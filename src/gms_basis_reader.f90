@@ -74,12 +74,19 @@ contains
 
   end function classify_line
 
-  pure function is_blank_or_control(line) result(res)
-    character(len=*), intent(in) :: line
-    logical :: res
-
-    res = (len_trim(line) == 0) .or. (line(1:1) == '$')
-  end function is_blank_or_control
+pure function is_blank_or_control(line) result(res)
+  character(len=*), intent(in) :: line
+  logical :: res
+  integer :: trimmed_len
+  
+  trimmed_len = len_trim(line)
+  
+  if (trimmed_len == 0) then
+    res = .true.
+  else
+    res = (line(1:1) == '$')
+  end if
+end function is_blank_or_control
 
   pure function is_function_line(line) result(res)
     character(len=*), intent(in) :: line
