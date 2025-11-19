@@ -29,7 +29,7 @@ program pic_basis_app
 
   print *
   print *, "=========================================="
-  print *, "GAMESS Basis Set Generator"
+  print *, "GAMESS-Style Basis Set Generator"
   print *, "=========================================="
   print *
   print *, "Geometry file:  ", trim(args%xyz_file)
