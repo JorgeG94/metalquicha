@@ -1,5 +1,5 @@
-module gms_basis_reader
-  use gms_cgto
+module pic_basis_reader
+  use pic_cgto
   use basis_file_reader, only: strings_equal
   use iso_fortran_env, only: real64
   implicit none
@@ -526,4 +526,4 @@ end subroutine count_shells_for_element
 
   end subroutine build_molecular_basis
 
-end module gms_basis_reader
+end module pic_basis_reader

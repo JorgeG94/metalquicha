@@ -1,4 +1,4 @@
-module gms_cli_parser
+module pic_cli_parser
   implicit none
   private
 
@@ -88,7 +88,7 @@ contains
     integer :: stat
 
     call get_command_argument(0, prog_name, status=stat)
-    if (stat /= 0) prog_name = "gms_basis_reader"
+    if (stat /= 0) prog_name = "pic_basis_reader"
 
     print *
     print *, "Usage: ", trim(prog_name), " <geometry.xyz> <basis_name>"
@@ -262,4 +262,4 @@ contains
 
   end subroutine find_basis_file
 
-end module gms_cli_parser
+end module pic_cli_parser

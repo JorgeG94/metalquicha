@@ -1,8 +1,8 @@
 program main
-  use gms_xyz_reader
-  use gms_basis_reader, only: classify_line, parse_element_basis, &
+  use pic_xyz_reader
+  use pic_basis_reader, only: classify_line, parse_element_basis, &
                               build_molecular_basis, ang_mom_int_to_char
-  use gms_cgto
+  use pic_cgto
   use basis_file_reader
   use iso_fortran_env, only: real64
   implicit none

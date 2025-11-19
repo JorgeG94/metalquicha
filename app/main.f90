@@ -1,8 +1,8 @@
-program gms_basis_app
-  use gms_cli_parser
-  use gms_xyz_reader
-  use gms_basis_reader, only: build_molecular_basis, ang_mom_int_to_char
-  use gms_cgto
+program pic_basis_app
+  use pic_cli_parser
+  use pic_xyz_reader
+  use pic_basis_reader, only: build_molecular_basis, ang_mom_int_to_char
+  use pic_cgto
   use basis_file_reader
   use iso_fortran_env, only: real64
   implicit none
@@ -173,4 +173,4 @@ contains
     end do
   end subroutine to_upper
 
-end program gms_basis_app
+end program pic_basis_app

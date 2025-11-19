@@ -1,4 +1,4 @@
-module gms_cgto
+module pic_cgto
   use iso_fortran_env, only: real64
   implicit none
   private
@@ -142,4 +142,4 @@ contains
     end do
   end function molecular_basis_num_basis_functions
 
-end module gms_cgto
+end module pic_cgto

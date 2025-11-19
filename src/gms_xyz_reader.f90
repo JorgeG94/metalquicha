@@ -1,4 +1,4 @@
-module gms_xyz_reader
+module pic_xyz_reader
   use iso_fortran_env, only: real64
   implicit none
   private
@@ -262,4 +262,4 @@ end subroutine split_lines
     this%natoms = 0
   end subroutine geometry_destroy
 
-end module gms_xyz_reader
+end module pic_xyz_reader
