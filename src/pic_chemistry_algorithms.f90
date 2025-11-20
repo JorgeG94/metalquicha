@@ -4,6 +4,7 @@ module pic_chemistry_algorithms
    use pic_timer
    use mpi_comm_simple
    use pic_fragment, only: pic_fragment_block
+   use pic_blas_interfaces, only: pic_gemm
    implicit none
 
 contains
@@ -31,9 +32,7 @@ contains
 
       ! Simulate chemistry work (JAXPY-like operation: C = alpha * H + S)
       call compute_timer%start()
-      do concurrent(j=1:dims, i=1:dims)
-         C(i, j) = alpha*H(i, j) + S(i, j)
-      end do
+      call pic_gemm(H,S,C)
       call compute_timer%stop()
       elapsed_time = compute_timer%get_elapsed_time()
 

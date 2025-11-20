@@ -18,8 +18,9 @@ implicit-external = false
 source-form = "free"
 
 [dependencies]
-pic = { git = "https://github.com/JorgeG94/pic.git", branch = "main"}
+pic = { git = "https://github.com/JorgeG94/pic.git", branch = "feat/move_blas_out"}
 pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
+pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", branch = "main"}
 
 [[executable]]
 name = "test"
