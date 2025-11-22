@@ -5,79 +5,83 @@ module pic_chemistry_algorithms
    use mpi_comm_simple
    use pic_fragment, only: pic_fragment_block
    use pic_blas_interfaces, only: pic_gemm, pic_dot 
-   use mctc_io_codata2018, only: bohr_radius
+   !use mctc_io_codata2018, only: bohr_radius
    implicit none
+   real(dp), parameter :: bohr_radius = 0.52917721092_dp
 
 contains
 
    subroutine process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
                                           water_energy, C_flat, phys_frag)
       use pic_physical_fragment, only: physical_fragment_t, element_number_to_symbol
+      use mctc_env, only: wp, error_type
+      use mctc_io, only: structure_type, new
+      use tblite_context_type, only: context_type
+      use tblite_wavefunction, only: wavefunction_type, new_wavefunction
+      use tblite_xtb_calculator, only: xtb_calculator
+      use tblite_xtb_gfn2, only: new_gfn2_calculator
+      use tblite_xtb_singlepoint, only: xtb_singlepoint
+
       integer, intent(in) :: fragment_idx, fragment_size, matrix_size
       integer, intent(in) :: fragment_indices(fragment_size)
       real(dp), intent(out) :: water_energy
       real(dp), allocatable, intent(out) :: C_flat(:)
       type(physical_fragment_t), intent(in), optional :: phys_frag
-      real(dp) :: dot_result
-      real(dp), allocatable :: H(:, :), S(:, :), C(:, :)
-      real(dp), allocatable :: H_flat(:), S_flat(:)
-      integer :: i, j, dims
-      type(timer_type) :: compute_timer
-      real(dp) :: elapsed_time
-      real(dp), parameter :: alpha = 17.0_dp
+      integer :: i
       real(dp), parameter :: water_1 = -75.0_dp
+
+      ! GFN1 calculation variables
+      type(error_type), allocatable :: error
+      type(structure_type) :: mol
+      real(wp), allocatable :: xyz(:, :)
+      integer, allocatable :: num(:)
+      type(xtb_calculator) :: calc
+      type(wavefunction_type) :: wfn
+      real(wp) :: energy
+      type(context_type) :: ctx
+      real(wp), parameter :: acc = 0.01_wp
+      real(wp), parameter :: kt = 300.0_wp * 3.166808578545117e-06_wp
 
       ! Print fragment geometry if provided
       if (present(phys_frag)) then
          !call print_fragment_xyz(fragment_idx, phys_frag)
+
+         ! Perform GFN1 calculation on the fragment
+         allocate(num(phys_frag%n_atoms))
+         allocate(xyz(3, phys_frag%n_atoms))
+
+         ! Copy atomic numbers
+         num = phys_frag%element_numbers
+
+         ! Convert coordinates from Angstroms to Bohr
+         do i = 1, phys_frag%n_atoms
+            xyz(1:3, i) = phys_frag%coordinates(1:3, i) / bohr_radius
+         end do
+
+         ! Create molecular structure and run GFN1 calculation
+         call new(mol, num, xyz, charge=0.0_wp, uhf=0)
+         call new_gfn2_calculator(calc, mol, error)
+
+         if (.not. allocated(error)) then
+            call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, kt)
+            energy = 0.0_wp
+            call xtb_singlepoint(ctx, mol, calc, wfn, acc, energy, verbosity=0)
+            !print *, "energy is ", energy
+            water_energy = real(energy, dp)
+         else
+            ! If GFN1 calculation fails, fall back to dummy value
+            water_energy = water_1 * fragment_size
+         end if
+
+         deallocate(num, xyz)
+      else
+         ! If no physical fragment provided, use dummy energy
+         water_energy = water_1 * fragment_size
       end if
 
-      dims = fragment_size*matrix_size
-      water_energy = water_1 * fragment_size
-
-      ! Allocate matrices for Hamiltonian, Overlap, and Coefficients
-      allocate (H(dims, dims), S(dims, dims), C(dims, dims))
-
-      ! Initialize matrices (simulating chemistry computation)
-      ! Scale values to get dot product in reasonable range
-      do concurrent(j=1:dims, i=1:dims)
-         H(i, j) = real(fragment_idx, dp) * 1e-4_dp  ! Hamiltonian matrix
-         S(i, j) = real(fragment_idx, dp) * 1e-4_dp  ! Overlap matrix
-         C(i, j) = 0.0_dp                             ! Coefficient matrix
-      end do
-
-      ! Simulate chemistry work (GEMM operation: C = H * S)
-      call compute_timer%start()
-      call pic_gemm(H,S,C)
-      call compute_timer%stop()
-      elapsed_time = compute_timer%get_elapsed_time()
-
-      ! Collapse H and S into 1D arrays
-      allocate(H_flat(dims*dims), S_flat(dims*dims))
-      H_flat = reshape(H, [dims*dims])
-      S_flat = reshape(S, [dims*dims])
-
-      ! Compute dot product of H and S
-      dot_result = pic_dot(H_flat, S_flat)
-
-      ! With 1e-3 scaling on H and S, dot_result ~ dims² * (fragment_idx * 1e-3)²
-      ! For dims=30, fragment_idx=1: dot_result ~ 900 * 1e-6 = 9e-4
-      ! This gives us a contribution on the order of 1e-4 to water_energy
-      block 
-      real(dp) :: division 
-      if(fragment_size > 2) then 
-        division = 1e5_dp
-      else 
-        division = 1e3_dp
-      end if
-      water_energy = water_energy - dot_result/division
-      end block
-
-      ! Collapse C into 1D array for sending
-      allocate(C_flat(dims*dims))
-      C_flat = reshape(C, [dims*dims])
-
-      deallocate (H, S, C, H_flat, S_flat)
+      ! Return empty vector for C_flat
+      allocate(C_flat(1))
+      C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
 
    subroutine print_fragment_xyz(fragment_idx, phys_frag)
@@ -356,11 +360,13 @@ contains
       integer :: max_matrix_size
       integer :: worker_fragment_map(node_comm%size())
       integer :: worker_source
+      integer :: results_received
 
       current_fragment = total_fragments
       finished_nodes = 0
       local_finished_workers = 0
       handling_local_workers = (node_comm%size() > 1)
+      results_received = 0
 
       ! Allocate storage for results
       allocate(scalar_results(total_fragments))
@@ -374,35 +380,39 @@ contains
 
       do while (finished_nodes < num_nodes)
 
-         ! Check for incoming results from local workers (tag 203 = scalar, tag 204 = matrix)
-         ! Only check workers that are currently assigned work
+         ! PRIORITY 1: Check for incoming results from local workers (tag 203 = scalar, tag 204 = matrix)
+         ! This MUST be checked before sending new work to avoid race conditions
          if (handling_local_workers) then
-            block
-               integer :: w
-               do w = 1, node_comm%size() - 1
-                  if (worker_fragment_map(w) > 0) then
-                     call iprobe(node_comm, w, 203, has_pending, local_status)
-                     if (has_pending) then
-                        worker_source = w
-                        ! Receive scalar result and store it using the fragment index for this worker
-                        call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, 203)
-                        ! Receive matrix result into temporary array, then copy to storage
-                        call recv(node_comm, temp_matrix, worker_source, 204, local_status)
-                        ! Copy only the received size, pad rest with zeros
-                        matrix_results(1:size(temp_matrix), worker_fragment_map(worker_source)) = temp_matrix
-                        if (size(temp_matrix) < max_matrix_size) then
-                           matrix_results(size(temp_matrix)+1:max_matrix_size, worker_fragment_map(worker_source)) = 0.0_dp
-                        end if
-                        ! Clear the mapping since we've received the result
-                        worker_fragment_map(worker_source) = 0
-                        deallocate(temp_matrix)
-                     end if
-                  end if
-               end do
-            end block
+            ! Keep checking for results until there are none pending
+            do
+               call iprobe(node_comm, MPI_ANY_SOURCE, 203, has_pending, local_status)
+               if (.not. has_pending) exit
+
+               worker_source = local_status%MPI_SOURCE
+
+               ! Safety check: worker should have a fragment assigned
+               if (worker_fragment_map(worker_source) == 0) then
+                  print *, "ERROR: Received result from worker", worker_source, "but no fragment was assigned!"
+                  error stop "Invalid worker_fragment_map state"
+               end if
+
+               ! Receive scalar result and store it using the fragment index for this worker
+               call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, 203)
+               ! Receive matrix result into temporary array, then copy to storage
+               call recv(node_comm, temp_matrix, worker_source, 204, local_status)
+               ! Copy only the received size, pad rest with zeros
+               matrix_results(1:size(temp_matrix), worker_fragment_map(worker_source)) = temp_matrix
+               if (size(temp_matrix) < max_matrix_size) then
+                  matrix_results(size(temp_matrix)+1:max_matrix_size, worker_fragment_map(worker_source)) = 0.0_dp
+               end if
+               ! Clear the mapping since we've received the result
+               worker_fragment_map(worker_source) = 0
+               if (allocated(temp_matrix)) deallocate(temp_matrix)
+               results_received = results_received + 1
+            end do
          end if
 
-         ! Remote node coordinator requests
+         ! PRIORITY 2: Remote node coordinator requests
          call iprobe(world_comm, MPI_ANY_SOURCE, 300, has_pending, status)
          if (has_pending) then
             call recv(world_comm, dummy_msg, status%MPI_SOURCE, 300)
@@ -417,27 +427,33 @@ contains
             end if
          end if
 
-         ! Local workers (shared memory)
+         ! PRIORITY 3: Local workers (shared memory) - send new work
          if (handling_local_workers .and. local_finished_workers < node_comm%size() - 1) then
             call iprobe(node_comm, MPI_ANY_SOURCE, 200, has_pending, local_status)
             if (has_pending) then
-               call recv(node_comm, local_dummy, local_status%MPI_SOURCE, 200)
+               ! Only process work request if this worker doesn't have pending results
+               if (worker_fragment_map(local_status%MPI_SOURCE) == 0) then
+                  call recv(node_comm, local_dummy, local_status%MPI_SOURCE, 200)
 
-               if (current_fragment >= 1) then
-                  call send_fragment_to_worker(node_comm, current_fragment, polymers, max_level, &
-                                                local_status%MPI_SOURCE, matrix_size)
-                  ! Track which fragment was sent to which worker
-                  worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
-                  current_fragment = current_fragment - 1
-               else
-                  call send(node_comm, -1, local_status%MPI_SOURCE, 202)
-                  local_finished_workers = local_finished_workers + 1
+                  if (current_fragment >= 1) then
+                     call send_fragment_to_worker(node_comm, current_fragment, polymers, max_level, &
+                                                   local_status%MPI_SOURCE, matrix_size)
+                     ! Track which fragment was sent to this worker
+                     worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
+                     current_fragment = current_fragment - 1
+                  else
+                     call send(node_comm, -1, local_status%MPI_SOURCE, 202)
+                     local_finished_workers = local_finished_workers + 1
+                  end if
                end if
+               ! If worker still has pending results, skip the work request
+               ! It will be processed on the next iteration after results are received
             end if
          end if
 
          ! Finalize local worker completion
-         if (handling_local_workers .and. local_finished_workers >= node_comm%size() - 1) then
+         if (handling_local_workers .and. local_finished_workers >= node_comm%size() - 1 &
+             .and. results_received >= total_fragments) then
             handling_local_workers = .false.
             if (num_nodes == 1) then
                finished_nodes = finished_nodes + 1
