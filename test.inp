@@ -1,0 +1,5 @@
+# PIC Chemistry input file
+# Test with water hexamer prism
+
+geom="prism.xyz"
+monomer_symbols="water_monomer.xyz"
