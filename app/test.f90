@@ -45,9 +45,9 @@ program hierarchical_mpi_mbe
    world_comm = comm_world()
    node_comm = world_comm%split()   ! shared memory communicator
    narg = command_argument_count()
-   n_monomers = 30
+   n_monomers = 10
    max_level = 3
-   n = 128  ! monomer matrix size
+   n = 25  ! monomer matrix size
 
    if (narg >= 1) then
       call get_command_argument(1, arg)
