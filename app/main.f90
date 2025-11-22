@@ -4,8 +4,10 @@ program test_with_geometry
    use pic_mbe
    use pic_physical_fragment
    use pic_input_parser
+   use pic_timer
    implicit none
 
+   type(timer_type) :: my_timer
    type(comm_t) :: world_comm, node_comm
    integer :: world_rank, world_size, node_rank, node_size
    integer :: ierr
@@ -38,6 +40,9 @@ program test_with_geometry
    world_size = world_comm%size()
    node_rank = node_comm%rank()
    node_size = node_comm%size()
+   if(world_rank == 0) then 
+    call my_timer%start()
+   end if
 
    ! All ranks read input file and load geometry
    input_file = "test.inp"
@@ -141,6 +146,11 @@ program test_with_geometry
       ! Worker
       print '(a,i0,a)', "Rank ", world_rank, ": Acting as worker"
       call test_node_worker(world_comm, node_comm, max_level, sys_geom)
+   end if
+
+   if(world_rank == 0) then 
+    call my_timer%stop()
+    print *, "Total processing time ", my_timer%get_elapsed_time(), " s"
    end if
 
    ! Cleanup
