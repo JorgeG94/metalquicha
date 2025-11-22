@@ -75,120 +75,150 @@ contains
    subroutine compute_mbe_energy(polymers, fragment_count, max_level, energies, total_energy)
       !! Compute the many-body expansion (MBE) energy
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
-      !! where deltaE(ij) = E(i,j) - E(i) - E(j)
-      !! and deltaE(ijk) = E(i,j,k) - deltaE(i,j) - deltaE(i,k) - deltaE(j,k) - E(i) - E(j) - E(k)
+      !! General n-body correction:
+      !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
       integer, intent(in) :: polymers(:, :), fragment_count, max_level
       real(dp), intent(in) :: energies(:)
       real(dp), intent(out) :: total_energy
 
-      integer :: i, j, k, fragment_size
-      real(dp) :: sum_1body, sum_2body, sum_3body
+      integer :: i, fragment_size, body_level
+      real(dp), allocatable :: sum_by_level(:)
+      real(dp) :: delta_E
 
-      sum_1body = 0.0_dp
-      sum_2body = 0.0_dp
-      sum_3body = 0.0_dp
+      allocate(sum_by_level(max_level))
+      sum_by_level = 0.0_dp
 
       ! Sum over all fragments by their size
       do i = 1, fragment_count
          fragment_size = count(polymers(i, :) > 0)
 
-         select case (fragment_size)
-         case (1)
+         if (fragment_size == 1) then
             ! 1-body terms: just the monomer energies
-            sum_1body = sum_1body + energies(i)
-
-         case (2)
-            ! 2-body corrections: deltaE(ij) = E(i,j) - E(i) - E(j)
-            sum_2body = sum_2body + compute_delta_2body(polymers(i, :), polymers, energies, fragment_count)
-
-         case (3)
-            ! 3-body corrections: deltaE(ijk) = E(i,j,k) - deltaE(i,j) - deltaE(i,k) - deltaE(j,k) - E(i) - E(j) - E(k)
-            sum_3body = sum_3body + compute_delta_3body(polymers(i, :), polymers, energies, fragment_count)
-
-         end select
+            sum_by_level(1) = sum_by_level(1) + energies(i)
+         else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+            ! n-body corrections for n >= 2
+            delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
+                                         fragment_count, fragment_size)
+            sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+         end if
       end do
 
-      total_energy = sum_1body + sum_2body + sum_3body
+      total_energy = sum(sum_by_level)
 
       print *, "MBE Energy breakdown:"
-      print *, "  1-body:  ", sum_1body
-      print *, "  2-body:  ", sum_2body
-      print *, "  3-body:  ", sum_3body
-      print *, "  Total:   ", total_energy
+      do body_level = 1, max_level
+         if (abs(sum_by_level(body_level)) > 1e-15_dp) then
+            print '(a,i0,a,f20.10)', "  ", body_level, "-body:  ", sum_by_level(body_level)
+         end if
+      end do
+      print '(a,f20.10)', "  Total:   ", total_energy
+
+      deallocate(sum_by_level)
 
    end subroutine compute_mbe_energy
 
-   function compute_delta_2body(fragment, polymers, energies, fragment_count) result(delta_E)
-      !! Compute 2-body correction: deltaE(ij) = E(i,j) - E(i) - E(j)
-      integer, intent(in) :: fragment(:), polymers(:, :), fragment_count
+   recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
+      !! Compute general n-body correction using recursion
+      !! deltaE(i1,i2,...,in) = E(i1,i2,...,in)
+      !!                        - sum over all proper subsets of deltaE or E
+      !! For n=2: deltaE(ij) = E(ij) - E(i) - E(j)
+      !! For n=3: deltaE(ijk) = E(ijk) - deltaE(ij) - deltaE(ik) - deltaE(jk) - E(i) - E(j) - E(k)
+      !! For n>=4: same pattern recursively
+      integer, intent(in) :: fragment(:), polymers(:, :), fragment_count, n
       real(dp), intent(in) :: energies(:)
       real(dp) :: delta_E
 
-      integer :: i, j, mono_i, mono_j, idx_ij, idx_i, idx_j
+      integer :: idx_n, subset_size, i, j, num_subsets
+      integer, allocatable :: subset(:), indices(:)
+      real(dp) :: E_n, subset_contribution
 
-      ! Extract the two monomers from this fragment
-      mono_i = fragment(1)
-      mono_j = fragment(2)
+      ! Find the energy of this n-mer
+      idx_n = find_fragment_index(fragment, polymers, fragment_count, n)
+      E_n = energies(idx_n)
 
-      ! Find the energy of the dimer E(i,j) - it's in the energies array
-      ! We need to find which fragment index corresponds to this dimer
-      idx_ij = find_fragment_index([mono_i, mono_j], polymers, fragment_count, 2)
+      ! Start with the full n-mer energy
+      delta_E = E_n
 
-      ! Find the energies of the individual monomers E(i) and E(j)
-      idx_i = find_fragment_index([mono_i], polymers, fragment_count, 1)
-      idx_j = find_fragment_index([mono_j], polymers, fragment_count, 1)
+      ! Subtract contributions from all proper subsets (size 1 to n-1)
+      do subset_size = 1, n - 1
+         ! Generate all subsets of this size and subtract their contributions
+         call generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
+                                           fragment_count, delta_E)
+      end do
 
-      ! Compute the 2-body correction
-      delta_E = energies(idx_ij) - energies(idx_i) - energies(idx_j)
+   end function compute_delta_nbody
 
-   end function compute_delta_2body
-
-   function compute_delta_3body(fragment, polymers, energies, fragment_count) result(delta_E)
-      !! Compute 3-body correction:
-      !! deltaE(ijk) = E(i,j,k) - deltaE(i,j) - deltaE(i,k) - deltaE(j,k) - E(i) - E(j) - E(k)
-      integer, intent(in) :: fragment(:), polymers(:, :), fragment_count
+   subroutine generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
+                                            fragment_count, delta_E)
+      !! Generate all subsets of given size and subtract their contribution
+      integer, intent(in) :: fragment(:), subset_size, n, polymers(:, :), fragment_count
       real(dp), intent(in) :: energies(:)
-      real(dp) :: delta_E
+      real(dp), intent(inout) :: delta_E
 
-      integer :: mono_i, mono_j, mono_k
-      integer :: idx_ijk, idx_ij, idx_ik, idx_jk, idx_i, idx_j, idx_k
-      real(dp) :: E_ijk, E_i, E_j, E_k, E_ij, E_ik, E_jk
-      real(dp) :: delta_ij, delta_ik, delta_jk
+      integer, allocatable :: indices(:), subset(:)
+      integer :: i
 
-      ! Extract the three monomers from this fragment
-      mono_i = fragment(1)
-      mono_j = fragment(2)
-      mono_k = fragment(3)
+      allocate(indices(subset_size))
+      allocate(subset(subset_size))
 
-      ! Find the energy of the trimer E(i,j,k)
-      idx_ijk = find_fragment_index([mono_i, mono_j, mono_k], polymers, fragment_count, 3)
-      E_ijk = energies(idx_ijk)
+      ! Initialize indices for first combination
+      do i = 1, subset_size
+         indices(i) = i
+      end do
 
-      ! Find monomer energies
-      idx_i = find_fragment_index([mono_i], polymers, fragment_count, 1)
-      idx_j = find_fragment_index([mono_j], polymers, fragment_count, 1)
-      idx_k = find_fragment_index([mono_k], polymers, fragment_count, 1)
-      E_i = energies(idx_i)
-      E_j = energies(idx_j)
-      E_k = energies(idx_k)
+      ! Loop through all combinations
+      do
+         ! Build the current subset
+         do i = 1, subset_size
+            subset(i) = fragment(indices(i))
+         end do
 
-      ! Find dimer energies and compute 2-body deltas
-      idx_ij = find_fragment_index([mono_i, mono_j], polymers, fragment_count, 2)
-      idx_ik = find_fragment_index([mono_i, mono_k], polymers, fragment_count, 2)
-      idx_jk = find_fragment_index([mono_j, mono_k], polymers, fragment_count, 2)
-      E_ij = energies(idx_ij)
-      E_ik = energies(idx_ik)
-      E_jk = energies(idx_jk)
+         ! Subtract this subset's contribution
+         if (subset_size == 1) then
+            ! 1-body: just subtract the monomer energy
+            delta_E = delta_E - energies(find_fragment_index(subset, polymers, fragment_count, 1))
+         else
+            ! n-body: recursively compute and subtract deltaE for this subset
+            delta_E = delta_E - compute_delta_nbody(subset, polymers, energies, fragment_count, subset_size)
+         end if
 
-      delta_ij = E_ij - E_i - E_j
-      delta_ik = E_ik - E_i - E_k
-      delta_jk = E_jk - E_j - E_k
+         ! Get next combination
+         if (.not. next_combination(indices, subset_size, n)) exit
+      end do
 
-      ! Compute the 3-body correction
-      ! deltaE(ijk) = E(i,j,k) - deltaE(i,j) - deltaE(i,k) - deltaE(j,k) - E(i) - E(j) - E(k)
-      delta_E = E_ijk - delta_ij - delta_ik - delta_jk - E_i - E_j - E_k
+      deallocate(indices, subset)
 
-   end function compute_delta_3body
+   end subroutine generate_and_subtract_subsets
+
+   function next_combination(indices, k, n) result(has_next)
+      !! Generate next combination (updates indices in place)
+      !! Returns .true. if there's a next combination, .false. if we're done
+      integer, intent(inout) :: indices(:)
+      integer, intent(in) :: k, n
+      logical :: has_next
+      integer :: i
+
+      has_next = .true.
+
+      ! Find rightmost index that can be incremented
+      i = k
+      do while (i >= 1)
+         if (indices(i) < n - k + i) then
+            indices(i) = indices(i) + 1
+            ! Reset all indices to the right
+            do while (i < k)
+               i = i + 1
+               indices(i) = indices(i - 1) + 1
+            end do
+            return
+         end if
+         i = i - 1
+      end do
+
+      ! No more combinations
+      has_next = .false.
+
+   end function next_combination
 
    function find_fragment_index(target_monomers, polymers, fragment_count, expected_size) result(idx)
       !! Find the fragment index that contains exactly the target monomers
@@ -382,9 +412,9 @@ contains
       block
       integer :: i
       real(dp) :: mbe_total_energy
-      do i = 1, size(scalar_results,1)
-        print *, "Fragment", i, "energy:", scalar_results(i)
-      end do
+      !do i = 1, size(scalar_results,1)
+      !  print *, "Fragment", i, "energy:", scalar_results(i)
+      !end do
 
       ! Compute the many-body expansion energy
       print *
