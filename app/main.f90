@@ -111,37 +111,44 @@ program test_with_geometry
    ! Broadcast total_fragments to all ranks
    call bcast(world_comm, total_fragments, 1, 0)
 
-   ! Determine number of nodes
-   num_nodes = 1
-   do i = 0, world_size - 1
-      if (i == 0) cycle
-      world_comm = comm_world()
-      node_comm = world_comm%split()
-      if (node_comm%rank() == 0) then
-         num_nodes = num_nodes + 1
+   ! Determine node leaders (like in test.f90)
+   block
+      integer :: global_node_rank, j
+      integer, allocatable :: all_node_leader_ranks(:)
+
+      global_node_rank = -1
+      if (node_comm%rank() == 0) global_node_rank = world_comm%rank()
+
+      allocate(all_node_leader_ranks(world_comm%size()))
+      call allgather(world_comm, global_node_rank, all_node_leader_ranks)
+
+      num_nodes = count(all_node_leader_ranks /= -1)
+
+      if (world_comm%rank() == 0) then
+         print '(a,i0,a)', "Running with ", num_nodes, " node(s)"
       end if
-   end do
 
-   ! Simplified: assume single node for this test
-   num_nodes = 1
-   allocate (node_leader_ranks(num_nodes))
-   node_leader_ranks(1) = 0
-
-   ! Reset communicators
-   call world_comm%finalize()
-   call node_comm%finalize()
-   world_comm = comm_world()
-   node_comm = world_comm%split()
+      allocate(node_leader_ranks(num_nodes))
+      i = 0
+      do j = 1, world_comm%size()
+         if (all_node_leader_ranks(j) /= -1) then
+            i = i + 1
+            node_leader_ranks(i) = all_node_leader_ranks(j)
+         end if
+      end do
+      deallocate(all_node_leader_ranks)
+   end block
 
    ! Run the test based on role
-   if (world_rank == 0 .and. node_rank == 0) then
-      ! Global coordinator
+   if (world_comm%leader() .and. node_comm%leader()) then
+      ! Global coordinator (rank 0, node leader on node 0)
       print *, "Rank 0: Acting as global coordinator"
       call test_global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                     node_leader_ranks, num_nodes, matrix_size)
-   else if (node_rank == 0) then
-      ! Node coordinator (not used in single-node test)
-      print *, "This should not happen in single-node test"
+   else if (node_comm%leader()) then
+      ! Node coordinator (node leader on other nodes)
+      print '(a,i0,a)', "Rank ", world_rank, ": Acting as node coordinator"
+      call test_node_coordinator(world_comm, node_comm, max_level, matrix_size)
    else
       ! Worker
       print '(a,i0,a)', "Rank ", world_rank, ": Acting as worker"
