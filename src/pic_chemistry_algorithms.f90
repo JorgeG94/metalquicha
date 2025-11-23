@@ -3,8 +3,9 @@ module pic_chemistry_algorithms
    use pic_types
    use pic_timer
    use mpi_comm_simple
+   use pic_mpi_tags
    use pic_fragment, only: pic_fragment_block
-   use pic_blas_interfaces, only: pic_gemm, pic_dot 
+   use pic_blas_interfaces, only: pic_gemm, pic_dot
    !use mctc_io_codata2018, only: bohr_radius
    implicit none
    real(dp), parameter :: bohr_radius = 0.52917721092_dp
@@ -380,12 +381,12 @@ contains
 
       do while (finished_nodes < num_nodes)
 
-         ! PRIORITY 1: Check for incoming results from local workers (tag 203 = scalar, tag 204 = matrix)
+         ! PRIORITY 1: Check for incoming results from local workers
          ! This MUST be checked before sending new work to avoid race conditions
          if (handling_local_workers) then
             ! Keep checking for results until there are none pending
             do
-               call iprobe(node_comm, MPI_ANY_SOURCE, 203, has_pending, local_status)
+               call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
                if (.not. has_pending) exit
 
                worker_source = local_status%MPI_SOURCE
@@ -397,9 +398,9 @@ contains
                end if
 
                ! Receive scalar result and store it using the fragment index for this worker
-               call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, 203)
+               call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, TAG_WORKER_SCALAR_RESULT)
                ! Receive matrix result into temporary array, then copy to storage
-               call recv(node_comm, temp_matrix, worker_source, 204, local_status)
+               call recv(node_comm, temp_matrix, worker_source, TAG_WORKER_MATRIX_RESULT, local_status)
                ! Copy only the received size, pad rest with zeros
                matrix_results(1:size(temp_matrix), worker_fragment_map(worker_source)) = temp_matrix
                if (size(temp_matrix) < max_matrix_size) then
@@ -412,15 +413,15 @@ contains
             end do
          end if
 
-         ! PRIORITY 1b: Check for incoming results from remote node coordinators (tag 303 = scalar, tag 304 = matrix)
+         ! PRIORITY 1b: Check for incoming results from remote node coordinators
          do
-            call iprobe(world_comm, MPI_ANY_SOURCE, 303, has_pending, status)
+            call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
             if (.not. has_pending) exit
 
             ! Receive fragment index, scalar result, and matrix result from node coordinator
-            call recv(world_comm, fragment_idx, status%MPI_SOURCE, 303)
-            call recv(world_comm, scalar_results(fragment_idx), status%MPI_SOURCE, 303)
-            call recv(world_comm, temp_matrix, status%MPI_SOURCE, 304, status)
+            call recv(world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT)
+            call recv(world_comm, scalar_results(fragment_idx), status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT)
+            call recv(world_comm, temp_matrix, status%MPI_SOURCE, TAG_NODE_MATRIX_RESULT, status)
 
             ! Copy matrix result into storage
             matrix_results(1:size(temp_matrix), fragment_idx) = temp_matrix
@@ -432,27 +433,27 @@ contains
          end do
 
          ! PRIORITY 2: Remote node coordinator requests
-         call iprobe(world_comm, MPI_ANY_SOURCE, 300, has_pending, status)
+         call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_REQUEST, has_pending, status)
          if (has_pending) then
-            call recv(world_comm, dummy_msg, status%MPI_SOURCE, 300)
+            call recv(world_comm, dummy_msg, status%MPI_SOURCE, TAG_NODE_REQUEST)
             request_source = status%MPI_SOURCE
 
             if (current_fragment >= 1) then
                call send_fragment_to_node(world_comm, current_fragment, polymers, max_level, request_source)
                current_fragment = current_fragment - 1
             else
-               call send(world_comm, -1, request_source, 302)
+               call send(world_comm, -1, request_source, TAG_NODE_FINISH)
                finished_nodes = finished_nodes + 1
             end if
          end if
 
          ! PRIORITY 3: Local workers (shared memory) - send new work
          if (handling_local_workers .and. local_finished_workers < node_comm%size() - 1) then
-            call iprobe(node_comm, MPI_ANY_SOURCE, 200, has_pending, local_status)
+            call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, local_status)
             if (has_pending) then
                ! Only process work request if this worker doesn't have pending results
                if (worker_fragment_map(local_status%MPI_SOURCE) == 0) then
-                  call recv(node_comm, local_dummy, local_status%MPI_SOURCE, 200)
+                  call recv(node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST)
 
                   if (current_fragment >= 1) then
                      call send_fragment_to_worker(node_comm, current_fragment, polymers, max_level, &
@@ -461,7 +462,7 @@ contains
                      worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
                      current_fragment = current_fragment - 1
                   else
-                     call send(node_comm, -1, local_status%MPI_SOURCE, 202)
+                     call send(node_comm, -1, local_status%MPI_SOURCE, TAG_WORKER_FINISH)
                      local_finished_workers = local_finished_workers + 1
                   end if
                end if
@@ -510,9 +511,9 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
-      call send(world_comm, fragment_idx, dest_rank, 301)
-      call send(world_comm, fragment_size, dest_rank, 301)
-      call send(world_comm, fragment_indices, dest_rank, 301)
+      call send(world_comm, fragment_idx, dest_rank, TAG_NODE_FRAGMENT)
+      call send(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT)
+      call send(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT)
 
       deallocate (fragment_indices)
    end subroutine send_fragment_to_node
@@ -528,10 +529,10 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
-      call send(node_comm, fragment_idx, dest_rank, 201)
-      call send(node_comm, fragment_size, dest_rank, 201)
-      call send(node_comm, fragment_indices, dest_rank, 201)
-      call send(node_comm, matrix_size, dest_rank, 201)
+      call send(node_comm, fragment_idx, dest_rank, TAG_WORKER_FRAGMENT)
+      call send(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT)
+      call send(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT)
+      call send(node_comm, matrix_size, dest_rank, TAG_WORKER_FRAGMENT)
 
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
@@ -560,8 +561,8 @@ contains
 
       do while (finished_workers < node_comm%size() - 1)
 
-         ! PRIORITY 1: Check for incoming results from local workers (tag 203 = scalar, tag 204 = matrix)
-         call iprobe(node_comm, MPI_ANY_SOURCE, 203, has_result, status)
+         ! PRIORITY 1: Check for incoming results from local workers
+         call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_result, status)
          if (has_result) then
             worker_source = status%MPI_SOURCE
 
@@ -573,13 +574,13 @@ contains
             end if
 
             ! Receive scalar and matrix results from worker
-            call recv(node_comm, scalar_result, worker_source, 203)
-            call recv(node_comm, matrix_result, worker_source, 204, status)
+            call recv(node_comm, scalar_result, worker_source, TAG_WORKER_SCALAR_RESULT)
+            call recv(node_comm, matrix_result, worker_source, TAG_WORKER_MATRIX_RESULT, status)
 
             ! Forward results to global coordinator with fragment index
-            call send(world_comm, worker_fragment_map(worker_source), 0, 303)  ! fragment_idx
-            call send(world_comm, scalar_result, 0, 303)                       ! scalar result
-            call send(world_comm, matrix_result, 0, 304)                       ! matrix result
+            call send(world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT)  ! fragment_idx
+            call send(world_comm, scalar_result, 0, TAG_NODE_SCALAR_RESULT)                       ! scalar result
+            call send(world_comm, matrix_result, 0, TAG_NODE_MATRIX_RESULT)                       ! matrix result
 
             ! Clear the mapping and deallocate
             worker_fragment_map(worker_source) = 0
@@ -587,38 +588,38 @@ contains
          end if
 
          ! PRIORITY 2: Check for work requests from local workers
-         call iprobe(node_comm, MPI_ANY_SOURCE, 200, local_message_pending, status)
+         call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, local_message_pending, status)
 
          if (local_message_pending) then
             ! Only process work request if this worker doesn't have pending results
             if (worker_fragment_map(status%MPI_SOURCE) == 0) then
-               call recv(node_comm, local_dummy, status%MPI_SOURCE, 200)
+               call recv(node_comm, local_dummy, status%MPI_SOURCE, TAG_WORKER_REQUEST)
 
                if (more_fragments) then
-                  call send(world_comm, dummy_msg, 0, 300)
+                  call send(world_comm, dummy_msg, 0, TAG_NODE_REQUEST)
                   call recv(world_comm, fragment_idx, 0, MPI_ANY_TAG, global_status)
 
-                  if (global_status%MPI_TAG == 301) then
-                     call recv(world_comm, fragment_size, 0, 301, global_status)
+                  if (global_status%MPI_TAG == TAG_NODE_FRAGMENT) then
+                     call recv(world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, global_status)
                      allocate (fragment_indices(fragment_size))
-                     call recv(world_comm, fragment_indices, 0, 301, global_status)
+                     call recv(world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
 
-                     call send(node_comm, fragment_idx, status%MPI_SOURCE, 201)
-                     call send(node_comm, fragment_size, status%MPI_SOURCE, 201)
-                     call send(node_comm, fragment_indices, status%MPI_SOURCE, 201)
-                     call send(node_comm, matrix_size, status%MPI_SOURCE, 201)
+                     call send(node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT)
+                     call send(node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT)
+                     call send(node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT)
+                     call send(node_comm, matrix_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT)
 
                      ! Track which fragment was sent to this worker
                      worker_fragment_map(status%MPI_SOURCE) = fragment_idx
 
                      deallocate (fragment_indices)
                   else
-                     call send(node_comm, -1, status%MPI_SOURCE, 202)
+                     call send(node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH)
                      finished_workers = finished_workers + 1
                      more_fragments = .false.
                   end if
                else
-                  call send(node_comm, -1, status%MPI_SOURCE, 202)
+                  call send(node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH)
                   finished_workers = finished_workers + 1
                end if
             end if
@@ -642,15 +643,15 @@ contains
       dummy_msg = 0
 
       do
-         call send(node_comm, dummy_msg, 0, 200)
+         call send(node_comm, dummy_msg, 0, TAG_WORKER_REQUEST)
          call recv(node_comm, fragment_idx, 0, MPI_ANY_TAG, status)
 
          select case (status%MPI_TAG)
-         case (201)
-            call recv(node_comm, fragment_size, 0, 201, status)
+         case (TAG_WORKER_FRAGMENT)
+            call recv(node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, status)
             allocate (fragment_indices(fragment_size))
-            call recv(node_comm, fragment_indices, 0, 201, status)
-            call recv(node_comm, matrix_size, 0, 201, status)
+            call recv(node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
+            call recv(node_comm, matrix_size, 0, TAG_WORKER_FRAGMENT, status)
 
             ! Build physical fragment from indices if sys_geom is available
             if (present(sys_geom)) then
@@ -668,11 +669,11 @@ contains
             end if
 
             ! Send results back to coordinator
-            call send(node_comm, dot_result, 0, 203)
-            call send(node_comm, C_flat, 0, 204)
+            call send(node_comm, dot_result, 0, TAG_WORKER_SCALAR_RESULT)
+            call send(node_comm, C_flat, 0, TAG_WORKER_MATRIX_RESULT)
 
             deallocate (fragment_indices, C_flat)
-         case (202)
+         case (TAG_WORKER_FINISH)
             exit
          end select
       end do
