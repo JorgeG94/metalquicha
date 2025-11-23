@@ -80,9 +80,9 @@ contains
                errmsg = "Invalid value for nlevel: "//trim(value)
                return
             end if
-            if (config%nlevel < 1) then
+            if (config%nlevel < 0) then
                stat = 1
-               errmsg = "nlevel must be >= 1"
+               errmsg = "nlevel must be >= 0 (0 for unfragmented calculation)"
                return
             end if
          case default

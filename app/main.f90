@@ -72,7 +72,33 @@ program test_with_geometry
       print '(a,i0)', "  Total monomers: ", sys_geom%n_monomers
       print '(a,i0)', "  Atoms per monomer: ", sys_geom%atoms_per_monomer
       print '(a,i0)', "  Total atoms: ", sys_geom%total_atoms
+      print '(a,i0)', "  Fragment level: ", max_level
       print *, "============================================"
+   end if
+
+   ! Check if this is an unfragmented calculation (nlevel=0)
+   if (max_level == 0) then
+      if (world_rank == 0) then
+         print *, ""
+         print *, "nlevel=0 detected: Running unfragmented calculation"
+         print *, "Only rank 0 will perform the calculation"
+         print *, ""
+         call unfragmented_calculation(sys_geom)
+      end if
+
+      ! All other ranks just wait
+      if (world_rank == 0) then
+         call my_timer%stop()
+         print *, "Total processing time ", my_timer%get_elapsed_time(), " s"
+      end if
+
+      ! Cleanup and exit
+      call config%destroy()
+      call sys_geom%destroy()
+      call world_comm%finalize()
+      call node_comm%finalize()
+      call mpi_finalize_wrapper()
+      stop
    end if
 
    ! Generate fragments (only rank 0 needs this for coordination)

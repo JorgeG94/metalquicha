@@ -4,6 +4,7 @@ module pic_chemistry_algorithms
    use mpi_comm_simple, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
    use pic_mpi_tags
    use pic_fragment, only: pic_fragment_block
+   use pic_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    !use mctc_io_codata2018, only: bohr_radius
    implicit none
@@ -677,5 +678,64 @@ contains
          end select
       end do
    end subroutine test_node_worker
+
+   subroutine unfragmented_calculation(sys_geom)
+      !! Run unfragmented calculation on the entire system (nlevel=0)
+      !! This is a simple single-process calculation without MPI distribution
+      type(system_geometry_t), intent(in), optional :: sys_geom
+
+      real(dp) :: dot_result
+      real(dp), allocatable :: C_flat(:)
+      integer :: total_atoms
+      type(physical_fragment_t) :: full_system
+      integer :: i
+
+      if (.not. present(sys_geom)) then
+         print *, "ERROR: sys_geom required for unfragmented calculation"
+         error stop "Missing geometry in unfragmented_calculation"
+      end if
+
+      total_atoms = sys_geom%total_atoms
+
+      print *, "============================================"
+      print *, "Running unfragmented calculation"
+      print '(a,i0)', "  Total atoms: ", total_atoms
+      print *, "============================================"
+
+      ! Build the full system as a single fragment (all monomers)
+      block
+         integer, allocatable :: all_monomer_indices(:)
+
+         allocate(all_monomer_indices(sys_geom%n_monomers))
+         do i = 1, sys_geom%n_monomers
+            all_monomer_indices(i) = i
+         end do
+
+         call build_fragment_from_indices(sys_geom, all_monomer_indices, full_system)
+         deallocate(all_monomer_indices)
+      end block
+
+      ! Process the full system
+      block
+         integer, allocatable :: temp_indices(:)
+         allocate(temp_indices(sys_geom%n_monomers))
+         do i = 1, sys_geom%n_monomers
+            temp_indices(i) = i
+         end do
+
+         call process_chemistry_fragment(0, temp_indices, sys_geom%n_monomers, &
+                                         total_atoms, dot_result, C_flat)
+         deallocate(temp_indices)
+      end block
+
+      print *, "============================================"
+      print *, "Unfragmented calculation completed"
+      print '(a,es15.8)', "  Scalar result: ", dot_result
+      print '(a,i0)', "  Matrix size: ", size(C_flat)
+      print *, "============================================"
+
+      if (allocated(C_flat)) deallocate(C_flat)
+
+   end subroutine unfragmented_calculation
 
 end module pic_chemistry_algorithms
