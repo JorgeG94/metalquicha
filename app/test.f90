@@ -1,6 +1,6 @@
 program hierarchical_mpi_mbe
-   use mpi_f08
-   use mpi_comm_simple
+   use mpi_comm_simple, only: comm_t, comm_world, abort_comm, allgather, get_processor_name, &
+                              mpi_initialize, mpi_finalize_wrapper
    use omp_lib
    !use pic_blas_interfaces, only: pic_gemm
    use pic_timer, only: timer_type
@@ -20,7 +20,7 @@ program hierarchical_mpi_mbe
 
    ! MPI wrappers
    type(comm_t) :: world_comm, node_comm
-   character(len=MPI_MAX_PROCESSOR_NAME) :: hostname
+   character(len=256) :: hostname  ! Standard max processor name length
    integer :: hostname_len
 
    ! Timing
@@ -41,7 +41,7 @@ program hierarchical_mpi_mbe
    !==============================
    ! MPI Initialization
    !==============================
-   call MPI_Init()
+   call mpi_initialize()
    world_comm = comm_world()
    node_comm = world_comm%split()   ! shared memory communicator
    narg = command_argument_count()
@@ -165,6 +165,6 @@ program hierarchical_mpi_mbe
    !==============================
    call node_comm%finalize()
    call world_comm%finalize()
-   call MPI_Finalize()
+   call mpi_finalize_wrapper()
 
 end program hierarchical_mpi_mbe

@@ -1,8 +1,7 @@
 module pic_chemistry_algorithms
-   use mpi_f08
    use pic_types
    use pic_timer
-   use mpi_comm_simple
+   use mpi_comm_simple, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
    use pic_mpi_tags
    use pic_fragment, only: pic_fragment_block
    use pic_blas_interfaces, only: pic_gemm, pic_dot
