@@ -21,6 +21,7 @@ source-form = "free"
 pic = { git = "https://github.com/JorgeG94/pic.git", branch = "feat/move_blas_out"}
 pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", branch = "main"}
+tblite = { git = "https://github.com/JorgeG94/tblite", branch = "main"}
 
 [[executable]]
 name = "test"
