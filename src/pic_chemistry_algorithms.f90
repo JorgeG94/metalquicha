@@ -53,16 +53,14 @@ contains
 
       ! Print fragment geometry if provided
       if (present(phys_frag)) then
-         !call print_fragment_xyz(fragment_idx, phys_frag)
+        if(verbosity == 1) then 
+          call print_fragment_xyz(fragment_idx, phys_frag)
+        end if
 
-         ! Perform GFN1 calculation on the fragment
          allocate(num(phys_frag%n_atoms))
          allocate(xyz(3, phys_frag%n_atoms))
 
-         ! Copy atomic numbers
          num = phys_frag%element_numbers
-
-         ! Convert coordinates from Angstroms to Bohr
          do i = 1, phys_frag%n_atoms
             xyz(1:3, i) = phys_frag%coordinates(1:3, i) / bohr_radius
          end do
@@ -75,17 +73,12 @@ contains
             call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, kt)
             energy = 0.0_wp
             call xtb_singlepoint(ctx, mol, calc, wfn, acc, energy, verbosity=verb_level)
-            !print *, "energy is ", energy
             water_energy = real(energy, dp)
-         else
-            ! If GFN1 calculation fails, fall back to dummy value
-            water_energy = water_1 * fragment_size
          end if
 
          deallocate(num, xyz)
       else
-         ! If no physical fragment provided, use dummy energy
-         water_energy = water_1 * fragment_size
+         water_energy = 0.0_dp
       end if
 
       ! Return empty vector for C_flat
