@@ -10,4 +10,5 @@ target_sources(
                       pic_fragment.f90
                       pic_mbe.f90
                       pic_physical_fragment.f90
-                      pic_input_parser.f90)
+                      pic_input_parser.f90
+                      pic_driver.f90)
