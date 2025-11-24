@@ -1,4 +1,4 @@
-module pic_input_parser
+module mqc_input_parser
    implicit none
    private
 
@@ -147,4 +147,4 @@ contains
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)
    end subroutine config_destroy
 
-end module pic_input_parser
+end module mqc_input_parser

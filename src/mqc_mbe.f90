@@ -1,4 +1,4 @@
-module pic_mbe
+module mqc_mbe
    use pic_types, only: default_int, dp
    implicit none
    private
@@ -104,4 +104,4 @@ contains
       end do
    end subroutine print_combos
 
-end module pic_mbe
+end module mqc_mbe

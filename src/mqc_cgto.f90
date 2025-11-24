@@ -1,4 +1,4 @@
-module pic_cgto
+module mqc_cgto
   use pic_types, only: dp
   implicit none
   private
@@ -142,4 +142,4 @@ contains
     end do
   end function molecular_basis_num_basis_functions
 
-end module pic_cgto
+end module mqc_cgto

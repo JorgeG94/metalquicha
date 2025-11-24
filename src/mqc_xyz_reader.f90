@@ -1,6 +1,6 @@
-module pic_xyz_reader
+module mqc_xyz_reader
   use pic_types, only: dp
-  use pic_geometry, only: geometry_type
+  use mqc_geometry, only: geometry_type
   implicit none
   private
 
@@ -244,4 +244,4 @@ subroutine split_lines(text, lines, nlines)
 
 end subroutine split_lines
 
-end module pic_xyz_reader
+end module mqc_xyz_reader

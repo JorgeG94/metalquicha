@@ -1,10 +1,10 @@
 program main
-  use pic_geometry
-  use pic_xyz_reader
-  use pic_basis_reader, only: classify_line, parse_element_basis, &
+  use mqc_geometry
+  use mqc_xyz_reader
+  use mqc_basis_reader, only: classify_line, parse_element_basis, &
                               build_molecular_basis, ang_mom_int_to_char
-  use pic_cgto
-  use basis_file_reader
+  use mqc_cgto
+  use mqc_basis_file_reader
   use pic_types, only: dp
   implicit none
   character(len=*), parameter :: test_basis = &

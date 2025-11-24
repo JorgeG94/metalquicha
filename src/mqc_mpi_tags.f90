@@ -1,4 +1,4 @@
-module pic_mpi_tags
+module mqc_mpi_tags
    !! Module defining MPI communication tags for clarity and maintainability
    use pic_types, only: default_int
    implicit none
@@ -28,4 +28,4 @@ module pic_mpi_tags
    integer(default_int), parameter, public :: TAG_NODE_MATRIX_RESULT = 304
       !! Node coordinator sends matrix results to global coordinator
 
-end module pic_mpi_tags
+end module mqc_mpi_tags

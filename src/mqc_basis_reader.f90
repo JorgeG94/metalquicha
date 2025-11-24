@@ -1,6 +1,6 @@
-module pic_basis_reader
-  use pic_cgto
-  use basis_file_reader, only: strings_equal
+module mqc_basis_reader
+  use mqc_cgto
+  use mqc_basis_file_reader, only: strings_equal
   use pic_types, only: dp
   implicit none
   private
@@ -526,4 +526,4 @@ end subroutine count_shells_for_element
 
   end subroutine build_molecular_basis
 
-end module pic_basis_reader
+end module mqc_basis_reader

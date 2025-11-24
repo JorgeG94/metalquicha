@@ -1,8 +1,8 @@
 program main
    use mpi_comm_simple
-   use pic_driver
-   use pic_physical_fragment
-   use pic_input_parser
+   use mqc_driver
+   use mqc_physical_fragment
+   use mqc_input_parser
    use pic_timer
    implicit none
 

@@ -1,4 +1,4 @@
-module pic_cli_parser
+module mqc_cli_parser
   implicit none
   private
 
@@ -262,4 +262,4 @@ contains
 
   end subroutine find_basis_file
 
-end module pic_cli_parser
+end module mqc_cli_parser

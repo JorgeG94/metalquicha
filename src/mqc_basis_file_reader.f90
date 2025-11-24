@@ -1,4 +1,4 @@
-module basis_file_reader
+module mqc_basis_file_reader
   use pic_types, only: int32, dp
   implicit none
   
@@ -161,4 +161,4 @@ end function is_letter
     equal = trim(adjustl(str1)) == trim(adjustl(str2))
   end function strings_equal
 
-end module basis_file_reader
+end module mqc_basis_file_reader

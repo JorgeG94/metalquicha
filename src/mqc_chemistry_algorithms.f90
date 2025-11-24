@@ -1,12 +1,11 @@
-module pic_chemistry_algorithms
+module mqc_chemistry_algorithms
    use pic_types
-   use pic_timer
-   use mpi_comm_simple, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
-   use pic_mpi_tags
-   use pic_fragment, only: pic_fragment_block
-   use pic_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices
+   use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
-   use pic_physical_fragment, only: physical_fragment_t, element_number_to_symbol
+   use mpi_comm_simple, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use mqc_mpi_tags
+   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
+   use mqc_physical_fragment, only: physical_fragment_t, element_number_to_symbol
    use mctc_env, only: wp, error_type
    use mctc_io, only: structure_type, new
    use tblite_context_type, only: context_type
@@ -28,7 +27,6 @@ contains
       type(physical_fragment_t), intent(in), optional :: phys_frag
       integer, intent(in), optional :: verbosity
       integer :: i, verb_level
-      real(dp), parameter :: water_1 = -75.0_dp
 
       ! GFN1 calculation variables
       type(error_type), allocatable :: error
@@ -85,7 +83,6 @@ contains
 
    subroutine print_fragment_xyz(fragment_idx, phys_frag)
       !! Print fragment geometry in XYZ format
-      use pic_physical_fragment, only: physical_fragment_t, element_number_to_symbol, to_angstrom
       integer, intent(in) :: fragment_idx
       type(physical_fragment_t), intent(in) :: phys_frag
       integer :: i
@@ -628,7 +625,6 @@ contains
    end subroutine node_coordinator
 
    subroutine node_worker(world_comm, node_comm, max_level, sys_geom)
-      use pic_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices
       class(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: max_level
       type(system_geometry_t), intent(in), optional :: sys_geom
@@ -739,4 +735,4 @@ contains
 
    end subroutine unfragmented_calculation
 
-end module pic_chemistry_algorithms
+end module mqc_chemistry_algorithms

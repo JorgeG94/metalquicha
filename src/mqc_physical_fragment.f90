@@ -1,7 +1,7 @@
-module pic_physical_fragment
+module mqc_physical_fragment
    use pic_types, only: dp, default_int
-   use pic_geometry, only: geometry_type
-   use pic_xyz_reader, only: read_xyz_file
+   use mqc_geometry, only: geometry_type
+   use mqc_xyz_reader, only: read_xyz_file
    implicit none
    private
 
@@ -256,4 +256,4 @@ contains
       this%total_atoms = 0
    end subroutine system_destroy
 
-end module pic_physical_fragment
+end module mqc_physical_fragment

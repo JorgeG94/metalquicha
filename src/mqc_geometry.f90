@@ -1,4 +1,4 @@
-module pic_geometry
+module mqc_geometry
   use pic_types, only: dp
   implicit none
   private
@@ -27,4 +27,4 @@ contains
     this%natoms = 0
   end subroutine geometry_destroy
 
-end module pic_geometry
+end module mqc_geometry

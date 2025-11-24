@@ -1,9 +1,9 @@
-module pic_driver
+module mqc_driver
    use mpi_comm_simple
-   use pic_chemistry_algorithms
-   use pic_mbe
-   use pic_physical_fragment
-   use pic_input_parser
+   use mqc_chemistry_algorithms
+   use mqc_mbe
+   use mqc_physical_fragment
+   use mqc_input_parser
    implicit none
    private
 
@@ -162,4 +162,4 @@ contains
 
    end subroutine run_calculation
 
-end module pic_driver
+end module mqc_driver
