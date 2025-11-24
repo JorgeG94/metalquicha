@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.22)
 cmake_policy(SET CMP0144 NEW)
 
 project(
-  "pic-chemistry"
+  "metalquicha"
   LANGUAGES Fortran C
   VERSION 0.1.0
   DESCRIPTION "PIC Chemistry - MBE fragmentation with MPI")
 
-set(project_name pic-chemistry)
+set(project_name metalquicha)
 set(main_lib ${project_name})
-set(exe_name chem_pic)
+set(exe_name ${project_name}.exe)
 set(all_targets ${main_lib} ${exe_name})
 
 
