@@ -1,4 +1,4 @@
-program test_with_geometry
+program main
    use mpi_comm_simple
    use pic_chemistry_algorithms
    use pic_mbe
@@ -137,7 +137,6 @@ program test_with_geometry
    ! Broadcast total_fragments to all ranks
    call bcast(world_comm, total_fragments, 1, 0)
 
-   ! Determine node leaders (like in test.f90)
    block
       integer :: global_node_rank, j
       integer, allocatable :: all_node_leader_ranks(:)
@@ -165,20 +164,19 @@ program test_with_geometry
       deallocate(all_node_leader_ranks)
    end block
 
-   ! Run the test based on role
    if (world_comm%leader() .and. node_comm%leader()) then
       ! Global coordinator (rank 0, node leader on node 0)
       print *, "Rank 0: Acting as global coordinator"
-      call test_global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+      call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                     node_leader_ranks, num_nodes, matrix_size)
    else if (node_comm%leader()) then
       ! Node coordinator (node leader on other nodes)
       print '(a,i0,a)', "Rank ", world_rank, ": Acting as node coordinator"
-      call test_node_coordinator(world_comm, node_comm, max_level, matrix_size)
+      call node_coordinator(world_comm, node_comm, max_level, matrix_size)
    else
       ! Worker
       print '(a,i0,a)', "Rank ", world_rank, ": Acting as worker"
-      call test_node_worker(world_comm, node_comm, max_level, sys_geom)
+      call node_worker(world_comm, node_comm, max_level, sys_geom)
    end if
 
    if(world_rank == 0) then 
@@ -198,4 +196,4 @@ program test_with_geometry
 
    call mpi_finalize_wrapper()
 
-end program test_with_geometry
+end program main 

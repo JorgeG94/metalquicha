@@ -6,7 +6,6 @@ module pic_chemistry_algorithms
    use pic_fragment, only: pic_fragment_block
    use pic_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices
    use pic_blas_interfaces, only: pic_gemm, pic_dot
-   !use mctc_io_codata2018, only: bohr_radius
    implicit none
    real(dp), parameter :: bohr_radius = 0.52917721092_dp
 
@@ -340,7 +339,7 @@ contains
 
    end subroutine calculate_exact_flops
 
-   subroutine test_global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+   subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                        node_leader_ranks, num_nodes, matrix_size)
       type(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: total_fragments, max_level, num_nodes, matrix_size
@@ -500,7 +499,7 @@ contains
 
       ! Cleanup
       deallocate(scalar_results, matrix_results)
-   end subroutine test_global_coordinator
+   end subroutine global_coordinator
 
    subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, max_level, dest_rank)
       type(comm_t), intent(in) :: world_comm
@@ -539,7 +538,7 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   subroutine test_node_coordinator(world_comm, node_comm, max_level, matrix_size)
+   subroutine node_coordinator(world_comm, node_comm, max_level, matrix_size)
       class(comm_t), intent(in) :: world_comm, node_comm
       integer(int32), intent(in) :: max_level, matrix_size
 
@@ -627,9 +626,9 @@ contains
             end if
          end if
       end do
-   end subroutine test_node_coordinator
+   end subroutine node_coordinator
 
-   subroutine test_node_worker(world_comm, node_comm, max_level, sys_geom)
+   subroutine node_worker(world_comm, node_comm, max_level, sys_geom)
       use pic_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices
       class(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: max_level
@@ -679,7 +678,7 @@ contains
             exit
          end select
       end do
-   end subroutine test_node_worker
+   end subroutine node_worker
 
    subroutine unfragmented_calculation(sys_geom)
       !! Run unfragmented calculation on the entire system (nlevel=0)
