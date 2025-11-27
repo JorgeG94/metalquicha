@@ -1,4 +1,4 @@
-module mqc_mbe
+module mqc_frag_utils
    use pic_types, only: default_int, dp
    implicit none
    private
@@ -104,4 +104,4 @@ contains
       end do
    end subroutine print_combos
 
-end module mqc_mbe
+end module mqc_frag_utils

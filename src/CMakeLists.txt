@@ -13,9 +13,9 @@ target_sources(
           # Parallel modules
           parallel/mqc_mpi_tags.f90
           # Chemistry modules
-          chemistry/mqc_chemistry_algorithms.f90
-          chemistry/mqc_mbe.f90
-          chemistry/mqc_physical_fragment.f90
+          fragmentation/mqc_chemistry_algorithms.f90
+          fragmentation/mqc_mbe.f90
+          fragmentation/mqc_physical_fragment.f90
           # CLI modules
           cli/mqc_cli_parser.f90
           cli/mqc_driver.f90)

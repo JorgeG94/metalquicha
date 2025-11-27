@@ -2,8 +2,8 @@ module mqc_driver
    use pic_mpi_f08
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
-   use mqc_chemistry_algorithms
    use mqc_mbe
+   use mqc_frag_utils
    use mqc_physical_fragment
    use mqc_input_parser
    implicit none

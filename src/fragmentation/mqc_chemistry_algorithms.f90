@@ -1,4 +1,4 @@
-module mqc_chemistry_algorithms
+module mqc_mbe
    use pic_types, only: int32, dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
@@ -770,4 +770,4 @@ contains
 
    end subroutine unfragmented_calculation
 
-end module mqc_chemistry_algorithms
+end module mqc_mbe
