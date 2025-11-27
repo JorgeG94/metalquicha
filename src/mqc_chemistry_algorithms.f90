@@ -2,7 +2,7 @@ module mqc_chemistry_algorithms
    use pic_types, only: int32, dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
-   use pic_mpi_f08, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
 

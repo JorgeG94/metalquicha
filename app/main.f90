@@ -1,7 +1,7 @@
 program main
    use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
-   use pic_mpi_f08 
+   use pic_mpi_lib 
    use mqc_driver
    use mqc_physical_fragment, only: initialize_system_geometry, system_geometry_t
    use mqc_input_parser

@@ -10,7 +10,7 @@ auto-tests = false
 auto-examples = false 
 module-naming = false
 [[executable]]
-name = "chem_pic"
+name = "metalquicha"
 source-dir = "app"
 main = "main.f90"
 [install]
