@@ -2,13 +2,15 @@ module mqc_physical_fragment
    use pic_types, only: dp, default_int
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_file
-   use mqc_elements, only: element_symbol_to_number, element_number_to_symbol
+   use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
    implicit none
    private
 
    public :: physical_fragment_t, system_geometry_t
    public :: initialize_system_geometry, build_fragment_from_indices
    public :: to_angstrom, to_bohr
+   public :: fragment_centroid, fragment_center_of_mass
+   public :: distance_between_points, distance_between_fragments
 
    !! Physical fragment with actual atomic coordinates
    type :: physical_fragment_t
@@ -157,5 +159,86 @@ contains
       this%atoms_per_monomer = 0
       this%total_atoms = 0
    end subroutine system_destroy
+
+   pure function fragment_centroid(fragment) result(centroid)
+      !! Calculate the geometric centroid (center of geometry) of a fragment
+      !! This is the simple average of all atomic coordinates
+      !! Returns coordinates in the same units as the fragment (typically Bohr)
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp) :: centroid(3)
+
+      integer :: i
+
+      centroid = 0.0_dp
+
+      ! Sum all atomic positions
+      do i = 1, fragment%n_atoms
+         centroid = centroid + fragment%coordinates(:, i)
+      end do
+
+      ! Divide by number of atoms to get average
+      centroid = centroid/real(fragment%n_atoms, dp)
+
+   end function fragment_centroid
+
+   pure function fragment_center_of_mass(fragment) result(com)
+      !! Calculate the center of mass of a fragment
+      !! Weights each atomic position by its atomic mass
+      !! Returns coordinates in the same units as the fragment (typically Bohr)
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp) :: com(3)
+
+      real(dp) :: total_mass, atom_mass
+      integer :: i
+
+      com = 0.0_dp
+      total_mass = 0.0_dp
+
+      ! Sum mass-weighted positions and total mass
+      do i = 1, fragment%n_atoms
+         atom_mass = element_mass(fragment%element_numbers(i))
+         com = com + atom_mass*fragment%coordinates(:, i)
+         total_mass = total_mass + atom_mass
+      end do
+
+      ! Divide by total mass to get center of mass
+      com = com/total_mass
+
+   end function fragment_center_of_mass
+
+   pure function distance_between_points(point1, point2) result(distance)
+      !! Calculate Euclidean distance between two 3D points
+      !! Points should be in the same units (typically Bohr)
+      real(dp), intent(in) :: point1(3), point2(3)
+      real(dp) :: distance
+
+      real(dp) :: diff(3)
+
+      diff = point2 - point1
+      distance = sqrt(dot_product(diff, diff))
+
+   end function distance_between_points
+
+   pure function distance_between_fragments(frag1, frag2, use_com) result(distance)
+      !! Calculate distance between two fragments
+      !! If use_com is .true., uses center of mass; otherwise uses centroid
+      !! Distance is in the same units as the fragment coordinates (typically Bohr)
+      type(physical_fragment_t), intent(in) :: frag1, frag2
+      logical, intent(in) :: use_com
+      real(dp) :: distance
+
+      real(dp) :: point1(3), point2(3)
+
+      if (use_com) then
+         point1 = fragment_center_of_mass(frag1)
+         point2 = fragment_center_of_mass(frag2)
+      else
+         point1 = fragment_centroid(frag1)
+         point2 = fragment_centroid(frag2)
+      end if
+
+      distance = distance_between_points(point1, point2)
+
+   end function distance_between_fragments
 
 end module mqc_physical_fragment
