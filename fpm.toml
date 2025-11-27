@@ -7,7 +7,7 @@ copyright = "Copyright 2025, JorgeGV"
 [build]
 auto-executables = false
 auto-tests = false
-auto-examples = false 
+auto-examples = false
 module-naming = false
 [[executable]]
 name = "metalquicha"
@@ -26,4 +26,3 @@ pic = { git = "https://github.com/JorgeG94/pic.git", branch = "feat/pure_to_uppe
 pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", branch = "main"}
 tblite = { git = "https://github.com/JorgeG94/tblite", branch = "main"}
-

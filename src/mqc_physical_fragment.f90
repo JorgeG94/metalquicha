@@ -39,14 +39,14 @@ contains
       !! Convert coordinate from Bohr to Angstrom
       real(dp), intent(in) :: bohr_value
       real(dp) :: angstrom_value
-      angstrom_value = bohr_value * bohr_radius
+      angstrom_value = bohr_value*bohr_radius
    end function to_angstrom
 
    pure elemental function to_bohr(angstrom_value) result(bohr_value)
       !! Convert coordinate from Angstrom to Bohr
       real(dp), intent(in) :: angstrom_value
       real(dp) :: bohr_value
-      bohr_value = angstrom_value / bohr_radius
+      bohr_value = angstrom_value/bohr_radius
    end function to_bohr
 
    subroutine initialize_system_geometry(full_geom_file, monomer_file, sys_geom, stat, errmsg)
@@ -82,7 +82,7 @@ contains
          return
       end if
 
-      sys_geom%n_monomers = sys_geom%total_atoms / sys_geom%atoms_per_monomer
+      sys_geom%n_monomers = sys_geom%total_atoms/sys_geom%atoms_per_monomer
 
       ! Allocate and copy data
       allocate (sys_geom%element_numbers(sys_geom%total_atoms))
@@ -117,7 +117,7 @@ contains
       n_monomers_in_frag = size(monomer_indices)
       atoms_per_monomer = sys_geom%atoms_per_monomer
 
-      fragment%n_atoms = n_monomers_in_frag * atoms_per_monomer
+      fragment%n_atoms = n_monomers_in_frag*atoms_per_monomer
 
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
@@ -127,8 +127,8 @@ contains
       ! Loop over requested monomers and extract their atoms
       do i = 1, n_monomers_in_frag
          mono_idx = monomer_indices(i)
-         atom_start = (mono_idx - 1) * atoms_per_monomer + 1
-         atom_end = mono_idx * atoms_per_monomer
+         atom_start = (mono_idx - 1)*atoms_per_monomer + 1
+         atom_end = mono_idx*atoms_per_monomer
 
          ! Copy atoms from this monomer
          fragment%element_numbers(frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &

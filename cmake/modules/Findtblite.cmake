@@ -1,18 +1,17 @@
-# This file is part of xtb.
-# SPDX-Identifier: LGPL-3.0-or-later
+# This file is part of xtb. SPDX-Identifier: LGPL-3.0-or-later
 #
-# xtb is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# xtb is free software: you can redistribute it and/or modify it under the terms
+# of the GNU Lesser General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
 #
-# xtb is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+# xtb is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+# details.
 #
-# You should have received a copy of the GNU Lesser General Public License
-# along with xtb.  If not, see <https://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License along
+# with xtb.  If not, see <https://www.gnu.org/licenses/>.
 
 set(_lib "tblite")
 set(_pkg "TBLITE")
@@ -21,7 +20,7 @@ set(_rev "v0.4.0")
 
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
-my_fetch_package("${_lib}"  "${_url}" "${_rev}")
+my_fetch_package("${_lib}" "${_url}" "${_rev}")
 
 unset(_lib)
 unset(_pkg)

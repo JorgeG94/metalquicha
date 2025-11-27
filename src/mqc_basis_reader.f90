@@ -1,529 +1,527 @@
 module mqc_basis_reader
-  use mqc_cgto
-  use mqc_basis_file_reader, only: strings_equal
-  use pic_types, only: dp
-  implicit none
-  private
+   use mqc_cgto
+   use mqc_basis_file_reader, only: strings_equal
+   use pic_types, only: dp
+   implicit none
+   private
 
-  public :: classify_line
-  public :: parse_element_basis
-  public :: build_molecular_basis
-  public :: ang_mom_char_to_int
-  public :: ang_mom_int_to_char
+   public :: classify_line
+   public :: parse_element_basis
+   public :: build_molecular_basis
+   public :: ang_mom_char_to_int
+   public :: ang_mom_int_to_char
 
-  integer, parameter, public :: LINE_UNKNOWN = 0
-  integer, parameter, public :: LINE_ATOM = 1
-  integer, parameter, public :: LINE_SHELL = 2
-  integer, parameter, public :: LINE_FUNCTION = 3
+   integer, parameter, public :: LINE_UNKNOWN = 0
+   integer, parameter, public :: LINE_ATOM = 1
+   integer, parameter, public :: LINE_SHELL = 2
+   integer, parameter, public :: LINE_FUNCTION = 3
 
 contains
 
+   !> Convert angular momentum character to integer (S=0, P=1, D=2, etc.)
+   pure function ang_mom_char_to_int(ang_mom_char) result(ang_mom)
+      character(len=1), intent(in) :: ang_mom_char
+      integer :: ang_mom
 
-  !> Convert angular momentum character to integer (S=0, P=1, D=2, etc.)
-  pure function ang_mom_char_to_int(ang_mom_char) result(ang_mom)
-    character(len=1), intent(in) :: ang_mom_char
-    integer :: ang_mom
+      select case (ang_mom_char)
+      case ('S'); ang_mom = 0
+      case ('P'); ang_mom = 1
+      case ('D'); ang_mom = 2
+      case ('F'); ang_mom = 3
+      case ('G'); ang_mom = 4
+      case ('H'); ang_mom = 5
+      case ('I'); ang_mom = 6
+      case ('L'); ang_mom = -1  ! Special case: L shells are split into S+P
+      case default; ang_mom = -1
+      end select
+   end function ang_mom_char_to_int
 
-    select case (ang_mom_char)
-    case ('S'); ang_mom = 0
-    case ('P'); ang_mom = 1
-    case ('D'); ang_mom = 2
-    case ('F'); ang_mom = 3
-    case ('G'); ang_mom = 4
-    case ('H'); ang_mom = 5
-    case ('I'); ang_mom = 6
-    case ('L'); ang_mom = -1  ! Special case: L shells are split into S+P
-    case default; ang_mom = -1
-    end select
-  end function ang_mom_char_to_int
+   !> Convert angular momentum integer to character (0=S, 1=P, 2=D, etc.)
+   pure function ang_mom_int_to_char(ang_mom) result(ang_mom_char)
+      integer, intent(in) :: ang_mom
+      character(len=1) :: ang_mom_char
 
-  !> Convert angular momentum integer to character (0=S, 1=P, 2=D, etc.)
-  pure function ang_mom_int_to_char(ang_mom) result(ang_mom_char)
-    integer, intent(in) :: ang_mom
-    character(len=1) :: ang_mom_char
+      select case (ang_mom)
+      case (0); ang_mom_char = 'S'
+      case (1); ang_mom_char = 'P'
+      case (2); ang_mom_char = 'D'
+      case (3); ang_mom_char = 'F'
+      case (4); ang_mom_char = 'G'
+      case (5); ang_mom_char = 'H'
+      case (6); ang_mom_char = 'I'
+      case default; ang_mom_char = '?'
+      end select
+   end function ang_mom_int_to_char
 
-    select case (ang_mom)
-    case (0); ang_mom_char = 'S'
-    case (1); ang_mom_char = 'P'
-    case (2); ang_mom_char = 'D'
-    case (3); ang_mom_char = 'F'
-    case (4); ang_mom_char = 'G'
-    case (5); ang_mom_char = 'H'
-    case (6); ang_mom_char = 'I'
-    case default; ang_mom_char = '?'
-    end select
-  end function ang_mom_int_to_char
+   pure function classify_line(line) result(line_type)
+      character(len=*), intent(in) :: line
+      integer :: line_type
 
-  pure function classify_line(line) result(line_type)
-    character(len=*), intent(in) :: line
-    integer :: line_type
+      character(len=:), allocatable :: line_trim
 
-    character(len=:), allocatable :: line_trim
+      line_trim = trim(adjustl(line))
 
-    line_trim = trim(adjustl(line))
+      if (is_blank_or_control(line_trim)) then
+         line_type = LINE_UNKNOWN
+      else if (is_function_line(line_trim)) then
+         line_type = LINE_FUNCTION
+      else if (is_shell_header(line_trim)) then
+         line_type = LINE_SHELL
+      else
+         line_type = LINE_ATOM
+      end if
 
-    if (is_blank_or_control(line_trim)) then
-      line_type = LINE_UNKNOWN
-    else if (is_function_line(line_trim)) then
-      line_type = LINE_FUNCTION
-    else if (is_shell_header(line_trim)) then
-      line_type = LINE_SHELL
-    else
-      line_type = LINE_ATOM
-    end if
+   end function classify_line
 
-  end function classify_line
+   pure function is_blank_or_control(line) result(res)
+      character(len=*), intent(in) :: line
+      logical :: res
+      integer :: trimmed_len
 
-pure function is_blank_or_control(line) result(res)
-  character(len=*), intent(in) :: line
-  logical :: res
-  integer :: trimmed_len
-  
-  trimmed_len = len_trim(line)
-  
-  if (trimmed_len == 0) then
-    res = .true.
-  else
-    res = (line(1:1) == '$')
-  end if
-end function is_blank_or_control
+      trimmed_len = len_trim(line)
 
-  pure function is_function_line(line) result(res)
-    character(len=*), intent(in) :: line
-    logical :: res
-    character(len=1) :: first_char
+      if (trimmed_len == 0) then
+         res = .true.
+      else
+         res = (line(1:1) == '$')
+      end if
+   end function is_blank_or_control
 
-    if (len_trim(line) == 0) then
+   pure function is_function_line(line) result(res)
+      character(len=*), intent(in) :: line
+      logical :: res
+      character(len=1) :: first_char
+
+      if (len_trim(line) == 0) then
+         res = .false.
+         return
+      end if
+
+      first_char = line(1:1)
+      res = (first_char >= '0' .and. first_char <= '9')
+   end function is_function_line
+
+   pure function is_shell_header(line) result(res)
+      character(len=*), intent(in) :: line
+      logical :: res
+      character(len=1) :: first_char
+      integer :: ios, dummy
+
       res = .false.
-      return
-    end if
+      if (len_trim(line) == 0) return
 
-    first_char = line(1:1)
-    res = (first_char >= '0' .and. first_char <= '9')
-  end function is_function_line
+      first_char = line(1:1)
 
-  pure function is_shell_header(line) result(res)
-    character(len=*), intent(in) :: line
-    logical :: res
-    character(len=1) :: first_char
-    integer :: ios, dummy
+      if (.not. any(first_char == ['S', 'P', 'D', 'F', 'G', 'H', 'I', 'L'])) return
 
-    res = .false.
-    if (len_trim(line) == 0) return
+      read (line(2:), *, iostat=ios) dummy
+      res = (ios == 0)
 
-    first_char = line(1:1)
-
-    if (.not. any(first_char == ['S', 'P', 'D', 'F', 'G', 'H', 'I', 'L'])) return
-
-    read (line(2:), *, iostat=ios) dummy
-    res = (ios == 0)
-
-  end function is_shell_header
+   end function is_shell_header
 
 !> Parse basis set for a specific element from a basis string
-  pure subroutine parse_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
-    character(len=*), intent(in) :: basis_string
-    character(len=*), intent(in) :: element_name
-    type(atomic_basis_type), intent(out) :: atom_basis
-    integer, intent(out) :: stat
-    character(len=:), allocatable, intent(out) :: errmsg
+   pure subroutine parse_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+      character(len=*), intent(in) :: basis_string
+      character(len=*), intent(in) :: element_name
+      type(atomic_basis_type), intent(out) :: atom_basis
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
 
-    integer :: nshells
+      integer :: nshells
 
-    stat = 0
+      stat = 0
 
-    ! Pass 1: Find the element and count its shells
-    call count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
-    if (stat /= 0) return
+      ! Pass 1: Find the element and count its shells
+      call count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
+      if (stat /= 0) return
 
-    if (nshells == 0) then
-      stat = 1
-      errmsg = "Element "//trim(element_name)//" not found in basis file"
-      return
-    end if
-
-    ! ! Allocate shells
-    atom_basis%element = trim(element_name)
-    call atom_basis%allocate_shells(nshells)
-
-    ! ! Pass 2: Parse and fill shell data
-    call fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
-
-  end subroutine parse_element_basis
-
-  !> First pass: count shells for a specific element (accounting for L-shell splitting)
-pure subroutine count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
-  character(len=*), intent(in) :: basis_string
-  character(len=*), intent(in) :: element_name
-  integer, intent(out) :: nshells
-  integer, intent(out) :: stat
-  character(len=:), allocatable, intent(out) :: errmsg
-  
-  integer :: line_start, line_end, line_type
-  character(len=256) :: line
-  logical :: in_target_element, found_element
-  character(len=1) :: ang_mom
-  
-  stat = 0
-  nshells = 0
-  in_target_element = .false.
-  found_element = .false.
-  line_start = 1
-  
-  do while (line_start <= len(basis_string))
-    call get_next_line(basis_string, line_start, line, line_end)
-    if (line_end == 0) exit
-    
-    line = adjustl(line)
-    line_type = classify_line(line)
-    
-    select case (line_type)
-    case (LINE_ATOM)
-      ! Check if this is our target element
-      if (strings_equal(line, element_name)) then
-        in_target_element = .true.
-        found_element = .true.
-      else
-        ! Different element - stop counting if we were in target
-        if (in_target_element) exit
-        in_target_element = .false.
+      if (nshells == 0) then
+         stat = 1
+         errmsg = "Element "//trim(element_name)//" not found in basis file"
+         return
       end if
-      
-    case (LINE_SHELL)
-      if (in_target_element) then
-        ! Extract angular momentum
-        line = adjustl(line)
-        ang_mom = line(1:1)
-        
-        ! L shells become 2 shells (S + P)
-        if (ang_mom == 'L') then
-          nshells = nshells + 2
-        else
-          nshells = nshells + 1
-        end if
+
+      ! ! Allocate shells
+      atom_basis%element = trim(element_name)
+      call atom_basis%allocate_shells(nshells)
+
+      ! ! Pass 2: Parse and fill shell data
+      call fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+
+   end subroutine parse_element_basis
+
+   !> First pass: count shells for a specific element (accounting for L-shell splitting)
+   pure subroutine count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
+      character(len=*), intent(in) :: basis_string
+      character(len=*), intent(in) :: element_name
+      integer, intent(out) :: nshells
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      integer :: line_start, line_end, line_type
+      character(len=256) :: line
+      logical :: in_target_element, found_element
+      character(len=1) :: ang_mom
+
+      stat = 0
+      nshells = 0
+      in_target_element = .false.
+      found_element = .false.
+      line_start = 1
+
+      do while (line_start <= len(basis_string))
+         call get_next_line(basis_string, line_start, line, line_end)
+         if (line_end == 0) exit
+
+         line = adjustl(line)
+         line_type = classify_line(line)
+
+         select case (line_type)
+         case (LINE_ATOM)
+            ! Check if this is our target element
+            if (strings_equal(line, element_name)) then
+               in_target_element = .true.
+               found_element = .true.
+            else
+               ! Different element - stop counting if we were in target
+               if (in_target_element) exit
+               in_target_element = .false.
+            end if
+
+         case (LINE_SHELL)
+            if (in_target_element) then
+               ! Extract angular momentum
+               line = adjustl(line)
+               ang_mom = line(1:1)
+
+               ! L shells become 2 shells (S + P)
+               if (ang_mom == 'L') then
+                  nshells = nshells + 2
+               else
+                  nshells = nshells + 1
+               end if
+            end if
+
+         case (LINE_UNKNOWN)
+            ! Skip blank lines and comments
+            continue
+         end select
+
+         line_start = line_end
+      end do
+
+      ! Check if we found the element at all
+      if (.not. found_element) then
+         stat = 1
+         errmsg = "Element not found in basis string: "//trim(element_name)
       end if
-      
-    case (LINE_UNKNOWN)
-      ! Skip blank lines and comments
-      continue
-    end select
-    
-    line_start = line_end
-  end do
-  
-  ! Check if we found the element at all
-  if (.not. found_element) then
-    stat = 1
-    errmsg = "Element not found in basis string: " // trim(element_name)
-  end if
-  
-end subroutine count_shells_for_element
+
+   end subroutine count_shells_for_element
 
 !> Helper: get next line from string
-  pure subroutine get_next_line(string, line_start, line, line_end)
-    character(len=*), intent(in) :: string
-    integer, intent(in) :: line_start
-    character(len=*), intent(out) :: line
-    integer, intent(out) :: line_end
+   pure subroutine get_next_line(string, line_start, line, line_end)
+      character(len=*), intent(in) :: string
+      integer, intent(in) :: line_start
+      character(len=*), intent(out) :: line
+      integer, intent(out) :: line_end
 
-    integer :: newline_pos
+      integer :: newline_pos
 
-    if (line_start > len(string)) then
-      line = ''
-      line_end = 0
-      return
-    end if
+      if (line_start > len(string)) then
+         line = ''
+         line_end = 0
+         return
+      end if
 
-    newline_pos = index(string(line_start:), new_line('a'))
+      newline_pos = index(string(line_start:), new_line('a'))
 
-    if (newline_pos == 0) then
-      ! Last line (no newline at end)
-      line = string(line_start:)
-      line_end = len(string) + 1
-    else
-      line = string(line_start:line_start + newline_pos - 2)
-      line_end = line_start + newline_pos
-    end if
+      if (newline_pos == 0) then
+         ! Last line (no newline at end)
+         line = string(line_start:)
+         line_end = len(string) + 1
+      else
+         line = string(line_start:line_start + newline_pos - 2)
+         line_end = line_start + newline_pos
+      end if
 
-  end subroutine get_next_line
-
+   end subroutine get_next_line
 
 !> Parse shell header line (e.g., "S 2" or "L 3")
-  pure subroutine parse_shell_header(line, ang_mom, nfunc, stat)
-    character(len=*), intent(in) :: line
-    character(len=1), intent(out) :: ang_mom
-    integer, intent(out) :: nfunc
-    integer, intent(out) :: stat
+   pure subroutine parse_shell_header(line, ang_mom, nfunc, stat)
+      character(len=*), intent(in) :: line
+      character(len=1), intent(out) :: ang_mom
+      integer, intent(out) :: nfunc
+      integer, intent(out) :: stat
 
-    character(len=256) :: line_trim
+      character(len=256) :: line_trim
 
-    line_trim = adjustl(line)
-    ang_mom = line_trim(1:1)
+      line_trim = adjustl(line)
+      ang_mom = line_trim(1:1)
 
-    ! Read the number of functions
-    read (line_trim(2:), *, iostat=stat) nfunc
+      ! Read the number of functions
+      read (line_trim(2:), *, iostat=stat) nfunc
 
-  end subroutine parse_shell_header
+   end subroutine parse_shell_header
 
 !> Parse function line (e.g., "1 1.0 2.0" or "1 1.0 2.0 3.0" for L shells)
-  pure subroutine parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
-    character(len=*), intent(in) :: line
-    integer, intent(out) :: func_num
-    real(dp), intent(out) :: exponent
-    real(dp), intent(out) :: coeff_s
-    real(dp), intent(out), optional :: coeff_p
-    logical, intent(out) :: has_p
-    integer, intent(out) :: stat
+   pure subroutine parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
+      character(len=*), intent(in) :: line
+      integer, intent(out) :: func_num
+      real(dp), intent(out) :: exponent
+      real(dp), intent(out) :: coeff_s
+      real(dp), intent(out), optional :: coeff_p
+      logical, intent(out) :: has_p
+      integer, intent(out) :: stat
 
-    real(dp) :: temp_p
+      real(dp) :: temp_p
 
-    has_p = .false.
+      has_p = .false.
 
-    ! Try to read 4 values (func_num, exponent, coeff_s, coeff_p)
-    read (line, *, iostat=stat) func_num, exponent, coeff_s, temp_p
+      ! Try to read 4 values (func_num, exponent, coeff_s, coeff_p)
+      read (line, *, iostat=stat) func_num, exponent, coeff_s, temp_p
 
-    if (stat == 0) then
-      ! Successfully read 4 values - this is an L shell
-      has_p = .true.
-      if (present(coeff_p)) coeff_p = temp_p
-    else
-      ! Try reading just 3 values (func_num, exponent, coeff_s)
-      read (line, *, iostat=stat) func_num, exponent, coeff_s
-    end if
+      if (stat == 0) then
+         ! Successfully read 4 values - this is an L shell
+         has_p = .true.
+         if (present(coeff_p)) coeff_p = temp_p
+      else
+         ! Try reading just 3 values (func_num, exponent, coeff_s)
+         read (line, *, iostat=stat) func_num, exponent, coeff_s
+      end if
 
-  end subroutine parse_function_line
+   end subroutine parse_function_line
 
 !> Second pass: fill in the shell data for a specific element
-  pure subroutine fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
-    character(len=*), intent(in) :: basis_string
-    character(len=*), intent(in) :: element_name
-    type(atomic_basis_type), intent(inout) :: atom_basis
-    integer, intent(out) :: stat
-    character(len=:), allocatable, intent(out) :: errmsg
+   pure subroutine fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+      character(len=*), intent(in) :: basis_string
+      character(len=*), intent(in) :: element_name
+      type(atomic_basis_type), intent(inout) :: atom_basis
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
 
-    integer :: line_start, line_end, line_type
-    character(len=256) :: line
-    logical :: in_data_block, in_target_element
-    character(len=1) :: ang_mom
-    integer :: nfunc, func_num, ishell, ifunc
-    real(dp) :: exponent, coeff_s, coeff_p
-    logical :: has_p
+      integer :: line_start, line_end, line_type
+      character(len=256) :: line
+      logical :: in_data_block, in_target_element
+      character(len=1) :: ang_mom
+      integer :: nfunc, func_num, ishell, ifunc
+      real(dp) :: exponent, coeff_s, coeff_p
+      logical :: has_p
 
-    ! L shell handling: we split into two shells, need to track both
-    logical :: reading_l_shell
-    integer :: l_shell_s_idx, l_shell_p_idx
+      ! L shell handling: we split into two shells, need to track both
+      logical :: reading_l_shell
+      integer :: l_shell_s_idx, l_shell_p_idx
 
-    stat = 0
-    in_data_block = .false.
-    in_target_element = .false.
-    ishell = 0
-    reading_l_shell = .false.
+      stat = 0
+      in_data_block = .false.
+      in_target_element = .false.
+      ishell = 0
+      reading_l_shell = .false.
 
-    line_start = 1
-    do while (line_start <= len(basis_string))
-      call get_next_line(basis_string, line_start, line, line_end)
-      if (line_end == 0) exit
+      line_start = 1
+      do while (line_start <= len(basis_string))
+         call get_next_line(basis_string, line_start, line, line_end)
+         if (line_end == 0) exit
 
-      line = adjustl(line)
-      line_type = classify_line(line)
+         line = adjustl(line)
+         line_type = classify_line(line)
 
-      select case (line_type)
-      ! case (LINE_UNKNOWN)
-      !   if (index(line, '$DATA') > 0) then
-      !     in_data_block = .true.
-      !   else if (index(line, '$END') > 0) then
-      !     exit
-      !   end if
+         select case (line_type)
+            ! case (LINE_UNKNOWN)
+            !   if (index(line, '$DATA') > 0) then
+            !     in_data_block = .true.
+            !   else if (index(line, '$END') > 0) then
+            !     exit
+            !   end if
 
-      case (LINE_ATOM)
-        if (strings_equal(line, element_name)) then
-          in_target_element = .true.
-        else
-          if (in_target_element) exit
-          in_target_element = .false.
-        end if
+         case (LINE_ATOM)
+            if (strings_equal(line, element_name)) then
+               in_target_element = .true.
+            else
+               if (in_target_element) exit
+               in_target_element = .false.
+            end if
 
-      case (LINE_SHELL)
-        if (in_target_element) then
-          ! Parse shell header
-          call parse_shell_header(line, ang_mom, nfunc, stat)
-          if (stat /= 0) then
-            errmsg = "Failed to parse shell header: "//trim(line)
-            return
-          end if
+         case (LINE_SHELL)
+            if (in_target_element) then
+               ! Parse shell header
+               call parse_shell_header(line, ang_mom, nfunc, stat)
+               if (stat /= 0) then
+                  errmsg = "Failed to parse shell header: "//trim(line)
+                  return
+               end if
 
-          if (ang_mom == 'L') then
-            ! L shell: create two shells (S and P)
-            reading_l_shell = .true.
+               if (ang_mom == 'L') then
+                  ! L shell: create two shells (S and P)
+                  reading_l_shell = .true.
 
-            ishell = ishell + 1
-            l_shell_s_idx = ishell
-            atom_basis%shells(ishell)%ang_mom = 0  ! S
-            call atom_basis%shells(ishell)%allocate_arrays(nfunc)
+                  ishell = ishell + 1
+                  l_shell_s_idx = ishell
+                  atom_basis%shells(ishell)%ang_mom = 0  ! S
+                  call atom_basis%shells(ishell)%allocate_arrays(nfunc)
 
-            ishell = ishell + 1
-            l_shell_p_idx = ishell
-            atom_basis%shells(ishell)%ang_mom = 1  ! P
-            call atom_basis%shells(ishell)%allocate_arrays(nfunc)
+                  ishell = ishell + 1
+                  l_shell_p_idx = ishell
+                  atom_basis%shells(ishell)%ang_mom = 1  ! P
+                  call atom_basis%shells(ishell)%allocate_arrays(nfunc)
 
-            ifunc = 0  ! Reset function counter
-          else
-            ! Regular shell
-            reading_l_shell = .false.
-            ishell = ishell + 1
+                  ifunc = 0  ! Reset function counter
+               else
+                  ! Regular shell
+                  reading_l_shell = .false.
+                  ishell = ishell + 1
 
-            ! Set angular momentum (S=0, P=1, D=2, F=3, G=4, H=5, I=6)
-            atom_basis%shells(ishell)%ang_mom = ang_mom_char_to_int(ang_mom)
+                  ! Set angular momentum (S=0, P=1, D=2, F=3, G=4, H=5, I=6)
+                  atom_basis%shells(ishell)%ang_mom = ang_mom_char_to_int(ang_mom)
 
-            call atom_basis%shells(ishell)%allocate_arrays(nfunc)
-            ifunc = 0
-          end if
-        end if
+                  call atom_basis%shells(ishell)%allocate_arrays(nfunc)
+                  ifunc = 0
+               end if
+            end if
 
-      case (LINE_FUNCTION)
-        if (in_target_element) then
-          call parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
-          if (stat /= 0) then
-            errmsg = "Failed to parse function line: "//trim(line)
-            return
-          end if
+         case (LINE_FUNCTION)
+            if (in_target_element) then
+               call parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
+               if (stat /= 0) then
+                  errmsg = "Failed to parse function line: "//trim(line)
+                  return
+               end if
 
-          ifunc = ifunc + 1
+               ifunc = ifunc + 1
 
-          if (reading_l_shell) then
-            ! Store in both S and P shells
-            atom_basis%shells(l_shell_s_idx)%exponents(ifunc) = exponent
-            atom_basis%shells(l_shell_s_idx)%coefficients(ifunc) = coeff_s
+               if (reading_l_shell) then
+                  ! Store in both S and P shells
+                  atom_basis%shells(l_shell_s_idx)%exponents(ifunc) = exponent
+                  atom_basis%shells(l_shell_s_idx)%coefficients(ifunc) = coeff_s
 
-            atom_basis%shells(l_shell_p_idx)%exponents(ifunc) = exponent
-            atom_basis%shells(l_shell_p_idx)%coefficients(ifunc) = coeff_p
-          else
-            ! Store in current shell
-            atom_basis%shells(ishell)%exponents(ifunc) = exponent
-            atom_basis%shells(ishell)%coefficients(ifunc) = coeff_s
-          end if
-        end if
+                  atom_basis%shells(l_shell_p_idx)%exponents(ifunc) = exponent
+                  atom_basis%shells(l_shell_p_idx)%coefficients(ifunc) = coeff_p
+               else
+                  ! Store in current shell
+                  atom_basis%shells(ishell)%exponents(ifunc) = exponent
+                  atom_basis%shells(ishell)%coefficients(ifunc) = coeff_s
+               end if
+            end if
 
-      end select
+         end select
 
-      line_start = line_end
-    end do
+         line_start = line_end
+      end do
 
-  end subroutine fill_element_basis
+   end subroutine fill_element_basis
 
 !> Find unique strings in an array
 !! Returns array of unique strings and count
-  pure subroutine find_unique_strings(input_array, unique_array, nunique)
-    character(len=*), intent(in) :: input_array(:)
-    character(len=:), allocatable, intent(out) :: unique_array(:)
-    integer, intent(out) :: nunique
+   pure subroutine find_unique_strings(input_array, unique_array, nunique)
+      character(len=*), intent(in) :: input_array(:)
+      character(len=:), allocatable, intent(out) :: unique_array(:)
+      integer, intent(out) :: nunique
 
-    integer :: i, j, n
-    logical :: is_unique
-    character(len=len(input_array)), allocatable :: temp_unique(:)
+      integer :: i, j, n
+      logical :: is_unique
+      character(len=len(input_array)), allocatable :: temp_unique(:)
 
-    n = size(input_array)
-    allocate (temp_unique(n))  ! Max possible size
-    nunique = 0
+      n = size(input_array)
+      allocate (temp_unique(n))  ! Max possible size
+      nunique = 0
 
-    do i = 1, n
-      is_unique = .true.
+      do i = 1, n
+         is_unique = .true.
 
-      ! Check if we've already seen this string
-      do j = 1, nunique
-        if (strings_equal(input_array(i), temp_unique(j))) then
-          is_unique = .false.
-          exit
-        end if
+         ! Check if we've already seen this string
+         do j = 1, nunique
+            if (strings_equal(input_array(i), temp_unique(j))) then
+               is_unique = .false.
+               exit
+            end if
+         end do
+
+         if (is_unique) then
+            nunique = nunique + 1
+            temp_unique(nunique) = input_array(i)
+         end if
       end do
 
-      if (is_unique) then
-        nunique = nunique + 1
-        temp_unique(nunique) = input_array(i)
-      end if
-    end do
+      ! Allocate output array with exact size and copy
+      allocate (character(len=len(input_array)) :: unique_array(nunique))
+      unique_array = temp_unique(1:nunique)
 
-    ! Allocate output array with exact size and copy
-    allocate (character(len=len(input_array)) :: unique_array(nunique))
-    unique_array = temp_unique(1:nunique)
+   end subroutine find_unique_strings
 
-  end subroutine find_unique_strings
+   pure subroutine copy_atomic_basis(source, dest)
+      type(atomic_basis_type), intent(in) :: source
+      type(atomic_basis_type), intent(out) :: dest
+      integer :: ishell
 
-  pure subroutine copy_atomic_basis(source, dest)
-    type(atomic_basis_type), intent(in) :: source
-    type(atomic_basis_type), intent(out) :: dest
-    integer :: ishell
+      dest%element = source%element
+      call dest%allocate_shells(source%nshells)
 
-    dest%element = source%element
-    call dest%allocate_shells(source%nshells)
+      do ishell = 1, source%nshells
+         dest%shells(ishell)%ang_mom = source%shells(ishell)%ang_mom
+         call dest%shells(ishell)%allocate_arrays(source%shells(ishell)%nfunc)
+         dest%shells(ishell)%exponents = source%shells(ishell)%exponents
+         dest%shells(ishell)%coefficients = source%shells(ishell)%coefficients
+      end do
 
-    do ishell = 1, source%nshells
-      dest%shells(ishell)%ang_mom = source%shells(ishell)%ang_mom
-      call dest%shells(ishell)%allocate_arrays(source%shells(ishell)%nfunc)
-      dest%shells(ishell)%exponents = source%shells(ishell)%exponents
-      dest%shells(ishell)%coefficients = source%shells(ishell)%coefficients
-    end do
-
-  end subroutine copy_atomic_basis
+   end subroutine copy_atomic_basis
 
 !> Build molecular basis from geometry and basis file
 !! Only parses unique elements, then copies basis data to atoms
-  subroutine build_molecular_basis(basis_string, element_names, mol_basis, stat, errmsg)
-    character(len=*), intent(in) :: basis_string
-    character(len=*), intent(in) :: element_names(:)  !! Element for each atom in geometry order
-    type(molecular_basis_type), intent(out) :: mol_basis
-    integer, intent(out) :: stat
-    character(len=:), allocatable, intent(out) :: errmsg
+   subroutine build_molecular_basis(basis_string, element_names, mol_basis, stat, errmsg)
+      character(len=*), intent(in) :: basis_string
+      character(len=*), intent(in) :: element_names(:)  !! Element for each atom in geometry order
+      type(molecular_basis_type), intent(out) :: mol_basis
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
 
-    integer :: iatom, natoms, iunique, nunique
-    character(len=:), allocatable :: unique_elements(:)
-    type(atomic_basis_type), allocatable :: unique_bases(:)
-    integer :: match_idx
+      integer :: iatom, natoms, iunique, nunique
+      character(len=:), allocatable :: unique_elements(:)
+      type(atomic_basis_type), allocatable :: unique_bases(:)
+      integer :: match_idx
 
-    stat = 0
-    natoms = size(element_names)
+      stat = 0
+      natoms = size(element_names)
 
-    ! Find unique elements
-    call find_unique_strings(element_names, unique_elements, nunique)
+      ! Find unique elements
+      call find_unique_strings(element_names, unique_elements, nunique)
 
-    print *, "Found ", nunique, " unique elements out of ", natoms, " atoms"
+      print *, "Found ", nunique, " unique elements out of ", natoms, " atoms"
 
-    ! Allocate for unique bases
-    allocate (unique_bases(nunique))
+      ! Allocate for unique bases
+      allocate (unique_bases(nunique))
 
-    ! Parse basis for each unique element
-    do iunique = 1, nunique
-      print *, "Parsing basis for: ", trim(unique_elements(iunique))
-      call parse_element_basis(basis_string, unique_elements(iunique), &
-                               unique_bases(iunique), stat, errmsg)
-      if (stat /= 0) then
-        errmsg = "Failed to parse basis for element "//trim(unique_elements(iunique))// &
-                 ": "//errmsg
-        return
-      end if
-    end do
-
-    ! Allocate molecular basis and assign to each atom
-    call mol_basis%allocate_elements(natoms)
-
-    do iatom = 1, natoms
-      ! Find which unique element this atom corresponds to
+      ! Parse basis for each unique element
       do iunique = 1, nunique
-        if (strings_equal(element_names(iatom), unique_elements(iunique))) then
-          match_idx = iunique
-          exit
-        end if
+         print *, "Parsing basis for: ", trim(unique_elements(iunique))
+         call parse_element_basis(basis_string, unique_elements(iunique), &
+                                  unique_bases(iunique), stat, errmsg)
+         if (stat /= 0) then
+            errmsg = "Failed to parse basis for element "//trim(unique_elements(iunique))// &
+                     ": "//errmsg
+            return
+         end if
       end do
 
-      ! Copy the basis data
-      call copy_atomic_basis(unique_bases(match_idx), mol_basis%elements(iatom))
-    end do
+      ! Allocate molecular basis and assign to each atom
+      call mol_basis%allocate_elements(natoms)
 
-    ! Clean up
-    do iunique = 1, nunique
-      call unique_bases(iunique)%destroy()
-    end do
+      do iatom = 1, natoms
+         ! Find which unique element this atom corresponds to
+         do iunique = 1, nunique
+            if (strings_equal(element_names(iatom), unique_elements(iunique))) then
+               match_idx = iunique
+               exit
+            end if
+         end do
 
-  end subroutine build_molecular_basis
+         ! Copy the basis data
+         call copy_atomic_basis(unique_bases(match_idx), mol_basis%elements(iatom))
+      end do
+
+      ! Clean up
+      do iunique = 1, nunique
+         call unique_bases(iunique)%destroy()
+      end do
+
+   end subroutine build_molecular_basis
 
 end module mqc_basis_reader

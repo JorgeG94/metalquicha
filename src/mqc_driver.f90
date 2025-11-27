@@ -40,16 +40,16 @@ contains
       max_level = config%nlevel
 
       ! Set matrix_size based on atoms per monomer (natoms * 3 for gradient)
-      matrix_size = sys_geom%atoms_per_monomer * 3
+      matrix_size = sys_geom%atoms_per_monomer*3
 
       if (world_rank == 0) then
          call logger%info("============================================")
          call logger%info("Loaded geometry:")
-         call logger%info("  Total monomers: " // to_char(sys_geom%n_monomers))
-         call logger%info("  Atoms per monomer: " // to_char(sys_geom%atoms_per_monomer))
-         call logger%info("  Total atoms: " // to_char(sys_geom%total_atoms))
-         call logger%info("  Fragment level: " // to_char(max_level))
-         call logger%info("  Matrix size (natoms*3): " // to_char(matrix_size))
+         call logger%info("  Total monomers: "//to_char(sys_geom%n_monomers))
+         call logger%info("  Atoms per monomer: "//to_char(sys_geom%atoms_per_monomer))
+         call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
+         call logger%info("  Fragment level: "//to_char(max_level))
+         call logger%info("  Matrix size (natoms*3): "//to_char(matrix_size))
          call logger%info("============================================")
       end if
 
@@ -62,7 +62,7 @@ contains
                call logger%error("")
                call logger%error("Unfragmented calculation (nlevel=0) requires exactly 1 MPI rank")
                call logger%error("  Parallelism is achieved through OpenMP threads, not MPI")
-               call logger%error("  Current number of MPI ranks: " // to_char(world_size) // " (must be 1)")
+               call logger%error("  Current number of MPI ranks: "//to_char(world_size)//" (must be 1)")
                call logger%error("")
                call logger%error("Please run with a single MPI rank (e.g., mpirun -np 1 ...)")
                call logger%error("Use OMP_NUM_THREADS to control thread-level parallelism")
@@ -88,8 +88,8 @@ contains
          n_rows = n_expected_frags
 
          ! Allocate monomer list and polymers array
-         allocate(monomers(sys_geom%n_monomers))
-         allocate(polymers(n_rows, max_level))
+         allocate (monomers(sys_geom%n_monomers))
+         allocate (polymers(n_rows, max_level))
          polymers = 0
 
          ! Create monomer list [1, 2, 3, ..., n_monomers]
@@ -107,11 +107,11 @@ contains
          ! Then add n-mers for n >= 2
          call generate_fragment_list(monomers, max_level, polymers, total_fragments)
 
-         deallocate(monomers)
+         deallocate (monomers)
 
          call logger%info("Generated fragments:")
-         call logger%info("  Total fragments: " // to_char(total_fragments))
-         call logger%info("  Max level: " // to_char(max_level))
+         call logger%info("  Total fragments: "//to_char(total_fragments))
+         call logger%info("  Max level: "//to_char(max_level))
       end if
 
       ! Broadcast total_fragments to all ranks
@@ -121,16 +121,16 @@ contains
       global_node_rank = -1
       if (node_comm%rank() == 0) global_node_rank = world_comm%rank()
 
-      allocate(all_node_leader_ranks(world_comm%size()))
+      allocate (all_node_leader_ranks(world_comm%size()))
       call allgather(world_comm, global_node_rank, all_node_leader_ranks)
 
       num_nodes = count(all_node_leader_ranks /= -1)
 
       if (world_comm%rank() == 0) then
-         call logger%info("Running with " // to_char(num_nodes) // " node(s)")
+         call logger%info("Running with "//to_char(num_nodes)//" node(s)")
       end if
 
-      allocate(node_leader_ranks(num_nodes))
+      allocate (node_leader_ranks(num_nodes))
       i = 0
       do j = 1, world_comm%size()
          if (all_node_leader_ranks(j) /= -1) then
@@ -138,21 +138,21 @@ contains
             node_leader_ranks(i) = all_node_leader_ranks(j)
          end if
       end do
-      deallocate(all_node_leader_ranks)
+      deallocate (all_node_leader_ranks)
 
       ! Execute appropriate role
       if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                       node_leader_ranks, num_nodes, matrix_size)
+                                 node_leader_ranks, num_nodes, matrix_size)
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
-         call logger%verbose("Rank " // to_char(world_rank) // ": Acting as node coordinator")
+         call logger%verbose("Rank "//to_char(world_rank)//": Acting as node coordinator")
          call node_coordinator(world_comm, node_comm, max_level, matrix_size)
       else
          ! Worker
-         call logger%verbose("Rank " // to_char(world_rank) // ": Acting as worker")
+         call logger%verbose("Rank "//to_char(world_rank)//": Acting as worker")
          call node_worker(world_comm, node_comm, max_level, sys_geom)
       end if
 

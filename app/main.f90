@@ -1,7 +1,7 @@
 program main
    use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
-   use pic_mpi_lib 
+   use pic_mpi_lib
    use mqc_driver
    use mqc_physical_fragment, only: initialize_system_geometry, system_geometry_t
    use mqc_input_parser
@@ -33,7 +33,7 @@ program main
    call read_input_file(input_file, config, stat, errmsg)
    if (stat /= 0) then
       if (world_comm%rank() == 0) then
-         call logger%error("Error reading input file " // errmsg)
+         call logger%error("Error reading input file "//errmsg)
       end if
       call abort_comm(world_comm, 1)
    end if
@@ -42,7 +42,7 @@ program main
    call initialize_system_geometry(config%geom_file, config%monomer_file, sys_geom, stat, errmsg)
    if (stat /= 0) then
       if (world_comm%rank() == 0) then
-         call logger%error("Error loeading geometry " // errmsg)
+         call logger%error("Error loeading geometry "//errmsg)
       end if
       call abort_comm(world_comm, 1)
    end if
@@ -53,7 +53,7 @@ program main
    ! Stop timer and report on rank 0
    if (world_comm%rank() == 0) then
       call my_timer%stop()
-      call logger%info("Total processing time: " // to_char(my_timer%get_elapsed_time()) // " s")
+      call logger%info("Total processing time: "//to_char(my_timer%get_elapsed_time())//" s")
    end if
 
    ! Cleanup and finalize

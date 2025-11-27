@@ -24,7 +24,7 @@ module mqc_chemistry_algorithms
 contains
 
    subroutine process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                          water_energy, C_flat, phys_frag, verbosity)
+                                         water_energy, C_flat, phys_frag, verbosity)
 
       integer, intent(in) :: fragment_idx, fragment_size, matrix_size
       integer, intent(in) :: fragment_indices(fragment_size)
@@ -44,7 +44,7 @@ contains
       real(wp) :: energy
       type(context_type) :: ctx
       real(wp), parameter :: acc = 0.01_wp
-      real(wp), parameter :: kt = 300.0_wp * 3.166808578545117e-06_wp
+      real(wp), parameter :: kt = 300.0_wp*3.166808578545117e-06_wp
 
       ! Set verbosity level (default is 0 for silent operation)
       if (present(verbosity)) then
@@ -55,12 +55,12 @@ contains
 
       ! Print fragment geometry if provided
       if (present(phys_frag)) then
-        if(verb_level == 1) then
-          call print_fragment_xyz(fragment_idx, phys_frag)
-        end if
+         if (verb_level == 1) then
+            call print_fragment_xyz(fragment_idx, phys_frag)
+         end if
 
-         allocate(num(phys_frag%n_atoms))
-         allocate(xyz(3, phys_frag%n_atoms))
+         allocate (num(phys_frag%n_atoms))
+         allocate (xyz(3, phys_frag%n_atoms))
 
          ! Coordinates are already in Bohr in sys_geom, just copy them
          num = phys_frag%element_numbers
@@ -77,13 +77,13 @@ contains
             water_energy = real(energy, dp)
          end if
 
-         deallocate(num, xyz)
+         deallocate (num, xyz)
       else
          water_energy = 0.0_dp
       end if
 
       ! Return empty vector for C_flat
-      allocate(C_flat(1))
+      allocate (C_flat(1))
       C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
 
@@ -96,14 +96,14 @@ contains
       character(len=256) :: coord_line
 
       call logger%info("=========================================")
-      call logger%info(" Fragment " // to_char(fragment_idx))
-      call logger%info(" Number of atoms: " // to_char(phys_frag%n_atoms))
+      call logger%info(" Fragment "//to_char(fragment_idx))
+      call logger%info(" Number of atoms: "//to_char(phys_frag%n_atoms))
       call logger%info(" Coordinates in Angstroms:")
       call logger%info("-----------------------------------------")
       do i = 1, phys_frag%n_atoms
          symbol = element_number_to_symbol(phys_frag%element_numbers(i))
          ! Convert from Bohr back to Angstroms for printing
-         write(coord_line, '(a2,3f15.8)') symbol, to_angstrom(phys_frag%coordinates(1:3, i))
+         write (coord_line, '(a2,3f15.8)') symbol, to_angstrom(phys_frag%coordinates(1:3, i))
          call logger%info(trim(coord_line))
       end do
       call logger%info("=========================================")
@@ -123,7 +123,7 @@ contains
       real(dp), allocatable :: sum_by_level(:)
       real(dp) :: delta_E
 
-      allocate(sum_by_level(max_level))
+      allocate (sum_by_level(max_level))
       sum_by_level = 0.0_dp
 
       ! Sum over all fragments by their size
@@ -136,7 +136,7 @@ contains
          else if (fragment_size >= 2 .and. fragment_size <= max_level) then
             ! n-body corrections for n >= 2
             delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
-                                         fragment_count, fragment_size)
+                                          fragment_count, fragment_size)
             sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
          end if
       end do
@@ -148,18 +148,18 @@ contains
          if (abs(sum_by_level(body_level)) > 1e-15_dp) then
             block
                character(len=256) :: energy_line
-               write(energy_line, '(a,i0,a,f20.10)') "  ", body_level, "-body:  ", sum_by_level(body_level)
+               write (energy_line, '(a,i0,a,f20.10)') "  ", body_level, "-body:  ", sum_by_level(body_level)
                call logger%info(trim(energy_line))
             end block
          end if
       end do
       block
          character(len=256) :: total_line
-         write(total_line, '(a,f20.10)') "  Total:   ", total_energy
+         write (total_line, '(a,f20.10)') "  Total:   ", total_energy
          call logger%info(trim(total_line))
       end block
 
-      deallocate(sum_by_level)
+      deallocate (sum_by_level)
 
    end subroutine compute_mbe_energy
 
@@ -189,7 +189,7 @@ contains
       do subset_size = 1, n - 1
          ! Generate all subsets of this size and subtract their contributions
          call generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
-                                           fragment_count, delta_E)
+                                            fragment_count, delta_E)
       end do
 
    end function compute_delta_nbody
@@ -204,8 +204,8 @@ contains
       integer, allocatable :: indices(:), subset(:)
       integer :: i
 
-      allocate(indices(subset_size))
-      allocate(subset(subset_size))
+      allocate (indices(subset_size))
+      allocate (subset(subset_size))
 
       ! Initialize indices for first combination
       do i = 1, subset_size
@@ -232,7 +232,7 @@ contains
          if (.not. next_combination(indices, subset_size, n)) exit
       end do
 
-      deallocate(indices, subset)
+      deallocate (indices, subset)
 
    end subroutine generate_and_subtract_subsets
 
@@ -301,8 +301,8 @@ contains
       block
          character(len=256) :: monomers_str
          integer :: k
-         write(monomers_str, '(*(i0,1x))') (target_monomers(k), k=1,size(target_monomers))
-         call logger%error("Could not find fragment with monomers: " // trim(monomers_str))
+         write (monomers_str, '(*(i0,1x))') (target_monomers(k), k=1, size(target_monomers))
+         call logger%error("Could not find fragment with monomers: "//trim(monomers_str))
       end block
       error stop "Fragment not found in find_fragment_index"
 
@@ -347,7 +347,7 @@ contains
          if (n_mers(i) > 0) then
             block
                character(len=256) :: flop_line
-               write(flop_line, '(a,i0,a,i0,a,f12.3,a)') "  ", i, "-mers:  ", n_mers(i), &
+               write (flop_line, '(a,i0,a,i0,a,f12.3,a)') "  ", i, "-mers:  ", n_mers(i), &
                   " (", mer_flops(i)/1.0e9_dp, " GFLOP)"
                call logger%info(trim(flop_line))
             end block
@@ -355,7 +355,7 @@ contains
       end do
       block
          character(len=256) :: total_line
-         write(total_line, '(a,i0,a,f12.3,a)') "  Total:    ", fragment_count, &
+         write (total_line, '(a,i0,a,f12.3,a)') "  Total:    ", fragment_count, &
             " (", total_flops/1.0e9_dp, " GFLOP)"
          call logger%info(trim(total_line))
       end block
@@ -365,7 +365,7 @@ contains
    end subroutine calculate_exact_flops
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                       node_leader_ranks, num_nodes, matrix_size)
+                                 node_leader_ranks, num_nodes, matrix_size)
       type(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: total_fragments, max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
@@ -382,7 +382,7 @@ contains
 
       ! Storage for results
       real(dp), allocatable :: scalar_results(:)
-      real(dp), allocatable :: matrix_results(:,:)
+      real(dp), allocatable :: matrix_results(:, :)
       real(dp), allocatable :: temp_matrix(:)
       integer :: max_matrix_size
       integer :: worker_fragment_map(node_comm%size())
@@ -396,15 +396,15 @@ contains
       results_received = 0
 
       ! Allocate storage for results
-      allocate(scalar_results(total_fragments))
-      max_matrix_size = (max_level * matrix_size)**2
-      allocate(matrix_results(max_matrix_size, total_fragments))
+      allocate (scalar_results(total_fragments))
+      max_matrix_size = (max_level*matrix_size)**2
+      allocate (matrix_results(max_matrix_size, total_fragments))
       scalar_results = 0.0_dp
       matrix_results = 0.0_dp
       worker_fragment_map = 0
 
-      call logger%verbose("Global coordinator starting with " // to_char(total_fragments) // &
-                         " fragments for " // to_char(num_nodes) // " nodes")
+      call logger%verbose("Global coordinator starting with "//to_char(total_fragments)// &
+                          " fragments for "//to_char(num_nodes)//" nodes")
 
       do while (finished_nodes < num_nodes)
 
@@ -420,8 +420,8 @@ contains
 
                ! Safety check: worker should have a fragment assigned
                if (worker_fragment_map(worker_source) == 0) then
-                  call logger%error("Received result from worker " // to_char(worker_source) // &
-                                   " but no fragment was assigned!")
+                  call logger%error("Received result from worker "//to_char(worker_source)// &
+                                    " but no fragment was assigned!")
                   error stop "Invalid worker_fragment_map state"
                end if
 
@@ -432,11 +432,11 @@ contains
                ! Copy only the received size, pad rest with zeros
                matrix_results(1:size(temp_matrix), worker_fragment_map(worker_source)) = temp_matrix
                if (size(temp_matrix) < max_matrix_size) then
-                  matrix_results(size(temp_matrix)+1:max_matrix_size, worker_fragment_map(worker_source)) = 0.0_dp
+                  matrix_results(size(temp_matrix) + 1:max_matrix_size, worker_fragment_map(worker_source)) = 0.0_dp
                end if
                ! Clear the mapping since we've received the result
                worker_fragment_map(worker_source) = 0
-               if (allocated(temp_matrix)) deallocate(temp_matrix)
+               if (allocated(temp_matrix)) deallocate (temp_matrix)
                results_received = results_received + 1
             end do
          end if
@@ -454,9 +454,9 @@ contains
             ! Copy matrix result into storage
             matrix_results(1:size(temp_matrix), fragment_idx) = temp_matrix
             if (size(temp_matrix) < max_matrix_size) then
-               matrix_results(size(temp_matrix)+1:max_matrix_size, fragment_idx) = 0.0_dp
+               matrix_results(size(temp_matrix) + 1:max_matrix_size, fragment_idx) = 0.0_dp
             end if
-            if (allocated(temp_matrix)) deallocate(temp_matrix)
+            if (allocated(temp_matrix)) deallocate (temp_matrix)
             results_received = results_received + 1
          end do
 
@@ -485,7 +485,7 @@ contains
 
                   if (current_fragment >= 1) then
                      call send_fragment_to_worker(node_comm, current_fragment, polymers, max_level, &
-                                                   local_status%MPI_SOURCE, matrix_size)
+                                                  local_status%MPI_SOURCE, matrix_size)
                      ! Track which fragment was sent to this worker
                      worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
                      current_fragment = current_fragment - 1
@@ -515,17 +515,17 @@ contains
 
       call logger%verbose("Global coordinator finished all fragments")
       block
-      real(dp) :: mbe_total_energy
+         real(dp) :: mbe_total_energy
 
-      ! Compute the many-body expansion energy
-      call logger%info("")
-      call logger%info("Computing Many-Body Expansion (MBE)...")
-      call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
+         ! Compute the many-body expansion energy
+         call logger%info("")
+         call logger%info("Computing Many-Body Expansion (MBE)...")
+         call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
 
       end block
 
       ! Cleanup
-      deallocate(scalar_results, matrix_results)
+      deallocate (scalar_results, matrix_results)
    end subroutine global_coordinator
 
    subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, max_level, dest_rank)
@@ -596,8 +596,8 @@ contains
 
             ! Safety check: worker should have a fragment assigned
             if (worker_fragment_map(worker_source) == 0) then
-               call logger%error("Node coordinator received result from worker " // to_char(worker_source) // &
-                                " but no fragment was assigned!")
+               call logger%error("Node coordinator received result from worker "//to_char(worker_source)// &
+                                 " but no fragment was assigned!")
                error stop "Invalid worker_fragment_map state in node coordinator"
             end if
 
@@ -612,7 +612,7 @@ contains
 
             ! Clear the mapping and deallocate
             worker_fragment_map(worker_source) = 0
-            if (allocated(matrix_result)) deallocate(matrix_result)
+            if (allocated(matrix_result)) deallocate (matrix_result)
          end if
 
          ! PRIORITY 2: Check for work requests from local workers
@@ -686,13 +686,13 @@ contains
 
                ! Process the chemistry fragment with physical geometry
                call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                              dot_result, C_flat, phys_frag)
+                                               dot_result, C_flat, phys_frag)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
                call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                              dot_result, C_flat)
+                                               dot_result, C_flat)
             end if
 
             ! Send results back to coordinator
@@ -726,26 +726,26 @@ contains
 
       call logger%info("============================================")
       call logger%info("Running unfragmented calculation")
-      call logger%info("  Total atoms: " // to_char(total_atoms))
+      call logger%info("  Total atoms: "//to_char(total_atoms))
       call logger%info("============================================")
 
       ! Build the full system as a single fragment (all monomers)
       block
          integer, allocatable :: all_monomer_indices(:)
 
-         allocate(all_monomer_indices(sys_geom%n_monomers))
+         allocate (all_monomer_indices(sys_geom%n_monomers))
          do i = 1, sys_geom%n_monomers
             all_monomer_indices(i) = i
          end do
 
          call build_fragment_from_indices(sys_geom, all_monomer_indices, full_system)
-         deallocate(all_monomer_indices)
+         deallocate (all_monomer_indices)
       end block
 
       ! Process the full system with verbosity=1 for detailed output
       block
          integer, allocatable :: temp_indices(:)
-         allocate(temp_indices(sys_geom%n_monomers))
+         allocate (temp_indices(sys_geom%n_monomers))
          do i = 1, sys_geom%n_monomers
             temp_indices(i) = i
          end do
@@ -753,20 +753,20 @@ contains
          call process_chemistry_fragment(0, temp_indices, sys_geom%n_monomers, &
                                          total_atoms, dot_result, C_flat, &
                                          phys_frag=full_system, verbosity=1)
-         deallocate(temp_indices)
+         deallocate (temp_indices)
       end block
 
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")
       block
          character(len=256) :: result_line
-         write(result_line, '(a,es15.8)') "  Scalar result: ", dot_result
+         write (result_line, '(a,es15.8)') "  Scalar result: ", dot_result
          call logger%info(trim(result_line))
       end block
-      call logger%info("  Matrix size: " // to_char(size(C_flat)))
+      call logger%info("  Matrix size: "//to_char(size(C_flat)))
       call logger%info("============================================")
 
-      if (allocated(C_flat)) deallocate(C_flat)
+      if (allocated(C_flat)) deallocate (C_flat)
 
    end subroutine unfragmented_calculation
 

@@ -74,7 +74,7 @@ contains
          case ('monomer_symbols')
             config%monomer_file = trim(value)
          case ('nlevel')
-            read(value, *, iostat=io_stat) config%nlevel
+            read (value, *, iostat=io_stat) config%nlevel
             if (io_stat /= 0) then
                stat = 1
                errmsg = "Invalid value for nlevel: "//trim(value)
