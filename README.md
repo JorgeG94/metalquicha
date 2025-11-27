@@ -1,5 +1,10 @@
 # Met'al q'uicha (metalquicha)
 
+<p align="center">
+  <img src="images/sunflower.png" alt="Otter coding logo" title="Project logo" width="250">
+</p>
+Yes, this is AI generated (the image) if you know an artist, please let me know.
+
 Met'al q'uicha, which I'll just write as metalquicha is a sample quantum chemistry backend
 with focus on using the [pic](https://github.com/JorgeG94/pic) library and its derivatives:
 [pic-mpi](https://github.com/JorgeG94/pic-mpi) and [pic-blas](https://github.com/JorgeG94/pic-blas)
