@@ -6,7 +6,7 @@ maintainer = "jorgegalvez1694@gmail.com"
 copyright = "Copyright 2025, JorgeGV"
 [build]
 auto-executables = false
-auto-tests = false
+auto-tests = true
 auto-examples = false
 module-naming = false
 [[executable]]
@@ -26,3 +26,4 @@ pic = { git = "https://github.com/JorgeG94/pic.git", branch = "main"}
 pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", branch = "main"}
 tblite = { git = "https://github.com/JorgeG94/tblite", branch = "main"}
+test-drive.git = "https://github.com/JorgeG94/test-drive"

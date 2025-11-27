@@ -21,14 +21,14 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 add_subdirectory(cmake)
 include(demo_status)
 
-option(ENABLE_TESTING "Enable testing for ${project_name}" OFF)
+option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
 option(PIC_USE_VAPAA "Use vapaa to link to a C mpi library" OFF)
 mark_as_advanced(PIC_USE_VAPAA)
 
 add_library(${main_lib} STATIC)
 set(libraries_to_link)
 
-if(NOT TARGET test-drive::test-drive AND ENABLE_TESTING)
+if(NOT TARGET test-drive::test-drive AND MQC_ENABLE_TESTING)
   enable_testing()
   find_package("test-drive" REQUIRED)
 endif()
@@ -59,7 +59,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src)
 
-if(ENABLE_TESTING)
+if(MQC_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
