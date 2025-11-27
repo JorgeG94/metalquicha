@@ -2,7 +2,7 @@ module mqc_chemistry_algorithms
    use pic_types
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
-   use mpi_comm_simple, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use pic_mpi_f08, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
    use mqc_mpi_tags
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_physical_fragment, only: physical_fragment_t, element_number_to_symbol

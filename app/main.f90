@@ -1,5 +1,5 @@
 program main
-   use mpi_comm_simple
+   use pic_mpi_f08 
    use mqc_driver
    use mqc_physical_fragment
    use mqc_input_parser
@@ -15,7 +15,7 @@ program main
    character(len=256) :: input_file
 
    ! Initialize MPI
-   call mpi_initialize()
+   call pic_mpi_init()
 
    ! Create communicators
    world_comm = comm_world()
@@ -59,6 +59,6 @@ program main
    call sys_geom%destroy()
    call world_comm%finalize()
    call node_comm%finalize()
-   call mpi_finalize_wrapper()
+   call pic_mpi_finalize()
 
 end program main
