@@ -11,6 +11,7 @@ module mqc_physical_fragment
    public :: to_angstrom, to_bohr
    public :: fragment_centroid, fragment_center_of_mass
    public :: distance_between_points, distance_between_fragments
+   public :: minimal_distance_between_fragments
 
    !! Physical fragment with actual atomic coordinates
    type :: physical_fragment_t
@@ -240,5 +241,35 @@ contains
       distance = distance_between_points(point1, point2)
 
    end function distance_between_fragments
+
+   pure function minimal_distance_between_fragments(frag1, frag2) result(min_distance)
+      !! Calculate the minimal distance between any two atoms in two fragments
+      !! This iterates over all atom pairs and finds the closest pair
+      !! Distance is in the same units as the fragment coordinates (typically Bohr)
+      type(physical_fragment_t), intent(in) :: frag1, frag2
+      real(dp) :: min_distance
+
+      real(dp) :: current_distance
+      integer :: i, j
+
+      ! Initialize with a very large value
+      min_distance = huge(1.0_dp)
+
+      ! Loop over all atoms in fragment 1
+      do i = 1, frag1%n_atoms
+         ! Loop over all atoms in fragment 2
+         do j = 1, frag2%n_atoms
+            ! Calculate distance between atom i in frag1 and atom j in frag2
+            current_distance = distance_between_points(frag1%coordinates(:, i), &
+                                                       frag2%coordinates(:, j))
+
+            ! Update minimum if this distance is smaller
+            if (current_distance < min_distance) then
+               min_distance = current_distance
+            end if
+         end do
+      end do
+
+   end function minimal_distance_between_fragments
 
 end module mqc_physical_fragment
