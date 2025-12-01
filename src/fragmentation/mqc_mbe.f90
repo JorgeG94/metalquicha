@@ -10,6 +10,7 @@ module mqc_mbe
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_elements, only: element_number_to_symbol
+   use mqc_frag_utils, only: next_combination, find_fragment_index
 
    ! Method API imports
    use mqc_method_xtb, only: xtb_method_t
@@ -218,78 +219,6 @@ contains
       deallocate (indices, subset)
 
    end subroutine generate_and_subtract_subsets
-
-   function next_combination(indices, k, n) result(has_next)
-      !! Generate next combination (updates indices in place)
-      !! Returns .true. if there's a next combination, .false. if we're done
-      integer, intent(inout) :: indices(:)
-      integer, intent(in) :: k, n
-      logical :: has_next
-      integer :: i
-
-      has_next = .true.
-
-      ! Find rightmost index that can be incremented
-      i = k
-      do while (i >= 1)
-         if (indices(i) < n - k + i) then
-            indices(i) = indices(i) + 1
-            ! Reset all indices to the right
-            do while (i < k)
-               i = i + 1
-               indices(i) = indices(i - 1) + 1
-            end do
-            return
-         end if
-         i = i - 1
-      end do
-
-      ! No more combinations
-      has_next = .false.
-
-   end function next_combination
-
-   function find_fragment_index(target_monomers, polymers, fragment_count, expected_size) result(idx)
-      !! Find the fragment index that contains exactly the target monomers
-      integer, intent(in) :: target_monomers(:), polymers(:, :), fragment_count, expected_size
-      integer :: idx
-
-      integer :: i, j, fragment_size
-      logical :: match
-
-      idx = -1
-
-      do i = 1, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-
-         ! Check if this fragment has the right size
-         if (fragment_size /= expected_size) cycle
-
-         ! Check if all target monomers are in this fragment
-         match = .true.
-         do j = 1, expected_size
-            if (.not. any(polymers(i, 1:fragment_size) == target_monomers(j))) then
-               match = .false.
-               exit
-            end if
-         end do
-
-         if (match) then
-            idx = i
-            return
-         end if
-      end do
-
-      ! If we get here, we didn't find the fragment
-      block
-         character(len=256) :: monomers_str
-         integer :: k
-         write (monomers_str, '(*(i0,1x))') (target_monomers(k), k=1, size(target_monomers))
-         call logger%error("Could not find fragment with monomers: "//trim(monomers_str))
-      end block
-      error stop "Fragment not found in find_fragment_index"
-
-   end function find_fragment_index
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                  node_leader_ranks, num_nodes, matrix_size)
