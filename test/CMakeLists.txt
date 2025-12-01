@@ -37,6 +37,7 @@ message(STATUS "Adding individual test executables for ${project_name}...")
 
 # Non-MPI tests
 addtest(mqc_xyz_reader)
+addtest(mqc_xyz_reader_detailed)
 addtest(mqc_basis_reader)
 addtest(mqc_basis_file_reader)
 addtest(mqc_elements)
