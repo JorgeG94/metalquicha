@@ -4,6 +4,9 @@ license = "license"
 author = "JorgeGV"
 maintainer = "jorgegalvez1694@gmail.com"
 copyright = "Copyright 2025, JorgeGV"
+[preprocess]
+[preprocess.cpp]
+suffixes = ["F90", "f90"]
 [build]
 auto-executables = false
 auto-tests = true
