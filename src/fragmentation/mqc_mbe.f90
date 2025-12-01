@@ -11,15 +11,9 @@ module mqc_mbe
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_elements, only: element_number_to_symbol
 
-   use mctc_env, only: wp, error_type
-   use mctc_io, only: structure_type, new
-
-   use tblite_context_type, only: context_type
-   use tblite_wavefunction, only: wavefunction_type, new_wavefunction
-   use tblite_xtb_calculator, only: xtb_calculator
-   use tblite_xtb_gfn1, only: new_gfn1_calculator
-   use tblite_xtb_gfn2, only: new_gfn2_calculator
-   use tblite_xtb_singlepoint, only: xtb_singlepoint
+   ! Method API imports
+   use mqc_method_xtb, only: xtb_method_t
+   use mqc_result_types, only: calculation_result_t
    implicit none
 
 contains
@@ -34,20 +28,10 @@ contains
       type(physical_fragment_t), intent(in), optional :: phys_frag
       integer, intent(in), optional :: verbosity
       character(len=*), intent(in), optional :: method
-      integer :: i, verb_level
+      integer :: verb_level
       character(len=:), allocatable :: calc_method
-
-      ! XTB calculation variables
-      type(error_type), allocatable :: error
-      type(structure_type) :: mol
-      real(wp), allocatable :: xyz(:, :)
-      integer, allocatable :: num(:)
-      type(xtb_calculator) :: calc
-      type(wavefunction_type) :: wfn
-      real(wp) :: energy
-      type(context_type) :: ctx
-      real(wp), parameter :: acc = 0.01_wp
-      real(wp), parameter :: kt = 300.0_wp*3.166808578545117e-06_wp
+      type(xtb_method_t) :: xtb_calc
+      type(calculation_result_t) :: result
 
       ! Set verbosity level (default is 0 for silent operation)
       if (present(verbosity)) then
@@ -69,39 +53,19 @@ contains
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
-         allocate (num(phys_frag%n_atoms))
-         allocate (xyz(3, phys_frag%n_atoms))
+         ! Setup XTB method
+         xtb_calc%variant = calc_method
+         xtb_calc%verbose = (verb_level > 0)
 
-         ! Coordinates are already in Bohr in sys_geom, just copy them
-         num = phys_frag%element_numbers
-         xyz = phys_frag%coordinates
+         ! Run the calculation using the method API
+         call xtb_calc%calc_energy(phys_frag, result)
+         water_energy = result%energy
 
-         ! Create molecular structure and run XTB calculation
-         call new(mol, num, xyz, charge=0.0_wp, uhf=0)
-
-         ! Select appropriate calculator based on method
-         select case (trim(calc_method))
-         case ("gfn1")
-            call new_gfn1_calculator(calc, mol, error)
-         case ("gfn2")
-            call new_gfn2_calculator(calc, mol, error)
-         case default
-            error stop "Unknown XTB method: "//calc_method
-         end select
-
-         if (.not. allocated(error)) then
-            call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, kt)
-            energy = 0.0_wp
-            call xtb_singlepoint(ctx, mol, calc, wfn, acc, energy, verbosity=verb_level)
-            water_energy = real(energy, dp)
-         end if
-
-         deallocate (num, xyz)
+         ! Clean up result
+         call result%destroy()
       else
          water_energy = 0.0_dp
-      end if
-
-      ! Return empty vector for C_flat
+      end if      ! Return empty vector for C_flat
       allocate (C_flat(1))
       C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
@@ -326,62 +290,6 @@ contains
       error stop "Fragment not found in find_fragment_index"
 
    end function find_fragment_index
-
-   subroutine calculate_exact_flops(polymers, fragment_count, max_level, matrix_size, total_flops)
-      integer, intent(in) :: polymers(:, :), fragment_count, max_level, matrix_size
-      real(dp), intent(out) :: total_flops
-
-      integer :: i, fragment_size
-      integer, allocatable :: n_mers(:)
-      real(dp), allocatable :: mer_flops(:)
-      real(dp) :: mer_size
-
-      ! Allocate counters for each n-mer level (1 to max_level)
-      allocate (n_mers(max_level))
-      allocate (mer_flops(max_level))
-
-      n_mers = 0
-      mer_flops = 0.0_dp
-
-      ! Count fragments by size
-      do i = 1, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size >= 1 .and. fragment_size <= max_level) then
-            n_mers(fragment_size) = n_mers(fragment_size) + 1
-         end if
-      end do
-
-      ! Calculate FLOPs for each n-mer level (using JAXPY: C = alpha * H + S, which is 2*N^2 FLOPs)
-      do i = 1, max_level
-         mer_size = real(i*matrix_size, dp)
-         mer_flops(i) = real(n_mers(i), dp)*2.0_dp*mer_size**2  ! 2*N^2 for JAXPY
-      end do
-
-      ! Total FLOPs
-      total_flops = sum(mer_flops)
-
-      ! Print breakdown
-      call logger%info("Fragment breakdown:")
-      do i = 1, max_level
-         if (n_mers(i) > 0) then
-            block
-               character(len=256) :: flop_line
-               write (flop_line, '(a,i0,a,i0,a,f12.3,a)') "  ", i, "-mers:  ", n_mers(i), &
-                  " (", mer_flops(i)/1.0e9_dp, " GFLOP)"
-               call logger%info(trim(flop_line))
-            end block
-         end if
-      end do
-      block
-         character(len=256) :: total_line
-         write (total_line, '(a,i0,a,f12.3,a)') "  Total:    ", fragment_count, &
-            " (", total_flops/1.0e9_dp, " GFLOP)"
-         call logger%info(trim(total_line))
-      end block
-
-      deallocate (n_mers, mer_flops)
-
-   end subroutine calculate_exact_flops
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                  node_leader_ranks, num_nodes, matrix_size)
