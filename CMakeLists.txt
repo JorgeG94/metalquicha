@@ -22,8 +22,8 @@ add_subdirectory(cmake)
 include(demo_status)
 
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
-option(PIC_USE_VAPAA "Use vapaa to link to a C mpi library" OFF)
-mark_as_advanced(PIC_USE_VAPAA)
+option(MQC_ENABLE_LIBCINT "Link to libcint for ERI computations" OFF)
+mark_as_advanced(MQC_ENABLE_LIBCINT)
 
 add_library(${main_lib} STATIC)
 set(libraries_to_link)
@@ -47,6 +47,11 @@ endif()
 
 if(NOT TARGET "tblite::tblite")
   find_package("tblite" REQUIRED)
+endif()
+
+if(MQC_ENABLE_LIBCINT)
+  find_package(libcint REQUIRED)
+  list(APPEND libraries_to_link libcint::cint_fortran)
 endif()
 
 find_package(
