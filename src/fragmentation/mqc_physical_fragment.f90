@@ -3,6 +3,7 @@ module mqc_physical_fragment
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
+   use mqc_cgto, only: molecular_basis_type
    implicit none
    private
 
@@ -18,8 +19,19 @@ module mqc_physical_fragment
       integer :: n_atoms
       integer, allocatable :: element_numbers(:)     ! Atomic numbers (e.g., 8 for O, 1 for H)
       real(dp), allocatable :: coordinates(:, :)     ! xyz coords (3, n_atoms)
+
+      ! Electronic structure information
+      integer :: charge = 0                          ! Molecular charge
+      integer :: multiplicity = 1                    ! Spin multiplicity (1=singlet, 2=doublet, etc.)
+      integer :: nelec = 0                           ! Number of electrons (computed from charge)
+
+      ! Basis set
+      type(molecular_basis_type), allocatable :: basis
+         ! Basis set for this fragment
    contains
       procedure :: destroy => fragment_destroy
+      procedure :: compute_nelec => fragment_compute_nelec
+      procedure :: set_basis => fragment_set_basis
    end type physical_fragment_t
 
    !! System geometry holding the full molecular cluster
@@ -149,8 +161,38 @@ contains
       class(physical_fragment_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
+      if (allocated(this%basis)) then
+         call this%basis%destroy()
+         deallocate (this%basis)
+      end if
       this%n_atoms = 0
+      this%charge = 0
+      this%multiplicity = 1
+      this%nelec = 0
    end subroutine fragment_destroy
+
+   subroutine fragment_compute_nelec(this)
+      !! Compute number of electrons from atomic numbers and charge
+      class(physical_fragment_t), intent(inout) :: this
+      integer :: nuclear_charge
+
+      nuclear_charge = sum(this%element_numbers)
+      this%nelec = nuclear_charge - this%charge
+   end subroutine fragment_compute_nelec
+
+   subroutine fragment_set_basis(this, basis)
+      !! Set the basis set for this fragment
+      class(physical_fragment_t), intent(inout) :: this
+      type(molecular_basis_type), intent(in) :: basis
+
+      if (allocated(this%basis)) then
+         call this%basis%destroy()
+         deallocate (this%basis)
+      end if
+
+      allocate (this%basis)
+      this%basis = basis
+   end subroutine fragment_set_basis
 
    subroutine system_destroy(this)
       class(system_geometry_t), intent(inout) :: this
