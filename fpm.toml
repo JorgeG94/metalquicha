@@ -9,6 +9,7 @@ auto-executables = false
 auto-tests = true
 auto-examples = false
 module-naming = false
+external-modules = ["mpi_f08", "mpi"]
 [[executable]]
 name = "metalquicha"
 source-dir = "app"

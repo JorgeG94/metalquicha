@@ -1,5 +1,5 @@
 module mqc_driver
-   use pic_mpi_f08
+   use pic_mpi_lib
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_mbe
