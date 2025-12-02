@@ -1,25 +1,39 @@
 module mqc_xyz_reader
+   !! XYZ molecular geometry file reader
+   !!
+   !! Provides functions to parse standard XYZ format files containing
+   !! atomic coordinates and element symbols for molecular structures.
    use pic_types, only: dp
    use mqc_geometry, only: geometry_type
    implicit none
    private
 
-   public :: read_xyz_file, read_xyz_string
+   public :: read_xyz_file    !! Read XYZ file from disk
+   public :: read_xyz_string  !! Parse XYZ data from string
+   public :: split_lines      !! Split text into lines (for testing)
 
-   ! Parameters
-   integer, parameter :: MAX_ELEMENT_SYMBOL_LEN = 4
+   ! Constants
+   integer, parameter :: MAX_ELEMENT_SYMBOL_LEN = 4  !! Maximum element symbol length
 
 contains
 
    subroutine read_xyz_file(filename, geom, stat, errmsg)
-      character(len=*), intent(in) :: filename
-      type(geometry_type), intent(out) :: geom
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      !! Read molecular geometry from XYZ format file
+      !!
+      !! Parses standard XYZ files with format:
+      !! Line 1: Number of atoms
+      !! Line 2: Comment/title line
+      !! Lines 3+: Element X Y Z (coordinates in Angstrom)
+      character(len=*), intent(in) :: filename  !! Path to XYZ file
+      type(geometry_type), intent(out) :: geom  !! Parsed molecular geometry
+      integer, intent(out) :: stat              !! Status (0=success, >0=error)
+      character(len=:), allocatable, intent(out) :: errmsg  !! Error message
 
-      integer :: unit, io_stat, file_size
-      logical :: file_exists
-      character(len=:), allocatable :: file_contents
+      integer :: unit      !! File unit number
+      integer :: io_stat   !! I/O operation status
+      integer :: file_size !! File size in bytes
+      logical :: file_exists !! Whether file exists on disk
+      character(len=:), allocatable :: file_contents !! Full file content buffer
 
       stat = 0
 
@@ -196,7 +210,6 @@ contains
 
       ! Allocate output array
       allocate (character(len=max_line_len) :: temp_lines(nlines))
-      temp_lines = ""  ! Initialize all to empty
 
       ! Pass 2: Extract lines
       nlines = 0
@@ -215,15 +228,31 @@ contains
                i = i + 1
             end if
             nlines = nlines + 1
+            temp_lines(nlines) = ""  ! Initialize line before copying
             if (line_end >= line_start) then
-               temp_lines(nlines) = text(line_start:line_end)
+               ! Intel compiler workaround: use character-by-character copy
+               block
+                  integer :: j, line_len
+                  line_len = line_end - line_start + 1
+                  do j = 1, line_len
+                     temp_lines(nlines)(j:j) = text(line_start + j - 1:line_start + j - 1)
+                  end do
+               end block
             end if
             line_start = i
          else if (text(i:i) == achar(10)) then  ! LF
             line_end = i - 1
             nlines = nlines + 1
+            temp_lines(nlines) = ""  ! Initialize line before copying
             if (line_end >= line_start) then
-               temp_lines(nlines) = text(line_start:line_end)
+               ! Intel compiler workaround: use character-by-character copy
+               block
+                  integer :: j, line_len
+                  line_len = line_end - line_start + 1
+                  do j = 1, line_len
+                     temp_lines(nlines)(j:j) = text(line_start + j - 1:line_start + j - 1)
+                  end do
+               end block
             end if
             i = i + 1
             line_start = i
@@ -235,12 +264,25 @@ contains
       ! Handle last line if text doesn't end with newline
       if (line_start <= len(text)) then
          nlines = nlines + 1
-         temp_lines(nlines) = text(line_start:len(text))
+         temp_lines(nlines) = ""  ! Initialize line before copying
+         ! Intel compiler workaround: use character-by-character copy
+         block
+            integer :: j, line_len
+            line_len = len(text) - line_start + 1
+            do j = 1, line_len
+               temp_lines(nlines)(j:j) = text(line_start + j - 1:line_start + j - 1)
+            end do
+         end block
       end if
 
-      ! Copy to output
+      ! Copy to output (use explicit loop for Intel compiler compatibility)
       allocate (character(len=max_line_len) :: lines(nlines))
-      lines = temp_lines(1:nlines)
+      block
+         integer :: iline
+         do iline = 1, nlines
+            lines(iline) = temp_lines(iline)
+         end do
+      end block
 
    end subroutine split_lines
 

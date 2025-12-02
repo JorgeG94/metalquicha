@@ -1,40 +1,65 @@
 module mqc_physical_fragment
+   !! Physical molecular fragment representation and geometry handling
+   !!
+   !! Provides data structures and utilities for managing molecular fragments
+   !! with atomic coordinates, electronic properties, and geometric operations.
    use pic_types, only: dp, default_int
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
+   use mqc_cgto, only: molecular_basis_type
    implicit none
    private
 
-   public :: physical_fragment_t, system_geometry_t
-   public :: initialize_system_geometry, build_fragment_from_indices
-   public :: to_angstrom, to_bohr
-   public :: fragment_centroid, fragment_center_of_mass
-   public :: distance_between_points, distance_between_fragments
-   public :: minimal_distance_between_fragments
+   public :: physical_fragment_t         !! Single molecular fragment type
+   public :: system_geometry_t          !! Complete system geometry type
+   public :: initialize_system_geometry !! System geometry initialization
+   public :: build_fragment_from_indices !! Extract fragment from system
+   public :: to_angstrom, to_bohr       !! Unit conversion utilities
+   public :: fragment_centroid          !! Geometric centroid calculation
+   public :: fragment_center_of_mass    !! Mass-weighted center calculation
+   public :: distance_between_points    !! Point-to-point distance
+   public :: distance_between_fragments !! Inter-fragment distance
+   public :: minimal_distance_between_fragments !! Closest approach distance
 
-   !! Physical fragment with actual atomic coordinates
    type :: physical_fragment_t
-      integer :: n_atoms
-      integer, allocatable :: element_numbers(:)     ! Atomic numbers (e.g., 8 for O, 1 for H)
-      real(dp), allocatable :: coordinates(:, :)     ! xyz coords (3, n_atoms)
+      !! Physical molecular fragment with atomic coordinates and properties
+      !!
+      !! Represents a molecular fragment containing atomic positions, element types,
+      !! electronic structure information, and basis set data for quantum calculations.
+      integer :: n_atoms  !! Number of atoms in this fragment
+      integer, allocatable :: element_numbers(:)     !! Atomic numbers (Z values)
+      real(dp), allocatable :: coordinates(:, :)     !! Cartesian coordinates (3, n_atoms) in Bohr
+
+      ! Electronic structure properties
+      integer :: charge = 0        !! Net molecular charge (electrons)
+      integer :: multiplicity = 1 !! Spin multiplicity (2S+1)
+      integer :: nelec = 0         !! Total number of electrons
+
+      ! Quantum chemistry basis set
+      type(molecular_basis_type), allocatable :: basis  !! Gaussian basis functions
    contains
-      procedure :: destroy => fragment_destroy
+      procedure :: destroy => fragment_destroy          !! Memory cleanup
+      procedure :: compute_nelec => fragment_compute_nelec !! Calculate electron count
+      procedure :: set_basis => fragment_set_basis      !! Assign basis set
    end type physical_fragment_t
 
-   !! System geometry holding the full molecular cluster
    type :: system_geometry_t
-      integer :: n_monomers                          ! Number of monomers
-      integer :: atoms_per_monomer                   ! Atoms in each monomer
-      integer :: total_atoms                         ! Total atoms in system
-      integer, allocatable :: element_numbers(:)     ! Atomic numbers for all atoms
-      real(dp), allocatable :: coordinates(:, :)     ! All coordinates (3, total_atoms)
+      !! Complete molecular system geometry for fragment-based calculations
+      !!
+      !! Contains the full atomic structure of a molecular cluster organized
+      !! by monomers for efficient fragment generation and MBE calculations.
+      integer :: n_monomers        !! Number of monomer units in system
+      integer :: atoms_per_monomer !! Atoms in each monomer (assumed identical)
+      integer :: total_atoms       !! Total number of atoms (n_monomers × atoms_per_monomer)
+      integer, allocatable :: element_numbers(:)  !! Atomic numbers for all atoms
+      real(dp), allocatable :: coordinates(:, :)  !! All coordinates (3, total_atoms) in Bohr
    contains
-      procedure :: destroy => system_destroy
+      procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
 
-   ! Bohr radius constant
-   real(dp), parameter :: bohr_radius = 0.52917721092_dp
+   ! Physical constants
+   real(dp), parameter :: bohr_radius = 0.52917721092_dp  !! Bohr radius in Ångström
 
 contains
 
@@ -149,8 +174,38 @@ contains
       class(physical_fragment_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
+      if (allocated(this%basis)) then
+         call this%basis%destroy()
+         deallocate (this%basis)
+      end if
       this%n_atoms = 0
+      this%charge = 0
+      this%multiplicity = 1
+      this%nelec = 0
    end subroutine fragment_destroy
+
+   subroutine fragment_compute_nelec(this)
+      !! Compute number of electrons from atomic numbers and charge
+      class(physical_fragment_t), intent(inout) :: this
+      integer :: nuclear_charge
+
+      nuclear_charge = sum(this%element_numbers)
+      this%nelec = nuclear_charge - this%charge
+   end subroutine fragment_compute_nelec
+
+   subroutine fragment_set_basis(this, basis)
+      !! Set the basis set for this fragment
+      class(physical_fragment_t), intent(inout) :: this
+      type(molecular_basis_type), intent(in) :: basis
+
+      if (allocated(this%basis)) then
+         call this%basis%destroy()
+         deallocate (this%basis)
+      end if
+
+      allocate (this%basis)
+      this%basis = basis
+   end subroutine fragment_set_basis
 
    subroutine system_destroy(this)
       class(system_geometry_t), intent(inout) :: this

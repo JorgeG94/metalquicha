@@ -21,6 +21,10 @@ contains
                   new_unittest("read_input_missing_monomer", test_missing_monomer), &
                   new_unittest("read_input_custom_nlevel", test_custom_nlevel), &
                   new_unittest("read_input_invalid_nlevel", test_invalid_nlevel), &
+                  new_unittest("read_input_with_gfn1", test_method_gfn1), &
+                  new_unittest("read_input_with_gfn2", test_method_gfn2), &
+                  new_unittest("read_input_invalid_method", test_invalid_method), &
+                  new_unittest("read_input_default_method", test_default_method), &
                   new_unittest("config_destroy", test_config_destroy) &
                   ]
    end subroutine collect_mqc_input_parser_tests
@@ -67,6 +71,13 @@ contains
       end if
 
       call check(error, config%nlevel, 1, "nlevel should default to 1")
+      if (allocated(error)) then
+         call config%destroy()
+         call cleanup_test_files()
+         return
+      end if
+
+      call check(error, trim(config%method), "gfn2", "method should default to gfn2")
 
       call config%destroy()
       call cleanup_test_files()
@@ -211,6 +222,7 @@ contains
 
       config%geom_file = "test.xyz"
       config%monomer_file = "monomer.xyz"
+      config%method = "gfn1"
       config%nlevel = 5
 
       call config%destroy()
@@ -221,7 +233,92 @@ contains
 
       call check(error,.not. allocated(config%monomer_file), &
                  "monomer_file should be deallocated")
+      if (allocated(error)) return
+
+      call check(error,.not. allocated(config%method), &
+                 "method should be deallocated")
    end subroutine test_config_destroy
+
+   subroutine test_method_gfn1(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(input_config_t) :: config
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_input_with_gfn1()
+
+      call read_input_file("test_input_gfn1.inp", config, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to read input with gfn1: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      call check(error, trim(config%method), "gfn1", "method should be gfn1")
+
+      call config%destroy()
+      call cleanup_test_files()
+   end subroutine test_method_gfn1
+
+   subroutine test_method_gfn2(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(input_config_t) :: config
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_input_with_gfn2()
+
+      call read_input_file("test_input_gfn2.inp", config, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to read input with gfn2: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      call check(error, trim(config%method), "gfn2", "method should be gfn2")
+
+      call config%destroy()
+      call cleanup_test_files()
+   end subroutine test_method_gfn2
+
+   subroutine test_invalid_method(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(input_config_t) :: config
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_input_invalid_method()
+
+      call read_input_file("test_input_invalid_method.inp", config, stat, errmsg)
+
+      call check(error, stat /= 0, "Should fail with invalid method")
+
+      call cleanup_test_files()
+   end subroutine test_invalid_method
+
+   subroutine test_default_method(error)
+      type(error_type), allocatable, intent(out) :: error
+      type(input_config_t) :: config
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_input_basic()  ! No method specified
+
+      call read_input_file("test_input_basic.inp", config, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to read basic input: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      call check(error, trim(config%method), "gfn2", "method should default to gfn2")
+
+      call config%destroy()
+      call cleanup_test_files()
+   end subroutine test_default_method
 
    ! Helper subroutines to create test files
 
@@ -285,6 +382,33 @@ contains
       close (unit)
    end subroutine create_test_input_invalid_nlevel
 
+   subroutine create_test_input_with_gfn1()
+      integer :: unit
+      open (newunit=unit, file="test_input_gfn1.inp", status="replace")
+      write (unit, '(a)') "geom=cluster.xyz"
+      write (unit, '(a)') "monomer_symbols=monomer.xyz"
+      write (unit, '(a)') "method=gfn1"
+      close (unit)
+   end subroutine create_test_input_with_gfn1
+
+   subroutine create_test_input_with_gfn2()
+      integer :: unit
+      open (newunit=unit, file="test_input_gfn2.inp", status="replace")
+      write (unit, '(a)') "geom=cluster.xyz"
+      write (unit, '(a)') "monomer_symbols=monomer.xyz"
+      write (unit, '(a)') "method=gfn2"
+      close (unit)
+   end subroutine create_test_input_with_gfn2
+
+   subroutine create_test_input_invalid_method()
+      integer :: unit
+      open (newunit=unit, file="test_input_invalid_method.inp", status="replace")
+      write (unit, '(a)') "geom=cluster.xyz"
+      write (unit, '(a)') "monomer_symbols=monomer.xyz"
+      write (unit, '(a)') "method=gfn0"
+      close (unit)
+   end subroutine create_test_input_invalid_method
+
    subroutine cleanup_test_files()
       call delete_file("test_input_basic.inp")
       call delete_file("test_input_comments.inp")
@@ -293,6 +417,9 @@ contains
       call delete_file("test_input_missing_monomer.inp")
       call delete_file("test_input_nlevel.inp")
       call delete_file("test_input_invalid_nlevel.inp")
+      call delete_file("test_input_gfn1.inp")
+      call delete_file("test_input_gfn2.inp")
+      call delete_file("test_input_invalid_method.inp")
    end subroutine cleanup_test_files
 
    subroutine delete_file(filename)

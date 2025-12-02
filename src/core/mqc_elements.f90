@@ -1,14 +1,21 @@
 module mqc_elements
+   !! Periodic table data and element utilities
+   !!
+   !! Provides atomic numbers, element symbols, and atomic masses for the complete
+   !! periodic table (elements 1-118) with conversion functions between representations.
    use pic_ascii, only: to_upper, to_lower
    use pic_types, only: dp
    implicit none
    private
 
-   public :: element_symbol_to_number, element_number_to_symbol
-   public :: element_mass
+   public :: element_symbol_to_number  !! Convert element symbol to atomic number
+   public :: element_number_to_symbol  !! Convert atomic number to element symbol
+   public :: element_mass              !! Get atomic mass by atomic number
 
    ! Periodic table data as module-level parameters
    character(len=2), parameter :: element_symbols(118) = [character(len=2) :: &
+      !! Element symbols for the complete periodic table (H through Og)
+      !! Ordered by atomic number from 1 to 118
                                                           'H', 'He', &
                                                           'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', &
                                                           'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', &
@@ -20,6 +27,8 @@ module mqc_elements
                                            'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
    real(dp), parameter :: element_masses(118) = [ &
+      !! Standard atomic masses in atomic mass units (amu)
+      !! Based on IUPAC standard atomic weights, ordered by atomic number
                           1.008_dp, 4.0026_dp, &                                                               ! H-He
                           6.94_dp, 9.0122_dp, 10.81_dp, 12.011_dp, 14.007_dp, 15.999_dp, 18.998_dp, 20.180_dp, & ! Li-Ne
                           22.990_dp, 24.305_dp, 26.982_dp, 28.085_dp, 30.974_dp, 32.06_dp, 35.45_dp, 39.948_dp, & ! Na-Ar

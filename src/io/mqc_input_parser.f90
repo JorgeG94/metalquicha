@@ -1,15 +1,24 @@
 module mqc_input_parser
+   !! Input file parser for PIC Chemistry configuration
+   !!
+   !! Parses simple key=value input files to configure calculation parameters
+   !! including geometry files, method selection, and fragment levels.
    implicit none
    private
 
-   public :: input_config_t, read_input_file
+   public :: input_config_t, read_input_file  !! Main configuration type and parser
 
    type :: input_config_t
-      character(len=:), allocatable :: geom_file
-      character(len=:), allocatable :: monomer_file
-      integer :: nlevel = 1  ! Default to 1 if not specified
+      !! Configuration data structure for calculation parameters
+      !!
+      !! Stores parsed input file contents including file paths,
+      !! method selection, and fragmentation level.
+      character(len=:), allocatable :: geom_file     !! Path to system geometry XYZ file
+      character(len=:), allocatable :: monomer_file  !! Path to monomer template XYZ file
+      character(len=:), allocatable :: method        !! QC method (gfn1, gfn2)
+      integer :: nlevel = 1  !! Fragmentation level (default: 1)
    contains
-      procedure :: destroy => config_destroy
+      procedure :: destroy => config_destroy  !! Cleanup allocated memory
    end type input_config_t
 
 contains
@@ -18,15 +27,20 @@ contains
       !! Simple parser for key=value input files
       !! Looks for: geom="path/to/geometry.xyz"
       !!            monomer_symbols="path/to/monomer.xyz"
-      character(len=*), intent(in) :: filename
-      type(input_config_t), intent(out) :: config
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      !!            method="gfn1" or "gfn2" (defaults to gfn2)
+      !!            nlevel=N (fragmentation level, defaults to 1)
+      character(len=*), intent(in) :: filename  !! Path to input file to parse
+      type(input_config_t), intent(out) :: config  !! Parsed configuration data
+      integer, intent(out) :: stat  !! Status code (0 = success, >0 = error)
+      character(len=:), allocatable, intent(out) :: errmsg  !! Error message on failure
 
-      integer :: unit, io_stat
-      character(len=512) :: line, key, value
-      integer :: eq_pos
-      logical :: file_exists
+      integer :: unit     !! File unit number
+      integer :: io_stat  !! I/O operation status
+      character(len=512) :: line   !! Current line being parsed
+      character(len=512) :: key    !! Parsed key name
+      character(len=512) :: value  !! Parsed value string
+      integer :: eq_pos   !! Position of '=' character in line
+      logical :: file_exists  !! Whether input file exists
 
       stat = 0
 
@@ -73,6 +87,16 @@ contains
             config%geom_file = trim(value)
          case ('monomer_symbols')
             config%monomer_file = trim(value)
+         case ('method')
+            ! Validate that method is gfn1 or gfn2
+            select case (trim(value))
+            case ('gfn1', 'gfn2')
+               config%method = trim(value)
+            case default
+               stat = 1
+               errmsg = "Invalid method: "//trim(value)//" (supported: gfn1, gfn2)"
+               return
+            end select
          case ('nlevel')
             read (value, *, iostat=io_stat) config%nlevel
             if (io_stat /= 0) then
@@ -104,6 +128,11 @@ contains
          stat = 1
          errmsg = "Missing required field: monomer_symbols"
          return
+      end if
+
+      ! Set default method if not specified
+      if (.not. allocated(config%method)) then
+         config%method = "gfn2"  ! Default to GFN2-xTB
       end if
 
    end subroutine read_input_file
@@ -145,6 +174,7 @@ contains
       class(input_config_t), intent(inout) :: this
       if (allocated(this%geom_file)) deallocate (this%geom_file)
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)
+      if (allocated(this%method)) deallocate (this%method)
    end subroutine config_destroy
 
 end module mqc_input_parser

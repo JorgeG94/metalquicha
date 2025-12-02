@@ -1,27 +1,35 @@
 module mqc_basis_reader
+   !! Gaussian basis set parser and molecular basis construction
+   !!
+   !! Provides utilities for parsing Gaussian-type orbital basis sets
+   !! from text files and building molecular basis sets for quantum calculations.
    use mqc_cgto
    use mqc_basis_file_reader, only: strings_equal
    use pic_types, only: dp
    implicit none
    private
 
-   public :: classify_line
-   public :: parse_element_basis
-   public :: build_molecular_basis
-   public :: ang_mom_char_to_int
-   public :: ang_mom_int_to_char
+   public :: classify_line        !! Determine basis file line type
+   public :: parse_element_basis  !! Parse basis for single element
+   public :: build_molecular_basis !! Build complete molecular basis
+   public :: ang_mom_char_to_int  !! Convert angular momentum character to integer
+   public :: ang_mom_int_to_char  !! Convert angular momentum integer to character
 
-   integer, parameter, public :: LINE_UNKNOWN = 0
-   integer, parameter, public :: LINE_ATOM = 1
-   integer, parameter, public :: LINE_SHELL = 2
-   integer, parameter, public :: LINE_FUNCTION = 3
+   ! Basis file line classification constants
+   integer, parameter, public :: LINE_UNKNOWN = 0   !! Unrecognized line type
+   integer, parameter, public :: LINE_ATOM = 1      !! Element specification line
+   integer, parameter, public :: LINE_SHELL = 2     !! Shell definition line
+   integer, parameter, public :: LINE_FUNCTION = 3  !! Basis function coefficient line
 
 contains
 
-   !> Convert angular momentum character to integer (S=0, P=1, D=2, etc.)
    pure function ang_mom_char_to_int(ang_mom_char) result(ang_mom)
-      character(len=1), intent(in) :: ang_mom_char
-      integer :: ang_mom
+      !! Convert angular momentum character to integer
+      !!
+      !! Standard mapping: S=0, P=1, D=2, F=3, G=4, H=5, I=6
+      !! Special case: L=-1 (combined S+P shell, requires splitting)
+      character(len=1), intent(in) :: ang_mom_char  !! Angular momentum symbol
+      integer :: ang_mom  !! Corresponding integer value
 
       select case (ang_mom_char)
       case ('S'); ang_mom = 0
@@ -36,10 +44,13 @@ contains
       end select
    end function ang_mom_char_to_int
 
-   !> Convert angular momentum integer to character (0=S, 1=P, 2=D, etc.)
    pure function ang_mom_int_to_char(ang_mom) result(ang_mom_char)
-      integer, intent(in) :: ang_mom
-      character(len=1) :: ang_mom_char
+      !! Convert angular momentum integer to character
+      !!
+      !! Inverse mapping: 0=S, 1=P, 2=D, 3=F, 4=G, 5=H, 6=I
+      !! Returns '?' for invalid input values.
+      integer, intent(in) :: ang_mom  !! Angular momentum quantum number
+      character(len=1) :: ang_mom_char  !! Corresponding symbol character
 
       select case (ang_mom)
       case (0); ang_mom_char = 'S'

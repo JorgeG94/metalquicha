@@ -1,29 +1,42 @@
 module mqc_cli_parser
+   !! Command line argument parsing for PIC Chemistry
+   !!
+   !! Handles parsing of command line options including geometry files,
+   !! basis set specifications, and help/usage display.
    implicit none
    private
 
-   public :: cli_args_type
-   public :: parse_command_line, print_usage
-   public :: normalize_basis_name, find_basis_file
+   public :: cli_args_type         !! Parsed command line arguments container
+   public :: parse_command_line    !! Main argument parsing routine
+   public :: print_usage           !! Display program usage information
+   public :: normalize_basis_name  !! Standardize basis set names
+   public :: find_basis_file       !! Locate basis set files
 
    type :: cli_args_type
-      character(len=:), allocatable :: xyz_file
-      character(len=:), allocatable :: basis_name
+      !! Container for parsed command line arguments
+      !!
+      !! Stores file paths and options extracted from command line,
+      !! with automatic memory management for string allocations.
+      character(len=:), allocatable :: xyz_file    !! Input XYZ geometry file path
+      character(len=:), allocatable :: basis_name  !! Basis set name (e.g., "6-31G")
    contains
-      procedure :: destroy => cli_args_destroy
+      procedure :: destroy => cli_args_destroy  !! Memory cleanup
    end type cli_args_type
 
 contains
 
-   !> Parse command line arguments
    subroutine parse_command_line(args, stat, errmsg)
-      type(cli_args_type), intent(out) :: args
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      !! Parse command line arguments for geometry file and basis set
+      !!
+      !! Extracts XYZ file path and basis set name from command line,
+      !! validates arguments, and handles help requests.
+      type(cli_args_type), intent(out) :: args  !! Parsed argument container
+      integer, intent(out) :: stat              !! Status (0=success, >0=error)
+      character(len=:), allocatable, intent(out) :: errmsg  !! Error message
 
-      integer :: nargs
-      character(len=256) :: arg_buffer
-      integer :: arg_len
+      integer :: nargs        !! Number of command line arguments
+      character(len=256) :: arg_buffer  !! Temporary argument buffer
+      integer :: arg_len      !! Length of current argument
 
       stat = 0
 

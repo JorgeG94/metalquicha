@@ -4,11 +4,15 @@ license = "license"
 author = "JorgeGV"
 maintainer = "jorgegalvez1694@gmail.com"
 copyright = "Copyright 2025, JorgeGV"
+[preprocess]
+[preprocess.cpp]
+suffixes = ["F90", "f90"]
 [build]
 auto-executables = false
 auto-tests = true
 auto-examples = false
 module-naming = false
+external-modules = ["mpi_f08", "mpi"]
 [[executable]]
 name = "metalquicha"
 source-dir = "app"

@@ -37,6 +37,7 @@ message(STATUS "Adding individual test executables for ${project_name}...")
 
 # Non-MPI tests
 addtest(mqc_xyz_reader)
+addtest(mqc_xyz_reader_detailed)
 addtest(mqc_basis_reader)
 addtest(mqc_basis_file_reader)
 addtest(mqc_elements)
@@ -46,3 +47,8 @@ addtest(mqc_frag_utils)
 addtest(mqc_geometry)
 addtest(mqc_input_parser)
 addtest(mqc_cli_parser)
+addtest(mqc_split_lines)
+
+if(MQC_ENABLE_TBLITE)
+  addtest(mqc_method_api)
+endif()

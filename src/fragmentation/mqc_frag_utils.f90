@@ -1,18 +1,30 @@
 module mqc_frag_utils
+   !! Fragment generation and manipulation utilities
+   !!
+   !! Provides combinatorial functions and algorithms for generating molecular
+   !! fragments, managing fragment lists, and performing many-body expansion calculations.
    use pic_types, only: default_int, dp
+   use pic_logger, only: logger => global_logger
    implicit none
    private
-   public :: binomial
-   public :: create_monomer_list
-   public :: generate_fragment_list
-   public :: get_nfrags
+   public :: binomial              !! Binomial coefficient calculation
+   public :: create_monomer_list   !! Generate sequential monomer indices
+   public :: generate_fragment_list !! Generate all fragments up to max level
+   public :: get_nfrags            !! Calculate total number of fragments
+   public :: next_combination      !! Generate next combination in sequence
+   public :: find_fragment_index   !! Locate fragment by composition
 
 contains
 
    pure function get_nfrags(n_monomers, max_level) result(n_expected_fragments)
-      integer(default_int), intent(in) :: n_monomers, max_level
-      integer(default_int) :: n_expected_fragments
-      integer(default_int) :: i
+      !! Calculate total number of fragments for given system size and max level
+      !!
+      !! Computes the sum of binomial coefficients C(n,k) for k=1 to max_level,
+      !! representing all possible fragments from monomers to max_level-mers.
+      integer(default_int), intent(in) :: n_monomers  !! Number of monomers in system
+      integer(default_int), intent(in) :: max_level   !! Maximum fragment size
+      integer(default_int) :: n_expected_fragments     !! Total fragment count
+      integer(default_int) :: i  !! Loop counter
 
       n_expected_fragments = 0
       do i = 1, max_level
@@ -21,9 +33,14 @@ contains
    end function get_nfrags
 
    pure function binomial(n, r) result(c)
-      integer(default_int), intent(in) :: n, r
-      integer(default_int) :: c
-      integer(default_int) :: i
+      !! Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)
+      !!
+      !! Calculates "n choose r" using iterative algorithm to avoid
+      !! factorial overflow for large numbers.
+      integer(default_int), intent(in) :: n  !! Total number of items
+      integer(default_int), intent(in) :: r  !! Number of items to choose
+      integer(default_int) :: c              !! Binomial coefficient result
+      integer(default_int) :: i              !! Loop counter
 
       if (r == 0 .or. r == n) then
          c = 1
@@ -103,5 +120,77 @@ contains
          write (*, *)  ! newline
       end do
    end subroutine print_combos
+
+   function next_combination(indices, k, n) result(has_next)
+      !! Generate next combination (updates indices in place)
+      !! Returns .true. if there's a next combination, .false. if we're done
+      integer, intent(inout) :: indices(:)
+      integer, intent(in) :: k, n
+      logical :: has_next
+      integer :: i
+
+      has_next = .true.
+
+      ! Find rightmost index that can be incremented
+      i = k
+      do while (i >= 1)
+         if (indices(i) < n - k + i) then
+            indices(i) = indices(i) + 1
+            ! Reset all indices to the right
+            do while (i < k)
+               i = i + 1
+               indices(i) = indices(i - 1) + 1
+            end do
+            return
+         end if
+         i = i - 1
+      end do
+
+      ! No more combinations
+      has_next = .false.
+
+   end function next_combination
+
+   function find_fragment_index(target_monomers, polymers, fragment_count, expected_size) result(idx)
+      !! Find the fragment index that contains exactly the target monomers
+      integer, intent(in) :: target_monomers(:), polymers(:, :), fragment_count, expected_size
+      integer :: idx
+
+      integer :: i, j, fragment_size
+      logical :: match
+
+      idx = -1
+
+      do i = 1, fragment_count
+         fragment_size = count(polymers(i, :) > 0)
+
+         ! Check if this fragment has the right size
+         if (fragment_size /= expected_size) cycle
+
+         ! Check if all target monomers are in this fragment
+         match = .true.
+         do j = 1, expected_size
+            if (.not. any(polymers(i, 1:fragment_size) == target_monomers(j))) then
+               match = .false.
+               exit
+            end if
+         end do
+
+         if (match) then
+            idx = i
+            return
+         end if
+      end do
+
+      ! If we get here, we didn't find the fragment
+      block
+         character(len=256) :: monomers_str
+         integer :: k
+         write (monomers_str, '(*(i0,1x))') (target_monomers(k), k=1, size(target_monomers))
+         call logger%error("Could not find fragment with monomers: "//trim(monomers_str))
+      end block
+      error stop "Fragment not found in find_fragment_index"
+
+   end function find_fragment_index
 
 end module mqc_frag_utils

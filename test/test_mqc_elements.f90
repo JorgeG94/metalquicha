@@ -1,17 +1,23 @@
 module test_mqc_elements
+   !! Unit tests for the periodic table elements module
+   !!
+   !! Tests element symbol/number conversions, atomic masses,
+   !! and error handling for the complete periodic table.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
    use pic_types, only: dp
    implicit none
    private
-   public :: collect_mqc_elements_tests
+   public :: collect_mqc_elements_tests  !! Test suite collection function
 
 contains
 
-   !> Collect all exported unit tests
    subroutine collect_mqc_elements_tests(testsuite)
-      !> Collection of tests
-      type(unittest_type), allocatable, intent(out) :: testsuite(:)
+      !! Collect all exported unit tests for elements module
+      !!
+      !! Assembles complete test suite covering symbol/number conversions,
+      !! atomic masses, case sensitivity, and error conditions.
+      type(unittest_type), allocatable, intent(out) :: testsuite(:)  !! Test collection array
 
       testsuite = [ &
                   new_unittest("symbol_to_number_hydrogen", test_symbol_to_number_h), &

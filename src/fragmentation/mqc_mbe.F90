@@ -1,4 +1,8 @@
 module mqc_mbe
+   !! Many-Body Expansion (MBE) calculation module
+   !!
+   !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
+   !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
@@ -10,41 +14,39 @@ module mqc_mbe
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_elements, only: element_number_to_symbol
+   use mqc_frag_utils, only: next_combination, find_fragment_index
 
-   use mctc_env, only: wp, error_type
-   use mctc_io, only: structure_type, new
-
-   use tblite_context_type, only: context_type
-   use tblite_wavefunction, only: wavefunction_type, new_wavefunction
-   use tblite_xtb_calculator, only: xtb_calculator
-   use tblite_xtb_gfn2, only: new_gfn2_calculator
-   use tblite_xtb_singlepoint, only: xtb_singlepoint
+   ! Method API imports
+#ifndef MQC_WITHOUT_TBLITE
+   use mqc_method_xtb, only: xtb_method_t
+#endif
+   use mqc_result_types, only: calculation_result_t
    implicit none
 
 contains
 
    subroutine process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                         water_energy, C_flat, phys_frag, verbosity)
+                                         water_energy, C_flat, method, phys_frag, verbosity)
+      !! Process a single fragment for quantum chemistry calculation
+      !!
+      !! Performs energy and gradient calculation on a molecular fragment using
+      !! specified quantum chemistry method (GFN-xTB variants).
 
-      integer, intent(in) :: fragment_idx, fragment_size, matrix_size
-      integer, intent(in) :: fragment_indices(fragment_size)
-      real(dp), intent(out) :: water_energy
-      real(dp), allocatable, intent(out) :: C_flat(:)
-      type(physical_fragment_t), intent(in), optional :: phys_frag
-      integer, intent(in), optional :: verbosity
-      integer :: i, verb_level
+      integer, intent(in) :: fragment_idx        !! Fragment index for identification
+      integer, intent(in) :: fragment_indices(*) !! Monomer indices comprising this fragment
+      integer, intent(in) :: fragment_size       !! Number of monomers in fragment
+      integer, intent(in) :: matrix_size         !! Size of gradient matrix (natoms*3)
+      real(dp), intent(out) :: water_energy      !! Computed energy for this fragment
+      real(dp), allocatable, intent(out) :: C_flat(:)  !! Flattened gradient array
+      character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
+      type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
+      integer, intent(in), optional :: verbosity !! Verbosity level (0=silent, 1=verbose)
 
-      ! GFN1 calculation variables
-      type(error_type), allocatable :: error
-      type(structure_type) :: mol
-      real(wp), allocatable :: xyz(:, :)
-      integer, allocatable :: num(:)
-      type(xtb_calculator) :: calc
-      type(wavefunction_type) :: wfn
-      real(wp) :: energy
-      type(context_type) :: ctx
-      real(wp), parameter :: acc = 0.01_wp
-      real(wp), parameter :: kt = 300.0_wp*3.166808578545117e-06_wp
+      integer :: verb_level  !! Local verbosity setting
+#ifndef MQC_WITHOUT_TBLITE
+      type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
+#endif
+      type(calculation_result_t) :: result  !! Computation results
 
       ! Set verbosity level (default is 0 for silent operation)
       if (present(verbosity)) then
@@ -59,30 +61,25 @@ contains
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
-         allocate (num(phys_frag%n_atoms))
-         allocate (xyz(3, phys_frag%n_atoms))
+#ifndef MQC_WITHOUT_TBLITE
+         ! Setup XTB method
+         xtb_calc%variant = method
+         xtb_calc%verbose = (verb_level > 0)
 
-         ! Coordinates are already in Bohr in sys_geom, just copy them
-         num = phys_frag%element_numbers
-         xyz = phys_frag%coordinates
+         ! Run the calculation using the method API
+         call xtb_calc%calc_energy(phys_frag, result)
+         water_energy = result%energy
 
-         ! Create molecular structure and run GFN1 calculation
-         call new(mol, num, xyz, charge=0.0_wp, uhf=0)
-         call new_gfn2_calculator(calc, mol, error)
-
-         if (.not. allocated(error)) then
-            call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, kt)
-            energy = 0.0_wp
-            call xtb_singlepoint(ctx, mol, calc, wfn, acc, energy, verbosity=verb_level)
-            water_energy = real(energy, dp)
-         end if
-
-         deallocate (num, xyz)
+         ! Clean up result
+         call result%destroy()
+#else
+         call logger%error("XTB method requested but tblite support not compiled in")
+         call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
+         error stop "tblite support not available"
+#endif
       else
          water_energy = 0.0_dp
-      end if
-
-      ! Return empty vector for C_flat
+      end if      ! Return empty vector for C_flat
       allocate (C_flat(1))
       C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
@@ -235,134 +232,6 @@ contains
       deallocate (indices, subset)
 
    end subroutine generate_and_subtract_subsets
-
-   function next_combination(indices, k, n) result(has_next)
-      !! Generate next combination (updates indices in place)
-      !! Returns .true. if there's a next combination, .false. if we're done
-      integer, intent(inout) :: indices(:)
-      integer, intent(in) :: k, n
-      logical :: has_next
-      integer :: i
-
-      has_next = .true.
-
-      ! Find rightmost index that can be incremented
-      i = k
-      do while (i >= 1)
-         if (indices(i) < n - k + i) then
-            indices(i) = indices(i) + 1
-            ! Reset all indices to the right
-            do while (i < k)
-               i = i + 1
-               indices(i) = indices(i - 1) + 1
-            end do
-            return
-         end if
-         i = i - 1
-      end do
-
-      ! No more combinations
-      has_next = .false.
-
-   end function next_combination
-
-   function find_fragment_index(target_monomers, polymers, fragment_count, expected_size) result(idx)
-      !! Find the fragment index that contains exactly the target monomers
-      integer, intent(in) :: target_monomers(:), polymers(:, :), fragment_count, expected_size
-      integer :: idx
-
-      integer :: i, j, fragment_size
-      logical :: match
-
-      idx = -1
-
-      do i = 1, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-
-         ! Check if this fragment has the right size
-         if (fragment_size /= expected_size) cycle
-
-         ! Check if all target monomers are in this fragment
-         match = .true.
-         do j = 1, expected_size
-            if (.not. any(polymers(i, 1:fragment_size) == target_monomers(j))) then
-               match = .false.
-               exit
-            end if
-         end do
-
-         if (match) then
-            idx = i
-            return
-         end if
-      end do
-
-      ! If we get here, we didn't find the fragment
-      block
-         character(len=256) :: monomers_str
-         integer :: k
-         write (monomers_str, '(*(i0,1x))') (target_monomers(k), k=1, size(target_monomers))
-         call logger%error("Could not find fragment with monomers: "//trim(monomers_str))
-      end block
-      error stop "Fragment not found in find_fragment_index"
-
-   end function find_fragment_index
-
-   subroutine calculate_exact_flops(polymers, fragment_count, max_level, matrix_size, total_flops)
-      integer, intent(in) :: polymers(:, :), fragment_count, max_level, matrix_size
-      real(dp), intent(out) :: total_flops
-
-      integer :: i, fragment_size
-      integer, allocatable :: n_mers(:)
-      real(dp), allocatable :: mer_flops(:)
-      real(dp) :: mer_size
-
-      ! Allocate counters for each n-mer level (1 to max_level)
-      allocate (n_mers(max_level))
-      allocate (mer_flops(max_level))
-
-      n_mers = 0
-      mer_flops = 0.0_dp
-
-      ! Count fragments by size
-      do i = 1, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size >= 1 .and. fragment_size <= max_level) then
-            n_mers(fragment_size) = n_mers(fragment_size) + 1
-         end if
-      end do
-
-      ! Calculate FLOPs for each n-mer level (using JAXPY: C = alpha * H + S, which is 2*N^2 FLOPs)
-      do i = 1, max_level
-         mer_size = real(i*matrix_size, dp)
-         mer_flops(i) = real(n_mers(i), dp)*2.0_dp*mer_size**2  ! 2*N^2 for JAXPY
-      end do
-
-      ! Total FLOPs
-      total_flops = sum(mer_flops)
-
-      ! Print breakdown
-      call logger%info("Fragment breakdown:")
-      do i = 1, max_level
-         if (n_mers(i) > 0) then
-            block
-               character(len=256) :: flop_line
-               write (flop_line, '(a,i0,a,i0,a,f12.3,a)') "  ", i, "-mers:  ", n_mers(i), &
-                  " (", mer_flops(i)/1.0e9_dp, " GFLOP)"
-               call logger%info(trim(flop_line))
-            end block
-         end if
-      end do
-      block
-         character(len=256) :: total_line
-         write (total_line, '(a,i0,a,f12.3,a)') "  Total:    ", fragment_count, &
-            " (", total_flops/1.0e9_dp, " GFLOP)"
-         call logger%info(trim(total_line))
-      end block
-
-      deallocate (n_mers, mer_flops)
-
-   end subroutine calculate_exact_flops
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                  node_leader_ranks, num_nodes, matrix_size)
@@ -655,10 +524,11 @@ contains
       end do
    end subroutine node_coordinator
 
-   subroutine node_worker(world_comm, node_comm, max_level, sys_geom)
+   subroutine node_worker(world_comm, node_comm, max_level, sys_geom, method)
       class(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: max_level
       type(system_geometry_t), intent(in), optional :: sys_geom
+      character(len=*), intent(in) :: method
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg, matrix_size
       integer(int32), allocatable :: fragment_indices(:)
@@ -686,13 +556,13 @@ contains
 
                ! Process the chemistry fragment with physical geometry
                call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                               dot_result, C_flat, phys_frag)
+                                               dot_result, C_flat, method, phys_frag)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
                call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                               dot_result, C_flat)
+                                               dot_result, C_flat, method)
             end if
 
             ! Send results back to coordinator
@@ -706,10 +576,11 @@ contains
       end do
    end subroutine node_worker
 
-   subroutine unfragmented_calculation(sys_geom)
+   subroutine unfragmented_calculation(sys_geom, method)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       type(system_geometry_t), intent(in), optional :: sys_geom
+      character(len=*), intent(in) :: method
 
       real(dp) :: dot_result
       real(dp), allocatable :: C_flat(:)
@@ -752,7 +623,7 @@ contains
 
          call process_chemistry_fragment(0, temp_indices, sys_geom%n_monomers, &
                                          total_atoms, dot_result, C_flat, &
-                                         phys_frag=full_system, verbosity=1)
+                                         method, phys_frag=full_system, verbosity=1)
          deallocate (temp_indices)
       end block
 

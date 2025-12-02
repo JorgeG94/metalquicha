@@ -1,0 +1,82 @@
+module mqc_method_hf
+   use pic_types, only: dp
+   use mqc_method_base, only: qc_method_t
+   use mqc_result_types, only: calculation_result_t
+   use mqc_physical_fragment, only: physical_fragment_t
+   implicit none
+   private
+
+   public :: hf_method_t, hf_options_t
+
+   !> Options for Hartree-Fock calculation
+   type :: hf_options_t
+      integer :: max_iter = 100
+         !! Maximum SCF iterations
+      real(dp) :: conv_tol = 1.0e-8_dp
+         !! Energy convergence threshold
+      logical :: spherical = .false.
+         !! Use spherical (true) or Cartesian (false) basis
+      logical :: verbose = .true.
+         !! Print SCF iterations
+   end type hf_options_t
+
+   !> Hartree-Fock method implementation
+   type, extends(qc_method_t) :: hf_method_t
+      type(hf_options_t) :: options
+   contains
+      procedure :: calc_energy => hf_calc_energy
+      procedure :: calc_gradient => hf_calc_gradient
+   end type hf_method_t
+
+contains
+
+   subroutine hf_calc_energy(this, fragment, result)
+      class(hf_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+
+      ! DUMMY IMPLEMENTATION
+      ! TODO: Implement actual HF calculation
+      ! 1. Convert fragment%basis to libcint format
+      ! 2. Build one-electron integrals (S, T, V)
+      ! 3. Run SCF iterations
+      ! 4. Calculate final energy
+
+      print *, "HF: Calculating energy for fragment with", fragment%n_atoms, "atoms"
+      print *, "HF: nelec =", fragment%nelec
+      print *, "HF: charge =", fragment%charge
+      print *, "HF: multiplicity =", fragment%multiplicity
+
+      ! Dummy result
+      result%energy = -1.0_dp  ! Placeholder
+      result%has_energy = .true.
+
+      print *, "HF: Dummy energy =", result%energy
+
+   end subroutine hf_calc_energy
+
+   subroutine hf_calc_gradient(this, fragment, result)
+      class(hf_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+
+      ! DUMMY IMPLEMENTATION
+      ! TODO: Implement gradient calculation
+      ! 1. Calculate energy (call calc_energy)
+      ! 2. Calculate gradient using integral derivatives
+
+      print *, "HF: Calculating gradient for fragment with", fragment%n_atoms, "atoms"
+
+      ! First get energy
+      call this%calc_energy(fragment, result)
+
+      ! Allocate and fill dummy gradient
+      allocate (result%gradient(3, fragment%n_atoms))
+      result%gradient = 0.0_dp  ! Placeholder
+      result%has_gradient = .true.
+
+      print *, "HF: Dummy gradient allocated"
+
+   end subroutine hf_calc_gradient
+
+end module mqc_method_hf
