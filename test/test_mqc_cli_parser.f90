@@ -163,11 +163,11 @@ contains
 
       call args%destroy()
 
-      call check(error, .not. allocated(args%xyz_file), &
+      call check(error,.not. allocated(args%xyz_file), &
                  "xyz_file should be deallocated")
       if (allocated(error)) return
 
-      call check(error, .not. allocated(args%basis_name), &
+      call check(error,.not. allocated(args%basis_name), &
                  "basis_name should be deallocated")
    end subroutine test_cli_args_destroy
 
@@ -191,9 +191,8 @@ contains
 
 end module test_mqc_cli_parser
 
-
 program tester
-    use iso_fortran_env, only: error_unit
+   use iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
    use test_mqc_cli_parser, only: collect_mqc_cli_parser_tests
    implicit none

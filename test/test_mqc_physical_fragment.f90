@@ -76,7 +76,7 @@ contains
 
       ! Initialize system geometry
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                       sys_geom, stat, errmsg)
+                                      sys_geom, stat, errmsg)
 
       if (stat /= 0) then
          call check(error, .false., "Failed to initialize system: "//errmsg)
@@ -134,7 +134,7 @@ contains
 
       ! Initialize system geometry - should fail
       call initialize_system_geometry("test_water_trimer.xyz", "test_mismatched.xyz", &
-                                       sys_geom, stat, errmsg)
+                                      sys_geom, stat, errmsg)
 
       call check(error, stat /= 0, "Should fail with mismatched monomer size")
 
@@ -152,7 +152,7 @@ contains
       call create_test_water_trimer()
 
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                       sys_geom, stat, errmsg)
+                                      sys_geom, stat, errmsg)
 
       if (stat /= 0) then
          call check(error, .false., "Failed to initialize system")
@@ -190,7 +190,7 @@ contains
       call create_test_water_trimer()
 
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                       sys_geom, stat, errmsg)
+                                      sys_geom, stat, errmsg)
 
       if (stat /= 0) then
          call check(error, .false., "Failed to initialize system")
@@ -446,11 +446,11 @@ contains
 
       call fragment%destroy()
 
-      call check(error, .not. allocated(fragment%element_numbers), &
+      call check(error,.not. allocated(fragment%element_numbers), &
                  "Element numbers should be deallocated")
       if (allocated(error)) return
 
-      call check(error, .not. allocated(fragment%coordinates), &
+      call check(error,.not. allocated(fragment%coordinates), &
                  "Coordinates should be deallocated")
       if (allocated(error)) return
 
@@ -470,11 +470,11 @@ contains
 
       call sys_geom%destroy()
 
-      call check(error, .not. allocated(sys_geom%element_numbers), &
+      call check(error,.not. allocated(sys_geom%element_numbers), &
                  "Element numbers should be deallocated")
       if (allocated(error)) return
 
-      call check(error, .not. allocated(sys_geom%coordinates), &
+      call check(error,.not. allocated(sys_geom%coordinates), &
                  "Coordinates should be deallocated")
       if (allocated(error)) return
 
@@ -556,7 +556,6 @@ contains
    end subroutine delete_file
 
 end module test_mqc_physical_fragment
-
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit

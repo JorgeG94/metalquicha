@@ -170,7 +170,7 @@ contains
       end if
 
       call check(error, monomers(3), 3_default_int, "Third monomer should be 3")
-      
+
       deallocate (monomers)
    end subroutine test_create_monomer_list_small
 
@@ -193,7 +193,7 @@ contains
       end do
 
       call check(error, all_correct, "All monomers should be numbered correctly from 1 to 10")
-      
+
       deallocate (monomers)
    end subroutine test_create_monomer_list_larger
 
@@ -364,9 +364,8 @@ contains
 
 end module test_mqc_frag_utils
 
-
 program tester
-    use iso_fortran_env, only: error_unit
+   use iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
    use test_mqc_frag_utils, only: collect_mqc_frag_utils_tests
    implicit none

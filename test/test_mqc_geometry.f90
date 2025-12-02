@@ -71,15 +71,15 @@ contains
       call geom%destroy()
 
       ! Check that everything is deallocated
-      call check(error, .not. allocated(geom%elements), &
+      call check(error,.not. allocated(geom%elements), &
                  "elements should be deallocated")
       if (allocated(error)) return
 
-      call check(error, .not. allocated(geom%coords), &
+      call check(error,.not. allocated(geom%coords), &
                  "coords should be deallocated")
       if (allocated(error)) return
 
-      call check(error, .not. allocated(geom%comment), &
+      call check(error,.not. allocated(geom%comment), &
                  "comment should be deallocated")
       if (allocated(error)) return
 
@@ -88,9 +88,8 @@ contains
 
 end module test_mqc_geometry
 
-
 program tester
-    use iso_fortran_env, only: error_unit
+   use iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
    use test_mqc_geometry, only: collect_mqc_geometry_tests
    implicit none
