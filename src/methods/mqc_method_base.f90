@@ -1,6 +1,5 @@
+!! Abstract base module for quantum chemistry method implementations
 module mqc_method_base
-   !! Abstract base module for quantum chemistry method implementations
-   !!
    !! Defines the common interface that all quantum chemistry methods must implement,
    !! providing a unified API for energy and gradient calculations.
    use pic_types, only: dp

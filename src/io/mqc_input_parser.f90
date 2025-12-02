@@ -1,6 +1,5 @@
+!! Input file parser for the hastily put together input file format
 module mqc_input_parser
-   !! Input file parser for PIC Chemistry configuration
-   !!
    !! Parses simple key=value input files to configure calculation parameters
    !! including geometry files, method selection, and fragment levels.
    implicit none
@@ -171,6 +170,7 @@ contains
    end function remove_quotes
 
    subroutine config_destroy(this)
+      !! Clean up allocated memory in input_config_t
       class(input_config_t), intent(inout) :: this
       if (allocated(this%geom_file)) deallocate (this%geom_file)
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)

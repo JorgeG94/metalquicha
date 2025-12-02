@@ -1,6 +1,5 @@
+!! Fragment generation and manipulation utilities
 module mqc_frag_utils
-   !! Fragment generation and manipulation utilities
-   !!
    !! Provides combinatorial functions and algorithms for generating molecular
    !! fragments, managing fragment lists, and performing many-body expansion calculations.
    use pic_types, only: default_int, dp
@@ -55,6 +54,7 @@ contains
    end function binomial
 
    pure subroutine create_monomer_list(monomers)
+      !! Generate a list of monomer indices from 1 to N
       integer(default_int), allocatable, intent(inout) :: monomers(:)
       integer(default_int) :: i, length
 
@@ -67,6 +67,7 @@ contains
    end subroutine create_monomer_list
 
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
+      !! Generate all possible fragments (combinations of monomers) up to max_level
       integer(default_int), intent(in) :: monomers(:), max_level
       integer(default_int), intent(inout) :: polymers(:, :)
       integer(default_int), intent(inout) :: count
@@ -79,6 +80,7 @@ contains
    end subroutine generate_fragment_list
 
    recursive subroutine combine(arr, n, r, out_array, count)
+      !! Generate all combinations of size r from array arr of size n
       integer(default_int), intent(in) :: arr(:)
       integer(default_int), intent(in) :: n, r
       integer(default_int), intent(inout) :: out_array(:, :)
@@ -88,6 +90,7 @@ contains
    end subroutine combine
 
    recursive subroutine combine_util(arr, n, r, index, data, i, out_array, count)
+      !! Utility for generating combinations recursively
       integer(default_int), intent(in) :: arr(:), n, r, index, i
       integer(default_int), intent(inout) :: data(:), out_array(:, :)
       integer(default_int), intent(inout) :: count
@@ -106,6 +109,7 @@ contains
    end subroutine combine_util
 
    subroutine print_combos(out_array, count, max_len)
+      !! Print combinations stored in out_array
       integer(default_int), intent(in) :: out_array(:, :), count, max_len
       integer(default_int) :: i, j
 

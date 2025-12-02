@@ -1,6 +1,6 @@
+!! This file simply contains the main program, look at it as the base of the calculation
+!! and how everything sits together.
 program main
-   !! Main driver program for PIC Chemistry quantum chemistry calculations
-   !!
    !! Orchestrates MPI initialization, input parsing, geometry loading,
    !! and dispatches to appropriate calculation routines (fragmented or unfragmented).
    use pic_logger, only: logger => global_logger, info_level

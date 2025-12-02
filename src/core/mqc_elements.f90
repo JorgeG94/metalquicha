@@ -1,6 +1,5 @@
+!! Periodic table data and element utilities
 module mqc_elements
-   !! Periodic table data and element utilities
-   !!
    !! Provides atomic numbers, element symbols, and atomic masses for the complete
    !! periodic table (elements 1-118) with conversion functions between representations.
    use pic_ascii, only: to_upper, to_lower
@@ -11,7 +10,7 @@ module mqc_elements
    public :: element_symbol_to_number  !! Convert element symbol to atomic number
    public :: element_number_to_symbol  !! Convert atomic number to element symbol
    public :: element_mass              !! Get atomic mass by atomic number
-
+   ! TODO: refactr to use findloc
    ! Periodic table data as module-level parameters
    character(len=2), parameter :: element_symbols(118) = [character(len=2) :: &
       !! Element symbols for the complete periodic table (H through Og)

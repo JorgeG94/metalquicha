@@ -1,5 +1,6 @@
 ---
 src_dir: src
+         app
 output_dir: docs/fpm-ford
 project: metalquicha
 summary: A set of commonly used programs in Fortran aimed at scientific computing

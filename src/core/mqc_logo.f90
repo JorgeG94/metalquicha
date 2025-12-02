@@ -1,6 +1,5 @@
+!! ASCII art logo display for metalquicha
 module mqc_logo
-   !! ASCII art logo display for PIC Chemistry
-   !!
    !! Provides the project branding sunflower logo and version information
    !! displayed at program startup.
    implicit none

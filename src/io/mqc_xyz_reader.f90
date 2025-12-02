@@ -1,6 +1,5 @@
+!! XYZ molecular geometry file reader
 module mqc_xyz_reader
-   !! XYZ molecular geometry file reader
-   !!
    !! Provides functions to parse standard XYZ format files containing
    !! atomic coordinates and element symbols for molecular structures.
    use pic_types, only: dp
@@ -72,6 +71,7 @@ contains
    end subroutine read_xyz_file
 
    pure subroutine read_xyz_string(xyz_string, geom, stat, errmsg)
+      !! Parse molecular geometry from XYZ format string
       character(len=*), intent(in) :: xyz_string
       type(geometry_type), intent(out) :: geom
       integer, intent(out) :: stat
@@ -142,8 +142,8 @@ contains
 
    end subroutine read_xyz_string
 
-!> Helper function to convert integer to string
    pure function int_to_string(i) result(str)
+      !! Convert integer to string
       integer, intent(in) :: i
       character(len=:), allocatable :: str
       character(len=20) :: buffer
@@ -152,9 +152,9 @@ contains
       str = trim(adjustl(buffer))
    end function int_to_string
 
-!> Split text into lines handling LF, CRLF, and CR line endings
-!! Trailing newlines do not create empty lines
    pure subroutine split_lines(text, lines, nlines)
+      !! Split input text into lines based on CR, LF, or CRLF line endings
+      !! Trailing newlines do not create empty lines
       character(len=*), intent(in) :: text
       character(len=:), allocatable, intent(out) :: lines(:)
       integer, intent(out) :: nlines

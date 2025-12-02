@@ -1,6 +1,5 @@
+!! Many-Body Expansion (MBE) calculation module
 module mqc_mbe
-   !! Many-Body Expansion (MBE) calculation module
-   !!
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, dp
@@ -242,6 +241,8 @@ contains
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                  node_leader_ranks, num_nodes, matrix_size)
+      !! Global coordinator for distributing fragments to node coordinators
+      !! will act as a node coordinator for a single node calculation
       type(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: total_fragments, max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
@@ -323,6 +324,7 @@ contains
             if (.not. has_pending) exit
 
             ! Receive fragment index, scalar result, and matrix result from node coordinator
+            ! TODO: serialize the data for better performance
             call recv(world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT)
             call recv(world_comm, scalar_results(fragment_idx), status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT)
             call recv(world_comm, temp_matrix, status%MPI_SOURCE, TAG_NODE_MATRIX_RESULT, status)
@@ -405,6 +407,7 @@ contains
    end subroutine global_coordinator
 
    subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, max_level, dest_rank)
+      !! Send fragment data to remote node coordinator
       type(comm_t), intent(in) :: world_comm
       integer, intent(in) :: fragment_idx, max_level, dest_rank
       integer, intent(in) :: polymers(:, :)
@@ -415,6 +418,7 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
+      ! TODO: serialize the data for better performance
       call send(world_comm, fragment_idx, dest_rank, TAG_NODE_FRAGMENT)
       call send(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT)
       call send(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT)
@@ -423,6 +427,7 @@ contains
    end subroutine send_fragment_to_node
 
    subroutine send_fragment_to_worker(node_comm, fragment_idx, polymers, max_level, dest_rank, matrix_size)
+      !! Send fragment data to local worker
       type(comm_t), intent(in) :: node_comm
       integer, intent(in) :: fragment_idx, max_level, dest_rank, matrix_size
       integer, intent(in) :: polymers(:, :)
@@ -433,6 +438,7 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
+      ! TODO: serialize the data for better performance
       call send(node_comm, fragment_idx, dest_rank, TAG_WORKER_FRAGMENT)
       call send(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT)
       call send(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT)
@@ -442,6 +448,8 @@ contains
    end subroutine send_fragment_to_worker
 
    subroutine node_coordinator(world_comm, node_comm, max_level, matrix_size)
+      !! Node coordinator for distributing fragments to local workers
+      !! Handles work requests and result collection from local workers
       class(comm_t), intent(in) :: world_comm, node_comm
       integer(int32), intent(in) :: max_level, matrix_size
 
@@ -477,6 +485,7 @@ contains
                error stop "Invalid worker_fragment_map state in node coordinator"
             end if
 
+            ! the send/recv operations need to be serialized
             ! Receive scalar and matrix results from worker
             call recv(node_comm, scalar_result, worker_source, TAG_WORKER_SCALAR_RESULT)
             call recv(node_comm, matrix_result, worker_source, TAG_WORKER_MATRIX_RESULT, status)
@@ -532,6 +541,7 @@ contains
    end subroutine node_coordinator
 
    subroutine node_worker(world_comm, node_comm, max_level, sys_geom, method)
+      !! Node worker for processing fragments assigned by node coordinator
       class(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: max_level
       type(system_geometry_t), intent(in), optional :: sys_geom

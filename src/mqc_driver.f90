@@ -1,6 +1,5 @@
+!! Main calculation driver module for metalquicha
 module mqc_driver
-   !! Main calculation driver module for metalquicha
-   !!
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather

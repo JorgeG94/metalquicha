@@ -1,4 +1,7 @@
+!! Hartree-Fock method implementation for metalquicha
 module mqc_method_hf
+   !! Implements the Hartree-Fock quantum chemistry method
+   !! Provides energy and gradient calculations using a basic SCF procedure.
    use pic_types, only: dp
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
@@ -8,8 +11,8 @@ module mqc_method_hf
 
    public :: hf_method_t, hf_options_t
 
-   !> Options for Hartree-Fock calculation
    type :: hf_options_t
+      !! Hartree-Fock calculation options
       integer :: max_iter = 100
          !! Maximum SCF iterations
       real(dp) :: conv_tol = 1.0e-8_dp
@@ -20,8 +23,8 @@ module mqc_method_hf
          !! Print SCF iterations
    end type hf_options_t
 
-   !> Hartree-Fock method implementation
    type, extends(qc_method_t) :: hf_method_t
+      !! Hartree-Fock method implementation
       type(hf_options_t) :: options
    contains
       procedure :: calc_energy => hf_calc_energy
@@ -31,6 +34,7 @@ module mqc_method_hf
 contains
 
    subroutine hf_calc_energy(this, fragment, result)
+      !! Calculate electronic energy using Hartree-Fock method
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -56,6 +60,7 @@ contains
    end subroutine hf_calc_energy
 
    subroutine hf_calc_gradient(this, fragment, result)
+      !! Calculate energy gradient using Hartree-Fock method
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result

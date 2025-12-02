@@ -1,3 +1,4 @@
+!! contains MPI tags used in the MQC parallel implementation
 module mqc_mpi_tags
    !! Module defining MPI communication tags for clarity and maintainability
    use pic_types, only: default_int

@@ -1,3 +1,5 @@
+!! This file contains all routines and types to represent a "physical" fragment or molecule
+!! i.e., with atomic coordinates, element types, electronic properties, etc.
 module mqc_physical_fragment
    !! Physical molecular fragment representation and geometry handling
    !!
@@ -171,6 +173,7 @@ contains
    end subroutine build_fragment_from_indices
 
    subroutine fragment_destroy(this)
+      !! Clean up allocated memory in physical_fragment_t
       class(physical_fragment_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
@@ -208,6 +211,7 @@ contains
    end subroutine fragment_set_basis
 
    subroutine system_destroy(this)
+      !! Clean up allocated memory in system_geometry_t
       class(system_geometry_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)

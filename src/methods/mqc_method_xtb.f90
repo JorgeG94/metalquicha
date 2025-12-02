@@ -1,6 +1,5 @@
+!! Extended Tight-Binding (xTB) quantum chemistry method implementation
 module mqc_method_xtb
-   !! Extended Tight-Binding (xTB) quantum chemistry method implementation
-   !!
    !! Provides GFN1-xTB and GFN2-xTB methods via the tblite library,
    !! implementing the abstract method interface for energy and gradient calculations.
    use pic_types, only: dp
@@ -40,6 +39,7 @@ module mqc_method_xtb
 contains
 
    subroutine xtb_calc_energy(this, fragment, result)
+      !! Calculate electronic energy using Extended Tight-Binding (xTB) method
       class(xtb_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
@@ -108,6 +108,7 @@ contains
    end subroutine xtb_calc_energy
 
    subroutine xtb_calc_gradient(this, fragment, result)
+      !! Calculate energy gradient using Extended Tight-Binding (xTB) method
       class(xtb_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result

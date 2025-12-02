@@ -1,4 +1,6 @@
+!! Data structures for cartesian contracted Gaussian type orbitals (CGTOs)
 module mqc_cgto
+   !! Defines data structures for cartesian contracted Gaussian type orbitals (CGTOs)
    use pic_types, only: dp
    implicit none
    private
@@ -6,6 +8,7 @@ module mqc_cgto
    public :: cgto_type, atomic_basis_type, molecular_basis_type
 
    type :: cgto_type
+      !! Contracted Gaussian type orbital (CGTO) data structure
       integer :: ang_mom
         !! Angular momentum quantum number (0=s, 1=p, 2=d, etc.)
       integer :: nfunc
@@ -21,6 +24,7 @@ module mqc_cgto
    end type cgto_type
 
    type :: atomic_basis_type
+      !! Atomic basis set data structure
       character(len=:), allocatable :: element
       !! element symbol
       type(cgto_type), allocatable :: shells(:)
@@ -34,6 +38,7 @@ module mqc_cgto
    end type atomic_basis_type
 
    type :: molecular_basis_type
+      !! Molecular basis set data structure (assembled basis)
       type(atomic_basis_type), allocatable :: elements(:)
       !! array of atomic basis types
       integer :: nelements
@@ -47,6 +52,7 @@ module mqc_cgto
 contains
 
    pure subroutine cgto_allocate_arrays(self, nfunc)
+      !! Allocate arrays for exponents and coefficients in a CGTO
       class(cgto_type), intent(inout) :: self
       integer, intent(in) :: nfunc
 
@@ -56,6 +62,7 @@ contains
    end subroutine cgto_allocate_arrays
 
    pure subroutine cgto_destroy(self)
+      !! Clean up allocated memory in a CGTO
       class(cgto_type), intent(inout) :: self
 
       if (allocated(self%exponents)) deallocate (self%exponents)
@@ -65,6 +72,7 @@ contains
    end subroutine cgto_destroy
 
    pure subroutine allocate_basis_shells(self, nshells)
+      !! Allocate array of shells in an atomic basis
       class(atomic_basis_type), intent(inout) :: self
       integer, intent(in) :: nshells
 
@@ -73,6 +81,7 @@ contains
    end subroutine allocate_basis_shells
 
    pure subroutine atomic_basis_destroy(self)
+      !! Clean up allocated memory in an atomic basis
       class(atomic_basis_type), intent(inout) :: self
       integer :: i
 
@@ -87,6 +96,7 @@ contains
    end subroutine atomic_basis_destroy
 
    pure subroutine basis_set_allocate_elements(self, nelements)
+      !! Allocate array of atomic basis elements in a molecular basis set
       class(molecular_basis_type), intent(inout) :: self
       integer, intent(in) :: nelements
 
@@ -96,6 +106,7 @@ contains
    end subroutine basis_set_allocate_elements
 
    pure subroutine basis_set_destroy(self)
+      !! Clean up allocated memory in a molecular basis set
       class(molecular_basis_type), intent(inout) :: self
       integer :: i
 
@@ -109,8 +120,8 @@ contains
       self%nelements = 0
    end subroutine basis_set_destroy
 
-!> Get number of basis functions in a shell (Cartesian)
    pure function cgto_num_basis_functions(self) result(nbf)
+      !! Get number of basis functions in a shell (Cartesian)
       class(cgto_type), intent(in) :: self
       integer :: nbf
 
@@ -118,8 +129,8 @@ contains
       nbf = (self%ang_mom + 1)*(self%ang_mom + 2)/2
    end function cgto_num_basis_functions
 
-!> Get total number of basis functions for an atom
    pure function atomic_basis_num_basis_functions(self) result(nbf)
+      !! Get total number of basis functions for an atom
       class(atomic_basis_type), intent(in) :: self
       integer :: nbf
       integer :: ishell
@@ -130,8 +141,8 @@ contains
       end do
    end function atomic_basis_num_basis_functions
 
-!> Get total number of basis functions for the molecule
    pure function molecular_basis_num_basis_functions(self) result(nbf)
+      !! Get total number of basis functions for the molecule
       class(molecular_basis_type), intent(in) :: self
       integer :: nbf
       integer :: iatom
