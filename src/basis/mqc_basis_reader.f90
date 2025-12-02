@@ -11,7 +11,7 @@ module mqc_basis_reader
 
    public :: classify_line        !! Determine basis file line type
    public :: parse_element_basis  !! Parse basis for single element
-   public :: build_molecular_basis !! Build complete molecular basis
+   public :: build_molecular_basis  !! Build complete molecular basis
    public :: ang_mom_char_to_int  !! Convert angular momentum character to integer
    public :: ang_mom_int_to_char  !! Convert angular momentum integer to character
 

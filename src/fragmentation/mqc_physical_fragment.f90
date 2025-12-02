@@ -13,14 +13,14 @@ module mqc_physical_fragment
 
    public :: physical_fragment_t         !! Single molecular fragment type
    public :: system_geometry_t          !! Complete system geometry type
-   public :: initialize_system_geometry !! System geometry initialization
-   public :: build_fragment_from_indices !! Extract fragment from system
+   public :: initialize_system_geometry  !! System geometry initialization
+   public :: build_fragment_from_indices  !! Extract fragment from system
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: fragment_centroid          !! Geometric centroid calculation
    public :: fragment_center_of_mass    !! Mass-weighted center calculation
    public :: distance_between_points    !! Point-to-point distance
-   public :: distance_between_fragments !! Inter-fragment distance
-   public :: minimal_distance_between_fragments !! Closest approach distance
+   public :: distance_between_fragments  !! Inter-fragment distance
+   public :: minimal_distance_between_fragments  !! Closest approach distance
 
    type :: physical_fragment_t
       !! Physical molecular fragment with atomic coordinates and properties
@@ -33,14 +33,14 @@ module mqc_physical_fragment
 
       ! Electronic structure properties
       integer :: charge = 0        !! Net molecular charge (electrons)
-      integer :: multiplicity = 1 !! Spin multiplicity (2S+1)
+      integer :: multiplicity = 1  !! Spin multiplicity (2S+1)
       integer :: nelec = 0         !! Total number of electrons
 
       ! Quantum chemistry basis set
       type(molecular_basis_type), allocatable :: basis  !! Gaussian basis functions
    contains
       procedure :: destroy => fragment_destroy          !! Memory cleanup
-      procedure :: compute_nelec => fragment_compute_nelec !! Calculate electron count
+      procedure :: compute_nelec => fragment_compute_nelec  !! Calculate electron count
       procedure :: set_basis => fragment_set_basis      !! Assign basis set
    end type physical_fragment_t
 
@@ -50,7 +50,7 @@ module mqc_physical_fragment
       !! Contains the full atomic structure of a molecular cluster organized
       !! by monomers for efficient fragment generation and MBE calculations.
       integer :: n_monomers        !! Number of monomer units in system
-      integer :: atoms_per_monomer !! Atoms in each monomer (assumed identical)
+      integer :: atoms_per_monomer  !! Atoms in each monomer (assumed identical)
       integer :: total_atoms       !! Total number of atoms (n_monomers × atoms_per_monomer)
       integer, allocatable :: element_numbers(:)  !! Atomic numbers for all atoms
       real(dp), allocatable :: coordinates(:, :)  !! All coordinates (3, total_atoms) in Bohr

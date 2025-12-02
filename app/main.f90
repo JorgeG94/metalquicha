@@ -20,7 +20,7 @@ program main
    type(system_geometry_t) :: sys_geom  !! Loaded molecular system
    integer :: stat                  !! Status code for error handling
    character(len=:), allocatable :: errmsg  !! Error messages
-   character(len=256) :: input_file !! Input file name
+   character(len=256) :: input_file  !! Input file name
 
    ! Initialize MPI
    call pic_mpi_init()

@@ -31,9 +31,9 @@ contains
 
       integer :: unit      !! File unit number
       integer :: io_stat   !! I/O operation status
-      integer :: file_size !! File size in bytes
-      logical :: file_exists !! Whether file exists on disk
-      character(len=:), allocatable :: file_contents !! Full file content buffer
+      integer :: file_size  !! File size in bytes
+      logical :: file_exists  !! Whether file exists on disk
+      character(len=:), allocatable :: file_contents  !! Full file content buffer
 
       stat = 0
 

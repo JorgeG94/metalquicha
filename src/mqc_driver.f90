@@ -29,7 +29,7 @@ contains
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
-      integer :: matrix_size !! Size of gradient matrix (natoms*3), tmp
+      integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
       integer :: total_fragments  !! Total number of fragments generated
       integer, allocatable :: polymers(:, :)  !! Fragment indices array
       integer :: num_nodes   !! Number of compute nodes

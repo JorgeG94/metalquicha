@@ -28,7 +28,7 @@ module mqc_method_xtb
       !!
       !! Concrete implementation of the abstract quantum chemistry method
       !! interface for GFN1-xTB and GFN2-xTB calculations via tblite.
-      character(len=:), allocatable :: variant !! XTB variant: "gfn1" or "gfn2"
+      character(len=:), allocatable :: variant  !! XTB variant: "gfn1" or "gfn2"
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
       real(wp) :: kt = 300.0_wp*3.166808578545117e-06_wp  !! Electronic temperature (300 K)

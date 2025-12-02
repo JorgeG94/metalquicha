@@ -18,7 +18,7 @@ module mqc_method_base
       !! that must be implemented by all concrete method types (XTB, HF, etc.).
    contains
       procedure(calc_energy_interface), deferred :: calc_energy    !! Energy calculation interface
-      procedure(calc_gradient_interface), deferred :: calc_gradient !! Gradient calculation interface
+      procedure(calc_gradient_interface), deferred :: calc_gradient  !! Gradient calculation interface
    end type qc_method_t
 
    abstract interface

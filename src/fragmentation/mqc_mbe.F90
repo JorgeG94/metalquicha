@@ -33,14 +33,14 @@ contains
       !! specified quantum chemistry method (GFN-xTB variants).
 
       integer, intent(in) :: fragment_idx        !! Fragment index for identification
-      integer, intent(in) :: fragment_indices(*) !! Monomer indices comprising this fragment
+      integer, intent(in) :: fragment_indices(*)  !! Monomer indices comprising this fragment
       integer, intent(in) :: fragment_size       !! Number of monomers in fragment
       integer, intent(in) :: matrix_size         !! Size of gradient matrix (natoms*3)
       real(dp), intent(out) :: water_energy      !! Computed energy for this fragment
       real(dp), allocatable, intent(out) :: C_flat(:)  !! Flattened gradient array
       character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
-      integer, intent(in), optional :: verbosity !! Verbosity level (0=silent, 1=verbose)
+      integer, intent(in), optional :: verbosity  !! Verbosity level (0=silent, 1=verbose)
 
       integer :: verb_level  !! Local verbosity setting
 #ifndef MQC_WITHOUT_TBLITE

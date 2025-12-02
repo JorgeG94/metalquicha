@@ -9,7 +9,7 @@ module mqc_frag_utils
    private
    public :: binomial              !! Binomial coefficient calculation
    public :: create_monomer_list   !! Generate sequential monomer indices
-   public :: generate_fragment_list !! Generate all fragments up to max level
+   public :: generate_fragment_list  !! Generate all fragments up to max level
    public :: get_nfrags            !! Calculate total number of fragments
    public :: next_combination      !! Generate next combination in sequence
    public :: find_fragment_index   !! Locate fragment by composition

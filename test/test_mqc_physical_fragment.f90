@@ -280,7 +280,7 @@ contains
       ! Simple linear arrangement for easy testing
       fragment%coordinates(:, 1) = [0.0_dp, 0.0_dp, 0.0_dp]  ! O at origin
       fragment%coordinates(:, 2) = [1.0_dp, 0.0_dp, 0.0_dp]  ! H at x=1
-      fragment%coordinates(:, 3) = [-1.0_dp, 0.0_dp, 0.0_dp] ! H at x=-1
+      fragment%coordinates(:, 3) = [-1.0_dp, 0.0_dp, 0.0_dp]  ! H at x=-1
 
       com = fragment_center_of_mass(fragment)
 

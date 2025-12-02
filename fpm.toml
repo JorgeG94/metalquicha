@@ -31,3 +31,7 @@ pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "main"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", branch = "main"}
 tblite = { git = "https://github.com/JorgeG94/tblite", branch = "main"}
 test-drive.git = "https://github.com/JorgeG94/test-drive"
+[extra.fortitude.check]
+select = ["C", "E", "S"]
+ignore = ["C003", "C072"]
+line-length = 132
