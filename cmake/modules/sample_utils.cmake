@@ -21,8 +21,12 @@ macro("my_fetch_package" package url)
     GIT_TAG "${_git_ref}")
   FetchContent_MakeAvailable("${_pkg_lc}")
 
-  add_library("${package}::${package}" INTERFACE IMPORTED)
-  target_link_libraries("${package}::${package}" INTERFACE "${package}")
+  # Only create the imported interface if the target doesn't already exist This
+  # allows the fetched package to create its own namespaced target
+  if(NOT TARGET "${package}::${package}")
+    add_library("${package}::${package}" INTERFACE IMPORTED)
+    target_link_libraries("${package}::${package}" INTERFACE "${package}")
+  endif()
 
   if(NOT EXISTS "${${_pkg_lc}_BINARY_DIR}/include")
     file(MAKE_DIRECTORY "${${_pkg_lc}_BINARY_DIR}/include")

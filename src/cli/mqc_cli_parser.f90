@@ -1,6 +1,5 @@
+!! Command line argument parsing for metalquicha
 module mqc_cli_parser
-   !! Command line argument parsing for PIC Chemistry
-   !!
    !! Handles parsing of command line options including geometry files,
    !! basis set specifications, and help/usage display.
    implicit none

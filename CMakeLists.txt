@@ -78,13 +78,8 @@ endif()
 set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
                                              ${CMAKE_BINARY_DIR}/modules)
 
-list(
-  APPEND
-  libraries_to_link
-  pic::pic
-  pic-mpi::pic-mpi
-  pic-blas::pic-blas
-  OpenMP::OpenMP_Fortran)
+list(APPEND libraries_to_link pic::pic pic-mpi::pic-mpi pic-blas::pic-blas
+     OpenMP::OpenMP_Fortran)
 
 if(MQC_ENABLE_TBLITE)
   list(APPEND libraries_to_link tblite::tblite)

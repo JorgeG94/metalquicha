@@ -106,7 +106,7 @@ program tester
    !! Test program for split_lines subroutine using testdrive framework
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_split_lines_module
+   use test_mqc_split_lines_module, only: collect_mqc_split_lines
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)

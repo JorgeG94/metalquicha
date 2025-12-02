@@ -1,4 +1,6 @@
+!! this file contains the modules and routines to open and read a GAMESS formatted basis set file
 module mqc_basis_file_reader
+   !! Module for reading and parsing GAMESS formatted basis set files
    use pic_types, only: int32, dp
    implicit none
 
@@ -6,6 +8,7 @@ module mqc_basis_file_reader
    public :: basis_file_t, open_basis_file, extract_element, strings_equal
 
    type :: basis_file_t
+      !! Container for basis set file contents
       character(len=:), allocatable :: full_content
       character(len=:), allocatable :: data_section
    end type basis_file_t
@@ -13,6 +16,7 @@ module mqc_basis_file_reader
 contains
 
    subroutine open_basis_file(basis_file, filename)
+      !! Open and read a GAMESS formatted basis set file
       type(basis_file_t), intent(out) :: basis_file
       character(len=*), intent(in) :: filename
 
@@ -55,6 +59,7 @@ contains
    end subroutine open_basis_file
 
    function extract_element(basis_file, element) result(element_content)
+      !! Extract the basis set data for a specific element from the basis file
       type(basis_file_t), intent(in) :: basis_file
       character(len=*), intent(in) :: element
       character(len=:), allocatable :: element_content
@@ -120,6 +125,7 @@ contains
    end function extract_element
 
    pure function is_letter(c) result(is_alpha)
+      !! Check if character is a letter (A-Z or a-z)
       character(len=1), intent(in) :: c
       logical :: is_alpha
       integer :: ic
@@ -130,6 +136,7 @@ contains
    end function is_letter
 
    pure function uppercase(str) result(upper)
+      !! Convert a string to uppercase, should use pic_ascii!
       character(len=*), intent(in) :: str
       character(len=:), allocatable :: upper
       integer :: i, ic
@@ -146,6 +153,7 @@ contains
    end function uppercase
 
    pure function is_uppercase_letter(c) result(is_upper)
+      !! Check if character is an uppercase letter (A-Z)
       character(len=1), intent(in) :: c
       logical :: is_upper
       integer :: ic
@@ -156,6 +164,7 @@ contains
 
    !> Compare two strings after trimming and adjusting (removing leading/trailing whitespace)
    pure function strings_equal(str1, str2) result(equal)
+      !! Compare two strings for equality after trimming and adjusting (removing leading/trailing whitespace)
       character(len=*), intent(in) :: str1, str2
       logical :: equal
       equal = trim(adjustl(str1)) == trim(adjustl(str2))

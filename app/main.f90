@@ -1,16 +1,16 @@
+!! This file simply contains the main program, look at it as the base of the calculation
+!! and how everything sits together.
 program main
-   !! Main driver program for PIC Chemistry quantum chemistry calculations
-   !!
    !! Orchestrates MPI initialization, input parsing, geometry loading,
    !! and dispatches to appropriate calculation routines (fragmented or unfragmented).
    use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
-   use pic_mpi_lib
-   use mqc_driver
+   use pic_mpi_lib, only: pic_mpi_init, comm_world, comm_t, abort_comm, pic_mpi_finalize
+   use mqc_driver, only: run_calculation
    use mqc_physical_fragment, only: initialize_system_geometry, system_geometry_t
-   use mqc_input_parser
-   use mqc_logo
-   use pic_timer
+   use mqc_input_parser, only: read_input_file, input_config_t
+   use mqc_logo, only: print_logo
+   use pic_timer, only: timer_type
    implicit none
 
    type(timer_type) :: my_timer     !! Execution timing
@@ -20,7 +20,7 @@ program main
    type(system_geometry_t) :: sys_geom  !! Loaded molecular system
    integer :: stat                  !! Status code for error handling
    character(len=:), allocatable :: errmsg  !! Error messages
-   character(len=256) :: input_file !! Input file name
+   character(len=256) :: input_file  !! Input file name
 
    ! Initialize MPI
    call pic_mpi_init()

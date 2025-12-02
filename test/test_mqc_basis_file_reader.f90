@@ -20,7 +20,7 @@ contains
                                       character(len=50) :: &
                                       "../basis_sets/"//basis_file, &  ! CMake working directory
                                       "basis_sets/"//basis_file, &  ! fpm from root
-                                      "../../basis_sets/"//basis_file, & ! fpm from build dir
+                                      "../../basis_sets/"//basis_file, &  ! fpm from build dir
                                       "../../../basis_sets/"//basis_file]  ! deeply nested
 
       integer :: i

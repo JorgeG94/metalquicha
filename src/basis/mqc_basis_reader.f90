@@ -1,9 +1,10 @@
+!! This file contains basis set reader routines for basis sets
 module mqc_basis_reader
    !! Gaussian basis set parser and molecular basis construction
    !!
    !! Provides utilities for parsing Gaussian-type orbital basis sets
    !! from text files and building molecular basis sets for quantum calculations.
-   use mqc_cgto
+   use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type
    use mqc_basis_file_reader, only: strings_equal
    use pic_types, only: dp
    implicit none
@@ -11,7 +12,7 @@ module mqc_basis_reader
 
    public :: classify_line        !! Determine basis file line type
    public :: parse_element_basis  !! Parse basis for single element
-   public :: build_molecular_basis !! Build complete molecular basis
+   public :: build_molecular_basis  !! Build complete molecular basis
    public :: ang_mom_char_to_int  !! Convert angular momentum character to integer
    public :: ang_mom_int_to_char  !! Convert angular momentum integer to character
 
@@ -65,6 +66,7 @@ contains
    end function ang_mom_int_to_char
 
    pure function classify_line(line) result(line_type)
+      !! Classify a line from a gamess formatted basis set file
       character(len=*), intent(in) :: line
       integer :: line_type
 
@@ -85,6 +87,7 @@ contains
    end function classify_line
 
    pure function is_blank_or_control(line) result(res)
+      !! Check if a line is blank or a control line (starts with '$')
       character(len=*), intent(in) :: line
       logical :: res
       integer :: trimmed_len
@@ -99,6 +102,7 @@ contains
    end function is_blank_or_control
 
    pure function is_function_line(line) result(res)
+      !! Check if a line is a function coefficient line (starts with a number)
       character(len=*), intent(in) :: line
       logical :: res
       character(len=1) :: first_char
@@ -113,6 +117,7 @@ contains
    end function is_function_line
 
    pure function is_shell_header(line) result(res)
+      !! Check if a line is a shell header line (starts with S, P, D, F, G, H, I, or L)
       character(len=*), intent(in) :: line
       logical :: res
       character(len=1) :: first_char
@@ -130,8 +135,8 @@ contains
 
    end function is_shell_header
 
-!> Parse basis set for a specific element from a basis string
    pure subroutine parse_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+      !! Parse basis set for a specific element from a GAMESS formatted basis string
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       type(atomic_basis_type), intent(out) :: atom_basis
@@ -161,8 +166,8 @@ contains
 
    end subroutine parse_element_basis
 
-   !> First pass: count shells for a specific element (accounting for L-shell splitting)
    pure subroutine count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
+      !! Count the number of shells for a specific element in a GAMESS formatted basis string,
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       integer, intent(out) :: nshells
@@ -229,8 +234,8 @@ contains
 
    end subroutine count_shells_for_element
 
-!> Helper: get next line from string
    pure subroutine get_next_line(string, line_start, line, line_end)
+      !! Extract the next line from a string starting at line_start
       character(len=*), intent(in) :: string
       integer, intent(in) :: line_start
       character(len=*), intent(out) :: line
@@ -257,8 +262,8 @@ contains
 
    end subroutine get_next_line
 
-!> Parse shell header line (e.g., "S 2" or "L 3")
    pure subroutine parse_shell_header(line, ang_mom, nfunc, stat)
+      !! Parse shell header line (e.g., "S 2" or "L 3")
       character(len=*), intent(in) :: line
       character(len=1), intent(out) :: ang_mom
       integer, intent(out) :: nfunc
@@ -274,8 +279,8 @@ contains
 
    end subroutine parse_shell_header
 
-!> Parse function line (e.g., "1 1.0 2.0" or "1 1.0 2.0 3.0" for L shells)
    pure subroutine parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
+      !! Parse function line (e.g., "1 1.0 2.0" or "1 1.0 2.0 3.0" for L shells)
       character(len=*), intent(in) :: line
       integer, intent(out) :: func_num
       real(dp), intent(out) :: exponent
@@ -302,8 +307,8 @@ contains
 
    end subroutine parse_function_line
 
-!> Second pass: fill in the shell data for a specific element
    pure subroutine fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+      !! Fill in the shell data for a specific element from a GAMESS formatted basis string
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       type(atomic_basis_type), intent(inout) :: atom_basis
@@ -420,9 +425,9 @@ contains
 
    end subroutine fill_element_basis
 
-!> Find unique strings in an array
-!! Returns array of unique strings and count
    pure subroutine find_unique_strings(input_array, unique_array, nunique)
+      !! Find unique strings in an array
+      !! Returns array of unique strings and count
       character(len=*), intent(in) :: input_array(:)
       character(len=:), allocatable, intent(out) :: unique_array(:)
       integer, intent(out) :: nunique
@@ -459,6 +464,7 @@ contains
    end subroutine find_unique_strings
 
    pure subroutine copy_atomic_basis(source, dest)
+      !! Deep copy of atomic basis data from source to dest
       type(atomic_basis_type), intent(in) :: source
       type(atomic_basis_type), intent(out) :: dest
       integer :: ishell
@@ -475,9 +481,9 @@ contains
 
    end subroutine copy_atomic_basis
 
-!> Build molecular basis from geometry and basis file
-!! Only parses unique elements, then copies basis data to atoms
    subroutine build_molecular_basis(basis_string, element_names, mol_basis, stat, errmsg)
+      !! Build molecular basis from geometry and basis file
+      !! Only parses unique elements, then copies basis data to atoms
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_names(:)  !! Element for each atom in geometry order
       type(molecular_basis_type), intent(out) :: mol_basis

@@ -1,6 +1,6 @@
 module test_mqc_frag_utils
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_frag_utils
+   use mqc_frag_utils, only: binomial, create_monomer_list, generate_fragment_list, get_nfrags
    use pic_types, only: default_int, dp
    implicit none
    private

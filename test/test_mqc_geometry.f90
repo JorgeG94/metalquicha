@@ -1,6 +1,6 @@
 module test_mqc_geometry
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_geometry
+   use mqc_geometry, only: geometry_type
    use pic_types, only: dp
    implicit none
    private

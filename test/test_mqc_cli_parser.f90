@@ -1,6 +1,6 @@
 module test_mqc_cli_parser
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_cli_parser
+   use mqc_cli_parser, only: normalize_basis_name, find_basis_file, cli_args_type
    implicit none
    private
    public :: collect_mqc_cli_parser_tests

@@ -1,0 +1,38 @@
+name: Check Pre-commit Hooks
+
+on: [push]
+
+jobs:
+  pre-commit:
+    name: Run pre-commit hooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit fprettify
+
+      - name: Run pre-commit checks
+        run: |
+          pre-commit install
+          pre-commit run --all-files
+
+  # Run Fortran linter with Fortitude
+  linter_fortitude:
+    name: Run Fortitude Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Fortitude Linter
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          fortitude-check: true
+          fortitude-settings: "--output-format github"

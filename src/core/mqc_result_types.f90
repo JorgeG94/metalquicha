@@ -1,6 +1,5 @@
+!! Quantum chemistry calculation result containers
 module mqc_result_types
-   !! Quantum chemistry calculation result containers
-   !!
    !! Defines data structures for storing and managing results from
    !! quantum chemistry calculations including energies, gradients, and properties.
    use pic_types, only: dp
@@ -32,6 +31,7 @@ module mqc_result_types
 contains
 
    subroutine result_destroy(this)
+      !! Clean up allocated memory in calculation_result_t
       class(calculation_result_t), intent(inout) :: this
       if (allocated(this%gradient)) deallocate (this%gradient)
       if (allocated(this%hessian)) deallocate (this%hessian)
@@ -40,6 +40,7 @@ contains
    end subroutine result_destroy
 
    subroutine result_reset(this)
+      !! Reset all values and flags in calculation_result_t
       class(calculation_result_t), intent(inout) :: this
       this%energy = 0.0_dp
       this%has_energy = .false.

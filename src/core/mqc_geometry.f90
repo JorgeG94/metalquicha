@@ -1,4 +1,6 @@
+!! Geometry data structure for molecular systems
 module mqc_geometry
+   !! Defines the geometry data structure for molecular systems
    use pic_types, only: dp
    implicit none
    private
@@ -9,6 +11,7 @@ module mqc_geometry
    integer, parameter :: MAX_ELEMENT_SYMBOL_LEN = 4
 
    type :: geometry_type
+      !! Molecular geometry data structure
       integer :: natoms
       character(len=:), allocatable :: elements(:)
       real(dp), allocatable :: coords(:, :)  ! coords(3, natoms)
@@ -20,6 +23,7 @@ module mqc_geometry
 contains
 
    subroutine geometry_destroy(this)
+      !! Clean up allocated memory in geometry_type
       class(geometry_type), intent(inout) :: this
       if (allocated(this%elements)) deallocate (this%elements)
       if (allocated(this%coords)) deallocate (this%coords)

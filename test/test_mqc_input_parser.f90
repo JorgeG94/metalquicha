@@ -1,6 +1,6 @@
 module test_mqc_input_parser
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_input_parser
+   use mqc_input_parser, only: input_config_t, read_input_file
    implicit none
    private
    public :: collect_mqc_input_parser_tests

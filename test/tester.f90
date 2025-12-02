@@ -1,10 +1,10 @@
 program main
-   use mqc_geometry
-   use mqc_xyz_reader
+   use mqc_geometry, only: geometry_type
+   use mqc_xyz_reader, only: read_xyz_file
    use mqc_basis_reader, only: classify_line, parse_element_basis, &
                                build_molecular_basis, ang_mom_int_to_char
-   use mqc_cgto
-   use mqc_basis_file_reader
+   use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type
+   use mqc_basis_file_reader, only: read_basis_file
    use pic_types, only: dp
    implicit none
    character(len=*), parameter :: test_basis = &

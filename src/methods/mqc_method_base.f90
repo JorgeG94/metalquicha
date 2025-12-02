@@ -1,6 +1,5 @@
+!! Abstract base module for quantum chemistry method implementations
 module mqc_method_base
-   !! Abstract base module for quantum chemistry method implementations
-   !!
    !! Defines the common interface that all quantum chemistry methods must implement,
    !! providing a unified API for energy and gradient calculations.
    use pic_types, only: dp
@@ -18,7 +17,7 @@ module mqc_method_base
       !! that must be implemented by all concrete method types (XTB, HF, etc.).
    contains
       procedure(calc_energy_interface), deferred :: calc_energy    !! Energy calculation interface
-      procedure(calc_gradient_interface), deferred :: calc_gradient !! Gradient calculation interface
+      procedure(calc_gradient_interface), deferred :: calc_gradient  !! Gradient calculation interface
    end type qc_method_t
 
    abstract interface
@@ -28,6 +27,7 @@ module mqc_method_base
          !! Computes the electronic energy for a molecular fragment
          !! using the specified quantum chemistry method.
          import :: qc_method_t, calculation_result_t, physical_fragment_t
+         implicit none
          class(qc_method_t), intent(in) :: this      !! Method instance
          type(physical_fragment_t), intent(in) :: fragment  !! Molecular fragment
          type(calculation_result_t), intent(out) :: result  !! Calculation results
@@ -39,6 +39,7 @@ module mqc_method_base
          !! Computes both electronic energy and nuclear gradients for a
          !! molecular fragment using the specified quantum chemistry method.
          import :: qc_method_t, calculation_result_t, physical_fragment_t
+         implicit none
          class(qc_method_t), intent(in) :: this      !! Method instance
          type(physical_fragment_t), intent(in) :: fragment  !! Molecular fragment
          type(calculation_result_t), intent(out) :: result

@@ -1,6 +1,13 @@
 set(_lib "pic-mpi")
 set(_url "https://github.com/JorgeG94/pic-mpi/")
 
+# Pass PIC_USE_LEGACY_MPI option to the fetched package if set
+if(DEFINED PIC_USE_LEGACY_MPI)
+  set(PIC_USE_LEGACY_MPI
+      ${PIC_USE_LEGACY_MPI}
+      CACHE BOOL "Use legacy MPI module" FORCE)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
 # Use the main branch

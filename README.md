@@ -22,6 +22,8 @@ The main purpose of this package is to showcase the ability of being able to wri
 simple, powerful Fortran based programs that are able to access massively parallel
 ecosystems with ease.
 
+If you are interested in contributing, please see [here](https://github.com/JorgeG94/pic/blob/main/contributing.md). Pic is the main project here and all the contributions fall downstream.
+
 ## Building
 
 You will need an internet connection to download the dependencies. The main dependencies are:
@@ -30,6 +32,7 @@ You will need an internet connection to download the dependencies. The main depe
 - A Fortran compiler
 - An MPI installation
 - A BLAS/LAPACK install
+- TBLITE (will be downloaded automatically)
 
 You can then simply:
 
@@ -42,8 +45,7 @@ make -j
 
 ### Building with the Fortran Package Manager (FPM)
 
-FPM hardcodes some dependencies, specially the linking to `openblas`. So you will need openblas to build with
-FPM.
+*FPM will only work if you are building with openblas, since the linking step is hardcoded.*
 
 Simply then just do: `fpm install --prefix . --compiler mpifort --profile release`
 

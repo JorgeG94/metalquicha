@@ -1,15 +1,14 @@
+!! Main calculation driver module for metalquicha
 module mqc_driver
-   !! Main calculation driver module for metalquicha
-   !!
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
-   use pic_mpi_lib
+   use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
-   use mqc_mbe
-   use mqc_frag_utils
-   use mqc_physical_fragment
-   use mqc_input_parser
+   use mqc_mbe, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation
+   use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_input_parser, only: input_config_t
    implicit none
    private
 
@@ -29,7 +28,7 @@ contains
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
-      integer :: matrix_size !! Size of gradient matrix (natoms*3), tmp
+      integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
       integer :: total_fragments  !! Total number of fragments generated
       integer, allocatable :: polymers(:, :)  !! Fragment indices array
       integer :: num_nodes   !! Number of compute nodes
@@ -126,6 +125,12 @@ contains
       integer, allocatable :: all_node_leader_ranks(:)  !! Node leader status for all ranks
 
       ! Generate fragments (only rank 0 needs this for coordination)
+      if (world_comm%size() == 1) then
+         if (world_comm%rank() == 0) then
+            call logger%error("Fragmented calculation cannot be run with one rank")
+         end if
+         call abort_comm(world_comm, 1)
+      end if
       if (world_comm%rank() == 0) then
          ! Calculate expected number of fragments
          n_expected_frags = get_nfrags(sys_geom%n_monomers, max_level)
