@@ -303,7 +303,7 @@ contains
                end if
 
                ! Receive scalar result and store it using the fragment index for this worker
-               call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, TAG_WORKER_SCALAR_RESULT)
+         call recv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, TAG_WORKER_SCALAR_RESULT)
                ! Receive matrix result into temporary array, then copy to storage
                call recv(node_comm, temp_matrix, worker_source, TAG_WORKER_MATRIX_RESULT, local_status)
                ! Copy only the received size, pad rest with zeros

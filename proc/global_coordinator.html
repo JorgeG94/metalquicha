@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="A set of commonly used programs in Fortran aimed at scientific computing">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
@@ -141,7 +141,7 @@
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-finished_nodes">finished_nodes</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_idx~3">fragment_idx</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_indices~2">fragment_indices</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_size~3">fragment_size</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_size~4">fragment_size</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-has_pending">has_pending</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_dummy">local_dummy</a>
@@ -212,7 +212,7 @@ will act as a node coordinator for a single node calculation</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -227,7 +227,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~3"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -257,7 +257,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -272,7 +272,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~4"></span>
+              <span class="anchor" id="variable-max_level~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -932,7 +932,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~3"></span>
+              <span class="anchor" id="variable-fragment_size~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1265,7 +1265,7 @@ large graphs.</div>
 <span class="w">               </span><span class="k">end if</span>
 
 <span class="w">               </span><span class="c">! Receive scalar result and store it using the fragment index for this worker</span>
-<span class="w">               </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">scalar_results</span><span class="p">(</span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)),</span><span class="w"> </span><span class="n">worker_source</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">scalar_results</span><span class="p">(</span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)),</span><span class="w"> </span><span class="n">worker_source</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">)</span>
 <span class="w">               </span><span class="c">! Receive matrix result into temporary array, then copy to storage</span>
 <span class="w">               </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">temp_matrix</span><span class="p">,</span><span class="w"> </span><span class="n">worker_source</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_MATRIX_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">)</span>
 <span class="w">               </span><span class="c">! Copy only the received size, pad rest with zeros</span>
@@ -1390,7 +1390,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 11:49 +0000             </p>
+ on 2025-12-02 20:08 +0000             </p>
           </div>
         </div>
         <br>

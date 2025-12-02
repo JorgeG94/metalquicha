@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="A set of commonly used programs in Fortran aimed at scientific computing">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
@@ -134,14 +134,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../program/main.html#variable-config~2">config</a>
-            <a class="list-group-item" href="../program/main.html#variable-errmsg">errmsg</a>
+            <a class="list-group-item" href="../program/main.html#variable-config~3">config</a>
+            <a class="list-group-item" href="../program/main.html#variable-errmsg~11">errmsg</a>
             <a class="list-group-item" href="../program/main.html#variable-input_file">input_file</a>
             <a class="list-group-item" href="../program/main.html#variable-my_timer">my_timer</a>
-            <a class="list-group-item" href="../program/main.html#variable-node_comm~3">node_comm</a>
-            <a class="list-group-item" href="../program/main.html#variable-stat">stat</a>
-            <a class="list-group-item" href="../program/main.html#variable-sys_geom~4">sys_geom</a>
-            <a class="list-group-item" href="../program/main.html#variable-world_comm~4">world_comm</a>
+            <a class="list-group-item" href="../program/main.html#variable-node_comm~7">node_comm</a>
+            <a class="list-group-item" href="../program/main.html#variable-stat~14">stat</a>
+            <a class="list-group-item" href="../program/main.html#variable-sys_geom~8">sys_geom</a>
+            <a class="list-group-item" href="../program/main.html#variable-world_comm~8">world_comm</a>
         </div>
       </div>
     </div>
@@ -183,13 +183,13 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='../module/mqc_logo.html'>mqc_logo</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
                   <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='../module/mqc_input_parser.html'>mqc_input_parser</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_logo.html'>mqc_logo</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_driver.html'>mqc_driver</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
@@ -1976,7 +1976,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~2"></span>
+              <span class="anchor" id="variable-config~3"></span>
               type(<a href='../type/input_config_t.html'>input_config_t</a>)
             </td>
             <td>
@@ -1992,7 +1992,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg"></span>
+              <span class="anchor" id="variable-errmsg~11"></span>
               character(len=:),
             </td>
             <td>
@@ -2040,7 +2040,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm~7"></span>
               type(comm_t)
             </td>
             <td>
@@ -2056,7 +2056,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat"></span>
+              <span class="anchor" id="variable-stat~14"></span>
               integer
             </td>
             <td>
@@ -2072,7 +2072,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>)
             </td>
             <td>
@@ -2088,7 +2088,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               type(comm_t)
             </td>
             <td>
@@ -2211,7 +2211,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 11:49 +0000             </p>
+ on 2025-12-02 20:08 +0000             </p>
           </div>
         </div>
         <br>

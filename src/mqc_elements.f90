@@ -15,19 +15,21 @@ module mqc_elements
    character(len=2), parameter :: element_symbols(118) = [character(len=2) :: &
       !! Element symbols for the complete periodic table (H through Og)
       !! Ordered by atomic number from 1 to 118
+                                                          ! for some reason this is how the formatted formats this (????)
                                                           'H', 'He', &
                                                           'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', &
                                                           'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', &
-                         'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
-                         'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', &
-                             'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
-                                          'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', &
-                              'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
-                                           'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+               'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
+               'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', &
+                   'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
+                                'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', &
+                    'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
+                                 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
    real(dp), parameter :: element_masses(118) = [ &
       !! Standard atomic masses in atomic mass units (amu)
       !! Based on IUPAC standard atomic weights, ordered by atomic number
+                          ! for some reason this is how the formatted formats this (????)
                           1.008_dp, 4.0026_dp, &                                                               ! H-He
                           6.94_dp, 9.0122_dp, 10.81_dp, 12.011_dp, 14.007_dp, 15.999_dp, 18.998_dp, 20.180_dp, &  ! Li-Ne
                           22.990_dp, 24.305_dp, 26.982_dp, 28.085_dp, 30.974_dp, 32.06_dp, 35.45_dp, 39.948_dp, &  ! Na-Ar
@@ -63,13 +65,7 @@ contains
       if (len_trim(sym) >= 2) sym(2:2) = to_lower(sym(2:2))
 
       ! Search for symbol in table
-      atomic_number = 0  ! Default for unknown element
-      do i = 1, 118
-         if (trim(sym) == trim(element_symbols(i))) then
-            atomic_number = i
-            return
-         end if
-      end do
+      atomic_number = findloc(element_symbols, sym, dim=1)
 
    end function element_symbol_to_number
 
