@@ -6,21 +6,26 @@
 Yes, this is AI generated (the image) if you know an artist, please let me know.
 
 
-Met'al q'uicha (the Huastec (tenek) word for sunflower), which I'll just write as metalquicha is a sample quantum chemistry backend
+
+Met'al q'uicha (the Huastec (tenek) word for sunflower), which I'll just write as metalquicha, is a sample quantum chemistry backend
 with focus on using the [pic](https://github.com/JorgeG94/pic) library and its derivatives:
 [pic-mpi](https://github.com/JorgeG94/pic-mpi) and [pic-blas](https://github.com/JorgeG94/pic-blas)
 which are Fortran based implementations of commonly used routines such as sorting algorithms,
-array handling, strings, loggers, timers, etc. While pic-mpi and pic-blas provide modern
-Fortran interfaces to MPI and BLAS implementations in a portable way. Specifically, the MPI
+array handling, strings, loggers, timers, etc.
+
+While pic-mpi and pic-blas provide modern Fortran wrappers and interfaces to MPI and BLAS implementations in a portable way. Specifically, the MPI
 library lets the user switch betwen the `mpi` and `mpi_f08` modules with ease.
 
-Metalquicha implements a naive backend for unfragmented and fragmented quantum chemistry
-calculations. Currently, metalquicha uses [tblite](https://github.com/tblite/tblite) as
-its chemistry engine which performs energy calculations.
+Additionally, users can opt to try the [vapaa](https://github.com/jeffhammond/vapaa) backend for the `mpi_f08` module
+to ensure cross compiler portability. Please report any issues associated here and in vapaa.
 
 The main purpose of this package is to showcase the ability of being able to write
 simple, powerful Fortran based programs that are able to access massively parallel
 ecosystems with ease.
+
+Metalquicha implements a naive backend for unfragmented and fragmented quantum chemistry
+calculations. Currently, metalquicha uses [tblite](https://github.com/tblite/tblite) as
+its chemistry engine which performs energy calculations.
 
 If you are interested in contributing, please see [here](https://github.com/JorgeG94/pic/blob/main/contributing.md). Pic is the main project here and all the contributions fall downstream.
 
@@ -42,6 +47,10 @@ cd build
 cmake ../
 make -j
 ```
+### Notes on Fortran compiler compatibility
+
+If you enable tblite (enabled by default at the moment) you are going to be blocked by which compilers does tblite
+support. If you decide to not build tblite and just build the framework the code will work with most modern compilers.
 
 ### Building with the Fortran Package Manager (FPM)
 
