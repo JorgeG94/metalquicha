@@ -193,18 +193,18 @@ calculations with MPI parallelization and energy/gradient computation.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -908,7 +908,7 @@ For n&gt;=4: same pattern recursively</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~3"></span>
+              <span class="anchor" id="variable-fragment"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -923,7 +923,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -953,7 +953,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -968,7 +968,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~7"></span>
+              <span class="anchor" id="variable-n"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1019,7 +1019,7 @@ will act as a node coordinator for a single node calculation</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1034,7 +1034,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1049,7 +1049,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~3"></span>
+              <span class="anchor" id="variable-total_fragments"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1064,7 +1064,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1079,7 +1079,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1094,7 +1094,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~3"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1109,7 +1109,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~3"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1124,7 +1124,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~4"></span>
+              <span class="anchor" id="variable-matrix_size~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1165,7 +1165,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~3"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1180,7 +1180,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~5"></span>
+              <span class="anchor" id="variable-node_comm~3"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1195,7 +1195,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1210,7 +1210,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~6"></span>
+              <span class="anchor" id="variable-matrix_size~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1250,7 +1250,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~4"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1265,7 +1265,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~6"></span>
+              <span class="anchor" id="variable-node_comm~4"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1280,7 +1280,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~10"></span>
+              <span class="anchor" id="variable-max_level~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1295,7 +1295,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1310,7 +1310,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1380,7 +1380,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~2"></span>
+              <span class="anchor" id="variable-fragment_size"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1395,7 +1395,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~3"></span>
+              <span class="anchor" id="variable-matrix_size"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1440,7 +1440,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1511,7 +1511,7 @@ This is a simple single-process calculation without MPI distribution</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~5"></span>
+              <span class="anchor" id="variable-sys_geom~2"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1526,7 +1526,7 @@ This is a simple single-process calculation without MPI distribution</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1569,7 +1569,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1584,7 +1584,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1599,7 +1599,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1669,7 +1669,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~4"></span>
+              <span class="anchor" id="variable-fragment~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1699,7 +1699,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~8"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1714,7 +1714,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1744,7 +1744,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1854,7 +1854,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1884,7 +1884,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1899,7 +1899,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~7"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1954,7 +1954,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1984,7 +1984,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-polymers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1999,7 +1999,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2029,7 +2029,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~5"></span>
+              <span class="anchor" id="variable-matrix_size~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2072,7 +2072,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:08 +0000             </p>
+ on 2025-12-02 20:57 +0000             </p>
           </div>
         </div>
         <br>
