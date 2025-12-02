@@ -23,6 +23,7 @@ include(demo_status)
 
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
 option(MQC_ENABLE_LIBCINT "Link to libcint for ERI computations" OFF)
+option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
 mark_as_advanced(MQC_ENABLE_LIBCINT)
 
 add_library(${main_lib} STATIC)
@@ -45,13 +46,19 @@ if(NOT TARGET pic-blas::pic-blas)
   find_package("pic-blas" REQUIRED)
 endif()
 
-if(NOT TARGET "tblite::tblite")
-  find_package("tblite" REQUIRED)
+if(MQC_ENABLE_TBLITE)
+  if(NOT TARGET "tblite::tblite")
+    find_package("tblite" REQUIRED)
+  endif()
+else()
+  add_compile_definitions(MQC_WITHOUT_TBLITE)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
   find_package(libcint REQUIRED)
   list(APPEND libraries_to_link libcint::cint_fortran)
+else()
+  add_compile_definitions(MQC_WITHOUT_LIBCINT)
 endif()
 
 find_package(
@@ -74,11 +81,14 @@ set_target_properties(${main_lib} PROPERTIES Fortran_MODULE_DIRECTORY
 list(
   APPEND
   libraries_to_link
-  tblite::tblite
   pic::pic
   pic-mpi::pic-mpi
   pic-blas::pic-blas
   OpenMP::OpenMP_Fortran)
+
+if(MQC_ENABLE_TBLITE)
+  list(APPEND libraries_to_link tblite::tblite)
+endif()
 
 target_link_libraries(${main_lib} ${libraries_to_link})
 

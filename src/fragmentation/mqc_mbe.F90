@@ -17,7 +17,9 @@ module mqc_mbe
    use mqc_frag_utils, only: next_combination, find_fragment_index
 
    ! Method API imports
+#ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
+#endif
    use mqc_result_types, only: calculation_result_t
    implicit none
 
@@ -41,7 +43,9 @@ contains
       integer, intent(in), optional :: verbosity !! Verbosity level (0=silent, 1=verbose)
 
       integer :: verb_level  !! Local verbosity setting
+#ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
+#endif
       type(calculation_result_t) :: result  !! Computation results
 
       ! Set verbosity level (default is 0 for silent operation)
@@ -57,6 +61,7 @@ contains
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
+#ifndef MQC_WITHOUT_TBLITE
          ! Setup XTB method
          xtb_calc%variant = method
          xtb_calc%verbose = (verb_level > 0)
@@ -67,6 +72,11 @@ contains
 
          ! Clean up result
          call result%destroy()
+#else
+         call logger%error("XTB method requested but tblite support not compiled in")
+         call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
+         error stop "tblite support not available"
+#endif
       else
          water_energy = 0.0_dp
       end if      ! Return empty vector for C_flat
