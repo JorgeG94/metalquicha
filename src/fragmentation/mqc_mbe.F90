@@ -8,6 +8,7 @@ module mqc_mbe
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use pic_hash_32bit, only: fnv_1a_hash
 
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, TAG_WORKER_MATRIX_RESULT, &
@@ -24,6 +25,20 @@ module mqc_mbe
    use mqc_result_types, only: calculation_result_t
    implicit none
    private
+
+   ! Hash table parameters for fragment lookup optimization
+   integer, parameter :: HASH_TABLE_SIZE = 2097152  ! 2^21
+
+   ! Hash table type for O(1) fragment lookup
+   type hash_entry_t
+      integer :: fragment_idx = -1
+      integer, allocatable :: monomers(:)
+      type(hash_entry_t), pointer :: next => null()
+   end type hash_entry_t
+
+   type hash_table_t
+      type(hash_entry_t), allocatable :: buckets(:)
+   end type hash_table_t
 
    ! Public interface
    public :: process_chemistry_fragment, global_coordinator, node_coordinator
@@ -113,11 +128,128 @@ contains
 
    end subroutine print_fragment_xyz
 
+   function hash_function(monomers, n_monomers) result(hash)
+      !! Compute hash for monomer array using FNV-1a
+      integer, intent(in) :: monomers(:), n_monomers
+      integer :: hash
+      integer(int32) :: hash_val
+
+      hash_val = fnv_1a_hash(monomers(1:n_monomers))
+      hash = 1 + modulo(abs(hash_val), HASH_TABLE_SIZE)
+   end function hash_function
+
+   subroutine build_hash_table(polymers, fragment_count, max_level, htable)
+      !! Build hash table mapping monomer sets to fragment indices (O(N) build time)
+      integer, intent(in) :: polymers(:, :), fragment_count, max_level
+      type(hash_table_t), intent(out) :: htable
+      integer :: i, frag_size, hash
+      type(hash_entry_t), pointer :: entry
+
+      allocate (htable%buckets(HASH_TABLE_SIZE))
+
+      do i = 1, fragment_count
+         frag_size = count(polymers(i, :) > 0)
+         if (frag_size == 0) cycle
+
+         hash = hash_function(polymers(i, 1:frag_size), frag_size)
+
+         if (htable%buckets(hash)%fragment_idx == -1) then
+            htable%buckets(hash)%fragment_idx = i
+            allocate (htable%buckets(hash)%monomers(frag_size))
+            htable%buckets(hash)%monomers = polymers(i, 1:frag_size)
+         else
+            ! Collision: create linked list
+            allocate (entry)
+            entry%fragment_idx = i
+            allocate (entry%monomers(frag_size))
+            entry%monomers = polymers(i, 1:frag_size)
+            entry%next => htable%buckets(hash)%next
+            htable%buckets(hash)%next => entry
+         end if
+      end do
+   end subroutine build_hash_table
+
+   function hash_lookup(htable, target_monomers, expected_size) result(idx)
+      !! Look up fragment index using hash table (O(1) average case)
+      type(hash_table_t), intent(in) :: htable
+      integer, intent(in) :: target_monomers(:), expected_size
+      integer :: idx
+      integer :: hash, i
+      type(hash_entry_t), pointer :: entry
+      logical :: match
+
+      idx = -1
+      hash = hash_function(target_monomers, expected_size)
+
+      if (htable%buckets(hash)%fragment_idx /= -1) then
+         if (size(htable%buckets(hash)%monomers) == expected_size) then
+            match = .true.
+            do i = 1, expected_size
+               if (.not. any(htable%buckets(hash)%monomers == target_monomers(i))) then
+                  match = .false.
+                  exit
+               end if
+            end do
+            if (match) then
+               idx = htable%buckets(hash)%fragment_idx
+               return
+            end if
+         end if
+
+         entry => htable%buckets(hash)%next
+         do while (associated(entry))
+            if (size(entry%monomers) == expected_size) then
+               match = .true.
+               do i = 1, expected_size
+                  if (.not. any(entry%monomers == target_monomers(i))) then
+                     match = .false.
+                     exit
+                  end if
+               end do
+               if (match) then
+                  idx = entry%fragment_idx
+                  return
+               end if
+            end if
+            entry => entry%next
+         end do
+      end if
+
+      if (idx == -1) then
+         call logger%error("Fragment not found in hash table")
+         error stop "Fragment lookup failed"
+      end if
+   end function hash_lookup
+
+   subroutine destroy_hash_table(htable)
+      !! Clean up hash table memory
+      type(hash_table_t), intent(inout) :: htable
+      integer :: i
+      type(hash_entry_t), pointer :: entry, next_entry
+
+      do i = 1, HASH_TABLE_SIZE
+         if (allocated(htable%buckets(i)%monomers)) then
+            deallocate (htable%buckets(i)%monomers)
+         end if
+
+         entry => htable%buckets(i)%next
+         do while (associated(entry))
+            next_entry => entry%next
+            if (allocated(entry%monomers)) deallocate (entry%monomers)
+            deallocate (entry)
+            entry => next_entry
+         end do
+      end do
+
+      deallocate (htable%buckets)
+   end subroutine destroy_hash_table
+
    subroutine compute_mbe_energy(polymers, fragment_count, max_level, energies, total_energy)
       !! Compute the many-body expansion (MBE) energy
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
       !! General n-body correction:
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
+      !! OPTIMIZED: Uses hash table for O(1) fragment lookup and OpenMP parallelization
       integer, intent(in) :: polymers(:, :), fragment_count, max_level
       real(dp), intent(in) :: energies(:)
       real(dp), intent(out) :: total_energy
@@ -125,11 +257,18 @@ contains
       integer :: i, fragment_size, body_level
       real(dp), allocatable :: sum_by_level(:)
       real(dp) :: delta_E
+      type(hash_table_t) :: fragment_hash
 
       allocate (sum_by_level(max_level))
       sum_by_level = 0.0_dp
 
+      ! Build hash table for O(1) fragment lookup (critical optimization!)
+      call logger%verbose("Building fragment hash table for MBE calculation...")
+      call build_hash_table(polymers, fragment_count, max_level, fragment_hash)
+
       ! Sum over all fragments by their size
+      ! Parallelized with OpenMP for multi-threaded execution
+      !$omp parallel do private(i, fragment_size, delta_E) reduction(+:sum_by_level) schedule(dynamic, 100)
       do i = 1, fragment_count
          fragment_size = count(polymers(i, :) > 0)
 
@@ -139,10 +278,14 @@ contains
          else if (fragment_size >= 2 .and. fragment_size <= max_level) then
             ! n-body corrections for n >= 2
             delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
-                                          fragment_count, fragment_size)
+                                          fragment_count, fragment_size, fragment_hash)
             sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
          end if
       end do
+      !$omp end parallel do
+
+      ! Clean up hash table
+      call destroy_hash_table(fragment_hash)
 
       total_energy = sum(sum_by_level)
 
@@ -166,23 +309,24 @@ contains
 
    end subroutine compute_mbe_energy
 
-   recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
+   recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n, htable) result(delta_E)
       !! Compute general n-body correction using recursion
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in)
       !!                        - sum over all proper subsets of deltaE or E
       !! For n=2: deltaE(ij) = E(ij) - E(i) - E(j)
       !! For n=3: deltaE(ijk) = E(ijk) - deltaE(ij) - deltaE(ik) - deltaE(jk) - E(i) - E(j) - E(k)
       !! For n>=4: same pattern recursively
+      !! OPTIMIZED: Uses hash table for O(1) fragment lookup
       integer, intent(in) :: fragment(:), polymers(:, :), fragment_count, n
       real(dp), intent(in) :: energies(:)
+      type(hash_table_t), intent(in) :: htable
       real(dp) :: delta_E
 
-      integer :: idx_n, subset_size, i, j, num_subsets
-      integer, allocatable :: subset(:), indices(:)
-      real(dp) :: E_n, subset_contribution
+      integer :: idx_n, subset_size
+      real(dp) :: E_n
 
-      ! Find the energy of this n-mer
-      idx_n = find_fragment_index(fragment, polymers, fragment_count, n)
+      ! Find the energy of this n-mer using hash table (O(1) instead of O(N))
+      idx_n = hash_lookup(htable, fragment, n)
       E_n = energies(idx_n)
 
       ! Start with the full n-mer energy
@@ -192,17 +336,19 @@ contains
       do subset_size = 1, n - 1
          ! Generate all subsets of this size and subtract their contributions
          call generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
-                                            fragment_count, delta_E)
+                                            fragment_count, delta_E, htable)
       end do
 
    end function compute_delta_nbody
 
    subroutine generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
-                                            fragment_count, delta_E)
+                                            fragment_count, delta_E, htable)
       !! Generate all subsets of given size and subtract their contribution
+      !! OPTIMIZED: Uses hash table for O(1) fragment lookup
       integer, intent(in) :: fragment(:), subset_size, n, polymers(:, :), fragment_count
       real(dp), intent(in) :: energies(:)
       real(dp), intent(inout) :: delta_E
+      type(hash_table_t), intent(in) :: htable
 
       integer, allocatable :: indices(:), subset(:)
       integer :: i
@@ -224,11 +370,11 @@ contains
 
          ! Subtract this subset's contribution
          if (subset_size == 1) then
-            ! 1-body: just subtract the monomer energy
-            delta_E = delta_E - energies(find_fragment_index(subset, polymers, fragment_count, 1))
+            ! 1-body: just subtract the monomer energy (use hash lookup)
+            delta_E = delta_E - energies(hash_lookup(htable, subset, 1))
          else
             ! n-body: recursively compute and subtract deltaE for this subset
-            delta_E = delta_E - compute_delta_nbody(subset, polymers, energies, fragment_count, subset_size)
+            delta_E = delta_E - compute_delta_nbody(subset, polymers, energies, fragment_count, subset_size, htable)
          end if
 
          ! Get next combination
