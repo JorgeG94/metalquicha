@@ -2,7 +2,7 @@
 module mqc_frag_utils
    !! Provides combinatorial functions and algorithms for generating molecular
    !! fragments, managing fragment lists, and performing many-body expansion calculations.
-   use pic_types, only: default_int, dp
+   use pic_types, only: default_int, int64, dp
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -20,12 +20,13 @@ contains
       !!
       !! Computes the sum of binomial coefficients C(n,k) for k=1 to max_level,
       !! representing all possible fragments from monomers to max_level-mers.
+      !! Uses int64 to handle large fragment counts that overflow int32.
       integer(default_int), intent(in) :: n_monomers  !! Number of monomers in system
       integer(default_int), intent(in) :: max_level   !! Maximum fragment size
-      integer(default_int) :: n_expected_fragments     !! Total fragment count
+      integer(int64) :: n_expected_fragments     !! Total fragment count
       integer(default_int) :: i  !! Loop counter
 
-      n_expected_fragments = 0
+      n_expected_fragments = 0_int64
       do i = 1, max_level
          n_expected_fragments = n_expected_fragments + binomial(n_monomers, i)
       end do
@@ -36,19 +37,20 @@ contains
       !!
       !! Calculates "n choose r" using iterative algorithm to avoid
       !! factorial overflow for large numbers.
+      !! Uses int64 to handle large combinatorial values that overflow int32.
       integer(default_int), intent(in) :: n  !! Total number of items
       integer(default_int), intent(in) :: r  !! Number of items to choose
-      integer(default_int) :: c              !! Binomial coefficient result
+      integer(int64) :: c              !! Binomial coefficient result
       integer(default_int) :: i              !! Loop counter
 
       if (r == 0 .or. r == n) then
-         c = 1
+         c = 1_int64
       else if (r > n) then
-         c = 0
+         c = 0_int64
       else
-         c = 1
+         c = 1_int64
          do i = 1, r
-            c = c*(n - i + 1)/i
+            c = c*int(n - i + 1, int64)/int(i, int64)
          end do
       end if
    end function binomial
@@ -68,9 +70,10 @@ contains
 
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
       !! Generate all possible fragments (combinations of monomers) up to max_level
+      !! Uses int64 for count to handle large numbers of fragments that overflow int32.
       integer(default_int), intent(in) :: monomers(:), max_level
       integer(default_int), intent(inout) :: polymers(:, :)
-      integer(default_int), intent(inout) :: count
+      integer(int64), intent(inout) :: count
       integer(default_int) :: r, n
 
       n = size(monomers, 1)
@@ -81,23 +84,25 @@ contains
 
    recursive subroutine combine(arr, n, r, out_array, count)
       !! Generate all combinations of size r from array arr of size n
+      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
       integer(default_int), intent(in) :: arr(:)
       integer(default_int), intent(in) :: n, r
       integer(default_int), intent(inout) :: out_array(:, :)
-      integer(default_int), intent(inout) :: count
+      integer(int64), intent(inout) :: count
       integer(default_int) :: data(r)
       call combine_util(arr, n, r, 1, data, 1, out_array, count)
    end subroutine combine
 
    recursive subroutine combine_util(arr, n, r, index, data, i, out_array, count)
       !! Utility for generating combinations recursively
+      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
       integer(default_int), intent(in) :: arr(:), n, r, index, i
       integer(default_int), intent(inout) :: data(:), out_array(:, :)
-      integer(default_int), intent(inout) :: count
+      integer(int64), intent(inout) :: count
       integer(default_int) :: j
 
       if (index > r) then
-         count = count + 1
+         count = count + 1_int64
          out_array(count, 1:r) = data(1:r)
          return
       end if
@@ -110,10 +115,13 @@ contains
 
    subroutine print_combos(out_array, count, max_len)
       !! Print combinations stored in out_array
-      integer(default_int), intent(in) :: out_array(:, :), count, max_len
-      integer(default_int) :: i, j
+      !! Uses int64 for count to handle large numbers of combinations that overflow int32.
+      integer(default_int), intent(in) :: out_array(:, :), max_len
+      integer(int64), intent(in) :: count
+      integer(int64) :: i
+      integer(default_int) :: j
 
-      do i = 1, count
+      do i = 1_int64, count
          do j = 1, max_len
             if (out_array(i, j) == 0) exit
             write (*, '(I0)', advance='no') out_array(i, j)

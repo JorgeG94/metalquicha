@@ -2,6 +2,7 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
+   use pic_types, only: int64
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -29,14 +30,14 @@ contains
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
-      integer :: total_fragments  !! Total number of fragments generated
+      integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment indices array
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
       integer, allocatable :: node_leader_ranks(:)  !! Ranks of node leaders
       integer, allocatable :: monomers(:)     !! Monomer indices for fragment generation
-      integer :: n_expected_frags  !! Expected number of fragments
-      integer :: n_rows      !! Number of rows for polymers array
+      integer(int64) :: n_expected_frags  !! Expected number of fragments (int64 to handle large systems)
+      integer(int64) :: n_rows      !! Number of rows for polymers array (int64 to handle large systems)
       integer :: global_node_rank  !! Global rank if node leader, -1 otherwise
       integer, allocatable :: all_node_leader_ranks(:)  !! All node leader ranks
 
@@ -146,11 +147,11 @@ contains
          call create_monomer_list(monomers)
 
          ! Generate all fragments (includes monomers in polymers array)
-         total_fragments = 0
+         total_fragments = 0_int64
 
          ! First add monomers
          do i = 1, sys_geom%n_monomers
-            total_fragments = total_fragments + 1
+            total_fragments = total_fragments + 1_int64
             polymers(total_fragments, 1) = i
          end do
 

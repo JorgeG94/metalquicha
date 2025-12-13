@@ -2,7 +2,7 @@
 module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
-   use pic_types, only: int32, dp
+   use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
@@ -118,11 +118,14 @@ contains
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
       !! General n-body correction:
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
-      integer, intent(in) :: polymers(:, :), fragment_count, max_level
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: polymers(:, :), max_level
       real(dp), intent(in) :: energies(:)
       real(dp), intent(out) :: total_energy
 
-      integer :: i, fragment_size, body_level
+      integer(int64) :: i
+      integer :: fragment_size, body_level
       real(dp), allocatable :: sum_by_level(:)
       real(dp) :: delta_E
 
@@ -130,7 +133,7 @@ contains
       sum_by_level = 0.0_dp
 
       ! Sum over all fragments by their size
-      do i = 1, fragment_count
+      do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
 
          if (fragment_size == 1) then
@@ -243,11 +246,14 @@ contains
                                  node_leader_ranks, num_nodes, matrix_size)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
+      !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
       type(comm_t), intent(in) :: world_comm, node_comm
-      integer, intent(in) :: total_fragments, max_level, num_nodes, matrix_size
+      integer(int64), intent(in) :: total_fragments
+      integer, intent(in) :: max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
 
-      integer :: current_fragment, finished_nodes
+      integer(int64) :: current_fragment, results_received
+      integer :: finished_nodes
       integer :: request_source, dummy_msg, fragment_idx
       type(MPI_Status) :: status, local_status
       logical :: handling_local_workers
@@ -264,13 +270,12 @@ contains
       integer :: max_matrix_size
       integer :: worker_fragment_map(node_comm%size())
       integer :: worker_source
-      integer :: results_received
 
       current_fragment = total_fragments
       finished_nodes = 0
       local_finished_workers = 0
       handling_local_workers = (node_comm%size() > 1)
-      results_received = 0
+      results_received = 0_int64
 
       ! Allocate storage for results
       allocate (scalar_results(total_fragments))
