@@ -64,7 +64,7 @@ contains
          call run_unfragmented_calculation(world_comm, sys_geom, config%method)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, sys_geom, max_level, &
-                                          matrix_size)
+                                         matrix_size)
       end if
 
    end subroutine run_calculation
