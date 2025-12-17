@@ -114,27 +114,28 @@ contains
 
    end subroutine print_fragment_xyz
 
-   subroutine compute_mbe_energy(polymers, fragment_count, max_level, energies, total_energy, print_detailed)
+   subroutine compute_mbe_energy(polymers, fragment_count, max_level, energies, total_energy)
       !! Compute the many-body expansion (MBE) energy
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
       !! General n-body correction:
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      !! Detailed breakdown is printed only if logger level is verbose or higher.
+      use pic_logger, only: verbose_level
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: polymers(:, :), max_level
       real(dp), intent(in) :: energies(:)
       real(dp), intent(out) :: total_energy
-      logical, intent(in), optional :: print_detailed  !! Print detailed breakdown per fragment
 
       integer(int64) :: i
-      integer :: fragment_size, body_level
+      integer :: fragment_size, body_level, current_log_level
       real(dp), allocatable :: sum_by_level(:), delta_energies(:)
       real(dp) :: delta_E
       logical :: do_detailed_print
 
-      ! Handle optional arguments
-      do_detailed_print = .true.
-      !if (present(print_detailed)) do_detailed_print = print_detailed
+      ! Query logger to decide if we should print detailed breakdown
+      call logger%configuration(level=current_log_level)
+      do_detailed_print = (current_log_level >= verbose_level)
 
       allocate (sum_by_level(max_level))
       allocate (delta_energies(fragment_count))
@@ -472,7 +473,7 @@ contains
    end subroutine generate_and_subtract_subsets
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, matrix_size, print_detailed_energy)
+                                 node_leader_ranks, num_nodes, matrix_size)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
@@ -480,7 +481,6 @@ contains
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
-      logical, intent(in) :: print_detailed_energy  !! Print detailed energy breakdown
 
       integer(int64) :: current_fragment, results_received
       integer :: finished_nodes
@@ -633,8 +633,7 @@ contains
          ! Compute the many-body expansion energy
          call logger%info("")
          call logger%info("Computing Many-Body Expansion (MBE)...")
-         call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy, &
-                                 print_detailed_energy)
+         call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
 
       end block
 

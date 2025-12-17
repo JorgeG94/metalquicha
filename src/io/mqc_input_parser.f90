@@ -17,7 +17,6 @@ module mqc_input_parser
       character(len=:), allocatable :: method        !! QC method (gfn1, gfn2)
       character(len=:), allocatable :: log_level     !! Logger verbosity level (debug/verbose/info/warning/error)
       integer :: nlevel = 1  !! Fragmentation level (default: 1)
-      logical :: print_detailed_energy = .false.  !! Print detailed energy breakdown (default: false)
    contains
       procedure :: destroy => config_destroy  !! Cleanup allocated memory
    end type input_config_t
@@ -31,7 +30,6 @@ contains
       !!            method="gfn1" or "gfn2" (defaults to gfn2)
       !!            nlevel=N (fragmentation level, defaults to 1)
       !!            log_level="debug|verbose|info|performance|warning|error|knowledge" (defaults to info)
-      !!            print_detailed_energy=true/false (defaults to false)
       character(len=*), intent(in) :: filename  !! Path to input file to parse
       type(input_config_t), intent(out) :: config  !! Parsed configuration data
       integer, intent(out) :: stat  !! Status code (0 = success, >0 = error)
@@ -110,18 +108,6 @@ contains
                errmsg = "nlevel must be >= 0 (0 for unfragmented calculation)"
                return
             end if
-         case ('print_detailed_energy')
-            ! Parse boolean value (true/false, yes/no, 1/0)
-            select case (trim(value))
-            case ('true', 'True', 'TRUE', 'yes', 'Yes', 'YES', '1')
-               config%print_detailed_energy = .true.
-            case ('false', 'False', 'FALSE', 'no', 'No', 'NO', '0')
-               config%print_detailed_energy = .false.
-            case default
-               stat = 1
-               errmsg = "Invalid value for print_detailed_energy: "//trim(value)//" (expected: true/false)"
-               return
-            end select
          case ('log_level')
             ! Validate log level
             select case (trim(value))

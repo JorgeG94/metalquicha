@@ -64,7 +64,7 @@ contains
          call run_unfragmented_calculation(world_comm, sys_geom, config%method)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, sys_geom, max_level, &
-                                          matrix_size, config%print_detailed_energy)
+                                          matrix_size)
       end if
 
    end subroutine run_calculation
@@ -104,8 +104,7 @@ contains
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(world_comm, node_comm, method, sys_geom, max_level, matrix_size, &
-                                          print_detailed_energy)
+   subroutine run_fragmented_calculation(world_comm, node_comm, method, sys_geom, max_level, matrix_size)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -116,7 +115,6 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
       integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
-      logical, intent(in) :: print_detailed_energy  !! Print detailed energy breakdown
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
@@ -199,7 +197,7 @@ contains
          ! Global coordinator (rank 0, node leader on node 0)
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, matrix_size, print_detailed_energy)
+                                 node_leader_ranks, num_nodes, matrix_size)
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
