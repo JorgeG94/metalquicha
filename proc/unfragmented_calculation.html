@@ -139,7 +139,7 @@
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-c_flat~3">C_flat</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-dot_result~2">dot_result</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system">full_system</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~31">i</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~14">i</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms~2">total_atoms</a>
         </div>
       </div>
@@ -197,7 +197,7 @@ This is a simple single-process calculation without MPI distribution</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~5"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -212,7 +212,7 @@ This is a simple single-process calculation without MPI distribution</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -302,20 +302,20 @@ This is a simple single-process calculation without MPI distribution</p>
 <path fill="none" stroke="#ff0000" d="M96.13,-334.91C117.72,-321.36 154.72,-299.52 189,-286 194.52,-283.82 200.33,-281.81 206.22,-279.97"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="207.55,-283.22 216.14,-277.02 205.56,-276.51 207.55,-283.22"/>
 </g>
-<!-- proc~process_chemistry_fragment -->
+<!-- proc~do_fragment_work -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_node6" class="node">
-<title>proc~process_chemistry_fragment</title>
-<g id="a_proc~~unfragmented_calculation~~CallsGraph_node6"><a xlink:href="../proc/process_chemistry_fragment.html" xlink:title="process_chemistry_fragment">
-<polygon fill="#d9534f" stroke="#d9534f" points="355,-319 189,-319 189,-295 355,-295 355,-319"/>
-<text text-anchor="middle" x="272" y="-304.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">process_chemistry_fragment</text>
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~unfragmented_calculation~~CallsGraph_node6"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="328,-319 216,-319 216,-295 328,-295 328,-319"/>
+<text text-anchor="middle" x="272" y="-304.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
 </a>
 </g>
 </g>
-<!-- proc~unfragmented_calculation&#45;&gt;proc~process_chemistry_fragment -->
+<!-- proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_edge5" class="edge">
-<title>proc~unfragmented_calculation&#45;&gt;proc~process_chemistry_fragment</title>
-<path fill="none" stroke="#ff0000" d="M135.56,-335C156.7,-330.63 180.79,-325.65 202.74,-321.11"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="203.57,-324.51 212.65,-319.06 202.15,-317.66 203.57,-324.51"/>
+<title>proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M135.56,-335C157.76,-330.41 183.23,-325.14 206.04,-320.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.88,-323.83 215.97,-318.38 205.47,-316.97 206.88,-323.83"/>
 </g>
 <!-- temp_indices -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_node7" class="node">
@@ -347,11 +347,11 @@ This is a simple single-process calculation without MPI distribution</p>
 <polygon fill="#777777" stroke="#777777" points="532,-277 448,-277 448,-253 532,-253 532,-277"/>
 <text text-anchor="middle" x="490" y="-262.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;configuration -->
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_edge8" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;configuration</title>
-<path fill="none" stroke="#0091ff" d="M334.9,-294.96C367.49,-288.63 406.98,-280.95 437.82,-274.95"/>
-<polygon fill="#0091ff" stroke="#0091ff" points="438.78,-278.33 447.93,-272.99 437.44,-271.46 438.78,-278.33"/>
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#0091ff" d="M328.06,-296.29C361.82,-289.73 404.74,-281.38 437.77,-274.96"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="438.53,-278.38 447.68,-273.03 437.19,-271.51 438.53,-278.38"/>
 </g>
 <!-- proc~print_fragment_xyz -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_node10" class="node">
@@ -362,11 +362,11 @@ This is a simple single-process calculation without MPI distribution</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz -->
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_edge9" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz</title>
-<path fill="none" stroke="#0091ff" d="M355.28,-307C377.41,-307 401.07,-307 422.24,-307"/>
-<polygon fill="#0091ff" stroke="#0091ff" points="422.42,-310.5 432.42,-307 422.42,-303.5 422.42,-310.5"/>
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#0091ff" d="M328.06,-307C356.7,-307 391.93,-307 422.12,-307"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="422.15,-310.5 432.15,-307 422.15,-303.5 422.15,-310.5"/>
 </g>
 <!-- proc~result_destroy -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_node11" class="node">
@@ -377,10 +377,10 @@ This is a simple single-process calculation without MPI distribution</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~result_destroy -->
+<!-- proc~do_fragment_work&#45;&gt;proc~result_destroy -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_edge10" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~result_destroy</title>
-<path fill="none" stroke="#0091ff" d="M336.42,-295C342.93,-292.54 349.26,-289.57 355,-286 375.88,-273.01 369.87,-256.57 391,-244 394.18,-242.11 397.5,-240.39 400.93,-238.82"/>
+<title>proc~do_fragment_work&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#0091ff" d="M328.28,-297.8C337.61,-294.88 346.89,-291.05 355,-286 375.88,-273.01 369.87,-256.57 391,-244 394.18,-242.11 397.5,-240.39 400.93,-238.82"/>
 <polygon fill="#0091ff" stroke="#0091ff" points="402.28,-242.05 410.21,-235.02 399.62,-235.57 402.28,-242.05"/>
 </g>
 <!-- proc~xtb_calc_energy -->
@@ -392,10 +392,10 @@ This is a simple single-process calculation without MPI distribution</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy -->
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
 <g id="proc~~unfragmented_calculation~~CallsGraph_edge11" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy</title>
-<path fill="none" stroke="#0091ff" d="M341.29,-294.96C346.22,-292.49 350.87,-289.54 355,-286 385.85,-259.58 367.05,-234.81 391,-202 410.73,-174.98 440.55,-150.7 462.12,-135.08"/>
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#0091ff" d="M328.01,-300.31C337.79,-297.16 347.3,-292.6 355,-286 385.85,-259.58 367.05,-234.81 391,-202 410.73,-174.98 440.55,-150.7 462.12,-135.08"/>
 <polygon fill="#0091ff" stroke="#0091ff" points="464.38,-137.76 470.51,-129.13 460.33,-132.05 464.38,-137.76"/>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;info -->
@@ -820,7 +820,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~31"></span>
+              <span class="anchor" id="variable-i~14"></span>
               integer,
             </td>
               <td>private</td>
@@ -913,9 +913,9 @@ large graphs.</div>
 <span class="w">            </span><span class="n">temp_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
 <span class="w">         </span><span class="k">end do</span>
 
-<span class="k">         call </span><span class="n">process_chemistry_fragment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">temp_indices</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                         </span><span class="n">total_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">dot_result</span><span class="p">,</span><span class="w"> </span><span class="n">C_flat</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                         </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="o">=</span><span class="n">full_system</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">temp_indices</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="n">total_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">dot_result</span><span class="p">,</span><span class="w"> </span><span class="n">C_flat</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="o">=</span><span class="n">full_system</span><span class="p">)</span>
 <span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">temp_indices</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end block</span>
 
@@ -955,7 +955,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-17 08:40 +0000             </p>
+ on 2025-12-17 09:06 +0000             </p>
           </div>
         </div>
         <br>

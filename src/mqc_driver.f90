@@ -2,11 +2,12 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
-   use pic_types, only: int64
+   use pic_types, only: int64, dp
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
-   use mqc_mbe, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation
+   use mqc_mbe, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
+                      serial_fragment_processor
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_input_parser, only: input_config_t
@@ -127,13 +128,7 @@ contains
       integer :: global_node_rank  !! Global rank if this process leads a node, -1 otherwise
       integer, allocatable :: all_node_leader_ranks(:)  !! Node leader status for all ranks
 
-      ! Generate fragments (only rank 0 needs this for coordination)
-      if (world_comm%size() == 1) then
-         if (world_comm%rank() == 0) then
-            call logger%error("Fragmented calculation cannot be run with one rank")
-         end if
-         call abort_comm(world_comm, 1)
-      end if
+      ! Generate fragments
       if (world_comm%rank() == 0) then
          ! Calculate expected number of fragments
          n_expected_frags = get_nfrags(sys_geom%n_monomers, max_level)
@@ -193,7 +188,11 @@ contains
       deallocate (all_node_leader_ranks)
 
       ! Execute appropriate role
-      if (world_comm%leader() .and. node_comm%leader()) then
+      if (world_comm%size() == 1) then
+         ! Single rank: process fragments serially
+         call logger%info("Running in serial mode (single MPI rank)")
+         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, matrix_size)
+      else if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &

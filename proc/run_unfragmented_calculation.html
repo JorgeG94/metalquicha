@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for procedures.">24 statements</a>
+                 title=" 1.0% of total for procedures.">24 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -183,7 +183,7 @@ on entire system using OpenMP for parallelization.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~2"></span>
+              <span class="anchor" id="variable-world_comm~7"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -198,7 +198,7 @@ on entire system using OpenMP for parallelization.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -213,7 +213,7 @@ on entire system using OpenMP for parallelization.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -360,20 +360,20 @@ on entire system using OpenMP for parallelization.</p>
 <path fill="none" stroke="#0066ff" d="M319.97,-120.54C342.23,-111.9 373.23,-100.34 401,-91.7 407.95,-89.54 415.27,-87.43 422.57,-85.43"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="423.71,-88.75 432.47,-82.78 421.9,-81.99 423.71,-88.75"/>
 </g>
-<!-- proc~process_chemistry_fragment -->
+<!-- proc~do_fragment_work -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_node9" class="node">
-<title>proc~process_chemistry_fragment</title>
-<g id="a_proc~~run_unfragmented_calculation~~CallsGraph_node9"><a xlink:href="../proc/process_chemistry_fragment.html" xlink:title="process_chemistry_fragment">
-<polygon fill="#d9534f" stroke="#d9534f" points="567,-246.7 401,-246.7 401,-222.7 567,-222.7 567,-246.7"/>
-<text text-anchor="middle" x="484" y="-232.3" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">process_chemistry_fragment</text>
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~run_unfragmented_calculation~~CallsGraph_node9"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="540,-246.7 428,-246.7 428,-222.7 540,-222.7 540,-246.7"/>
+<text text-anchor="middle" x="484" y="-232.3" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
 </a>
 </g>
 </g>
-<!-- proc~unfragmented_calculation&#45;&gt;proc~process_chemistry_fragment -->
+<!-- proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_edge10" class="edge">
-<title>proc~unfragmented_calculation&#45;&gt;proc~process_chemistry_fragment</title>
-<path fill="none" stroke="#0066ff" d="M339.81,-144.8C348.75,-148.36 357.56,-152.91 365,-158.7 388.05,-176.65 377.24,-196.7 401,-213.7 403.14,-215.23 405.39,-216.66 407.71,-217.97"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="406.49,-221.27 417.01,-222.56 409.59,-215 406.49,-221.27"/>
+<title>proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#0066ff" d="M339.81,-144.8C348.75,-148.36 357.56,-152.91 365,-158.7 388.05,-176.65 377.24,-196.7 401,-213.7 406.18,-217.4 411.95,-220.46 417.97,-222.97"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="416.98,-226.34 427.58,-226.49 419.39,-219.76 416.98,-226.34"/>
 </g>
 <!-- temp_indices -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_node10" class="node">
@@ -393,11 +393,11 @@ on entire system using OpenMP for parallelization.</p>
 <polygon fill="#777777" stroke="#777777" points="744,-246.7 660,-246.7 660,-222.7 744,-222.7 744,-246.7"/>
 <text text-anchor="middle" x="702" y="-232.3" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;configuration -->
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_edge13" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;configuration</title>
-<path fill="none" stroke="#00ffff" d="M567.28,-234.7C594.92,-234.7 624.95,-234.7 649.54,-234.7"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="649.72,-238.2 659.72,-234.7 649.72,-231.2 649.72,-238.2"/>
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ffff" d="M540.06,-234.7C573.67,-234.7 616.37,-234.7 649.34,-234.7"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="649.68,-238.2 659.68,-234.7 649.68,-231.2 649.68,-238.2"/>
 </g>
 <!-- proc~print_fragment_xyz -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_node12" class="node">
@@ -408,11 +408,11 @@ on entire system using OpenMP for parallelization.</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz -->
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_edge14" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz</title>
-<path fill="none" stroke="#00ffff" d="M546.9,-222.67C574.21,-217.35 606.37,-211.1 634.22,-205.69"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="635.12,-209.08 644.27,-203.73 633.78,-202.2 635.12,-209.08"/>
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#00ffff" d="M540.06,-223.99C568.7,-218.43 603.93,-211.57 634.12,-205.7"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="635,-209.1 644.15,-203.75 633.67,-202.23 635,-209.1"/>
 </g>
 <!-- proc~result_destroy -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_node13" class="node">
@@ -423,11 +423,11 @@ on entire system using OpenMP for parallelization.</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~result_destroy -->
+<!-- proc~do_fragment_work&#45;&gt;proc~result_destroy -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_edge15" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~result_destroy</title>
-<path fill="none" stroke="#00ffff" d="M546.9,-246.74C572.54,-251.72 602.46,-257.54 629.07,-262.71"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="628.61,-266.19 639.09,-264.66 629.95,-259.32 628.61,-266.19"/>
+<title>proc~do_fragment_work&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#00ffff" d="M540.06,-245.41C567.12,-250.67 600.07,-257.08 629.09,-262.72"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="628.69,-266.21 639.17,-264.68 630.03,-259.33 628.69,-266.21"/>
 </g>
 <!-- proc~xtb_calc_energy -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_node14" class="node">
@@ -438,10 +438,10 @@ on entire system using OpenMP for parallelization.</p>
 </a>
 </g>
 </g>
-<!-- proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy -->
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
 <g id="proc~~run_unfragmented_calculation~~CallsGraph_edge16" class="edge">
-<title>proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy</title>
-<path fill="none" stroke="#00ffff" d="M548.42,-246.7C554.93,-249.17 561.26,-252.13 567,-255.7 587.88,-268.69 585.62,-280.32 603,-297.7 627.09,-321.79 657.14,-346.9 677.57,-363.32"/>
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#00ffff" d="M540.28,-243.9C549.61,-246.82 558.89,-250.66 567,-255.7 587.88,-268.69 585.62,-280.32 603,-297.7 627.09,-321.79 657.14,-346.9 677.57,-363.32"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="675.42,-366.08 685.42,-369.58 679.78,-360.61 675.42,-366.08"/>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;info -->
@@ -854,7 +854,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-17 08:40 +0000             </p>
+ on 2025-12-17 09:06 +0000             </p>
           </div>
         </div>
         <br>

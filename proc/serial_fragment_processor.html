@@ -1,0 +1,1362 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>serial_fragment_processor &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>serial_fragment_processor
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.9% of total for procedures.">43 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe.F90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe.f90.html'>mqc_mbe.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+            <li class="breadcrumb-item active" aria-current="page">serial_fragment_processor</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-c_flat~4">C_flat</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-dot_result~3">dot_result</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx">frag_idx</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_indices~7">fragment_indices</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~8">fragment_size</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-matrix_results~2">matrix_results</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-max_matrix_size~2">max_matrix_size</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-mbe_total_energy">mbe_total_energy</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-phys_frag~3">phys_frag</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-scalar_results~2">scalar_results</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/serial_fragment_processor.html#src">serial_fragment_processor</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, matrix_size)  
+</h2>
+    
+
+    <p>Process all fragments serially in single-rank mode
+This is used when running with only 1 MPI rank</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_fragments~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_fragments</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~6"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~4"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-matrix_size~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>matrix_size</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~serial_fragment_processor~~CallsGraph Pages: 1 -->
+<svg id="procserial_fragment_processorCallsGraph" width="641pt" height="409pt"
+ viewBox="0.00 0.00 641.00 409.34" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_fragment_processor~~CallsGraph" class="graph" transform="scale(0.52 0.52) rotate(0) translate(4 777)">
+<title>proc~~serial_fragment_processor~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-777 1219,-777 1219,4 -4,4"/>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node1" class="node">
+<title>proc~serial_fragment_processor</title>
+<polygon fill="none" stroke="black" points="154,-342 0,-342 0,-318 154,-318 154,-342"/>
+<text text-anchor="middle" x="77" y="-327.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+</g>
+<!-- info -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="857.5,-444 803.5,-444 803.5,-420 857.5,-420 857.5,-444"/>
+<text text-anchor="middle" x="830.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;info -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge1" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M154.16,-331.84C305.21,-335.96 632.16,-347.38 678,-370 699.75,-380.73 692.9,-399.06 714,-411 738.1,-424.64 769.16,-429.72 793,-431.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="792.88,-434.98 803.06,-432.06 793.28,-427.99 792.88,-434.98"/>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node3" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node3"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="384.5,-402 218.5,-402 218.5,-378 384.5,-378 384.5,-402"/>
+<text text-anchor="middle" x="301.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge2" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0000" d="M115.42,-342.01C137.1,-348.81 164.98,-357.27 190,-364 204.99,-368.03 221.21,-372.05 236.49,-375.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.84,-379.11 246.37,-377.99 237.44,-372.3 235.84,-379.11"/>
+</g>
+<!-- proc~compute_mbe_energy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node4" class="node">
+<title>proc~compute_mbe_energy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node4"><a xlink:href="../proc/compute_mbe_energy.html" xlink:title="compute_mbe_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="367.5,-464 235.5,-464 235.5,-440 367.5,-440 367.5,-464"/>
+<text text-anchor="middle" x="301.5" y="-449.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge3" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy</title>
+<path fill="none" stroke="#ff0000" d="M92.02,-342.08C112.45,-359.22 152.11,-390.76 190,-411 209.07,-421.19 231.22,-429.95 250.66,-436.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249.66,-440.08 260.25,-439.99 251.91,-433.46 249.66,-440.08"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node5" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node5"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="357.5,-322 245.5,-322 245.5,-298 357.5,-298 357.5,-322"/>
+<text text-anchor="middle" x="301.5" y="-307.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge4" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M154.26,-323.15C180.58,-320.78 209.8,-318.15 235.16,-315.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.76,-319.33 245.41,-314.95 235.13,-312.36 235.76,-319.33"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node6" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node6"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="413,-53 190,-53 190,-29 413,-29 413,-53"/>
+<text text-anchor="middle" x="301.5" y="-38.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge5" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M79.88,-317.73C86.73,-277.32 114.01,-147.08 190,-78 200.18,-68.75 212.75,-61.8 225.71,-56.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="227.03,-59.83 235.2,-53.08 224.61,-53.26 227.03,-59.83"/>
+</g>
+<!-- to_char -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node7" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="857.5,-66 803.5,-66 803.5,-42 857.5,-42 857.5,-66"/>
+<text text-anchor="middle" x="830.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;to_char -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge6" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M93.97,-317.97C143.59,-281.26 300.7,-169.9 449,-117 570.22,-73.76 723.92,-59.94 792.98,-55.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="793.54,-59.2 803.32,-55.14 793.14,-52.22 793.54,-59.2"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;info -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge8" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;info</title>
+<path fill="none" stroke="#00ff00" d="M367.65,-449.53C479.72,-445.27 705.42,-436.71 793.31,-433.37"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="793.47,-436.87 803.33,-432.99 793.2,-429.88 793.47,-436.87"/>
+</g>
+<!-- configuration -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node8" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="605.5,-403 521.5,-403 521.5,-379 605.5,-379 605.5,-403"/>
+<text text-anchor="middle" x="563.5" y="-388.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;configuration -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge7" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ff00" d="M353.87,-439.95C399.55,-429.23 465.97,-413.65 511.53,-402.96"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="512.55,-406.31 521.49,-400.62 510.96,-399.5 512.55,-406.31"/>
+</g>
+<!-- proc~compute_delta_nbody -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node10" class="node">
+<title>proc~compute_delta_nbody</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node10"><a xlink:href="../proc/compute_delta_nbody.html" xlink:title="compute_delta_nbody">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="628.5,-752 498.5,-752 498.5,-728 628.5,-728 628.5,-752"/>
+<text text-anchor="middle" x="563.5" y="-737.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_delta_nbody</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~compute_delta_nbody -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge9" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~compute_delta_nbody</title>
+<path fill="none" stroke="#00ff00" d="M313.34,-464.01C353.56,-508.56 494.51,-664.69 544.64,-720.21"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="542.31,-722.86 551.61,-727.94 547.51,-718.17 542.31,-722.86"/>
+</g>
+<!-- proc~print_detailed_breakdown -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node11" class="node">
+<title>proc~print_detailed_breakdown</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node11"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
+<polygon fill="#d9534f" stroke="#d9534f" points="638.5,-587 488.5,-587 488.5,-563 638.5,-563 638.5,-587"/>
+<text text-anchor="middle" x="563.5" y="-572.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge10" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown</title>
+<path fill="none" stroke="#00ff00" d="M327.9,-464.02C374.7,-486.15 474.57,-533.4 527.65,-558.51"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="526.46,-561.82 536.99,-562.93 529.45,-555.49 526.46,-561.82"/>
+</g>
+<!-- proc~print_detailed_breakdown_json -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node12" class="node">
+<title>proc~print_detailed_breakdown_json</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node12"><a xlink:href="../proc/print_detailed_breakdown_json.html" xlink:title="print_detailed_breakdown_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="652,-484 475,-484 475,-460 652,-460 652,-484"/>
+<text text-anchor="middle" x="563.5" y="-469.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown_json</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge11" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json</title>
+<path fill="none" stroke="#00ff00" d="M367.77,-457.02C396.96,-459.27 431.98,-461.96 464.23,-464.44"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="464.36,-467.96 474.59,-465.24 464.89,-460.98 464.36,-467.96"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge12" class="edge">
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ffff" d="M341.14,-322.04C387.16,-336.38 464.07,-360.33 514.03,-375.9"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="513.06,-379.26 523.64,-378.89 515.14,-372.58 513.06,-379.26"/>
+</g>
+<!-- proc~print_fragment_xyz -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node13" class="node">
+<title>proc~print_fragment_xyz</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node13"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
+<polygon fill="#d9534f" stroke="#d9534f" points="621,-150 506,-150 506,-126 621,-126 621,-150"/>
+<text text-anchor="middle" x="563.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge13" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#00ffff" d="M320.78,-297.91C365.91,-268.05 482.76,-190.75 535.72,-155.72"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="537.83,-158.52 544.24,-150.08 533.97,-152.68 537.83,-158.52"/>
+</g>
+<!-- proc~result_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node14" class="node">
+<title>proc~result_destroy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node14"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="662.5,-322 464.5,-322 464.5,-298 662.5,-298 662.5,-322"/>
+<text text-anchor="middle" x="563.5" y="-307.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~result_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge14" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#00ffff" d="M357.64,-310C385.74,-310 420.91,-310 454.15,-310"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="454.39,-313.5 464.39,-310 454.39,-306.5 454.39,-313.5"/>
+</g>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node15" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node15"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="654,-278 473,-278 473,-254 654,-254 654,-278"/>
+<text text-anchor="middle" x="563.5" y="-263.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge15" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#00ffff" d="M357.64,-300.67C393.51,-294.6 440.9,-286.58 481.07,-279.78"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="481.84,-283.2 491.12,-278.08 480.68,-276.3 481.84,-283.2"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node9" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node9"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="678,-30 449,-30 449,-6 678,-6 678,-30"/>
+<text text-anchor="middle" x="563.5" y="-15.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge16" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#0000ff" d="M413.14,-31.21C421.58,-30.47 430.14,-29.71 438.66,-28.96"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="438.98,-32.44 448.64,-28.07 438.37,-25.47 438.98,-32.44"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node23" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node23"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="947,-24 714,-24 714,0 947,0 947,-24"/>
+<text text-anchor="middle" x="830.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge17" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffbf00" d="M678.04,-15.43C686.52,-15.24 695.11,-15.04 703.66,-14.85"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="703.75,-18.35 713.67,-14.62 703.59,-11.35 703.75,-18.35"/>
+</g>
+<!-- proc~find_fragment_index -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node25" class="node">
+<title>proc~find_fragment_index</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node25"><a xlink:href="../proc/find_fragment_index.html" xlink:title="find_fragment_index">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1114.5,-731 993.5,-731 993.5,-707 1114.5,-707 1114.5,-731"/>
+<text text-anchor="middle" x="1054" y="-716.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">find_fragment_index</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_delta_nbody&#45;&gt;proc~find_fragment_index -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge18" class="edge">
+<title>proc~compute_delta_nbody&#45;&gt;proc~find_fragment_index</title>
+<path fill="none" stroke="#7fff00" d="M628.61,-737.24C720.4,-733.3 888.59,-726.07 983.34,-721.99"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="983.56,-725.49 993.4,-721.56 983.26,-718.49 983.56,-725.49"/>
+</g>
+<!-- proc~generate_and_subtract_subsets -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node26" class="node">
+<title>proc~generate_and_subtract_subsets</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node26"><a xlink:href="../proc/generate_and_subtract_subsets.html" xlink:title="generate_and_subtract_subsets">
+<polygon fill="#d9534f" stroke="#d9534f" points="921,-772 740,-772 740,-748 921,-748 921,-772"/>
+<text text-anchor="middle" x="830.5" y="-757.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_and_subtract_subsets</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_delta_nbody&#45;&gt;proc~generate_and_subtract_subsets -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge19" class="edge">
+<title>proc~compute_delta_nbody&#45;&gt;proc~generate_and_subtract_subsets</title>
+<path fill="none" stroke="#7fff00" d="M628.65,-738.96C662.67,-740.58 704.98,-743.6 741.97,-747"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="741.97,-750.52 752.26,-747.97 742.63,-743.55 741.97,-750.52"/>
+</g>
+<!-- header -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node17" class="node">
+<title>header</title>
+<polygon fill="#777777" stroke="#777777" points="857.5,-650 803.5,-650 803.5,-626 857.5,-626 857.5,-650"/>
+<text text-anchor="middle" x="830.5" y="-635.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">header</text>
+</g>
+<!-- proc~print_detailed_breakdown&#45;&gt;header -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge20" class="edge">
+<title>proc~print_detailed_breakdown&#45;&gt;header</title>
+<path fill="none" stroke="#00ff3f" d="M603.59,-587.07C633.6,-596.07 676.17,-608.27 714,-617 740.35,-623.08 770.41,-628.5 793.26,-632.31"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="792.77,-635.78 803.21,-633.94 793.91,-628.87 792.77,-635.78"/>
+</g>
+<!-- level_name -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node18" class="node">
+<title>level_name</title>
+<polygon fill="#777777" stroke="#777777" points="867.5,-608 793.5,-608 793.5,-584 867.5,-584 867.5,-608"/>
+<text text-anchor="middle" x="830.5" y="-593.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">level_name</text>
+</g>
+<!-- proc~print_detailed_breakdown&#45;&gt;level_name -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge21" class="edge">
+<title>proc~print_detailed_breakdown&#45;&gt;level_name</title>
+<path fill="none" stroke="#00ff3f" d="M638.67,-580.88C685.15,-584.56 743.6,-589.19 783.48,-592.35"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="783.21,-595.84 793.46,-593.14 783.77,-588.86 783.21,-595.84"/>
+</g>
+<!-- proc~get_body_level_name -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node27" class="node">
+<title>proc~get_body_level_name</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node27"><a xlink:href="../proc/get_body_level_name.html" xlink:title="get_body_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="894.5,-524 766.5,-524 766.5,-500 894.5,-500 894.5,-524"/>
+<text text-anchor="middle" x="830.5" y="-509.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_body_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~print_detailed_breakdown&#45;&gt;proc~get_body_level_name -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge22" class="edge">
+<title>proc~print_detailed_breakdown&#45;&gt;proc~get_body_level_name</title>
+<path fill="none" stroke="#00ff3f" d="M603.59,-562.93C633.6,-553.93 676.17,-541.73 714,-533 727.58,-529.86 742.15,-526.91 756.21,-524.25"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="757.14,-527.64 766.34,-522.38 755.87,-520.76 757.14,-527.64"/>
+</g>
+<!-- verbose -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node30" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="858,-692 803,-692 803,-668 858,-668 858,-692"/>
+<text text-anchor="middle" x="830.5" y="-677.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~print_detailed_breakdown&#45;&gt;verbose -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge23" class="edge">
+<title>proc~print_detailed_breakdown&#45;&gt;verbose</title>
+<path fill="none" stroke="#00ff3f" d="M581.53,-587.09C608.37,-605.54 662.75,-640.53 714,-659 739.44,-668.17 769.53,-673.47 792.63,-676.46"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="792.35,-679.95 802.7,-677.67 793.19,-673 792.35,-679.95"/>
+</g>
+<!-- warning -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node31" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="858,-566 803,-566 803,-542 858,-542 858,-566"/>
+<text text-anchor="middle" x="830.5" y="-551.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~print_detailed_breakdown&#45;&gt;warning -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge24" class="edge">
+<title>proc~print_detailed_breakdown&#45;&gt;warning</title>
+<path fill="none" stroke="#00ff3f" d="M638.67,-569.12C688.99,-565.13 753.33,-560.04 792.96,-556.9"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="793.28,-560.38 802.97,-556.1 792.72,-553.4 793.28,-560.38"/>
+</g>
+<!-- proc~print_detailed_breakdown_json&#45;&gt;info -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge26" class="edge">
+<title>proc~print_detailed_breakdown_json&#45;&gt;info</title>
+<path fill="none" stroke="#00ffff" d="M644.01,-460C693.62,-452.51 755.1,-443.23 793.31,-437.46"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="794.08,-440.89 803.45,-435.93 793.04,-433.96 794.08,-440.89"/>
+</g>
+<!-- error -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node16" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1215,-607 1161,-607 1161,-583 1215,-583 1215,-607"/>
+<text text-anchor="middle" x="1188" y="-592.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~print_detailed_breakdown_json&#45;&gt;error -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge25" class="edge">
+<title>proc~print_detailed_breakdown_json&#45;&gt;error</title>
+<path fill="none" stroke="#00ffff" d="M652.32,-467.52C730.66,-465.61 847.94,-467.88 947,-491 1026.68,-509.6 1113.09,-553.54 1157.28,-577.93"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1155.62,-581.01 1166.06,-582.82 1159.03,-574.9 1155.62,-581.01"/>
+</g>
+<!-- proc~print_detailed_breakdown_json&#45;&gt;proc~get_body_level_name -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge27" class="edge">
+<title>proc~print_detailed_breakdown_json&#45;&gt;proc~get_body_level_name</title>
+<path fill="none" stroke="#00ffff" d="M644.01,-484C679.67,-489.38 721.46,-495.69 756.34,-500.96"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="756.04,-504.45 766.45,-502.48 757.09,-497.53 756.04,-504.45"/>
+</g>
+<!-- proc~print_detailed_breakdown_json&#45;&gt;warning -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge28" class="edge">
+<title>proc~print_detailed_breakdown_json&#45;&gt;warning</title>
+<path fill="none" stroke="#00ffff" d="M589.59,-484.12C618.83,-497.8 668.92,-519.86 714,-533 739.96,-540.57 770.04,-545.93 792.99,-549.34"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="792.6,-552.82 802.99,-550.77 793.59,-545.89 792.6,-552.82"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;info -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge29" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;info</title>
+<path fill="none" stroke="#003fff" d="M583.09,-150.06C608.68,-167.69 654.29,-203.03 678,-245 715.13,-310.73 659.73,-358.53 714,-411 734.73,-431.05 767.84,-435.35 793.3,-435.19"/>
+<polygon fill="#003fff" stroke="#003fff" points="793.44,-438.68 803.33,-434.89 793.24,-431.69 793.44,-438.68"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;to_char -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge32" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;to_char</title>
+<path fill="none" stroke="#003fff" d="M621.22,-127.18C639.97,-122.27 660.5,-115.4 678,-106 696.6,-96.01 694.95,-84.1 714,-75 738.72,-63.2 769.32,-58 792.82,-55.73"/>
+<polygon fill="#003fff" stroke="#003fff" points="793.39,-59.19 803.06,-54.87 792.81,-52.21 793.39,-59.19"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node24" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node24"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="912,-108 749,-108 749,-84 912,-84 912,-108"/>
+<text text-anchor="middle" x="830.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge30" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#003fff" d="M621.02,-129.04C656.62,-123.4 703.26,-116.01 743.4,-109.65"/>
+<polygon fill="#003fff" stroke="#003fff" points="744.12,-113.08 753.45,-108.05 743.03,-106.16 744.12,-113.08"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node29" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node29"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="870,-150 791,-150 791,-126 870,-126 870,-150"/>
+<text text-anchor="middle" x="830.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~to_angstrom -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge31" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#003fff" d="M621.02,-138C668.41,-138 735.37,-138 780.51,-138"/>
+<polygon fill="#003fff" stroke="#003fff" points="780.64,-141.5 790.64,-138 780.64,-134.5 780.64,-141.5"/>
+</g>
+<!-- proc~result_reset -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node28" class="node">
+<title>proc~result_reset</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node28"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="923,-402 738,-402 738,-378 923,-378 923,-402"/>
+<text text-anchor="middle" x="830.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~result_destroy&#45;&gt;proc~result_reset -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge33" class="edge">
+<title>proc~result_destroy&#45;&gt;proc~result_reset</title>
+<path fill="none" stroke="#7f00ff" d="M641.84,-322.04C654.32,-325.57 666.81,-330.13 678,-336 697.22,-346.09 694.56,-359.35 714,-369 718.56,-371.26 723.33,-373.29 728.23,-375.09"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="727.18,-378.43 737.78,-378.31 729.41,-371.8 727.18,-378.43"/>
+</g>
+<!-- new -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node19" class="node">
+<title>new</title>
+<polygon fill="#777777" stroke="#777777" points="857.5,-192 803.5,-192 803.5,-168 857.5,-168 857.5,-192"/>
+<text text-anchor="middle" x="830.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge34" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new</title>
+<path fill="none" stroke="#ff00bf" d="M587.69,-253.91C616.55,-239.35 667.69,-215.07 714,-201 740.04,-193.09 770.35,-187.71 793.38,-184.39"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="793.98,-187.84 803.41,-183 793.02,-180.9 793.98,-187.84"/>
+</g>
+<!-- new_gfn1_calculator -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node20" class="node">
+<title>new_gfn1_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="891.5,-360 769.5,-360 769.5,-336 891.5,-336 891.5,-360"/>
+<text text-anchor="middle" x="830.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge35" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#ff00bf" d="M652.29,-278.08C661.26,-280.98 670,-284.56 678,-289 698.35,-300.28 693.54,-315.93 714,-327 727.75,-334.44 743.62,-339.31 759.12,-342.48"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="758.76,-345.97 769.22,-344.32 760.02,-339.08 758.76,-345.97"/>
+</g>
+<!-- new_gfn2_calculator -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node21" class="node">
+<title>new_gfn2_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="891.5,-318 769.5,-318 769.5,-294 891.5,-294 891.5,-318"/>
+<text text-anchor="middle" x="830.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge36" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator</title>
+<path fill="none" stroke="#ff00bf" d="M644.01,-278C680.64,-283.53 723.74,-290.04 759.17,-295.38"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="759.02,-298.9 769.43,-296.93 760.06,-291.98 759.02,-298.9"/>
+</g>
+<!-- new_wavefunction -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node22" class="node">
+<title>new_wavefunction</title>
+<polygon fill="#777777" stroke="#777777" points="886,-276 775,-276 775,-252 886,-252 886,-276"/>
+<text text-anchor="middle" x="830.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_wavefunction -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge37" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_wavefunction</title>
+<path fill="none" stroke="#ff00bf" d="M654.22,-265.32C690.41,-265.05 731.38,-264.74 764.6,-264.49"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="764.68,-267.99 774.65,-264.41 764.63,-260.99 764.68,-267.99"/>
+</g>
+<!-- xtb_singlepoint -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node32" class="node">
+<title>xtb_singlepoint</title>
+<polygon fill="#777777" stroke="#777777" points="877,-234 784,-234 784,-210 877,-210 877,-234"/>
+<text text-anchor="middle" x="830.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;xtb_singlepoint -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge38" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;xtb_singlepoint</title>
+<path fill="none" stroke="#ff00bf" d="M636.91,-253.98C680.05,-246.81 733.97,-237.86 773.77,-231.25"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="774.54,-234.67 783.83,-229.58 773.39,-227.77 774.54,-234.67"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node33" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node33"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1125,-24 983,-24 983,0 1125,0 1125,-24"/>
+<text text-anchor="middle" x="1054" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge39" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#00ff78" d="M947.12,-12C955.77,-12 964.38,-12 972.74,-12"/>
+<polygon fill="#00ff78" stroke="#00ff78" points="972.79,-15.5 982.79,-12 972.79,-8.5 972.79,-15.5"/>
+</g>
+<!-- proc~find_fragment_index&#45;&gt;error -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge40" class="edge">
+<title>proc~find_fragment_index&#45;&gt;error</title>
+<path fill="none" stroke="#00d1ff" d="M1068.14,-706.66C1091.17,-685.02 1138.97,-640.11 1166.42,-614.33"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="1169.02,-616.69 1173.91,-607.29 1164.23,-611.59 1169.02,-616.69"/>
+</g>
+<!-- proc~generate_and_subtract_subsets&#45;&gt;proc~compute_delta_nbody -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge41" class="edge">
+<title>proc~generate_and_subtract_subsets&#45;&gt;proc~compute_delta_nbody</title>
+<path fill="none" stroke="#0078ff" d="M739.91,-759.66C706.98,-757.69 670.08,-754.81 638.65,-751.73"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="638.95,-748.24 628.65,-750.72 638.25,-755.2 638.95,-748.24"/>
+</g>
+<!-- proc~generate_and_subtract_subsets&#45;&gt;proc~find_fragment_index -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge42" class="edge">
+<title>proc~generate_and_subtract_subsets&#45;&gt;proc~find_fragment_index</title>
+<path fill="none" stroke="#0078ff" d="M896.46,-747.98C923.75,-742.93 955.53,-737.04 983.31,-731.9"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="984.15,-735.3 993.34,-730.04 982.87,-728.42 984.15,-735.3"/>
+</g>
+<!-- proc~next_combination -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node34" class="node">
+<title>proc~next_combination</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node34"><a xlink:href="../proc/next_combination.html" xlink:title="next_combination">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1107.5,-773 1000.5,-773 1000.5,-749 1107.5,-749 1107.5,-773"/>
+<text text-anchor="middle" x="1054" y="-758.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_combination</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_and_subtract_subsets&#45;&gt;proc~next_combination -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge43" class="edge">
+<title>proc~generate_and_subtract_subsets&#45;&gt;proc~next_combination</title>
+<path fill="none" stroke="#0078ff" d="M921.27,-760.41C944.36,-760.51 968.7,-760.62 990.1,-760.72"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="990.33,-764.22 1000.35,-760.76 990.37,-757.22 990.33,-764.22"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocserial_fragment_processorCallsGraph = svgPanZoom('#procserial_fragment_processorCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~serial_fragment_processor~~CalledByGraph Pages: 1 -->
+<svg id="procserial_fragment_processorCalledByGraph" width="581pt" height="32pt"
+ viewBox="0.00 0.00 581.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_fragment_processor~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~serial_fragment_processor~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 577,-28 577,4 -4,4"/>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node1" class="node">
+<title>proc~serial_fragment_processor</title>
+<polygon fill="none" stroke="black" points="573,-24 419,-24 419,0 573,0 573,-24"/>
+<text text-anchor="middle" x="496" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node2" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node2"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="383,-24 220,-24 220,0 383,0 383,-24"/>
+<text text-anchor="middle" x="301.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge1" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" d="M383.02,-12C391.54,-12 400.22,-12 408.8,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="408.8,-15.5 418.8,-12 408.8,-8.5 408.8,-15.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node3" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="184,-24 90,-24 90,0 184,0 184,-24"/>
+<text text-anchor="middle" x="137" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge2" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M184.13,-12C192.24,-12 200.94,-12 209.78,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="209.8,-15.5 219.8,-12 209.8,-8.5 209.8,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node4" class="node">
+<title>program~main</title>
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node4"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge3" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.14,-12C61.95,-12 70.81,-12 79.77,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.86,-15.5 89.86,-12 79.86,-8.5 79.86,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_flat~4"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>C_flat</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dot_result~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dot_result</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_idx"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_indices~7"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragment_indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_size~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-matrix_results~2"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>matrix_results</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_matrix_size~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_matrix_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mbe_total_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mbe_total_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-phys_frag~3"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>phys_frag</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scalar_results~2"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>scalar_results</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">serial_fragment_processor</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">matrix_size</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Process all fragments serially in single-rank mode</span>
+<span class="w">      </span><span class="c">!! This is used when running with only 1 MPI rank</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_fragments</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">matrix_size</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scalar_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">matrix_results</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">C_flat</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dot_result</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_total_energy</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">phys_frag</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_matrix_size</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments serially...&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">scalar_results</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">))</span>
+<span class="w">      </span><span class="n">max_matrix_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="o">*</span><span class="n">matrix_size</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">matrix_results</span><span class="p">(</span><span class="n">max_matrix_size</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">))</span>
+<span class="w">      </span><span class="n">scalar_results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">matrix_results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">frag_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span>
+<span class="w">         </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">(</span><span class="n">fragment_size</span><span class="p">))</span>
+<span class="w">         </span><span class="n">fragment_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_size</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">),</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">matrix_size</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="n">dot_result</span><span class="p">,</span><span class="w"> </span><span class="n">C_flat</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">)</span>
+
+<span class="w">         </span><span class="n">scalar_results</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dot_result</span>
+<span class="w">         </span><span class="n">matrix_results</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">size</span><span class="p">(</span><span class="n">C_flat</span><span class="p">),</span><span class="w"> </span><span class="n">frag_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">C_flat</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">C_flat</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_matrix_size</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">matrix_results</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">C_flat</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">max_matrix_size</span><span class="p">,</span><span class="w"> </span><span class="n">frag_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">         call </span><span class="n">phys_frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">C_flat</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="o">/</span><span class="mi">10</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">frag_idx</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Processed &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All fragments processed&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Computing Many-Body Expansion (MBE)...&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_mbe_energy</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">scalar_results</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_total_energy</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">scalar_results</span><span class="p">,</span><span class="w"> </span><span class="n">matrix_results</span><span class="p">)</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">serial_fragment_processor</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-17 09:06 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
