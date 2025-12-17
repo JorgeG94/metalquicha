@@ -60,7 +60,6 @@ contains
       else
          verb_level = 0
       end if
-      verb_level = 1
 
       ! Print fragment geometry if provided
       if (present(phys_frag)) then
@@ -90,6 +89,39 @@ contains
       allocate (C_flat(1))
       C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
+
+   function get_body_level_name(body_level) result(level_name)
+      !! Map body level (n-mer) to descriptive name
+      !! Supports up to decamers (10-mers), then falls back to "N-mers" format
+      integer, intent(in) :: body_level
+      character(len=32) :: level_name
+
+      select case (body_level)
+      case (1)
+         level_name = "monomers"
+      case (2)
+         level_name = "dimers"
+      case (3)
+         level_name = "trimers"
+      case (4)
+         level_name = "tetramers"
+      case (5)
+         level_name = "pentamers"
+      case (6)
+         level_name = "hexamers"
+      case (7)
+         level_name = "heptamers"
+      case (8)
+         level_name = "octamers"
+      case (9)
+         level_name = "nonamers"
+      case (10)
+         level_name = "decamers"
+      case default
+         ! For levels > 10, use generic format
+         write (level_name, '(i0,a)') body_level, "-mers"
+      end select
+   end function get_body_level_name
 
    subroutine print_fragment_xyz(fragment_idx, phys_frag)
       !! Print fragment geometry in XYZ format
@@ -210,6 +242,11 @@ contains
       call logger%verbose("Detailed Energy Breakdown by Fragment")
       call logger%verbose("============================================")
 
+      ! Warn if we have very high fragmentation levels
+      if (max_level > 10) then
+         call logger%warning("Fragment levels exceed decamers (10-mers). Using generic N-mers notation.")
+      end if
+
       do body_level = 1, max_level
          count_by_level = 0_int64
 
@@ -222,16 +259,14 @@ contains
             call logger%verbose("")
             block
                character(len=256) :: header
-               if (body_level == 1) then
-                  write (header, '(a,i0,a)') "Monomers (", count_by_level, " fragments):"
-               else if (body_level == 2) then
-                  write (header, '(a,i0,a)') "Dimers (", count_by_level, " fragments):"
-               else if (body_level == 3) then
-                  write (header, '(a,i0,a)') "Trimers (", count_by_level, " fragments):"
-               else if (body_level == 4) then
-                  write (header, '(a,i0,a)') "Tetramers (", count_by_level, " fragments):"
-               else
-                  write (header, '(i0,a,i0,a)') body_level, "-mers (", count_by_level, " fragments):"
+               character(len=32) :: level_name
+               level_name = get_body_level_name(body_level)
+               write (header, '(a,a,i0,a)') trim(level_name), " (", count_by_level, " fragments):"
+               ! Capitalize first letter
+               if (len_trim(level_name) > 0) then
+                  if (level_name(1:1) >= 'a' .and. level_name(1:1) <= 'z') then
+                     header(1:1) = achar(iachar(header(1:1)) - 32)
+                  end if
                end if
                call logger%verbose(trim(header))
             end block
@@ -294,6 +329,11 @@ contains
 
       call logger%info("Writing JSON output to results.json")
 
+      ! Warn if we have very high fragmentation levels
+      if (max_level > 10) then
+         call logger%warning("Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.")
+      end if
+
       write (unit, '(a)') "{"
       write (unit, '(a)') '  "mbe_breakdown": {'
 
@@ -319,17 +359,7 @@ contains
 
             write (unit, '(a)') '      {'
 
-            if (body_level == 1) then
-               level_name = "monomers"
-            else if (body_level == 2) then
-               level_name = "dimers"
-            else if (body_level == 3) then
-               level_name = "trimers"
-            else if (body_level == 4) then
-               level_name = "tetramers"
-            else
-               write (level_name, '(i0,a)') body_level, "-mers"
-            end if
+            level_name = get_body_level_name(body_level)
 
             write (json_line, '(a,i0,a)') '        "body_level": ', body_level, ','
             write (unit, '(a)') trim(json_line)
