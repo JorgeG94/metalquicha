@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 7.0% of total for derived types.</p>Including implementation: 14 statements,  4.1% of total for derived types.">8 statements</a>
+                 title="<p> 7.8% of total for derived types.</p>Including implementation: 16 statements,  4.7% of total for derived types.">9 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,8 +137,9 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/input_config_t.html#variable-geom_file">geom_file</a>
-            <a class="list-group-item" href="../type/input_config_t.html#variable-method~6">method</a>
-            <a class="list-group-item" href="../type/input_config_t.html#variable-monomer_file">monomer_file</a>
+            <a class="list-group-item" href="../type/input_config_t.html#variable-log_level">log_level</a>
+            <a class="list-group-item" href="../type/input_config_t.html#variable-method~3">method</a>
+            <a class="list-group-item" href="../type/input_config_t.html#variable-monomer_file~2">monomer_file</a>
             <a class="list-group-item" href="../type/input_config_t.html#variable-nlevel">nlevel</a>
         </div>
       </div>
@@ -166,7 +167,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/input_config_t.html#boundprocedure-destroy~7">destroy</a>
+            <a class="list-group-item" href="../type/input_config_t.html#boundprocedure-destroy~8">destroy</a>
         </div>
       </div>
     </div>
@@ -224,7 +225,24 @@ method selection, and fragmentation level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-log_level"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>log_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Logger verbosity level (debug/verbose/info/warning/error)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -241,7 +259,7 @@ method selection, and fragmentation level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_file"></span>
+              <span class="anchor" id="variable-monomer_file~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -286,7 +304,7 @@ method selection, and fragmentation level.</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~7"></span>
+      <span class="anchor" id="boundprocedure-destroy~8"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a>
@@ -353,6 +371,7 @@ method selection, and fragmentation level.</p>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">geom_file</span><span class="w">     </span><span class="c">!! Path to system geometry XYZ file</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_file</span><span class="w">  </span><span class="c">!! Path to monomer template XYZ file</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="w">        </span><span class="c">!! QC method (gfn1, gfn2)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">log_level</span><span class="w">     </span><span class="c">!! Logger verbosity level (debug/verbose/info/warning/error)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c">!! Fragmentation level (default: 1)</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">destroy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">config_destroy</span><span class="w">  </span><span class="c">!! Cleanup allocated memory</span>
@@ -379,7 +398,7 @@ method selection, and fragmentation level.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

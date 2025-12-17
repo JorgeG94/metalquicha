@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/combine_util.html#variable-j~4">j</a>
+            <a class="list-group-item" href="../proc/combine_util.html#variable-j~5">j</a>
         </div>
       </div>
     </div>
@@ -176,7 +176,8 @@
 </h2>
     
 
-    <p>Utility for generating combinations recursively</p>
+    <p>Utility for generating combinations recursively
+Uses int64 for count to handle large numbers of combinations that overflow int32.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +208,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~7"></span>
+              <span class="anchor" id="variable-n~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -267,7 +268,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~17"></span>
+              <span class="anchor" id="variable-i~14"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -298,7 +299,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-count~3"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -521,7 +522,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~4"></span>
+              <span class="anchor" id="variable-j~5"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -554,13 +555,14 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">recursive subroutine </span><span class="n">combine_util</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="nb">index</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">out_array</span><span class="p">,</span><span class="w"> </span><span class="nb">count</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Utility for generating combinations recursively</span>
+<span class="w">      </span><span class="c">!! Uses int64 for count to handle large numbers of combinations that overflow int32.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">arr</span><span class="p">(:),</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="nb">index</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">data</span><span class="p">(:),</span><span class="w"> </span><span class="n">out_array</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span>
 <span class="nb">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">j</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="nb">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">         </span><span class="nb">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
 <span class="w">         </span><span class="n">out_array</span><span class="p">(</span><span class="nb">count</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">data</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">r</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -593,7 +595,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

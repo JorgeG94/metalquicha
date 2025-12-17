@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 4.0% of total for procedures.">81 statements</a>
+                 title=" 4.1% of total for procedures.">93 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,11 +137,11 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/read_input_file.html#variable-eq_pos">eq_pos</a>
-            <a class="list-group-item" href="../proc/read_input_file.html#variable-file_exists~4">file_exists</a>
+            <a class="list-group-item" href="../proc/read_input_file.html#variable-file_exists~2">file_exists</a>
             <a class="list-group-item" href="../proc/read_input_file.html#variable-io_stat~3">io_stat</a>
             <a class="list-group-item" href="../proc/read_input_file.html#variable-key">key</a>
             <a class="list-group-item" href="../proc/read_input_file.html#variable-line~10">line</a>
-            <a class="list-group-item" href="../proc/read_input_file.html#variable-unit~3">unit</a>
+            <a class="list-group-item" href="../proc/read_input_file.html#variable-unit~2">unit</a>
             <a class="list-group-item" href="../proc/read_input_file.html#variable-value">value</a>
         </div>
       </div>
@@ -186,7 +186,8 @@
 Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
            monomer_symbols=&rdquo;path/to/monomer.xyz&rdquo;
            method=&rdquo;gfn1&rdquo; or &ldquo;gfn2&rdquo; (defaults to gfn2)
-           nlevel=N (fragmentation level, defaults to 1)</p>
+           nlevel=N (fragmentation level, defaults to 1)
+           log_level=&rdquo;debug|verbose|info|performance|warning|error|knowledge&rdquo; (defaults to info)</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +203,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~4"></span>
+              <span class="anchor" id="variable-filename~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -232,7 +233,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~13"></span>
+              <span class="anchor" id="variable-stat~11"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -247,7 +248,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~10"></span>
+              <span class="anchor" id="variable-errmsg~9"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -538,7 +539,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-file_exists~4"></span>
+              <span class="anchor" id="variable-file_exists~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -606,7 +607,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~3"></span>
+              <span class="anchor" id="variable-unit~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -660,6 +661,7 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!!            monomer_symbols=&quot;path/to/monomer.xyz&quot;</span>
 <span class="w">      </span><span class="c">!!            method=&quot;gfn1&quot; or &quot;gfn2&quot; (defaults to gfn2)</span>
 <span class="w">      </span><span class="c">!!            nlevel=N (fragmentation level, defaults to 1)</span>
+<span class="w">      </span><span class="c">!!            log_level=&quot;debug|verbose|info|performance|warning|error|knowledge&quot; (defaults to info)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span><span class="w">  </span><span class="c">!! Path to input file to parse</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">input_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w">  </span><span class="c">!! Parsed configuration data</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span><span class="w">  </span><span class="c">!! Status code (0 = success, &gt;0 = error)</span>
@@ -675,7 +677,6 @@ large graphs.</div>
 
 <span class="w">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
-<span class="w">      </span><span class="c">! Check if file exists</span>
 <span class="w">      </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">file_exists</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">file_exists</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
@@ -683,8 +684,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
-<span class="w">      </span><span class="c">! Open input file</span>
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;old&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;read&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="k">      open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;old&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;read&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_stat</span>
 <span class="w">         </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Error opening input file: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -740,6 +740,23 @@ large graphs.</div>
 <span class="w">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nlevel must be &gt;= 0 (0 for unfragmented calculation)&quot;</span>
 <span class="w">               </span><span class="k">return</span>
 <span class="k">            end if</span>
+<span class="k">         case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;log_level&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! Validate log level</span>
+<span class="w">            </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">))</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Debug&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;verbose&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Verbose&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;VERBOSE&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;info&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Info&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INFO&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;performance&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Performance&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PERFORMANCE&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;warning&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Warning&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;WARNING&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;ERROR&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s1">&#39;knowledge&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Knowledge&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;KNOWLEDGE&#39;</span><span class="p">)</span>
+<span class="w">               </span><span class="n">config</span><span class="p">%</span><span class="n">log_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
+<span class="w">            </span><span class="k">case </span><span class="n">default</span>
+<span class="w">               </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Invalid log_level: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot; (supported: debug, verbose, info, performance, warning, error, knowledge)&quot;</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end select</span>
 <span class="k">         case </span><span class="n">default</span>
 <span class="w">            </span><span class="c">! Ignore unrecognized keys</span>
 <span class="w">            </span><span class="k">continue</span>
@@ -766,6 +783,11 @@ large graphs.</div>
 <span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gfn2&quot;</span><span class="w">  </span><span class="c">! Default to GFN2-xTB</span>
 <span class="w">      </span><span class="k">end if</span>
 
+<span class="w">      </span><span class="c">! Set default log_level if not specified</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">log_level</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">config</span><span class="p">%</span><span class="n">log_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="w">  </span><span class="c">! Default to info level</span>
+<span class="w">      </span><span class="k">end if</span>
+
 <span class="k">   end subroutine </span><span class="n">read_input_file</span>
 </pre></div>
 
@@ -790,7 +812,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

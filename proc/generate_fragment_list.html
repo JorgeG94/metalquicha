@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">10 statements</a>
+                 title=" 0.4% of total for procedures.">10 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-n~5">n</a>
+            <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-n~3">n</a>
             <a class="list-group-item" href="../proc/generate_fragment_list.html#variable-r~2">r</a>
         </div>
       </div>
@@ -177,7 +177,8 @@
 </h2>
     
 
-    <p>Generate all possible fragments (combinations of monomers) up to max_level</p>
+    <p>Generate all possible fragments (combinations of monomers) up to max_level
+Uses int64 for count to handle large numbers of fragments that overflow int32.</p>
 
 
     <h3>Arguments</h3>
@@ -193,7 +194,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~2"></span>
+              <span class="anchor" id="variable-monomers~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -208,7 +209,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -223,7 +224,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -239,7 +240,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-count"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -563,7 +564,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~5"></span>
+              <span class="anchor" id="variable-n~3"></span>
               integer(kind=default_int),
             </td>
               <td>private</td>
@@ -613,9 +614,10 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">recursive subroutine </span><span class="n">generate_fragment_list</span><span class="p">(</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="nb">count</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Generate all possible fragments (combinations of monomers) up to max_level</span>
+<span class="w">      </span><span class="c">!! Uses int64 for count to handle large numbers of fragments that overflow int32.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomers</span><span class="p">(:),</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">count</span>
 <span class="nb">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
 
 <span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
@@ -646,7 +648,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

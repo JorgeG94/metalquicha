@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="18.3% of total for modules and submodules.">430 statements</a>
+                 title="24.3% of total for modules and submodules.">629 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -146,6 +146,7 @@
       <div id="funcs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-compute_delta_nbody">compute_delta_nbody</a>
+            <a class="list-group-item" href="../module/mqc_mbe.html#proc-get_body_level_name">get_body_level_name</a>
         </div>
       </div>
     </div>
@@ -164,6 +165,8 @@
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-unfragmented_calculation">unfragmented_calculation</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-compute_mbe_energy">compute_mbe_energy</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-generate_and_subtract_subsets">generate_and_subtract_subsets</a>
+            <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_detailed_breakdown">print_detailed_breakdown</a>
+            <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_detailed_breakdown_json">print_detailed_breakdown_json</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-print_fragment_xyz">print_fragment_xyz</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-send_fragment_to_node">send_fragment_to_node</a>
             <a class="list-group-item" href="../module/mqc_mbe.html#proc-send_fragment_to_worker">send_fragment_to_worker</a>
@@ -193,18 +196,18 @@ calculations with MPI parallelization and energy/gradient computation.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -893,7 +896,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in)
                        - sum over all proper subsets of deltaE or E
 For n=2: deltaE(ij) = E(ij) - E(i) - E(j)
 For n=3: deltaE(ijk) = E(ijk) - deltaE(ij) - deltaE(ik) - deltaE(jk) - E(i) - E(j) - E(k)
-For n&gt;=4: same pattern recursively</p>
+For n&gt;=4: same pattern recursively
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -908,7 +912,7 @@ For n&gt;=4: same pattern recursively</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment"></span>
+              <span class="anchor" id="variable-fragment~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -923,7 +927,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -938,7 +942,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -953,8 +957,8 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
-              integer,
+              <span class="anchor" id="variable-fragment_count~5"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -968,7 +972,7 @@ For n&gt;=4: same pattern recursively</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -993,18 +997,13 @@ For n&gt;=4: same pattern recursively</p>
     </div>
   </div>
 
-        </section>
-        <br>
-
-        <section>
-          <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-global_coordinator"></span> <h3>public  subroutine <a href='../proc/global_coordinator.html'>global_coordinator</a>(world_comm, node_comm, total_fragments, polymers, max_level, node_leader_ranks, num_nodes, matrix_size)  
+    <div class="card-header codesum"><span class="anchor" id="proc-get_body_level_name"></span> <h3>private  function <a href='../proc/get_body_level_name.html'>get_body_level_name</a>(body_level) result(level_name)  
 </h3></div>
     <div class="card-body">
           
-  <p>Global coordinator for distributing fragments to node coordinators
-will act as a node coordinator for a single node calculation</p>
+  <p>Map body level (n-mer) to descriptive name
+Supports up to decamers (10-mers), then falls back to &ldquo;N-mers&rdquo; format</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1019,7 +1018,59 @@ will act as a node coordinator for a single node calculation</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-body_level"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>body_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=32)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-global_coordinator"></span> <h3>public  subroutine <a href='../proc/global_coordinator.html'>global_coordinator</a>(world_comm, node_comm, total_fragments, polymers, max_level, node_leader_ranks, num_nodes, matrix_size)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Global coordinator for distributing fragments to node coordinators
+will act as a node coordinator for a single node calculation
+Uses int64 for total_fragments to handle large fragment counts that overflow int32.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1034,7 +1085,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm"></span>
+              <span class="anchor" id="variable-node_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1049,8 +1100,8 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
-              integer,
+              <span class="anchor" id="variable-total_fragments~3"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1064,7 +1115,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1079,7 +1130,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~2"></span>
+              <span class="anchor" id="variable-max_level~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1094,7 +1145,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1109,7 +1160,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1124,7 +1175,7 @@ will act as a node coordinator for a single node calculation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~2"></span>
+              <span class="anchor" id="variable-matrix_size~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1165,7 +1216,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~3"></span>
+              <span class="anchor" id="variable-world_comm~7"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1180,7 +1231,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm~6"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1195,7 +1246,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1210,7 +1261,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~4"></span>
+              <span class="anchor" id="variable-matrix_size~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1250,7 +1301,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1265,7 +1316,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~7"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1280,7 +1331,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1295,7 +1346,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1310,7 +1361,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~2"></span>
+              <span class="anchor" id="variable-method~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1331,7 +1382,7 @@ Handles work requests and result collection from local workers</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-process_chemistry_fragment"></span> <h3>public  subroutine <a href='../proc/process_chemistry_fragment.html'>process_chemistry_fragment</a>(fragment_idx, fragment_indices, fragment_size, matrix_size, water_energy, C_flat, method, phys_frag, verbosity)  
+    <div class="card-header codesum"><span class="anchor" id="proc-process_chemistry_fragment"></span> <h3>public  subroutine <a href='../proc/process_chemistry_fragment.html'>process_chemistry_fragment</a>(fragment_idx, fragment_indices, fragment_size, matrix_size, water_energy, C_flat, method, phys_frag)  
 </h3></div>
     <div class="card-body">
           
@@ -1380,7 +1431,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size"></span>
+              <span class="anchor" id="variable-fragment_size~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1395,7 +1446,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size"></span>
+              <span class="anchor" id="variable-matrix_size~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1440,7 +1491,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1466,21 +1517,6 @@ Handles work requests and result collection from local workers</p>
             <td><strong>phys_frag</strong></td>
             <td>
 <p>Fragment geometry</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-verbosity"></span>
-              integer,
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>verbosity</strong></td>
-            <td>
-<p>Verbosity level (0=silent, 1=verbose)</p>
             </td>
         </tr>
     </tbody>
@@ -1511,7 +1547,7 @@ This is a simple single-process calculation without MPI distribution</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1526,7 +1562,7 @@ This is a simple single-process calculation without MPI distribution</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method~6"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1554,7 +1590,9 @@ This is a simple single-process calculation without MPI distribution</p>
   <p>Compute the many-body expansion (MBE) energy
 Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + &hellip;
 General n-body correction:
-deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms</p>
+deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+Detailed breakdown is printed only if logger level is verbose or higher.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1569,7 +1607,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1584,8 +1622,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
-              integer,
+              <span class="anchor" id="variable-fragment_count~2"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1599,7 +1637,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level"></span>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1654,7 +1692,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
 </h3></div>
     <div class="card-body">
           
-  <p>Generate all subsets of given size and subtract their contribution</p>
+  <p>Generate all subsets of given size and subtract their contribution
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1669,7 +1708,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~2"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1699,7 +1738,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~2"></span>
+              <span class="anchor" id="variable-n~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1714,7 +1753,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1729,7 +1768,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~3"></span>
+              <span class="anchor" id="variable-energies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1744,8 +1783,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
-              integer,
+              <span class="anchor" id="variable-fragment_count~6"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1768,6 +1807,240 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
             </td>
             <td>::</td>
             <td><strong>delta_E</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-print_detailed_breakdown"></span> <h3>private  subroutine <a href='../proc/print_detailed_breakdown.html'>print_detailed_breakdown</a>(polymers, fragment_count, max_level, energies, delta_energies)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Print detailed energy breakdown for each fragment
+Shows full energy and deltaE correction for all monomers, dimers, trimers, etc.
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_count~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energies~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-delta_energies~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>delta_energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-print_detailed_breakdown_json"></span> <h3>private  subroutine <a href='../proc/print_detailed_breakdown_json.html'>print_detailed_breakdown_json</a>(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Write detailed energy breakdown to results.json file
+Outputs structured JSON with all fragment energies and deltaE corrections
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_count~4"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energies~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-delta_energies~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>delta_energies</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sum_by_level~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sum_by_level</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_energy</strong></td>
             <td>
 
             </td>
@@ -1839,7 +2112,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
 </h3></div>
     <div class="card-body">
           
-  <p>Send fragment data to remote node coordinator</p>
+  <p>Send fragment data to remote node coordinator
+Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1854,7 +2128,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~2"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1870,7 +2144,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         <tr>
             <td>
               <span class="anchor" id="variable-fragment_idx~4"></span>
-              integer,
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1884,7 +2158,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1899,7 +2173,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1939,7 +2213,8 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
 </h3></div>
     <div class="card-body">
           
-  <p>Send fragment data to local worker</p>
+  <p>Send fragment data to local worker
+Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1954,7 +2229,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~2"></span>
+              <span class="anchor" id="variable-node_comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1970,7 +2245,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         <tr>
             <td>
               <span class="anchor" id="variable-fragment_idx~5"></span>
-              integer,
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1984,7 +2259,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1999,7 +2274,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~4"></span>
+              <span class="anchor" id="variable-max_level~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2029,7 +2304,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~3"></span>
+              <span class="anchor" id="variable-matrix_size~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2072,7 +2347,7 @@ deltaE(i1,i2,&hellip;,in) = E(i1,i2,&hellip;,in) - sum of all lower-order terms<
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

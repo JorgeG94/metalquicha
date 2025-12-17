@@ -89,11 +89,11 @@ contains
       type(geometry_type) :: full_geom, monomer_geom
       integer :: i
 
-      ! Read full system geometry
       call read_xyz_file(full_geom_file, full_geom, stat, errmsg)
       if (stat /= 0) return
 
       ! Read monomer template
+      ! this will be changed once we have a proper input file parsing
       call read_xyz_file(monomer_file, monomer_geom, stat, errmsg)
       if (stat /= 0) then
          call full_geom%destroy()
@@ -114,19 +114,18 @@ contains
 
       sys_geom%n_monomers = sys_geom%total_atoms/sys_geom%atoms_per_monomer
 
-      ! Allocate and copy data
+      ! TODO JORGE: this can be a sys_geom%allocate()
       allocate (sys_geom%element_numbers(sys_geom%total_atoms))
       allocate (sys_geom%coordinates(3, sys_geom%total_atoms))
 
-      ! Convert element symbols to atomic numbers
       do i = 1, sys_geom%total_atoms
          sys_geom%element_numbers(i) = element_symbol_to_number(full_geom%elements(i))
       end do
 
       ! Store coordinates in Bohr (convert from Angstroms)
+      ! TODO JORGE: need a way to handle units
       sys_geom%coordinates = to_bohr(full_geom%coords)
 
-      ! Cleanup
       call full_geom%destroy()
       call monomer_geom%destroy()
 
@@ -154,13 +153,11 @@ contains
 
       frag_atom_idx = 0
 
-      ! Loop over requested monomers and extract their atoms
       do i = 1, n_monomers_in_frag
          mono_idx = monomer_indices(i)
          atom_start = (mono_idx - 1)*atoms_per_monomer + 1
          atom_end = mono_idx*atoms_per_monomer
 
-         ! Copy atoms from this monomer
          fragment%element_numbers(frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
             sys_geom%element_numbers(atom_start:atom_end)
 
@@ -231,12 +228,10 @@ contains
 
       centroid = 0.0_dp
 
-      ! Sum all atomic positions
       do i = 1, fragment%n_atoms
          centroid = centroid + fragment%coordinates(:, i)
       end do
 
-      ! Divide by number of atoms to get average
       centroid = centroid/real(fragment%n_atoms, dp)
 
    end function fragment_centroid
@@ -254,14 +249,12 @@ contains
       com = 0.0_dp
       total_mass = 0.0_dp
 
-      ! Sum mass-weighted positions and total mass
       do i = 1, fragment%n_atoms
          atom_mass = element_mass(fragment%element_numbers(i))
          com = com + atom_mass*fragment%coordinates(:, i)
          total_mass = total_mass + atom_mass
       end do
 
-      ! Divide by total mass to get center of mass
       com = com/total_mass
 
    end function fragment_center_of_mass
@@ -314,15 +307,11 @@ contains
       ! Initialize with a very large value
       min_distance = huge(1.0_dp)
 
-      ! Loop over all atoms in fragment 1
       do i = 1, frag1%n_atoms
-         ! Loop over all atoms in fragment 2
          do j = 1, frag2%n_atoms
-            ! Calculate distance between atom i in frag1 and atom j in frag2
             current_distance = distance_between_points(frag1%coordinates(:, i), &
                                                        frag2%coordinates(:, j))
 
-            ! Update minimum if this distance is smaller
             if (current_distance < min_distance) then
                min_distance = current_distance
             end if

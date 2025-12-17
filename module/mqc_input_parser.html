@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.3% of total for modules and submodules.">125 statements</a>
+                 title=" 6.2% of total for modules and submodules.">162 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -156,6 +156,7 @@
       </a>
       <div id="funcs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_input_parser.html#proc-get_logger_level">get_logger_level</a>
             <a class="list-group-item" href="../module/mqc_input_parser.html#proc-remove_quotes">remove_quotes</a>
         </div>
       </div>
@@ -380,7 +381,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-log_level"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>log_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Logger verbosity level (debug/verbose/info/warning/error)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~3"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -397,7 +415,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_file"></span>
+              <span class="anchor" id="variable-monomer_file~2"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -440,7 +458,7 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/input_config_t.html#boundprocedure-destroy~7'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
+  <strong><a href='../type/input_config_t.html#boundprocedure-destroy~8'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a></td>
                   <td><p>Cleanup allocated memory</p></td>
               </tr>
           </tbody>
@@ -453,6 +471,52 @@ large graphs.</div>
 
         <section>
           <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-get_logger_level"></span> <h3>public  function <a href='../proc/get_logger_level.html'>get_logger_level</a>(level_string) result(level_int)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Convert string log level to integer value
+This function uses the pic_logger constants</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_string"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level_string</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
               <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-remove_quotes"></span> <h3>private  function <a href='../proc/remove_quotes.html'>remove_quotes</a>(str) result(cleaned)  
 </h3></div>
@@ -473,7 +537,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-str~3"></span>
+              <span class="anchor" id="variable-str~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -512,7 +576,8 @@ large graphs.</div>
 Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
            monomer_symbols=&rdquo;path/to/monomer.xyz&rdquo;
            method=&rdquo;gfn1&rdquo; or &ldquo;gfn2&rdquo; (defaults to gfn2)
-           nlevel=N (fragmentation level, defaults to 1)</p>
+           nlevel=N (fragmentation level, defaults to 1)
+           log_level=&rdquo;debug|verbose|info|performance|warning|error|knowledge&rdquo; (defaults to info)</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -527,7 +592,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~4"></span>
+              <span class="anchor" id="variable-filename~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -557,7 +622,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~13"></span>
+              <span class="anchor" id="variable-stat~11"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -572,7 +637,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~10"></span>
+              <span class="anchor" id="variable-errmsg~9"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -612,7 +677,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~11"></span>
+              <span class="anchor" id="variable-this~8"></span>
               class(<a href='../type/input_config_t.html'>input_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -655,7 +720,7 @@ Looks for: geom=&rdquo;path/to/geometry.xyz&rdquo;
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

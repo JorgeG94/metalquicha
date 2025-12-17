@@ -2,7 +2,7 @@
 module mqc_mbe
    !! Implements hierarchical many-body expansion for fragment-based quantum chemistry
    !! calculations with MPI parallelization and energy/gradient computation.
-   use pic_types, only: int32, dp
+   use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
@@ -32,11 +32,14 @@ module mqc_mbe
 contains
 
    subroutine process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                         water_energy, C_flat, method, phys_frag, verbosity)
+                                         water_energy, C_flat, method, phys_frag)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
       !! specified quantum chemistry method (GFN-xTB variants).
+      !! Verbosity is controlled by the global logger level.
+
+      use pic_logger, only: verbose_level
 
       integer, intent(in) :: fragment_idx        !! Fragment index for identification
       integer, intent(in) :: fragment_size       !! Number of monomers in fragment
@@ -46,31 +49,28 @@ contains
       real(dp), allocatable, intent(out) :: C_flat(:)  !! Flattened gradient array
       character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
-      integer, intent(in), optional :: verbosity  !! Verbosity level (0=silent, 1=verbose)
 
-      integer :: verb_level  !! Local verbosity setting
+      integer :: current_log_level  !! Current logger verbosity level
+      logical :: is_verbose  !! Whether verbose output is enabled
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
 #endif
       type(calculation_result_t) :: result  !! Computation results
 
-      ! Set verbosity level (default is 0 for silent operation)
-      if (present(verbosity)) then
-         verb_level = verbosity
-      else
-         verb_level = 0
-      end if
+      ! Query logger to determine verbosity
+      call logger%configuration(level=current_log_level)
+      is_verbose = (current_log_level >= verbose_level)
 
-      ! Print fragment geometry if provided
+      ! Print fragment geometry if provided and verbose mode is enabled
       if (present(phys_frag)) then
-         if (verb_level == 1) then
+         if (is_verbose) then
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
 #ifndef MQC_WITHOUT_TBLITE
          ! Setup XTB method
          xtb_calc%variant = method
-         xtb_calc%verbose = (verb_level > 0)
+         xtb_calc%verbose = is_verbose
 
          ! Run the calculation using the method API
          call xtb_calc%calc_energy(phys_frag, result)
@@ -89,6 +89,39 @@ contains
       allocate (C_flat(1))
       C_flat(1) = 0.0_dp
    end subroutine process_chemistry_fragment
+
+   function get_body_level_name(body_level) result(level_name)
+      !! Map body level (n-mer) to descriptive name
+      !! Supports up to decamers (10-mers), then falls back to "N-mers" format
+      integer, intent(in) :: body_level
+      character(len=32) :: level_name
+
+      select case (body_level)
+      case (1)
+         level_name = "monomers"
+      case (2)
+         level_name = "dimers"
+      case (3)
+         level_name = "trimers"
+      case (4)
+         level_name = "tetramers"
+      case (5)
+         level_name = "pentamers"
+      case (6)
+         level_name = "hexamers"
+      case (7)
+         level_name = "heptamers"
+      case (8)
+         level_name = "octamers"
+      case (9)
+         level_name = "nonamers"
+      case (10)
+         level_name = "decamers"
+      case default
+         ! For levels > 10, use generic format
+         write (level_name, '(i0,a)') body_level, "-mers"
+      end select
+   end function get_body_level_name
 
    subroutine print_fragment_xyz(fragment_idx, phys_frag)
       !! Print fragment geometry in XYZ format
@@ -118,34 +151,50 @@ contains
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
       !! General n-body correction:
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
-      integer, intent(in) :: polymers(:, :), fragment_count, max_level
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      !! Detailed breakdown is printed only if logger level is verbose or higher.
+      use pic_logger, only: verbose_level
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: polymers(:, :), max_level
       real(dp), intent(in) :: energies(:)
       real(dp), intent(out) :: total_energy
 
-      integer :: i, fragment_size, body_level
-      real(dp), allocatable :: sum_by_level(:)
+      integer(int64) :: i
+      integer :: fragment_size, body_level, current_log_level
+      real(dp), allocatable :: sum_by_level(:), delta_energies(:)
       real(dp) :: delta_E
+      logical :: do_detailed_print
+
+      ! Query logger to decide if we should print detailed breakdown
+      call logger%configuration(level=current_log_level)
+      do_detailed_print = (current_log_level >= verbose_level)
 
       allocate (sum_by_level(max_level))
+      allocate (delta_energies(fragment_count))
       sum_by_level = 0.0_dp
+      delta_energies = 0.0_dp
 
       ! Sum over all fragments by their size
-      do i = 1, fragment_count
+      do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
 
          if (fragment_size == 1) then
             ! 1-body terms: just the monomer energies
-            sum_by_level(1) = sum_by_level(1) + energies(i)
+            delta_E = energies(i)
+            delta_energies(i) = delta_E
+            sum_by_level(1) = sum_by_level(1) + delta_E
          else if (fragment_size >= 2 .and. fragment_size <= max_level) then
             ! n-body corrections for n >= 2
             delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
                                           fragment_count, fragment_size)
+            delta_energies(i) = delta_E
             sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
          end if
       end do
 
       total_energy = sum(sum_by_level)
 
+      ! Print text summary to console
       call logger%info("MBE Energy breakdown:")
       do body_level = 1, max_level
          if (abs(sum_by_level(body_level)) > 1e-15_dp) then
@@ -162,9 +211,219 @@ contains
          call logger%info(trim(total_line))
       end block
 
-      deallocate (sum_by_level)
+      ! Print detailed breakdown if requested
+      if (do_detailed_print) then
+         call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
+      end if
+
+      ! Always write JSON file for machine-readable output
+      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                         sum_by_level, total_energy)
+
+      deallocate (sum_by_level, delta_energies)
 
    end subroutine compute_mbe_energy
+
+   subroutine print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
+      !! Print detailed energy breakdown for each fragment
+      !! Shows full energy and deltaE correction for all monomers, dimers, trimers, etc.
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer, intent(in) :: polymers(:, :), max_level
+      integer(int64), intent(in) :: fragment_count
+      real(dp), intent(in) :: energies(:), delta_energies(:)
+
+      integer(int64) :: i
+      integer :: fragment_size, j, body_level
+      character(len=512) :: fragment_str, energy_line
+      integer(int64) :: count_by_level
+
+      call logger%verbose("")
+      call logger%verbose("============================================")
+      call logger%verbose("Detailed Energy Breakdown by Fragment")
+      call logger%verbose("============================================")
+
+      ! Warn if we have very high fragmentation levels
+      if (max_level > 10) then
+         call logger%warning("Fragment levels exceed decamers (10-mers). Using generic N-mers notation.")
+      end if
+
+      do body_level = 1, max_level
+         count_by_level = 0_int64
+
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size == body_level) count_by_level = count_by_level + 1_int64
+         end do
+
+         if (count_by_level > 0_int64) then
+            call logger%verbose("")
+            block
+               character(len=256) :: header
+               character(len=32) :: level_name
+               level_name = get_body_level_name(body_level)
+               write (header, '(a,a,i0,a)') trim(level_name), " (", count_by_level, " fragments):"
+               ! Capitalize first letter
+               if (len_trim(level_name) > 0) then
+                  if (level_name(1:1) >= 'a' .and. level_name(1:1) <= 'z') then
+                     header(1:1) = achar(iachar(header(1:1)) - 32)
+                  end if
+               end if
+               call logger%verbose(trim(header))
+            end block
+            call logger%verbose("--------------------------------------------")
+
+            do i = 1_int64, fragment_count
+               fragment_size = count(polymers(i, :) > 0)
+
+               if (fragment_size == body_level) then
+                  fragment_str = "["
+                  do j = 1, fragment_size
+                     if (j > 1) then
+                        write (fragment_str, '(a,a,i0)') trim(fragment_str), ",", polymers(i, j)
+                     else
+                        write (fragment_str, '(a,i0)') trim(fragment_str), polymers(i, j)
+                     end if
+                  end do
+                  write (fragment_str, '(a,a)') trim(fragment_str), "]"
+
+                  if (body_level == 1) then
+                     write (energy_line, '(a,a,f20.10)') &
+                        "  Fragment ", trim(adjustl(fragment_str)), energies(i)
+                  else
+                     write (energy_line, '(a,a,f20.10,a,f20.10)') &
+                        "  Fragment ", trim(adjustl(fragment_str)), energies(i), &
+                        "   deltaE: ", delta_energies(i)
+                  end if
+                  call logger%verbose(trim(energy_line))
+               end if
+            end do
+         end if
+      end do
+
+      call logger%verbose("")
+      call logger%verbose("============================================")
+
+   end subroutine print_detailed_breakdown
+
+   subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
+                                            energies, delta_energies, sum_by_level, total_energy)
+      !! Write detailed energy breakdown to results.json file
+      !! Outputs structured JSON with all fragment energies and deltaE corrections
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer, intent(in) :: polymers(:, :), max_level
+      integer(int64), intent(in) :: fragment_count
+      real(dp), intent(in) :: energies(:), delta_energies(:)
+      real(dp), intent(in) :: sum_by_level(:), total_energy
+
+      integer(int64) :: i
+      integer :: fragment_size, j, body_level, unit, io_stat
+      character(len=512) :: json_line
+      integer(int64) :: count_by_level
+      logical :: first_level, first_fragment
+      character(len=32) :: level_name
+
+      open (newunit=unit, file='results.json', status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open results.json for writing")
+         return
+      end if
+
+      call logger%info("Writing JSON output to results.json")
+
+      ! Warn if we have very high fragmentation levels
+      if (max_level > 10) then
+         call logger%warning("Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.")
+      end if
+
+      write (unit, '(a)') "{"
+      write (unit, '(a)') '  "mbe_breakdown": {'
+
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (unit, '(a)') trim(json_line)
+
+      write (unit, '(a)') '    "levels": ['
+
+      first_level = .true.
+      do body_level = 1, max_level
+         count_by_level = 0_int64
+
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size == body_level) count_by_level = count_by_level + 1_int64
+         end do
+
+         if (count_by_level > 0_int64) then
+            if (.not. first_level) then
+               write (unit, '(a)') '      },'
+            end if
+            first_level = .false.
+
+            write (unit, '(a)') '      {'
+
+            level_name = get_body_level_name(body_level)
+
+            write (json_line, '(a,i0,a)') '        "body_level": ', body_level, ','
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,a,a)') '        "name": "', trim(level_name), '",'
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,i0,a)') '        "count": ', count_by_level, ','
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,f20.10,a)') '        "total_energy": ', sum_by_level(body_level), ','
+            write (unit, '(a)') trim(json_line)
+            write (unit, '(a)') '        "fragments": ['
+
+            first_fragment = .true.
+            do i = 1_int64, fragment_count
+               fragment_size = count(polymers(i, :) > 0)
+
+               if (fragment_size == body_level) then
+                  if (.not. first_fragment) then
+                     write (unit, '(a)') '          },'
+                  end if
+                  first_fragment = .false.
+
+                  write (unit, '(a)') '          {'
+
+                  json_line = '            "indices": ['
+                  do j = 1, fragment_size
+                     if (j > 1) then
+                        write (json_line, '(a,a,i0)') trim(json_line), ', ', polymers(i, j)
+                     else
+                        write (json_line, '(a,i0)') trim(json_line), polymers(i, j)
+                     end if
+                  end do
+                  write (json_line, '(a,a)') trim(json_line), '],'
+                  write (unit, '(a)') trim(json_line)
+
+                  write (json_line, '(a,f20.10)') '            "energy": ', energies(i)
+                  if (body_level > 1) then
+                     write (json_line, '(a,a)') trim(json_line), ','
+                     write (unit, '(a)') trim(json_line)
+                     write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
+                  end if
+                  write (unit, '(a)') trim(json_line)
+               end if
+            end do
+
+            if (.not. first_fragment) then
+               write (unit, '(a)') '          }'
+            end if
+            write (unit, '(a)') '        ]'
+         end if
+      end do
+
+      if (.not. first_level) then
+         write (unit, '(a)') '      }'
+      end if
+
+      write (unit, '(a)') '    ]'
+      write (unit, '(a)') '  }'
+      write (unit, '(a)') '}'
+
+      close (unit)
+      call logger%info("JSON output written successfully to results.json")
+
+   end subroutine print_detailed_breakdown_json
 
    recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
       !! Compute general n-body correction using recursion
@@ -173,11 +432,14 @@ contains
       !! For n=2: deltaE(ij) = E(ij) - E(i) - E(j)
       !! For n=3: deltaE(ijk) = E(ijk) - deltaE(ij) - deltaE(ik) - deltaE(jk) - E(i) - E(j) - E(k)
       !! For n>=4: same pattern recursively
-      integer, intent(in) :: fragment(:), polymers(:, :), fragment_count, n
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer, intent(in) :: fragment(:), polymers(:, :), n
+      integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:)
       real(dp) :: delta_E
 
-      integer :: idx_n, subset_size, i, j, num_subsets
+      integer(int64) :: idx_n
+      integer :: subset_size, i, j, num_subsets
       integer, allocatable :: subset(:), indices(:)
       real(dp) :: E_n, subset_contribution
 
@@ -200,7 +462,9 @@ contains
    subroutine generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
                                             fragment_count, delta_E)
       !! Generate all subsets of given size and subtract their contribution
-      integer, intent(in) :: fragment(:), subset_size, n, polymers(:, :), fragment_count
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer, intent(in) :: fragment(:), subset_size, n, polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:)
       real(dp), intent(inout) :: delta_E
 
@@ -243,11 +507,14 @@ contains
                                  node_leader_ranks, num_nodes, matrix_size)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
+      !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
       type(comm_t), intent(in) :: world_comm, node_comm
-      integer, intent(in) :: total_fragments, max_level, num_nodes, matrix_size
+      integer(int64), intent(in) :: total_fragments
+      integer, intent(in) :: max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
 
-      integer :: current_fragment, finished_nodes
+      integer(int64) :: current_fragment, results_received
+      integer :: finished_nodes
       integer :: request_source, dummy_msg, fragment_idx
       type(MPI_Status) :: status, local_status
       logical :: handling_local_workers
@@ -264,13 +531,12 @@ contains
       integer :: max_matrix_size
       integer :: worker_fragment_map(node_comm%size())
       integer :: worker_source
-      integer :: results_received
 
       current_fragment = total_fragments
       finished_nodes = 0
       local_finished_workers = 0
       handling_local_workers = (node_comm%size() > 1)
-      results_received = 0
+      results_received = 0_int64
 
       ! Allocate storage for results
       allocate (scalar_results(total_fragments))
@@ -408,8 +674,10 @@ contains
 
    subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, max_level, dest_rank)
       !! Send fragment data to remote node coordinator
+      !! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.
       type(comm_t), intent(in) :: world_comm
-      integer, intent(in) :: fragment_idx, max_level, dest_rank
+      integer(int64), intent(in) :: fragment_idx
+      integer, intent(in) :: max_level, dest_rank
       integer, intent(in) :: polymers(:, :)
       integer :: fragment_size
       integer, allocatable :: fragment_indices(:)
@@ -419,7 +687,7 @@ contains
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
       ! TODO: serialize the data for better performance
-      call send(world_comm, fragment_idx, dest_rank, TAG_NODE_FRAGMENT)
+      call send(world_comm, int(fragment_idx, kind=int32), dest_rank, TAG_NODE_FRAGMENT)
       call send(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT)
       call send(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT)
 
@@ -428,8 +696,10 @@ contains
 
    subroutine send_fragment_to_worker(node_comm, fragment_idx, polymers, max_level, dest_rank, matrix_size)
       !! Send fragment data to local worker
+      !! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.
       type(comm_t), intent(in) :: node_comm
-      integer, intent(in) :: fragment_idx, max_level, dest_rank, matrix_size
+      integer(int64), intent(in) :: fragment_idx
+      integer, intent(in) :: max_level, dest_rank, matrix_size
       integer, intent(in) :: polymers(:, :)
       integer :: fragment_size
       integer, allocatable :: fragment_indices(:)
@@ -439,7 +709,7 @@ contains
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
       ! TODO: serialize the data for better performance
-      call send(node_comm, fragment_idx, dest_rank, TAG_WORKER_FRAGMENT)
+      call send(node_comm, int(fragment_idx, kind=int32), dest_rank, TAG_WORKER_FRAGMENT)
       call send(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT)
       call send(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT)
       call send(node_comm, matrix_size, dest_rank, TAG_WORKER_FRAGMENT)
@@ -640,7 +910,7 @@ contains
 
          call process_chemistry_fragment(0, temp_indices, sys_geom%n_monomers, &
                                          total_atoms, dot_result, C_flat, &
-                                         method, phys_frag=full_system, verbosity=1)
+                                         method, phys_frag=full_system)
          deallocate (temp_indices)
       end block
 

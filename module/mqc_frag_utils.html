@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.1% of total for modules and submodules.">143 statements</a>
+                 title=" 5.7% of total for modules and submodules.">147 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -197,8 +197,8 @@ Locate fragment by composition</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -504,7 +504,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~4"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -537,7 +537,7 @@ large graphs.</div>
 
     <h4>
     Return Value
-    <small>integer(kind=default_int)</small>
+    <small>integer(kind=int64)</small>
     </h4>
     <p>Binomial coefficient result</p>
 
@@ -549,7 +549,8 @@ large graphs.</div>
 </h3></div>
     <div class="card-body">
           
-  <p>Find the fragment index that contains exactly the target monomers</p>
+  <p>Find the fragment index that contains exactly the target monomers
+Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -579,7 +580,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -594,8 +595,8 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
-              integer,
+              <span class="anchor" id="variable-fragment_count"></span>
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -627,7 +628,7 @@ large graphs.</div>
 
     <h4>
     Return Value
-    <small>integer</small>
+    <small>integer(kind=int64)</small>
     </h4>
     
 
@@ -654,7 +655,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -669,7 +670,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~7"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -687,7 +688,7 @@ large graphs.</div>
 
     <h4>
     Return Value
-    <small>integer(kind=default_int)</small>
+    <small>integer(kind=int64)</small>
     </h4>
     <p>Total fragment count</p>
 
@@ -715,7 +716,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~3"></span>
+              <span class="anchor" id="variable-indices"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -745,7 +746,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~8"></span>
+              <span class="anchor" id="variable-n~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -795,7 +796,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers"></span>
+              <span class="anchor" id="variable-monomers~3"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout),</td>
@@ -820,7 +821,8 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
 </h3></div>
     <div class="card-body">
           
-  <p>Generate all possible fragments (combinations of monomers) up to max_level</p>
+  <p>Generate all possible fragments (combinations of monomers) up to max_level
+Uses int64 for count to handle large numbers of fragments that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -835,7 +837,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~2"></span>
+              <span class="anchor" id="variable-monomers~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -850,7 +852,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -865,7 +867,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer(kind=default_int),
             </td>
 <td>intent(inout)</td>
@@ -881,7 +883,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         <tr>
             <td>
               <span class="anchor" id="variable-count"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -905,7 +907,8 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
 </h3></div>
     <div class="card-body">
           
-  <p>Generate all combinations of size r from array arr of size n</p>
+  <p>Generate all combinations of size r from array arr of size n
+Uses int64 for count to handle large numbers of combinations that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -935,7 +938,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~6"></span>
+              <span class="anchor" id="variable-n~4"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -981,7 +984,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         <tr>
             <td>
               <span class="anchor" id="variable-count~2"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1005,7 +1008,8 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
 </h3></div>
     <div class="card-body">
           
-  <p>Utility for generating combinations recursively</p>
+  <p>Utility for generating combinations recursively
+Uses int64 for count to handle large numbers of combinations that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1035,7 +1039,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~7"></span>
+              <span class="anchor" id="variable-n~5"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1095,7 +1099,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~17"></span>
+              <span class="anchor" id="variable-i~14"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1126,7 +1130,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         <tr>
             <td>
               <span class="anchor" id="variable-count~3"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1150,7 +1154,8 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
 </h3></div>
     <div class="card-body">
           
-  <p>Print combinations stored in out_array</p>
+  <p>Print combinations stored in out_array
+Uses int64 for count to handle large numbers of combinations that overflow int32.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1181,7 +1186,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
         <tr>
             <td>
               <span class="anchor" id="variable-count~4"></span>
-              integer(kind=default_int),
+              integer(kind=int64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -1238,7 +1243,7 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;re done<
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

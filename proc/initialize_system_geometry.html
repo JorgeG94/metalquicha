@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.7% of total for procedures.">34 statements</a>
+                 title=" 1.5% of total for procedures.">34 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/initialize_system_geometry.html#variable-full_geom">full_geom</a>
-            <a class="list-group-item" href="../proc/initialize_system_geometry.html#variable-i~25">i</a>
+            <a class="list-group-item" href="../proc/initialize_system_geometry.html#variable-i~6">i</a>
             <a class="list-group-item" href="../proc/initialize_system_geometry.html#variable-monomer_geom">monomer_geom</a>
         </div>
       </div>
@@ -209,7 +209,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_file~2"></span>
+              <span class="anchor" id="variable-monomer_file"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -224,7 +224,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -239,7 +239,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~14"></span>
+              <span class="anchor" id="variable-stat~7"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -254,7 +254,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~11"></span>
+              <span class="anchor" id="variable-errmsg~5"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -663,7 +663,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~25"></span>
+              <span class="anchor" id="variable-i~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -721,11 +721,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">geometry_type</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">full_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
 
-<span class="w">      </span><span class="c">! Read full system geometry</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_xyz_file</span><span class="p">(</span><span class="n">full_geom_file</span><span class="p">,</span><span class="w"> </span><span class="n">full_geom</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
 
 <span class="w">      </span><span class="c">! Read monomer template</span>
+<span class="w">      </span><span class="c">! this will be changed once we have a proper input file parsing</span>
 <span class="w">      </span><span class="k">call </span><span class="n">read_xyz_file</span><span class="p">(</span><span class="n">monomer_file</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_geom</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">full_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
@@ -746,19 +746,18 @@ large graphs.</div>
 
 <span class="k">      </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="o">/</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
 
-<span class="w">      </span><span class="c">! Allocate and copy data</span>
+<span class="w">      </span><span class="c">! TODO JORGE: this can be a sys_geom%allocate()</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">))</span>
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">))</span>
 
-<span class="w">      </span><span class="c">! Convert element symbols to atomic numbers</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
 <span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_symbol_to_number</span><span class="p">(</span><span class="n">full_geom</span><span class="p">%</span><span class="n">elements</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end do</span>
 
 <span class="w">      </span><span class="c">! Store coordinates in Bohr (convert from Angstroms)</span>
+<span class="w">      </span><span class="c">! TODO JORGE: need a way to handle units</span>
 <span class="w">      </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to_bohr</span><span class="p">(</span><span class="n">full_geom</span><span class="p">%</span><span class="n">coords</span><span class="p">)</span>
 
-<span class="w">      </span><span class="c">! Cleanup</span>
 <span class="w">      </span><span class="k">call </span><span class="n">full_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 <span class="w">      </span><span class="k">call </span><span class="n">monomer_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
@@ -788,7 +787,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>

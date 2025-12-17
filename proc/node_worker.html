@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.8% of total for procedures.">36 statements</a>
+                 title=" 1.6% of total for procedures.">36 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -141,8 +141,8 @@
             <a class="list-group-item" href="../proc/node_worker.html#variable-dummy_msg~3">dummy_msg</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_idx~7">fragment_idx</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_indices~6">fragment_indices</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_size~7">fragment_size</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-matrix_size~5">matrix_size</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_size~10">fragment_size</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-matrix_size~7">matrix_size</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-phys_frag~3">phys_frag</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-status~3">status</a>
         </div>
@@ -200,7 +200,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -215,7 +215,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~7"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -245,7 +245,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -260,7 +260,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~2"></span>
+              <span class="anchor" id="variable-method~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -369,220 +369,232 @@
 <polygon fill="#ff0000" stroke="#ff0000" points="192.75,-227.75 202.36,-223.28 192.06,-220.78 192.75,-227.75"/>
 </g>
 <!-- proc~basis_set_destroy -->
-<g id="proc~~node_worker~~CallsGraph_node7" class="node">
+<g id="proc~~node_worker~~CallsGraph_node8" class="node">
 <title>proc~basis_set_destroy</title>
-<g id="a_proc~~node_worker~~CallsGraph_node7"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="606,-402 377,-402 377,-378 606,-378 606,-402"/>
-<text text-anchor="middle" x="491.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+<g id="a_proc~~node_worker~~CallsGraph_node8"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-423 377,-423 377,-399 606,-399 606,-423"/>
+<text text-anchor="middle" x="491.5" y="-408.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
 <g id="proc~~node_worker~~CallsGraph_edge6" class="edge">
 <title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
-<path fill="none" stroke="#cbff00" d="M305.01,-360.04C336.56,-365.13 373.47,-371.1 406.03,-376.35"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="405.55,-379.82 415.98,-377.96 406.67,-372.91 405.55,-379.82"/>
+<path fill="none" stroke="#cbff00" d="M298.78,-360.02C312.79,-362.76 327.41,-365.81 341,-369 374.69,-376.92 412.18,-387.46 441.19,-395.99"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="440.5,-399.44 451.08,-398.92 442.49,-392.73 440.5,-399.44"/>
+</g>
+<!-- configuration -->
+<g id="proc~~node_worker~~CallsGraph_node7" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="533.5,-360 449.5,-360 449.5,-336 533.5,-336 533.5,-360"/>
+<text text-anchor="middle" x="491.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~process_chemistry_fragment&#45;&gt;configuration -->
+<g id="proc~~node_worker~~CallsGraph_edge7" class="edge">
+<title>proc~process_chemistry_fragment&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ff66" d="M305.01,-318.04C347.98,-324.98 400.92,-333.53 439.23,-339.72"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="438.7,-343.18 449.13,-341.32 439.82,-336.27 438.7,-343.18"/>
 </g>
 <!-- proc~print_fragment_xyz -->
-<g id="proc~~node_worker~~CallsGraph_node8" class="node">
+<g id="proc~~node_worker~~CallsGraph_node9" class="node">
 <title>proc~print_fragment_xyz</title>
-<g id="a_proc~~node_worker~~CallsGraph_node8"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
+<g id="a_proc~~node_worker~~CallsGraph_node9"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
 <polygon fill="#d9534f" stroke="#d9534f" points="549,-318 434,-318 434,-294 549,-294 549,-318"/>
 <text text-anchor="middle" x="491.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
 </a>
 </g>
 </g>
 <!-- proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz -->
-<g id="proc~~node_worker~~CallsGraph_edge7" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge8" class="edge">
 <title>proc~process_chemistry_fragment&#45;&gt;proc~print_fragment_xyz</title>
 <path fill="none" stroke="#00ff66" d="M312.77,-306C348.49,-306 389.81,-306 423.61,-306"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="423.84,-309.5 433.84,-306 423.84,-302.5 423.84,-309.5"/>
 </g>
 <!-- proc~result_destroy -->
-<g id="proc~~node_worker~~CallsGraph_node9" class="node">
+<g id="proc~~node_worker~~CallsGraph_node10" class="node">
 <title>proc~result_destroy</title>
-<g id="a_proc~~node_worker~~CallsGraph_node9"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
+<g id="a_proc~~node_worker~~CallsGraph_node10"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
 <polygon fill="#d9534f" stroke="#d9534f" points="590.5,-255 392.5,-255 392.5,-231 590.5,-231 590.5,-255"/>
 <text text-anchor="middle" x="491.5" y="-240.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~process_chemistry_fragment&#45;&gt;proc~result_destroy -->
-<g id="proc~~node_worker~~CallsGraph_edge8" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge9" class="edge">
 <title>proc~process_chemistry_fragment&#45;&gt;proc~result_destroy</title>
 <path fill="none" stroke="#00ff66" d="M298.78,-293.98C312.79,-291.24 327.41,-288.19 341,-285 374.69,-277.08 412.18,-266.54 441.19,-258.01"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="442.49,-261.27 451.08,-255.08 440.5,-254.56 442.49,-261.27"/>
 </g>
 <!-- proc~xtb_calc_energy -->
-<g id="proc~~node_worker~~CallsGraph_node10" class="node">
+<g id="proc~~node_worker~~CallsGraph_node11" class="node">
 <title>proc~xtb_calc_energy</title>
-<g id="a_proc~~node_worker~~CallsGraph_node10"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<g id="a_proc~~node_worker~~CallsGraph_node11"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
 <polygon fill="#d9534f" stroke="#d9534f" points="582,-129 401,-129 401,-105 582,-105 582,-129"/>
 <text text-anchor="middle" x="491.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
 </a>
 </g>
 </g>
 <!-- proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy -->
-<g id="proc~~node_worker~~CallsGraph_edge9" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge10" class="edge">
 <title>proc~process_chemistry_fragment&#45;&gt;proc~xtb_calc_energy</title>
 <path fill="none" stroke="#00ff66" d="M312.58,-298.76C322.72,-295.52 332.5,-291.07 341,-285 367.25,-266.27 356.93,-247.24 377,-222 403.9,-188.17 441.86,-155.36 466.33,-135.67"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="468.73,-138.23 474.38,-129.27 464.37,-132.75 468.73,-138.23"/>
 </g>
 <!-- proc~atomic_basis_destroy -->
-<g id="proc~~node_worker~~CallsGraph_node16" class="node">
+<g id="proc~~node_worker~~CallsGraph_node17" class="node">
 <title>proc~atomic_basis_destroy</title>
-<g id="a_proc~~node_worker~~CallsGraph_node16"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<g id="a_proc~~node_worker~~CallsGraph_node17"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
 <polygon fill="#d9534f" stroke="#d9534f" points="875,-444 642,-444 642,-420 875,-420 875,-444"/>
 <text text-anchor="middle" x="758.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
-<g id="proc~~node_worker~~CallsGraph_edge10" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge11" class="edge">
 <title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
-<path fill="none" stroke="#ff0000" d="M568.44,-402.04C600.59,-407.13 638.22,-413.1 671.41,-418.35"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="671.13,-421.85 681.55,-419.96 672.22,-414.94 671.13,-421.85"/>
+<path fill="none" stroke="#cbff00" d="M606.04,-420C614.52,-420.67 623.11,-421.35 631.66,-422.03"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="631.42,-425.52 641.67,-422.82 631.98,-418.54 631.42,-425.52"/>
 </g>
 <!-- info -->
-<g id="proc~~node_worker~~CallsGraph_node11" class="node">
+<g id="proc~~node_worker~~CallsGraph_node12" class="node">
 <title>info</title>
 <polygon fill="#777777" stroke="#777777" points="785.5,-402 731.5,-402 731.5,-378 785.5,-378 785.5,-402"/>
 <text text-anchor="middle" x="758.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;info -->
-<g id="proc~~node_worker~~CallsGraph_edge11" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge12" class="edge">
 <title>proc~print_fragment_xyz&#45;&gt;info</title>
-<path fill="none" stroke="#7fff00" d="M516.5,-318.05C545.54,-332.18 596.24,-355.38 642,-369 668.09,-376.77 698.39,-382.14 721.41,-385.51"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="721.04,-389 731.43,-386.92 722.01,-382.06 721.04,-389"/>
+<path fill="none" stroke="#00ff66" d="M549.1,-308.88C568.15,-311.77 588.9,-317.15 606,-327 627.3,-339.27 620.68,-356.76 642,-369 666.17,-382.87 697.48,-387.92 721.4,-389.61"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="721.32,-393.11 731.49,-390.15 721.7,-386.12 721.32,-393.11"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~node_worker~~CallsGraph_node17" class="node">
+<g id="proc~~node_worker~~CallsGraph_node18" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~node_worker~~CallsGraph_node17"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<g id="a_proc~~node_worker~~CallsGraph_node18"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="840,-360 677,-360 677,-336 840,-336 840,-360"/>
 <text text-anchor="middle" x="758.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~node_worker~~CallsGraph_edge12" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge13" class="edge">
 <title>proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#7fff00" d="M549.02,-314.96C584.62,-320.6 631.26,-327.99 671.4,-334.35"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="671.03,-337.84 681.45,-335.95 672.12,-330.92 671.03,-337.84"/>
+<path fill="none" stroke="#00ff66" d="M549.02,-314.96C584.62,-320.6 631.26,-327.99 671.4,-334.35"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="671.03,-337.84 681.45,-335.95 672.12,-330.92 671.03,-337.84"/>
 </g>
 <!-- proc~to_angstrom -->
-<g id="proc~~node_worker~~CallsGraph_node19" class="node">
+<g id="proc~~node_worker~~CallsGraph_node20" class="node">
 <title>proc~to_angstrom</title>
-<g id="a_proc~~node_worker~~CallsGraph_node19"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<g id="a_proc~~node_worker~~CallsGraph_node20"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="798,-318 719,-318 719,-294 798,-294 798,-318"/>
 <text text-anchor="middle" x="758.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
 </a>
 </g>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;proc~to_angstrom -->
-<g id="proc~~node_worker~~CallsGraph_edge13" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge14" class="edge">
 <title>proc~print_fragment_xyz&#45;&gt;proc~to_angstrom</title>
-<path fill="none" stroke="#7fff00" d="M549.02,-306C596.41,-306 663.37,-306 708.51,-306"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="708.64,-309.5 718.64,-306 708.64,-302.5 708.64,-309.5"/>
+<path fill="none" stroke="#00ff66" d="M549.02,-306C596.41,-306 663.37,-306 708.51,-306"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="708.64,-309.5 718.64,-306 708.64,-302.5 708.64,-309.5"/>
 </g>
 <!-- to_char -->
-<g id="proc~~node_worker~~CallsGraph_node20" class="node">
+<g id="proc~~node_worker~~CallsGraph_node21" class="node">
 <title>to_char</title>
 <polygon fill="#777777" stroke="#777777" points="785.5,-276 731.5,-276 731.5,-252 785.5,-252 785.5,-276"/>
 <text text-anchor="middle" x="758.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~print_fragment_xyz&#45;&gt;to_char -->
-<g id="proc~~node_worker~~CallsGraph_edge14" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge15" class="edge">
 <title>proc~print_fragment_xyz&#45;&gt;to_char</title>
-<path fill="none" stroke="#7fff00" d="M549.02,-297.04C601.09,-288.79 676.8,-276.79 721.22,-269.75"/>
-<polygon fill="#7fff00" stroke="#7fff00" points="721.94,-273.18 731.27,-268.16 720.84,-266.27 721.94,-273.18"/>
+<path fill="none" stroke="#00ff66" d="M549.02,-297.04C601.09,-288.79 676.8,-276.79 721.22,-269.75"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="721.94,-273.18 731.27,-268.16 720.84,-266.27 721.94,-273.18"/>
 </g>
 <!-- proc~result_reset -->
-<g id="proc~~node_worker~~CallsGraph_node18" class="node">
+<g id="proc~~node_worker~~CallsGraph_node19" class="node">
 <title>proc~result_reset</title>
-<g id="a_proc~~node_worker~~CallsGraph_node18"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
+<g id="a_proc~~node_worker~~CallsGraph_node19"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
 <polygon fill="#d9534f" stroke="#d9534f" points="851,-234 666,-234 666,-210 851,-210 851,-234"/>
 <text text-anchor="middle" x="758.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
 </a>
 </g>
 </g>
 <!-- proc~result_destroy&#45;&gt;proc~result_reset -->
-<g id="proc~~node_worker~~CallsGraph_edge15" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge16" class="edge">
 <title>proc~result_destroy&#45;&gt;proc~result_reset</title>
-<path fill="none" stroke="#00ffff" d="M590.8,-235.21C612.04,-233.53 634.53,-231.74 655.89,-230.05"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="656.25,-233.53 665.94,-229.26 655.7,-226.56 656.25,-233.53"/>
+<path fill="none" stroke="#0066ff" d="M590.8,-235.21C612.04,-233.53 634.53,-231.74 655.89,-230.05"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="656.25,-233.53 665.94,-229.26 655.7,-226.56 656.25,-233.53"/>
 </g>
 <!-- new -->
-<g id="proc~~node_worker~~CallsGraph_node12" class="node">
+<g id="proc~~node_worker~~CallsGraph_node13" class="node">
 <title>new</title>
 <polygon fill="#777777" stroke="#777777" points="785.5,-192 731.5,-192 731.5,-168 785.5,-168 785.5,-192"/>
 <text text-anchor="middle" x="758.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
 </g>
 <!-- proc~xtb_calc_energy&#45;&gt;new -->
-<g id="proc~~node_worker~~CallsGraph_edge16" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge17" class="edge">
 <title>proc~xtb_calc_energy&#45;&gt;new</title>
-<path fill="none" stroke="#7f00ff" d="M531.59,-129.07C561.6,-138.07 604.17,-150.27 642,-159 668.35,-165.08 698.41,-170.5 721.26,-174.31"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="720.77,-177.78 731.21,-175.94 721.91,-170.87 720.77,-177.78"/>
+<path fill="none" stroke="#cc00ff" d="M531.59,-129.07C561.6,-138.07 604.17,-150.27 642,-159 668.35,-165.08 698.41,-170.5 721.26,-174.31"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="720.77,-177.78 731.21,-175.94 721.91,-170.87 720.77,-177.78"/>
 </g>
 <!-- new_gfn1_calculator -->
-<g id="proc~~node_worker~~CallsGraph_node13" class="node">
+<g id="proc~~node_worker~~CallsGraph_node14" class="node">
 <title>new_gfn1_calculator</title>
 <polygon fill="#777777" stroke="#777777" points="819.5,-150 697.5,-150 697.5,-126 819.5,-126 819.5,-150"/>
 <text text-anchor="middle" x="758.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
 </g>
 <!-- proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator -->
-<g id="proc~~node_worker~~CallsGraph_edge17" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge18" class="edge">
 <title>proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator</title>
-<path fill="none" stroke="#7f00ff" d="M582.22,-124.11C616.5,-126.83 655.05,-129.88 687.26,-132.43"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="687.24,-135.94 697.48,-133.24 687.79,-128.96 687.24,-135.94"/>
+<path fill="none" stroke="#cc00ff" d="M582.22,-124.11C616.5,-126.83 655.05,-129.88 687.26,-132.43"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="687.24,-135.94 697.48,-133.24 687.79,-128.96 687.24,-135.94"/>
 </g>
 <!-- new_gfn2_calculator -->
-<g id="proc~~node_worker~~CallsGraph_node14" class="node">
+<g id="proc~~node_worker~~CallsGraph_node15" class="node">
 <title>new_gfn2_calculator</title>
 <polygon fill="#777777" stroke="#777777" points="819.5,-108 697.5,-108 697.5,-84 819.5,-84 819.5,-108"/>
 <text text-anchor="middle" x="758.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
 </g>
 <!-- proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator -->
-<g id="proc~~node_worker~~CallsGraph_edge18" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge19" class="edge">
 <title>proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator</title>
-<path fill="none" stroke="#7f00ff" d="M582.22,-109.89C616.5,-107.17 655.05,-104.12 687.26,-101.57"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="687.79,-105.04 697.48,-100.76 687.24,-98.06 687.79,-105.04"/>
+<path fill="none" stroke="#cc00ff" d="M582.22,-109.89C616.5,-107.17 655.05,-104.12 687.26,-101.57"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="687.79,-105.04 697.48,-100.76 687.24,-98.06 687.79,-105.04"/>
 </g>
 <!-- new_wavefunction -->
-<g id="proc~~node_worker~~CallsGraph_node15" class="node">
+<g id="proc~~node_worker~~CallsGraph_node16" class="node">
 <title>new_wavefunction</title>
 <polygon fill="#777777" stroke="#777777" points="814,-66 703,-66 703,-42 814,-42 814,-66"/>
 <text text-anchor="middle" x="758.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
 </g>
 <!-- proc~xtb_calc_energy&#45;&gt;new_wavefunction -->
-<g id="proc~~node_worker~~CallsGraph_edge19" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge20" class="edge">
 <title>proc~xtb_calc_energy&#45;&gt;new_wavefunction</title>
-<path fill="none" stroke="#7f00ff" d="M531.59,-104.93C561.6,-95.93 604.17,-83.73 642,-75 658.36,-71.22 676.16,-67.7 692.77,-64.66"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="693.71,-68.05 702.93,-62.83 692.47,-61.16 693.71,-68.05"/>
+<path fill="none" stroke="#cc00ff" d="M531.59,-104.93C561.6,-95.93 604.17,-83.73 642,-75 658.36,-71.22 676.16,-67.7 692.77,-64.66"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="693.71,-68.05 702.93,-62.83 692.47,-61.16 693.71,-68.05"/>
 </g>
 <!-- xtb_singlepoint -->
-<g id="proc~~node_worker~~CallsGraph_node21" class="node">
+<g id="proc~~node_worker~~CallsGraph_node22" class="node">
 <title>xtb_singlepoint</title>
 <polygon fill="#777777" stroke="#777777" points="805,-24 712,-24 712,0 805,0 805,-24"/>
 <text text-anchor="middle" x="758.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
 </g>
 <!-- proc~xtb_calc_energy&#45;&gt;xtb_singlepoint -->
-<g id="proc~~node_worker~~CallsGraph_edge20" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge21" class="edge">
 <title>proc~xtb_calc_energy&#45;&gt;xtb_singlepoint</title>
-<path fill="none" stroke="#7f00ff" d="M509.53,-104.91C536.37,-86.46 590.75,-51.47 642,-33 661.02,-26.15 682.65,-21.45 702,-18.27"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="702.54,-21.73 711.89,-16.74 701.47,-14.81 702.54,-21.73"/>
+<path fill="none" stroke="#cc00ff" d="M509.53,-104.91C536.37,-86.46 590.75,-51.47 642,-33 661.02,-26.15 682.65,-21.45 702,-18.27"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="702.54,-21.73 711.89,-16.74 701.47,-14.81 702.54,-21.73"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~node_worker~~CallsGraph_node22" class="node">
+<g id="proc~~node_worker~~CallsGraph_node23" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~node_worker~~CallsGraph_node22"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<g id="a_proc~~node_worker~~CallsGraph_node23"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
 <polygon fill="#d9534f" stroke="#d9534f" points="1053,-444 911,-444 911,-420 1053,-420 1053,-444"/>
 <text text-anchor="middle" x="982" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~node_worker~~CallsGraph_edge21" class="edge">
+<g id="proc~~node_worker~~CallsGraph_edge22" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
 <path fill="none" stroke="#00ffb9" d="M875.12,-432C883.77,-432 892.38,-432 900.74,-432"/>
 <polygon fill="#00ffb9" stroke="#00ffb9" points="900.79,-435.5 910.79,-432 900.79,-428.5 900.79,-435.5"/>
@@ -926,7 +938,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~7"></span>
+              <span class="anchor" id="variable-fragment_size~10"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -943,7 +955,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-matrix_size~5"></span>
+              <span class="anchor" id="variable-matrix_size~7"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -1083,7 +1095,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-02 20:57 +0000             </p>
+ on 2025-12-17 08:40 +0000             </p>
           </div>
         </div>
         <br>
