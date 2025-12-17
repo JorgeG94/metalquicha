@@ -204,10 +204,10 @@ contains
       character(len=512) :: fragment_str, energy_line
       integer(int64) :: count_by_level
 
-      call logger%info("")
-      call logger%info("============================================")
-      call logger%info("Detailed Energy Breakdown by Fragment")
-      call logger%info("============================================")
+      call logger%verbose("")
+      call logger%verbose("============================================")
+      call logger%verbose("Detailed Energy Breakdown by Fragment")
+      call logger%verbose("============================================")
 
       do body_level = 1, max_level
          count_by_level = 0_int64
@@ -232,9 +232,9 @@ contains
                else
                   write (header, '(i0,a,i0,a)') body_level, "-mers (", count_by_level, " fragments):"
                end if
-               call logger%info(trim(header))
+               call logger%verbose(trim(header))
             end block
-            call logger%info("--------------------------------------------")
+            call logger%verbose("--------------------------------------------")
 
             do i = 1_int64, fragment_count
                fragment_size = count(polymers(i, :) > 0)
@@ -258,14 +258,14 @@ contains
                         "  Fragment ", trim(adjustl(fragment_str)), energies(i), &
                         "   deltaE: ", delta_energies(i)
                   end if
-                  call logger%info(trim(energy_line))
+                  call logger%verbose(trim(energy_line))
                end if
             end do
          end if
       end do
 
-      call logger%info("")
-      call logger%info("============================================")
+      call logger%verbose("")
+      call logger%verbose("============================================")
 
    end subroutine print_detailed_breakdown
 
