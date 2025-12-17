@@ -9,6 +9,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz
+   use omp_lib
    use mqc_mbe, only: compute_mbe_energy
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, TAG_WORKER_MATRIX_RESULT, &
@@ -101,6 +102,7 @@ contains
       integer, intent(in) :: max_level, num_nodes, matrix_size
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
 
+      type(timer_type) :: coord_timer
       integer(int64) :: current_fragment, results_received
       integer :: finished_nodes
       integer :: request_source, dummy_msg, fragment_idx
@@ -137,6 +139,7 @@ contains
       call logger%verbose("Global coordinator starting with "//to_char(total_fragments)// &
                           " fragments for "//to_char(num_nodes)//" nodes")
 
+      call coord_timer%start()
       do while (finished_nodes < num_nodes)
 
          ! PRIORITY 1: Check for incoming results from local workers
@@ -246,13 +249,18 @@ contains
       end do
 
       call logger%verbose("Global coordinator finished all fragments")
+      call coord_timer%stop()
+      call logger%info("Time to evaluate all fragments "//to_char(coord_timer%get_elapsed_time())//" s")
       block
          real(dp) :: mbe_total_energy
 
          ! Compute the many-body expansion energy
          call logger%info("")
          call logger%info("Computing Many-Body Expansion (MBE)...")
+         call coord_timer%start()
          call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
+         call coord_timer%stop()
+         call logger%info("Time to evaluate the MBE "//to_char(coord_timer%get_elapsed_time())//" s")
 
       end block
 
@@ -542,6 +550,7 @@ contains
       scalar_results = 0.0_dp
       matrix_results = 0.0_dp
 
+      call omp_set_num_threads(1)
       do frag_idx = 1_int64, total_fragments
          fragment_size = count(polymers(frag_idx, :) > 0)
          allocate (fragment_indices(fragment_size))
@@ -565,6 +574,7 @@ contains
             call logger%info("  Processed "//to_char(frag_idx)//"/"//to_char(total_fragments)//" fragments")
          end if
       end do
+      call omp_set_num_threads(omp_get_max_threads())
 
       call logger%info("All fragments processed")
 

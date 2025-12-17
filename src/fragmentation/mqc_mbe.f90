@@ -14,7 +14,7 @@ module mqc_mbe
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT, TAG_NODE_MATRIX_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
-   use mqc_frag_utils, only: next_combination, find_fragment_index
+   use mqc_frag_utils, only: next_combination, find_fragment_index, get_next_combination
 
    implicit none
    private
@@ -42,8 +42,8 @@ contains
       real(dp), allocatable :: sum_by_level(:), delta_energies(:)
       real(dp) :: delta_E
       logical :: do_detailed_print
+      real(dp), allocatable :: sum_private(:)
 
-      ! Query logger to decide if we should print detailed breakdown
       call logger%configuration(level=current_log_level)
       do_detailed_print = (current_log_level >= verbose_level)
 
@@ -52,25 +52,52 @@ contains
       sum_by_level = 0.0_dp
       delta_energies = 0.0_dp
 
-      ! Sum over all fragments by their size
+!$omp parallel default(shared) private(i, fragment_size, delta_E, sum_private)
+      allocate (sum_private(max_level))
+      sum_private = 0.0_dp
+
+!$omp do schedule(dynamic)
       do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
 
          if (fragment_size == 1) then
-            ! 1-body terms: just the monomer energies
             delta_E = energies(i)
             delta_energies(i) = delta_E
-            sum_by_level(1) = sum_by_level(1) + delta_E
+            sum_private(1) = sum_private(1) + delta_E
+
          else if (fragment_size >= 2 .and. fragment_size <= max_level) then
-            ! n-body corrections for n >= 2
-            delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
-                                          fragment_count, fragment_size)
+            delta_E = compute_delta_nbody( &
+                      polymers(i, 1:fragment_size), polymers, energies, &
+                      fragment_count, fragment_size)
             delta_energies(i) = delta_E
-            sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+            sum_private(fragment_size) = sum_private(fragment_size) + delta_E
          end if
       end do
+!$omp end do
 
-      total_energy = sum(sum_by_level)
+!$omp critical
+      sum_by_level = sum_by_level + sum_private
+!$omp end critical
+
+      deallocate (sum_private)
+!$omp end parallel
+
+!      do i = 1_int64, fragment_count
+!         fragment_size = count(polymers(i, :) > 0)
+!
+!         if (fragment_size == 1) then
+!            delta_E = energies(i)
+!            delta_energies(i) = delta_E
+!            sum_by_level(1) = sum_by_level(1) + delta_E
+!         else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+!            delta_E = compute_delta_nbody(polymers(i, 1:fragment_size), polymers, energies, &
+!                                          fragment_count, fragment_size)
+!            delta_energies(i) = delta_E
+!            sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+!         end if
+!      end do
+!
+!      total_energy = sum(sum_by_level)
 
       ! Print text summary to console
       call logger%info("MBE Energy breakdown:")
@@ -102,7 +129,7 @@ contains
 
    end subroutine compute_mbe_energy
 
-   recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
+   pure recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
       !! Compute general n-body correction using recursion
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in)
       !!                        - sum over all proper subsets of deltaE or E
@@ -136,8 +163,8 @@ contains
 
    end function compute_delta_nbody
 
-   subroutine generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
-                                            fragment_count, delta_E)
+   pure subroutine generate_and_subtract_subsets(fragment, subset_size, n, polymers, energies, &
+                                                 fragment_count, delta_E)
       !! Generate all subsets of given size and subtract their contribution
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
       integer, intent(in) :: fragment(:), subset_size, n, polymers(:, :)
@@ -147,6 +174,7 @@ contains
 
       integer, allocatable :: indices(:), subset(:)
       integer :: i
+      logical :: has_next
 
       allocate (indices(subset_size))
       allocate (subset(subset_size))
@@ -173,7 +201,8 @@ contains
          end if
 
          ! Get next combination
-         if (.not. next_combination(indices, subset_size, n)) exit
+         call get_next_combination(indices, subset_size, n, has_next)
+         if (.not. has_next) exit
       end do
 
       deallocate (indices, subset)

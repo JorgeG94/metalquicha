@@ -6,6 +6,7 @@ module mqc_driver
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
                                                    serial_fragment_processor
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list
@@ -194,6 +195,7 @@ contains
          call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, matrix_size)
       else if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
+         call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
                                  node_leader_ranks, num_nodes, matrix_size)
@@ -203,6 +205,7 @@ contains
          call node_coordinator(world_comm, node_comm, max_level, matrix_size)
       else
          ! Worker
+         call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
          call node_worker(world_comm, node_comm, max_level, sys_geom, method)
       end if
