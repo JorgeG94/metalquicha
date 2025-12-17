@@ -132,10 +132,9 @@ contains
       real(dp) :: delta_E
       logical :: do_detailed_print
 
-      ! Handle optional argument
+      ! Handle optional arguments
       do_detailed_print = .true.
       !if (present(print_detailed)) do_detailed_print = print_detailed
-      
 
       allocate (sum_by_level(max_level))
       allocate (delta_energies(fragment_count))
@@ -162,6 +161,7 @@ contains
 
       total_energy = sum(sum_by_level)
 
+      ! Print text summary to console
       call logger%info("MBE Energy breakdown:")
       do body_level = 1, max_level
          if (abs(sum_by_level(body_level)) > 1e-15_dp) then
@@ -182,6 +182,10 @@ contains
       if (do_detailed_print) then
          call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
       end if
+
+      ! Always write JSON file for machine-readable output
+      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                         sum_by_level, total_energy)
 
       deallocate (sum_by_level, delta_energies)
 
@@ -205,11 +209,9 @@ contains
       call logger%info("Detailed Energy Breakdown by Fragment")
       call logger%info("============================================")
 
-      ! Print fragments organized by level
       do body_level = 1, max_level
          count_by_level = 0_int64
 
-         ! Count how many fragments at this level
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
             if (fragment_size == body_level) count_by_level = count_by_level + 1_int64
@@ -234,12 +236,10 @@ contains
             end block
             call logger%info("--------------------------------------------")
 
-            ! Print each fragment at this level
             do i = 1_int64, fragment_count
                fragment_size = count(polymers(i, :) > 0)
 
                if (fragment_size == body_level) then
-                  ! Build fragment string (e.g., "[1,2,3]")
                   fragment_str = "["
                   do j = 1, fragment_size
                      if (j > 1) then
@@ -250,13 +250,10 @@ contains
                   end do
                   write (fragment_str, '(a,a)') trim(fragment_str), "]"
 
-                  ! Print energy information
                   if (body_level == 1) then
-                     ! Monomers: only show full energy (deltaE = E for monomers)
                      write (energy_line, '(a,a,f20.10)') &
                         "  Fragment ", trim(adjustl(fragment_str)), energies(i)
                   else
-                     ! Dimers and higher: show both full energy and deltaE correction
                      write (energy_line, '(a,a,f20.10,a,f20.10)') &
                         "  Fragment ", trim(adjustl(fragment_str)), energies(i), &
                         "   deltaE: ", delta_energies(i)
@@ -271,6 +268,130 @@ contains
       call logger%info("============================================")
 
    end subroutine print_detailed_breakdown
+
+   subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy)
+      !! Write detailed energy breakdown to results.json file
+      !! Outputs structured JSON with all fragment energies and deltaE corrections
+      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      integer, intent(in) :: polymers(:, :), max_level
+      integer(int64), intent(in) :: fragment_count
+      real(dp), intent(in) :: energies(:), delta_energies(:)
+      real(dp), intent(in) :: sum_by_level(:), total_energy
+
+      integer(int64) :: i
+      integer :: fragment_size, j, body_level, unit, io_stat
+      character(len=512) :: json_line
+      integer(int64) :: count_by_level
+      logical :: first_level, first_fragment
+      character(len=32) :: level_name
+
+      open (newunit=unit, file='results.json', status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open results.json for writing")
+         return
+      end if
+
+      call logger%info("Writing JSON output to results.json")
+
+      write (unit, '(a)') "{"
+      write (unit, '(a)') '  "mbe_breakdown": {'
+
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (unit, '(a)') trim(json_line)
+
+      write (unit, '(a)') '    "levels": ['
+
+      first_level = .true.
+      do body_level = 1, max_level
+         count_by_level = 0_int64
+
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size == body_level) count_by_level = count_by_level + 1_int64
+         end do
+
+         if (count_by_level > 0_int64) then
+            if (.not. first_level) then
+               write (unit, '(a)') '      },'
+            end if
+            first_level = .false.
+
+            write (unit, '(a)') '      {'
+
+            if (body_level == 1) then
+               level_name = "monomers"
+            else if (body_level == 2) then
+               level_name = "dimers"
+            else if (body_level == 3) then
+               level_name = "trimers"
+            else if (body_level == 4) then
+               level_name = "tetramers"
+            else
+               write (level_name, '(i0,a)') body_level, "-mers"
+            end if
+
+            write (json_line, '(a,i0,a)') '        "body_level": ', body_level, ','
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,a,a)') '        "name": "', trim(level_name), '",'
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,i0,a)') '        "count": ', count_by_level, ','
+            write (unit, '(a)') trim(json_line)
+            write (json_line, '(a,f20.10,a)') '        "total_energy": ', sum_by_level(body_level), ','
+            write (unit, '(a)') trim(json_line)
+            write (unit, '(a)') '        "fragments": ['
+
+            first_fragment = .true.
+            do i = 1_int64, fragment_count
+               fragment_size = count(polymers(i, :) > 0)
+
+               if (fragment_size == body_level) then
+                  if (.not. first_fragment) then
+                     write (unit, '(a)') '          },'
+                  end if
+                  first_fragment = .false.
+
+                  write (unit, '(a)') '          {'
+
+                  json_line = '            "indices": ['
+                  do j = 1, fragment_size
+                     if (j > 1) then
+                        write (json_line, '(a,a,i0)') trim(json_line), ', ', polymers(i, j)
+                     else
+                        write (json_line, '(a,i0)') trim(json_line), polymers(i, j)
+                     end if
+                  end do
+                  write (json_line, '(a,a)') trim(json_line), '],'
+                  write (unit, '(a)') trim(json_line)
+
+                  write (json_line, '(a,f20.10)') '            "energy": ', energies(i)
+                  if (body_level > 1) then
+                     write (json_line, '(a,a)') trim(json_line), ','
+                     write (unit, '(a)') trim(json_line)
+                     write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
+                  end if
+                  write (unit, '(a)') trim(json_line)
+               end if
+            end do
+
+            if (.not. first_fragment) then
+               write (unit, '(a)') '          }'
+            end if
+            write (unit, '(a)') '        ]'
+         end if
+      end do
+
+      if (.not. first_level) then
+         write (unit, '(a)') '      }'
+      end if
+
+      write (unit, '(a)') '    ]'
+      write (unit, '(a)') '  }'
+      write (unit, '(a)') '}'
+
+      close (unit)
+      call logger%info("JSON output written successfully to results.json")
+
+   end subroutine print_detailed_breakdown_json
 
    recursive function compute_delta_nbody(fragment, polymers, energies, fragment_count, n) result(delta_E)
       !! Compute general n-body correction using recursion
