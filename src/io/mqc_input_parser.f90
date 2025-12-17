@@ -5,7 +5,7 @@ module mqc_input_parser
    implicit none
    private
 
-   public :: input_config_t, read_input_file  !! Main configuration type and parser
+   public :: input_config_t, read_input_file, get_logger_level  !! Main configuration type and parser
 
    type :: input_config_t
       !! Configuration data structure for calculation parameters
@@ -15,6 +15,7 @@ module mqc_input_parser
       character(len=:), allocatable :: geom_file     !! Path to system geometry XYZ file
       character(len=:), allocatable :: monomer_file  !! Path to monomer template XYZ file
       character(len=:), allocatable :: method        !! QC method (gfn1, gfn2)
+      character(len=:), allocatable :: log_level     !! Logger verbosity level (debug/verbose/info/warning/error)
       integer :: nlevel = 1  !! Fragmentation level (default: 1)
    contains
       procedure :: destroy => config_destroy  !! Cleanup allocated memory
@@ -28,6 +29,7 @@ contains
       !!            monomer_symbols="path/to/monomer.xyz"
       !!            method="gfn1" or "gfn2" (defaults to gfn2)
       !!            nlevel=N (fragmentation level, defaults to 1)
+      !!            log_level="debug|verbose|info|performance|warning|error|knowledge" (defaults to info)
       character(len=*), intent(in) :: filename  !! Path to input file to parse
       type(input_config_t), intent(out) :: config  !! Parsed configuration data
       integer, intent(out) :: stat  !! Status code (0 = success, >0 = error)
@@ -43,7 +45,6 @@ contains
 
       stat = 0
 
-      ! Check if file exists
       inquire (file=filename, exist=file_exists)
       if (.not. file_exists) then
          stat = 1
@@ -51,7 +52,6 @@ contains
          return
       end if
 
-      ! Open input file
       open (newunit=unit, file=filename, status='old', action='read', iostat=io_stat)
       if (io_stat /= 0) then
          stat = io_stat
@@ -108,6 +108,23 @@ contains
                errmsg = "nlevel must be >= 0 (0 for unfragmented calculation)"
                return
             end if
+         case ('log_level')
+            ! Validate log level
+            select case (trim(value))
+            case ('debug', 'Debug', 'DEBUG', &
+                  'verbose', 'Verbose', 'VERBOSE', &
+                  'info', 'Info', 'INFO', &
+                  'performance', 'Performance', 'PERFORMANCE', &
+                  'warning', 'Warning', 'WARNING', &
+                  'error', 'Error', 'ERROR', &
+                  'knowledge', 'Knowledge', 'KNOWLEDGE')
+               config%log_level = trim(value)
+            case default
+               stat = 1
+               errmsg = "Invalid log_level: "//trim(value)// &
+                        " (supported: debug, verbose, info, performance, warning, error, knowledge)"
+               return
+            end select
          case default
             ! Ignore unrecognized keys
             continue
@@ -132,6 +149,11 @@ contains
       ! Set default method if not specified
       if (.not. allocated(config%method)) then
          config%method = "gfn2"  ! Default to GFN2-xTB
+      end if
+
+      ! Set default log_level if not specified
+      if (.not. allocated(config%log_level)) then
+         config%log_level = "info"  ! Default to info level
       end if
 
    end subroutine read_input_file
@@ -169,12 +191,42 @@ contains
 
    end function remove_quotes
 
+   function get_logger_level(level_string) result(level_int)
+      !! Convert string log level to integer value
+      !! This function uses the pic_logger constants
+      use pic_logger, only: debug_level, verbose_level, info_level, performance_level, &
+                            warning_level, error_level, knowledge_level
+      character(len=*), intent(in) :: level_string
+      integer :: level_int
+
+      select case (trim(adjustl(level_string)))
+      case ('debug', 'Debug', 'DEBUG')
+         level_int = debug_level
+      case ('verbose', 'Verbose', 'VERBOSE')
+         level_int = verbose_level
+      case ('info', 'Info', 'INFO')
+         level_int = info_level
+      case ('performance', 'Performance', 'PERFORMANCE')
+         level_int = performance_level
+      case ('warning', 'Warning', 'WARNING')
+         level_int = warning_level
+      case ('error', 'Error', 'ERROR')
+         level_int = error_level
+      case ('knowledge', 'Knowledge', 'KNOWLEDGE')
+         level_int = knowledge_level
+      case default
+         ! Default to info level if unknown
+         level_int = info_level
+      end select
+   end function get_logger_level
+
    subroutine config_destroy(this)
       !! Clean up allocated memory in input_config_t
       class(input_config_t), intent(inout) :: this
       if (allocated(this%geom_file)) deallocate (this%geom_file)
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)
       if (allocated(this%method)) deallocate (this%method)
+      if (allocated(this%log_level)) deallocate (this%log_level)
    end subroutine config_destroy
 
 end module mqc_input_parser

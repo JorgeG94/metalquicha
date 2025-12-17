@@ -2,6 +2,7 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
+   use pic_types, only: int64
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -29,21 +30,23 @@ contains
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
-      integer :: total_fragments  !! Total number of fragments generated
+      integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment indices array
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
       integer, allocatable :: node_leader_ranks(:)  !! Ranks of node leaders
       integer, allocatable :: monomers(:)     !! Monomer indices for fragment generation
-      integer :: n_expected_frags  !! Expected number of fragments
-      integer :: n_rows      !! Number of rows for polymers array
+      integer(int64) :: n_expected_frags  !! Expected number of fragments (int64 to handle large systems)
+      integer(int64) :: n_rows      !! Number of rows for polymers array (int64 to handle large systems)
       integer :: global_node_rank  !! Global rank if node leader, -1 otherwise
       integer, allocatable :: all_node_leader_ranks(:)  !! All node leader ranks
 
       ! Set max_level from config
+      ! TODO JORGE: change to max fragmentation level
       max_level = config%nlevel
 
       ! Set matrix_size based on atoms per monomer (natoms * 3 for gradient)
+      ! TODO JORGE: this is temporary, until we define a result_struct that will initialize itself
       matrix_size = sys_geom%atoms_per_monomer*3
 
       if (world_comm%rank() == 0) then
@@ -57,11 +60,11 @@ contains
          call logger%info("============================================")
       end if
 
-      ! Choose calculation type based on nlevel
       if (max_level == 0) then
          call run_unfragmented_calculation(world_comm, sys_geom, config%method)
       else
-         call run_fragmented_calculation(world_comm, node_comm, config%method, sys_geom, max_level, matrix_size)
+         call run_fragmented_calculation(world_comm, node_comm, config%method, sys_geom, max_level, &
+                                         matrix_size)
       end if
 
    end subroutine run_calculation
@@ -78,6 +81,7 @@ contains
       ! Validate that only a single rank is used for unfragmented calculation
       ! (parallelism comes from OpenMP threads, not MPI ranks)
       if (world_comm%size() > 1) then
+         ! TODO JORGE: maybe don't fail? prune the extra ranks ?
          if (world_comm%rank() == 0) then
             call logger%error("")
             call logger%error("Unfragmented calculation (nlevel=0) requires exactly 1 MPI rank")
@@ -93,8 +97,7 @@ contains
 
       if (world_comm%rank() == 0) then
          call logger%info("")
-         call logger%info("nlevel=0 detected: Running unfragmented calculation")
-         call logger%info("Parallelism provided by OpenMP threads")
+         call logger%info("Running unfragmented calculation")
          call logger%info("")
          call unfragmented_calculation(sys_geom, method)
       end if
@@ -113,14 +116,14 @@ contains
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
       integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
 
-      integer :: total_fragments  !! Total number of fragments generated
+      integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
       integer, allocatable :: node_leader_ranks(:)  !! Ranks of processes that lead each node
       integer, allocatable :: monomers(:)     !! Temporary monomer list for fragment generation
-      integer :: n_expected_frags  !! Expected number of fragments based on combinatorics
-      integer :: n_rows      !! Number of rows needed for polymers array
+      integer(int64) :: n_expected_frags  !! Expected number of fragments based on combinatorics (int64 to handle large systems)
+      integer(int64) :: n_rows      !! Number of rows needed for polymers array (int64 to handle large systems)
       integer :: global_node_rank  !! Global rank if this process leads a node, -1 otherwise
       integer, allocatable :: all_node_leader_ranks(:)  !! Node leader status for all ranks
 
@@ -145,11 +148,11 @@ contains
          call create_monomer_list(monomers)
 
          ! Generate all fragments (includes monomers in polymers array)
-         total_fragments = 0
+         total_fragments = 0_int64
 
          ! First add monomers
          do i = 1, sys_geom%n_monomers
-            total_fragments = total_fragments + 1
+            total_fragments = total_fragments + 1_int64
             polymers(total_fragments, 1) = i
          end do
 

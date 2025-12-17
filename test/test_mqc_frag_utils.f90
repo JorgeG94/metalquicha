@@ -1,7 +1,7 @@
 module test_mqc_frag_utils
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_frag_utils, only: binomial, create_monomer_list, generate_fragment_list, get_nfrags
-   use pic_types, only: default_int, dp
+   use pic_types, only: default_int, int64, dp
    implicit none
    private
    public :: collect_mqc_frag_utils_tests
@@ -31,121 +31,121 @@ contains
 
    subroutine test_binomial_base_cases(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! C(n, 0) = 1 for any n
       result = binomial(5_default_int, 0_default_int)
-      call check(error, result, 1_default_int, "C(5,0) should be 1")
+      call check(error, result, 1_int64, "C(5,0) should be 1")
       if (allocated(error)) return
 
       ! C(n, n) = 1 for any n
       result = binomial(5_default_int, 5_default_int)
-      call check(error, result, 1_default_int, "C(5,5) should be 1")
+      call check(error, result, 1_int64, "C(5,5) should be 1")
       if (allocated(error)) return
 
       ! C(n, r) = 0 when r > n
       result = binomial(3_default_int, 5_default_int)
-      call check(error, result, 0_default_int, "C(3,5) should be 0")
+      call check(error, result, 0_int64, "C(3,5) should be 0")
    end subroutine test_binomial_base_cases
 
    subroutine test_binomial_small_values(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! C(4, 2) = 6
       result = binomial(4_default_int, 2_default_int)
-      call check(error, result, 6_default_int, "C(4,2) should be 6")
+      call check(error, result, 6_int64, "C(4,2) should be 6")
       if (allocated(error)) return
 
       ! C(5, 2) = 10
       result = binomial(5_default_int, 2_default_int)
-      call check(error, result, 10_default_int, "C(5,2) should be 10")
+      call check(error, result, 10_int64, "C(5,2) should be 10")
       if (allocated(error)) return
 
       ! C(6, 3) = 20
       result = binomial(6_default_int, 3_default_int)
-      call check(error, result, 20_default_int, "C(6,3) should be 20")
+      call check(error, result, 20_int64, "C(6,3) should be 20")
    end subroutine test_binomial_small_values
 
    subroutine test_binomial_larger_values(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! C(10, 3) = 120
       result = binomial(10_default_int, 3_default_int)
-      call check(error, result, 120_default_int, "C(10,3) should be 120")
+      call check(error, result, 120_int64, "C(10,3) should be 120")
       if (allocated(error)) return
 
       ! C(10, 5) = 252
       result = binomial(10_default_int, 5_default_int)
-      call check(error, result, 252_default_int, "C(10,5) should be 252")
+      call check(error, result, 252_int64, "C(10,5) should be 252")
       if (allocated(error)) return
 
       ! C(7, 4) = 35
       result = binomial(7_default_int, 4_default_int)
-      call check(error, result, 35_default_int, "C(7,4) should be 35")
+      call check(error, result, 35_int64, "C(7,4) should be 35")
    end subroutine test_binomial_larger_values
 
    subroutine test_binomial_edge_cases(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! C(1, 1) = 1
       result = binomial(1_default_int, 1_default_int)
-      call check(error, result, 1_default_int, "C(1,1) should be 1")
+      call check(error, result, 1_int64, "C(1,1) should be 1")
       if (allocated(error)) return
 
       ! C(10, 1) = 10
       result = binomial(10_default_int, 1_default_int)
-      call check(error, result, 10_default_int, "C(10,1) should be 10")
+      call check(error, result, 10_int64, "C(10,1) should be 10")
    end subroutine test_binomial_edge_cases
 
    subroutine test_get_nfrags_single(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! 5 monomers, up to dimers (level 2)
       ! Should have C(5,1) + C(5,2) = 5 + 10 = 15
       result = get_nfrags(5_default_int, 2_default_int)
-      call check(error, result, 15_default_int, "5 monomers up to dimers should be 15")
+      call check(error, result, 15_int64, "5 monomers up to dimers should be 15")
       if (allocated(error)) return
 
       ! 4 monomers, up to monomers only (level 1)
       ! Should have C(4,1) = 4
       result = get_nfrags(4_default_int, 1_default_int)
-      call check(error, result, 4_default_int, "4 monomers up to level 1 should be 4")
+      call check(error, result, 4_int64, "4 monomers up to level 1 should be 4")
    end subroutine test_get_nfrags_single
 
    subroutine test_get_nfrags_multiple(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! 5 monomers, up to trimers (level 3)
       ! C(5,1) + C(5,2) + C(5,3) = 5 + 10 + 10 = 25
       result = get_nfrags(5_default_int, 3_default_int)
-      call check(error, result, 25_default_int, "5 monomers up to trimers should be 25")
+      call check(error, result, 25_int64, "5 monomers up to trimers should be 25")
       if (allocated(error)) return
 
       ! 6 monomers, up to dimers (level 2)
       ! C(6,1) + C(6,2) = 6 + 15 = 21
       result = get_nfrags(6_default_int, 2_default_int)
-      call check(error, result, 21_default_int, "6 monomers up to dimers should be 21")
+      call check(error, result, 21_int64, "6 monomers up to dimers should be 21")
    end subroutine test_get_nfrags_multiple
 
    subroutine test_get_nfrags_all(error)
       type(error_type), allocatable, intent(out) :: error
-      integer(default_int) :: result
+      integer(int64) :: result
 
       ! 4 monomers, all levels (level 4)
       ! C(4,1) + C(4,2) + C(4,3) + C(4,4) = 4 + 6 + 4 + 1 = 15
       result = get_nfrags(4_default_int, 4_default_int)
-      call check(error, result, 15_default_int, "4 monomers all levels should be 15 (2^4-1)")
+      call check(error, result, 15_int64, "4 monomers all levels should be 15 (2^4-1)")
       if (allocated(error)) return
 
       ! 3 monomers, all levels (level 3)
       ! C(3,1) + C(3,2) + C(3,3) = 3 + 3 + 1 = 7
       result = get_nfrags(3_default_int, 3_default_int)
-      call check(error, result, 7_default_int, "3 monomers all levels should be 7 (2^3-1)")
+      call check(error, result, 7_int64, "3 monomers all levels should be 7 (2^3-1)")
    end subroutine test_get_nfrags_all
 
    subroutine test_create_monomer_list_small(error)
@@ -201,7 +201,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       integer(default_int), allocatable :: monomers(:)
       integer(default_int), allocatable :: polymers(:, :)
-      integer(default_int) :: count, expected_count
+      integer(int64) :: count, expected_count
       integer(default_int) :: max_level, n_monomers
 
       n_monomers = 4_default_int
@@ -217,7 +217,7 @@ contains
       ! Allocate output array
       allocate (polymers(expected_count, max_level))
       polymers = 0
-      count = 0
+      count = 0_int64
 
       ! Generate fragments
       call generate_fragment_list(monomers, max_level, polymers, count)
@@ -258,7 +258,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       integer(default_int), allocatable :: monomers(:)
       integer(default_int), allocatable :: polymers(:, :)
-      integer(default_int) :: count, expected_count
+      integer(int64) :: count, expected_count
       integer(default_int) :: max_level, n_monomers
 
       n_monomers = 5_default_int
@@ -274,7 +274,7 @@ contains
       ! Allocate output array
       allocate (polymers(expected_count, max_level))
       polymers = 0
-      count = 0
+      count = 0_int64
 
       ! Generate fragments
       call generate_fragment_list(monomers, max_level, polymers, count)
@@ -316,7 +316,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       integer(default_int), allocatable :: monomers(:)
       integer(default_int), allocatable :: polymers(:, :)
-      integer(default_int) :: count, expected_count
+      integer(int64) :: count, expected_count
       integer(default_int) :: max_level, n_monomers
 
       n_monomers = 3_default_int
@@ -333,12 +333,12 @@ contains
       ! Allocate output array
       allocate (polymers(expected_count, max_level))
       polymers = 0
-      count = 0
+      count = 0_int64
 
       ! Generate fragments
       call generate_fragment_list(monomers, max_level, polymers, count)
 
-      call check(error, count, 4_default_int, "Should generate 4 fragments from 3 monomers")
+      call check(error, count, 4_int64, "Should generate 4 fragments from 3 monomers")
       if (allocated(error)) then
          deallocate (monomers, polymers)
          return

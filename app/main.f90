@@ -8,7 +8,7 @@ program main
    use pic_mpi_lib, only: pic_mpi_init, comm_world, comm_t, abort_comm, pic_mpi_finalize
    use mqc_driver, only: run_calculation
    use mqc_physical_fragment, only: initialize_system_geometry, system_geometry_t
-   use mqc_input_parser, only: read_input_file, input_config_t
+   use mqc_input_parser, only: read_input_file, input_config_t, get_logger_level
    use mqc_logo, only: print_logo
    use pic_timer, only: timer_type
    implicit none
@@ -23,19 +23,18 @@ program main
    character(len=256) :: input_file  !! Input file name
 
    ! Initialize MPI
+   ! pic-mpi will call mpi_init_thread when needed
    call pic_mpi_init()
 
    ! Create communicators
    world_comm = comm_world()
    node_comm = world_comm%split()
 
-   ! Start timer on rank 0
    if (world_comm%rank() == 0) then
       call print_logo()
       call my_timer%start()
    end if
 
-   ! Read input file
    input_file = "test.inp"
    call read_input_file(input_file, config, stat, errmsg)
    if (stat /= 0) then
@@ -45,7 +44,12 @@ program main
       call abort_comm(world_comm, 1)
    end if
 
-   ! Initialize system geometry
+   ! Configure logger verbosity based on input file
+   call logger%configure(get_logger_level(config%log_level))
+   if (world_comm%rank() == 0) then
+      call logger%info("Logger verbosity set to: "//trim(config%log_level))
+   end if
+
    call initialize_system_geometry(config%geom_file, config%monomer_file, sys_geom, stat, errmsg)
    if (stat /= 0) then
       if (world_comm%rank() == 0) then
@@ -54,16 +58,13 @@ program main
       call abort_comm(world_comm, 1)
    end if
 
-   ! Run the calculation
    call run_calculation(world_comm, node_comm, config, sys_geom)
 
-   ! Stop timer and report on rank 0
    if (world_comm%rank() == 0) then
       call my_timer%stop()
       call logger%info("Total processing time: "//to_char(my_timer%get_elapsed_time())//" s")
    end if
 
-   ! Cleanup and finalize
    call config%destroy()
    call sys_geom%destroy()
    call world_comm%finalize()
