@@ -4,3 +4,4 @@ nlevel=5
 geom="prism.xyz"
 monomer_symbols="water_monomer.xyz"
 method="gfn2"
+log_level=info

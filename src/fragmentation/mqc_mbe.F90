@@ -218,7 +218,7 @@ contains
          end do
 
          if (count_by_level > 0_int64) then
-            call logger%info("")
+            call logger%verbose("")
             block
                character(len=256) :: header
                if (body_level == 1) then

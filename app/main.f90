@@ -8,7 +8,7 @@ program main
    use pic_mpi_lib, only: pic_mpi_init, comm_world, comm_t, abort_comm, pic_mpi_finalize
    use mqc_driver, only: run_calculation
    use mqc_physical_fragment, only: initialize_system_geometry, system_geometry_t
-   use mqc_input_parser, only: read_input_file, input_config_t
+   use mqc_input_parser, only: read_input_file, input_config_t, get_logger_level
    use mqc_logo, only: print_logo
    use pic_timer, only: timer_type
    implicit none
@@ -42,6 +42,12 @@ program main
          call logger%error("Error reading input file "//errmsg)
       end if
       call abort_comm(world_comm, 1)
+   end if
+
+   ! Configure logger verbosity based on input file
+   call logger%configure(get_logger_level(config%log_level))
+   if (world_comm%rank() == 0) then
+      call logger%info("Logger verbosity set to: "//trim(config%log_level))
    end if
 
    call initialize_system_geometry(config%geom_file, config%monomer_file, sys_geom, stat, errmsg)
