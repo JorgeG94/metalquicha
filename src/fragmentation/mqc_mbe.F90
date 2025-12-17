@@ -26,13 +26,14 @@ module mqc_mbe
    private
 
    ! Public interface
-   public :: process_chemistry_fragment, global_coordinator, node_coordinator
+   public :: do_fragment_work, global_coordinator, node_coordinator
+   public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation
 
 contains
 
-   subroutine process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                         water_energy, C_flat, method, phys_frag)
+   subroutine do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+                               water_energy, C_flat, method, phys_frag)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -88,7 +89,7 @@ contains
       end if      ! Return empty vector for C_flat
       allocate (C_flat(1))
       C_flat(1) = 0.0_dp
-   end subroutine process_chemistry_fragment
+   end subroutine do_fragment_work
 
    function get_body_level_name(body_level) result(level_name)
       !! Map body level (n-mer) to descriptive name
@@ -842,14 +843,14 @@ contains
                call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
                ! Process the chemistry fragment with physical geometry
-               call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                               dot_result, C_flat, method, phys_frag)
+               call do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+                                     dot_result, C_flat, method, phys_frag)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call process_chemistry_fragment(fragment_idx, fragment_indices, fragment_size, matrix_size, &
-                                               dot_result, C_flat, method)
+               call do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+                                     dot_result, C_flat, method)
             end if
 
             ! Send results back to coordinator
@@ -908,9 +909,9 @@ contains
             temp_indices(i) = i
          end do
 
-         call process_chemistry_fragment(0, temp_indices, sys_geom%n_monomers, &
-                                         total_atoms, dot_result, C_flat, &
-                                         method, phys_frag=full_system)
+         call do_fragment_work(0, temp_indices, sys_geom%n_monomers, &
+                               total_atoms, dot_result, C_flat, &
+                               method, phys_frag=full_system)
          deallocate (temp_indices)
       end block
 
@@ -927,5 +928,75 @@ contains
       if (allocated(C_flat)) deallocate (C_flat)
 
    end subroutine unfragmented_calculation
+
+   subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, matrix_size)
+      !! Process all fragments serially in single-rank mode
+      !! This is used when running with only 1 MPI rank
+      !! Each fragment calculation uses threaded BLAS/LAPACK internally
+      integer(int64), intent(in) :: total_fragments
+      integer, intent(in) :: polymers(:, :), max_level, matrix_size
+      type(system_geometry_t), intent(in) :: sys_geom
+      character(len=*), intent(in) :: method
+
+      integer(int64) :: frag_idx
+      integer :: fragment_size
+      integer, allocatable :: fragment_indices(:)
+      real(dp), allocatable :: scalar_results(:)
+      real(dp), allocatable :: matrix_results(:, :)
+      real(dp), allocatable :: C_flat(:)
+      real(dp) :: dot_result, mbe_total_energy
+      type(physical_fragment_t) :: phys_frag
+      integer :: max_matrix_size
+
+      call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
+
+      ! Allocate storage for results
+      allocate (scalar_results(total_fragments))
+      max_matrix_size = (max_level*matrix_size)**2
+      allocate (matrix_results(max_matrix_size, total_fragments))
+      scalar_results = 0.0_dp
+      matrix_results = 0.0_dp
+
+      ! Process each fragment sequentially
+      do frag_idx = 1_int64, total_fragments
+         fragment_size = count(polymers(frag_idx, :) > 0)
+         allocate (fragment_indices(fragment_size))
+         fragment_indices = polymers(frag_idx, 1:fragment_size)
+
+         ! Build physical fragment
+         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
+
+         ! Process the fragment
+         call do_fragment_work(int(frag_idx), fragment_indices, fragment_size, matrix_size, &
+                               dot_result, C_flat, method, phys_frag)
+
+         ! Store results
+         scalar_results(frag_idx) = dot_result
+         matrix_results(1:size(C_flat), frag_idx) = C_flat
+         if (size(C_flat) < max_matrix_size) then
+            matrix_results(size(C_flat) + 1:max_matrix_size, frag_idx) = 0.0_dp
+         end if
+
+         ! Cleanup
+         call phys_frag%destroy()
+         deallocate (fragment_indices, C_flat)
+
+         ! Progress indicator
+         if (mod(frag_idx, max(1_int64, total_fragments/10)) == 0 .or. frag_idx == total_fragments) then
+            call logger%info("  Processed "//to_char(frag_idx)//"/"//to_char(total_fragments)//" fragments")
+         end if
+      end do
+
+      call logger%info("All fragments processed")
+
+      ! Compute MBE energy
+      call logger%info("")
+      call logger%info("Computing Many-Body Expansion (MBE)...")
+      call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
+
+      ! Cleanup
+      deallocate (scalar_results, matrix_results)
+
+   end subroutine serial_fragment_processor
 
 end module mqc_mbe
