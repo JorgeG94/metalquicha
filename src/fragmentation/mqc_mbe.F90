@@ -305,7 +305,8 @@ contains
 
    end subroutine print_detailed_breakdown
 
-   subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy)
+   subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
+                                            energies, delta_energies, sum_by_level, total_energy)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
