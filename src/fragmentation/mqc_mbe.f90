@@ -14,8 +14,7 @@ module mqc_mbe
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT, TAG_NODE_MATRIX_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
-   use mqc_frag_utils, only: find_fragment_index, get_next_combination
-   use mqc_fragment_lookup, only: fragment_lookup_t
+   use mqc_frag_utils, only: find_fragment_index, get_next_combination, fragment_lookup_t
 
    implicit none
    private
