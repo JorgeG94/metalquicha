@@ -79,7 +79,7 @@ contains
       character(len=512) :: fragment_str, energy_line
       integer(int64) :: count_by_level
 
-      call logger%verbose("")
+      call logger%verbose(" ")
       call logger%verbose("============================================")
       call logger%verbose("Detailed Energy Breakdown by Fragment")
       call logger%verbose("============================================")
@@ -98,7 +98,7 @@ contains
          end do
 
          if (count_by_level > 0_int64) then
-            call logger%verbose("")
+            call logger%verbose(" ")
             block
                character(len=256) :: header
                character(len=32) :: level_name
@@ -142,7 +142,7 @@ contains
          end if
       end do
 
-      call logger%verbose("")
+      call logger%verbose(" ")
       call logger%verbose("============================================")
 
    end subroutine print_detailed_breakdown

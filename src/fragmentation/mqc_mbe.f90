@@ -129,7 +129,7 @@ contains
       real(dp), intent(in) :: energies(:), delta_energies(:)  !! Pre-computed delta values
       real(dp) :: delta_E
 
-      integer :: subset_size, i, j
+      integer :: subset_size, i
       integer, allocatable :: indices(:), subset(:)
       integer(int64) :: subset_idx
       logical :: has_next

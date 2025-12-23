@@ -401,6 +401,11 @@ contains
                   errmsg = "Failed to parse function line: "//trim(line)
                   return
                end if
+               if (.not. has_p) then
+                  stat = 1
+                  errmsg = "L shell requires both S and P coefficients"
+                  return
+               end if
 
                ifunc = ifunc + 1
 
@@ -495,6 +500,7 @@ contains
       type(atomic_basis_type), allocatable :: unique_bases(:)
       integer :: match_idx
 
+      match_idx = 0
       stat = 0
       natoms = size(element_names)
 

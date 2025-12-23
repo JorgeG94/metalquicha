@@ -32,7 +32,7 @@ module mqc_mbe_fragment_distribution_scheme
 
 contains
 
-   subroutine do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+   subroutine do_fragment_work(fragment_idx, &
                                water_energy, C_flat, method, phys_frag)
       !! Process a single fragment for quantum chemistry calculation
       !!
@@ -43,9 +43,6 @@ contains
       use pic_logger, only: verbose_level
 
       integer, intent(in) :: fragment_idx        !! Fragment index for identification
-      integer, intent(in) :: fragment_size       !! Number of monomers in fragment
-      integer, intent(in) :: fragment_indices(fragment_size)  !! Monomer indices comprising this fragment
-      integer, intent(in) :: matrix_size         !! Size of gradient matrix (natoms*3)
       real(dp), intent(out) :: water_energy      !! Computed energy for this fragment
       real(dp), allocatable, intent(out) :: C_flat(:)  !! Flattened gradient array
       character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
@@ -110,15 +107,14 @@ contains
       logical :: has_pending
 
       ! For local workers
-      integer :: local_finished_workers, fragment_size, local_dummy
-      integer, allocatable :: fragment_indices(:)
+      integer :: local_finished_workers, local_dummy
 
       ! Storage for results
       real(dp), allocatable :: scalar_results(:)
       real(dp), allocatable :: matrix_results(:, :)
       real(dp), allocatable :: temp_matrix(:)
       integer :: max_matrix_size
-      integer :: worker_fragment_map(node_comm%size())
+      integer(int64) :: worker_fragment_map(node_comm%size())
       integer :: worker_source
 
       current_fragment = total_fragments
@@ -201,7 +197,7 @@ contains
             request_source = status%MPI_SOURCE
 
             if (current_fragment >= 1) then
-               call send_fragment_to_node(world_comm, current_fragment, polymers, max_level, request_source)
+               call send_fragment_to_node(world_comm, current_fragment, polymers, request_source)
                current_fragment = current_fragment - 1
             else
                call send(world_comm, -1, request_source, TAG_NODE_FINISH)
@@ -218,7 +214,7 @@ contains
                   call recv(node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST)
 
                   if (current_fragment >= 1) then
-                     call send_fragment_to_worker(node_comm, current_fragment, polymers, max_level, &
+                     call send_fragment_to_worker(node_comm, current_fragment, polymers, &
                                                   local_status%MPI_SOURCE, matrix_size)
                      ! Track which fragment was sent to this worker
                      worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
@@ -254,7 +250,7 @@ contains
          real(dp) :: mbe_total_energy
 
          ! Compute the many-body expansion energy
-         call logger%info("")
+         call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
          call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
@@ -267,12 +263,12 @@ contains
       deallocate (scalar_results, matrix_results)
    end subroutine global_coordinator
 
-   subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, max_level, dest_rank)
+   subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, dest_rank)
       !! Send fragment data to remote node coordinator
       !! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.
       type(comm_t), intent(in) :: world_comm
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: max_level, dest_rank
+      integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
       integer :: fragment_size
       integer, allocatable :: fragment_indices(:)
@@ -289,12 +285,12 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_node
 
-   subroutine send_fragment_to_worker(node_comm, fragment_idx, polymers, max_level, dest_rank, matrix_size)
+   subroutine send_fragment_to_worker(node_comm, fragment_idx, polymers, dest_rank, matrix_size)
       !! Send fragment data to local worker
       !! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.
       type(comm_t), intent(in) :: node_comm
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: max_level, dest_rank, matrix_size
+      integer, intent(in) :: dest_rank, matrix_size
       integer, intent(in) :: polymers(:, :)
       integer :: fragment_size
       integer, allocatable :: fragment_indices(:)
@@ -312,11 +308,11 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   subroutine node_coordinator(world_comm, node_comm, max_level, matrix_size)
+   subroutine node_coordinator(world_comm, node_comm, matrix_size)
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
       class(comm_t), intent(in) :: world_comm, node_comm
-      integer(int32), intent(in) :: max_level, matrix_size
+      integer(int32), intent(in) :: matrix_size
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
       integer(int32) :: finished_workers
@@ -405,10 +401,9 @@ contains
       end do
    end subroutine node_coordinator
 
-   subroutine node_worker(world_comm, node_comm, max_level, sys_geom, method)
+   subroutine node_worker(world_comm, node_comm, sys_geom, method)
       !! Node worker for processing fragments assigned by node coordinator
       class(comm_t), intent(in) :: world_comm, node_comm
-      integer, intent(in) :: max_level
       type(system_geometry_t), intent(in), optional :: sys_geom
       character(len=*), intent(in) :: method
 
@@ -437,13 +432,13 @@ contains
                call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
                ! Process the chemistry fragment with physical geometry
-               call do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+               call do_fragment_work(fragment_idx, &
                                      dot_result, C_flat, method, phys_frag)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call do_fragment_work(fragment_idx, fragment_indices, fragment_size, matrix_size, &
+               call do_fragment_work(fragment_idx, &
                                      dot_result, C_flat, method)
             end if
 
@@ -503,8 +498,8 @@ contains
             temp_indices(i) = i
          end do
 
-         call do_fragment_work(0, temp_indices, sys_geom%n_monomers, &
-                               total_atoms, dot_result, C_flat, &
+         call do_fragment_work(0, &
+                               dot_result, C_flat, &
                                method, phys_frag=full_system)
          deallocate (temp_indices)
       end block
@@ -559,7 +554,7 @@ contains
 
          call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
-         call do_fragment_work(int(frag_idx), fragment_indices, fragment_size, matrix_size, &
+         call do_fragment_work(int(frag_idx), &
                                dot_result, C_flat, method, phys_frag)
 
          scalar_results(frag_idx) = dot_result
@@ -581,7 +576,7 @@ contains
 
       call logger%info("All fragments processed")
 
-      call logger%info("")
+      call logger%info(" ")
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
       call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)

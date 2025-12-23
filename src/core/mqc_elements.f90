@@ -57,7 +57,6 @@ contains
       integer :: atomic_number
 
       character(len=2) :: sym
-      integer :: i
 
       ! Normalize: uppercase first letter, lowercase second
       sym = adjustl(symbol)

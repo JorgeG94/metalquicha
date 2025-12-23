@@ -32,16 +32,6 @@ contains
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
-      integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
-      integer, allocatable :: polymers(:, :)  !! Fragment indices array
-      integer :: num_nodes   !! Number of compute nodes
-      integer :: i, j        !! Loop counters
-      integer, allocatable :: node_leader_ranks(:)  !! Ranks of node leaders
-      integer, allocatable :: monomers(:)     !! Monomer indices for fragment generation
-      integer(int64) :: n_expected_frags  !! Expected number of fragments (int64 to handle large systems)
-      integer(int64) :: n_rows      !! Number of rows for polymers array (int64 to handle large systems)
-      integer :: global_node_rank  !! Global rank if node leader, -1 otherwise
-      integer, allocatable :: all_node_leader_ranks(:)  !! All node leader ranks
 
       ! Set max_level from config
       ! TODO JORGE: change to max fragmentation level
@@ -85,22 +75,22 @@ contains
       if (world_comm%size() > 1) then
          ! TODO JORGE: maybe don't fail? prune the extra ranks ?
          if (world_comm%rank() == 0) then
-            call logger%error("")
+            call logger%error(" ")
             call logger%error("Unfragmented calculation (nlevel=0) requires exactly 1 MPI rank")
             call logger%error("  Parallelism is achieved through OpenMP threads, not MPI")
             call logger%error("  Current number of MPI ranks: "//to_char(world_comm%size())//" (must be 1)")
-            call logger%error("")
+            call logger%error(" ")
             call logger%error("Please run with a single MPI rank (e.g., mpirun -np 1 ...)")
             call logger%error("Use OMP_NUM_THREADS to control thread-level parallelism")
-            call logger%error("")
+            call logger%error(" ")
          end if
          call abort_comm(world_comm, 1)
       end if
 
       if (world_comm%rank() == 0) then
-         call logger%info("")
+         call logger%info(" ")
          call logger%info("Running unfragmented calculation")
-         call logger%info("")
+         call logger%info(" ")
          call unfragmented_calculation(sys_geom, method)
       end if
 
@@ -202,12 +192,12 @@ contains
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
-         call node_coordinator(world_comm, node_comm, max_level, matrix_size)
+         call node_coordinator(world_comm, node_comm, matrix_size)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
-         call node_worker(world_comm, node_comm, max_level, sys_geom, method)
+         call node_worker(world_comm, node_comm, sys_geom, method)
       end if
 
       ! Cleanup
