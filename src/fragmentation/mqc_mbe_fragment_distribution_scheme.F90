@@ -9,7 +9,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz
-   use omp_lib
+   use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use mqc_mbe, only: compute_mbe_energy
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, TAG_WORKER_MATRIX_RESULT, &
