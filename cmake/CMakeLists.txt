@@ -34,7 +34,7 @@ set(CMAKE_Fortran_FLAGS_DEBUG
     "${CMAKE_Fortran_FLAGS_DEBUG} ${fpe} ${warning_flags}"
     PARENT_SCOPE)
 set(CMAKE_Fortran_FLAGS
-    "${CMAKE_Fortran_FLAGS} ${standard_compile_flags} ${warning_flags}"
+    "${CMAKE_Fortran_FLAGS} ${standard_compile_flags}"
     PARENT_SCOPE)
 
 set(CMAKE_Fortran_FLAGS_COVERAGE
