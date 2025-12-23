@@ -167,6 +167,11 @@ contains
                worker_fragment_map(worker_source) = 0
                if (allocated(temp_matrix)) deallocate (temp_matrix)
                results_received = results_received + 1
+               if (mod(results_received, max(1_int64, total_fragments/10)) == 0 .or. &
+                   results_received == total_fragments) then
+                  call logger%info("  Processed "//to_char(results_received)//"/"// &
+                                   to_char(total_fragments)//" fragments")
+               end if
             end do
          end if
 
@@ -188,6 +193,11 @@ contains
             end if
             if (allocated(temp_matrix)) deallocate (temp_matrix)
             results_received = results_received + 1
+            if (mod(results_received, max(1_int64, total_fragments/10)) == 0 .or. &
+                results_received == total_fragments) then
+               call logger%info("  Processed "//to_char(results_received)//"/"// &
+                                to_char(total_fragments)//" fragments")
+            end if
          end do
 
          ! PRIORITY 2: Remote node coordinator requests
