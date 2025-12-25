@@ -183,17 +183,17 @@ contains
       if (world_comm%size() == 1) then
          ! Single rank: process fragments serially
          call logger%info("Running in serial mode (single MPI rank)")
-         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, matrix_size)
+         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method)
       else if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, matrix_size)
+                                 node_leader_ranks, num_nodes)
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
-         call node_coordinator(world_comm, node_comm, matrix_size)
+         call node_coordinator(world_comm, node_comm)
       else
          ! Worker
          call omp_set_num_threads(1)

@@ -10,9 +10,9 @@ module mqc_mbe
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_detailed_breakdown, print_detailed_breakdown_json
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
-                           TAG_WORKER_SCALAR_RESULT, TAG_WORKER_MATRIX_RESULT, &
+                           TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
-                           TAG_NODE_SCALAR_RESULT, TAG_NODE_MATRIX_RESULT
+                           TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
 
