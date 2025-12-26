@@ -95,12 +95,12 @@ contains
       verbosity = merge(1, 0, this%verbose)
       call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
 
-      ! Store result
-      result%energy = real(energy, dp)
+      ! Store result (XTB is a semi-empirical method, store as SCF energy)
+      result%energy%scf = real(energy, dp)
       result%has_energy = .true.
 
       if (this%verbose) then
-         print *, "XTB: Energy =", result%energy
+         print *, "XTB: Energy =", result%energy%total()
       end if
 
       deallocate (num, xyz)

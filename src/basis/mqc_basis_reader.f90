@@ -401,25 +401,25 @@ contains
                   errmsg = "Failed to parse function line: "//trim(line)
                   return
                end if
+
+               ifunc = ifunc + 1
+
+               if (reading_l_shell) then
                if (.not. has_p) then
                   stat = 1
                   errmsg = "L shell requires both S and P coefficients"
                   return
                end if
+               ! Store in both S and P shells
+               atom_basis%shells(l_shell_s_idx)%exponents(ifunc) = exponent
+               atom_basis%shells(l_shell_s_idx)%coefficients(ifunc) = coeff_s
 
-               ifunc = ifunc + 1
-
-               if (reading_l_shell) then
-                  ! Store in both S and P shells
-                  atom_basis%shells(l_shell_s_idx)%exponents(ifunc) = exponent
-                  atom_basis%shells(l_shell_s_idx)%coefficients(ifunc) = coeff_s
-
-                  atom_basis%shells(l_shell_p_idx)%exponents(ifunc) = exponent
-                  atom_basis%shells(l_shell_p_idx)%coefficients(ifunc) = coeff_p
+               atom_basis%shells(l_shell_p_idx)%exponents(ifunc) = exponent
+               atom_basis%shells(l_shell_p_idx)%coefficients(ifunc) = coeff_p
                else
-                  ! Store in current shell
-                  atom_basis%shells(ishell)%exponents(ifunc) = exponent
-                  atom_basis%shells(ishell)%coefficients(ifunc) = coeff_s
+               ! Store in current shell
+               atom_basis%shells(ishell)%exponents(ifunc) = exponent
+               atom_basis%shells(ishell)%coefficients(ifunc) = coeff_s
                end if
             end if
 

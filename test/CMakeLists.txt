@@ -48,6 +48,7 @@ addtest(mqc_geometry)
 addtest(mqc_input_parser)
 addtest(mqc_cli_parser)
 addtest(mqc_split_lines)
+addtest(mqc_result_types)
 
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)

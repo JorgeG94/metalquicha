@@ -76,7 +76,7 @@ contains
 #endif
       else
          ! For empty fragments, set energy to zero
-         result%energy = 0.0_dp
+         call result%energy%reset()
          result%has_energy = .true.
       end if
    end subroutine do_fragment_work
@@ -518,7 +518,7 @@ contains
       call logger%info("Unfragmented calculation completed")
       block
          character(len=256) :: result_line
-         write (result_line, '(a,f25.15)') "  Final energy: ", result%energy
+         write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
       end block
       call logger%info("============================================")

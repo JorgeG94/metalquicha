@@ -29,7 +29,7 @@ program test_method_api
    call hf_method%calc_energy(h2_fragment, result)
    print *, ""
    print *, "Result from HF:"
-   print *, "  Energy:", result%energy
+   print *, "  Energy:", result%energy%total()
    print *, "  Has energy:", result%has_energy
    print *, ""
 
@@ -45,7 +45,7 @@ program test_method_api
    call xtb_method%calc_energy(h2_fragment, result)
    print *, ""
    print *, "Result from XTB/GFN2:"
-   print *, "  Energy:", result%energy
+   print *, "  Energy:", result%energy%total()
    print *, "  Has energy:", result%has_energy
    print *, ""
 
@@ -58,7 +58,7 @@ program test_method_api
    call xtb_method%calc_gradient(h2_fragment, result)
    print *, ""
    print *, "Result from XTB/GFN2 gradient:"
-   print *, "  Energy:", result%energy
+   print *, "  Energy:", result%energy%total()
    print *, "  Has gradient:", result%has_gradient
    if (result%has_gradient) then
       print *, "  Gradient shape:", shape(result%gradient)

@@ -55,9 +55,9 @@ contains
       sum_by_level = 0.0_dp
       delta_energies = 0.0_dp
 
-      ! Extract energies from results
+      ! Extract total energies from results
       do i = 1_int64, fragment_count
-         energies(i) = results(i)%energy
+         energies(i) = results(i)%energy%total()
       end do
 
       ! Build hash table for fast fragment lookups

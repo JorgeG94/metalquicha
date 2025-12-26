@@ -52,10 +52,10 @@ contains
       print *, "HF: multiplicity =", fragment%multiplicity
 
       ! Dummy result
-      result%energy = -1.0_dp  ! Placeholder
+      result%energy%scf = -1.0_dp  ! Placeholder
       result%has_energy = .true.
 
-      print *, "HF: Dummy energy =", result%energy
+      print *, "HF: Dummy energy =", result%energy%total()
 
    end subroutine hf_calc_energy
 
