@@ -2,7 +2,7 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
-   use pic_types, only: int64, dp
+   use pic_types, only: int32, int64, dp
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -12,6 +12,8 @@ module mqc_driver
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_input_parser, only: input_config_t
+   use mqc_method_types, only: method_type_to_string
+   use mqc_calc_types, only: calc_type_to_string
    implicit none
    private
 
@@ -69,8 +71,8 @@ contains
       !! on entire system using OpenMP for parallelization.
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
-      character(len=*), intent(in) :: method  !! Quantum chemistry method (gfn1/gfn2)
-      character(len=*), intent(in) :: calc_type  !! Calculation type (energy/gradient)
+      integer(int32), intent(in) :: method  !! Quantum chemistry method
+      integer(int32), intent(in) :: calc_type  !! Calculation type
 
       ! Validate that only a single rank is used for unfragmented calculation
       ! (parallelism comes from OpenMP threads, not MPI ranks)
@@ -92,7 +94,7 @@ contains
       if (world_comm%rank() == 0) then
          call logger%info(" ")
          call logger%info("Running unfragmented calculation")
-         call logger%info("  Calculation type: "//trim(calc_type))
+         call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
          call unfragmented_calculation(sys_geom, method, calc_type)
       end if
@@ -106,8 +108,8 @@ contains
       !! and coordinates many-body expansion calculation using hierarchical parallelism.
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
-      character(len=*), intent(in) :: method  !! Quantum chemistry method (gfn1/gfn2)
-      character(len=*), intent(in) :: calc_type  !! Calculation type (energy/gradient)
+      integer(int32), intent(in) :: method  !! Quantum chemistry method
+      integer(int32), intent(in) :: calc_type  !! Calculation type
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
       integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
