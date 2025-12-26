@@ -10,7 +10,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
-   use mqc_mbe, only: compute_mbe_energy
+   use mqc_mbe, only: compute_mbe_energy, compute_mbe_energy_gradient
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
@@ -568,7 +568,6 @@ contains
    subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
-      use mqc_mbe, only: compute_mbe_gradient
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
@@ -652,36 +651,19 @@ contains
       call logger%info(" ")
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
-      call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
-      call coord_timer%stop()
-      call logger%info("Time to compute MBE energy "//to_char(coord_timer%get_elapsed_time())//" s")
 
-      ! Compute MBE gradient if requested
+      ! Use combined function if computing gradients (more efficient)
       if (trim(calc_type_local) == "gradient") then
          allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-         call coord_timer%start()
-         call compute_mbe_gradient(polymers, total_fragments, max_level, results, sys_geom, mbe_total_gradient)
-         call coord_timer%stop()
-         call logger%info("Time to compute MBE gradient "//to_char(coord_timer%get_elapsed_time())//" s")
-
-         ! Print gradient if verbose and small system
-         call logger%configuration(level=current_log_level)
-         if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-            call logger%info(" ")
-            call logger%info("Total MBE Gradient (Hartree/Bohr):")
-            do iatom = 1, sys_geom%total_atoms
-               block
-                  character(len=256) :: grad_line
-                  write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
-                     mbe_total_gradient(1, iatom), mbe_total_gradient(2, iatom), mbe_total_gradient(3, iatom)
-                  call logger%info(trim(grad_line))
-               end block
-            end do
-            call logger%info(" ")
-         end if
-
+         call compute_mbe_energy_gradient(polymers, total_fragments, max_level, results, sys_geom, &
+                                          mbe_total_energy, mbe_total_gradient)
          deallocate (mbe_total_gradient)
+      else
+         call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
       end if
+
+      call coord_timer%stop()
+      call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")
 
       deallocate (results)
 
