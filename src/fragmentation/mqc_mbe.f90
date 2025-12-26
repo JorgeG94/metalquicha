@@ -20,7 +20,7 @@ module mqc_mbe
    private
 
    ! Public interface
-   public :: compute_mbe_energy
+   public :: compute_mbe_energy, compute_mbe_gradient
 
 contains
 
@@ -177,5 +177,183 @@ contains
       end do
 
    end function compute_mbe
+
+   subroutine compute_mbe_gradient(polymers, fragment_count, max_level, results, sys_geom, total_gradient)
+      !! Compute the many-body expansion (MBE) gradient
+      !! Uses the same logic as energy MBE: deltaG = sum over all fragments of deltaG(fragment)
+      !! Store delta gradients in system atom coordinates to simplify logic
+      use mqc_result_types, only: calculation_result_t
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: polymers(:, :), max_level
+      type(calculation_result_t), intent(in) :: results(:)
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(out) :: total_gradient(:, :)  !! (3, total_atoms)
+
+      integer(int64) :: i
+      integer :: fragment_size
+      real(dp), allocatable :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
+      type(fragment_lookup_t) :: lookup
+      type(timer_type) :: lookup_timer
+
+      ! Validate that all fragments have gradients
+      do i = 1_int64, fragment_count
+         if (.not. results(i)%has_gradient) then
+            call logger%error("Fragment "//to_char(i)//" does not have gradient!")
+            error stop "Missing gradient in compute_mbe_gradient"
+         end if
+      end do
+
+      ! Allocate delta gradients in system coordinates
+      allocate (delta_gradients(3, sys_geom%total_atoms, fragment_count))
+      delta_gradients = 0.0_dp
+      total_gradient = 0.0_dp
+
+      ! Build hash table for fast fragment lookups
+      call lookup_timer%start()
+      call lookup%init(fragment_count)
+      do i = 1_int64, fragment_count
+         fragment_size = count(polymers(i, :) > 0)
+         call lookup%insert(polymers(i, :), fragment_size, i)
+      end do
+      call lookup_timer%stop()
+      call logger%debug("Time to build gradient lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
+
+      ! Bottom-up computation: process fragments by size
+      do i = 1_int64, fragment_count
+         fragment_size = count(polymers(i, :) > 0)
+
+         if (fragment_size == 1) then
+            ! 1-body: deltaG = G (no subsets to subtract)
+            ! Map fragment gradient to system coordinates
+            call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:fragment_size), &
+                                                 sys_geom, delta_gradients(:, :, i))
+         else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+            ! n-body: deltaG = G - sum(all subset deltaGs)
+            call compute_mbe_grad_simple(i, polymers(i, 1:fragment_size), lookup, &
+                                         results, delta_gradients, fragment_size, sys_geom)
+         end if
+      end do
+
+      ! Clean up lookup table
+      call lookup%destroy()
+
+      ! Sum all delta gradients (simple addition like energy)
+      do i = 1_int64, fragment_count
+         total_gradient = total_gradient + delta_gradients(:, :, i)
+      end do
+
+      call logger%info("MBE gradient computation completed")
+      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
+
+      deallocate (delta_gradients)
+
+   end subroutine compute_mbe_gradient
+
+   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad)
+      !! Map fragment gradient to system gradient coordinates
+      !! Zeroes out sys_grad first, then copies fragment gradients to appropriate positions
+      use pic_logger, only: verbose_level
+      real(dp), intent(in) :: frag_grad(:, :)  !! (3, natoms_frag)
+      integer, intent(in) :: monomers(:)  !! Monomer indices in fragment
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(inout) :: sys_grad(:, :)  !! (3, total_atoms)
+
+      integer :: i_mon, i_atom, frag_atom_idx, sys_atom_idx
+      integer :: current_log_level
+
+      ! Explicitly zero out the entire sys_grad array
+      sys_grad = 0.0_dp
+
+      ! Debug output
+      call logger%configuration(level=current_log_level)
+      if (current_log_level >= verbose_level) then
+         block
+            character(len=256) :: debug_msg
+            write (debug_msg, '(a,i0,a,*(i0,1x))') "  Mapping fragment with ", size(monomers), " monomers: ", monomers
+            call logger%verbose(trim(debug_msg))
+            write (debug_msg, '(a,i0,a)') "  Fragment has ", size(frag_grad, 2), " atoms"
+            call logger%verbose(trim(debug_msg))
+         end block
+      end if
+
+      ! Map fragment gradient to system positions
+      frag_atom_idx = 0
+      do i_mon = 1, size(monomers)
+         do i_atom = 1, sys_geom%atoms_per_monomer
+            frag_atom_idx = frag_atom_idx + 1
+            sys_atom_idx = (monomers(i_mon) - 1)*sys_geom%atoms_per_monomer + i_atom
+
+            if (current_log_level >= verbose_level .and. i_atom == 1) then
+               block
+                  character(len=256) :: debug_msg
+                  write (debug_msg, '(a,i0,a,i0,a,i0)') &
+                     "    Monomer ", monomers(i_mon), ": frag atoms ", &
+                     frag_atom_idx, " -> sys atom ", sys_atom_idx
+                  call logger%verbose(trim(debug_msg))
+               end block
+            end if
+
+            sys_grad(:, sys_atom_idx) = frag_grad(:, frag_atom_idx)
+         end do
+      end do
+
+   end subroutine map_fragment_to_system_gradient
+
+   subroutine compute_mbe_grad_simple(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom)
+      !! Bottom-up computation of n-body gradient correction
+      !! Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
+      !! All gradients are in system coordinates, so subtraction is simple
+      use mqc_result_types, only: calculation_result_t
+      integer(int64), intent(in) :: fragment_idx
+      integer, intent(in) :: fragment(:), n
+      type(fragment_lookup_t), intent(in) :: lookup
+      type(calculation_result_t), intent(in) :: results(:)
+      real(dp), intent(inout) :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
+      type(system_geometry_t), intent(in) :: sys_geom
+
+      integer :: subset_size, i
+      integer, allocatable :: indices(:), subset(:)
+      integer(int64) :: subset_idx
+      logical :: has_next
+
+      ! Start with the full n-mer gradient mapped to system coordinates
+      call map_fragment_to_system_gradient(results(fragment_idx)%gradient, fragment, &
+                                           sys_geom, delta_gradients(:, :, fragment_idx))
+
+      ! Subtract all proper subsets (size 1 to n-1)
+      ! This is EXACTLY like the energy calculation, but for each gradient component
+      do subset_size = 1, n - 1
+         allocate (indices(subset_size))
+         allocate (subset(subset_size))
+
+         ! Initialize first combination
+         do i = 1, subset_size
+            indices(i) = i
+         end do
+
+         ! Loop through all combinations
+         do
+            ! Build current subset
+            do i = 1, subset_size
+               subset(i) = fragment(indices(i))
+            end do
+
+            ! Look up subset index
+            subset_idx = lookup%find(subset, subset_size)
+            if (subset_idx < 0) error stop "Subset not found in MBE gradient!"
+
+            ! Subtract pre-computed delta gradient (simple array subtraction in system coords)
+            delta_gradients(:, :, fragment_idx) = delta_gradients(:, :, fragment_idx) - &
+                                                  delta_gradients(:, :, subset_idx)
+
+            ! Get next combination
+            call get_next_combination(indices, subset_size, n, has_next)
+            if (.not. has_next) exit
+         end do
+
+         deallocate (indices, subset)
+      end do
+
+   end subroutine compute_mbe_grad_simple
 
 end module mqc_mbe

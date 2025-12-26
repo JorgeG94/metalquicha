@@ -15,6 +15,7 @@ module mqc_input_parser
       character(len=:), allocatable :: geom_file     !! Path to system geometry XYZ file
       character(len=:), allocatable :: monomer_file  !! Path to monomer template XYZ file
       character(len=:), allocatable :: method        !! QC method (gfn1, gfn2)
+      character(len=:), allocatable :: calc_type     !! Calculation type (energy, gradient)
       character(len=:), allocatable :: log_level     !! Logger verbosity level (debug/verbose/info/warning/error)
       integer :: nlevel = 1  !! Fragmentation level (default: 1)
    contains
@@ -28,6 +29,7 @@ contains
       !! Looks for: geom="path/to/geometry.xyz"
       !!            monomer_symbols="path/to/monomer.xyz"
       !!            method="gfn1" or "gfn2" (defaults to gfn2)
+      !!            calc_type="energy" or "gradient" (defaults to energy)
       !!            nlevel=N (fragmentation level, defaults to 1)
       !!            log_level="debug|verbose|info|performance|warning|error|knowledge" (defaults to info)
       character(len=*), intent(in) :: filename  !! Path to input file to parse
@@ -96,6 +98,16 @@ contains
                errmsg = "Invalid method: "//trim(value)//" (supported: gfn1, gfn2)"
                return
             end select
+         case ('calc_type')
+            ! Validate that calc_type is energy or gradient
+            select case (trim(value))
+            case ('energy', 'gradient')
+               config%calc_type = trim(value)
+            case default
+               stat = 1
+               errmsg = "Invalid calc_type: "//trim(value)//" (supported: energy, gradient)"
+               return
+            end select
          case ('nlevel')
             read (value, *, iostat=io_stat) config%nlevel
             if (io_stat /= 0) then
@@ -149,6 +161,11 @@ contains
       ! Set default method if not specified
       if (.not. allocated(config%method)) then
          config%method = "gfn2"  ! Default to GFN2-xTB
+      end if
+
+      ! Set default calc_type if not specified
+      if (.not. allocated(config%calc_type)) then
+         config%calc_type = "energy"  ! Default to energy-only calculation
       end if
 
       ! Set default log_level if not specified
@@ -226,6 +243,7 @@ contains
       if (allocated(this%geom_file)) deallocate (this%geom_file)
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)
       if (allocated(this%method)) deallocate (this%method)
+      if (allocated(this%calc_type)) deallocate (this%calc_type)
       if (allocated(this%log_level)) deallocate (this%log_level)
    end subroutine config_destroy
 

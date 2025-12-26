@@ -173,6 +173,7 @@ contains
       !! Clean up allocated memory in calculation_result_t
       class(calculation_result_t), intent(inout) :: this
       if (allocated(this%gradient)) deallocate (this%gradient)
+      if (allocated(this%sigma)) deallocate (this%sigma)
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
       call this%reset()
@@ -184,6 +185,7 @@ contains
       call this%energy%reset()
       this%has_energy = .false.
       this%has_gradient = .false.
+      this%has_sigma = .false.
       this%has_hessian = .false.
       this%has_dipole = .false.
    end subroutine result_reset

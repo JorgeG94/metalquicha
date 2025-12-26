@@ -6,7 +6,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
  use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG
-   use pic_logger, only: logger => global_logger
+   use pic_logger, only: logger => global_logger, verbose_level
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
@@ -32,7 +32,7 @@ module mqc_mbe_fragment_distribution_scheme
 
 contains
 
-   subroutine do_fragment_work(fragment_idx, result, method, phys_frag)
+   subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -45,12 +45,21 @@ contains
       type(calculation_result_t), intent(out) :: result  !! Computation results
       character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
+      character(len=*), intent(in), optional :: calc_type  !! Calculation type (energy, gradient)
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
+      character(len=:), allocatable :: calc_type_local  !! Local copy of calc_type with default
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
 #endif
+
+      ! Set default calc_type if not provided
+      if (present(calc_type)) then
+         calc_type_local = trim(calc_type)
+      else
+         calc_type_local = "energy"  ! Default to energy-only calculation
+      end if
 
       ! Query logger to determine verbosity
       call logger%configuration(level=current_log_level)
@@ -68,7 +77,15 @@ contains
          xtb_calc%verbose = is_verbose
 
          ! Run the calculation using the method API
-         call xtb_calc%calc_energy(phys_frag, result)
+         select case (trim(calc_type_local))
+         case ('energy')
+            call xtb_calc%calc_energy(phys_frag, result)
+         case ('gradient')
+            call xtb_calc%calc_gradient(phys_frag, result)
+         case default
+            call logger%error("Unknown calc_type: "//trim(calc_type_local))
+            error stop "Invalid calc_type in do_fragment_work"
+         end select
 #else
          call logger%error("XTB method requested but tblite support not compiled in")
          call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
@@ -475,11 +492,12 @@ contains
       end do
    end subroutine node_worker
 
-   subroutine unfragmented_calculation(sys_geom, method)
+   subroutine unfragmented_calculation(sys_geom, method, calc_type)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       type(system_geometry_t), intent(in), optional :: sys_geom
       character(len=*), intent(in) :: method
+      character(len=*), intent(in), optional :: calc_type
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -512,14 +530,34 @@ contains
       end block
 
       ! Process the full system
-      call do_fragment_work(0_int32, result, method, phys_frag=full_system)
+      call do_fragment_work(0_int32, result, method, phys_frag=full_system, calc_type=calc_type)
 
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")
       block
          character(len=256) :: result_line
+         integer :: current_log_level, iatom
+
          write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
+
+         if (result%has_gradient) then
+            write (result_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(result%gradient**2))
+            call logger%info(trim(result_line))
+
+            ! Print full gradient if verbose and system is small
+            call logger%configuration(level=current_log_level)
+            if (current_log_level >= verbose_level .and. total_atoms < 100) then
+               call logger%verbose(" ")
+               call logger%verbose("Gradient (Hartree/Bohr):")
+               do iatom = 1, total_atoms
+                  write (result_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                     result%gradient(1, iatom), result%gradient(2, iatom), result%gradient(3, iatom)
+                  call logger%verbose(trim(result_line))
+               end do
+               call logger%verbose(" ")
+            end if
+         end if
       end block
       call logger%info("============================================")
 
@@ -527,23 +565,35 @@ contains
 
    end subroutine unfragmented_calculation
 
-   subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method)
+   subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
+      use mqc_mbe, only: compute_mbe_gradient
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
       character(len=*), intent(in) :: method
+      character(len=*), intent(in), optional :: calc_type
 
       integer(int64) :: frag_idx
-      integer :: fragment_size
+      integer :: fragment_size, current_log_level, iatom
       integer, allocatable :: fragment_indices(:)
       type(calculation_result_t), allocatable :: results(:)
       real(dp) :: mbe_total_energy
+      real(dp), allocatable :: mbe_total_gradient(:, :)
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
+      character(len=:), allocatable :: calc_type_local
+
+      ! Set default calc_type if not provided
+      if (present(calc_type)) then
+         calc_type_local = trim(calc_type)
+      else
+         calc_type_local = "energy"
+      end if
 
       call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
+      call logger%info("  Calculation type: "//trim(calc_type_local))
 
       allocate (results(total_fragments))
 
@@ -556,7 +606,34 @@ contains
 
          call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
-         call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag)
+         call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag, calc_type=calc_type_local)
+
+         ! Debug output for gradients
+         if (trim(calc_type_local) == "gradient" .and. results(frag_idx)%has_gradient) then
+            call logger%configuration(level=current_log_level)
+            if (current_log_level >= verbose_level) then
+               block
+                  character(len=512) :: debug_line
+                  integer :: iatom_local
+                  write (debug_line, '(a,i0,a,*(i0,1x))') "Fragment ", frag_idx, " monomers: ", fragment_indices
+                  call logger%verbose(trim(debug_line))
+                  write (debug_line, '(a,f25.15)') "  Energy: ", results(frag_idx)%energy%total()
+                  call logger%verbose(trim(debug_line))
+                  write (debug_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(results(frag_idx)%gradient**2))
+                  call logger%verbose(trim(debug_line))
+                  if (size(results(frag_idx)%gradient, 2) <= 20) then
+                     call logger%verbose("  Fragment gradient:")
+                     do iatom_local = 1, size(results(frag_idx)%gradient, 2)
+                        write (debug_line, '(a,i3,a,3f20.12)') "    Atom ", iatom_local, ": ", &
+                           results(frag_idx)%gradient(1, iatom_local), &
+                           results(frag_idx)%gradient(2, iatom_local), &
+                           results(frag_idx)%gradient(3, iatom_local)
+                        call logger%verbose(trim(debug_line))
+                     end do
+                  end if
+               end block
+            end if
+         end if
 
          call phys_frag%destroy()
          deallocate (fragment_indices)
@@ -577,7 +654,34 @@ contains
       call coord_timer%start()
       call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
       call coord_timer%stop()
-      call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")
+      call logger%info("Time to compute MBE energy "//to_char(coord_timer%get_elapsed_time())//" s")
+
+      ! Compute MBE gradient if requested
+      if (trim(calc_type_local) == "gradient") then
+         allocate (mbe_total_gradient(3, sys_geom%total_atoms))
+         call coord_timer%start()
+         call compute_mbe_gradient(polymers, total_fragments, max_level, results, sys_geom, mbe_total_gradient)
+         call coord_timer%stop()
+         call logger%info("Time to compute MBE gradient "//to_char(coord_timer%get_elapsed_time())//" s")
+
+         ! Print gradient if verbose and small system
+         call logger%configuration(level=current_log_level)
+         if (current_log_level >= verbose_level .and. sys_geom%total_atoms < 100) then
+            call logger%verbose(" ")
+            call logger%verbose("Total MBE Gradient (Hartree/Bohr):")
+            do iatom = 1, sys_geom%total_atoms
+               block
+                  character(len=256) :: grad_line
+                  write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                     mbe_total_gradient(1, iatom), mbe_total_gradient(2, iatom), mbe_total_gradient(3, iatom)
+                  call logger%verbose(trim(grad_line))
+               end block
+            end do
+            call logger%verbose(" ")
+         end if
+
+         deallocate (mbe_total_gradient)
+      end if
 
       deallocate (results)
 
