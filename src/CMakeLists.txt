@@ -9,4 +9,5 @@ if(MQC_ENABLE_LIBCINT)
   add_subdirectory(libcint_interface)
 endif()
 
-target_sources(${main_lib} PRIVATE mqc_driver.f90)
+target_sources(${main_lib} PRIVATE mqc_calc_types.f90 mqc_method_types.f90
+                                   mqc_driver.f90)

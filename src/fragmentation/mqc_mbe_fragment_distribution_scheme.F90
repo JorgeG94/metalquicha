@@ -16,6 +16,8 @@ module mqc_mbe_fragment_distribution_scheme
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
+   use mqc_method_types, only: method_type_to_string
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
 
    ! Method API imports
 #ifndef MQC_WITHOUT_TBLITE
@@ -43,22 +45,22 @@ contains
 
       integer, intent(in) :: fragment_idx        !! Fragment index for identification
       type(calculation_result_t), intent(out) :: result  !! Computation results
-      character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
+      integer(int32), intent(in) :: method       !! QC method
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
-      character(len=*), intent(in), optional :: calc_type  !! Calculation type (energy, gradient)
+      integer(int32), intent(in), optional :: calc_type  !! Calculation type
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
-      character(len=:), allocatable :: calc_type_local  !! Local copy of calc_type with default
+      integer(int32) :: calc_type_local  !! Local copy of calc_type with default
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
 #endif
 
       ! Set default calc_type if not provided
       if (present(calc_type)) then
-         calc_type_local = trim(calc_type)
+         calc_type_local = calc_type
       else
-         calc_type_local = "energy"  ! Default to energy-only calculation
+         calc_type_local = CALC_TYPE_ENERGY  ! Default to energy-only calculation
       end if
 
       ! Query logger to determine verbosity
@@ -73,17 +75,17 @@ contains
 
 #ifndef MQC_WITHOUT_TBLITE
          ! Setup XTB method
-         xtb_calc%variant = method
+         xtb_calc%variant = method_type_to_string(method)
          xtb_calc%verbose = is_verbose
 
          ! Run the calculation using the method API
-         select case (trim(calc_type_local))
-         case ('energy')
+         select case (calc_type_local)
+         case (CALC_TYPE_ENERGY)
             call xtb_calc%calc_energy(phys_frag, result)
-         case ('gradient')
+         case (CALC_TYPE_GRADIENT)
             call xtb_calc%calc_gradient(phys_frag, result)
          case default
-            call logger%error("Unknown calc_type: "//trim(calc_type_local))
+            call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
             error stop "Invalid calc_type in do_fragment_work"
          end select
 #else
@@ -108,7 +110,7 @@ contains
       integer, intent(in) :: max_level, num_nodes
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
       type(system_geometry_t), intent(in), optional :: sys_geom
-      character(len=*), intent(in), optional :: calc_type
+      integer(int32), intent(in), optional :: calc_type
 
       type(timer_type) :: coord_timer
       integer(int64) :: current_fragment, results_received
@@ -117,7 +119,7 @@ contains
       type(MPI_Status) :: status, local_status
       logical :: handling_local_workers
       logical :: has_pending
-      character(len=:), allocatable :: calc_type_local
+      integer(int32) :: calc_type_local
 
       ! For local workers
       integer :: local_finished_workers, local_dummy
@@ -132,9 +134,9 @@ contains
 
       ! Set default calc_type if not provided
       if (present(calc_type)) then
-         calc_type_local = trim(calc_type)
+         calc_type_local = calc_type
       else
-         calc_type_local = "energy"
+         calc_type_local = CALC_TYPE_ENERGY
       end if
 
       current_fragment = total_fragments
@@ -276,7 +278,7 @@ contains
          call coord_timer%start()
 
          ! Use combined function if computing gradients (more efficient)
-         if (trim(calc_type_local) == "gradient") then
+         if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for gradient calculation in global_coordinator")
                error stop "Missing sys_geom for gradient calculation"
@@ -362,7 +364,7 @@ contains
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
       class(comm_t), intent(in) :: world_comm, node_comm
-      character(len=*), intent(in), optional :: calc_type
+      integer(int32), intent(in), optional :: calc_type
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
       integer(int32) :: finished_workers
@@ -465,8 +467,8 @@ contains
       !! Node worker for processing fragments assigned by node coordinator
       class(comm_t), intent(in) :: world_comm, node_comm
       type(system_geometry_t), intent(in), optional :: sys_geom
-      character(len=*), intent(in) :: method
-      character(len=*), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: method
+      integer(int32), intent(in), optional :: calc_type
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
       integer(int32), allocatable :: fragment_indices(:)
@@ -523,8 +525,8 @@ contains
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       type(system_geometry_t), intent(in), optional :: sys_geom
-      character(len=*), intent(in) :: method
-      character(len=*), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: method
+      integer(int32), intent(in), optional :: calc_type
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -598,8 +600,8 @@ contains
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
-      character(len=*), intent(in) :: method
-      character(len=*), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: method
+      integer(int32), intent(in), optional :: calc_type
 
       integer(int64) :: frag_idx
       integer :: fragment_size, current_log_level, iatom
@@ -609,17 +611,17 @@ contains
       real(dp), allocatable :: mbe_total_gradient(:, :)
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
-      character(len=:), allocatable :: calc_type_local
+      integer(int32) :: calc_type_local
 
       ! Set default calc_type if not provided
       if (present(calc_type)) then
-         calc_type_local = trim(calc_type)
+         calc_type_local = calc_type
       else
-         calc_type_local = "energy"
+         calc_type_local = CALC_TYPE_ENERGY
       end if
 
       call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
-      call logger%info("  Calculation type: "//trim(calc_type_local))
+      call logger%info("  Calculation type: "//calc_type_to_string(calc_type_local))
 
       allocate (results(total_fragments))
 
@@ -635,7 +637,7 @@ contains
          call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag, calc_type=calc_type_local)
 
          ! Debug output for gradients
-         if (trim(calc_type_local) == "gradient" .and. results(frag_idx)%has_gradient) then
+         if (calc_type_local == CALC_TYPE_GRADIENT .and. results(frag_idx)%has_gradient) then
             call logger%configuration(level=current_log_level)
             if (current_log_level >= verbose_level) then
                block
@@ -680,7 +682,7 @@ contains
       call coord_timer%start()
 
       ! Use combined function if computing gradients (more efficient)
-      if (trim(calc_type_local) == "gradient") then
+      if (calc_type_local == CALC_TYPE_GRADIENT) then
          allocate (mbe_total_gradient(3, sys_geom%total_atoms))
          call compute_mbe_energy_gradient(polymers, total_fragments, max_level, results, sys_geom, &
                                           mbe_total_energy, mbe_total_gradient)

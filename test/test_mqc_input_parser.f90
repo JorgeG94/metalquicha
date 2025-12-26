@@ -1,6 +1,8 @@
 module test_mqc_input_parser
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_input_parser, only: input_config_t, read_input_file
+   use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
    implicit none
    private
    public :: collect_mqc_input_parser_tests
@@ -77,7 +79,7 @@ contains
          return
       end if
 
-      call check(error, trim(config%method), "gfn2", "method should default to gfn2")
+      call check(error, config%method, METHOD_TYPE_GFN2, "method should default to gfn2")
 
       call config%destroy()
       call cleanup_test_files()
@@ -222,7 +224,7 @@ contains
 
       config%geom_file = "test.xyz"
       config%monomer_file = "monomer.xyz"
-      config%method = "gfn1"
+      config%method = METHOD_TYPE_GFN1
       config%nlevel = 5
 
       call config%destroy()
@@ -235,8 +237,7 @@ contains
                  "monomer_file should be deallocated")
       if (allocated(error)) return
 
-      call check(error,.not. allocated(config%method), &
-                 "method should be deallocated")
+      ! method is now an integer(int32), not allocatable, so no test needed
    end subroutine test_config_destroy
 
    subroutine test_method_gfn1(error)
@@ -255,7 +256,7 @@ contains
          return
       end if
 
-      call check(error, trim(config%method), "gfn1", "method should be gfn1")
+      call check(error, config%method, METHOD_TYPE_GFN1, "method should be gfn1")
 
       call config%destroy()
       call cleanup_test_files()
@@ -277,7 +278,7 @@ contains
          return
       end if
 
-      call check(error, trim(config%method), "gfn2", "method should be gfn2")
+      call check(error, config%method, METHOD_TYPE_GFN2, "method should be gfn2")
 
       call config%destroy()
       call cleanup_test_files()
@@ -314,7 +315,7 @@ contains
          return
       end if
 
-      call check(error, trim(config%method), "gfn2", "method should default to gfn2")
+      call check(error, config%method, METHOD_TYPE_GFN2, "method should default to gfn2")
 
       call config%destroy()
       call cleanup_test_files()
