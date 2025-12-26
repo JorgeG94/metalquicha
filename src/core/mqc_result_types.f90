@@ -23,9 +23,10 @@ module mqc_result_types
       real(dp) :: ss = 0.0_dp  !! Same-spin correlation energy (Hartree)
       real(dp) :: os = 0.0_dp  !! Opposite-spin correlation energy (Hartree)
    contains
-      procedure :: total => mp2_total     !! Compute total MP2 correlation
-      procedure :: scs => mp2_scs         !! Compute SCS-MP2 correlation
-      procedure :: reset => mp2_reset     !! Reset both components to zero
+      procedure :: total => mp2_total           !! Compute total MP2 correlation
+      procedure :: scs => mp2_scs               !! Compute SCS-MP2 correlation
+      procedure :: reset => mp2_reset           !! Reset both components to zero
+      procedure :: check_stability => mp2_check_stability  !! Check for positive energies (instability)
    end type mp2_energy_t
 
    type :: cc_energy_t
@@ -34,8 +35,9 @@ module mqc_result_types
       real(dp) :: doubles = 0.0_dp   !! Doubles contribution (Hartree)
       real(dp) :: triples = 0.0_dp   !! Triples contribution (Hartree)
    contains
-      procedure :: total => cc_total      !! Compute total CC correlation
-      procedure :: reset => cc_reset      !! Reset all components to zero
+      procedure :: total => cc_total            !! Compute total CC correlation
+      procedure :: reset => cc_reset            !! Reset all components to zero
+      procedure :: check_stability => cc_check_stability  !! Check for positive energies (instability)
    end type cc_energy_t
 
    type :: energy_t
@@ -98,6 +100,21 @@ contains
       this%os = 0.0_dp
    end subroutine mp2_reset
 
+   subroutine mp2_check_stability(this)
+      !! Check for positive MP2 correlation energies (instability warning)
+      !! Correlation energies should be negative; positive values indicate instability
+      use pic_logger, only: logger => global_logger
+      class(mp2_energy_t), intent(in) :: this
+
+      if (this%ss > 0.0_dp) then
+         call logger%warning("MP2 same-spin correlation energy is positive - possible instability!")
+      end if
+
+      if (this%os > 0.0_dp) then
+         call logger%warning("MP2 opposite-spin correlation energy is positive - possible instability!")
+      end if
+   end subroutine mp2_check_stability
+
    pure function cc_total(this) result(total)
       !! Compute total CC correlation energy
       class(cc_energy_t), intent(in) :: this
@@ -113,6 +130,25 @@ contains
       this%doubles = 0.0_dp
       this%triples = 0.0_dp
    end subroutine cc_reset
+
+   subroutine cc_check_stability(this)
+      !! Check for positive CC correlation energies (instability warning)
+      !! Correlation energies should be negative; positive values indicate instability
+      use pic_logger, only: logger => global_logger
+      class(cc_energy_t), intent(in) :: this
+
+      if (this%singles > 0.0_dp) then
+         call logger%warning("CC singles correlation energy is positive - possible instability!")
+      end if
+
+      if (this%doubles > 0.0_dp) then
+         call logger%warning("CC doubles correlation energy is positive - possible instability!")
+      end if
+
+      if (this%triples > 0.0_dp) then
+         call logger%warning("CC triples correlation energy is positive - possible instability!")
+      end if
+   end subroutine cc_check_stability
 
    pure function energy_total(this) result(total)
       !! Compute total energy from all components
