@@ -113,24 +113,84 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      ! TODO: Implement gradient calculation using tblite
-      ! For now, just get energy and return zero gradient
+      ! tblite calculation variables
+      type(error_type), allocatable :: error
+      type(structure_type) :: mol
+      real(wp), allocatable :: xyz(:, :)
+      integer, allocatable :: num(:)
+      type(xtb_calculator) :: calc
+      type(wavefunction_type) :: wfn
+      real(wp) :: energy
+      type(context_type) :: ctx
+      integer :: verbosity
+      real(wp), allocatable :: gradient(:, :)
+      real(wp), allocatable :: sigma(:, :)
 
       if (this%verbose) then
          print *, "XTB: Calculating gradient using ", this%variant
+         print *, "XTB: Fragment has", fragment%n_atoms, "atoms"
+         print *, "XTB: nelec =", fragment%nelec
+         print *, "XTB: charge =", fragment%charge
       end if
 
-      ! First get energy
-      call this%calc_energy(fragment, result)
+      ! Convert fragment to tblite format
+      allocate (num(fragment%n_atoms))
+      allocate (xyz(3, fragment%n_atoms))
 
-      ! Allocate and fill dummy gradient (TODO: get real gradient from tblite)
+      num = fragment%element_numbers
+      xyz = fragment%coordinates  ! Already in Bohr
+
+      ! Create molecular structure
+      call new(mol, num, xyz, charge=real(fragment%charge, wp), &
+               uhf=fragment%multiplicity - 1)
+
+      ! Select and create appropriate GFN calculator
+      select case (this%variant)
+      case ("gfn1")
+         call new_gfn1_calculator(calc, mol, error)
+      case ("gfn2")
+         call new_gfn2_calculator(calc, mol, error)
+      case default
+         error stop "Unknown XTB variant: "//this%variant
+      end select
+
+      if (allocated(error)) then
+         error stop "Failed to create XTB calculator"
+      end if
+
+      ! Allocate gradient and sigma arrays
+      allocate (gradient(3, fragment%n_atoms))
+      allocate (sigma(3, 3))
+
+      ! Create wavefunction and run single point calculation with gradient
+      call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, this%kt)
+      energy = 0.0_wp
+
+      verbosity = merge(1, 0, this%verbose)
+      call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, &
+                           gradient=gradient, sigma=sigma, verbosity=verbosity)
+
+      ! Store results (XTB is a semi-empirical method, store as SCF energy)
+      result%energy%scf = real(energy, dp)
+      result%has_energy = .true.
+
+      ! Store gradient
       allocate (result%gradient(3, fragment%n_atoms))
-      result%gradient = 0.0_dp  ! Placeholder
+      result%gradient = real(gradient, dp)
       result%has_gradient = .true.
 
+      ! Store sigma (stress tensor)
+      allocate (result%sigma(3, 3))
+      result%sigma = real(sigma, dp)
+      result%has_sigma = .true.
+
       if (this%verbose) then
-         print *, "XTB: Gradient calculation complete (dummy for now)"
+         print *, "XTB: Energy =", result%energy%total()
+         print *, "XTB: Gradient norm =", sqrt(sum(result%gradient**2))
+         print *, "XTB: Gradient calculation complete"
       end if
+
+      deallocate (num, xyz, gradient, sigma)
 
    end subroutine xtb_calc_gradient
 

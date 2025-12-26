@@ -54,15 +54,15 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-         call run_unfragmented_calculation(world_comm, sys_geom, config%method)
+         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type)
       else
-         call run_fragmented_calculation(world_comm, node_comm, config%method, sys_geom, max_level, &
+         call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
                                          matrix_size)
       end if
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! Validates single MPI rank requirement and runs direct calculation
@@ -70,6 +70,7 @@ contains
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       character(len=*), intent(in) :: method  !! Quantum chemistry method (gfn1/gfn2)
+      character(len=*), intent(in) :: calc_type  !! Calculation type (energy/gradient)
 
       ! Validate that only a single rank is used for unfragmented calculation
       ! (parallelism comes from OpenMP threads, not MPI ranks)
@@ -91,13 +92,14 @@ contains
       if (world_comm%rank() == 0) then
          call logger%info(" ")
          call logger%info("Running unfragmented calculation")
+         call logger%info("  Calculation type: "//trim(calc_type))
          call logger%info(" ")
-         call unfragmented_calculation(sys_geom, method)
+         call unfragmented_calculation(sys_geom, method, calc_type)
       end if
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(world_comm, node_comm, method, sys_geom, max_level, matrix_size)
+   subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, matrix_size)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -105,6 +107,7 @@ contains
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
       character(len=*), intent(in) :: method  !! Quantum chemistry method (gfn1/gfn2)
+      character(len=*), intent(in) :: calc_type  !! Calculation type (energy/gradient)
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
       integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
@@ -183,22 +186,22 @@ contains
       if (world_comm%size() == 1) then
          ! Single rank: process fragments serially
          call logger%info("Running in serial mode (single MPI rank)")
-         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method)
+         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type)
       else if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes)
+                                 node_leader_ranks, num_nodes, sys_geom, calc_type)
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
-         call node_coordinator(world_comm, node_comm)
+         call node_coordinator(world_comm, node_comm, calc_type)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
-         call node_worker(world_comm, node_comm, sys_geom, method)
+         call node_worker(world_comm, node_comm, sys_geom, method, calc_type)
       end if
 
       ! Cleanup

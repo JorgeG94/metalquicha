@@ -148,21 +148,25 @@ contains
    end subroutine print_detailed_breakdown
 
    subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
-                                            energies, delta_energies, sum_by_level, total_energy)
+                                            energies, delta_energies, sum_by_level, total_energy, &
+                                            total_gradient)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
+      !! Optionally includes total gradient if provided
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
       integer, intent(in) :: polymers(:, :), max_level
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
       real(dp), intent(in) :: sum_by_level(:), total_energy
+      real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
 
       integer(int64) :: i
-      integer :: fragment_size, j, frag_level, unit, io_stat
+      integer :: fragment_size, j, frag_level, unit, io_stat, iatom
       character(len=512) :: json_line
       integer(int64) :: count_by_level
       logical :: first_level, first_fragment
       character(len=32) :: level_name
+      integer :: total_atoms
 
       open (newunit=unit, file='results.json', status='replace', action='write', iostat=io_stat)
       if (io_stat /= 0) then
@@ -259,7 +263,38 @@ contains
       end if
 
       write (unit, '(a)') '    ]'
-      write (unit, '(a)') '  }'
+
+      ! Close mbe_breakdown section with or without comma depending on gradient presence
+      if (present(total_gradient)) then
+         write (unit, '(a)') '  },'
+      else
+         write (unit, '(a)') '  }'
+      end if
+
+      ! Add gradient section if present
+      if (present(total_gradient)) then
+         total_atoms = size(total_gradient, 2)
+
+         write (unit, '(a)') '  "gradient": {'
+         write (json_line, '(a,f20.10,a)') '    "norm": ', sqrt(sum(total_gradient**2)), ','
+         write (unit, '(a)') trim(json_line)
+         write (unit, '(a)') '    "components": ['
+
+         do iatom = 1, total_atoms
+            write (json_line, '(a,3(f20.12,a))') '      [', &
+               total_gradient(1, iatom), ', ', &
+               total_gradient(2, iatom), ', ', &
+               total_gradient(3, iatom), ']'
+            if (iatom < total_atoms) then
+               write (json_line, '(a,a)') trim(json_line), ','
+            end if
+            write (unit, '(a)') trim(json_line)
+         end do
+
+         write (unit, '(a)') '    ]'
+         write (unit, '(a)') '  }'
+      end if
+
       write (unit, '(a)') '}'
 
       close (unit)
