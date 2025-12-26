@@ -61,12 +61,14 @@ module mqc_result_types
       !! indicating which properties have been computed.
       type(energy_t) :: energy                  !! Energy components (Hartree)
       real(dp), allocatable :: gradient(:, :)   !! Energy gradient (3, natoms) (Hartree/Bohr)
+      real(dp), allocatable :: sigma(:, :)     !! Stress tensor (3,3) (Hartree/Bohr^3)
       real(dp), allocatable :: hessian(:, :)    !! Energy hessian (future implementation)
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
 
       ! Computation status flags
       logical :: has_energy = .false.    !! Energy has been computed
       logical :: has_gradient = .false.  !! Gradient has been computed
+      logical :: has_sigma = .false.     !! Stress tensor has been computed
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
    contains
