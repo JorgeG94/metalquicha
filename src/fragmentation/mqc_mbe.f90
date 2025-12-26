@@ -429,9 +429,9 @@ contains
          call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
       end if
 
-      ! Always write JSON file for machine-readable output
+      ! Always write JSON file for machine-readable output (include gradient)
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy)
+                                         sum_by_level, total_energy, total_gradient)
 
       deallocate (sum_by_level, delta_energies, energies, delta_gradients)
 
