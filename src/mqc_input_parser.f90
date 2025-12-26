@@ -2,6 +2,9 @@
 module mqc_input_parser
    !! Parses simple key=value input files to configure calculation parameters
    !! including geometry files, method selection, and fragment levels.
+   use pic_types, only: int32
+   use mqc_method_types, only: method_type_from_string, METHOD_TYPE_GFN2, METHOD_TYPE_UNKNOWN
+   use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_ENERGY, CALC_TYPE_UNKNOWN
    implicit none
    private
 
@@ -12,11 +15,11 @@ module mqc_input_parser
       !!
       !! Stores parsed input file contents including file paths,
       !! method selection, and fragmentation level.
-      character(len=:), allocatable :: geom_file     !! Path to system geometry XYZ file
-      character(len=:), allocatable :: monomer_file  !! Path to monomer template XYZ file
-      character(len=:), allocatable :: method        !! QC method (gfn1, gfn2)
-      character(len=:), allocatable :: calc_type     !! Calculation type (energy, gradient)
-      character(len=:), allocatable :: log_level     !! Logger verbosity level (debug/verbose/info/warning/error)
+      character(len=:), allocatable :: geom_file      !! Path to system geometry XYZ file
+      character(len=:), allocatable :: monomer_file   !! Path to monomer template XYZ file
+      integer(int32) :: method = METHOD_TYPE_GFN2     !! QC method (default: gfn2)
+      integer(int32) :: calc_type = CALC_TYPE_ENERGY  !! Calculation type (default: energy)
+      character(len=:), allocatable :: log_level      !! Logger verbosity level (debug/verbose/info/warning/error)
       integer :: nlevel = 1  !! Fragmentation level (default: 1)
    contains
       procedure :: destroy => config_destroy  !! Cleanup allocated memory
@@ -89,25 +92,21 @@ contains
          case ('monomer_symbols')
             config%monomer_file = trim(value)
          case ('method')
-            ! Validate that method is gfn1 or gfn2
-            select case (trim(value))
-            case ('gfn1', 'gfn2')
-               config%method = trim(value)
-            case default
+            ! Convert method string to integer constant
+            config%method = method_type_from_string(trim(value))
+            if (config%method == METHOD_TYPE_UNKNOWN) then
                stat = 1
-               errmsg = "Invalid method: "//trim(value)//" (supported: gfn1, gfn2)"
+               errmsg = "Invalid method: "//trim(value)//" (supported: gfn1, gfn2, hf)"
                return
-            end select
+            end if
          case ('calc_type')
-            ! Validate that calc_type is energy or gradient
-            select case (trim(value))
-            case ('energy', 'gradient')
-               config%calc_type = trim(value)
-            case default
+            ! Convert calc_type string to integer constant
+            config%calc_type = calc_type_from_string(trim(value))
+            if (config%calc_type == CALC_TYPE_UNKNOWN) then
                stat = 1
-               errmsg = "Invalid calc_type: "//trim(value)//" (supported: energy, gradient)"
+               errmsg = "Invalid calc_type: "//trim(value)//" (supported: energy, gradient, hessian)"
                return
-            end select
+            end if
          case ('nlevel')
             read (value, *, iostat=io_stat) config%nlevel
             if (io_stat /= 0) then
@@ -156,16 +155,6 @@ contains
          stat = 1
          errmsg = "Missing required field: monomer_symbols"
          return
-      end if
-
-      ! Set default method if not specified
-      if (.not. allocated(config%method)) then
-         config%method = "gfn2"  ! Default to GFN2-xTB
-      end if
-
-      ! Set default calc_type if not specified
-      if (.not. allocated(config%calc_type)) then
-         config%calc_type = "energy"  ! Default to energy-only calculation
       end if
 
       ! Set default log_level if not specified
@@ -242,8 +231,6 @@ contains
       class(input_config_t), intent(inout) :: this
       if (allocated(this%geom_file)) deallocate (this%geom_file)
       if (allocated(this%monomer_file)) deallocate (this%monomer_file)
-      if (allocated(this%method)) deallocate (this%method)
-      if (allocated(this%calc_type)) deallocate (this%calc_type)
       if (allocated(this%log_level)) deallocate (this%log_level)
    end subroutine config_destroy
 
