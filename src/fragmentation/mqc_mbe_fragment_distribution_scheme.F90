@@ -21,7 +21,7 @@ module mqc_mbe_fragment_distribution_scheme
 #ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
 #endif
-   use mqc_result_types, only: calculation_result_t
+   use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
    implicit none
    private
 
@@ -32,8 +32,7 @@ module mqc_mbe_fragment_distribution_scheme
 
 contains
 
-   subroutine do_fragment_work(fragment_idx, &
-                               water_energy, C_flat, method, phys_frag)
+   subroutine do_fragment_work(fragment_idx, result, method, phys_frag)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -43,8 +42,7 @@ contains
       use pic_logger, only: verbose_level
 
       integer, intent(in) :: fragment_idx        !! Fragment index for identification
-      real(dp), intent(out) :: water_energy      !! Computed energy for this fragment
-      real(dp), allocatable, intent(out) :: C_flat(:)  !! Flattened gradient array
+      type(calculation_result_t), intent(out) :: result  !! Computation results
       character(len=*), intent(in) :: method     !! QC method (gfn1, gfn2)
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
 
@@ -53,7 +51,6 @@ contains
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
 #endif
-      type(calculation_result_t) :: result  !! Computation results
 
       ! Query logger to determine verbosity
       call logger%configuration(level=current_log_level)
@@ -72,20 +69,16 @@ contains
 
          ! Run the calculation using the method API
          call xtb_calc%calc_energy(phys_frag, result)
-         water_energy = result%energy
-
-         ! Clean up result
-         call result%destroy()
 #else
          call logger%error("XTB method requested but tblite support not compiled in")
          call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
          error stop "tblite support not available"
 #endif
       else
-         water_energy = 0.0_dp
-      end if      ! Return empty vector for C_flat
-      allocate (C_flat(1))
-      C_flat(1) = 0.0_dp
+         ! For empty fragments, set energy to zero
+         result%energy = 0.0_dp
+         result%has_energy = .true.
+      end if
    end subroutine do_fragment_work
 
    subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
@@ -110,7 +103,7 @@ contains
       integer :: local_finished_workers, local_dummy
 
       ! Storage for results
-      real(dp), allocatable :: scalar_results(:)
+      type(calculation_result_t), allocatable :: results(:)
       integer(int64) :: worker_fragment_map(node_comm%size())
       integer :: worker_source
 
@@ -124,8 +117,7 @@ contains
       results_received = 0_int64
 
       ! Allocate storage for results
-      allocate (scalar_results(total_fragments))
-      scalar_results = 0.0_dp
+      allocate (results(total_fragments))
       worker_fragment_map = 0
 
       call logger%verbose("Global coordinator starting with "//to_char(total_fragments)// &
@@ -151,9 +143,9 @@ contains
                   error stop "Invalid worker_fragment_map state"
                end if
 
-               ! Receive scalar result and store it using the fragment index for this worker
-               call irecv(node_comm, scalar_results(worker_fragment_map(worker_source)), worker_source, &
-                          TAG_WORKER_SCALAR_RESULT, req)
+               ! Receive result and store it using the fragment index for this worker
+               call result_irecv(results(worker_fragment_map(worker_source)), node_comm, worker_source, &
+                                 TAG_WORKER_SCALAR_RESULT, req)
                call wait(req)
                ! Clear the mapping since we've received the result
                worker_fragment_map(worker_source) = 0
@@ -172,11 +164,11 @@ contains
             call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
             if (.not. has_pending) exit
 
-            ! Receive fragment index and scalar result from node coordinator
+            ! Receive fragment index and result from node coordinator
             ! TODO: serialize the data for better performance
             call irecv(world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
-            call irecv(world_comm, scalar_results(fragment_idx), status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+            call result_irecv(results(fragment_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
             results_received = results_received + 1
             if (mod(results_received, max(1_int64, total_fragments/10)) == 0 .or. &
@@ -254,14 +246,14 @@ contains
          call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
-         call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
+         call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
          call coord_timer%stop()
          call logger%info("Time to evaluate the MBE "//to_char(coord_timer%get_elapsed_time())//" s")
 
       end block
 
       ! Cleanup
-      deallocate (scalar_results)
+      deallocate (results)
    end subroutine global_coordinator
 
    subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, dest_rank)
@@ -339,7 +331,7 @@ contains
       ! For tracking worker-fragment mapping and collecting results
       integer(int32) :: worker_fragment_map(node_comm%size())
       integer(int32) :: worker_source
-      real(dp) :: scalar_result
+      type(calculation_result_t) :: worker_result
 
       ! MPI request handles for non-blocking operations
       type(request_t) :: req
@@ -363,14 +355,14 @@ contains
                error stop "Invalid worker_fragment_map state in node coordinator"
             end if
 
-            ! Receive scalar result from worker
-            call irecv(node_comm, scalar_result, worker_source, TAG_WORKER_SCALAR_RESULT, req)
+            ! Receive result from worker
+            call result_irecv(worker_result, node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
             ! Forward results to global coordinator with fragment index
             call isend(world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
             call wait(req)
-            call isend(world_comm, scalar_result, 0, TAG_NODE_SCALAR_RESULT, req)                       ! scalar result
+            call result_isend(worker_result, world_comm, 0, TAG_NODE_SCALAR_RESULT, req)                ! result
             call wait(req)
 
             ! Clear the mapping
@@ -434,8 +426,7 @@ contains
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
       integer(int32), allocatable :: fragment_indices(:)
-      real(dp) :: dot_result
-      real(dp), allocatable :: C_flat(:)
+      type(calculation_result_t) :: result
       type(MPI_Status) :: status
       type(physical_fragment_t) :: phys_frag
 
@@ -463,21 +454,21 @@ contains
                call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
                ! Process the chemistry fragment with physical geometry
-               call do_fragment_work(fragment_idx, &
-                                     dot_result, C_flat, method, phys_frag)
+               call do_fragment_work(fragment_idx, result, method, phys_frag)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call do_fragment_work(fragment_idx, &
-                                     dot_result, C_flat, method)
+               call do_fragment_work(fragment_idx, result, method)
             end if
 
-            ! Send results back to coordinator
-            call isend(node_comm, dot_result, 0, TAG_WORKER_SCALAR_RESULT, req)
+            ! Send result back to coordinator
+            call result_isend(result, node_comm, 0, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
-            deallocate (fragment_indices, C_flat)
+            ! Clean up result
+            call result%destroy()
+            deallocate (fragment_indices)
          case (TAG_WORKER_FINISH)
             exit
          end select
@@ -490,8 +481,7 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom
       character(len=*), intent(in) :: method
 
-      real(dp) :: dot_result
-      real(dp), allocatable :: C_flat(:)
+      type(calculation_result_t) :: result
       integer :: total_atoms
       type(physical_fragment_t) :: full_system
       integer :: i
@@ -521,31 +511,19 @@ contains
          deallocate (all_monomer_indices)
       end block
 
-      ! Process the full system with verbosity=1 for detailed output
-      block
-         integer, allocatable :: temp_indices(:)
-         allocate (temp_indices(sys_geom%n_monomers))
-         do i = 1, sys_geom%n_monomers
-            temp_indices(i) = i
-         end do
-
-         call do_fragment_work(0, &
-                               dot_result, C_flat, &
-                               method, phys_frag=full_system)
-         deallocate (temp_indices)
-      end block
+      ! Process the full system
+      call do_fragment_work(0_int32, result, method, phys_frag=full_system)
 
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")
       block
          character(len=256) :: result_line
-         write (result_line, '(a,f25.15)') "  Final energy: ", dot_result
+         write (result_line, '(a,f25.15)') "  Final energy: ", result%energy
          call logger%info(trim(result_line))
       end block
-      !call logger%info("  Matrix size: "//to_char(size(C_flat)))
       call logger%info("============================================")
 
-      if (allocated(C_flat)) deallocate (C_flat)
+      call result%destroy()
 
    end subroutine unfragmented_calculation
 
@@ -560,16 +538,14 @@ contains
       integer(int64) :: frag_idx
       integer :: fragment_size
       integer, allocatable :: fragment_indices(:)
-      real(dp), allocatable :: scalar_results(:)
-      real(dp), allocatable :: C_flat(:)
-      real(dp) :: dot_result, mbe_total_energy
+      type(calculation_result_t), allocatable :: results(:)
+      real(dp) :: mbe_total_energy
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
 
       call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
 
-      allocate (scalar_results(total_fragments))
-      scalar_results = 0.0_dp
+      allocate (results(total_fragments))
 
       call omp_set_num_threads(1)
       call coord_timer%start()
@@ -580,13 +556,10 @@ contains
 
          call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
 
-         call do_fragment_work(int(frag_idx), &
-                               dot_result, C_flat, method, phys_frag)
-
-         scalar_results(frag_idx) = dot_result
+         call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag)
 
          call phys_frag%destroy()
-         deallocate (fragment_indices, C_flat)
+         deallocate (fragment_indices)
 
          if (mod(frag_idx, max(1_int64, total_fragments/10)) == 0 .or. frag_idx == total_fragments) then
             call logger%info("  Processed "//to_char(frag_idx)//"/"//to_char(total_fragments)// &
@@ -602,11 +575,11 @@ contains
       call logger%info(" ")
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
-      call compute_mbe_energy(polymers, total_fragments, max_level, scalar_results, mbe_total_energy)
+      call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
       call coord_timer%stop()
       call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")
 
-      deallocate (scalar_results)
+      deallocate (results)
 
    end subroutine serial_fragment_processor
 

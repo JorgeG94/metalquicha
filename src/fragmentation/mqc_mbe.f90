@@ -24,7 +24,7 @@ module mqc_mbe
 
 contains
 
-   subroutine compute_mbe_energy(polymers, fragment_count, max_level, energies, total_energy)
+   subroutine compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
       !! Compute the many-body expansion (MBE) energy
       !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
       !! General n-body correction:
@@ -32,14 +32,15 @@ contains
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
       !! Detailed breakdown is printed only if logger level is verbose or higher.
       use pic_logger, only: verbose_level
+      use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: polymers(:, :), max_level
-      real(dp), intent(in) :: energies(:)
+      type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(out) :: total_energy
 
       integer(int64) :: i
       integer :: fragment_size, body_level, current_log_level
-      real(dp), allocatable :: sum_by_level(:), delta_energies(:)
+      real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp) :: delta_E
       logical :: do_detailed_print
       type(fragment_lookup_t) :: lookup
@@ -50,8 +51,14 @@ contains
 
       allocate (sum_by_level(max_level))
       allocate (delta_energies(fragment_count))
+      allocate (energies(fragment_count))
       sum_by_level = 0.0_dp
       delta_energies = 0.0_dp
+
+      ! Extract energies from results
+      do i = 1_int64, fragment_count
+         energies(i) = results(i)%energy
+      end do
 
       ! Build hash table for fast fragment lookups
       call lookup_timer%start()
@@ -115,7 +122,7 @@ contains
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
                                          sum_by_level, total_energy)
 
-      deallocate (sum_by_level, delta_energies)
+      deallocate (sum_by_level, delta_energies, energies)
 
    end subroutine compute_mbe_energy
 
