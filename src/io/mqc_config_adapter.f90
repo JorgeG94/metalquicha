@@ -1,50 +1,46 @@
-!! Adapter module to convert between new mqc_config_t and existing structures
-!! This allows using the new .mqc file format with the existing backend
+!! Adapter module to convert mqc_config_t to internal driver structures
+!! This module provides a bridge between the .mqc file format and the driver backend
 module mqc_config_adapter
-   !! Provides conversion utilities between new mqc_config_t and legacy structures
-   !! to support new input format without modifying existing backend code
+   !! Provides conversion utilities from mqc_config_t to driver-compatible structures
    use pic_types, only: dp, int32
    use mqc_config_parser, only: mqc_config_t
-   use mqc_input_parser, only: input_config_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    implicit none
    private
 
-   public :: config_to_legacy, geometry_to_system
-   public :: config_to_system_geometry
+   public :: driver_config_t  !! Minimal config for driver
+   public :: config_to_driver, config_to_system_geometry
+   public :: get_logger_level  !! Convert log level string to integer
+
+   !! Minimal configuration for driver (internal use only)
+   type :: driver_config_t
+      integer(int32) :: method      !! QC method constant
+      integer(int32) :: calc_type   !! Calculation type constant
+      integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
+   end type driver_config_t
 
 contains
 
-   subroutine config_to_legacy(mqc_config, legacy_config)
-      !! Convert new mqc_config_t to legacy input_config_t
-      !! Maps only the fields needed by the driver
+   subroutine config_to_driver(mqc_config, driver_config)
+      !! Convert mqc_config_t to minimal driver_config_t
+      !! Extracts only the fields needed by the driver
       type(mqc_config_t), intent(in) :: mqc_config
-      type(input_config_t), intent(out) :: legacy_config
+      type(driver_config_t), intent(out) :: driver_config
 
       ! Copy method and calc_type (already integers)
-      legacy_config%method = mqc_config%method
-      legacy_config%calc_type = mqc_config%calc_type
+      driver_config%method = mqc_config%method
+      driver_config%calc_type = mqc_config%calc_type
 
       ! Set fragmentation level
       ! For unfragmented calculations (nfrag=0), nlevel must be 0
       if (mqc_config%nfrag == 0) then
-         legacy_config%nlevel = 0
+         driver_config%nlevel = 0
       else
-         legacy_config%nlevel = mqc_config%frag_level
+         driver_config%nlevel = mqc_config%frag_level
       end if
 
-      ! Copy log level
-      if (allocated(mqc_config%log_level)) then
-         legacy_config%log_level = mqc_config%log_level
-      else
-         legacy_config%log_level = "info"
-      end if
-
-      ! Note: geom_file and monomer_file are not set
-      ! because geometry comes from mqc_config directly
-
-   end subroutine config_to_legacy
+   end subroutine config_to_driver
 
    subroutine config_to_system_geometry(mqc_config, sys_geom, stat, errmsg)
       !! Convert mqc_config_t geometry to system_geometry_t
@@ -196,5 +192,34 @@ contains
       call geometry_to_system_unfragmented(geom, sys_geom, use_angstrom)
 
    end subroutine geometry_to_system
+
+   function get_logger_level(level_string) result(level_int)
+      !! Convert string log level to integer value
+      !! This function uses the pic_logger constants
+      use pic_logger, only: debug_level, verbose_level, info_level, performance_level, &
+                            warning_level, error_level, knowledge_level
+      character(len=*), intent(in) :: level_string
+      integer :: level_int
+
+      select case (trim(adjustl(level_string)))
+      case ('debug', 'Debug', 'DEBUG')
+         level_int = debug_level
+      case ('verbose', 'Verbose', 'VERBOSE')
+         level_int = verbose_level
+      case ('info', 'Info', 'INFO')
+         level_int = info_level
+      case ('performance', 'Performance', 'PERFORMANCE')
+         level_int = performance_level
+      case ('warning', 'Warning', 'WARNING')
+         level_int = warning_level
+      case ('error', 'Error', 'ERROR')
+         level_int = error_level
+      case ('knowledge', 'Knowledge', 'KNOWLEDGE')
+         level_int = knowledge_level
+      case default
+         ! Default to info level if unknown
+         level_int = info_level
+      end select
+   end function get_logger_level
 
 end module mqc_config_adapter
