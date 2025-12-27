@@ -33,5 +33,5 @@ tblite = { git = "https://github.com/JorgeG94/tblite", branch = "main"}
 test-drive.git = "https://github.com/JorgeG94/test-drive"
 [extra.fortitude.check]
 select = ["C", "E", "S"]
-ignore = ["C003", "C072"]
+ignore = ["C003", "C072", "S212", "S082", "C043", "C122", "C011"]
 line-length = 132

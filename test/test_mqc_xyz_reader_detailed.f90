@@ -150,7 +150,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       integer :: natoms, stat
-      character(len=100) :: test_strings(5)
+      integer, parameter :: num_tests = 5
+      character(len=100) :: test_strings(num_tests)
       integer :: i
 
       test_strings(1) = "1"

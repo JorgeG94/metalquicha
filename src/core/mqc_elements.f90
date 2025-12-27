@@ -12,13 +12,14 @@ module mqc_elements
    public :: element_mass              !! Get atomic mass by atomic number
    ! TODO: refactr to use findloc
    ! Periodic table data as module-level parameters
-   character(len=2), parameter :: element_symbols(118) = [character(len=2) :: &
+   integer, parameter :: n_elements = 118
+   character(len=2), parameter :: element_symbols(n_elements) = [character(len=2) :: &
       !! Element symbols for the complete periodic table (H through Og)
       !! Ordered by atomic number from 1 to 118
-                                                          ! for some reason this is how the formatted formats this (????)
-                                                          'H', 'He', &
-                                                          'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', &
-                                                          'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', &
+                                                                 ! for some reason this is how the formatted formats this (????)
+                                                                 'H', 'He', &
+                                                                 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', &
+                                                                 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', &
                'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
                'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', &
                    'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
@@ -26,7 +27,7 @@ module mqc_elements
                     'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
                                  'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-   real(dp), parameter :: element_masses(118) = [ &
+   real(dp), parameter :: element_masses(n_elements) = [ &
       !! Standard atomic masses in atomic mass units (amu)
       !! Based on IUPAC standard atomic weights, ordered by atomic number
                           ! for some reason this is how the formatted formats this (????)

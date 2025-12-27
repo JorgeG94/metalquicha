@@ -1,0 +1,703 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+try:
+    import numpy as np
+except Exception:
+    np = None  # optional
+
+
+# ----------------------------
+# Strict validation helpers
+# ----------------------------
+
+def die(msg: str) -> None:
+    raise ValueError(msg)
+
+def require_only_keys(d: Dict[str, Any], allowed: set[str], ctx: str) -> None:
+    extra = set(d.keys()) - allowed
+    if extra:
+        raise ValueError(f"{ctx}: unknown keys: {sorted(extra)}")
+
+def req_type(x: Any, t, ctx: str) -> Any:
+    if not isinstance(x, t):
+        die(f"{ctx}: expected {t.__name__}, got {type(x).__name__}")
+    return x
+
+def opt_type(x: Any, t, ctx: str) -> Any:
+    if x is None:
+        return None
+    if not isinstance(x, t):
+        die(f"{ctx}: expected {t.__name__}, got {type(x).__name__}")
+    return x
+
+def check_index_0based(i: Any, natom: int, ctx: str) -> int:
+    if not isinstance(i, int):
+        die(f"{ctx}: expected int, got {type(i).__name__}")
+    if i < 0 or i >= natom:
+        die(f"{ctx}: index out of range {i} for natom={natom} (0-based expected)")
+    return i
+
+
+# ----------------------------
+# Internal representation
+# ----------------------------
+
+@dataclass
+class SchemaTag:
+    name: str
+    version: str
+    index_base: int = 0
+    units: str = "angstrom"
+
+@dataclass
+class Model:
+    method: str
+    basis: Optional[str] = None
+    aux_basis: Optional[str] = None
+
+@dataclass
+class SCF:
+    maxiter: int
+    tolerance: float
+
+@dataclass
+class FragCutoffs:
+    dimer: Optional[float] = None
+    trimer: Optional[float] = None
+
+@dataclass
+class Fragmentation:
+    method: str
+    allow_overlapping_fragments: bool
+    level: int
+    embedding: str
+    cutoff_method: str
+    distance_metric: str
+    cutoffs: Optional[FragCutoffs]
+
+@dataclass
+class Logger:
+    level: str = "info"
+
+@dataclass
+class System:
+    logger: Logger
+
+@dataclass
+class Molecule:
+    symbols: List[str]
+    geom_xyz: Any  # Nx3 list-of-lists or numpy array
+    charge: int
+    multiplicity: int
+    fragments: List[List[int]]
+    fragment_charges: List[int]
+    fragment_multiplicities: List[int]
+    connectivity: Optional[List[Tuple[int, int, int]]] = None  # allowed, not emitted v1 (yet)
+    source_xyz: Optional[str] = None
+
+@dataclass
+class Input:
+    schema: SchemaTag
+    model: Model
+    driver: str
+    molecules: List[Molecule]
+    title: Optional[str] = None
+    scf: Optional[SCF] = None
+    fragmentation: Optional[Fragmentation] = None
+    system: Optional[System] = None
+
+
+# ----------------------------
+# XYZ reader
+# ----------------------------
+
+def read_xyz_file(xyz_path: Union[str, Path]) -> Tuple[List[str], Any]:
+    xyz_path = Path(xyz_path)
+    lines = xyz_path.read_text(encoding="utf-8").strip().splitlines()
+    if len(lines) < 3:
+        die(f"XYZ file too short: {xyz_path}")
+
+    try:
+        natom = int(lines[0].split()[0])
+    except Exception as e:
+        die(f"XYZ first line must start with natom int: {xyz_path} ({e})")
+    if natom <= 0:
+        die(f"XYZ natom must be > 0: {xyz_path}")
+
+    atom_lines = lines[2:]
+    if len(atom_lines) < natom:
+        die(f"XYZ expected {natom} atom lines, got {len(atom_lines)}: {xyz_path}")
+
+    symbols: List[str] = []
+    coords: List[float] = []
+    for i in range(natom):
+        parts = atom_lines[i].split()
+        if len(parts) < 4:
+            die(f"XYZ atom line malformed at line {i+3}: '{atom_lines[i]}' in {xyz_path}")
+        sym = parts[0]
+        try:
+            x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+        except Exception as e:
+            die(f"XYZ atom line has non-numeric coords at line {i+3}: '{atom_lines[i]}' ({e})")
+        symbols.append(sym)
+        coords.extend([x, y, z])
+
+    geom = reshape_geometry(coords, natom)
+    return symbols, geom
+
+
+# ----------------------------
+# Geometry reshape
+# ----------------------------
+
+def reshape_geometry(flat: Any, natom: int) -> Any:
+    req_type(flat, list, "molecule.geometry")
+    if len(flat) != 3 * natom:
+        die(f"molecule.geometry: expected length {3*natom}, got {len(flat)}")
+
+    if np is not None:
+        return np.asarray(flat, dtype=float).reshape((natom, 3))
+
+    out = []
+    for i in range(natom):
+        x = float(flat[3*i + 0]); y = float(flat[3*i + 1]); z = float(flat[3*i + 2])
+        out.append([x, y, z])
+    return out
+
+
+# ----------------------------
+# Strict JSON -> Input
+# ----------------------------
+
+def parse_schema(obj: Any) -> SchemaTag:
+    # require schema present for strictness
+    if isinstance(obj, str):
+        # allow "mqc-frag-1.0" or "mqc-frag"
+        if "-" in obj:
+            name, version = obj.rsplit("-", 1)
+        else:
+            name, version = obj, "unknown"
+        return SchemaTag(name=name, version=version, index_base=0, units="angstrom")
+
+    if isinstance(obj, dict):
+        require_only_keys(obj, {"name", "version", "index_base", "units"}, "schema")
+        name = req_type(obj.get("name"), str, "schema.name")
+        version = req_type(obj.get("version"), str, "schema.version")
+        index_base = obj.get("index_base", 0)
+        units = obj.get("units", "angstrom")
+        if index_base != 0:
+            die("schema.index_base: only 0 supported in v1")
+        units = req_type(units, str, "schema.units")
+        return SchemaTag(name=name, version=version, index_base=0, units=units)
+
+    die("schema must be string or object")
+
+def parse_model(d: Dict[str, Any]) -> Model:
+    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
+    method = req_type(d.get("method"), str, "model.method")
+    basis = opt_type(d.get("basis"), str, "model.basis")
+    aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
+    return Model(method=method, basis=basis, aux_basis=aux)
+
+def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Fragmentation]]:
+    require_only_keys(d, {"scf", "fragmentation"}, "keywords")
+
+    scf = None
+    if "scf" in d:
+        sd = req_type(d["scf"], dict, "keywords.scf")
+        require_only_keys(sd, {"maxiter", "tolerance"}, "keywords.scf")
+        maxiter = req_type(sd.get("maxiter"), int, "keywords.scf.maxiter")
+        tol = sd.get("tolerance")
+        if not isinstance(tol, (int, float)):
+            die("keywords.scf.tolerance must be number")
+        if maxiter <= 0:
+            die("keywords.scf.maxiter must be > 0")
+        if float(tol) <= 0:
+            die("keywords.scf.tolerance must be > 0")
+        scf = SCF(maxiter=maxiter, tolerance=float(tol))
+
+    frag = None
+    if "fragmentation" in d:
+        fd = req_type(d["fragmentation"], dict, "keywords.fragmentation")
+        require_only_keys(
+            fd,
+            {
+                "method",
+                "allow_overlapping_fragments",
+                "level",
+                "embedding",
+                "cutoff_method",
+                "distance_metric",
+                "cutoffs",
+            },
+            "keywords.fragmentation",
+        )
+
+        method = req_type(fd.get("method"), str, "keywords.fragmentation.method")
+        allow = req_type(fd.get("allow_overlapping_fragments"), bool,
+                         "keywords.fragmentation.allow_overlapping_fragments")
+        level = req_type(fd.get("level"), int, "keywords.fragmentation.level")
+        embedding = req_type(fd.get("embedding"), str, "keywords.fragmentation.embedding")
+        cutoff_method = req_type(fd.get("cutoff_method"), str, "keywords.fragmentation.cutoff_method")
+        distance_metric = req_type(fd.get("distance_metric"), str, "keywords.fragmentation.distance_metric")
+
+        if level <= 0:
+            die("keywords.fragmentation.level must be > 0")
+
+        cutoffs = None
+        if "cutoffs" in fd:
+            cd = req_type(fd["cutoffs"], dict, "keywords.fragmentation.cutoffs")
+            require_only_keys(cd, {"dimer", "trimer"}, "keywords.fragmentation.cutoffs")
+            dimer = cd.get("dimer")
+            trimer = cd.get("trimer")
+
+            def pos_float(x: Any, ctx: str) -> Optional[float]:
+                if x is None:
+                    return None
+                if not isinstance(x, (int, float)) or float(x) <= 0:
+                    die(f"{ctx} must be a positive number")
+                return float(x)
+
+            cutoffs = FragCutoffs(
+                dimer=pos_float(dimer, "keywords.fragmentation.cutoffs.dimer"),
+                trimer=pos_float(trimer, "keywords.fragmentation.cutoffs.trimer"),
+            )
+
+        frag = Fragmentation(
+            method=method,
+            allow_overlapping_fragments=allow,
+            level=level,
+            embedding=embedding,
+            cutoff_method=cutoff_method,
+            distance_metric=distance_metric,
+            cutoffs=cutoffs,
+        )
+
+    return scf, frag
+
+def parse_system(d: Dict[str, Any]) -> System:
+    require_only_keys(d, {"logger"}, "system")
+
+    logger_data = req_type(d.get("logger"), dict, "system.logger")
+    require_only_keys(logger_data, {"level"}, "system.logger")
+
+    level = req_type(logger_data.get("level"), str, "system.logger.level")
+    # Validate log level (case-insensitive check)
+    valid_levels = {"debug", "verbose", "info", "performance", "warning", "error", "knowledge"}
+    if level.lower() not in valid_levels:
+        die(f"system.logger.level must be one of: {', '.join(sorted(valid_levels))}")
+
+    return System(logger=Logger(level=level))
+
+def parse_molecule(m: Dict[str, Any], base_dir: Path, mi: int) -> Molecule:
+    require_only_keys(
+        m,
+        {
+            "symbols",
+            "geometry",
+            "xyz",
+            "molecular_charge",
+            "molecular_multiplicity",
+            "connectivity",
+            "fragments",
+            "fragment_charges",
+            "fragment_multiplicities",
+        },
+        f"molecules[{mi}]",
+    )
+
+    has_xyz = "xyz" in m
+    has_sym = "symbols" in m
+    has_geo = "geometry" in m
+
+    if has_xyz:
+        if has_sym or has_geo:
+            die(f"molecules[{mi}]: provide either xyz OR (symbols+geometry), not both")
+        xyz_rel = req_type(m.get("xyz"), str, f"molecules[{mi}].xyz")
+        xyz_path = (base_dir / xyz_rel).resolve()
+        symbols, geom = read_xyz_file(xyz_path)
+        source_xyz = xyz_rel
+    else:
+        if not (has_sym and has_geo):
+            die(f"molecules[{mi}]: must provide either xyz OR (symbols+geometry)")
+        symbols = req_type(m.get("symbols"), list, f"molecules[{mi}].symbols")
+        if not symbols or not all(isinstance(s, str) for s in symbols):
+            die(f"molecules[{mi}].symbols must be a non-empty list of strings")
+        natom = len(symbols)
+        geom = reshape_geometry(m.get("geometry"), natom)
+        source_xyz = None
+
+    natom = len(symbols)
+
+    # Molecular charge and multiplicity (required)
+    charge = req_type(m.get("molecular_charge"), int, f"molecules[{mi}].molecular_charge")
+    multiplicity = req_type(m.get("molecular_multiplicity"), int, f"molecules[{mi}].molecular_multiplicity")
+    if multiplicity <= 0:
+        die(f"molecules[{mi}].molecular_multiplicity must be >= 1")
+
+    # fragments (optional - not needed for unfragmented calculations)
+    frags_raw = m.get("fragments", None)
+
+    if frags_raw is None:
+        # Unfragmented calculation - no fragments specified
+        fragments = []
+        charges = []
+        mults = []
+    else:
+        # Fragmented calculation
+        frags = req_type(frags_raw, list, f"molecules[{mi}].fragments")
+        if len(frags) == 0:
+            die(f"molecules[{mi}].fragments must be non-empty if provided")
+
+        fragments: List[List[int]] = []
+        for fi, frag in enumerate(frags):
+            req_type(frag, list, f"molecules[{mi}].fragments[{fi}]")
+            if len(frag) == 0:
+                die(f"molecules[{mi}].fragments[{fi}] empty")
+            fragments.append([check_index_0based(a, natom, f"molecules[{mi}].fragments[{fi}]") for a in frag])
+
+        nfrag = len(fragments)
+
+        # fragment_charges/fragment_multiplicities: optional with defaults, but if present must match nfrag
+        charges = m.get("fragment_charges", [0] * nfrag)
+        mults = m.get("fragment_multiplicities", [1] * nfrag)
+
+        req_type(charges, list, f"molecules[{mi}].fragment_charges")
+        req_type(mults, list, f"molecules[{mi}].fragment_multiplicities")
+        if len(charges) != nfrag:
+            die(f"molecules[{mi}].fragment_charges length mismatch: expected {nfrag}, got {len(charges)}")
+        if len(mults) != nfrag:
+            die(f"molecules[{mi}].fragment_multiplicities length mismatch: expected {nfrag}, got {len(mults)}")
+        if not all(isinstance(c, int) for c in charges):
+            die(f"molecules[{mi}].fragment_charges must be ints")
+        if not all(isinstance(mm, int) for mm in mults):
+            die(f"molecules[{mi}].fragment_multiplicities must be ints")
+        for i, mm in enumerate(mults):
+            if mm <= 0:
+                die(f"molecules[{mi}].fragment_multiplicities[{i}] must be >=1")
+
+        # Validate that fragment charges sum to molecular charge
+        total_frag_charge = sum(charges)
+        if total_frag_charge != charge:
+            die(f"molecules[{mi}]: fragment charges sum to {total_frag_charge}, "
+                f"but molecular charge is {charge}. These must be equal.")
+
+        # Validate multiplicity consistency
+        # If all fragments are closed-shell (mult=1), molecule should be too
+        if all(m == 1 for m in mults) and multiplicity != 1:
+            die(f"molecules[{mi}]: all fragments have multiplicity=1 (closed-shell), "
+                f"but molecular multiplicity is {multiplicity}. "
+                f"This is inconsistent - molecular multiplicity should also be 1.")
+
+        # If molecule is closed-shell but fragments aren't, that's suspicious
+        if multiplicity == 1 and not all(m == 1 for m in mults):
+            import sys
+            print(f"WARNING: molecules[{mi}]: molecular multiplicity=1 but some fragments "
+                  f"have multiplicity>1. Ensure fragment spins are properly paired.",
+                  file=sys.stderr)
+
+    # connectivity allowed (strictly typed), but not emitted to v1 yet
+    conn_raw = m.get("connectivity", None)
+    connectivity = None
+    if conn_raw is not None:
+        req_type(conn_raw, list, f"molecules[{mi}].connectivity")
+        connectivity = []
+        for bi, triple in enumerate(conn_raw):
+            req_type(triple, list, f"molecules[{mi}].connectivity[{bi}]")
+            if len(triple) != 3:
+                die(f"molecules[{mi}].connectivity[{bi}] must be [i,j,order]")
+            i, j, order = triple
+            i0 = check_index_0based(i, natom, f"molecules[{mi}].connectivity[{bi}].i")
+            j0 = check_index_0based(j, natom, f"molecules[{mi}].connectivity[{bi}].j")
+            if not isinstance(order, int) or order <= 0:
+                die(f"molecules[{mi}].connectivity[{bi}].order must be positive int")
+            connectivity.append((i0, j0, order))
+
+    return Molecule(
+        symbols=symbols,
+        geom_xyz=geom,
+        charge=charge,
+        multiplicity=multiplicity,
+        fragments=fragments,
+        fragment_charges=charges,
+        fragment_multiplicities=mults,
+        connectivity=connectivity,
+        source_xyz=source_xyz,
+    )
+
+def parse_json_to_input(json_path: Union[str, Path]) -> Input:
+    json_path = Path(json_path)
+    base_dir = json_path.parent
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    req_type(data, dict, "top-level")
+
+    # strict top-level keys
+    require_only_keys(data, {"schema", "molecules", "model", "keywords", "driver", "title", "system"}, "top-level")
+
+    schema = parse_schema(data.get("schema"))
+
+    model = parse_model(req_type(data.get("model"), dict, "model"))
+
+    driver = req_type(data.get("driver"), str, "driver")
+
+    # Optional title for output filename
+    title = opt_type(data.get("title"), str, "title")
+
+    kw = data.get("keywords", {})
+    req_type(kw, dict, "keywords")
+    scf, frag = parse_keywords(kw)
+
+    # Parse system section (optional)
+    system = None
+    sys_data = data.get("system")
+    if sys_data is not None:
+        system = parse_system(req_type(sys_data, dict, "system"))
+
+    mols = req_type(data.get("molecules"), list, "molecules")
+    if len(mols) == 0:
+        die("molecules must be non-empty list")
+    molecules = []
+    for mi, m in enumerate(mols):
+        molecules.append(parse_molecule(req_type(m, dict, f"molecules[{mi}]"), base_dir, mi))
+
+    return Input(schema=schema, model=model, driver=driver, molecules=molecules, title=title, scf=scf, fragmentation=frag, system=system)
+
+
+# ----------------------------
+# Emit v1 Fortran-input format
+# ----------------------------
+
+def fmt_float(x: float) -> str:
+    # stable, compact; good for machine files
+    return f"{x:.12g}"
+
+def write_indices_block(f, indices: List[int], per_line: int = 20) -> None:
+    f.write("%indices\n")
+    for i in range(0, len(indices), per_line):
+        chunk = indices[i:i+per_line]
+        f.write(" ".join(str(v) for v in chunk) + "\n")
+    f.write("end\n")
+
+def find_atom_fragment(atom_idx: int, fragments: List[List[int]]) -> Optional[int]:
+    """Find which fragment (0-indexed) contains the given atom index"""
+    for fi, frag in enumerate(fragments):
+        if atom_idx in frag:
+            return fi
+    return None
+
+def write_connectivity(f, mol: Molecule) -> None:
+    """Write connectivity section, marking broken bonds"""
+    if mol.connectivity is None or len(mol.connectivity) == 0:
+        return
+
+    f.write("%connectivity\n")
+    f.write(f"nbonds = {len(mol.connectivity)}\n\n")
+
+    # Count broken bonds for summary
+    broken_count = 0
+
+    for bi, (i, j, order) in enumerate(mol.connectivity):
+        frag_i = find_atom_fragment(i, mol.fragments)
+        frag_j = find_atom_fragment(j, mol.fragments)
+
+        # Check if bond is broken (atoms in different fragments)
+        is_broken = (frag_i is not None and frag_j is not None and frag_i != frag_j)
+
+        if is_broken:
+            broken_count += 1
+            # Warn if breaking a non-single bond
+            if order != 1:
+                import sys
+                print(f"WARNING: Breaking non-single bond between atoms {i} and {j} (bond order {order})",
+                      file=sys.stderr)
+            # Format: atom_i atom_j order broken
+            f.write(f"{i} {j} {order} broken\n")
+        else:
+            # Format: atom_i atom_j order preserved
+            f.write(f"{i} {j} {order} preserved\n")
+
+    f.write(f"\nnbroken = {broken_count}\n")
+    f.write("end\n\n")
+
+def write_structure(f, mol: Molecule) -> None:
+    """Write %structure section with molecular properties"""
+    f.write("%structure\n")
+    f.write(f"charge = {mol.charge}\n")
+    f.write(f"multiplicity = {mol.multiplicity}\n")
+    f.write("end\n\n")
+
+def write_geometry_xyz(f, mol: Molecule) -> None:
+    """Write %geometry section in XYZ format"""
+    symbols = mol.symbols
+    geom = mol.geom_xyz
+    natom = len(symbols)
+
+    f.write("%geometry\n")
+    f.write(f"{natom}\n")
+    f.write("\n")  # blank line (comment line in XYZ format)
+
+    # geometry Nx3
+    if np is not None and hasattr(geom, "shape"):
+        for s, (x, y, z) in zip(symbols, geom):
+            f.write(f"{s} {fmt_float(float(x))} {fmt_float(float(y))} {fmt_float(float(z))}\n")
+    else:
+        for i, s in enumerate(symbols):
+            x, y, z = geom[i]
+            f.write(f"{s} {fmt_float(float(x))} {fmt_float(float(y))} {fmt_float(float(z))}\n")
+
+    f.write("end\n\n")
+
+def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
+    """
+    Generates v1 Fortran-input format and writes to file.
+
+    Returns tuple of (text_content, output_path).
+    v1 currently supports exactly one molecule in output.
+
+    Output filename is determined by:
+    - If inp.title is set, use "{title}.mqc"
+    - Otherwise use "{json_stem}.mqc" (e.g., input.json -> input.mqc)
+    """
+    if len(inp.molecules) != 1:
+        die(f"v1 emitter currently supports exactly 1 molecule; got {len(inp.molecules)}")
+
+    mol = inp.molecules[0]
+
+    # Determine output filename
+    if inp.title:
+        # Sanitize title for filesystem (remove problematic chars)
+        safe_title = "".join(c if c.isalnum() or c in "._- " else "_" for c in inp.title)
+        out_path = json_path.parent / f"{safe_title}.mqc"
+    else:
+        out_path = json_path.parent / f"{json_path.stem}.mqc"
+
+    lines: List[str] = []
+    from io import StringIO
+    buf = StringIO()
+
+    # %schema (always)
+    buf.write("%schema\n")
+    buf.write(f"name = {inp.schema.name}\n")
+    buf.write(f"version = {inp.schema.version}\n")
+    buf.write(f"index_base = {inp.schema.index_base}\n")
+    buf.write(f"units = {inp.schema.units}\n")
+    buf.write("end\n\n")
+
+    # %model (always)
+    buf.write("%model\n")
+    buf.write(f"method = {inp.model.method}\n")
+    if inp.model.basis is not None:
+        buf.write(f"basis = {inp.model.basis}\n")
+    if inp.model.aux_basis is not None:
+        buf.write(f"aux_basis = {inp.model.aux_basis}\n")
+    buf.write("end\n\n")
+
+    # %driver (always)
+    buf.write("%driver\n")
+    buf.write(f"type = {inp.driver}\n")
+    buf.write("end\n\n")
+
+    # %system (optional)
+    if inp.system is not None:
+        buf.write("%system\n")
+        buf.write(f"log_level = {inp.system.logger.level}\n")
+        buf.write("end\n\n")
+
+    # %structure (always)
+    write_structure(buf, mol)
+
+    # %geometry (always)
+    write_geometry_xyz(buf, mol)
+
+    # %fragments (only if fragments are specified)
+    if len(mol.fragments) > 0:
+        buf.write("%fragments\n")
+        buf.write(f"nfrag = {len(mol.fragments)}\n\n")
+
+        for fi, frag_atoms in enumerate(mol.fragments):
+            charge = mol.fragment_charges[fi]
+            mult = mol.fragment_multiplicities[fi]
+
+            buf.write("%fragment\n")
+            buf.write(f"charge = {charge}\n")
+            buf.write(f"multiplicity = {mult}\n")
+            write_indices_block(buf, frag_atoms, per_line=24)
+            buf.write("end\n\n")
+
+        # Write connectivity information (identifies broken bonds)
+        write_connectivity(buf, mol)
+
+        buf.write("end\n\n")
+    else:
+        # Unfragmented calculation - still output connectivity if present
+        write_connectivity(buf, mol)
+
+    # %scf (optional)
+    if inp.scf is not None:
+        buf.write("%scf\n")
+        buf.write(f"maxiter = {inp.scf.maxiter}\n")
+        buf.write(f"tolerance = {fmt_float(inp.scf.tolerance)}\n")
+        buf.write("end\n\n")
+
+    # %fragmentation (optional)
+    if inp.fragmentation is not None:
+        fk = inp.fragmentation
+        buf.write("%fragmentation\n")
+        buf.write(f"method = {fk.method}\n")
+        buf.write(f"allow_overlapping_fragments = {'true' if fk.allow_overlapping_fragments else 'false'}\n")
+        buf.write(f"level = {fk.level}\n")
+        buf.write(f"embedding = {fk.embedding}\n")
+        buf.write(f"cutoff_method = {fk.cutoff_method}\n")
+        buf.write(f"distance_metric = {fk.distance_metric}\n")
+
+        if fk.cutoffs is not None:
+            buf.write("\n%cutoffs\n")
+            if fk.cutoffs.dimer is not None:
+                buf.write(f"dimer = {fmt_float(fk.cutoffs.dimer)}\n")
+            if fk.cutoffs.trimer is not None:
+                buf.write(f"trimer = {fmt_float(fk.cutoffs.trimer)}\n")
+            buf.write("end\n")
+
+        buf.write("end\n\n")
+
+    text = buf.getvalue()
+
+    # Always write to file
+    out_path.write_text(text, encoding="utf-8")
+
+    return text, out_path
+
+
+# ----------------------------
+# CLI
+# ----------------------------
+
+def main() -> None:
+    import argparse
+    p = argparse.ArgumentParser(
+        description="Strict MQC JSON -> v1 Fortran-input emitter",
+        epilog="Output file is automatically named based on input JSON or 'title' field."
+    )
+    p.add_argument("json_file", help="Input JSON file")
+    args = p.parse_args()
+
+    json_path = Path(args.json_file)
+    if not json_path.exists():
+        die(f"Input file not found: {json_path}")
+
+    inp = parse_json_to_input(json_path)
+    text, out_path = emit_v1(inp, json_path)
+
+    print(f"Generated: {out_path}")
+    print(f"  Lines: {len(text.splitlines())}")
+    print(f"  Size: {len(text)} bytes")
+
+if __name__ == "__main__":
+    main()

@@ -198,7 +198,8 @@ contains
       character(len=:), allocatable :: normalized
       logical :: file_exists
       integer :: i, j
-      character(len=256), dimension(10) :: variants
+      integer, parameter :: max_variants = 10
+      character(len=256), dimension(max_variants) :: variants
       integer :: nvariants
       character(len=256) :: test_path
       character(len=256), dimension(2) :: search_dirs

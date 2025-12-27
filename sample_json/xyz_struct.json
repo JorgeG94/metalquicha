@@ -1,0 +1,187 @@
+{
+    "schema": { "name": "mqc-frag", "version": "1.0" },
+    "molecules": [{
+        "xyz": "sample_inputs/gly10.xyz",
+        "connectivity": [
+            [
+                1,
+                2,
+                1
+            ],
+            [
+                9,
+                10,
+                1
+            ],
+            [
+                16,
+                17,
+                1
+            ],
+            [
+                23,
+                24,
+                1
+            ],
+            [
+                30,
+                31,
+                1
+            ],
+            [
+                37,
+                38,
+                1
+            ],
+            [
+                44,
+                45,
+                1
+            ],
+            [
+                51,
+                52,
+                1
+            ],
+            [
+                58,
+                59,
+                1
+            ]
+        ],
+        "fragments": [
+            [
+                0,
+                1,
+                4,
+                5,
+                6,
+                7
+            ],
+            [
+                2,
+                3,
+                8,
+                9,
+                12,
+                13,
+                14
+            ],
+            [
+                10,
+                11,
+                15,
+                16,
+                19,
+                20,
+                21
+            ],
+            [
+                17,
+                18,
+                22,
+                23,
+                26,
+                27,
+                28
+            ],
+            [
+                33,
+                34,
+                35,
+                24,
+                25,
+                29,
+                30
+            ],
+            [
+                32,
+                36,
+                37,
+                40,
+                41,
+                42,
+                31
+            ],
+            [
+                38,
+                39,
+                43,
+                44,
+                47,
+                48,
+                49
+            ],
+            [
+                45,
+                46,
+                50,
+                51,
+                54,
+                55,
+                56
+            ],
+            [
+                52,
+                53,
+                57,
+                58,
+                61,
+                62,
+                63
+            ],
+            [
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                59,
+                60
+            ]
+        ],
+        "fragment_charges": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "fragment_multiplicities": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        "molecular_charge": 0,
+        "molecular_multiplicity": 1
+    }],
+  "model": {
+    "method": "XTB-GFN1",
+    "basis": "cc-pVDZ",
+    "aux_basis": "cc-pVDZ-RIFIT"
+  },
+  "keywords":{
+    "scf": {
+      "maxiter": 300,
+      "tolerance": 1e-6
+    },
+    "fragmentation":{
+        "method": "MBE",
+        "allow_overlapping_fragments": true,
+        "level": 2,
+        "embedding": "none",
+        "cutoff_method": "distance",
+        "distance_metric": "min",
+        "cutoffs":{
+            "dimer": 10.0,
+            "trimer": 8.0
+        }
+    }
+  },
+  "driver": "Energy"
+}

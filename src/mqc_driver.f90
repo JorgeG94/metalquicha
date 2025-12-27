@@ -11,7 +11,7 @@ module mqc_driver
                                                    serial_fragment_processor
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_input_parser, only: input_config_t
+   use mqc_config_adapter, only: driver_config_t
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string
    implicit none
@@ -28,7 +28,7 @@ contains
       !! calculation routine with proper MPI setup and validation.
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
-      type(input_config_t), intent(in) :: config  !! Parsed input configuration
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
 
       ! Local variables
