@@ -1,4 +1,4 @@
-name: Build PIC using local conda env (MPI, OpenMP, BLAS)
+name: Build MQC using local conda env (MPI, OpenMP, BLAS)
 
 on: [push]
 
@@ -36,6 +36,25 @@ jobs:
           conda activate mqc
           export FC=${{matrix.compiler}}
           cmake -B build
+          cmake --build build
+
+      - name: Run unit tests
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          ctest --test-dir build -V -R "mqc"
+
+      - name: Clean build dir
+        shell: bash -el {0}
+        run: |
+          rm -rf build
+
+      - name: Execute cmake and build without tblite
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          export FC=${{matrix.compiler}}
+          cmake -DMQC_ENABLE_TBLITE=OFF -B build
           cmake --build build
 
       - name: Run unit tests
