@@ -117,7 +117,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_minimal
@@ -224,7 +224,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_with_fragments
@@ -288,7 +288,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_with_connectivity
@@ -328,7 +328,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_no_fragments
@@ -372,7 +372,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_method_xtb
@@ -419,7 +419,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_parse_system_log_level
@@ -449,7 +449,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_error_missing_schema
@@ -480,7 +480,7 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old')
+      open (newunit=unit, file=test_file, status='old', action='read')
       close (unit, status='delete')
 
    end subroutine test_error_missing_geometry

@@ -161,7 +161,7 @@ contains
    subroutine create_test_basis_file(filename)
       character(len=*), intent(in) :: filename
       integer :: unit
-      open (newunit=unit, file=filename, status="replace")
+      open (newunit=unit, file=filename, status="replace", action="write")
       write (unit, '(a)') "$DATA"
       write (unit, '(a)') "$END"
       close (unit)
@@ -170,7 +170,7 @@ contains
    subroutine delete_file(filename)
       character(len=*), intent(in) :: filename
       integer :: unit, stat
-      open (newunit=unit, file=filename, status="old", iostat=stat)
+      open (newunit=unit, file=filename, status="old", action="read", iostat=stat)
       if (stat == 0) close (unit, status="delete")
    end subroutine delete_file
 
