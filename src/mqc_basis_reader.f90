@@ -33,15 +33,24 @@ contains
       integer :: ang_mom  !! Corresponding integer value
 
       select case (ang_mom_char)
-      case ('S'); ang_mom = 0
-      case ('P'); ang_mom = 1
-      case ('D'); ang_mom = 2
-      case ('F'); ang_mom = 3
-      case ('G'); ang_mom = 4
-      case ('H'); ang_mom = 5
-      case ('I'); ang_mom = 6
-      case ('L'); ang_mom = -1  ! Special case: L shells are split into S+P
-      case default; ang_mom = -1
+      case ('S')
+         ang_mom = 0
+      case ('P')
+         ang_mom = 1
+      case ('D')
+         ang_mom = 2
+      case ('F')
+         ang_mom = 3
+      case ('G')
+         ang_mom = 4
+      case ('H')
+         ang_mom = 5
+      case ('I')
+         ang_mom = 6
+      case ('L')
+         ang_mom = -1  ! Special case: L shells are split into S+P
+      case default
+         ang_mom = -1
       end select
    end function ang_mom_char_to_int
 
@@ -54,14 +63,22 @@ contains
       character(len=1) :: ang_mom_char  !! Corresponding symbol character
 
       select case (ang_mom)
-      case (0); ang_mom_char = 'S'
-      case (1); ang_mom_char = 'P'
-      case (2); ang_mom_char = 'D'
-      case (3); ang_mom_char = 'F'
-      case (4); ang_mom_char = 'G'
-      case (5); ang_mom_char = 'H'
-      case (6); ang_mom_char = 'I'
-      case default; ang_mom_char = '?'
+      case (0)
+         ang_mom_char = 'S'
+      case (1)
+         ang_mom_char = 'P'
+      case (2)
+         ang_mom_char = 'D'
+      case (3)
+         ang_mom_char = 'F'
+      case (4)
+         ang_mom_char = 'G'
+      case (5)
+         ang_mom_char = 'H'
+      case (6)
+         ang_mom_char = 'I'
+      case default
+         ang_mom_char = '?'
       end select
    end function ang_mom_int_to_char
 
@@ -220,6 +237,9 @@ contains
 
          case (LINE_UNKNOWN)
             ! Skip blank lines and comments
+            continue
+         case default
+            ! Skip any other line types (e.g., LINE_FUNCTION)
             continue
          end select
 
@@ -423,6 +443,9 @@ contains
                end if
             end if
 
+         case default
+            ! Skip unknown line types (e.g., LINE_UNKNOWN, blank lines, comments)
+            continue
          end select
 
          line_start = line_end

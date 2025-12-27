@@ -220,6 +220,10 @@ contains
             read (value, *, iostat=io_stat) config%index_base
          case ('units')
             config%units = trim(value)
+         case default
+            stat = 1
+            errmsg = "Unknown key in %schema section: "//trim(key)
+            return
          end select
       end do
 
@@ -269,6 +273,10 @@ contains
             config%basis = trim(value)
          case ('aux_basis')
             config%aux_basis = trim(value)
+         case default
+            stat = 1
+            errmsg = "Unknown key in %model section: "//trim(key)
+            return
          end select
       end do
 
@@ -313,6 +321,10 @@ contains
                errmsg = "Invalid calc_type: "//trim(value)
                return
             end if
+         case default
+            stat = 1
+            errmsg = "Unknown key in %driver section: "//trim(key)
+            return
          end select
       end do
 
@@ -354,6 +366,10 @@ contains
             read (value, *, iostat=io_stat) config%charge
          case ('multiplicity')
             read (value, *, iostat=io_stat) config%multiplicity
+         case default
+            stat = 1
+            errmsg = "Unknown key in %structure section: "//trim(key)
+            return
          end select
       end do
 
@@ -587,6 +603,10 @@ contains
                   read (value, *, iostat=io_stat) fragment%charge
                case ('multiplicity')
                   read (value, *, iostat=io_stat) fragment%multiplicity
+               case default
+                  stat = 1
+                  errmsg = "Unknown key in fragment properties: "//trim(key)
+                  return
                end select
             end if
          end if
@@ -781,6 +801,10 @@ contains
             read (value, *, iostat=io_stat) config%scf_maxiter
          case ('tolerance')
             read (value, *, iostat=io_stat) config%scf_tolerance
+         case default
+            stat = 1
+            errmsg = "Unknown key in %scf section: "//trim(key)
+            return
          end select
       end do
 
@@ -837,6 +861,10 @@ contains
                read (value, *, iostat=io_stat) config%dimer_cutoff
             case ('trimer')
                read (value, *, iostat=io_stat) config%trimer_cutoff
+            case default
+               stat = 1
+               errmsg = "Unknown key in %fragmentation cutoffs subsection: "//trim(key)
+               return
             end select
          else
             select case (trim(key))
@@ -852,6 +880,10 @@ contains
                config%cutoff_method = trim(value)
             case ('distance_metric')
                config%distance_metric = trim(value)
+            case default
+               stat = 1
+               errmsg = "Unknown key in %fragmentation section: "//trim(key)
+               return
             end select
          end if
       end do
@@ -892,6 +924,10 @@ contains
          select case (trim(key))
          case ('log_level')
             config%log_level = trim(value)
+         case default
+            stat = 1
+            errmsg = "Unknown key in %system section: "//trim(key)
+            return
          end select
       end do
 

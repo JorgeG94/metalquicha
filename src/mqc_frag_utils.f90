@@ -189,7 +189,7 @@ contains
       integer :: i
 
       ! Use prime number close to estimated size for better distribution
-      this%table_size = next_prime_internal(int(estimated_entries*1.3_8))
+      this%table_size = next_prime_internal(int(estimated_entries*1.3_dp))
       allocate (this%table(this%table_size))
 
       ! Initialize all entries as empty

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for procedures.">35 statements</a>
+                 title=" 1.1% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,9 +137,9 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/parse_schema_section.html#variable-eq_pos">eq_pos</a>
-            <a class="list-group-item" href="../proc/parse_schema_section.html#variable-io_stat~3">io_stat</a>
+            <a class="list-group-item" href="../proc/parse_schema_section.html#variable-io_stat~2">io_stat</a>
             <a class="list-group-item" href="../proc/parse_schema_section.html#variable-key">key</a>
-            <a class="list-group-item" href="../proc/parse_schema_section.html#variable-line~11">line</a>
+            <a class="list-group-item" href="../proc/parse_schema_section.html#variable-line~2">line</a>
             <a class="list-group-item" href="../proc/parse_schema_section.html#variable-value">value</a>
         </div>
       </div>
@@ -195,7 +195,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~3"></span>
+              <span class="anchor" id="variable-unit~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -210,7 +210,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~3"></span>
+              <span class="anchor" id="variable-config~2"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -225,7 +225,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~11"></span>
+              <span class="anchor" id="variable-stat~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -240,7 +240,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~9"></span>
+              <span class="anchor" id="variable-errmsg~2"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -426,7 +426,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~3"></span>
+              <span class="anchor" id="variable-io_stat~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -460,7 +460,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~11"></span>
+              <span class="anchor" id="variable-line~2"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -548,7 +548,11 @@ large graphs.</div>
 <span class="w">            </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">index_base</span>
 <span class="w">         </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">)</span>
 <span class="w">            </span><span class="n">config</span><span class="p">%</span><span class="n">units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
-<span class="w">         </span><span class="k">end select</span>
+<span class="w">         </span><span class="k">case </span><span class="n">default</span>
+<span class="w">            </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Unknown key in %schema section: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end select</span>
 <span class="k">      end do</span>
 
 <span class="k">   end subroutine </span><span class="n">parse_schema_section</span>
@@ -575,7 +579,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-27 12:00 +0000             </p>
+ on 2025-12-27 12:24 +0000             </p>
           </div>
         </div>
         <br>

@@ -517,6 +517,11 @@ contains
             deallocate (fragment_indices)
          case (TAG_WORKER_FINISH)
             exit
+         case default
+            ! Unexpected MPI tag - this should not happen in normal operation
+            call logger%error("Worker received unexpected MPI tag: "//to_char(status%MPI_TAG))
+            call logger%error("Expected TAG_WORKER_FRAGMENT or TAG_WORKER_FINISH")
+            error stop "MPI protocol error in node_worker"
          end select
       end do
    end subroutine node_worker

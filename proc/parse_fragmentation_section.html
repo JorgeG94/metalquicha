@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.7% of total for procedures.">61 statements</a>
+                 title=" 1.9% of total for procedures.">69 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,9 +138,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-eq_pos~9">eq_pos</a>
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-in_cutoffs">in_cutoffs</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-io_stat~13">io_stat</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-io_stat~12">io_stat</a>
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-key~9">key</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-line~21">line</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-line~12">line</a>
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-value~9">value</a>
         </div>
       </div>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~12"></span>
+              <span class="anchor" id="variable-unit~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~11"></span>
+              <span class="anchor" id="variable-config~10"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~21"></span>
+              <span class="anchor" id="variable-stat~12"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -241,7 +241,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~19"></span>
+              <span class="anchor" id="variable-errmsg~12"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -444,7 +444,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~13"></span>
+              <span class="anchor" id="variable-io_stat~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -478,7 +478,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~21"></span>
+              <span class="anchor" id="variable-line~12"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -577,7 +577,11 @@ large graphs.</div>
 <span class="w">               </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">dimer_cutoff</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;trimer&#39;</span><span class="p">)</span>
 <span class="w">               </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">trimer_cutoff</span>
-<span class="w">            </span><span class="k">end select</span>
+<span class="w">            </span><span class="k">case </span><span class="n">default</span>
+<span class="w">               </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Unknown key in %fragmentation cutoffs subsection: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end select</span>
 <span class="k">         else</span>
 <span class="k">            select case</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;method&#39;</span><span class="p">)</span>
@@ -592,7 +596,11 @@ large graphs.</div>
 <span class="w">               </span><span class="n">config</span><span class="p">%</span><span class="n">cutoff_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;distance_metric&#39;</span><span class="p">)</span>
 <span class="w">               </span><span class="n">config</span><span class="p">%</span><span class="n">distance_metric</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
-<span class="w">            </span><span class="k">end select</span>
+<span class="w">            </span><span class="k">case </span><span class="n">default</span>
+<span class="w">               </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Unknown key in %fragmentation section: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end select</span>
 <span class="k">         end if</span>
 <span class="k">      end do</span>
 
@@ -620,7 +628,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-27 12:00 +0000             </p>
+ on 2025-12-27 12:24 +0000             </p>
           </div>
         </div>
         <br>
