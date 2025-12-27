@@ -365,7 +365,7 @@ contains
 end module test_mqc_frag_utils
 
 program tester
-   use iso_fortran_env, only: error_unit
+   use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
    use test_mqc_frag_utils, only: collect_mqc_frag_utils_tests
    implicit none
