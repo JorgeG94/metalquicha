@@ -1,9 +1,9 @@
 !! Unit tests for mqc_config_parser module
 program test_mqc_config_parser
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
-   use mqc_config_parser
-   use mqc_method_types
-   use mqc_calc_types
+   use mqc_config_parser, only: mqc_config_t, read_mqc_file
+   use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+   use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
    implicit none
    integer :: stat
    type(unittest_type), allocatable :: testsuite(:)

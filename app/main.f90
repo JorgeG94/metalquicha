@@ -17,11 +17,11 @@ program main
    use pic_timer, only: timer_type
    implicit none
 
-   type(timer_type) :: my_timer     !! Execution timing
-   type(comm_t) :: world_comm       !! Global MPI communicator
-   type(comm_t) :: node_comm        !! Node-local MPI communicator
-   type(driver_config_t) :: config  !! Driver configuration
-   type(mqc_config_t) :: mqc_config !! Parsed .mqc file
+   type(timer_type) :: my_timer      !! Execution timing
+   type(comm_t) :: world_comm        !! Global MPI communicator
+   type(comm_t) :: node_comm         !! Node-local MPI communicator
+   type(driver_config_t) :: config   !! Driver configuration
+   type(mqc_config_t) :: mqc_config  !! Parsed .mqc file
    type(system_geometry_t) :: sys_geom  !! Loaded molecular system
    integer :: stat                  !! Status code for error handling
    character(len=:), allocatable :: errmsg  !! Error messages
