@@ -4,6 +4,7 @@ program test_mqc_config_parser
    use mqc_config_parser, only: mqc_config_t, read_mqc_file
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
+   use pic_test_helpers, only: is_equal
    implicit none
    integer :: stat
    type(unittest_type), allocatable :: testsuite(:)
@@ -107,11 +108,11 @@ contains
       call check(error, config%geometry%elements(1), "H", "First element should be H")
       if (allocated(error)) return
 
-      call check(error, abs(config%geometry%coords(1, 1) - 0.0d0) < 1e-6, &
+      call check(error, is_equal(config%geometry%coords(1, 1), 0.0d0), &
                  "First atom x-coordinate should be 0.0")
       if (allocated(error)) return
 
-      call check(error, abs(config%geometry%coords(1, 2) - 0.7d0) < 1e-6, &
+      call check(error, is_equal(config%geometry%coords(1, 2), 0.7d0), &
                  "Second atom x-coordinate should be 0.7")
       if (allocated(error)) return
 
