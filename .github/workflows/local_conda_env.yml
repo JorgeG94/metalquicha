@@ -1,0 +1,50 @@
+name: Build PIC using local conda env (MPI, OpenMP, BLAS)
+
+on: [push]
+
+jobs:
+  test_conda:
+    name: Build testing with ${{ matrix.compiler }}  on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # mpi on windows is a nightmare
+        os: ["ubuntu-latest"]
+        compiler: ["gfortran"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+
+      - name: Install Our own environment
+        shell: bash -el {0}
+        run: |
+          conda env create --name mqc --file environment.yml
+
+      - name: Install our own compiler using conda
+        shell: bash -el {0}
+        run: |
+          conda install -c conda-forge -n mqc ${{matrix.compiler}}=14.2.0
+
+      - name: Execute cmake and build
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          export FC=${{matrix.compiler}}
+          cmake -B build
+          cmake --build build
+
+      - name: Run unit tests
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          ctest --test-dir build -V -R "mqc"
+
+      - name: Clean build dir
+        shell: bash -el {0}
+        run: |
+          rm -rf build

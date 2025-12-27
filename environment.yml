@@ -4,9 +4,8 @@ channels:
 dependencies:
   - python=3.12
   - openblas
-  - openblas-ilp64
   - openmpi
-  - gfortran=14.2.0
+  #- gfortran=14.2.0
   - cmake
   - ninja
   - fpm
