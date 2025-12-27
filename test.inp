@@ -1,8 +1,0 @@
-# PIC Chemistry input file
-# Test with water hexamer prism
-nlevel=0
-geom="prism.xyz"
-monomer_symbols="water_monomer.xyz"
-method="gfn1"
-calc_type="energy"
-log_level=info

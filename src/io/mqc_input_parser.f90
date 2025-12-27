@@ -1,7 +1,13 @@
-!! Input file parser for the hastily put together input file format
+!! DEPRECATED: Legacy .inp format parser
+!!
+!! This module is deprecated in favor of mqc_config_parser (.mqc format).
+!! The .inp format is maintained for backward compatibility only.
+!! New inputs should use the .mqc format with mqc_config_parser module.
 module mqc_input_parser
    !! Parses simple key=value input files to configure calculation parameters
    !! including geometry files, method selection, and fragment levels.
+   !!
+   !! DEPRECATED: Use mqc_config_parser for new .mqc format files
    use pic_types, only: int32
    use mqc_method_types, only: method_type_from_string, METHOD_TYPE_GFN2, METHOD_TYPE_UNKNOWN
    use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_ENERGY, CALC_TYPE_UNKNOWN

@@ -1,5 +1,12 @@
-!! This file simply contains the main program, look at it as the base of the calculation
-!! and how everything sits together.
+!! Main program for metalquicha quantum chemistry calculations
+!!
+!! Supports two input formats:
+!!   - .mqc (recommended): Section-based format with full features
+!!   - .inp (legacy): Simple key=value format (deprecated, backward compatibility only)
+!!
+!! Usage: metalquicha [input_file.mqc]
+!!        metalquicha [input_file.inp]  (legacy)
+!!        metalquicha                    (defaults to test.inp for backward compatibility)
 program main
    !! Orchestrates MPI initialization, input parsing, geometry loading,
    !! and dispatches to appropriate calculation routines (fragmented or unfragmented).
