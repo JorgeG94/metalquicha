@@ -94,20 +94,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">32 statements</a>
+                 title=" 0.8% of total for procedures.">30 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_cli_parser.f90"> Source File</a>
+              <a href="../src/mqc_basis_utils.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_cli_parser.f90.html'>mqc_cli_parser.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_cli_parser.html'>mqc_cli_parser</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_basis_utils.f90.html'>mqc_basis_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></li>
             <li class="breadcrumb-item active" aria-current="page">normalize_basis_name</li>
           </ol>
         </nav>
@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/normalize_basis_name.html#variable-buffer">buffer</a>
-            <a class="list-group-item" href="../proc/normalize_basis_name.html#variable-i~14">i</a>
+            <a class="list-group-item" href="../proc/normalize_basis_name.html#variable-i">i</a>
             <a class="list-group-item" href="../proc/normalize_basis_name.html#variable-in_parens">in_parens</a>
             <a class="list-group-item" href="../proc/normalize_basis_name.html#variable-out_pos">out_pos</a>
         </div>
@@ -175,18 +175,22 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  function normalize_basis_name(basis_name) result(normalized)  
+    <h2>public pure function normalize_basis_name(basis_name) result(normalized)  
 </h2>
     
 
-    <p>Normalize basis set name to filename-safe format
-Rules: * -&gt; s, + -&gt; p, remove parentheses and their contents
-Examples:
+    <p>Normalize basis set name to filename-safe format</p>
+<p>Rules:
+  * -&gt; s
+  + -&gt; p
+  Remove parentheses and commas</p>
+<p>Examples:
   6-31G<em>      -&gt; 6-31Gs
   6-31+G</em>     -&gt; 6-31pGs
   6-31G(d)    -&gt; 6-31Gd
-  6-311G(d,p) -&gt; 6-31Gdp
-  6-311++G**  -&gt; 6-311ppGss</p>
+  6-311G(d,p) -&gt; 6-311Gdp
+  6-311++G**  -&gt; 6-311ppGss
+  cc-pVDZ     -&gt; cc-pVDZ (unchanged)</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +206,7 @@ Examples:
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~2"></span>
+              <span class="anchor" id="variable-basis_name"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -380,7 +384,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~14"></span>
+              <span class="anchor" id="variable-i"></span>
               integer,
             </td>
               <td>private</td>
@@ -445,7 +449,21 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">normalize_basis_name</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">normalize_basis_name</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Normalize basis set name to filename-safe format</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Rules:</span>
+<span class="w">      </span><span class="c">!!   * -&gt; s</span>
+<span class="w">      </span><span class="c">!!   + -&gt; p</span>
+<span class="w">      </span><span class="c">!!   Remove parentheses and commas</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Examples:</span>
+<span class="w">      </span><span class="c">!!   6-31G*      -&gt; 6-31Gs</span>
+<span class="w">      </span><span class="c">!!   6-31+G*     -&gt; 6-31pGs</span>
+<span class="w">      </span><span class="c">!!   6-31G(d)    -&gt; 6-31Gd</span>
+<span class="w">      </span><span class="c">!!   6-311G(d,p) -&gt; 6-311Gdp</span>
+<span class="w">      </span><span class="c">!!   6-311++G**  -&gt; 6-311ppGss</span>
+<span class="w">      </span><span class="c">!!   cc-pVDZ     -&gt; cc-pVDZ (unchanged)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_name</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">normalized</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">out_pos</span>
@@ -477,13 +495,10 @@ large graphs.</div>
 <span class="w">            </span><span class="n">in_parens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 
 <span class="w">         </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span>
-<span class="w">            </span><span class="c">! Skip commas and spaces inside parentheses</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">in_parens</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-<span class="w">            </span><span class="c">! Keep them outside parentheses</span>
-<span class="w">            </span><span class="n">out_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="n">buffer</span><span class="p">(</span><span class="n">out_pos</span><span class="p">:</span><span class="n">out_pos</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basis_name</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! Skip commas and spaces (inside or outside parentheses)</span>
+<span class="w">            </span><span class="k">continue</span>
 
-<span class="w">         </span><span class="k">case </span><span class="n">default</span>
+<span class="k">         case </span><span class="n">default</span>
 <span class="w">            </span><span class="c">! Copy character as-is</span>
 <span class="w">            </span><span class="n">out_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">out_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">            </span><span class="n">buffer</span><span class="p">(</span><span class="n">out_pos</span><span class="p">:</span><span class="n">out_pos</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basis_name</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span>
@@ -515,7 +530,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-27 08:26 +0000             </p>
+ on 2025-12-27 12:00 +0000             </p>
           </div>
         </div>
         <br>

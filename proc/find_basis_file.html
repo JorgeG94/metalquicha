@@ -94,20 +94,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.8% of total for procedures.">65 statements</a>
+                 title=" 0.5% of total for procedures.">19 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_cli_parser.f90"> Source File</a>
+              <a href="../src/mqc_basis_utils.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_cli_parser.f90.html'>mqc_cli_parser.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_cli_parser.html'>mqc_cli_parser</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_basis_utils.f90.html'>mqc_basis_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></li>
             <li class="breadcrumb-item active" aria-current="page">find_basis_file</li>
           </ol>
         </nav>
@@ -137,14 +137,8 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/find_basis_file.html#variable-file_exists">file_exists</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-i~15">i</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-j~5">j</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-max_variants">max_variants</a>
+            <a class="list-group-item" href="../proc/find_basis_file.html#variable-filepath">filepath</a>
             <a class="list-group-item" href="../proc/find_basis_file.html#variable-normalized~2">normalized</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-nvariants">nvariants</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-search_dirs">search_dirs</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-test_path">test_path</a>
-            <a class="list-group-item" href="../proc/find_basis_file.html#variable-variants">variants</a>
         </div>
       </div>
     </div>
@@ -184,14 +178,13 @@
 </h2>
     
 
-    <p>Find basis file, trying multiple name variants
-Searches in:
-  1. basis_sets/ subdirectory
-  2. Current directory
-Tries name variants:
-  1. Exact name as given
-  2. Normalized name (with * -&gt; s, + -&gt; p, etc.)
-  3. Common synonyms</p>
+    <p>Find basis set file using normalized name</p>
+<p>Search strategy:
+  1. Normalize the basis name (e.g., 6-31G* -&gt; 6-31Gs)
+  2. Look for basis_sets/{normalized}.txt
+  3. If not found, return error</p>
+<p>This is a simple, straightforward approach that assumes
+the JSON/mqc input provides the correct basis set name.</p>
 
 
     <h3>Arguments</h3>
@@ -207,7 +200,7 @@ Tries name variants:
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_name~3"></span>
+              <span class="anchor" id="variable-basis_name~2"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -237,7 +230,7 @@ Tries name variants:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~10"></span>
+              <span class="anchor" id="variable-stat"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -252,7 +245,7 @@ Tries name variants:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~7"></span>
+              <span class="anchor" id="variable-errmsg"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -423,51 +416,17 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~15"></span>
-              integer,
+              <span class="anchor" id="variable-filepath"></span>
+              character(len=512),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>i</strong></td>
+            <td><strong>filepath</strong></td>
                 <td></td>
                 <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-j~5"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>j</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_variants"></span>
-              integer,
-            </td>
-              <td>private,</td>
-            <td>
-parameter               
-            </td>
-            <td>::</td>
-            <td><strong>max_variants</strong></td>
-<td> =</td>
-                <td>10</td>
             <td>
                 
             </td>
@@ -483,74 +442,6 @@ parameter
             </td>
             <td>::</td>
             <td><strong>normalized</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-nvariants"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>nvariants</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-search_dirs"></span>
-              character(len=256),
-            </td>
-              <td>private,</td>
-            <td>
-              dimension(2)
-            </td>
-            <td>::</td>
-            <td><strong>search_dirs</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-test_path"></span>
-              character(len=256),
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>test_path</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-variants"></span>
-              character(len=256),
-            </td>
-              <td>private,</td>
-            <td>
-              dimension(max_variants)
-            </td>
-            <td>::</td>
-            <td><strong>variants</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -574,6 +465,15 @@ parameter
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">find_basis_file</span><span class="p">(</span><span class="n">basis_name</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Find basis set file using normalized name</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Search strategy:</span>
+<span class="w">      </span><span class="c">!!   1. Normalize the basis name (e.g., 6-31G* -&gt; 6-31Gs)</span>
+<span class="w">      </span><span class="c">!!   2. Look for basis_sets/{normalized}.txt</span>
+<span class="w">      </span><span class="c">!!   3. If not found, return error</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! This is a simple, straightforward approach that assumes</span>
+<span class="w">      </span><span class="c">!! the JSON/mqc input provides the correct basis set name.</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_name</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span>
@@ -581,81 +481,26 @@ parameter
 
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">normalized</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">file_exists</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_variants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(</span><span class="n">max_variants</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">variants</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nvariants</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">test_path</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">search_dirs</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filepath</span>
 
 <span class="w">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
-<span class="w">      </span><span class="c">! Define search directories (in order of priority)</span>
-<span class="w">      </span><span class="n">search_dirs</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;basis_sets/&quot;</span>
-<span class="w">      </span><span class="n">search_dirs</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w">  </span><span class="c">! Current directory</span>
-
-<span class="w">      </span><span class="c">! Variant 1: Exact name</span>
-<span class="w">      </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">      </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.txt&quot;</span>
-
-<span class="w">      </span><span class="c">! Variant 2: Normalized name</span>
+<span class="w">      </span><span class="c">! Normalize the basis name</span>
 <span class="w">      </span><span class="n">normalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">normalize_basis_name</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.txt&quot;</span>
+
+<span class="w">      </span><span class="c">! Construct file path: basis_sets/{normalized}.txt</span>
+<span class="w">      </span><span class="n">filepath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;basis_sets/&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.txt&quot;</span>
+
+<span class="w">      </span><span class="c">! Check if file exists</span>
+<span class="w">      </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">filepath</span><span class="p">),</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">file_exists</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">file_exists</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Basis set file not found: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                  </span><span class="s2">&quot; (from basis name: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span>
 <span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Variant 3: Common synonyms</span>
-<span class="w">      </span><span class="c">! 6-31G* = 6-31G(d)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-31G*&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-31G(d)&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31Gs.txt&quot;</span>
-<span class="w">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31Gd.txt&quot;</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! 6-31G** = 6-31G(d,p)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-31G**&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-31G(d,p)&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31Gss.txt&quot;</span>
-<span class="w">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-31Gdp.txt&quot;</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! 6-311G* = 6-311G(d)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-311G*&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basis_name</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;6-311G(d)&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-311Gs.txt&quot;</span>
-<span class="w">         </span><span class="n">nvariants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvariants</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">         </span><span class="n">variants</span><span class="p">(</span><span class="n">nvariants</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;6-311Gd.txt&quot;</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Try each directory with each variant</span>
-<span class="w">      </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nvariants</span>
-<span class="w">            </span><span class="n">test_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">search_dirs</span><span class="p">(</span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">variants</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="w">            </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">test_path</span><span class="p">),</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">file_exists</span><span class="p">)</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">file_exists</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               </span><span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">test_path</span><span class="p">)</span>
-<span class="w">               </span><span class="k">return</span>
-<span class="k">            end if</span>
-<span class="k">         end do</span>
-<span class="k">      end do</span>
-
-<span class="w">      </span><span class="c">! None found - return error with all paths tried</span>
-<span class="w">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">      </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Basis set file not found. Tried: &quot;</span>
-<span class="w">      </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
-<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nvariants</span>
-<span class="w">            </span><span class="n">test_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">search_dirs</span><span class="p">(</span><span class="n">j</span><span class="p">))</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">variants</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">errmsg</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">test_path</span><span class="p">)</span>
-<span class="w">            </span><span class="k">else</span>
-<span class="k">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">errmsg</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">test_path</span><span class="p">)</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">         end do</span>
-<span class="k">      end do</span>
 
 <span class="k">   end subroutine </span><span class="n">find_basis_file</span>
 </pre></div>
@@ -681,7 +526,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-27 08:26 +0000             </p>
+ on 2025-12-27 12:00 +0000             </p>
           </div>
         </div>
         <br>
