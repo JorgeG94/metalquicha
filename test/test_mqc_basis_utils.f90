@@ -1,14 +1,14 @@
-module test_mqc_cli_parser
+module test_mqc_basis_utils
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_cli_parser, only: normalize_basis_name, find_basis_file, cli_args_type
+   use mqc_basis_utils, only: normalize_basis_name, find_basis_file
    implicit none
    private
-   public :: collect_mqc_cli_parser_tests
+   public :: collect_mqc_basis_utils_tests
 
 contains
 
    !> Collect all exported unit tests
-   subroutine collect_mqc_cli_parser_tests(testsuite)
+   subroutine collect_mqc_basis_utils_tests(testsuite)
       !> Collection of tests
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
@@ -19,10 +19,9 @@ contains
                   new_unittest("normalize_basis_complex", test_normalize_complex), &
                   new_unittest("normalize_basis_unchanged", test_normalize_unchanged), &
                   new_unittest("find_basis_file_exists", test_find_basis_exists), &
-                  new_unittest("find_basis_file_not_found", test_find_basis_not_found), &
-                  new_unittest("cli_args_destroy", test_cli_args_destroy) &
+                  new_unittest("find_basis_file_not_found", test_find_basis_not_found) &
                   ]
-   end subroutine collect_mqc_cli_parser_tests
+   end subroutine collect_mqc_basis_utils_tests
 
    subroutine test_normalize_stars(error)
       type(error_type), allocatable, intent(out) :: error
@@ -118,14 +117,14 @@ contains
       call execute_command_line("mkdir -p basis_sets", exitstat=stat)
 
       ! Create a test basis file in basis_sets directory
-      call create_test_basis_file("basis_sets/test_6-31G.txt")
+      call create_test_basis_file("basis_sets/test_basis.txt")
 
       ! Try to find it
-      call find_basis_file("test_6-31G", filename, stat, errmsg)
+      call find_basis_file("test_basis", filename, stat, errmsg)
 
       if (stat /= 0) then
-         call check(error, .false., "Should find test_6-31G.txt: "//errmsg)
-         call delete_file("basis_sets/test_6-31G.txt")
+         call check(error, .false., "Should find test_basis.txt: "//errmsg)
+         call delete_file("basis_sets/test_basis.txt")
          return
       end if
 
@@ -134,15 +133,15 @@ contains
       call check(error, file_exists, &
                  "Returned filename should exist: "//trim(filename))
       if (allocated(error)) then
-         call delete_file("basis_sets/test_6-31G.txt")
+         call delete_file("basis_sets/test_basis.txt")
          return
       end if
 
       ! Check that the filename is correct
-      call check(error, trim(filename), "basis_sets/test_6-31G.txt", &
-                 "Filename should be basis_sets/test_6-31G.txt")
+      call check(error, trim(filename), "basis_sets/test_basis.txt", &
+                 "Filename should be basis_sets/test_basis.txt")
 
-      call delete_file("basis_sets/test_6-31G.txt")
+      call delete_file("basis_sets/test_basis.txt")
    end subroutine test_find_basis_exists
 
    subroutine test_find_basis_not_found(error)
@@ -156,23 +155,6 @@ contains
 
       call check(error, stat /= 0, "Should fail to find non-existent basis")
    end subroutine test_find_basis_not_found
-
-   subroutine test_cli_args_destroy(error)
-      type(error_type), allocatable, intent(out) :: error
-      type(cli_args_type) :: args
-
-      args%xyz_file = "test.xyz"
-      args%basis_name = "6-31G"
-
-      call args%destroy()
-
-      call check(error,.not. allocated(args%xyz_file), &
-                 "xyz_file should be deallocated")
-      if (allocated(error)) return
-
-      call check(error,.not. allocated(args%basis_name), &
-                 "basis_name should be deallocated")
-   end subroutine test_cli_args_destroy
 
    ! Helper subroutines
 
@@ -192,12 +174,12 @@ contains
       if (stat == 0) close (unit, status="delete")
    end subroutine delete_file
 
-end module test_mqc_cli_parser
+end module test_mqc_basis_utils
 
 program tester
    use iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_cli_parser, only: collect_mqc_cli_parser_tests
+   use test_mqc_basis_utils, only: collect_mqc_basis_utils_tests
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
@@ -206,7 +188,7 @@ program tester
    stat = 0
 
    testsuites = [ &
-                new_testsuite("mqc_cli_parser", collect_mqc_cli_parser_tests) &
+                new_testsuite("mqc_basis_utils", collect_mqc_basis_utils_tests) &
                 ]
 
    do is = 1, size(testsuites)
