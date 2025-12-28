@@ -18,6 +18,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
+   use mqc_config_parser, only: bond_t
 
    ! Method API imports
 #ifndef MQC_WITHOUT_TBLITE
@@ -463,12 +464,13 @@ contains
       end do
    end subroutine node_coordinator
 
-   subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type)
+   subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       !! Node worker for processing fragments assigned by node coordinator
       class(comm_t), intent(in) :: world_comm, node_comm
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in), optional :: calc_type
+      type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
       integer(int32), allocatable :: fragment_indices(:)
@@ -497,7 +499,7 @@ contains
 
             ! Build physical fragment from indices if sys_geom is available
             if (present(sys_geom)) then
-               call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
+               call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
 
                ! Process the chemistry fragment with physical geometry
                call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
@@ -526,12 +528,13 @@ contains
       end do
    end subroutine node_worker
 
-   subroutine unfragmented_calculation(sys_geom, method, calc_type)
+   subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in), optional :: calc_type
+      type(bond_t), intent(in), optional :: bonds(:)
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -559,7 +562,7 @@ contains
             all_monomer_indices(i) = i
          end do
 
-         call build_fragment_from_indices(sys_geom, all_monomer_indices, full_system)
+         call build_fragment_from_indices(sys_geom, all_monomer_indices, full_system, bonds)
          deallocate (all_monomer_indices)
       end block
 
@@ -599,7 +602,7 @@ contains
 
    end subroutine unfragmented_calculation
 
-   subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type)
+   subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
       integer(int64), intent(in) :: total_fragments
@@ -607,6 +610,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in), optional :: calc_type
+      type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int64) :: frag_idx
       integer :: fragment_size, current_log_level, iatom
@@ -637,7 +641,7 @@ contains
          allocate (fragment_indices(fragment_size))
          fragment_indices = polymers(frag_idx, 1:fragment_size)
 
-         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag)
+         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
 
          call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag, calc_type=calc_type_local)
 

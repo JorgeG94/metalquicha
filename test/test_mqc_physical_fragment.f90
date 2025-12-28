@@ -5,6 +5,7 @@ module test_mqc_physical_fragment
                                     fragment_center_of_mass, distance_between_points, &
                                     distance_between_fragments, minimal_distance_between_fragments, &
                                     system_geometry_t, physical_fragment_t
+   use mqc_config_parser, only: bond_t
    use pic_types, only: dp
    implicit none
    private
@@ -35,7 +36,11 @@ contains
                   new_unittest("distance_between_fragments_com", test_distance_fragments_com), &
                   new_unittest("minimal_distance_between_fragments", test_minimal_distance_fragments), &
                   new_unittest("fragment_destroy", test_fragment_destroy_proc), &
-                  new_unittest("system_destroy", test_system_destroy_proc) &
+                  new_unittest("system_destroy", test_system_destroy_proc), &
+                  new_unittest("h_cap_single_broken_bond", test_h_cap_single_broken), &
+                  new_unittest("h_cap_no_broken_bonds", test_h_cap_no_broken), &
+                  new_unittest("h_cap_dimer_intact_internal", test_h_cap_dimer_intact), &
+                  new_unittest("h_cap_positions_and_elements", test_h_cap_positions) &
                   ]
    end subroutine collect_mqc_physical_fragment_tests
 
@@ -493,6 +498,212 @@ contains
       call check(error, sys_geom%total_atoms == 0, &
                  "total_atoms should be reset to 0")
    end subroutine test_system_destroy_proc
+
+   ! ============================================================================
+   ! Hydrogen capping tests
+   ! ============================================================================
+
+   subroutine test_h_cap_single_broken(error)
+      !! Test single monomer with one broken bond → should add 1 H-cap
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      ! Create test system: 2 monomers, 3 atoms each
+      call create_test_water_trimer()
+      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+                                      sys_geom, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to initialize system: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      ! Create one broken bond between monomer 1 (atom 0) and monomer 2 (atom 3)
+      ! Using 0-based indexing as in the bond_t structure
+      allocate (bonds(1))
+      bonds(1)%atom_i = 0  ! First atom of monomer 1
+      bonds(1)%atom_j = 3  ! First atom of monomer 2
+      bonds(1)%order = 1
+      bonds(1)%is_broken = .true.
+
+      ! Build fragment from monomer 1 only
+      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+
+      ! Should have 3 real atoms + 1 H-cap = 4 total
+      call check(error, fragment%n_atoms, 4, &
+                 "Fragment with 1 broken bond should have 4 atoms (3 real + 1 cap)")
+      if (allocated(error)) goto 100
+
+      ! Check n_caps field
+      call check(error, fragment%n_caps, 1, &
+                 "Should have exactly 1 H-cap")
+      if (allocated(error)) goto 100
+
+      ! Check that last atom is hydrogen (element 1)
+      call check(error, fragment%element_numbers(4), 1, &
+                 "Last atom should be hydrogen (H-cap)")
+      if (allocated(error)) goto 100
+
+      ! Check cap_replaces_atom is set correctly (should be atom 3, 0-indexed)
+      call check(error, allocated(fragment%cap_replaces_atom), &
+                 "cap_replaces_atom should be allocated")
+      if (allocated(error)) goto 100
+
+      call check(error, fragment%cap_replaces_atom(1), 3, &
+                 "H-cap should replace atom 3")
+
+100   call fragment%destroy()
+      call sys_geom%destroy()
+      call cleanup_test_files()
+      if (allocated(bonds)) deallocate (bonds)
+   end subroutine test_h_cap_single_broken
+
+   subroutine test_h_cap_no_broken(error)
+      !! Test monomer with no broken bonds → should add 0 H-caps
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_water_trimer()
+      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+                                      sys_geom, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to initialize system: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      ! Create bond but mark it as NOT broken
+      allocate (bonds(1))
+      bonds(1)%atom_i = 0
+      bonds(1)%atom_j = 3
+      bonds(1)%order = 1
+      bonds(1)%is_broken = .false.  ! Not broken!
+
+      ! Build fragment from monomer 1 only
+      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+
+      ! Should have only 3 atoms (no caps)
+      call check(error, fragment%n_atoms, 3, &
+                 "Fragment with no broken bonds should have 3 atoms (no caps)")
+      if (allocated(error)) goto 200
+
+      ! Check n_caps field
+      call check(error, fragment%n_caps, 0, &
+                 "Should have 0 H-caps")
+
+200   call fragment%destroy()
+      call sys_geom%destroy()
+      call cleanup_test_files()
+      if (allocated(bonds)) deallocate (bonds)
+   end subroutine test_h_cap_no_broken
+
+   subroutine test_h_cap_dimer_intact(error)
+      !! Test dimer with intact internal bond → should add 0 H-caps between monomers
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      integer :: stat
+      character(len=:), allocatable :: errmsg
+
+      call create_test_water_trimer()
+      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+                                      sys_geom, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to initialize system: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      ! Create broken bond between atoms 0 and 3 (monomers 1-2)
+      ! But we're building a fragment with BOTH monomers
+      allocate (bonds(1))
+      bonds(1)%atom_i = 0  ! Monomer 1
+      bonds(1)%atom_j = 3  ! Monomer 2
+      bonds(1)%order = 1
+      bonds(1)%is_broken = .true.
+
+      ! Build fragment from monomers 1 AND 2 (dimer)
+      call build_fragment_from_indices(sys_geom, [1, 2], fragment, bonds)
+
+      ! Should have 6 atoms (2 waters) and NO caps (bond is internal to fragment)
+      call check(error, fragment%n_atoms, 6, &
+                 "Dimer with internal bond should have 6 atoms (no caps)")
+      if (allocated(error)) goto 300
+
+      call check(error, fragment%n_caps, 0, &
+                 "Dimer with intact internal bond should have 0 caps")
+
+300   call fragment%destroy()
+      call sys_geom%destroy()
+      call cleanup_test_files()
+      if (allocated(bonds)) deallocate (bonds)
+   end subroutine test_h_cap_dimer_intact
+
+   subroutine test_h_cap_positions(error)
+      !! Test that H-cap positions match replaced atom positions
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      type(physical_fragment_t) :: fragment
+      type(bond_t), allocatable :: bonds(:)
+      integer :: stat, i
+      character(len=:), allocatable :: errmsg
+      real(dp) :: replaced_atom_coords(3), cap_coords(3)
+
+      call create_test_water_trimer()
+      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+                                      sys_geom, stat, errmsg)
+
+      if (stat /= 0) then
+         call check(error, .false., "Failed to initialize system: "//errmsg)
+         call cleanup_test_files()
+         return
+      end if
+
+      ! Create broken bond between atom 0 (monomer 1) and atom 3 (monomer 2)
+      allocate (bonds(1))
+      bonds(1)%atom_i = 0
+      bonds(1)%atom_j = 3  ! This is 0-indexed
+      bonds(1)%order = 1
+      bonds(1)%is_broken = .true.
+
+      ! Get coordinates of atom 3 before building fragment
+      ! atom_j is 0-indexed (3), so in Fortran array it's at index 4
+      replaced_atom_coords = sys_geom%coordinates(:, 4)
+
+      ! Build fragment from monomer 1 only
+      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+
+      ! H-cap should be at position 4 (last atom)
+      cap_coords = fragment%coordinates(:, 4)
+
+      ! Check that H-cap coordinates match replaced atom coordinates
+      do i = 1, 3
+         call check(error, abs(cap_coords(i) - replaced_atom_coords(i)) < tol, &
+                    "H-cap coordinate should match replaced atom")
+         if (allocated(error)) goto 400
+      end do
+
+      ! Also verify element number is hydrogen
+      call check(error, fragment%element_numbers(4), 1, &
+                 "H-cap element should be hydrogen (1)")
+
+400   call fragment%destroy()
+      call sys_geom%destroy()
+      call cleanup_test_files()
+      if (allocated(bonds)) deallocate (bonds)
+   end subroutine test_h_cap_positions
 
    ! Helper subroutines for creating test files
 

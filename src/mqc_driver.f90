@@ -14,6 +14,7 @@ module mqc_driver
    use mqc_config_adapter, only: driver_config_t
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string
+   use mqc_config_parser, only: bond_t
    implicit none
    private
 
@@ -21,7 +22,7 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(world_comm, node_comm, config, sys_geom)
+   subroutine run_calculation(world_comm, node_comm, config, sys_geom, bonds)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
@@ -30,6 +31,7 @@ contains
       type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
+      type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
@@ -56,15 +58,15 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type)
+         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
-                                         matrix_size)
+                                         matrix_size, bonds)
       end if
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! Validates single MPI rank requirement and runs direct calculation
@@ -73,6 +75,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
+      type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
 
       ! Validate that only a single rank is used for unfragmented calculation
       ! (parallelism comes from OpenMP threads, not MPI ranks)
@@ -96,12 +99,12 @@ contains
          call logger%info("Running unfragmented calculation")
          call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
-         call unfragmented_calculation(sys_geom, method, calc_type)
+         call unfragmented_calculation(sys_geom, method, calc_type, bonds)
       end if
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, matrix_size)
+  subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, matrix_size, bonds)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -113,6 +116,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
       integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
+      type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
@@ -188,7 +192,7 @@ contains
       if (world_comm%size() == 1) then
          ! Single rank: process fragments serially
          call logger%info("Running in serial mode (single MPI rank)")
-         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type)
+         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
       else if (world_comm%leader() .and. node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
@@ -203,7 +207,7 @@ contains
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
-         call node_worker(world_comm, node_comm, sys_geom, method, calc_type)
+         call node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       end if
 
       ! Cleanup

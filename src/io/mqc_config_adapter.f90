@@ -119,48 +119,54 @@ contains
 
    subroutine geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, stat, errmsg)
       !! Convert geometry to system_geometry_t for fragmented calculation
-      !! Tries to infer monomer structure from fragments
+      !! Supports both identical and variable-sized fragments
       type(mqc_config_t), intent(in) :: mqc_config
       type(system_geometry_t), intent(out) :: sys_geom
       logical, intent(in) :: use_angstrom
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
-      integer :: i, atoms_in_first_frag
-      integer, allocatable :: fragment_sizes(:)
+      integer :: i, j, atoms_in_first_frag, max_frag_size
       logical :: all_same_size
 
       stat = 0
 
-      ! Get fragment sizes
-      allocate (fragment_sizes(mqc_config%nfrag))
-      do i = 1, mqc_config%nfrag
-         fragment_sizes(i) = size(mqc_config%fragments(i)%indices)
-      end do
-
-      ! Check if all fragments have the same size (monomer-based)
-      atoms_in_first_frag = fragment_sizes(1)
-      all_same_size = all(fragment_sizes == atoms_in_first_frag)
-
-      if (.not. all_same_size) then
-         stat = 1
-         errmsg = "Fragmented calculations currently only support identical fragment sizes"
-         deallocate (fragment_sizes)
-         return
-      end if
-
-      deallocate (fragment_sizes)
-
-      ! Set up system geometry based on identical monomers
+      ! Set up basic system geometry
       sys_geom%n_monomers = mqc_config%nfrag
-      sys_geom%atoms_per_monomer = atoms_in_first_frag
       sys_geom%total_atoms = mqc_config%geometry%natoms
 
-      ! Validate that total atoms matches
-      if (sys_geom%n_monomers*sys_geom%atoms_per_monomer /= sys_geom%total_atoms) then
-         stat = 1
-         errmsg = "Fragment atoms don't match total atoms"
-         return
+      ! Allocate fragment info arrays
+      allocate (sys_geom%fragment_sizes(mqc_config%nfrag))
+
+      ! Get fragment sizes
+      max_frag_size = 0
+      atoms_in_first_frag = size(mqc_config%fragments(1)%indices)
+      all_same_size = .true.
+
+      do i = 1, mqc_config%nfrag
+         sys_geom%fragment_sizes(i) = size(mqc_config%fragments(i)%indices)
+         max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
+         if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
+            all_same_size = .false.
+         end if
+      end do
+
+      ! Allocate fragment_atoms array
+      allocate (sys_geom%fragment_atoms(max_frag_size, mqc_config%nfrag))
+      sys_geom%fragment_atoms = -1  ! Initialize with invalid index
+
+      ! Store fragment atom indices (0-indexed from input file)
+      do i = 1, mqc_config%nfrag
+         do j = 1, sys_geom%fragment_sizes(i)
+            sys_geom%fragment_atoms(j, i) = mqc_config%fragments(i)%indices(j)
+         end do
+      end do
+
+      ! Set atoms_per_monomer: use common size if identical, else 0
+      if (all_same_size) then
+         sys_geom%atoms_per_monomer = atoms_in_first_frag
+      else
+         sys_geom%atoms_per_monomer = 0  ! Signal variable-sized fragments
       end if
 
       allocate (sys_geom%element_numbers(sys_geom%total_atoms))

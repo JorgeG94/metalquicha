@@ -10,6 +10,7 @@ module mqc_physical_fragment
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
    use mqc_cgto, only: molecular_basis_type
+   use mqc_config_parser, only: bond_t
    implicit none
    private
 
@@ -38,6 +39,10 @@ module mqc_physical_fragment
       integer :: multiplicity = 1  !! Spin multiplicity (2S+1)
       integer :: nelec = 0         !! Total number of electrons
 
+      ! Hydrogen capping for broken bonds
+      integer :: n_caps = 0  !! Number of hydrogen caps added (always at end of atom list)
+      integer, allocatable :: cap_replaces_atom(:)  !! Original atom index that each cap replaces (size: n_caps)
+
       ! Quantum chemistry basis set
       type(molecular_basis_type), allocatable :: basis  !! Gaussian basis functions
    contains
@@ -52,10 +57,14 @@ module mqc_physical_fragment
       !! Contains the full atomic structure of a molecular cluster organized
       !! by monomers for efficient fragment generation and MBE calculations.
       integer :: n_monomers        !! Number of monomer units in system
-      integer :: atoms_per_monomer  !! Atoms in each monomer (assumed identical)
-      integer :: total_atoms       !! Total number of atoms (n_monomers × atoms_per_monomer)
+      integer :: atoms_per_monomer  !! Atoms in each monomer (0 if variable-sized)
+      integer :: total_atoms       !! Total number of atoms
       integer, allocatable :: element_numbers(:)  !! Atomic numbers for all atoms
       real(dp), allocatable :: coordinates(:, :)  !! All coordinates (3, total_atoms) in Bohr
+
+      ! For variable-sized fragments (explicit fragment definitions)
+      integer, allocatable :: fragment_sizes(:)      !! Number of atoms in each fragment (n_monomers)
+      integer, allocatable :: fragment_atoms(:, :)   !! Atom indices for each fragment (max_frag_size, n_monomers), 0-indexed
    contains
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
@@ -133,39 +142,156 @@ contains
 
    end subroutine initialize_system_geometry
 
-   pure subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment)
-      !! Build a fragment on-the-fly from monomer indices
-      !! e.g., monomer_indices = [1, 3, 5] extracts waters 1, 3, and 5
+   subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, bonds)
+      !! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds
+      !!
+      !! Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.
+      !! Caps are always added at the end of the atom list.
+      !! Supports both fixed-size (identical monomers) and variable-sized fragments.
+      !!
+      !! Example: monomer_indices = [1, 3, 5] extracts waters 1, 3, and 5
+      !!          If connectivity shows broken bonds, hydrogens are capped at positions of missing atoms
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomer_indices(:)
       type(physical_fragment_t), intent(out) :: fragment
+      type(bond_t), intent(in), optional :: bonds(:)  !! Connectivity information for capping
 
-      integer :: n_monomers_in_frag, atoms_per_monomer
-      integer :: i, mono_idx, atom_start, atom_end, frag_atom_idx
+      integer :: n_monomers_in_frag, atoms_per_monomer, n_atoms_no_caps
+      integer :: i, j, mono_idx, atom_start, atom_end, frag_atom_idx
+      integer :: ibond, atom_i, atom_j, n_caps, cap_idx
+      logical :: atom_i_in_frag, atom_j_in_frag
+      integer, allocatable :: atoms_in_fragment(:)  !! List of all atom indices in this fragment
+      integer :: iatom, atom_global_idx
+      logical :: use_explicit_fragments
 
       n_monomers_in_frag = size(monomer_indices)
-      atoms_per_monomer = sys_geom%atoms_per_monomer
 
-      fragment%n_atoms = n_monomers_in_frag*atoms_per_monomer
+      ! Determine if we're using explicit fragment definitions or regular monomer-based
+      use_explicit_fragments = allocated(sys_geom%fragment_atoms)
 
+      if (use_explicit_fragments) then
+         ! Variable-sized fragments: count total atoms from fragment definitions
+         n_atoms_no_caps = 0
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            n_atoms_no_caps = n_atoms_no_caps + sys_geom%fragment_sizes(mono_idx)
+         end do
+
+         ! Build list of atom indices (0-indexed) from explicit fragment definitions
+         allocate (atoms_in_fragment(n_atoms_no_caps))
+         iatom = 0
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            do j = 1, sys_geom%fragment_sizes(mono_idx)
+               iatom = iatom + 1
+               atoms_in_fragment(iatom) = sys_geom%fragment_atoms(j, mono_idx)
+            end do
+         end do
+      else
+         ! Fixed-size monomers: use atoms_per_monomer
+         atoms_per_monomer = sys_geom%atoms_per_monomer
+         n_atoms_no_caps = n_monomers_in_frag*atoms_per_monomer
+
+         ! Build list of atom indices in this fragment (0-indexed to match bond indices)
+         allocate (atoms_in_fragment(n_atoms_no_caps))
+         iatom = 0
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            atom_start = (mono_idx - 1)*atoms_per_monomer
+            do atom_i = 0, atoms_per_monomer - 1
+               iatom = iatom + 1
+               atoms_in_fragment(iatom) = atom_start + atom_i
+            end do
+         end do
+      end if
+
+      ! Count how many caps we need
+      n_caps = 0
+      if (present(bonds)) then
+         do ibond = 1, size(bonds)
+            if (.not. bonds(ibond)%is_broken) cycle
+
+            ! Check if exactly one atom of this bond is in the fragment
+            atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
+            atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
+
+            ! Add cap only if one atom in fragment, other not (XOR condition)
+            if ((atom_i_in_frag .and. .not. atom_j_in_frag) .or. &
+                (.not. atom_i_in_frag .and. atom_j_in_frag)) then
+               n_caps = n_caps + 1
+            end if
+         end do
+      end if
+
+      ! Allocate arrays with space for original atoms + caps
+      fragment%n_atoms = n_atoms_no_caps + n_caps
+      fragment%n_caps = n_caps
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
+      if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
 
+      ! Copy original atoms
       frag_atom_idx = 0
+      if (use_explicit_fragments) then
+         ! Variable-sized: copy atoms based on explicit fragment definitions
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            do j = 1, sys_geom%fragment_sizes(mono_idx)
+               frag_atom_idx = frag_atom_idx + 1
+               ! fragment_atoms is 0-indexed, so +1 for Fortran arrays
+               atom_global_idx = sys_geom%fragment_atoms(j, mono_idx) + 1
+               fragment%element_numbers(frag_atom_idx) = sys_geom%element_numbers(atom_global_idx)
+               fragment%coordinates(:, frag_atom_idx) = sys_geom%coordinates(:, atom_global_idx)
+            end do
+         end do
+      else
+         ! Fixed-size: use atoms_per_monomer
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            atom_start = (mono_idx - 1)*atoms_per_monomer + 1
+            atom_end = mono_idx*atoms_per_monomer
 
-      do i = 1, n_monomers_in_frag
-         mono_idx = monomer_indices(i)
-         atom_start = (mono_idx - 1)*atoms_per_monomer + 1
-         atom_end = mono_idx*atoms_per_monomer
+            fragment%element_numbers(frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
+               sys_geom%element_numbers(atom_start:atom_end)
 
-         fragment%element_numbers(frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
-            sys_geom%element_numbers(atom_start:atom_end)
+            fragment%coordinates(:, frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
+               sys_geom%coordinates(:, atom_start:atom_end)
 
-         fragment%coordinates(:, frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
-            sys_geom%coordinates(:, atom_start:atom_end)
+            frag_atom_idx = frag_atom_idx + atoms_per_monomer
+         end do
+      end if
 
-         frag_atom_idx = frag_atom_idx + atoms_per_monomer
-      end do
+      ! Add hydrogen caps at end (if any)
+      if (present(bonds) .and. n_caps > 0) then
+         cap_idx = 0
+         do ibond = 1, size(bonds)
+            if (.not. bonds(ibond)%is_broken) cycle
+
+            atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
+            atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
+
+            if (atom_i_in_frag .and. .not. atom_j_in_frag) then
+               ! atom_i is in fragment, atom_j is not → cap at position of atom_j
+               cap_idx = cap_idx + 1
+               fragment%element_numbers(n_atoms_no_caps + cap_idx) = 1  ! Hydrogen
+               ! Place H at position of atom_j (1-indexed for coordinates array)
+               fragment%coordinates(:, n_atoms_no_caps + cap_idx) = &
+                  sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
+               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
+
+            else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
+               ! atom_j is in fragment, atom_i is not → cap at position of atom_i
+               cap_idx = cap_idx + 1
+               fragment%element_numbers(n_atoms_no_caps + cap_idx) = 1  ! Hydrogen
+               ! Place H at position of atom_i (1-indexed for coordinates array)
+               fragment%coordinates(:, n_atoms_no_caps + cap_idx) = &
+                  sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
+               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
+            end if
+         end do
+      end if
+
+      deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
 
@@ -174,6 +300,7 @@ contains
       class(physical_fragment_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
+      if (allocated(this%cap_replaces_atom)) deallocate (this%cap_replaces_atom)
       if (allocated(this%basis)) then
          call this%basis%destroy()
          deallocate (this%basis)
@@ -182,6 +309,7 @@ contains
       this%charge = 0
       this%multiplicity = 1
       this%nelec = 0
+      this%n_caps = 0
    end subroutine fragment_destroy
 
    subroutine fragment_compute_nelec(this)
@@ -212,6 +340,8 @@ contains
       class(system_geometry_t), intent(inout) :: this
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
+      if (allocated(this%fragment_sizes)) deallocate (this%fragment_sizes)
+      if (allocated(this%fragment_atoms)) deallocate (this%fragment_atoms)
       this%n_monomers = 0
       this%atoms_per_monomer = 0
       this%total_atoms = 0

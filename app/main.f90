@@ -103,7 +103,7 @@ program main
       call abort_comm(world_comm, 1)
    end if
 
-   call run_calculation(world_comm, node_comm, config, sys_geom)
+   call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%bonds)
 
    if (world_comm%rank() == 0) then
       call my_timer%stop()
