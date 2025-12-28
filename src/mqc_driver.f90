@@ -13,7 +13,7 @@ module mqc_driver
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_adapter, only: driver_config_t
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT
    use mqc_config_parser, only: bond_t
    implicit none
    private
@@ -36,6 +36,8 @@ contains
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
+      integer :: i  !! Loop counter
+      logical :: has_broken_bonds  !! Flag for broken bonds (H-capping will occur)
 
       ! Set max_level from config
       ! TODO JORGE: change to max fragmentation level
@@ -54,6 +56,38 @@ contains
          call logger%info("  Fragment level: "//to_char(max_level))
          call logger%info("  Matrix size (natoms*3): "//to_char(matrix_size))
          call logger%info("============================================")
+      end if
+
+      ! Validate gradient calculations with H-capping
+      ! Gradients with H-caps are not physically meaningful since H-caps are artificial atoms
+      if (max_level > 0 .and. config%calc_type == CALC_TYPE_GRADIENT) then
+         if (present(bonds)) then
+            has_broken_bonds = .false.
+            do i = 1, size(bonds)
+               if (bonds(i)%is_broken) then
+                  has_broken_bonds = .true.
+                  exit
+               end if
+            end do
+
+            if (has_broken_bonds) then
+               if (world_comm%rank() == 0) then
+                  call logger%error(" ")
+                  call logger%error("ERROR: Gradient calculations with hydrogen capping are not supported")
+                  call logger%error(" ")
+                  call logger%error("Hydrogen caps are artificial atoms added where bonds are broken.")
+                  call logger%error("Their gradients are not physically meaningful and would give")
+                  call logger%error("incorrect results for geometry optimization or force calculations.")
+                  call logger%error(" ")
+                  call logger%error("Solutions:")
+                  call logger%error("  1. Use calc_type = Energy instead of Gradient")
+                  call logger%error("  2. Remove broken bonds from connectivity (no H-capping)")
+                  call logger%error("  3. Use unfragmented calculation (nlevel = 0)")
+                  call logger%error(" ")
+               end if
+               call abort_comm(world_comm, 1)
+            end if
+         end if
       end if
 
       if (max_level == 0) then
