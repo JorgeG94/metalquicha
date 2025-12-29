@@ -4,6 +4,7 @@ module mqc_xyz_reader
    !! atomic coordinates and element symbols for molecular structures.
    use pic_types, only: dp
    use mqc_geometry, only: geometry_type
+   use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE
    implicit none
    private
 
@@ -16,7 +17,7 @@ module mqc_xyz_reader
 
 contains
 
-   subroutine read_xyz_file(filename, geom, stat, errmsg)
+   subroutine read_xyz_file(filename, geom, error)
       !! Read molecular geometry from XYZ format file
       !!
       !! Parses standard XYZ files with format:
@@ -25,8 +26,7 @@ contains
       !! Lines 3+: Element X Y Z (coordinates in Angstrom)
       character(len=*), intent(in) :: filename  !! Path to XYZ file
       type(geometry_type), intent(out) :: geom  !! Parsed molecular geometry
-      integer, intent(out) :: stat              !! Status (0=success, >0=error)
-      character(len=:), allocatable, intent(out) :: errmsg  !! Error message
+      type(error_t), intent(out) :: error       !! Error handling
 
       integer :: unit      !! File unit number
       integer :: io_stat   !! I/O operation status
@@ -34,13 +34,10 @@ contains
       logical :: file_exists  !! Whether file exists on disk
       character(len=:), allocatable :: file_contents  !! Full file content buffer
 
-      stat = 0
-
       ! Check if file exists
       inquire (file=filename, exist=file_exists, size=file_size)
       if (.not. file_exists) then
-         stat = 1
-         errmsg = "XYZ file not found: "//trim(filename)
+         call error%set(ERROR_IO, "XYZ file not found: "//trim(filename))
          return
       end if
 
@@ -51,8 +48,7 @@ contains
       open (newunit=unit, file=filename, status='old', action='read', &
             access='stream', form='unformatted', iostat=io_stat)
       if (io_stat /= 0) then
-         stat = io_stat
-         errmsg = "Error opening file: "//trim(filename)
+         call error%set(ERROR_IO, "Error opening file: "//trim(filename))
          return
       end if
 
@@ -60,50 +56,43 @@ contains
       close (unit)
 
       if (io_stat /= 0) then
-         stat = io_stat
-         errmsg = "Error reading file: "//trim(filename)
+         call error%set(ERROR_IO, "Error reading file: "//trim(filename))
          return
       end if
 
       ! Parse the contents
-      call read_xyz_string(file_contents, geom, stat, errmsg)
+      call read_xyz_string(file_contents, geom, error)
 
    end subroutine read_xyz_file
 
-   pure subroutine read_xyz_string(xyz_string, geom, stat, errmsg)
+   pure subroutine read_xyz_string(xyz_string, geom, error)
       !! Parse molecular geometry from XYZ format string
       character(len=*), intent(in) :: xyz_string
       type(geometry_type), intent(out) :: geom
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       character(len=:), allocatable :: lines(:)
       integer :: nlines, iatom, io_stat
       character(len=256) :: element
       real(dp) :: x, y, z
 
-      stat = 0
-
       ! Split into lines
       call split_lines(xyz_string, lines, nlines)
 
       if (nlines < 2) then
-         stat = 1
-         errmsg = "XYZ file must have at least 2 lines (natoms + comment)"
+         call error%set(ERROR_PARSE, "XYZ file must have at least 2 lines (natoms + comment)")
          return
       end if
 
       ! Read number of atoms from first line
       read (lines(1), *, iostat=io_stat) geom%natoms
       if (io_stat /= 0) then
-         stat = 1
-         errmsg = "Failed to read number of atoms from first line"
+         call error%set(ERROR_PARSE, "Failed to read number of atoms from first line")
          return
       end if
 
       if (geom%natoms < 0) then
-         stat = 1
-         errmsg = "Number of atoms must be non-negative"
+         call error%set(ERROR_PARSE, "Number of atoms must be non-negative")
          return
       end if
 
@@ -112,10 +101,9 @@ contains
 
       ! Check we have enough lines
       if (nlines < 2 + geom%natoms) then
-         stat = 1
-         errmsg = "XYZ file has insufficient lines: expected "// &
-                  trim(int_to_string(2 + geom%natoms))//", got "// &
-                  trim(int_to_string(nlines))
+         call error%set(ERROR_PARSE, "XYZ file has insufficient lines: expected "// &
+                        trim(int_to_string(2 + geom%natoms))//", got "// &
+                        trim(int_to_string(nlines)))
          return
       end if
 
@@ -127,10 +115,9 @@ contains
       do iatom = 1, geom%natoms
          read (lines(2 + iatom), *, iostat=io_stat) element, x, y, z
          if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Failed to parse atom data on line "// &
-                     trim(int_to_string(2 + iatom))//": '"// &
-                     trim(lines(2 + iatom))//"'"
+            call error%set(ERROR_PARSE, "Failed to parse atom data on line "// &
+                           trim(int_to_string(2 + iatom))//": '"// &
+                           trim(lines(2 + iatom))//"'")
             return
          end if
 

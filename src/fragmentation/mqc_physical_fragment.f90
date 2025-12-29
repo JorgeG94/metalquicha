@@ -11,6 +11,7 @@ module mqc_physical_fragment
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
    use mqc_cgto, only: molecular_basis_type
    use mqc_config_parser, only: bond_t
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
@@ -88,23 +89,22 @@ contains
       bohr_value = angstrom_value/bohr_radius
    end function to_bohr
 
-   subroutine initialize_system_geometry(full_geom_file, monomer_file, sys_geom, stat, errmsg)
+   subroutine initialize_system_geometry(full_geom_file, monomer_file, sys_geom, error)
       !! Read full geometry and monomer template, initialize system_geometry_t
       character(len=*), intent(in) :: full_geom_file, monomer_file
       type(system_geometry_t), intent(out) :: sys_geom
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       type(geometry_type) :: full_geom, monomer_geom
       integer :: i
 
-      call read_xyz_file(full_geom_file, full_geom, stat, errmsg)
-      if (stat /= 0) return
+      call read_xyz_file(full_geom_file, full_geom, error)
+      if (error%has_error()) return
 
       ! Read monomer template
       ! this will be changed once we have a proper input file parsing
-      call read_xyz_file(monomer_file, monomer_geom, stat, errmsg)
-      if (stat /= 0) then
+      call read_xyz_file(monomer_file, monomer_geom, error)
+      if (error%has_error()) then
          call full_geom%destroy()
          return
       end if
@@ -114,8 +114,7 @@ contains
       sys_geom%total_atoms = full_geom%natoms
 
       if (mod(sys_geom%total_atoms, sys_geom%atoms_per_monomer) /= 0) then
-         stat = 1
-         errmsg = "Full geometry atoms not a multiple of monomer atoms"
+         call error%set(ERROR_VALIDATION, "Full geometry atoms not a multiple of monomer atoms")
          call full_geom%destroy()
          call monomer_geom%destroy()
          return
@@ -137,8 +136,6 @@ contains
 
       call full_geom%destroy()
       call monomer_geom%destroy()
-
-      stat = 0
 
    end subroutine initialize_system_geometry
 
