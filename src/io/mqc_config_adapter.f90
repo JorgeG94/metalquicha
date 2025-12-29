@@ -12,6 +12,7 @@ module mqc_config_adapter
    public :: driver_config_t  !! Minimal config for driver
    public :: config_to_driver, config_to_system_geometry
    public :: get_logger_level  !! Convert log level string to integer
+   public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
 
    !! Minimal configuration for driver (internal use only)
    type :: driver_config_t
