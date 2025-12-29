@@ -6,6 +6,7 @@ module mqc_basis_utils
    !!   * -> s   (e.g., 6-31G* -> 6-31Gs)
    !!   + -> p   (e.g., 6-31+G -> 6-31pG)
    !!   (d,p) -> dp (remove parentheses and commas)
+   use mqc_error, only: error_t, ERROR_IO
    implicit none
    private
 
@@ -73,7 +74,7 @@ contains
       normalized = trim(buffer(1:out_pos))
    end function normalize_basis_name
 
-   subroutine find_basis_file(basis_name, filename, stat, errmsg)
+   subroutine find_basis_file(basis_name, filename, error)
       !! Find basis set file using normalized name
       !!
       !! Search strategy:
@@ -85,14 +86,11 @@ contains
       !! the JSON/mqc input provides the correct basis set name.
       character(len=*), intent(in) :: basis_name
       character(len=:), allocatable, intent(out) :: filename
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       character(len=:), allocatable :: normalized
       logical :: file_exists
       character(len=512) :: filepath
-
-      stat = 0
 
       ! Normalize the basis name
       normalized = normalize_basis_name(basis_name)
@@ -106,9 +104,8 @@ contains
       if (file_exists) then
          filename = trim(filepath)
       else
-         stat = 1
-         errmsg = "Basis set file not found: "//trim(filepath)// &
-                  " (from basis name: "//trim(basis_name)//")"
+         call error%set(ERROR_IO, "Basis set file not found: "//trim(filepath)// &
+                        " (from basis name: "//trim(basis_name)//")")
       end if
 
    end subroutine find_basis_file

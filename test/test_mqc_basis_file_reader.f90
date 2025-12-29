@@ -3,6 +3,7 @@ module test_mqc_basis_file_reader
    use mqc_basis_file_reader, only: basis_file_t, open_basis_file, extract_element
    use mqc_basis_reader, only: parse_element_basis
    use mqc_cgto, only: atomic_basis_type
+   use mqc_error, only: error_t
    implicit none
    private
    public :: collect_mqc_basis_file_reader_tests
@@ -141,8 +142,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(basis_file_t) :: basis_file
       type(atomic_basis_type) :: h_basis
-      character(len=:), allocatable :: h_content, errmsg, path_to_basis
-      integer :: stat
+      character(len=:), allocatable :: h_content, path_to_basis
+      type(error_t) :: parse_error
       logical :: file_exists
 
       path_to_basis = find_basis_file()
@@ -156,9 +157,9 @@ contains
       h_content = extract_element(basis_file, "HYDROGEN")
 
       ! Parse the extracted content
-      call parse_element_basis(h_content, "HYDROGEN", h_basis, stat, errmsg)
+      call parse_element_basis(h_content, "HYDROGEN", h_basis, parse_error)
 
-      call check(error, stat, 0, "Should parse extracted hydrogen basis")
+      call check(error,.not. parse_error%has_error(), "Should parse extracted hydrogen basis")
       if (allocated(error)) return
 
       call check(error, trim(h_basis%element), "HYDROGEN", &

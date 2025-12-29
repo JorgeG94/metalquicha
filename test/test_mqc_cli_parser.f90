@@ -1,6 +1,7 @@
 module test_mqc_cli_parser
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_cli_parser, only: normalize_basis_name, find_basis_file, cli_args_type
+   use mqc_error, only: error_t
    implicit none
    private
    public :: collect_mqc_cli_parser_tests
@@ -110,8 +111,8 @@ contains
    subroutine test_find_basis_exists(error)
       type(error_type), allocatable, intent(out) :: error
       character(len=:), allocatable :: filename
+      type(error_t) :: parse_error
       integer :: stat
-      character(len=:), allocatable :: errmsg
       logical :: file_exists
 
       ! Create basis_sets directory if it doesn't exist
@@ -121,10 +122,10 @@ contains
       call create_test_basis_file("basis_sets/test_6-31G.txt")
 
       ! Try to find it
-      call find_basis_file("test_6-31G", filename, stat, errmsg)
+      call find_basis_file("test_6-31G", filename, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Should find test_6-31G.txt: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Should find test_6-31G.txt: "//parse_error%get_message())
          call delete_file("basis_sets/test_6-31G.txt")
          return
       end if
@@ -148,13 +149,12 @@ contains
    subroutine test_find_basis_not_found(error)
       type(error_type), allocatable, intent(out) :: error
       character(len=:), allocatable :: filename
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Try to find non-existent basis
-      call find_basis_file("NONEXISTENT-BASIS", filename, stat, errmsg)
+      call find_basis_file("NONEXISTENT-BASIS", filename, parse_error)
 
-      call check(error, stat /= 0, "Should fail to find non-existent basis")
+      call check(error, parse_error%has_error(), "Should fail to find non-existent basis")
    end subroutine test_find_basis_not_found
 
    subroutine test_cli_args_destroy(error)
