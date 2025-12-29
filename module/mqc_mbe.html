@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.2% of total for modules and submodules.">279 statements</a>
+                 title=" 6.1% of total for modules and submodules.">279 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -187,16 +187,16 @@ calculations with MPI parallelization and energy/gradient computation.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -861,7 +861,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~9"></span>
+              <span class="anchor" id="variable-fragment_idx~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -936,7 +936,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~11"></span>
+              <span class="anchor" id="variable-n"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -991,7 +991,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1021,7 +1021,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~7"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1036,7 +1036,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1093,7 +1093,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1123,7 +1123,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1138,7 +1138,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1153,7 +1153,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~10"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1225,7 +1225,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1270,7 +1270,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
+              <span class="anchor" id="variable-results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1300,7 +1300,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1315,7 +1315,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~15"></span>
+              <span class="anchor" id="variable-sys_geom~9"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1371,7 +1371,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~5"></span>
+              <span class="anchor" id="variable-monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1386,7 +1386,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~14"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1444,7 +1444,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 08:26 +0000             </p>
+ on 2025-12-29 12:30 +0000             </p>
           </div>
         </div>
         <br>

@@ -12,6 +12,7 @@ module mqc_config_adapter
    public :: driver_config_t  !! Minimal config for driver
    public :: config_to_driver, config_to_system_geometry
    public :: get_logger_level  !! Convert log level string to integer
+   public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
 
    !! Minimal configuration for driver (internal use only)
    type :: driver_config_t
@@ -91,7 +92,8 @@ contains
             errmsg = "Invalid molecule_index in multi-molecule mode"
             return
          end if
-         call molecule_to_system_geometry(mqc_config%molecules(molecule_index), sys_geom, use_angstrom, stat, errmsg)
+         call molecule_to_system_geometry(mqc_config%molecules(molecule_index), sys_geom, use_angstrom, &
+                                          mqc_config%allow_overlapping_fragments, stat, errmsg)
       else
          ! Single molecule mode (backward compatible)
          ! Check if geometry is loaded
@@ -191,6 +193,12 @@ contains
          end do
       end do
 
+      ! Check for overlapping fragments if not allowed
+      if (.not. mqc_config%allow_overlapping_fragments) then
+         call check_fragment_overlap(mqc_config%fragments, mqc_config%nfrag, stat, errmsg)
+         if (stat /= 0) return
+      end if
+
       ! Set atoms_per_monomer: use common size if identical, else 0
       if (all_same_size) then
          sys_geom%atoms_per_monomer = atoms_in_first_frag
@@ -215,7 +223,7 @@ contains
 
    end subroutine geometry_to_system_fragmented
 
-   subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, stat, errmsg)
+   subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, allow_overlapping, stat, errmsg)
       !! Convert a molecule_t to system_geometry_t
       !! Handles both unfragmented (nfrag=0) and fragmented molecules
       use mqc_config_parser, only: molecule_t
@@ -223,6 +231,7 @@ contains
       type(molecule_t), intent(in) :: mol
       type(system_geometry_t), intent(out) :: sys_geom
       logical, intent(in) :: use_angstrom
+      logical, intent(in) :: allow_overlapping
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
@@ -272,6 +281,12 @@ contains
                sys_geom%fragment_atoms(j, i) = mol%fragments(i)%indices(j)
             end do
          end do
+
+         ! Check for overlapping fragments if not allowed
+         if (.not. allow_overlapping) then
+            call check_fragment_overlap(mol%fragments, mol%nfrag, stat, errmsg)
+            if (stat /= 0) return
+         end if
 
          ! Set atoms_per_monomer: use common size if identical, else 0
          if (all_same_size) then
@@ -339,5 +354,44 @@ contains
          level_int = info_level
       end select
    end function get_logger_level
+
+   subroutine check_fragment_overlap(fragments, nfrag, stat, errmsg)
+      !! Check if any atoms appear in multiple fragments
+      !! This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes
+      use mqc_config_parser, only: input_fragment_t
+      use pic_io, only: to_char
+
+      type(input_fragment_t), intent(in) :: fragments(:)
+      integer, intent(in) :: nfrag
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      integer :: i, j, k, l
+      integer :: atom_i, atom_j
+
+      stat = 0
+
+      ! Compare each pair of fragments
+      do i = 1, nfrag - 1
+         do j = i + 1, nfrag
+            ! Compare atoms in fragment i with atoms in fragment j
+            do k = 1, size(fragments(i)%indices)
+               atom_i = fragments(i)%indices(k)
+               do l = 1, size(fragments(j)%indices)
+                  atom_j = fragments(j)%indices(l)
+                  if (atom_i == atom_j) then
+                     ! Found overlapping atom
+                     stat = 1
+                     errmsg = "Overlapping fragments detected: fragments "//to_char(i)//" and "// &
+                              to_char(j)//" both contain atom "//to_char(atom_i)// &
+                              ". Set allow_overlapping_fragments = true to allow this."
+                     return
+                  end if
+               end do
+            end do
+         end do
+      end do
+
+   end subroutine check_fragment_overlap
 
 end module mqc_config_adapter
