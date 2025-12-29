@@ -1,7 +1,7 @@
 .. _history:
 
 -------
-history
+History
 -------
 
 .. contents::
@@ -11,13 +11,13 @@ Origin of Metalquicha
 =====================
 
 Metalquicha originated as a "I need to write this code for an invited talk at Pacifichem" throughout
-the year 2025. Metalquicha depends on a personal hobby project of mine, called `pic https://github.com/JorgeG94/pic`_history,
+the year 2025. Metalquicha depends on a personal hobby project of mine, called `pic <https://github.com/JorgeG94/pic>`_ history,
 which is a Fortran library that resembles a standard library, like the STL from C/C++.
 
 The pic library provides data structures, algorithms, and utilities that make development
 in Metalquicha easier and faster. Alongisde with pic, Metalquicha also uses pic to provide
-access to MPI and BLAS functionalities through `pic mpi https://github.com/JorgeG94/pic-mpi`_
-and `pic blas github.com/JorgeG94/pic-blas`_.
+access to MPI and BLAS functionalities through `pic mpi <https://github.com/JorgeG94/pic-mpi>`_
+and `pic blas <https://github.com/JorgeG94/pic-blas>`_.
 
 The main idea behind Metalquicha (and its associated presentation at Pacifichem) was to show
 that Fortran can be used as a modern programming language, with the ability to do rapid prototyping,
