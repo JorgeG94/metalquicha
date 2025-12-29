@@ -13,6 +13,8 @@ with focus on using the [pic](https://github.com/JorgeG94/pic) library and its d
 which are Fortran based implementations of commonly used routines such as sorting algorithms,
 array handling, strings, loggers, timers, etc.
 
+The documentation is hosted at readthedocs, [here](https://metalquicha.readthedocs.io/en/latest/index.html).
+
 Additionally, users can opt to try the [vapaa](https://github.com/jeffhammond/vapaa) backend for the `mpi_f08` module
 to ensure cross compiler portability. Please report any issues associated here and in vapaa.
 
