@@ -22,19 +22,36 @@ module mqc_config_adapter
 
 contains
 
-   subroutine config_to_driver(mqc_config, driver_config)
+   subroutine config_to_driver(mqc_config, driver_config, molecule_index)
       !! Convert mqc_config_t to minimal driver_config_t
       !! Extracts only the fields needed by the driver
+      !! If molecule_index is provided, uses that molecule's fragment count
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(out) :: driver_config
+      integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
+
+      integer :: nfrag_to_use
 
       ! Copy method and calc_type (already integers)
       driver_config%method = mqc_config%method
       driver_config%calc_type = mqc_config%calc_type
 
+      ! Determine fragment count
+      if (present(molecule_index)) then
+         ! Multi-molecule mode: use specific molecule's fragment count
+         if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) then
+            nfrag_to_use = 0
+         else
+            nfrag_to_use = mqc_config%molecules(molecule_index)%nfrag
+         end if
+      else
+         ! Single molecule mode (backward compatible)
+         nfrag_to_use = mqc_config%nfrag
+      end if
+
       ! Set fragmentation level
       ! For unfragmented calculations (nfrag=0), nlevel must be 0
-      if (mqc_config%nfrag == 0) then
+      if (nfrag_to_use == 0) then
          driver_config%nlevel = 0
       else
          driver_config%nlevel = mqc_config%frag_level
@@ -42,26 +59,21 @@ contains
 
    end subroutine config_to_driver
 
-   subroutine config_to_system_geometry(mqc_config, sys_geom, stat, errmsg)
+   subroutine config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index)
       !! Convert mqc_config_t geometry to system_geometry_t
       !! For unfragmented calculations (nfrag=0), treats entire system as single unit
       !! For fragmented calculations, currently assumes monomer-based fragmentation
+      !! If molecule_index is provided, uses that specific molecule from multi-molecule mode
       type(mqc_config_t), intent(in) :: mqc_config
       type(system_geometry_t), intent(out) :: sys_geom
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
+      integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
 
       integer :: i
       logical :: use_angstrom
 
       stat = 0
-
-      ! Check if geometry is loaded
-      if (mqc_config%geometry%natoms == 0) then
-         stat = 1
-         errmsg = "No geometry loaded in mqc_config"
-         return
-      end if
 
       ! Determine units
       use_angstrom = .true.
@@ -71,15 +83,32 @@ contains
          end if
       end if
 
-      if (mqc_config%nfrag == 0) then
-         ! Unfragmented calculation: entire system is one "monomer"
-         call geometry_to_system_unfragmented(mqc_config%geometry, sys_geom, use_angstrom)
+      ! Handle multi-molecule vs single molecule mode
+      if (present(molecule_index)) then
+         ! Multi-molecule mode: extract specific molecule
+         if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) then
+            stat = 1
+            errmsg = "Invalid molecule_index in multi-molecule mode"
+            return
+         end if
+         call molecule_to_system_geometry(mqc_config%molecules(molecule_index), sys_geom, use_angstrom, stat, errmsg)
       else
-         ! Fragmented calculation with explicit fragments
-         ! For now, we'll try to infer monomer size from first fragment
-         ! TODO: This is a temporary solution - need better fragmentation support
-         call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, stat, errmsg)
-         if (stat /= 0) return
+         ! Single molecule mode (backward compatible)
+         ! Check if geometry is loaded
+         if (mqc_config%geometry%natoms == 0) then
+            stat = 1
+            errmsg = "No geometry loaded in mqc_config"
+            return
+         end if
+
+         if (mqc_config%nfrag == 0) then
+            ! Unfragmented calculation: entire system is one "monomer"
+            call geometry_to_system_unfragmented(mqc_config%geometry, sys_geom, use_angstrom)
+         else
+            ! Fragmented calculation with explicit fragments
+            call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, stat, errmsg)
+            if (stat /= 0) return
+         end if
       end if
 
    end subroutine config_to_system_geometry
@@ -185,6 +214,89 @@ contains
       end if
 
    end subroutine geometry_to_system_fragmented
+
+   subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, stat, errmsg)
+      !! Convert a molecule_t to system_geometry_t
+      !! Handles both unfragmented (nfrag=0) and fragmented molecules
+      use mqc_config_parser, only: molecule_t
+
+      type(molecule_t), intent(in) :: mol
+      type(system_geometry_t), intent(out) :: sys_geom
+      logical, intent(in) :: use_angstrom
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      integer :: i, j, atoms_in_first_frag, max_frag_size
+      logical :: all_same_size
+
+      stat = 0
+
+      ! Check if geometry is loaded
+      if (mol%geometry%natoms == 0) then
+         stat = 1
+         errmsg = "No geometry loaded in molecule"
+         return
+      end if
+
+      if (mol%nfrag == 0) then
+         ! Unfragmented molecule
+         call geometry_to_system_unfragmented(mol%geometry, sys_geom, use_angstrom)
+      else
+         ! Fragmented molecule
+         sys_geom%n_monomers = mol%nfrag
+         sys_geom%total_atoms = mol%geometry%natoms
+
+         ! Allocate fragment info arrays
+         allocate (sys_geom%fragment_sizes(mol%nfrag))
+
+         ! Get fragment sizes
+         max_frag_size = 0
+         atoms_in_first_frag = size(mol%fragments(1)%indices)
+         all_same_size = .true.
+
+         do i = 1, mol%nfrag
+            sys_geom%fragment_sizes(i) = size(mol%fragments(i)%indices)
+            max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
+            if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
+               all_same_size = .false.
+            end if
+         end do
+
+         ! Allocate fragment_atoms array
+         allocate (sys_geom%fragment_atoms(max_frag_size, mol%nfrag))
+         sys_geom%fragment_atoms = -1  ! Initialize with invalid index
+
+         ! Store fragment atom indices (0-indexed from input file)
+         do i = 1, mol%nfrag
+            do j = 1, sys_geom%fragment_sizes(i)
+               sys_geom%fragment_atoms(j, i) = mol%fragments(i)%indices(j)
+            end do
+         end do
+
+         ! Set atoms_per_monomer: use common size if identical, else 0
+         if (all_same_size) then
+            sys_geom%atoms_per_monomer = atoms_in_first_frag
+         else
+            sys_geom%atoms_per_monomer = 0  ! Signal variable-sized fragments
+         end if
+
+         allocate (sys_geom%element_numbers(sys_geom%total_atoms))
+         allocate (sys_geom%coordinates(3, sys_geom%total_atoms))
+
+         ! Convert element symbols to atomic numbers
+         do i = 1, sys_geom%total_atoms
+            sys_geom%element_numbers(i) = element_symbol_to_number(mol%geometry%elements(i))
+         end do
+
+         ! Store coordinates (convert to Bohr if needed)
+         if (use_angstrom) then
+            sys_geom%coordinates = to_bohr(mol%geometry%coords)
+         else
+            sys_geom%coordinates = mol%geometry%coords
+         end if
+      end if
+
+   end subroutine molecule_to_system_geometry
 
    subroutine geometry_to_system(geom, sys_geom, use_angstrom)
       !! Simple conversion for backward compatibility

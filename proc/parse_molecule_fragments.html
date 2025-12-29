@@ -1,0 +1,661 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>parse_molecule_fragments &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>parse_molecule_fragments
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">7 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_config_parser.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_config_parser.f90.html'>mqc_config_parser.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+            <li class="breadcrumb-item active" aria-current="page">parse_molecule_fragments</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/parse_molecule_fragments.html#src">parse_molecule_fragments</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine parse_molecule_fragments(unit, mol, stat, errmsg)  
+</h2>
+    
+
+    <p>Parse %fragments section for a molecule</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unit~17"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>unit</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol~7"></span>
+              type(<a href='../type/molecule_t.html'>molecule_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stat~21"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stat</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-errmsg~21"></span>
+              character(len=:),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>errmsg</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~parse_molecule_fragments~~CallsGraph Pages: 1 -->
+<svg id="procparse_molecule_fragmentsCallsGraph" width="628pt" height="113pt"
+ viewBox="0.00 0.00 628.00 113.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~parse_molecule_fragments~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 109)">
+<title>proc~~parse_molecule_fragments~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-109 624,-109 624,4 -4,4"/>
+<!-- proc~parse_molecule_fragments -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node1" class="node">
+<title>proc~parse_molecule_fragments</title>
+<polygon fill="none" stroke="black" points="157,-65 0,-65 0,-41 157,-41 157,-65"/>
+<text text-anchor="middle" x="78.5" y="-50.6" font-family="Helvetica,sans-Serif" font-size="10.50">parse_molecule_fragments</text>
+</g>
+<!-- proc~parse_fragments_generic -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node2" class="node">
+<title>proc~parse_fragments_generic</title>
+<g id="a_proc~~parse_molecule_fragments~~CallsGraph_node2"><a xlink:href="../proc/parse_fragments_generic.html" xlink:title="parse_fragments_generic">
+<polygon fill="#d9534f" stroke="#d9534f" points="341,-65 193,-65 193,-41 341,-41 341,-65"/>
+<text text-anchor="middle" x="267" y="-50.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_fragments_generic</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecule_fragments&#45;&gt;proc~parse_fragments_generic -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge1" class="edge">
+<title>proc~parse_molecule_fragments&#45;&gt;proc~parse_fragments_generic</title>
+<path fill="none" stroke="#ff0000" d="M157.24,-53C165.63,-53 174.18,-53 182.63,-53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.86,-56.5 192.86,-53 182.86,-49.5 182.86,-56.5"/>
+</g>
+<!-- proc~parse_fragment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node3" class="node">
+<title>proc~parse_fragment</title>
+<g id="a_proc~~parse_molecule_fragments~~CallsGraph_node3"><a xlink:href="../proc/parse_fragment.html" xlink:title="parse_fragment">
+<polygon fill="#d9534f" stroke="#d9534f" points="474,-25 377,-25 377,-1 474,-1 474,-25"/>
+<text text-anchor="middle" x="425.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_fragment</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~parse_fragment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge2" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~parse_fragment</title>
+<path fill="none" stroke="#ff0000" d="M314.96,-41C331.44,-36.79 350.14,-32.01 367.36,-27.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="368.49,-30.93 377.31,-25.06 366.75,-24.15 368.49,-30.93"/>
+</g>
+<!-- proc~skip_to_end -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node4" class="node">
+<title>proc~skip_to_end</title>
+<g id="a_proc~~parse_molecule_fragments~~CallsGraph_node4"><a xlink:href="../proc/skip_to_end.html" xlink:title="skip_to_end">
+<polygon fill="#d9534f" stroke="#d9534f" points="463,-105 388,-105 388,-81 463,-81 463,-105"/>
+<text text-anchor="middle" x="425.5" y="-90.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">skip_to_end</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~skip_to_end -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge3" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~skip_to_end</title>
+<path fill="none" stroke="#ff0000" d="M314.96,-65C334.9,-70.1 358.1,-76.03 378,-81.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="377.22,-84.53 387.77,-83.61 378.95,-77.75 377.22,-84.53"/>
+</g>
+<!-- proc~strip_comment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node5" class="node">
+<title>proc~strip_comment</title>
+<g id="a_proc~~parse_molecule_fragments~~CallsGraph_node5"><a xlink:href="../proc/strip_comment.html" xlink:title="strip_comment">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="611,-66 519,-66 519,-42 611,-42 611,-66"/>
+<text text-anchor="middle" x="565" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">strip_comment</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge4" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M341.17,-53.25C393,-53.42 461.46,-53.65 508.75,-53.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="508.79,-57.31 518.8,-53.85 508.82,-50.31 508.79,-57.31"/>
+</g>
+<!-- proc~parse_fragment&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge6" class="edge">
+<title>proc~parse_fragment&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M467.01,-25.08C481.57,-29.42 498.17,-34.37 513.47,-38.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="512.72,-42.36 523.3,-41.87 514.72,-35.65 512.72,-42.36"/>
+</g>
+<!-- proc~parse_indices_line -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_node6" class="node">
+<title>proc~parse_indices_line</title>
+<g id="a_proc~~parse_molecule_fragments~~CallsGraph_node6"><a xlink:href="../proc/parse_indices_line.html" xlink:title="parse_indices_line">
+<polygon fill="#d9534f" stroke="#d9534f" points="620,-24 510,-24 510,0 620,0 620,-24"/>
+<text text-anchor="middle" x="565" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_indices_line</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragment&#45;&gt;proc~parse_indices_line -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge5" class="edge">
+<title>proc~parse_fragment&#45;&gt;proc~parse_indices_line</title>
+<path fill="none" stroke="#ff0000" d="M474.2,-12.65C482.46,-12.59 491.15,-12.53 499.76,-12.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="499.81,-15.97 509.78,-12.39 499.76,-8.97 499.81,-15.97"/>
+</g>
+<!-- proc~skip_to_end&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecule_fragments~~CallsGraph_edge7" class="edge">
+<title>proc~skip_to_end&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#00ff00" d="M463.35,-82.55C478.1,-78.36 495.38,-73.46 511.41,-68.92"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="512.54,-72.24 521.2,-66.14 510.63,-65.5 512.54,-72.24"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~parse_molecule_fragments~~CalledByGraph Pages: 1 -->
+<svg id="procparse_molecule_fragmentsCalledByGraph" width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 28.10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~parse_molecule_fragments~~CalledByGraph" class="graph" transform="scale(0.88 0.88) rotate(0) translate(4 28)">
+<title>proc~~parse_molecule_fragments~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 726,-28 726,4 -4,4"/>
+<!-- proc~parse_molecule_fragments -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_node1" class="node">
+<title>proc~parse_molecule_fragments</title>
+<polygon fill="none" stroke="black" points="722,-24 565,-24 565,0 722,0 722,-24"/>
+<text text-anchor="middle" x="643.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">parse_molecule_fragments</text>
+</g>
+<!-- proc~parse_single_molecule -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_node2" class="node">
+<title>proc~parse_single_molecule</title>
+<g id="a_proc~~parse_molecule_fragments~~CalledByGraph_node2"><a xlink:href="../proc/parse_single_molecule.html" xlink:title="parse_single_molecule">
+<polygon fill="#d9534f" stroke="#d9534f" points="529,-24 395,-24 395,0 529,0 529,-24"/>
+<text text-anchor="middle" x="462" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_single_molecule</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~parse_molecule_fragments -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_edge1" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~parse_molecule_fragments</title>
+<path fill="none" stroke="#ff0000" d="M529.07,-12C537.41,-12 546.04,-12 554.64,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="554.71,-15.5 564.71,-12 554.71,-8.5 554.71,-15.5"/>
+</g>
+<!-- proc~parse_molecules_section -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_node3" class="node">
+<title>proc~parse_molecules_section</title>
+<g id="a_proc~~parse_molecule_fragments~~CalledByGraph_node3"><a xlink:href="../proc/parse_molecules_section.html" xlink:title="parse_molecules_section">
+<polygon fill="#d9534f" stroke="#d9534f" points="359,-24 213,-24 213,0 359,0 359,-24"/>
+<text text-anchor="middle" x="286" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_molecules_section</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecules_section&#45;&gt;proc~parse_single_molecule -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_edge2" class="edge">
+<title>proc~parse_molecules_section&#45;&gt;proc~parse_single_molecule</title>
+<path fill="none" stroke="#ff0000" d="M359.03,-12C367.47,-12 376.11,-12 384.6,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="384.88,-15.5 394.88,-12 384.88,-8.5 384.88,-15.5"/>
+</g>
+<!-- proc~read_mqc_file -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_node4" class="node">
+<title>proc~read_mqc_file</title>
+<g id="a_proc~~parse_molecule_fragments~~CalledByGraph_node4"><a xlink:href="../proc/read_mqc_file.html" xlink:title="read_mqc_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="177,-24 90,-24 90,0 177,0 177,-24"/>
+<text text-anchor="middle" x="133.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_mqc_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_mqc_file&#45;&gt;proc~parse_molecules_section -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_edge3" class="edge">
+<title>proc~read_mqc_file&#45;&gt;proc~parse_molecules_section</title>
+<path fill="none" stroke="#ff0000" d="M177.22,-12C185.22,-12 193.82,-12 202.55,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="202.84,-15.5 212.84,-12 202.84,-8.5 202.84,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_node5" class="node">
+<title>program~main</title>
+<g id="a_proc~~parse_molecule_fragments~~CalledByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_mqc_file -->
+<g id="proc~~parse_molecule_fragments~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~read_mqc_file</title>
+<path fill="none" stroke="#ff0000" d="M54.1,-12C61.83,-12 70.6,-12 79.4,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.68,-15.5 89.68,-12 79.68,-8.5 79.68,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocparse_molecule_fragmentsCalledByGraph = svgPanZoom('#procparse_molecule_fragmentsCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">parse_molecule_fragments</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Parse %fragments section for a molecule</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unit</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">molecule_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span>
+<span class="nb">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">errmsg</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">parse_fragments_generic</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">parse_molecule_fragments</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-29 08:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

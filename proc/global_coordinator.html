@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.6% of total for procedures.">133 statements</a>
+                 title=" 3.2% of total for procedures.">133 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -141,7 +141,7 @@
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-current_fragment">current_fragment</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-dummy_msg">dummy_msg</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-finished_nodes">finished_nodes</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_idx~6">fragment_idx</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_idx~4">fragment_idx</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-has_pending">has_pending</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_dummy">local_dummy</a>
@@ -149,7 +149,7 @@
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_status">local_status</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-req~3">req</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-request_source">request_source</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results~4">results</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results">results</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-results_received">results_received</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-status~3">status</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-worker_fragment_map">worker_fragment_map</a>
@@ -211,7 +211,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -226,7 +226,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -241,7 +241,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -256,7 +256,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~7"></span>
+              <span class="anchor" id="variable-polymers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -271,7 +271,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -286,7 +286,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -301,7 +301,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~2"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -316,7 +316,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~13"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -331,7 +331,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1188,65 +1188,90 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~global_coordinator~~CalledByGraph Pages: 1 -->
-<svg id="procglobal_coordinatorCalledByGraph" width="540pt" height="32pt"
- viewBox="0.00 0.00 540.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~global_coordinator~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<svg id="procglobal_coordinatorCalledByGraph" width="641pt" height="44pt"
+ viewBox="0.00 0.00 641.00 43.69" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~global_coordinator~~CalledByGraph" class="graph" transform="scale(0.84 0.84) rotate(0) translate(4 48)">
 <title>proc~~global_coordinator~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 536,-28 536,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-48 759,-48 759,4 -4,4"/>
 <!-- proc~global_coordinator -->
 <g id="proc~~global_coordinator~~CalledByGraph_node1" class="node">
 <title>proc~global_coordinator</title>
-<polygon fill="none" stroke="black" points="532,-24 419,-24 419,0 532,0 532,-24"/>
-<text text-anchor="middle" x="475.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">global_coordinator</text>
+<polygon fill="none" stroke="black" points="755,-44 642,-44 642,-20 755,-20 755,-44"/>
+<text text-anchor="middle" x="698.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">global_coordinator</text>
 </g>
 <!-- proc~run_fragmented_calculation -->
 <g id="proc~~global_coordinator~~CalledByGraph_node2" class="node">
 <title>proc~run_fragmented_calculation</title>
 <g id="a_proc~~global_coordinator~~CalledByGraph_node2"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="383,-24 220,-24 220,0 383,0 383,-24"/>
-<text text-anchor="middle" x="301.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-44 443,-44 443,-20 606,-20 606,-44"/>
+<text text-anchor="middle" x="524.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
 <g id="proc~~global_coordinator~~CalledByGraph_edge1" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ff0000" d="M383.21,-12C391.78,-12 400.41,-12 408.77,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="408.81,-15.5 418.81,-12 408.81,-8.5 408.81,-15.5"/>
+<path fill="none" stroke="#ff0000" d="M606.21,-32C614.78,-32 623.41,-32 631.77,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="631.81,-35.5 641.81,-32 631.81,-28.5 631.81,-35.5"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~global_coordinator~~CalledByGraph_node3" class="node">
 <title>proc~run_calculation</title>
 <g id="a_proc~~global_coordinator~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="184,-24 90,-24 90,0 184,0 184,-24"/>
-<text text-anchor="middle" x="137" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-44 313,-44 313,-20 407,-20 407,-44"/>
+<text text-anchor="middle" x="360" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
 <g id="proc~~global_coordinator~~CalledByGraph_edge2" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M184.13,-12C192.24,-12 200.94,-12 209.78,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="209.8,-15.5 219.8,-12 209.8,-8.5 209.8,-15.5"/>
+<path fill="none" stroke="#ff0000" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~global_coordinator~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~global_coordinator~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~global_coordinator~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
 </g>
 <!-- program~main -->
-<g id="proc~~global_coordinator~~CalledByGraph_node4" class="node">
+<g id="proc~~global_coordinator~~CalledByGraph_node5" class="node">
 <title>program~main</title>
-<g id="a_proc~~global_coordinator~~CalledByGraph_node4"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
-<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~global_coordinator~~CalledByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~global_coordinator~~CalledByGraph_edge3" class="edge">
+<g id="proc~~global_coordinator~~CalledByGraph_edge4" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.14,-12C61.95,-12 70.81,-12 79.77,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="79.86,-15.5 89.86,-12 79.86,-8.5 79.86,-15.5"/>
+<path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~global_coordinator~~CalledByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
 </g>
 </g>
 </svg>
-</div>          <div>
+</div>                <script>
+                  var panprocglobal_coordinatorCalledByGraph = svgPanZoom('#procglobal_coordinatorCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -1429,7 +1454,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~6"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1565,7 +1590,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
+              <span class="anchor" id="variable-results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -1886,7 +1911,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 06:32 +0000             </p>
+ on 2025-12-29 08:26 +0000             </p>
           </div>
         </div>
         <br>

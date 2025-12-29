@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.5% of total for modules and submodules.">149 statements</a>
+                 title=" 5.0% of total for modules and submodules.">225 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -173,6 +173,7 @@
             <a class="list-group-item" href="../module/mqc_config_adapter.html#proc-geometry_to_system">geometry_to_system</a>
             <a class="list-group-item" href="../module/mqc_config_adapter.html#proc-geometry_to_system_fragmented">geometry_to_system_fragmented</a>
             <a class="list-group-item" href="../module/mqc_config_adapter.html#proc-geometry_to_system_unfragmented">geometry_to_system_unfragmented</a>
+            <a class="list-group-item" href="../module/mqc_config_adapter.html#proc-molecule_to_system_geometry">molecule_to_system_geometry</a>
         </div>
       </div>
     </div>
@@ -201,10 +202,10 @@ Convert log level string to integer</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -712,7 +713,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -810,12 +811,13 @@ This function uses the pic_logger constants</p>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-config_to_driver"></span> <h3>public  subroutine <a href='../proc/config_to_driver.html'>config_to_driver</a>(mqc_config, driver_config)  
+    <div class="card-header codesum"><span class="anchor" id="proc-config_to_driver"></span> <h3>public  subroutine <a href='../proc/config_to_driver.html'>config_to_driver</a>(mqc_config, driver_config, molecule_index)  
 </h3></div>
     <div class="card-body">
           
   <p>Convert mqc_config_t to minimal driver_config_t
-Extracts only the fields needed by the driver</p>
+Extracts only the fields needed by the driver
+If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -858,6 +860,21 @@ Extracts only the fields needed by the driver</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-molecule_index"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>molecule_index</strong></td>
+            <td>
+<p>Which molecule to use (for multi-molecule mode)</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -866,13 +883,14 @@ Extracts only the fields needed by the driver</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-config_to_system_geometry"></span> <h3>public  subroutine <a href='../proc/config_to_system_geometry.html'>config_to_system_geometry</a>(mqc_config, sys_geom, stat, errmsg)  
+    <div class="card-header codesum"><span class="anchor" id="proc-config_to_system_geometry"></span> <h3>public  subroutine <a href='../proc/config_to_system_geometry.html'>config_to_system_geometry</a>(mqc_config, sys_geom, stat, errmsg, molecule_index)  
 </h3></div>
     <div class="card-body">
           
   <p>Convert mqc_config_t geometry to system_geometry_t
 For unfragmented calculations (nfrag=0), treats entire system as single unit
-For fragmented calculations, currently assumes monomer-based fragmentation</p>
+For fragmented calculations, currently assumes monomer-based fragmentation
+If molecule_index is provided, uses that specific molecule from multi-molecule mode</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -902,7 +920,7 @@ For fragmented calculations, currently assumes monomer-based fragmentation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -917,7 +935,7 @@ For fragmented calculations, currently assumes monomer-based fragmentation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~7"></span>
+              <span class="anchor" id="variable-stat"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -932,7 +950,7 @@ For fragmented calculations, currently assumes monomer-based fragmentation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~6"></span>
+              <span class="anchor" id="variable-errmsg"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -943,6 +961,21 @@ For fragmented calculations, currently assumes monomer-based fragmentation</p>
             <td><strong>errmsg</strong></td>
             <td>
 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-molecule_index~2"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>molecule_index</strong></td>
+            <td>
+<p>Which molecule to use (for multi-molecule mode)</p>
             </td>
         </tr>
     </tbody>
@@ -973,7 +1006,7 @@ Deprecated: use config_to_system_geometry instead</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~4"></span>
+              <span class="anchor" id="variable-geom~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -988,7 +1021,7 @@ Deprecated: use config_to_system_geometry instead</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~5"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1003,7 +1036,7 @@ Deprecated: use config_to_system_geometry instead</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_angstrom~4"></span>
+              <span class="anchor" id="variable-use_angstrom~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -1059,7 +1092,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~3"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1089,7 +1122,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~8"></span>
+              <span class="anchor" id="variable-stat~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1104,7 +1137,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~7"></span>
+              <span class="anchor" id="variable-errmsg~2"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -1145,7 +1178,7 @@ Treats entire system as a single monomer</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~3"></span>
+              <span class="anchor" id="variable-geom"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -1160,7 +1193,7 @@ Treats entire system as a single monomer</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~2"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1195,6 +1228,107 @@ Treats entire system as a single monomer</p>
     </div>
   </div>
 
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-molecule_to_system_geometry"></span> <h3>private  subroutine <a href='../proc/molecule_to_system_geometry.html'>molecule_to_system_geometry</a>(mol, sys_geom, use_angstrom, stat, errmsg)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Convert a molecule_t to system_geometry_t
+Handles both unfragmented (nfrag=0) and fragmented molecules</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol~3"></span>
+              type(<a href='../type/molecule_t.html'>molecule_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mol</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~4"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_angstrom~4"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_angstrom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stat~3"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stat</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-errmsg~3"></span>
+              character(len=:),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>errmsg</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
         </section>
         <br>
 
@@ -1218,7 +1352,7 @@ Treats entire system as a single monomer</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 06:32 +0000             </p>
+ on 2025-12-29 08:26 +0000             </p>
           </div>
         </div>
         <br>

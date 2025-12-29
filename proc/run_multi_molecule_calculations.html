@@ -1,0 +1,2449 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>run_multi_molecule_calculations &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>run_multi_molecule_calculations
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 2.7% of total for procedures.">112 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/main.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/main.f90.html'>main.f90</a></li>
+                <li class="breadcrumb-item"><a href='../program/main.html'>main</a></li>
+            <li class="breadcrumb-item active" aria-current="page">run_multi_molecule_calculations</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-color">color</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-config~14">config</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-errmsg~29">errmsg</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-has_fragmented_molecules">has_fragmented_molecules</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-imol~2">imol</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_comm">mol_comm</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_name">mol_name</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-mol_node_comm">mol_node_comm</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-molecules_processed">molecules_processed</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-my_rank">my_rank</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-num_ranks">num_ranks</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-stat~29">stat</a>
+            <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#variable-sys_geom~11">sys_geom</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/run_multi_molecule_calculations.html#src">run_multi_molecule_calculations</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2> subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)  
+</h2>
+    
+
+    <p>Run calculations for multiple molecules with MPI parallelization
+Each molecule is independent, so assign one molecule per rank</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~6"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-node_comm~6"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>node_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_config~5"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mqc_config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_multi_molecule_calculations~~CallsGraph Pages: 1 -->
+<svg id="procrun_multi_molecule_calculationsCallsGraph" width="641pt" height="979pt"
+ viewBox="0.00 0.00 641.00 978.54" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph" class="graph" transform="scale(0.39 0.39) rotate(0) translate(4 2488.92)">
+<title>proc~~run_multi_molecule_calculations~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-2488.92 1629,-2488.92 1629,4 -4,4"/>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node1" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<polygon fill="none" stroke="black" points="187,-1854.92 0,-1854.92 0,-1830.92 187,-1830.92 187,-1854.92"/>
+<text text-anchor="middle" x="93.5" y="-1840.52" font-family="Helvetica,sans-Serif" font-size="10.50">run_multi_molecule_calculations</text>
+</g>
+<!-- abort_comm -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node2" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="596,-2284.92 516,-2284.92 516,-2260.92 596,-2260.92 596,-2284.92"/>
+<text text-anchor="middle" x="556" y="-2270.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;abort_comm -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge1" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M102,-1854.98C136.44,-1909.38 285.56,-2134.01 467,-2246.92 478.75,-2254.23 492.66,-2259.57 505.9,-2263.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="505.29,-2266.9 515.86,-2266.12 507.11,-2260.14 505.29,-2266.9"/>
+</g>
+<!-- barrier -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node3" class="node">
+<title>barrier</title>
+<polygon fill="#777777" stroke="#777777" points="354,-2364.92 300,-2364.92 300,-2340.92 354,-2340.92 354,-2364.92"/>
+<text text-anchor="middle" x="327" y="-2350.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">barrier</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;barrier -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge2" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;barrier</title>
+<path fill="none" stroke="#ff0000" d="M96.06,-1855.15C105.03,-1923.42 152.03,-2256.81 223,-2326.92 240.44,-2344.15 267.55,-2350.49 289.57,-2352.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="289.37,-2356.11 299.6,-2353.33 289.87,-2349.13 289.37,-2356.11"/>
+</g>
+<!-- error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node4" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-496.92 1282.5,-496.92 1282.5,-472.92 1336.5,-472.92 1336.5,-496.92"/>
+<text text-anchor="middle" x="1309.5" y="-482.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M94.85,-1830.9C99.76,-1674.12 160.44,-35.92 555,-35.92 555,-35.92 555,-35.92 784.5,-35.92 944.94,-35.92 1029.36,56.31 1145,-54.92 1208.05,-115.56 1125.56,-379.25 1181,-446.92 1202.9,-473.65 1242.76,-482.11 1272.1,-484.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1272.18,-488.04 1282.38,-485.17 1272.61,-481.06 1272.18,-488.04"/>
+</g>
+<!-- info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node5" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-2047.92 1282.5,-2047.92 1282.5,-2023.92 1336.5,-2023.92 1336.5,-2047.92"/>
+<text text-anchor="middle" x="1309.5" y="-2033.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge4" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M97.04,-1855C106.6,-1898.08 144.01,-2046.5 223,-2138.92 331.24,-2265.55 388.41,-2312.92 555,-2312.92 555,-2312.92 555,-2312.92 784.5,-2312.92 946.02,-2312.92 1006.54,-2350.08 1145,-2266.92 1228.8,-2216.58 1281.1,-2104.96 1300.25,-2057.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1303.6,-2058.74 1304.02,-2048.16 1297.09,-2056.17 1303.6,-2058.74"/>
+</g>
+<!-- proc~config_to_driver -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node6" class="node">
+<title>proc~config_to_driver</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node6"><a xlink:href="../proc/config_to_driver.html" xlink:title="config_to_driver">
+<polygon fill="#d9534f" stroke="#d9534f" points="376,-1875.92 278,-1875.92 278,-1851.92 376,-1851.92 376,-1875.92"/>
+<text text-anchor="middle" x="327" y="-1861.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">config_to_driver</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~config_to_driver -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge5" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~config_to_driver</title>
+<path fill="none" stroke="#ff0000" d="M187.33,-1851.34C214.51,-1853.8 243.46,-1856.43 267.83,-1858.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="267.7,-1862.14 277.98,-1859.56 268.34,-1855.17 267.7,-1862.14"/>
+</g>
+<!-- proc~config_to_system_geometry -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node7" class="node">
+<title>proc~config_to_system_geometry</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node7"><a xlink:href="../proc/config_to_system_geometry.html" xlink:title="config_to_system_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="407.5,-2406.92 246.5,-2406.92 246.5,-2382.92 407.5,-2382.92 407.5,-2406.92"/>
+<text text-anchor="middle" x="327" y="-2392.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">config_to_system_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~config_to_system_geometry -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge6" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~config_to_system_geometry</title>
+<path fill="none" stroke="#ff0000" d="M95.68,-1854.94C102.97,-1926.71 144.14,-2297.87 223,-2373.92 227.15,-2377.91 231.84,-2381.25 236.87,-2384.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.73,-2387.34 246.27,-2388.41 238.69,-2381 235.73,-2387.34"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node8" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node8"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="374,-1833.92 280,-1833.92 280,-1809.92 374,-1809.92 374,-1833.92"/>
+<text text-anchor="middle" x="327" y="-1819.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge7" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M187.33,-1834.5C215.17,-1831.97 244.86,-1829.28 269.6,-1827.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="270.23,-1830.49 279.88,-1826.1 269.6,-1823.52 270.23,-1830.49"/>
+</g>
+<!-- proc~system_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node9" class="node">
+<title>proc~system_destroy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node9"><a xlink:href="../proc/system_destroy.html" xlink:title="system_geometry_t%system_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="431,-1247.92 223,-1247.92 223,-1223.92 431,-1223.92 431,-1247.92"/>
+<text text-anchor="middle" x="327" y="-1233.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">system_geometry_t%system_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~system_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge8" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~system_destroy</title>
+<path fill="none" stroke="#ff0000" d="M95.48,-1830.82C101.81,-1755.21 139.53,-1347.9 223,-1261.92 226.19,-1258.63 229.74,-1255.73 233.54,-1253.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.32,-1256.19 242.21,-1248.14 231.81,-1250.14 235.32,-1256.19"/>
+</g>
+<!-- to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node10" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-1143.92 1282.5,-1143.92 1282.5,-1119.92 1336.5,-1119.92 1336.5,-1143.92"/>
+<text text-anchor="middle" x="1309.5" y="-1129.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge9" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M95.79,-1830.77C104.19,-1752.91 153.2,-1323.84 223,-1214.92 295.56,-1101.67 341.05,-1083.1 467,-1035.92 749.27,-930.18 857.42,-928.6 1145,-1018.92 1152.83,-1021.38 1239.38,-1082.63 1283.28,-1113.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1281.28,-1116.77 1291.45,-1119.73 1285.34,-1111.07 1281.28,-1116.77"/>
+</g>
+<!-- verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node11" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="1061,-1183.92 1006,-1183.92 1006,-1159.92 1061,-1159.92 1061,-1183.92"/>
+<text text-anchor="middle" x="1033.5" y="-1169.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge10" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;verbose</title>
+<path fill="none" stroke="#ff0000" d="M104.41,-1830.76C157.26,-1766.61 413.48,-1463.83 681,-1289.92 778.37,-1226.62 810.22,-1220.42 922,-1188.92 946.08,-1182.13 973.93,-1177.87 995.64,-1175.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="996.21,-1178.76 1005.77,-1174.18 995.44,-1171.81 996.21,-1178.76"/>
+</g>
+<!-- proc~geometry_to_system_fragmented -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node13" class="node">
+<title>proc~geometry_to_system_fragmented</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node13"><a xlink:href="../proc/geometry_to_system_fragmented.html" xlink:title="geometry_to_system_fragmented">
+<polygon fill="#d9534f" stroke="#d9534f" points="879,-2484.92 688,-2484.92 688,-2460.92 879,-2460.92 879,-2484.92"/>
+<text text-anchor="middle" x="783.5" y="-2470.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">geometry_to_system_fragmented</text>
+</a>
+</g>
+</g>
+<!-- proc~config_to_system_geometry&#45;&gt;proc~geometry_to_system_fragmented -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge11" class="edge">
+<title>proc~config_to_system_geometry&#45;&gt;proc~geometry_to_system_fragmented</title>
+<path fill="none" stroke="#00ffff" d="M398.02,-2406.93C480.18,-2421.03 616.11,-2444.36 702.39,-2459.17"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="701.95,-2462.64 712.4,-2460.89 703.14,-2455.74 701.95,-2462.64"/>
+</g>
+<!-- proc~geometry_to_system_unfragmented -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node14" class="node">
+<title>proc~geometry_to_system_unfragmented</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node14"><a xlink:href="../proc/geometry_to_system_unfragmented.html" xlink:title="geometry_to_system_unfragmented">
+<polygon fill="#d9534f" stroke="#d9534f" points="886,-2366.92 681,-2366.92 681,-2342.92 886,-2342.92 886,-2366.92"/>
+<text text-anchor="middle" x="783.5" y="-2352.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">geometry_to_system_unfragmented</text>
+</a>
+</g>
+</g>
+<!-- proc~config_to_system_geometry&#45;&gt;proc~geometry_to_system_unfragmented -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge12" class="edge">
+<title>proc~config_to_system_geometry&#45;&gt;proc~geometry_to_system_unfragmented</title>
+<path fill="none" stroke="#00ffff" d="M399.27,-2382.89C420.96,-2379.57 444.91,-2376.24 467,-2373.92 534.32,-2366.82 610.02,-2362.15 670.4,-2359.22"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="670.89,-2362.7 680.72,-2358.72 670.56,-2355.7 670.89,-2362.7"/>
+</g>
+<!-- proc~molecule_to_system_geometry -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node15" class="node">
+<title>proc~molecule_to_system_geometry</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node15"><a xlink:href="../proc/molecule_to_system_geometry.html" xlink:title="molecule_to_system_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="645,-2406.92 467,-2406.92 467,-2382.92 645,-2382.92 645,-2406.92"/>
+<text text-anchor="middle" x="556" y="-2392.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecule_to_system_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~config_to_system_geometry&#45;&gt;proc~molecule_to_system_geometry -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge13" class="edge">
+<title>proc~config_to_system_geometry&#45;&gt;proc~molecule_to_system_geometry</title>
+<path fill="none" stroke="#00ffff" d="M407.71,-2394.92C423.58,-2394.92 440.42,-2394.92 456.82,-2394.92"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="456.97,-2398.42 466.97,-2394.92 456.97,-2391.42 456.97,-2398.42"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;abort_comm -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge14" class="edge">
+<title>proc~run_calculation&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#0066ff" d="M374.06,-1819.73C394.42,-1821.34 416.89,-1827.13 431,-1842.92 491.06,-1910.12 409.89,-2177.18 467,-2246.92 476.6,-2258.63 491.2,-2265.23 505.77,-2268.9"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="505.28,-2272.37 515.79,-2271 506.72,-2265.52 505.28,-2272.37"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge15" class="edge">
+<title>proc~run_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#0066ff" d="M330.33,-1809.61C341.74,-1749.3 392.68,-1478.97 431,-1256.92 504.52,-830.91 334.45,-575.35 681,-316.92 847.65,-192.64 981.13,-248.01 1145,-375.92 1172.89,-397.68 1153.84,-424.24 1181,-446.92 1206.86,-468.51 1244.65,-477.83 1272.37,-481.86"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1272.09,-485.35 1282.46,-483.15 1272.99,-478.41 1272.09,-485.35"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge16" class="edge">
+<title>proc~run_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#0066ff" d="M374.18,-1820.71C394.07,-1822.62 416.12,-1828.37 431,-1842.92 482.51,-1893.26 428.9,-1939.8 467,-2000.92 588.07,-2195.1 695.32,-2210.55 922,-2241.92 1020.18,-2255.5 1055.75,-2285.02 1145,-2241.92 1226.06,-2202.77 1279.23,-2101.75 1299.4,-2057.37"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1302.66,-2058.64 1303.51,-2048.08 1296.26,-2055.81 1302.66,-2058.64"/>
+</g>
+<!-- proc~run_calculation&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge20" class="edge">
+<title>proc~run_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#0066ff" d="M330.18,-1809.82C346.9,-1717.29 454.42,-1124.55 467,-1110.92 569.63,-999.7 997.99,-1010.99 1145,-1046.92 1197.89,-1059.84 1252.72,-1093.15 1283.54,-1114.03"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1281.71,-1117.02 1291.94,-1119.82 1285.69,-1111.26 1281.71,-1117.02"/>
+</g>
+<!-- omp_set_num_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node12" class="node">
+<title>omp_set_num_threads</title>
+<polygon fill="#777777" stroke="#777777" points="1099.5,-2207.92 967.5,-2207.92 967.5,-2183.92 1099.5,-2183.92 1099.5,-2207.92"/>
+<text text-anchor="middle" x="1033.5" y="-2193.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_set_num_threads</text>
+</g>
+<!-- proc~run_calculation&#45;&gt;omp_set_num_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge17" class="edge">
+<title>proc~run_calculation&#45;&gt;omp_set_num_threads</title>
+<path fill="none" stroke="#0066ff" d="M374.15,-1824.85C392.79,-1827.64 413.9,-1832.93 431,-1842.92 577.37,-1928.39 533.85,-2046.79 681,-2130.92 766.93,-2180.05 882.23,-2193.19 956.94,-2196.11"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="957.1,-2199.62 967.21,-2196.46 957.33,-2192.62 957.1,-2199.62"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node16" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node16"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="637.5,-1833.92 474.5,-1833.92 474.5,-1809.92 637.5,-1809.92 637.5,-1833.92"/>
+<text text-anchor="middle" x="556" y="-1819.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge18" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#0066ff" d="M374.21,-1821.92C400.07,-1821.92 433.21,-1821.92 464.05,-1821.92"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="464.4,-1825.42 474.4,-1821.92 464.4,-1818.42 464.4,-1825.42"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node17" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node17"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="644,-1143.92 468,-1143.92 468,-1119.92 644,-1119.92 644,-1143.92"/>
+<text text-anchor="middle" x="556" y="-1129.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge19" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#0066ff" d="M332.04,-1809.65C358.98,-1727.75 512.75,-1260.35 547.86,-1153.62"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="551.25,-1154.52 551.05,-1143.93 544.6,-1152.33 551.25,-1154.52"/>
+</g>
+<!-- proc~element_symbol_to_number -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node24" class="node">
+<title>proc~element_symbol_to_number</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node24"><a xlink:href="../proc/element_symbol_to_number.html" xlink:title="element_symbol_to_number">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1115,-2404.92 952,-2404.92 952,-2380.92 1115,-2380.92 1115,-2404.92"/>
+<text text-anchor="middle" x="1033.5" y="-2390.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_symbol_to_number</text>
+</a>
+</g>
+</g>
+<!-- proc~geometry_to_system_fragmented&#45;&gt;proc~element_symbol_to_number -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge21" class="edge">
+<title>proc~geometry_to_system_fragmented&#45;&gt;proc~element_symbol_to_number</title>
+<path fill="none" stroke="#ffff00" d="M808.24,-2460.84C835.19,-2447.58 880.76,-2426.52 922,-2413.92 930.05,-2411.45 938.53,-2409.23 947.06,-2407.22"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="948.08,-2410.58 957.07,-2404.97 946.54,-2403.75 948.08,-2410.58"/>
+</g>
+<!-- proc~to_bohr -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node31" class="node">
+<title>proc~to_bohr</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node31"><a xlink:href="../proc/to_bohr.html" xlink:title="to_bohr">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1060.5,-2446.92 1006.5,-2446.92 1006.5,-2422.92 1060.5,-2422.92 1060.5,-2446.92"/>
+<text text-anchor="middle" x="1033.5" y="-2432.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_bohr</text>
+</a>
+</g>
+</g>
+<!-- proc~geometry_to_system_fragmented&#45;&gt;proc~to_bohr -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge22" class="edge">
+<title>proc~geometry_to_system_fragmented&#45;&gt;proc~to_bohr</title>
+<path fill="none" stroke="#ffff00" d="M862.97,-2460.89C907.59,-2454.05 961.36,-2445.82 996.2,-2440.48"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="997.02,-2443.89 1006.37,-2438.92 995.96,-2436.97 997.02,-2443.89"/>
+</g>
+<!-- proc~geometry_to_system_unfragmented&#45;&gt;proc~element_symbol_to_number -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge23" class="edge">
+<title>proc~geometry_to_system_unfragmented&#45;&gt;proc~element_symbol_to_number</title>
+<path fill="none" stroke="#00ff00" d="M862.97,-2366.94C888.76,-2370.89 917.61,-2375.31 944.09,-2379.37"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="943.7,-2382.85 954.12,-2380.91 944.76,-2375.93 943.7,-2382.85"/>
+</g>
+<!-- proc~geometry_to_system_unfragmented&#45;&gt;proc~to_bohr -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge24" class="edge">
+<title>proc~geometry_to_system_unfragmented&#45;&gt;proc~to_bohr</title>
+<path fill="none" stroke="#00ff00" d="M808.24,-2366.99C835.19,-2380.25 880.76,-2401.31 922,-2413.92 946.23,-2421.32 974.29,-2426.61 996.07,-2430.03"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="995.8,-2433.53 1006.21,-2431.56 996.85,-2426.61 995.8,-2433.53"/>
+</g>
+<!-- proc~molecule_to_system_geometry&#45;&gt;proc~geometry_to_system_unfragmented -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge26" class="edge">
+<title>proc~molecule_to_system_geometry&#45;&gt;proc~geometry_to_system_unfragmented</title>
+<path fill="none" stroke="#00ffff" d="M624.66,-2382.91C649.74,-2378.47 678.39,-2373.38 704.33,-2368.78"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="705.27,-2372.17 714.5,-2366.98 704.04,-2365.28 705.27,-2372.17"/>
+</g>
+<!-- proc~molecule_to_system_geometry&#45;&gt;proc~element_symbol_to_number -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge25" class="edge">
+<title>proc~molecule_to_system_geometry&#45;&gt;proc~element_symbol_to_number</title>
+<path fill="none" stroke="#00ffff" d="M645.05,-2394.55C729.4,-2394.19 856.15,-2393.66 941.49,-2393.3"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="941.7,-2396.8 951.68,-2393.26 941.67,-2389.8 941.7,-2396.8"/>
+</g>
+<!-- proc~molecule_to_system_geometry&#45;&gt;proc~to_bohr -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge27" class="edge">
+<title>proc~molecule_to_system_geometry&#45;&gt;proc~to_bohr</title>
+<path fill="none" stroke="#00ffff" d="M645.03,-2404.45C657.11,-2405.67 669.36,-2406.86 681,-2407.92 795.95,-2418.35 932.3,-2428.07 996.13,-2432.46"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="996.25,-2435.97 1006.46,-2433.16 996.73,-2428.99 996.25,-2435.97"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge30" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#0000ff" d="M558.34,-1834.23C564,-1880.16 589.97,-2043.36 681,-2130.92 762.96,-2209.75 809.94,-2197.52 922,-2216.92 1019.66,-2233.82 1054.43,-2257.16 1145,-2216.92 1219.72,-2183.72 1274.74,-2097.64 1297.27,-2057.33"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1300.45,-2058.8 1302.17,-2048.34 1294.31,-2055.45 1300.45,-2058.8"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge41" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#0000ff" d="M563.71,-1809.73C595.21,-1753.93 734.71,-1521.42 922,-1427.92 1011.64,-1383.16 1061.24,-1449.89 1145,-1394.92 1235.85,-1335.29 1285.16,-1205.87 1301.9,-1154.04"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1305.33,-1154.8 1304.97,-1144.21 1298.65,-1152.7 1305.33,-1154.8"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge42" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;verbose</title>
+<path fill="none" stroke="#0000ff" d="M558.38,-1809.52C566.33,-1740.32 608.47,-1402.49 681,-1332.92 748.18,-1268.47 815.86,-1351.13 886,-1289.92 921.9,-1258.58 885.26,-1219.27 922,-1188.92 942.24,-1172.19 971.95,-1168.4 995.46,-1168.53"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="995.67,-1172.04 1005.78,-1168.84 995.88,-1165.05 995.67,-1172.04"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;omp_set_num_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge33" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;omp_set_num_threads</title>
+<path fill="none" stroke="#0000ff" d="M558.87,-1834C566.06,-1876.24 595.93,-2018.62 681,-2089.92 753.21,-2150.43 802.61,-2100.05 886,-2143.92 904.69,-2153.75 902.98,-2165.74 922,-2174.92 933.03,-2180.24 945.29,-2184.21 957.52,-2187.18"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="956.77,-2190.6 967.29,-2189.35 958.29,-2183.76 956.77,-2190.6"/>
+</g>
+<!-- allgather -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node18" class="node">
+<title>allgather</title>
+<polygon fill="#777777" stroke="#777777" points="814,-1959.92 753,-1959.92 753,-1935.92 814,-1935.92 814,-1959.92"/>
+<text text-anchor="middle" x="783.5" y="-1945.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allgather</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;allgather -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge28" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;allgather</title>
+<path fill="none" stroke="#0000ff" d="M567.55,-1834.22C587.38,-1856.48 632.56,-1903.32 681,-1926.92 700.2,-1936.27 723.41,-1941.46 742.79,-1944.34"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="742.44,-1947.83 752.82,-1945.68 743.37,-1940.89 742.44,-1947.83"/>
+</g>
+<!-- bcast -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node19" class="node">
+<title>bcast</title>
+<polygon fill="#777777" stroke="#777777" points="810.5,-1917.92 756.5,-1917.92 756.5,-1893.92 810.5,-1893.92 810.5,-1917.92"/>
+<text text-anchor="middle" x="783.5" y="-1903.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;bcast -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge29" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;bcast</title>
+<path fill="none" stroke="#0000ff" d="M576.89,-1834.12C600.78,-1848.29 642.49,-1871.42 681,-1884.92 702.02,-1892.28 726.43,-1897.43 746.05,-1900.79"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.69,-1904.28 756.12,-1902.43 746.81,-1897.37 745.69,-1904.28"/>
+</g>
+<!-- leader -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node20" class="node">
+<title>leader</title>
+<polygon fill="#777777" stroke="#777777" points="810.5,-1875.92 756.5,-1875.92 756.5,-1851.92 810.5,-1851.92 810.5,-1875.92"/>
+<text text-anchor="middle" x="783.5" y="-1861.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">leader</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;leader -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge31" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;leader</title>
+<path fill="none" stroke="#0000ff" d="M621.62,-1833.95C662.02,-1841.48 712.56,-1850.89 746.11,-1857.14"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="745.89,-1860.66 756.36,-1859.05 747.17,-1853.78 745.89,-1860.66"/>
+</g>
+<!-- omp_get_max_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node21" class="node">
+<title>omp_get_max_threads</title>
+<polygon fill="#777777" stroke="#777777" points="1100,-2085.92 967,-2085.92 967,-2061.92 1100,-2061.92 1100,-2085.92"/>
+<text text-anchor="middle" x="1033.5" y="-2071.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_get_max_threads</text>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;omp_get_max_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge32" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;omp_get_max_threads</title>
+<path fill="none" stroke="#0000ff" d="M564.01,-1834.16C580.65,-1862.17 625.36,-1931.39 681,-1968.92 728.09,-2000.68 880.21,-2039.16 968.13,-2059.57"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="967.47,-2063.01 978,-2061.85 969.05,-2056.19 967.47,-2063.01"/>
+</g>
+<!-- proc~create_monomer_list -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node23" class="node">
+<title>proc~create_monomer_list</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node23"><a xlink:href="../proc/create_monomer_list.html" xlink:title="create_monomer_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="845.5,-1833.92 721.5,-1833.92 721.5,-1809.92 845.5,-1809.92 845.5,-1833.92"/>
+<text text-anchor="middle" x="783.5" y="-1819.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_monomer_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge34" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~create_monomer_list</title>
+<path fill="none" stroke="#0000ff" d="M637.77,-1821.92C661.77,-1821.92 687.88,-1821.92 711.23,-1821.92"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="711.4,-1825.42 721.4,-1821.92 711.4,-1818.42 711.4,-1825.42"/>
+</g>
+<!-- proc~generate_fragment_list -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node25" class="node">
+<title>proc~generate_fragment_list</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node25"><a xlink:href="../proc/generate_fragment_list.html" xlink:title="generate_fragment_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="851.5,-349.92 715.5,-349.92 715.5,-325.92 851.5,-325.92 851.5,-349.92"/>
+<text text-anchor="middle" x="783.5" y="-335.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_fragment_list</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_fragment_list -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge35" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~generate_fragment_list</title>
+<path fill="none" stroke="#0000ff" d="M559,-1809.64C569.75,-1743.18 621.09,-1419.53 645,-1152.92 652.43,-1070.04 639.82,-477.22 681,-404.92 694.17,-381.8 718.96,-365.21 740.75,-354.32"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="742.32,-357.44 749.86,-350 739.32,-351.12 742.32,-357.44"/>
+</g>
+<!-- proc~get_nfrags -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node26" class="node">
+<title>proc~get_nfrags</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node26"><a xlink:href="../proc/get_nfrags.html" xlink:title="get_nfrags">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="818,-2080.92 749,-2080.92 749,-2056.92 818,-2056.92 818,-2080.92"/>
+<text text-anchor="middle" x="783.5" y="-2066.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_nfrags</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~get_nfrags -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge36" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~get_nfrags</title>
+<path fill="none" stroke="#0000ff" d="M561.07,-1834.05C573.44,-1869.18 613.9,-1972.02 681,-2028.92 697.61,-2043 719.77,-2052.5 739.15,-2058.69"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="738.4,-2062.12 748.98,-2061.64 740.4,-2055.42 738.4,-2062.12"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node27" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node27"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="840,-1365.92 727,-1365.92 727,-1341.92 840,-1341.92 840,-1365.92"/>
+<text text-anchor="middle" x="783.5" y="-1351.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge37" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#0000ff" d="M557.07,-1809.83C558.01,-1755.28 568.79,-1529.01 681,-1399.92 692.72,-1386.43 709.2,-1376.68 725.48,-1369.74"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="726.99,-1372.9 735,-1365.97 724.41,-1366.4 726.99,-1372.9"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node28" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node28"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="837,-437.92 730,-437.92 730,-413.92 837,-413.92 837,-437.92"/>
+<text text-anchor="middle" x="783.5" y="-423.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~node_coordinator -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge38" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#0000ff" d="M558.75,-1809.62C568.21,-1743.02 613.89,-1418.78 645,-1152.92 663.23,-997.16 652.47,-956.12 681,-801.92 706.31,-665.13 756.49,-505.35 775.23,-447.89"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="778.65,-448.68 778.44,-438.08 772,-446.5 778.65,-448.68"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node29" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node29"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="824.5,-834.92 742.5,-834.92 742.5,-810.92 824.5,-810.92 824.5,-834.92"/>
+<text text-anchor="middle" x="783.5" y="-820.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~node_worker -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge39" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#0000ff" d="M558.18,-1809.67C565.16,-1739.01 603.45,-1376.64 681,-1090.92 706.63,-996.48 752.79,-888.96 772.8,-844.2"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="776.07,-845.48 776.98,-834.92 769.69,-842.61 776.07,-845.48"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node30" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node30"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="860.5,-1698.92 706.5,-1698.92 706.5,-1674.92 860.5,-1674.92 860.5,-1698.92"/>
+<text text-anchor="middle" x="783.5" y="-1684.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge40" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#0000ff" d="M577.41,-1809.7C617.66,-1785.6 707.37,-1731.89 753.65,-1704.19"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="755.52,-1707.15 762.3,-1699.01 751.92,-1701.14 755.52,-1707.15"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge43" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#ff00ff" d="M558.15,-1144.2C565.38,-1219.25 606.69,-1615.74 681,-1707.92 743.79,-1785.81 826.78,-1720.27 886,-1800.92 924.96,-1853.97 872.71,-2051.29 922,-2094.92 996.22,-2160.6 1047.37,-2111.99 1145,-2094.92 1191.2,-2086.83 1241.57,-2066.82 1274.01,-2052.34"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1275.82,-2055.36 1283.48,-2048.04 1272.93,-2048.99 1275.82,-2055.36"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge46" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff00ff" d="M587.03,-1119.76C611.81,-1110.27 648.12,-1097.62 681,-1090.92 883.26,-1049.69 941.87,-1034.26 1145,-1070.92 1191.88,-1079.38 1242.85,-1100.46 1275.2,-1115.46"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1274.08,-1118.8 1284.62,-1119.9 1277.07,-1112.47 1274.08,-1118.8"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge47" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;verbose</title>
+<path fill="none" stroke="#ff00ff" d="M644.21,-1139.25C749.24,-1148.09 920.85,-1162.52 995.68,-1168.82"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="995.74,-1172.34 1006,-1169.69 996.33,-1165.36 995.74,-1172.34"/>
+</g>
+<!-- proc~calc_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node22" class="node">
+<title>proc~calc_type_to_string</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node22"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1366.5,-690.92 1252.5,-690.92 1252.5,-666.92 1366.5,-666.92 1366.5,-690.92"/>
+<text text-anchor="middle" x="1309.5" y="-676.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge44" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#ff00ff" d="M567.58,-1119.68C587.06,-1096.32 628.11,-1042.98 645,-989.92 664.75,-927.86 633.56,-449.53 681,-404.92 718.56,-369.6 1104.74,-372.71 1145,-404.92 1201.92,-450.45 1144.07,-502.07 1181,-564.92 1205.4,-606.44 1250.08,-641.12 1279.53,-660.95"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1277.87,-664.04 1288.14,-666.62 1281.71,-658.2 1277.87,-664.04"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node32" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node32"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="860,-1123.92 707,-1123.92 707,-1099.92 860,-1099.92 860,-1123.92"/>
+<text text-anchor="middle" x="783.5" y="-1109.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge45" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#ff00ff" d="M644.18,-1124.18C661.49,-1122.65 679.64,-1121.04 696.88,-1119.51"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="697.27,-1122.99 706.92,-1118.62 696.65,-1116.02 697.27,-1122.99"/>
+</g>
+<!-- to_lower -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node56" class="node">
+<title>to_lower</title>
+<polygon fill="#777777" stroke="#777777" points="1338.5,-2383.92 1280.5,-2383.92 1280.5,-2359.92 1338.5,-2359.92 1338.5,-2383.92"/>
+<text text-anchor="middle" x="1309.5" y="-2369.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_lower</text>
+</g>
+<!-- proc~element_symbol_to_number&#45;&gt;to_lower -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge48" class="edge">
+<title>proc~element_symbol_to_number&#45;&gt;to_lower</title>
+<path fill="none" stroke="#00ff66" d="M1115.23,-2386.73C1166.38,-2382.81 1230.2,-2377.92 1270.16,-2374.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1270.58,-2378.33 1280.28,-2374.08 1270.04,-2371.35 1270.58,-2378.33"/>
+</g>
+<!-- to_upper -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node57" class="node">
+<title>to_upper</title>
+<polygon fill="#777777" stroke="#777777" points="1339.5,-2425.92 1279.5,-2425.92 1279.5,-2401.92 1339.5,-2401.92 1339.5,-2425.92"/>
+<text text-anchor="middle" x="1309.5" y="-2411.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_upper</text>
+</g>
+<!-- proc~element_symbol_to_number&#45;&gt;to_upper -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge49" class="edge">
+<title>proc~element_symbol_to_number&#45;&gt;to_upper</title>
+<path fill="none" stroke="#00ff66" d="M1115.23,-2399.1C1165.95,-2402.99 1229.12,-2407.83 1269.14,-2410.9"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1269.05,-2414.4 1279.29,-2411.68 1269.59,-2407.42 1269.05,-2414.4"/>
+</g>
+<!-- proc~combine -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node43" class="node">
+<title>proc~combine</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node43"><a xlink:href="../proc/combine.html" xlink:title="combine">
+<polygon fill="#d9534f" stroke="#d9534f" points="1063,-87.92 1004,-87.92 1004,-63.92 1063,-63.92 1063,-87.92"/>
+<text text-anchor="middle" x="1033.5" y="-73.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_fragment_list&#45;&gt;proc~combine -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge50" class="edge">
+<title>proc~generate_fragment_list&#45;&gt;proc~combine</title>
+<path fill="none" stroke="#00ffcb" d="M787.8,-325.82C799.15,-286.64 840.43,-162.29 922,-101.92 942.61,-86.66 970.8,-80.2 993.55,-77.53"/>
+<polygon fill="#00ffcb" stroke="#00ffcb" points="993.96,-81.01 1003.58,-76.55 993.28,-74.04 993.96,-81.01"/>
+</g>
+<!-- proc~binomial -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node41" class="node">
+<title>proc~binomial</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node41"><a xlink:href="../proc/binomial.html" xlink:title="binomial">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1063,-2165.92 1004,-2165.92 1004,-2141.92 1063,-2141.92 1063,-2165.92"/>
+<text text-anchor="middle" x="1033.5" y="-2151.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">binomial</text>
+</a>
+</g>
+</g>
+<!-- proc~get_nfrags&#45;&gt;proc~binomial -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge51" class="edge">
+<title>proc~get_nfrags&#45;&gt;proc~binomial</title>
+<path fill="none" stroke="#00cbff" d="M818.22,-2075.4C838.6,-2080.15 864.68,-2087.74 886,-2098.92 904.2,-2108.45 903.54,-2118.89 922,-2127.92 944.47,-2138.9 971.82,-2145.38 993.68,-2149.13"/>
+<polygon fill="#00cbff" stroke="#00cbff" points="993.19,-2152.59 1003.62,-2150.71 994.29,-2145.68 993.19,-2152.59"/>
+</g>
+<!-- proc~global_coordinator&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge53" class="edge">
+<title>proc~global_coordinator&#45;&gt;error</title>
+<path fill="none" stroke="#0066ff" d="M792.05,-1341.54C811.55,-1308.85 863.66,-1216.97 886,-1132.92 909.1,-1046.02 862.45,-797.28 922,-729.92 989.15,-653.96 1072.93,-753.22 1145,-681.92 1196.51,-630.96 1131.51,-575.84 1181,-522.92 1204.39,-497.9 1243.47,-489.11 1272.2,-486.15"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1272.61,-489.63 1282.28,-485.3 1272.02,-482.65 1272.61,-489.63"/>
+</g>
+<!-- proc~global_coordinator&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge55" class="edge">
+<title>proc~global_coordinator&#45;&gt;info</title>
+<path fill="none" stroke="#0066ff" d="M789.28,-1366.2C805.27,-1407.7 857.46,-1546.82 886,-1665.92 910.01,-1766.11 857.27,-1814.76 922,-1894.92 988.74,-1977.56 1055.14,-1924.27 1145,-1980.92 1163.62,-1992.65 1161.28,-2005.14 1181,-2014.92 1209.57,-2029.07 1245.72,-2033.98 1272.22,-2035.55"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1272.08,-2039.05 1282.23,-2036.01 1272.4,-2032.05 1272.08,-2039.05"/>
+</g>
+<!-- proc~global_coordinator&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge66" class="edge">
+<title>proc~global_coordinator&#45;&gt;to_char</title>
+<path fill="none" stroke="#0066ff" d="M840,-1352.73C927.56,-1350.07 1093.14,-1341.57 1145,-1314.92 1218.01,-1277.4 1273.74,-1192.69 1296.84,-1153.08"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1300.08,-1154.46 1302,-1144.04 1294,-1150.99 1300.08,-1154.46"/>
+</g>
+<!-- proc~global_coordinator&#45;&gt;verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge67" class="edge">
+<title>proc~global_coordinator&#45;&gt;verbose</title>
+<path fill="none" stroke="#0066ff" d="M840.07,-1350.3C856.68,-1346.65 873.73,-1339.95 886,-1327.92 928.8,-1285.94 878.79,-1239.47 922,-1197.92 941.43,-1179.23 971.63,-1173.09 995.56,-1171.42"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="995.88,-1174.91 1005.71,-1170.95 995.56,-1167.92 995.88,-1174.91"/>
+</g>
+<!-- debug -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node35" class="node">
+<title>debug</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-1585.92 1282.5,-1585.92 1282.5,-1561.92 1336.5,-1561.92 1336.5,-1585.92"/>
+<text text-anchor="middle" x="1309.5" y="-1571.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;debug -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge52" class="edge">
+<title>proc~global_coordinator&#45;&gt;debug</title>
+<path fill="none" stroke="#0066ff" d="M787.26,-1365.93C797.15,-1405.88 835,-1534.57 922,-1583.92 981,-1617.38 1187.74,-1591.77 1272.17,-1579.51"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1272.93,-1582.93 1282.31,-1578.01 1271.91,-1576.01 1272.93,-1582.93"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node36" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="1362.5,-1963.92 1256.5,-1963.92 1256.5,-1939.92 1362.5,-1939.92 1362.5,-1963.92"/>
+<text text-anchor="middle" x="1309.5" y="-1949.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge54" class="edge">
+<title>proc~global_coordinator&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#0066ff" d="M788.58,-1366.07C802.53,-1407.74 849.51,-1548.71 886,-1665.92 902.68,-1719.49 879.61,-1750.16 922,-1786.92 997.7,-1852.55 1068.5,-1755.21 1145,-1819.92 1184.6,-1853.41 1141.68,-1897.1 1181,-1930.92 1198.85,-1946.27 1223.5,-1952.56 1246.37,-1954.64"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1246.17,-1958.14 1256.38,-1955.31 1246.63,-1951.15 1246.17,-1958.14"/>
+</g>
+<!-- iprobe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node37" class="node">
+<title>iprobe</title>
+<polygon fill="#777777" stroke="#777777" points="1060.5,-639.92 1006.5,-639.92 1006.5,-615.92 1060.5,-615.92 1060.5,-639.92"/>
+<text text-anchor="middle" x="1033.5" y="-625.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;iprobe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge56" class="edge">
+<title>proc~global_coordinator&#45;&gt;iprobe</title>
+<path fill="none" stroke="#0066ff" d="M792.11,-1341.55C811.78,-1308.91 864.25,-1217.13 886,-1132.92 912.7,-1029.56 852.63,-735.05 922,-653.92 939.93,-632.94 971.3,-627.13 996.04,-626.18"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="996.23,-629.67 1006.18,-626.03 996.13,-622.67 996.23,-629.67"/>
+</g>
+<!-- irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node38" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-302.92 1282.5,-302.92 1282.5,-278.92 1336.5,-278.92 1336.5,-302.92"/>
+<text text-anchor="middle" x="1309.5" y="-288.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge57" class="edge">
+<title>proc~global_coordinator&#45;&gt;irecv</title>
+<path fill="none" stroke="#0066ff" d="M792.09,-1341.55C811.7,-1308.89 864.05,-1217.08 886,-1132.92 911.37,-1035.63 853.34,-755.36 922,-681.92 990.42,-608.73 1074.17,-719.78 1145,-648.92 1222.5,-571.39 1129.04,-501.44 1181,-404.92 1203.83,-362.5 1248.92,-328.07 1278.9,-308.53"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1281.11,-311.27 1287.67,-302.95 1277.36,-305.36 1281.11,-311.27"/>
+</g>
+<!-- isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node39" class="node">
+<title>isend</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-1032.92 1282.5,-1032.92 1282.5,-1008.92 1336.5,-1008.92 1336.5,-1032.92"/>
+<text text-anchor="middle" x="1309.5" y="-1018.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge58" class="edge">
+<title>proc~global_coordinator&#45;&gt;isend</title>
+<path fill="none" stroke="#0066ff" d="M840.26,-1349.48C856.6,-1345.76 873.43,-1339.24 886,-1327.92 920.17,-1297.14 886.6,-1260.26 922,-1230.92 999.41,-1166.76 1065.76,-1254.79 1145,-1192.92 1176.37,-1168.42 1155.82,-1141.74 1181,-1110.92 1206.87,-1079.24 1246.56,-1053.63 1274.77,-1037.95"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1276.75,-1040.86 1283.87,-1033.01 1273.41,-1034.7 1276.75,-1040.86"/>
+</g>
+<!-- mbe_total_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node40" class="node">
+<title>mbe_total_gradient</title>
+<polygon fill="#777777" stroke="#777777" points="1091.5,-1385.92 975.5,-1385.92 975.5,-1361.92 1091.5,-1361.92 1091.5,-1385.92"/>
+<text text-anchor="middle" x="1033.5" y="-1371.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_total_gradient</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;mbe_total_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge59" class="edge">
+<title>proc~global_coordinator&#45;&gt;mbe_total_gradient</title>
+<path fill="none" stroke="#0066ff" d="M840.16,-1358.4C877.2,-1361.39 926.09,-1365.33 965.3,-1368.5"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="965.06,-1371.99 975.31,-1369.3 965.62,-1365.01 965.06,-1371.99"/>
+</g>
+<!-- proc~compute_mbe_energy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node44" class="node">
+<title>proc~compute_mbe_energy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node44"><a xlink:href="../proc/compute_mbe_energy.html" xlink:title="compute_mbe_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1099.5,-1777.92 967.5,-1777.92 967.5,-1753.92 1099.5,-1753.92 1099.5,-1777.92"/>
+<text text-anchor="middle" x="1033.5" y="-1763.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge60" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy</title>
+<path fill="none" stroke="#0066ff" d="M788.38,-1366.02C809.11,-1430.53 906.42,-1731.52 922,-1744.92 932.03,-1753.54 944.49,-1759.07 957.39,-1762.54"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="956.77,-1765.99 967.3,-1764.81 958.33,-1759.17 956.77,-1765.99"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node45" class="node">
+<title>proc~compute_mbe_energy_gradient</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node45"><a xlink:href="../proc/compute_mbe_energy_gradient.html" xlink:title="compute_mbe_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1124.5,-1735.92 942.5,-1735.92 942.5,-1711.92 1124.5,-1711.92 1124.5,-1735.92"/>
+<text text-anchor="middle" x="1033.5" y="-1721.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge61" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient</title>
+<path fill="none" stroke="#0066ff" d="M788.92,-1365.99C803.7,-1405.4 854.3,-1532.81 922,-1621.92 947.29,-1655.2 984.17,-1686.75 1008.25,-1705.72"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1006.15,-1708.52 1016.2,-1711.88 1010.44,-1702.99 1006.15,-1708.52"/>
+</g>
+<!-- proc~result_irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node50" class="node">
+<title>proc~result_irecv</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node50"><a xlink:href="../proc/result_irecv.html" xlink:title="result_irecv">
+<polygon fill="#d9534f" stroke="#d9534f" points="1070,-243.92 997,-243.92 997,-219.92 1070,-219.92 1070,-243.92"/>
+<text text-anchor="middle" x="1033.5" y="-229.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_irecv</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~result_irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge62" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~result_irecv</title>
+<path fill="none" stroke="#0066ff" d="M792.24,-1341.59C812.2,-1309.02 865.33,-1217.4 886,-1132.92 924.5,-975.58 872.76,-559.22 922,-404.92 941.61,-343.47 988.72,-282.44 1014.65,-251.95"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1017.47,-254.04 1021.36,-244.18 1012.17,-249.46 1017.47,-254.04"/>
+</g>
+<!-- proc~send_fragment_to_node -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node52" class="node">
+<title>proc~send_fragment_to_node</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node52"><a xlink:href="../proc/send_fragment_to_node.html" xlink:title="send_fragment_to_node">
+<polygon fill="#d9534f" stroke="#d9534f" points="1104,-1305.92 963,-1305.92 963,-1281.92 1104,-1281.92 1104,-1305.92"/>
+<text text-anchor="middle" x="1033.5" y="-1291.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_to_node</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~send_fragment_to_node -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge63" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~send_fragment_to_node</title>
+<path fill="none" stroke="#0066ff" d="M832.51,-1341.9C858.9,-1335.33 892.24,-1327.1 922,-1319.92 937.87,-1316.09 955.03,-1312.02 970.99,-1308.26"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="971.82,-1311.66 980.75,-1305.96 970.22,-1304.84 971.82,-1311.66"/>
+</g>
+<!-- proc~send_fragment_to_worker -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node53" class="node">
+<title>proc~send_fragment_to_worker</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node53"><a xlink:href="../proc/send_fragment_to_worker.html" xlink:title="send_fragment_to_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="1109,-1263.92 958,-1263.92 958,-1239.92 1109,-1239.92 1109,-1263.92"/>
+<text text-anchor="middle" x="1033.5" y="-1249.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_to_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~send_fragment_to_worker -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge64" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~send_fragment_to_worker</title>
+<path fill="none" stroke="#0066ff" d="M840.13,-1347.38C856,-1343.55 872.61,-1337.49 886,-1327.92 909.76,-1310.92 897.72,-1289.16 922,-1272.92 929.95,-1267.6 938.9,-1263.55 948.19,-1260.47"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="949.34,-1263.78 957.95,-1257.61 947.37,-1257.06 949.34,-1263.78"/>
+</g>
+<!-- start -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node55" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-2005.92 1282.5,-2005.92 1282.5,-1981.92 1336.5,-1981.92 1336.5,-2005.92"/>
+<text text-anchor="middle" x="1309.5" y="-1991.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~global_coordinator&#45;&gt;start -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge65" class="edge">
+<title>proc~global_coordinator&#45;&gt;start</title>
+<path fill="none" stroke="#0066ff" d="M788.83,-1366C803.58,-1407.43 852.84,-1547.73 886,-1665.92 904.75,-1732.76 880.29,-1762.42 922,-1817.92 990.4,-1908.92 1050.8,-1879.99 1145,-1943.92 1162,-1955.45 1162.25,-1964.53 1181,-1972.92 1209.98,-1985.88 1245.88,-1990.93 1272.19,-1992.85"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1272.28,-1996.36 1282.48,-1993.48 1272.71,-1989.38 1272.28,-1996.36"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge68" class="edge">
+<title>proc~node_coordinator&#45;&gt;error</title>
+<path fill="none" stroke="#0000ff" d="M818.25,-413.87C884.45,-392.36 1034.5,-354.09 1145,-404.92 1167.34,-415.19 1160.38,-433.53 1181,-446.92 1208.79,-464.96 1245.47,-474.72 1272.35,-479.8"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1272.04,-483.3 1282.5,-481.59 1273.26,-476.41 1272.04,-483.3"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge75" class="edge">
+<title>proc~node_coordinator&#45;&gt;to_char</title>
+<path fill="none" stroke="#0000ff" d="M784.74,-438.16C786.5,-493.4 801.1,-721.85 922,-841.92 995.9,-915.3 1072.77,-838.88 1145,-913.92 1185.98,-956.49 1146.9,-993.65 1181,-1041.92 1204.56,-1075.26 1244.56,-1100.53 1273.49,-1115.68"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1271.95,-1118.83 1282.45,-1120.24 1275.13,-1112.59 1271.95,-1118.83"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;iprobe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge69" class="edge">
+<title>proc~node_coordinator&#45;&gt;iprobe</title>
+<path fill="none" stroke="#0000ff" d="M789.83,-438.06C805.06,-471.22 852.22,-563.7 922,-606.92 944.32,-620.73 973.66,-625.83 996.5,-627.56"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="996.3,-631.05 1006.49,-628.13 996.71,-624.06 996.3,-631.05"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge70" class="edge">
+<title>proc~node_coordinator&#45;&gt;irecv</title>
+<path fill="none" stroke="#0000ff" d="M813.85,-413.85C836.91,-402.88 868.02,-384.48 886,-358.92 924.95,-303.54 868.77,-252.75 922,-210.92 1032.89,-123.77 1215.3,-228.46 1282.55,-272.85"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1281,-276.03 1291.26,-278.69 1284.9,-270.22 1281,-276.03"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge71" class="edge">
+<title>proc~node_coordinator&#45;&gt;isend</title>
+<path fill="none" stroke="#0000ff" d="M784.87,-438.11C787.17,-491.07 803.72,-703.06 922,-804.92 998.61,-870.89 1062.4,-791.6 1145,-849.92 1170.4,-867.85 1161.03,-886.08 1181,-909.92 1211.96,-946.86 1255.67,-982.08 1283.03,-1002.59"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1281.18,-1005.58 1291.3,-1008.72 1285.34,-999.95 1281.18,-1005.58"/>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~result_irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge72" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~result_irecv</title>
+<path fill="none" stroke="#0000ff" d="M809.41,-413.78C831.55,-402.06 863.76,-382.64 886,-358.92 908.06,-335.39 899.26,-318.79 922,-295.92 942.33,-275.47 970.53,-259.27 993.35,-248.29"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="994.86,-251.45 1002.45,-244.05 991.9,-245.11 994.86,-251.45"/>
+</g>
+<!-- proc~result_isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node51" class="node">
+<title>proc~result_isend</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node51"><a xlink:href="../proc/result_isend.html" xlink:title="result_isend">
+<polygon fill="#d9534f" stroke="#d9534f" points="1071.5,-437.92 995.5,-437.92 995.5,-413.92 1071.5,-413.92 1071.5,-437.92"/>
+<text text-anchor="middle" x="1033.5" y="-423.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_isend</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~result_isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge73" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#0000ff" d="M837.09,-425.92C880.97,-425.92 942.93,-425.92 985.24,-425.92"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="985.29,-429.42 995.29,-425.92 985.29,-422.42 985.29,-429.42"/>
+</g>
+<!-- recv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node54" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-203.92 1282.5,-203.92 1282.5,-179.92 1336.5,-179.92 1336.5,-203.92"/>
+<text text-anchor="middle" x="1309.5" y="-189.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~node_coordinator&#45;&gt;recv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge74" class="edge">
+<title>proc~node_coordinator&#45;&gt;recv</title>
+<path fill="none" stroke="#0000ff" d="M814.64,-413.85C837.83,-402.97 868.74,-384.71 886,-358.92 932.59,-289.3 857.36,-227.19 922,-173.92 1024.2,-89.69 1198.21,-145.87 1272.82,-176.15"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1271.67,-179.46 1282.25,-180.05 1274.35,-172.99 1271.67,-179.46"/>
+</g>
+<!-- proc~node_worker&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge76" class="edge">
+<title>proc~node_worker&#45;&gt;error</title>
+<path fill="none" stroke="#6500ff" d="M785.07,-810.64C788.16,-760.17 807.35,-567.69 922,-489.92 978.24,-451.76 1187.44,-470.85 1272.35,-480.49"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1271.97,-483.97 1282.3,-481.64 1272.77,-477.01 1271.97,-483.97"/>
+</g>
+<!-- proc~node_worker&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge84" class="edge">
+<title>proc~node_worker&#45;&gt;to_char</title>
+<path fill="none" stroke="#6500ff" d="M798.71,-834.97C822.58,-854.58 872.92,-893.26 922,-913.92 1015.44,-953.24 1066.17,-898.17 1145,-961.92 1175.32,-986.43 1156.2,-1011.83 1181,-1041.92 1207.02,-1073.47 1246.68,-1099.1 1274.85,-1114.83"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1273.47,-1118.06 1283.92,-1119.77 1276.82,-1111.91 1273.47,-1118.06"/>
+</g>
+<!-- proc~node_worker&#45;&gt;irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge77" class="edge">
+<title>proc~node_worker&#45;&gt;irecv</title>
+<path fill="none" stroke="#6500ff" d="M784.64,-810.91C785.95,-755.76 798.86,-524.3 922,-404.92 1020.86,-309.07 1196.17,-293.22 1271.94,-291.01"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1272.45,-294.5 1282.37,-290.78 1272.29,-287.5 1272.45,-294.5"/>
+</g>
+<!-- proc~node_worker&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge78" class="edge">
+<title>proc~node_worker&#45;&gt;isend</title>
+<path fill="none" stroke="#6500ff" d="M824.6,-830.55C892.41,-844.25 1033.26,-876.1 1145,-923.92 1196.65,-946.01 1251.89,-981.6 1283.12,-1002.98"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1281.42,-1006.06 1291.64,-1008.87 1285.4,-1000.3 1281.42,-1006.06"/>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node42" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node42"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="1116.5,-1103.92 950.5,-1103.92 950.5,-1079.92 1116.5,-1079.92 1116.5,-1103.92"/>
+<text text-anchor="middle" x="1033.5" y="-1089.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge79" class="edge">
+<title>proc~node_worker&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#6500ff" d="M795.8,-835.17C835.11,-877.81 966.09,-1019.88 1014.4,-1072.28"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1012.06,-1074.91 1021.42,-1079.89 1017.21,-1070.17 1012.06,-1074.91"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node46" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node46"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="1089.5,-795.92 977.5,-795.92 977.5,-771.92 1089.5,-771.92 1089.5,-795.92"/>
+<text text-anchor="middle" x="1033.5" y="-781.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge80" class="edge">
+<title>proc~node_worker&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#6500ff" d="M824.62,-816.61C863.11,-810.55 921.9,-801.31 967.15,-794.19"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="967.83,-797.63 977.17,-792.62 966.75,-790.71 967.83,-797.63"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node48" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node48"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1145,-1503.92 922,-1503.92 922,-1479.92 1145,-1479.92 1145,-1503.92"/>
+<text text-anchor="middle" x="1033.5" y="-1489.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge81" class="edge">
+<title>proc~node_worker&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#6500ff" d="M790.37,-835.13C808.03,-872.45 860.99,-988.7 886,-1090.92 918.33,-1223.07 858.68,-1274.5 922,-1394.92 940.17,-1429.48 976.08,-1457.37 1002.04,-1474.22"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1000.44,-1477.35 1010.76,-1479.71 1004.17,-1471.42 1000.44,-1477.35"/>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~result_isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge82" class="edge">
+<title>proc~node_worker&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#6500ff" d="M785.06,-810.72C788.15,-758.65 807.45,-553.09 922,-451.92 939.28,-436.65 963.84,-429.91 985.42,-427.09"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="985.83,-430.56 995.4,-426.02 985.09,-423.6 985.83,-430.56"/>
+</g>
+<!-- proc~node_worker&#45;&gt;recv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge83" class="edge">
+<title>proc~node_worker&#45;&gt;recv</title>
+<path fill="none" stroke="#6500ff" d="M788.34,-810.7C802.9,-763.97 855.49,-591.81 886,-446.92 896.93,-395 882.62,-246.46 922,-210.92 972.63,-165.22 1186.06,-180.05 1272.21,-188.15"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1272.02,-191.65 1282.31,-189.12 1272.69,-184.68 1272.02,-191.65"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge87" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;info</title>
+<path fill="none" stroke="#cc00ff" d="M808.03,-1698.92C831.78,-1712.35 867.51,-1736.42 886,-1767.92 935.49,-1852.23 851.73,-1916.94 922,-1984.92 971.44,-2032.74 1186.05,-2036.77 1272.36,-2036.4"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1272.49,-2039.9 1282.47,-2036.34 1272.44,-2032.9 1272.49,-2039.9"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge98" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;to_char</title>
+<path fill="none" stroke="#cc00ff" d="M788.38,-1674.66C800.92,-1637.26 844.07,-1523.91 922,-1470.92 1005.47,-1414.16 1063.34,-1487.24 1145,-1427.92 1242.51,-1357.07 1288.78,-1209.47 1303.28,-1153.8"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1306.71,-1154.49 1305.76,-1143.94 1299.92,-1152.79 1306.71,-1154.49"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;verbose -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge99" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;verbose</title>
+<path fill="none" stroke="#cc00ff" d="M788.77,-1674.82C803.35,-1633.34 852.11,-1492.89 886,-1374.92 904.22,-1311.51 881.41,-1282.92 922,-1230.92 940.58,-1207.11 971.52,-1191.77 995.94,-1182.72"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="997.33,-1185.94 1005.61,-1179.33 995.02,-1179.33 997.33,-1185.94"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;omp_set_num_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge89" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;omp_set_num_threads</title>
+<path fill="none" stroke="#cc00ff" d="M800.59,-1699.22C824.01,-1718.17 866.81,-1756.96 886,-1800.92 919.41,-1877.43 865.73,-2113.23 922,-2174.92 931.37,-2185.19 944.08,-2191.37 957.54,-2194.95"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="956.93,-2198.39 967.44,-2197.11 958.42,-2191.56 956.93,-2198.39"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;omp_get_max_threads -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge88" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;omp_get_max_threads</title>
+<path fill="none" stroke="#cc00ff" d="M808.7,-1699.03C832.64,-1712.4 868.2,-1736.28 886,-1767.92 947.53,-1877.26 837.98,-1954.74 922,-2047.92 931.29,-2058.22 943.83,-2064.82 957.13,-2068.98"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="956.35,-2072.4 966.91,-2071.6 958.15,-2065.63 956.35,-2072.4"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge91" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#cc00ff" d="M789.73,-1674.73C807.13,-1633.53 863.28,-1495.25 886,-1374.92 898.64,-1307.98 877.11,-814.15 922,-762.92 988.52,-687 1050.14,-754.41 1145,-719.92 1162.2,-713.66 1163.72,-705.94 1181,-699.92 1200.39,-693.16 1222.22,-688.55 1242.26,-685.42"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1242.85,-688.87 1252.24,-683.95 1241.84,-681.94 1242.85,-688.87"/>
+</g>
+<!-- configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node34" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="1351.5,-1501.92 1267.5,-1501.92 1267.5,-1477.92 1351.5,-1477.92 1351.5,-1501.92"/>
+<text text-anchor="middle" x="1309.5" y="-1487.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge85" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;configuration</title>
+<path fill="none" stroke="#cc00ff" d="M831.97,-1674.9C903.72,-1655.34 1042.3,-1612.04 1145,-1545.92 1163.76,-1533.83 1161.08,-1520.97 1181,-1510.92 1204.4,-1499.11 1232.99,-1493.71 1257.16,-1491.32"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1257.55,-1494.8 1267.22,-1490.47 1256.97,-1487.82 1257.55,-1494.8"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge86" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#cc00ff" d="M802.69,-1698.98C824.09,-1713.69 859.99,-1740.07 886,-1767.92 905.19,-1788.46 900.23,-1802.13 922,-1819.92 1018.33,-1898.62 1164.14,-1931.45 1246.37,-1944.31"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1245.91,-1947.78 1256.32,-1945.82 1246.96,-1940.86 1245.91,-1947.78"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge90" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#cc00ff" d="M789.26,-1674.63C805.2,-1633.11 857.25,-1493.96 886,-1374.92 909.67,-1276.9 863.42,-1232.99 922,-1150.92 936.31,-1130.87 959.58,-1117.01 981.08,-1107.79"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="982.52,-1110.99 990.48,-1104 979.9,-1104.5 982.52,-1110.99"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge92" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy</title>
+<path fill="none" stroke="#cc00ff" d="M808.76,-1699C835.79,-1712.03 881.08,-1732.55 922,-1744.92 933.32,-1748.34 945.46,-1751.31 957.41,-1753.87"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="956.88,-1757.33 967.38,-1755.91 958.29,-1750.47 956.88,-1757.33"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge93" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient</title>
+<path fill="none" stroke="#cc00ff" d="M860.59,-1698.27C886.22,-1702.09 915.08,-1706.4 941.73,-1710.37"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="941.41,-1713.86 951.82,-1711.88 942.44,-1706.94 941.41,-1713.86"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge94" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#cc00ff" d="M789.45,-1674.68C805.99,-1633.3 859.73,-1494.53 886,-1374.92 915.19,-1242.03 889.3,-1202.98 922,-1070.92 947.46,-968.07 999.85,-852.22 1022.11,-805.32"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1025.35,-806.67 1026.51,-796.14 1019.03,-803.65 1025.35,-806.67"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node47" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node47"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1377.5,-1543.92 1241.5,-1543.92 1241.5,-1519.92 1377.5,-1519.92 1377.5,-1543.92"/>
+<text text-anchor="middle" x="1309.5" y="-1529.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~energy_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge95" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#cc00ff" d="M860.9,-1690.77C953.43,-1693.84 1102.25,-1693.13 1145,-1659.92 1184.62,-1629.13 1142.78,-1585.42 1181,-1552.92 1194.99,-1541.02 1213.06,-1534.59 1231.18,-1531.33"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1231.85,-1534.77 1241.23,-1529.84 1230.82,-1527.85 1231.85,-1534.77"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge96" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#cc00ff" d="M800.01,-1674.72C842.12,-1641.61 958.72,-1549.93 1008.97,-1510.42"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1011.29,-1513.04 1016.99,-1504.11 1006.97,-1507.54 1011.29,-1513.04"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;start -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge97" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;start</title>
+<path fill="none" stroke="#cc00ff" d="M807.72,-1699.11C831.21,-1712.69 866.74,-1736.88 886,-1767.92 925.81,-1832.06 867.05,-1882.15 922,-1933.92 1019.59,-2025.86 1196.58,-2011.66 1272.42,-2000.36"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1273.1,-2003.8 1282.44,-1998.8 1272.01,-1996.88 1273.1,-2003.8"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge102" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;error</title>
+<path fill="none" stroke="#ff0066" d="M790.4,-1099.71C808.14,-1062.4 861.31,-946.21 886,-843.92 902.84,-774.14 870.9,-573.32 922,-522.92 946.67,-498.58 1181.03,-488.82 1272.34,-485.92"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1272.6,-489.42 1282.49,-485.61 1272.39,-482.42 1272.6,-489.42"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge103" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;info</title>
+<path fill="none" stroke="#ff0066" d="M792.09,-1124.28C811.71,-1156.94 864.07,-1248.75 886,-1332.92 911.51,-1430.85 865.05,-1703.25 922,-1786.92 984.08,-1878.11 1073.51,-1811.89 1145,-1895.92 1180.81,-1938 1139.46,-1978.48 1181,-2014.92 1205.75,-2036.63 1244.02,-2040.35 1272.18,-2039.57"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1272.61,-2043.05 1282.43,-2039.08 1272.27,-2036.06 1272.61,-2043.05"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge108" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0066" d="M860.13,-1114.8C974.56,-1119.17 1187.32,-1127.29 1272.18,-1130.53"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1272.23,-1134.03 1282.35,-1130.92 1272.49,-1127.04 1272.23,-1134.03"/>
+</g>
+<!-- all_monomer_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node33" class="node">
+<title>all_monomer_indices</title>
+<polygon fill="#777777" stroke="#777777" points="1096.5,-597.92 970.5,-597.92 970.5,-573.92 1096.5,-573.92 1096.5,-597.92"/>
+<text text-anchor="middle" x="1033.5" y="-583.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">all_monomer_indices</text>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;all_monomer_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge100" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;all_monomer_indices</title>
+<path fill="none" stroke="#ff0066" d="M790.22,-1099.66C807.44,-1062.23 859.32,-945.7 886,-843.92 899.51,-792.39 885.04,-645.28 922,-606.92 932.24,-596.29 946.06,-590.11 960.46,-586.67"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="961.34,-590.07 970.48,-584.71 959.99,-583.2 961.34,-590.07"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge101" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;configuration</title>
+<path fill="none" stroke="#ff0066" d="M791.27,-1123.97C809.3,-1156.6 859.01,-1249.79 886,-1332.92 911.2,-1410.51 858.91,-1461.19 922,-1512.92 998.65,-1575.75 1046.13,-1519.84 1145,-1512.92 1182.8,-1510.27 1225.16,-1504.22 1257.29,-1498.99"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1258.05,-1502.42 1267.34,-1497.33 1256.91,-1495.51 1258.05,-1502.42"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge104" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0066" d="M860.26,-1105.81C885.52,-1103.77 913.94,-1101.48 940.31,-1099.35"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="940.62,-1102.84 950.31,-1098.54 940.06,-1095.86 940.62,-1102.84"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge105" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0066" d="M793.62,-1099.85C830.69,-1050.83 970.27,-866.22 1017.09,-804.3"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1020.06,-806.18 1023.3,-796.09 1014.47,-801.95 1020.06,-806.18"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~energy_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge106" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0066" d="M791.39,-1123.93C809.73,-1156.46 860.13,-1249.44 886,-1332.92 913.91,-1422.95 849.92,-1481.19 922,-1541.92 967.04,-1579.86 1131.92,-1561.09 1231.2,-1545.52"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="1231.86,-1548.96 1241.19,-1543.94 1230.76,-1542.05 1231.86,-1548.96"/>
+</g>
+<!-- proc~result_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node49" class="node">
+<title>proc~result_destroy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node49"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1132.5,-555.92 934.5,-555.92 934.5,-531.92 1132.5,-531.92 1132.5,-555.92"/>
+<text text-anchor="middle" x="1033.5" y="-541.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~result_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge107" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#ff0066" d="M790.32,-1099.69C807.84,-1062.33 860.46,-946 886,-843.92 901.17,-783.27 879.13,-610.41 922,-564.92 923.24,-563.6 924.54,-562.35 925.89,-561.16"/>
+<polygon fill="#ff0066" stroke="#ff0066" points="928.17,-563.83 934.11,-555.05 923.99,-558.21 928.17,-563.83"/>
+</g>
+<!-- proc~combine_util -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node59" class="node">
+<title>proc~combine_util</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node59"><a xlink:href="../proc/combine_util.html" xlink:title="combine_util">
+<polygon fill="#d9534f" stroke="#d9534f" points="1350,-87.92 1269,-87.92 1269,-63.92 1350,-63.92 1350,-87.92"/>
+<text text-anchor="middle" x="1309.5" y="-73.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">combine_util</text>
+</a>
+</g>
+</g>
+<!-- proc~combine&#45;&gt;proc~combine_util -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge109" class="edge">
+<title>proc~combine&#45;&gt;proc~combine_util</title>
+<path fill="none" stroke="#00ff66" d="M1063.05,-75.92C1109.24,-75.92 1200.97,-75.92 1258.28,-75.92"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1258.56,-79.42 1268.56,-75.92 1258.56,-72.42 1258.56,-79.42"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge113" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;info</title>
+<path fill="none" stroke="#00ffa3" d="M1053.29,-1777.98C1078.18,-1794.97 1121.66,-1828.33 1145,-1867.92 1179.17,-1925.86 1131.64,-1969.22 1181,-2014.92 1205.23,-2037.35 1243.75,-2040.93 1272.11,-2039.92"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1272.65,-2043.39 1282.44,-2039.34 1272.26,-2036.4 1272.65,-2043.39"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge122" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffa3" d="M1099.71,-1766.93C1116.6,-1763.93 1133.31,-1757.51 1145,-1744.92 1193.37,-1692.78 1162.69,-1495.64 1181,-1426.92 1209.63,-1319.45 1270.97,-1200.5 1296.73,-1153.09"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1299.92,-1154.54 1301.66,-1144.09 1293.78,-1151.18 1299.92,-1154.54"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge110" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ffa3" d="M1099.67,-1766.58C1116.47,-1763.55 1133.13,-1757.21 1145,-1744.92 1218.08,-1669.22 1106.99,-1585.71 1181,-1510.92 1200.5,-1491.21 1230.89,-1485.63 1257.11,-1485.14"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1257.28,-1488.64 1267.3,-1485.19 1257.31,-1481.64 1257.28,-1488.64"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;debug -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge111" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;debug</title>
+<path fill="none" stroke="#00ffa3" d="M1099.6,-1765.82C1116.19,-1762.75 1132.77,-1756.57 1145,-1744.92 1194.62,-1697.61 1130.8,-1641.61 1181,-1594.92 1205.18,-1572.43 1243.7,-1568.86 1272.09,-1569.88"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1272.23,-1573.4 1282.42,-1570.47 1272.63,-1566.41 1272.23,-1573.4"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge112" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#00ffa3" d="M1099.65,-1769.34C1116.24,-1773.16 1132.81,-1780 1145,-1791.92 1190.63,-1836.53 1133.89,-1887.87 1181,-1930.92 1198.46,-1946.87 1223.15,-1953.24 1246.17,-1955.22"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1246.05,-1958.72 1256.24,-1955.83 1246.47,-1951.73 1246.05,-1958.72"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~energy_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge115" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#00ffa3" d="M1099.7,-1766.27C1116.4,-1763.22 1133,-1756.94 1145,-1744.92 1206.32,-1683.45 1118.93,-1613.62 1181,-1552.92 1194.46,-1539.75 1212.79,-1532.96 1231.36,-1529.78"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1231.94,-1533.23 1241.37,-1528.4 1230.99,-1526.3 1231.94,-1533.23"/>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;start -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge121" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;start</title>
+<path fill="none" stroke="#00ffa3" d="M1052.36,-1778C1076.6,-1795.27 1119.76,-1829.21 1145,-1867.92 1171.95,-1909.24 1143.33,-1941.06 1181,-1972.92 1206.06,-1994.11 1244.12,-1997.94 1272.14,-1997.33"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1272.49,-2000.81 1282.34,-1996.9 1272.2,-1993.82 1272.49,-2000.81"/>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node60" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node60"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1354,-1753.92 1265,-1753.92 1265,-1729.92 1354,-1729.92 1354,-1753.92"/>
+<text text-anchor="middle" x="1309.5" y="-1739.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~compute_mbe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge114" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#00ffa3" d="M1099.78,-1760.2C1147.07,-1756.06 1210.23,-1750.52 1254.64,-1746.63"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1255,-1750.11 1264.66,-1745.76 1254.39,-1743.14 1255,-1750.11"/>
+</g>
+<!-- proc~fragment_lookup_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node63" class="node">
+<title>proc~fragment_lookup_destroy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node63"><a xlink:href="../proc/fragment_lookup_destroy.html" xlink:title="fragment_lookup_t%fragment_lookup_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1438,-1879.92 1181,-1879.92 1181,-1855.92 1438,-1855.92 1438,-1879.92"/>
+<text text-anchor="middle" x="1309.5" y="-1865.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge116" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_destroy</title>
+<path fill="none" stroke="#00ffa3" d="M1099.62,-1772.7C1115.47,-1776.57 1131.68,-1782.59 1145,-1791.92 1168.93,-1808.68 1156.52,-1830.97 1181,-1846.92 1183.6,-1848.61 1186.28,-1850.17 1189.04,-1851.63"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1187.55,-1854.79 1198.08,-1855.9 1190.54,-1848.47 1187.55,-1854.79"/>
+</g>
+<!-- proc~fragment_lookup_init -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node64" class="node">
+<title>proc~fragment_lookup_init</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node64"><a xlink:href="../proc/fragment_lookup_init.html" xlink:title="fragment_lookup_t%fragment_lookup_init">
+<polygon fill="#d9534f" stroke="#d9534f" points="1427,-1921.92 1192,-1921.92 1192,-1897.92 1427,-1897.92 1427,-1921.92"/>
+<text text-anchor="middle" x="1309.5" y="-1907.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_init</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_init -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge117" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_init</title>
+<path fill="none" stroke="#00ffa3" d="M1099.73,-1770.38C1116.04,-1774.24 1132.44,-1780.83 1145,-1791.92 1179.47,-1822.35 1145.52,-1859.67 1181,-1888.92 1182.56,-1890.2 1184.16,-1891.42 1185.81,-1892.58"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1184.04,-1895.6 1194.39,-1897.87 1187.72,-1889.64 1184.04,-1895.6"/>
+</g>
+<!-- proc~fragment_lookup_insert -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node65" class="node">
+<title>proc~fragment_lookup_insert</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node65"><a xlink:href="../proc/fragment_lookup_insert.html" xlink:title="fragment_lookup_t%fragment_lookup_insert">
+<polygon fill="#d9534f" stroke="#d9534f" points="1433.5,-1711.92 1185.5,-1711.92 1185.5,-1687.92 1433.5,-1687.92 1433.5,-1711.92"/>
+<text text-anchor="middle" x="1309.5" y="-1697.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_insert</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_insert -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge118" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_insert</title>
+<path fill="none" stroke="#00ffa3" d="M1099.74,-1757.99C1114.93,-1754.93 1130.81,-1750.71 1145,-1744.92 1162.8,-1737.64 1163.11,-1727.97 1181,-1720.92 1186.89,-1718.59 1193.03,-1716.53 1199.29,-1714.69"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1200.49,-1717.99 1209.22,-1711.99 1198.65,-1711.24 1200.49,-1717.99"/>
+</g>
+<!-- proc~print_detailed_breakdown -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node69" class="node">
+<title>proc~print_detailed_breakdown</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node69"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
+<polygon fill="#d9534f" stroke="#d9534f" points="1384.5,-1837.92 1234.5,-1837.92 1234.5,-1813.92 1384.5,-1813.92 1384.5,-1837.92"/>
+<text text-anchor="middle" x="1309.5" y="-1823.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge119" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown</title>
+<path fill="none" stroke="#00ffa3" d="M1091.33,-1777.96C1108.67,-1781.99 1127.71,-1786.78 1145,-1791.92 1161.31,-1796.76 1164.54,-1800.63 1181,-1804.92 1194.85,-1808.52 1209.71,-1811.64 1224.22,-1814.28"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1223.74,-1817.75 1234.19,-1816.03 1224.95,-1810.85 1223.74,-1817.75"/>
+</g>
+<!-- proc~print_detailed_breakdown_json -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node70" class="node">
+<title>proc~print_detailed_breakdown_json</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node70"><a xlink:href="../proc/print_detailed_breakdown_json.html" xlink:title="print_detailed_breakdown_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="1398,-1795.92 1221,-1795.92 1221,-1771.92 1398,-1771.92 1398,-1795.92"/>
+<text text-anchor="middle" x="1309.5" y="-1781.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown_json</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge120" class="edge">
+<title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json</title>
+<path fill="none" stroke="#00ffa3" d="M1099.78,-1770.2C1132.91,-1772.38 1173.84,-1775.07 1210.65,-1777.49"/>
+<polygon fill="#00ffa3" stroke="#00ffa3" points="1210.71,-1781 1220.92,-1778.16 1211.17,-1774.01 1210.71,-1781"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge125" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;error</title>
+<path fill="none" stroke="#00ffe0" d="M1043.32,-1711.89C1065.48,-1680.87 1123.26,-1594.85 1145,-1512.92 1173.23,-1406.53 1113.62,-609.96 1181,-522.92 1202.22,-495.51 1242.37,-487.17 1271.97,-484.97"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1272.55,-488.45 1282.35,-484.41 1272.17,-481.46 1272.55,-488.45"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;info -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge127" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;info</title>
+<path fill="none" stroke="#00ffe0" d="M1124.71,-1730.67C1132.28,-1734.17 1139.23,-1738.82 1145,-1744.92 1228.21,-1832.85 1096.72,-1928.01 1181,-2014.92 1204.23,-2038.87 1243.5,-2042.08 1272.34,-2040.56"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1272.72,-2044.04 1282.44,-2039.82 1272.21,-2037.06 1272.72,-2044.04"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;to_char -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge138" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ffe0" d="M1041.35,-1711.74C1059.29,-1679.66 1108.76,-1590.01 1145,-1512.92 1162.63,-1475.42 1164.78,-1465.05 1181,-1426.92 1224.74,-1324.1 1278.07,-1201.62 1299.22,-1153.16"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1302.43,-1154.54 1303.23,-1143.98 1296.02,-1151.74 1302.43,-1154.54"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge123" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;configuration</title>
+<path fill="none" stroke="#00ffe0" d="M1070.3,-1711.83C1094.9,-1701.71 1126.36,-1684.87 1145,-1659.92 1185.76,-1605.33 1131.08,-1557.28 1181,-1510.92 1201.17,-1492.18 1231.3,-1486.58 1257.21,-1485.83"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1257.29,-1489.33 1267.27,-1485.77 1257.24,-1482.33 1257.29,-1489.33"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;debug -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge124" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;debug</title>
+<path fill="none" stroke="#00ffe0" d="M1123.07,-1711.89C1131.06,-1708.29 1138.55,-1703.72 1145,-1697.92 1181.04,-1665.48 1143.88,-1626.12 1181,-1594.92 1206.13,-1573.8 1244.18,-1569.96 1272.17,-1570.55"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1272.23,-1574.05 1282.36,-1570.96 1272.51,-1567.06 1272.23,-1574.05"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;get_elapsed_time -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge126" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#00ffe0" d="M1124.61,-1731.15C1132.15,-1734.57 1139.12,-1739.06 1145,-1744.92 1204.64,-1804.35 1120.63,-1872.21 1181,-1930.92 1198.09,-1947.54 1222.97,-1953.98 1246.21,-1955.82"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1246.23,-1959.33 1256.4,-1956.36 1246.6,-1952.34 1246.23,-1959.33"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~energy_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge130" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#00ffe0" d="M1124.71,-1711.98C1132.18,-1708.34 1139.11,-1703.73 1145,-1697.92 1192.24,-1651.25 1132.2,-1597.95 1181,-1552.92 1194.69,-1540.28 1212.93,-1533.63 1231.31,-1530.42"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1231.81,-1533.88 1241.21,-1529 1230.82,-1526.95 1231.81,-1533.88"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;start -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge137" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;start</title>
+<path fill="none" stroke="#00ffe0" d="M1124.56,-1730.82C1132.16,-1734.29 1139.16,-1738.89 1145,-1744.92 1216.4,-1818.58 1108.7,-1900.13 1181,-1972.92 1204.44,-1996.52 1243.51,-1999.82 1272.23,-1998.43"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1272.56,-2001.91 1282.3,-1997.73 1272.08,-1994.93 1272.56,-2001.91"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge128" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#00ffe0" d="M1124.6,-1729.83C1167.65,-1732.66 1217.74,-1735.95 1254.76,-1738.39"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1254.63,-1741.88 1264.84,-1739.05 1255.09,-1734.9 1254.63,-1741.88"/>
+</g>
+<!-- proc~compute_mbe_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node61" class="node">
+<title>proc~compute_mbe_gradient</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node61"><a xlink:href="../proc/compute_mbe_gradient.html" xlink:title="compute_mbe_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1379,-1627.92 1240,-1627.92 1240,-1603.92 1379,-1603.92 1379,-1627.92"/>
+<text text-anchor="middle" x="1309.5" y="-1613.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge129" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe_gradient</title>
+<path fill="none" stroke="#00ffe0" d="M1118.58,-1711.85C1128.01,-1708.31 1137.06,-1703.76 1145,-1697.92 1170.36,-1679.26 1155.03,-1654.7 1181,-1636.92 1195.31,-1627.11 1212.61,-1621.32 1229.79,-1618"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1230.57,-1621.42 1239.86,-1616.32 1229.42,-1614.51 1230.57,-1621.42"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge131" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_destroy</title>
+<path fill="none" stroke="#00ffe0" d="M1124.55,-1732.43C1131.96,-1735.61 1138.93,-1739.7 1145,-1744.92 1181.47,-1776.24 1144.15,-1816.04 1181,-1846.92 1182.39,-1848.08 1183.82,-1849.19 1185.28,-1850.25"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1183.71,-1853.4 1194.03,-1855.79 1187.45,-1847.48 1183.71,-1853.4"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_init -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge132" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_init</title>
+<path fill="none" stroke="#00ffe0" d="M1124.55,-1731.6C1132.06,-1734.94 1139.04,-1739.28 1145,-1744.92 1192.96,-1790.21 1132.49,-1844.21 1181,-1888.92 1182.16,-1889.98 1183.35,-1891.01 1184.57,-1892"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1182.84,-1895.06 1193.05,-1897.91 1186.85,-1889.32 1182.84,-1895.06"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_insert -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge133" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_insert</title>
+<path fill="none" stroke="#00ffe0" d="M1124.6,-1716.02C1140.77,-1714.61 1157.92,-1713.1 1175.01,-1711.61"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1175.4,-1715.09 1185.05,-1710.73 1174.79,-1708.11 1175.4,-1715.09"/>
+</g>
+<!-- proc~map_fragment_to_system_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node66" class="node">
+<title>proc~map_fragment_to_system_gradient</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node66"><a xlink:href="../proc/map_fragment_to_system_gradient.html" xlink:title="map_fragment_to_system_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1409.5,-1669.92 1209.5,-1669.92 1209.5,-1645.92 1409.5,-1645.92 1409.5,-1669.92"/>
+<text text-anchor="middle" x="1309.5" y="-1655.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~map_fragment_to_system_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge134" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~map_fragment_to_system_gradient</title>
+<path fill="none" stroke="#00ffe0" d="M1098.15,-1711.86C1113.7,-1708.12 1130.14,-1703.48 1145,-1697.92 1161.94,-1691.57 1163.85,-1684.68 1181,-1678.92 1188.4,-1676.43 1196.15,-1674.23 1204,-1672.28"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1205.06,-1675.63 1214,-1669.95 1203.47,-1668.81 1205.06,-1675.63"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge135" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown</title>
+<path fill="none" stroke="#00ffe0" d="M1124.62,-1734.21C1131.85,-1737.04 1138.75,-1740.56 1145,-1744.92 1170.51,-1762.71 1155.28,-1787.44 1181,-1804.92 1193.79,-1813.6 1208.93,-1819.14 1224.23,-1822.58"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1223.79,-1826.06 1234.28,-1824.56 1225.14,-1819.19 1223.79,-1826.06"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge136" class="edge">
+<title>proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json</title>
+<path fill="none" stroke="#00ffe0" d="M1112.48,-1735.93C1123.52,-1738.44 1134.64,-1741.42 1145,-1744.92 1161.95,-1750.64 1163.98,-1757.4 1181,-1762.92 1190.62,-1766.03 1200.81,-1768.71 1211.07,-1770.99"/>
+<polygon fill="#00ffe0" stroke="#00ffe0" points="1210.4,-1774.43 1220.9,-1773.07 1211.84,-1767.58 1210.4,-1774.43"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;error -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge140" class="edge">
+<title>proc~do_fragment_work&#45;&gt;error</title>
+<path fill="none" stroke="#00e0ff" d="M1071.53,-771.82C1096.21,-761.82 1127.26,-745.12 1145,-719.92 1196.23,-647.13 1121.58,-589.18 1181,-522.92 1203.93,-497.34 1243.26,-488.65 1272.18,-485.87"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1272.62,-489.34 1282.32,-485.09 1272.08,-482.37 1272.62,-489.34"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge141" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#00e0ff" d="M1089.76,-779.53C1108.64,-775.9 1129,-769.42 1145,-757.92 1169.64,-740.21 1155.78,-716.78 1181,-699.92 1198.87,-687.97 1221.23,-682.02 1242.21,-679.26"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1242.81,-682.72 1252.37,-678.15 1242.05,-675.76 1242.81,-682.72"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge139" class="edge">
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#00e0ff" d="M1040.62,-796.11C1059.84,-835.02 1119.2,-960.16 1145,-1070.92 1165.15,-1157.41 1120.54,-1403.87 1181,-1468.92 1200.01,-1489.37 1230.68,-1494.9 1257.17,-1495.18"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1257.52,-1498.67 1267.47,-1495.04 1257.42,-1491.67 1257.52,-1498.67"/>
+</g>
+<!-- proc~energy_reset -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node62" class="node">
+<title>proc~energy_reset</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node62"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1378.5,-900.92 1240.5,-900.92 1240.5,-876.92 1378.5,-876.92 1378.5,-900.92"/>
+<text text-anchor="middle" x="1309.5" y="-886.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~energy_reset -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge142" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~energy_reset</title>
+<path fill="none" stroke="#00e0ff" d="M1089.76,-788.3C1108.64,-791.93 1129,-798.41 1145,-809.92 1169.64,-827.62 1155.78,-851.05 1181,-867.92 1195.5,-877.61 1212.95,-883.35 1230.22,-886.65"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1229.91,-890.14 1240.35,-888.32 1231.05,-883.24 1229.91,-890.14"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node67" class="node">
+<title>proc~method_type_to_string</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node67"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1376,-858.92 1243,-858.92 1243,-834.92 1376,-834.92 1376,-858.92"/>
+<text text-anchor="middle" x="1309.5" y="-844.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~method_type_to_string -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge143" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~method_type_to_string</title>
+<path fill="none" stroke="#00e0ff" d="M1089.59,-794.75C1107.46,-798.82 1127.26,-803.94 1145,-809.92 1161.59,-815.5 1164.23,-820.9 1181,-825.92 1197.53,-830.86 1215.63,-834.73 1232.88,-837.72"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1232.47,-841.2 1242.91,-839.39 1233.62,-834.3 1232.47,-841.2"/>
+</g>
+<!-- proc~print_fragment_xyz -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node71" class="node">
+<title>proc~print_fragment_xyz</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node71"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
+<polygon fill="#d9534f" stroke="#d9534f" points="1367,-816.92 1252,-816.92 1252,-792.92 1367,-792.92 1367,-816.92"/>
+<text text-anchor="middle" x="1309.5" y="-802.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge144" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#00e0ff" d="M1089.62,-788.14C1133.44,-791.5 1194.92,-796.21 1241.57,-799.79"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1241.35,-803.28 1251.58,-800.55 1241.88,-796.3 1241.35,-803.28"/>
+</g>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node73" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node73"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1400,-774.92 1219,-774.92 1219,-750.92 1400,-750.92 1400,-774.92"/>
+<text text-anchor="middle" x="1309.5" y="-760.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge145" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#00e0ff" d="M1089.62,-779.69C1123.76,-777.07 1168.62,-773.64 1208.84,-770.55"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1209.25,-774.03 1218.95,-769.78 1208.71,-767.05 1209.25,-774.03"/>
+</g>
+<!-- proc~xtb_calc_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node74" class="node">
+<title>proc~xtb_calc_gradient</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node74"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1403.5,-732.92 1215.5,-732.92 1215.5,-708.92 1403.5,-708.92 1403.5,-732.92"/>
+<text text-anchor="middle" x="1309.5" y="-718.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge146" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00e0ff" d="M1089.59,-773.09C1107.46,-769.01 1127.26,-763.89 1145,-757.92 1161.59,-752.33 1164.23,-746.93 1181,-741.92 1189.6,-739.34 1198.63,-737.06 1207.74,-735.04"/>
+<polygon fill="#00e0ff" stroke="#00e0ff" points="1208.58,-738.44 1217.65,-732.95 1207.14,-731.59 1208.58,-738.44"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node68" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node68"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1625,-1543.92 1474,-1543.92 1474,-1519.92 1625,-1519.92 1625,-1543.92"/>
+<text text-anchor="middle" x="1549.5" y="-1529.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge147" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#00a3ff" d="M1377.75,-1531.92C1404.44,-1531.92 1435.44,-1531.92 1463.64,-1531.92"/>
+<polygon fill="#00a3ff" stroke="#00a3ff" points="1463.9,-1535.42 1473.9,-1531.92 1463.9,-1528.42 1463.9,-1535.42"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node58" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node58"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1424,-1459.92 1195,-1459.92 1195,-1435.92 1424,-1435.92 1424,-1459.92"/>
+<text text-anchor="middle" x="1309.5" y="-1445.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge148" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#0066ff" d="M1109.37,-1479.89C1144.71,-1474.22 1187.05,-1467.42 1223.58,-1461.55"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="1224.4,-1464.97 1233.72,-1459.92 1223.29,-1458.05 1224.4,-1464.97"/>
+</g>
+<!-- proc~result_reset -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node72" class="node">
+<title>proc~result_reset</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CallsGraph_node72"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1402,-555.92 1217,-555.92 1217,-531.92 1402,-531.92 1402,-555.92"/>
+<text text-anchor="middle" x="1309.5" y="-541.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~result_destroy&#45;&gt;proc~result_reset -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge149" class="edge">
+<title>proc~result_destroy&#45;&gt;proc~result_reset</title>
+<path fill="none" stroke="#0028ff" d="M1132.65,-543.92C1156.7,-543.92 1182.49,-543.92 1206.71,-543.92"/>
+<polygon fill="#0028ff" stroke="#0028ff" points="1206.98,-547.42 1216.98,-543.92 1206.98,-540.42 1206.98,-547.42"/>
+</g>
+<!-- proc~result_irecv&#45;&gt;irecv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge150" class="edge">
+<title>proc~result_irecv&#45;&gt;irecv</title>
+<path fill="none" stroke="#1400ff" d="M1070.04,-239.57C1122.44,-250.85 1219.89,-271.84 1272.53,-283.17"/>
+<polygon fill="#1400ff" stroke="#1400ff" points="1271.93,-286.62 1282.44,-285.3 1273.4,-279.78 1271.93,-286.62"/>
+</g>
+<!-- proc~result_irecv&#45;&gt;recv -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge151" class="edge">
+<title>proc~result_irecv&#45;&gt;recv</title>
+<path fill="none" stroke="#1400ff" d="M1070.04,-226.73C1122.44,-219.08 1219.89,-204.85 1272.53,-197.17"/>
+<polygon fill="#1400ff" stroke="#1400ff" points="1273.05,-200.63 1282.44,-195.72 1272.04,-193.7 1273.05,-200.63"/>
+</g>
+<!-- proc~result_isend&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge152" class="edge">
+<title>proc~result_isend&#45;&gt;isend</title>
+<path fill="none" stroke="#5100ff" d="M1056.4,-438.03C1082.53,-453.81 1125.17,-484.03 1145,-522.92 1223.47,-676.81 1102.21,-756.19 1181,-909.92 1202.41,-951.69 1246.84,-984.6 1277.17,-1003.41"/>
+<polygon fill="#5100ff" stroke="#5100ff" points="1275.71,-1006.62 1286.08,-1008.79 1279.33,-1000.62 1275.71,-1006.62"/>
+</g>
+<!-- send -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_node75" class="node">
+<title>send</title>
+<polygon fill="#777777" stroke="#777777" points="1336.5,-437.92 1282.5,-437.92 1282.5,-413.92 1336.5,-413.92 1336.5,-437.92"/>
+<text text-anchor="middle" x="1309.5" y="-423.52" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send</text>
+</g>
+<!-- proc~result_isend&#45;&gt;send -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge153" class="edge">
+<title>proc~result_isend&#45;&gt;send</title>
+<path fill="none" stroke="#5100ff" d="M1071.74,-425.92C1124.44,-425.92 1220.16,-425.92 1272.3,-425.92"/>
+<polygon fill="#5100ff" stroke="#5100ff" points="1272.42,-429.42 1282.42,-425.92 1272.42,-422.42 1272.42,-429.42"/>
+</g>
+<!-- proc~send_fragment_to_node&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge154" class="edge">
+<title>proc~send_fragment_to_node&#45;&gt;isend</title>
+<path fill="none" stroke="#8e00ff" d="M1104.04,-1293.08C1119.16,-1289.77 1133.92,-1283.65 1145,-1272.92 1197.95,-1221.57 1140.12,-1172.31 1181,-1110.92 1203.7,-1076.83 1244.04,-1051.62 1273.27,-1036.69"/>
+<polygon fill="#8e00ff" stroke="#8e00ff" points="1274.93,-1039.77 1282.34,-1032.2 1271.83,-1033.5 1274.93,-1039.77"/>
+</g>
+<!-- proc~send_fragment_to_worker&#45;&gt;isend -->
+<g id="proc~~run_multi_molecule_calculations~~CallsGraph_edge155" class="edge">
+<title>proc~send_fragment_to_worker&#45;&gt;isend</title>
+<path fill="none" stroke="#cc00ff" d="M1109.02,-1245.48C1122.24,-1241.42 1134.97,-1235.24 1145,-1225.92 1184.21,-1189.44 1149.46,-1154.2 1181,-1110.92 1204.97,-1078.02 1244.72,-1052.74 1273.47,-1037.46"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="1275.11,-1040.56 1282.39,-1032.86 1271.9,-1034.34 1275.11,-1040.56"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocrun_multi_molecule_calculationsCallsGraph = svgPanZoom('#procrun_multi_molecule_calculationsCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~run_multi_molecule_calculations~~CalledByGraph Pages: 1 -->
+<svg id="procrun_multi_molecule_calculationsCalledByGraph" width="285pt" height="32pt"
+ viewBox="0.00 0.00 285.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~run_multi_molecule_calculations~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~run_multi_molecule_calculations~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 281,-28 281,4 -4,4"/>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~run_multi_molecule_calculations~~CalledByGraph_node1" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<polygon fill="none" stroke="black" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">run_multi_molecule_calculations</text>
+</g>
+<!-- program~main -->
+<g id="proc~~run_multi_molecule_calculations~~CalledByGraph_node2" class="node">
+<title>program~main</title>
+<g id="a_proc~~run_multi_molecule_calculations~~CalledByGraph_node2"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~run_multi_molecule_calculations~~CalledByGraph_edge1" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ff0000" d="M54.21,-12C61.73,-12 70.43,-12 79.67,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.89,-15.5 89.89,-12 79.89,-8.5 79.89,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-color"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>color</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~14"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-errmsg~29"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>errmsg</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_fragmented_molecules"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_fragmented_molecules</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-imol~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>imol</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol_comm"></span>
+              type(comm_t),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mol_comm</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol_name"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>mol_name</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol_node_comm"></span>
+              type(comm_t),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mol_node_comm</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-molecules_processed"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>molecules_processed</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-my_rank"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>my_rank</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-num_ranks"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>num_ranks</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stat~29"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stat</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~11"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_multi_molecule_calculations</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Run calculations for multiple molecules with MPI parallelization</span>
+<span class="w">      </span><span class="c">!! Each molecule is independent, so assign one molecule per rank</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node_comm</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mqc_config</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol_comm</span><span class="p">,</span><span class="w"> </span><span class="n">mol_node_comm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">imol</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">my_rank</span><span class="p">,</span><span class="w"> </span><span class="n">num_ranks</span><span class="p">,</span><span class="w"> </span><span class="n">color</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">molecules_processed</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">errmsg</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol_name</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_fragmented_molecules</span>
+
+<span class="w">      </span><span class="n">my_rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span>
+<span class="w">      </span><span class="n">num_ranks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world_comm</span><span class="p">%</span><span class="n">size</span><span class="p">()</span>
+
+<span class="w">      </span><span class="c">! Check if any molecules have fragments (nlevel &gt; 0)</span>
+<span class="w">      </span><span class="n">has_fragmented_molecules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">do </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">nfrag</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">has_fragmented_molecules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">            </span><span class="k">exit</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Multi-molecule mode: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; molecules&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;MPI ranks: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">))</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_fragmented_molecules</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Sequential execution (fragmented molecules detected)&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Each molecule will use all &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; rank(s) for its calculation&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Sequential execution (single rank)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Parallel execution (one molecule per rank)&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Note: More ranks than molecules - ranks &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">&quot; to &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; will be idle&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Mode: Parallel execution (one molecule per rank)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Determine execution mode:</span>
+<span class="w">      </span><span class="c">! 1. Sequential: Single rank OR fragmented molecules (each molecule needs all ranks)</span>
+<span class="w">      </span><span class="c">! 2. Parallel: Multiple ranks AND unfragmented molecules (distribute molecules across ranks)</span>
+<span class="w">      </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">has_fragmented_molecules</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! Sequential mode: process all molecules one after another</span>
+<span class="w">         </span><span class="c">! Each molecule uses all available ranks for its calculation</span>
+<span class="w">         </span><span class="k">do </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span>
+<span class="w">            </span><span class="c">! Determine molecule name for logging</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;molecule_&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="w">            </span><span class="c">! Convert to driver configuration for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">config_to_driver</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Convert geometry for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">config_to_system_geometry</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error converting geometry for &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="w">            </span><span class="c">! Run calculation for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">bonds</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Clean up for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Completed molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      else</span>
+<span class="w">         </span><span class="c">! Multiple ranks: distribute molecules across ranks (one per rank)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_rank</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="c">! This rank has a molecule to process</span>
+<span class="w">            </span><span class="c">! Determine molecule name for logging</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">name</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               </span><span class="n">mol_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;molecule_&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Processing molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;--------------------------------------------&quot;</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Convert to driver configuration for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">config_to_driver</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Convert geometry for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">config_to_system_geometry</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">,</span><span class="w"> </span><span class="n">molecule_index</span><span class="o">=</span><span class="n">imol</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Error converting geometry for &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="w">            </span><span class="c">! Run calculation for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">run_calculation</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">)%</span><span class="n">bonds</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Clean up for this molecule</span>
+<span class="w">            </span><span class="k">call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: Completed molecule &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">imol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">mol_name</span><span class="p">)</span>
+
+<span class="w">            </span><span class="n">molecules_processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="w">            </span><span class="c">! Idle rank - no molecule assigned</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">my_rank</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;: No molecule assigned (idle)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! Synchronize all ranks</span>
+<span class="w">      </span><span class="k">call </span><span class="n">world_comm</span><span class="p">%</span><span class="n">barrier</span><span class="p">()</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">my_rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; molecules completed&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_fragmented_molecules</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Sequential (each molecule used all ranks)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Sequential (single rank)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">num_ranks</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">           call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Parallel (active ranks: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">nmol</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">num_ranks</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Execution: Parallel (all ranks active)&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">   end subroutine </span><span class="n">run_multi_molecule_calculations</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-29 08:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,1027 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>parse_molecules_section &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>parse_molecules_section
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.6% of total for procedures.">66 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_config_parser.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_config_parser.f90.html'>mqc_config_parser.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+            <li class="breadcrumb-item active" aria-current="page">parse_molecules_section</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-eq_pos~8">eq_pos</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-imol">imol</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-io_stat~10">io_stat</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-key~9">key</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-line~11">line</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-nmol~2">nmol</a>
+            <a class="list-group-item" href="../proc/parse_molecules_section.html#variable-value~9">value</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/parse_molecules_section.html#src">parse_molecules_section</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine parse_molecules_section(unit, config, stat, errmsg)  
+</h2>
+    
+
+    <p>Parse %molecules section containing multiple %molecule blocks</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unit~13"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>unit</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~12"></span>
+              type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stat~17"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stat</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-errmsg~17"></span>
+              character(len=:),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>errmsg</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~parse_molecules_section~~CallsGraph Pages: 1 -->
+<svg id="procparse_molecules_sectionCallsGraph" width="641pt" height="191pt"
+ viewBox="0.00 0.00 641.00 190.79" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~parse_molecules_section~~CallsGraph" class="graph" transform="scale(0.61 0.61) rotate(0) translate(4 307.93)">
+<title>proc~~parse_molecules_section~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-307.93 1044,-307.93 1044,4 -4,4"/>
+<!-- proc~parse_molecules_section -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node1" class="node">
+<title>proc~parse_molecules_section</title>
+<polygon fill="none" stroke="black" points="146,-163 0,-163 0,-139 146,-139 146,-163"/>
+<text text-anchor="middle" x="73" y="-148.6" font-family="Helvetica,sans-Serif" font-size="10.50">parse_molecules_section</text>
+</g>
+<!-- proc~parse_single_molecule -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node2" class="node">
+<title>proc~parse_single_molecule</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node2"><a xlink:href="../proc/parse_single_molecule.html" xlink:title="parse_single_molecule">
+<polygon fill="#d9534f" stroke="#d9534f" points="316,-163 182,-163 182,-139 316,-139 316,-163"/>
+<text text-anchor="middle" x="249" y="-148.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_single_molecule</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecules_section&#45;&gt;proc~parse_single_molecule -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge1" class="edge">
+<title>proc~parse_molecules_section&#45;&gt;proc~parse_single_molecule</title>
+<path fill="none" stroke="#ff0000" d="M146.03,-151C154.47,-151 163.11,-151 171.6,-151"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="171.88,-154.5 181.88,-151 171.88,-147.5 171.88,-154.5"/>
+</g>
+<!-- proc~skip_to_end -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node3" class="node">
+<title>proc~skip_to_end</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node3"><a xlink:href="../proc/skip_to_end.html" xlink:title="skip_to_end">
+<polygon fill="#d9534f" stroke="#d9534f" points="859,-104 784,-104 784,-80 859,-80 859,-104"/>
+<text text-anchor="middle" x="821.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">skip_to_end</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecules_section&#45;&gt;proc~skip_to_end -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge2" class="edge">
+<title>proc~parse_molecules_section&#45;&gt;proc~skip_to_end</title>
+<path fill="none" stroke="#ff0000" d="M93.96,-138.85C138.35,-112.62 249.45,-51.35 352,-30 424.66,-14.87 445.16,-22.49 519,-30 610.47,-39.31 715.17,-64.11 774,-79.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="773.18,-82.78 783.74,-81.92 774.95,-76 773.18,-82.78"/>
+</g>
+<!-- proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node4" class="node">
+<title>proc~strip_comment</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node4"><a xlink:href="../proc/strip_comment.html" xlink:title="strip_comment">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1031,-163 939,-163 939,-139 1031,-139 1031,-163"/>
+<text text-anchor="middle" x="985" y="-148.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">strip_comment</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecules_section&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge3" class="edge">
+<title>proc~parse_molecules_section&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M91.05,-163.11C141.15,-197.45 293.24,-293 434.5,-293 434.5,-293 434.5,-293 635,-293 750.49,-293 792.99,-327.98 894,-272 934.18,-249.73 961.56,-201.15 974.81,-172.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="978.15,-173.89 979.05,-163.33 971.76,-171.03 978.15,-173.89"/>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~skip_to_end -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge8" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~skip_to_end</title>
+<path fill="none" stroke="#ff0000" d="M273.58,-138.81C293.8,-129.03 324,-115.98 352,-110 503.5,-77.66 688.66,-83.46 773.72,-88.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="773.63,-92.06 783.83,-89.19 774.06,-85.07 773.63,-92.06"/>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge9" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M316.12,-151.67C328.06,-151.78 340.4,-151.9 352,-152 592.88,-154.09 653.17,-160.35 894,-155 905.13,-154.75 917.04,-154.33 928.42,-153.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="928.85,-157.34 938.69,-153.41 928.55,-150.35 928.85,-157.34"/>
+</g>
+<!-- proc~parse_molecule_connectivity -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node5" class="node">
+<title>proc~parse_molecule_connectivity</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node5"><a xlink:href="../proc/parse_molecule_connectivity.html" xlink:title="parse_molecule_connectivity">
+<polygon fill="#d9534f" stroke="#d9534f" points="519,-143 352,-143 352,-119 519,-119 519,-143"/>
+<text text-anchor="middle" x="435.5" y="-128.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_molecule_connectivity</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~parse_molecule_connectivity -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge4" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~parse_molecule_connectivity</title>
+<path fill="none" stroke="#ff0000" d="M316.09,-143.84C324.41,-142.93 333.04,-142 341.68,-141.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.25,-144.52 351.81,-139.96 341.49,-137.56 342.25,-144.52"/>
+</g>
+<!-- proc~parse_molecule_fragments -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node6" class="node">
+<title>proc~parse_molecule_fragments</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node6"><a xlink:href="../proc/parse_molecule_fragments.html" xlink:title="parse_molecule_fragments">
+<polygon fill="#d9534f" stroke="#d9534f" points="514,-63 357,-63 357,-39 514,-39 514,-63"/>
+<text text-anchor="middle" x="435.5" y="-48.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_molecule_fragments</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~parse_molecule_fragments -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge5" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~parse_molecule_fragments</title>
+<path fill="none" stroke="#ff0000" d="M263.58,-138.91C282.29,-122.8 317.61,-94.32 352,-77 360.08,-72.93 368.92,-69.34 377.72,-66.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="378.85,-69.54 387.21,-63.03 376.62,-62.9 378.85,-69.54"/>
+</g>
+<!-- proc~parse_molecule_geometry -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node7" class="node">
+<title>proc~parse_molecule_geometry</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node7"><a xlink:href="../proc/parse_molecule_geometry.html" xlink:title="parse_molecule_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="512.5,-265 358.5,-265 358.5,-241 512.5,-241 512.5,-265"/>
+<text text-anchor="middle" x="435.5" y="-250.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_molecule_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~parse_molecule_geometry -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge6" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~parse_molecule_geometry</title>
+<path fill="none" stroke="#ff0000" d="M261.69,-163.1C279.52,-180.86 315.33,-213.82 352,-232 356.06,-234.01 360.33,-235.84 364.7,-237.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="363.79,-240.9 374.38,-240.89 366.1,-234.29 363.79,-240.9"/>
+</g>
+<!-- proc~parse_molecule_structure -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node8" class="node">
+<title>proc~parse_molecule_structure</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node8"><a xlink:href="../proc/parse_molecule_structure.html" xlink:title="parse_molecule_structure">
+<polygon fill="#d9534f" stroke="#d9534f" points="510.5,-223 360.5,-223 360.5,-199 510.5,-199 510.5,-223"/>
+<text text-anchor="middle" x="435.5" y="-208.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_molecule_structure</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_single_molecule&#45;&gt;proc~parse_molecule_structure -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge7" class="edge">
+<title>proc~parse_single_molecule&#45;&gt;proc~parse_molecule_structure</title>
+<path fill="none" stroke="#ff0000" d="M285.83,-163.1C305.36,-169.66 329.98,-177.86 352,-185 363.05,-188.58 374.95,-192.37 386.18,-195.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="385.26,-199.3 395.84,-198.96 387.36,-192.62 385.26,-199.3"/>
+</g>
+<!-- proc~skip_to_end&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge10" class="edge">
+<title>proc~skip_to_end&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#00ff00" d="M855.61,-104.02C867.7,-108.41 881.47,-113.42 894,-118 909.52,-123.67 926.53,-129.9 941.55,-135.41"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="940.5,-138.75 951.09,-138.91 942.91,-132.18 940.5,-138.75"/>
+</g>
+<!-- proc~parse_connectivity_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node9" class="node">
+<title>proc~parse_connectivity_generic</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node9"><a xlink:href="../proc/parse_connectivity_generic.html" xlink:title="parse_connectivity_generic">
+<polygon fill="#d9534f" stroke="#d9534f" points="713,-143 555,-143 555,-119 713,-119 713,-143"/>
+<text text-anchor="middle" x="634" y="-128.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_connectivity_generic</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecule_connectivity&#45;&gt;proc~parse_connectivity_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge11" class="edge">
+<title>proc~parse_molecule_connectivity&#45;&gt;proc~parse_connectivity_generic</title>
+<path fill="none" stroke="#ff0000" d="M519.26,-131C527.62,-131 536.12,-131 544.53,-131"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="544.72,-134.5 554.72,-131 544.72,-127.5 544.72,-134.5"/>
+</g>
+<!-- proc~parse_fragments_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node10" class="node">
+<title>proc~parse_fragments_generic</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node10"><a xlink:href="../proc/parse_fragments_generic.html" xlink:title="parse_fragments_generic">
+<polygon fill="#d9534f" stroke="#d9534f" points="708,-24 560,-24 560,0 708,0 708,-24"/>
+<text text-anchor="middle" x="634" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_fragments_generic</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecule_fragments&#45;&gt;proc~parse_fragments_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge12" class="edge">
+<title>proc~parse_molecule_fragments&#45;&gt;proc~parse_fragments_generic</title>
+<path fill="none" stroke="#7fff00" d="M497.06,-38.98C517.7,-34.88 540.95,-30.27 562.31,-26.03"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="563.17,-29.43 572.3,-24.05 561.81,-22.56 563.17,-29.43"/>
+</g>
+<!-- proc~parse_geometry_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node11" class="node">
+<title>proc~parse_geometry_generic</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node11"><a xlink:href="../proc/parse_geometry_generic.html" xlink:title="parse_geometry_generic">
+<polygon fill="#d9534f" stroke="#d9534f" points="894,-263 749,-263 749,-239 894,-239 894,-263"/>
+<text text-anchor="middle" x="821.5" y="-248.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_geometry_generic</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecule_geometry&#45;&gt;proc~parse_geometry_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge13" class="edge">
+<title>proc~parse_molecule_geometry&#45;&gt;proc~parse_geometry_generic</title>
+<path fill="none" stroke="#00ffff" d="M512.83,-252.6C578.15,-252.26 671.96,-251.77 738.79,-251.43"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="738.88,-254.93 748.86,-251.37 738.84,-247.93 738.88,-254.93"/>
+</g>
+<!-- proc~parse_structure_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node12" class="node">
+<title>proc~parse_structure_generic</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node12"><a xlink:href="../proc/parse_structure_generic.html" xlink:title="parse_structure_generic">
+<polygon fill="#d9534f" stroke="#d9534f" points="704.5,-223 563.5,-223 563.5,-199 704.5,-199 704.5,-223"/>
+<text text-anchor="middle" x="634" y="-208.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_structure_generic</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_molecule_structure&#45;&gt;proc~parse_structure_generic -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge14" class="edge">
+<title>proc~parse_molecule_structure&#45;&gt;proc~parse_structure_generic</title>
+<path fill="none" stroke="#7f00ff" d="M510.51,-211C524.43,-211 539.04,-211 553.13,-211"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="553.28,-214.5 563.28,-211 553.28,-207.5 553.28,-214.5"/>
+</g>
+<!-- proc~parse_connectivity_generic&#45;&gt;proc~skip_to_end -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge15" class="edge">
+<title>proc~parse_connectivity_generic&#45;&gt;proc~skip_to_end</title>
+<path fill="none" stroke="#ff0000" d="M692.17,-118.98C718.46,-113.45 749.25,-106.98 774.08,-101.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="774.91,-105.16 783.97,-99.68 773.47,-98.31 774.91,-105.16"/>
+</g>
+<!-- proc~parse_connectivity_generic&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge16" class="edge">
+<title>proc~parse_connectivity_generic&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M713.32,-135.49C778.73,-139.24 870.36,-144.49 928.44,-147.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="928.34,-151.32 938.52,-148.39 928.74,-144.33 928.34,-151.32"/>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~skip_to_end -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge18" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~skip_to_end</title>
+<path fill="none" stroke="#7fff00" d="M679.82,-24.05C690.97,-27.82 702.68,-32.48 713,-38 730.87,-47.56 731.26,-56.19 749,-66 756.9,-70.36 765.67,-74.25 774.29,-77.6"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="773.3,-80.97 783.9,-81.16 775.73,-74.41 773.3,-80.97"/>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge19" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#7fff00" d="M694.97,-24.02C765.83,-38.48 876.39,-61.94 894,-71 923.18,-86.02 950.41,-112.69 967.11,-131.09"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="964.77,-133.72 974.02,-138.88 970.01,-129.08 964.77,-133.72"/>
+</g>
+<!-- proc~parse_fragment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node13" class="node">
+<title>proc~parse_fragment</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node13"><a xlink:href="../proc/parse_fragment.html" xlink:title="parse_fragment">
+<polygon fill="#d9534f" stroke="#d9534f" points="870,-24 773,-24 773,0 870,0 870,-24"/>
+<text text-anchor="middle" x="821.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_fragment</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragments_generic&#45;&gt;proc~parse_fragment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge17" class="edge">
+<title>proc~parse_fragments_generic&#45;&gt;proc~parse_fragment</title>
+<path fill="none" stroke="#7fff00" d="M708.05,-12C726.1,-12 745.2,-12 762.43,-12"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="762.89,-15.5 772.89,-12 762.89,-8.5 762.89,-15.5"/>
+</g>
+<!-- proc~parse_geometry_generic&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge20" class="edge">
+<title>proc~parse_geometry_generic&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#00ffff" d="M861.38,-238.89C872.26,-234.82 883.87,-229.81 894,-224 920.48,-208.8 947.19,-185.96 964.55,-169.89"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="966.96,-172.44 971.84,-163.03 962.16,-167.34 966.96,-172.44"/>
+</g>
+<!-- proc~parse_structure_generic&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge21" class="edge">
+<title>proc~parse_structure_generic&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#7f00ff" d="M704.52,-208.94C757.13,-206.2 830.87,-199.82 894,-185 912.18,-180.73 931.64,-173.71 947.81,-167.15"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="949.51,-170.23 957.4,-163.15 946.82,-163.77 949.51,-170.23"/>
+</g>
+<!-- proc~parse_fragment&#45;&gt;proc~strip_comment -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge23" class="edge">
+<title>proc~parse_fragment&#45;&gt;proc~strip_comment</title>
+<path fill="none" stroke="#ff0000" d="M867.5,-24.09C876.74,-27.71 886.06,-32.29 894,-38 928.85,-63.06 957.32,-105.11 972.37,-130.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="969.41,-132.1 977.47,-138.97 975.45,-128.57 969.41,-132.1"/>
+</g>
+<!-- proc~parse_indices_line -->
+<g id="proc~~parse_molecules_section~~CallsGraph_node14" class="node">
+<title>proc~parse_indices_line</title>
+<g id="a_proc~~parse_molecules_section~~CallsGraph_node14"><a xlink:href="../proc/parse_indices_line.html" xlink:title="parse_indices_line">
+<polygon fill="#d9534f" stroke="#d9534f" points="1040,-24 930,-24 930,0 1040,0 1040,-24"/>
+<text text-anchor="middle" x="985" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parse_indices_line</text>
+</a>
+</g>
+</g>
+<!-- proc~parse_fragment&#45;&gt;proc~parse_indices_line -->
+<g id="proc~~parse_molecules_section~~CallsGraph_edge22" class="edge">
+<title>proc~parse_fragment&#45;&gt;proc~parse_indices_line</title>
+<path fill="none" stroke="#ff0000" d="M870.08,-12C885.65,-12 903.2,-12 919.78,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="919.96,-15.5 929.96,-12 919.96,-8.5 919.96,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocparse_molecules_sectionCallsGraph = svgPanZoom('#procparse_molecules_sectionCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~parse_molecules_section~~CalledByGraph Pages: 1 -->
+<svg id="procparse_molecules_sectionCalledByGraph" width="367pt" height="32pt"
+ viewBox="0.00 0.00 367.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~parse_molecules_section~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~parse_molecules_section~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 363,-28 363,4 -4,4"/>
+<!-- proc~parse_molecules_section -->
+<g id="proc~~parse_molecules_section~~CalledByGraph_node1" class="node">
+<title>proc~parse_molecules_section</title>
+<polygon fill="none" stroke="black" points="359,-24 213,-24 213,0 359,0 359,-24"/>
+<text text-anchor="middle" x="286" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">parse_molecules_section</text>
+</g>
+<!-- proc~read_mqc_file -->
+<g id="proc~~parse_molecules_section~~CalledByGraph_node2" class="node">
+<title>proc~read_mqc_file</title>
+<g id="a_proc~~parse_molecules_section~~CalledByGraph_node2"><a xlink:href="../proc/read_mqc_file.html" xlink:title="read_mqc_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="177,-24 90,-24 90,0 177,0 177,-24"/>
+<text text-anchor="middle" x="133.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_mqc_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_mqc_file&#45;&gt;proc~parse_molecules_section -->
+<g id="proc~~parse_molecules_section~~CalledByGraph_edge1" class="edge">
+<title>proc~read_mqc_file&#45;&gt;proc~parse_molecules_section</title>
+<path fill="none" stroke="#ff0000" d="M177.22,-12C185.22,-12 193.82,-12 202.55,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="202.84,-15.5 212.84,-12 202.84,-8.5 202.84,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~parse_molecules_section~~CalledByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_proc~~parse_molecules_section~~CalledByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_mqc_file -->
+<g id="proc~~parse_molecules_section~~CalledByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;proc~read_mqc_file</title>
+<path fill="none" stroke="#ff0000" d="M54.1,-12C61.83,-12 70.6,-12 79.4,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.68,-15.5 89.68,-12 79.68,-8.5 79.68,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eq_pos~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eq_pos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-imol"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>imol</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-io_stat~10"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>io_stat</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-key~9"></span>
+              character(len=MAX_LINE_LEN),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>key</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-line~11"></span>
+              character(len=MAX_LINE_LEN),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>line</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nmol~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nmol</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~9"></span>
+              character(len=MAX_LINE_LEN),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">parse_molecules_section</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Parse %molecules section containing multiple %molecule blocks</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unit</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mqc_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span>
+<span class="nb">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">errmsg</span>
+
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_LINE_LEN</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="k">value</span>
+<span class="k">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">io_stat</span><span class="p">,</span><span class="w"> </span><span class="n">eq_pos</span><span class="p">,</span><span class="w"> </span><span class="n">nmol</span><span class="p">,</span><span class="w"> </span><span class="n">imol</span>
+
+<span class="w">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">nmol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="c">! First pass: read nmol</span>
+<span class="w">      </span><span class="k">do</span>
+<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Unexpected end of file in %molecules section&quot;</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+
+<span class="k">         </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;#&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;!&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         </span><span class="n">eq_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span>
+<span class="w">            </span><span class="k">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:))</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;nmol&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">nmol</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Invalid nmol value&quot;</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               exit</span>
+<span class="k">            end if</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">nmol</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! No molecules, just skip to end</span>
+<span class="w">         </span><span class="k">call </span><span class="n">skip_to_end</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">config</span><span class="p">%</span><span class="n">nmol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nmol</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">nmol</span><span class="p">))</span>
+
+<span class="w">      </span><span class="c">! Parse individual molecules</span>
+<span class="w">      </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do</span>
+<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;#&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;!&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;%molecule&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">imol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">imol</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">imol</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="n">errmsg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;More molecules than declared nmol&quot;</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end if</span>
+<span class="k">            call </span><span class="n">parse_single_molecule</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">molecules</span><span class="p">(</span><span class="n">imol</span><span class="p">),</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">errmsg</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">imol</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">nmol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">errmsg</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A,I0,A,I0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Expected &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nmol</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; molecules, found &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">imol</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">   end subroutine </span><span class="n">parse_molecules_section</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-29 08:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

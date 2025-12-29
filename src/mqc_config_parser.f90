@@ -10,7 +10,7 @@ module mqc_config_parser
    private
 
    public :: mqc_config_t, read_mqc_file
-   public :: input_fragment_t, bond_t
+   public :: input_fragment_t, bond_t, molecule_t
 
    ! Maximum line length for reading
    integer, parameter :: MAX_LINE_LEN = 1024
@@ -33,6 +33,30 @@ module mqc_config_parser
       logical :: is_broken = .false.
    end type bond_t
 
+   type :: molecule_t
+      !! Single molecule definition with structure, geometry, fragments, and connectivity
+      character(len=:), allocatable :: name  !! Optional molecule name
+
+      ! Structure information
+      integer :: charge = 0
+      integer :: multiplicity = 1
+
+      ! Geometry
+      type(geometry_type) :: geometry
+
+      ! Fragments
+      integer :: nfrag = 0
+      type(input_fragment_t), allocatable :: fragments(:)
+
+      ! Connectivity
+      integer :: nbonds = 0
+      integer :: nbroken = 0
+      type(bond_t), allocatable :: bonds(:)
+
+   contains
+      procedure :: destroy => molecule_destroy
+   end type molecule_t
+
    type :: mqc_config_t
       !! Complete configuration from .mqc file
 
@@ -50,6 +74,11 @@ module mqc_config_parser
       ! Driver information
       integer(int32) :: calc_type = CALC_TYPE_ENERGY
 
+      ! Multiple molecules support
+      integer :: nmol = 0  !! Number of molecules (0 = single molecule mode for backward compatibility)
+      type(molecule_t), allocatable :: molecules(:)  !! Array of molecules (if nmol > 0)
+
+      ! Single molecule fields (backward compatibility - used if nmol == 0)
       ! Structure information
       integer :: charge = 0
       integer :: multiplicity = 1
@@ -170,6 +199,8 @@ contains
                call parse_fragmentation_section(unit, config, stat, errmsg)
             case ('%system')
                call parse_system_section(unit, config, stat, errmsg)
+            case ('%molecules')
+               call parse_molecules_section(unit, config, stat, errmsg)
             case default
                ! Skip unknown sections
                call skip_to_end(unit, stat, errmsg)
@@ -191,10 +222,17 @@ contains
          return
       end if
 
-      if (.not. allocated(config%geometry%coords) .or. config%geometry%natoms == 0) then
-         stat = 1
-         errmsg = "Missing required section: %geometry"
-         return
+      ! Validate geometry: required for single-molecule mode, not for multi-molecule mode
+      if (config%nmol == 0) then
+         ! Single molecule mode: require top-level geometry
+         if (.not. allocated(config%geometry%coords) .or. config%geometry%natoms == 0) then
+            stat = 1
+            errmsg = "Missing required section: %geometry"
+            return
+         end if
+      else
+         ! Multi-molecule mode: each molecule must have geometry (validated during parsing)
+         ! No additional validation needed here
       end if
 
    end subroutine read_mqc_file
@@ -355,42 +393,7 @@ contains
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
-      character(len=MAX_LINE_LEN) :: line, key, value
-      integer :: io_stat, eq_pos
-
-      stat = 0
-
-      do
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Unexpected end of file in %structure section"
-            return
-         end if
-
-         line = adjustl(line)
-         if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
-
-         if (trim(strip_comment(line)) == 'end') exit
-
-         eq_pos = index(line, '=')
-         if (eq_pos == 0) cycle
-
-         key = adjustl(line(1:eq_pos - 1))
-         value = adjustl(line(eq_pos + 1:))
-
-         select case (trim(key))
-         case ('charge')
-            read (value, *, iostat=io_stat) config%charge
-         case ('multiplicity')
-            read (value, *, iostat=io_stat) config%multiplicity
-         case default
-            stat = 1
-            errmsg = "Unknown key in %structure section: "//trim(key)
-            return
-         end select
-      end do
+      call parse_structure_generic(unit, config%charge, config%multiplicity, stat, errmsg)
 
    end subroutine parse_structure_section
 
@@ -400,86 +403,7 @@ contains
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
-      character(len=MAX_LINE_LEN) :: line, elem
-      integer :: io_stat, natoms, i
-      real(dp) :: x, y, z
-
-      stat = 0
-
-      ! Read number of atoms
-      read (unit, '(A)', iostat=io_stat) line
-      if (io_stat /= 0) then
-         stat = 1
-         errmsg = "Error reading natoms in %geometry section"
-         return
-      end if
-
-      read (line, *, iostat=io_stat) natoms
-      if (io_stat /= 0) then
-         stat = 1
-         errmsg = "Invalid natoms in %geometry section"
-         return
-      end if
-
-      config%geometry%natoms = natoms
-
-      ! Read blank line (comment line in XYZ format)
-      read (unit, '(A)', iostat=io_stat) line
-      if (io_stat /= 0) then
-         stat = 1
-         errmsg = "Error reading comment line in %geometry section"
-         return
-      end if
-
-      config%geometry%comment = trim(line)
-
-      ! Allocate arrays
-      allocate (character(len=4) :: config%geometry%elements(natoms))
-      allocate (config%geometry%coords(3, natoms))
-
-      ! Read coordinates
-      do i = 1, natoms
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Error reading geometry coordinates"
-            return
-         end if
-
-         line = adjustl(line)
-         if (trim(strip_comment(line)) == 'end') then
-            stat = 1
-            errmsg = "Unexpected 'end' while reading geometry"
-            return
-         end if
-
-         read (line, *, iostat=io_stat) elem, x, y, z
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Invalid coordinate format in %geometry section"
-            return
-         end if
-
-         config%geometry%elements(i) = trim(elem)
-         config%geometry%coords(1, i) = x
-         config%geometry%coords(2, i) = y
-         config%geometry%coords(3, i) = z
-      end do
-
-      ! Read 'end' marker
-      read (unit, '(A)', iostat=io_stat) line
-      if (io_stat /= 0) then
-         stat = 1
-         errmsg = "Missing 'end' in %geometry section"
-         return
-      end if
-
-      line = adjustl(line)
-      if (trim(strip_comment(line)) /= 'end') then
-         stat = 1
-         errmsg = "Expected 'end' after geometry coordinates"
-         return
-      end if
+      call parse_geometry_generic(unit, config%geometry, stat, errmsg)
 
    end subroutine parse_geometry_section
 
@@ -489,82 +413,7 @@ contains
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
-      character(len=MAX_LINE_LEN) :: line, key, value
-      integer :: io_stat, eq_pos, nfrag, ifrag
-
-      stat = 0
-      nfrag = 0
-
-      ! First pass: read nfrag
-      do
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Unexpected end of file in %fragments section"
-            return
-         end if
-
-         line = adjustl(line)
-         if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
-
-         if (trim(strip_comment(line)) == 'end') exit
-
-         eq_pos = index(line, '=')
-         if (eq_pos > 0) then
-            key = adjustl(line(1:eq_pos - 1))
-            value = adjustl(line(eq_pos + 1:))
-
-            if (trim(key) == 'nfrag') then
-               read (value, *, iostat=io_stat) nfrag
-               if (io_stat /= 0) then
-                  stat = 1
-                  errmsg = "Invalid nfrag value"
-                  return
-               end if
-               exit
-            end if
-         end if
-      end do
-
-      if (nfrag == 0) then
-         ! No fragments, just skip to end
-         call skip_to_end(unit, stat, errmsg)
-         return
-      end if
-
-      config%nfrag = nfrag
-      allocate (config%fragments(nfrag))
-
-      ! Parse individual fragments
-      ifrag = 0
-      do
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) exit
-
-         line = adjustl(line)
-         if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
-
-         if (trim(strip_comment(line)) == 'end') exit
-
-         if (trim(line) == '%fragment') then
-            ifrag = ifrag + 1
-            if (ifrag > nfrag) then
-               stat = 1
-               errmsg = "More fragments than declared nfrag"
-               return
-            end if
-            call parse_fragment(unit, config%fragments(ifrag), stat, errmsg)
-            if (stat /= 0) return
-         end if
-      end do
-
-      if (ifrag /= nfrag) then
-         stat = 1
-         write (errmsg, '(A,I0,A,I0)') "Expected ", nfrag, " fragments, found ", ifrag
-         return
-      end if
+      call parse_fragments_generic(unit, config%nfrag, config%fragments, stat, errmsg)
 
    end subroutine parse_fragments_section
 
@@ -690,97 +539,7 @@ contains
       integer, intent(out) :: stat
       character(len=:), allocatable, intent(out) :: errmsg
 
-      character(len=MAX_LINE_LEN) :: line, key, value, status_str
-      integer :: io_stat, eq_pos, nbonds, ibond
-      integer :: atom_i, atom_j, order
-
-      stat = 0
-      nbonds = 0
-
-      ! First pass: read nbonds
-      do
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Unexpected end of file in %connectivity section"
-            return
-         end if
-
-         line = adjustl(line)
-         if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
-
-         if (trim(strip_comment(line)) == 'end') exit
-
-         eq_pos = index(line, '=')
-         if (eq_pos > 0) then
-            key = adjustl(line(1:eq_pos - 1))
-            value = adjustl(line(eq_pos + 1:))
-
-            if (trim(key) == 'nbonds') then
-               read (value, *, iostat=io_stat) nbonds
-               if (io_stat /= 0) then
-                  stat = 1
-                  errmsg = "Invalid nbonds value"
-                  return
-               end if
-               exit
-            end if
-         end if
-      end do
-
-      if (nbonds == 0) then
-         ! No bonds, just skip to end
-         call skip_to_end(unit, stat, errmsg)
-         return
-      end if
-
-      config%nbonds = nbonds
-      allocate (config%bonds(nbonds))
-
-      ! Read bonds
-      ibond = 0
-      do
-         read (unit, '(A)', iostat=io_stat) line
-         if (io_stat /= 0) exit
-
-         line = adjustl(line)
-         if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
-
-         ! Check for key=value pairs (like nbroken=9)
-         eq_pos = index(line, '=')
-         if (eq_pos > 0) then
-            key = adjustl(line(1:eq_pos - 1))
-            value = adjustl(line(eq_pos + 1:))
-            if (trim(key) == 'nbroken') then
-               read (value, *, iostat=io_stat) config%nbroken
-            end if
-            cycle
-         end if
-
-         if (trim(strip_comment(line)) == 'end') exit
-
-         ! Parse bond line: atom_i atom_j order broken/preserved
-         read (line, *, iostat=io_stat) atom_i, atom_j, order, status_str
-         if (io_stat /= 0) then
-            stat = 1
-            errmsg = "Invalid bond format in %connectivity section"
-            return
-         end if
-
-         ibond = ibond + 1
-         if (ibond > nbonds) then
-            stat = 1
-            errmsg = "More bonds than declared nbonds"
-            return
-         end if
-
-         config%bonds(ibond)%atom_i = atom_i
-         config%bonds(ibond)%atom_j = atom_j
-         config%bonds(ibond)%order = order
-         config%bonds(ibond)%is_broken = (trim(status_str) == 'broken')
-      end do
+      call parse_connectivity_generic(unit, config%nbonds, config%nbroken, config%bonds, stat, errmsg)
 
    end subroutine parse_connectivity_section
 
@@ -952,6 +711,195 @@ contains
 
    end subroutine parse_system_section
 
+   subroutine parse_molecules_section(unit, config, stat, errmsg)
+      !! Parse %molecules section containing multiple %molecule blocks
+      integer, intent(in) :: unit
+      type(mqc_config_t), intent(inout) :: config
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos, nmol, imol
+
+      stat = 0
+      nmol = 0
+
+      ! First pass: read nmol
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Unexpected end of file in %molecules section"
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos > 0) then
+            key = adjustl(line(1:eq_pos - 1))
+            value = adjustl(line(eq_pos + 1:))
+
+            if (trim(key) == 'nmol') then
+               read (value, *, iostat=io_stat) nmol
+               if (io_stat /= 0) then
+                  stat = 1
+                  errmsg = "Invalid nmol value"
+                  return
+               end if
+               exit
+            end if
+         end if
+      end do
+
+      if (nmol == 0) then
+         ! No molecules, just skip to end
+         call skip_to_end(unit, stat, errmsg)
+         return
+      end if
+
+      config%nmol = nmol
+      allocate (config%molecules(nmol))
+
+      ! Parse individual molecules
+      imol = 0
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) exit
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         if (trim(line) == '%molecule') then
+            imol = imol + 1
+            if (imol > nmol) then
+               stat = 1
+               errmsg = "More molecules than declared nmol"
+               return
+            end if
+            call parse_single_molecule(unit, config%molecules(imol), stat, errmsg)
+            if (stat /= 0) return
+         end if
+      end do
+
+      if (imol /= nmol) then
+         stat = 1
+         write (errmsg, '(A,I0,A,I0)') "Expected ", nmol, " molecules, found ", imol
+         return
+      end if
+
+   end subroutine parse_molecules_section
+
+   subroutine parse_single_molecule(unit, mol, stat, errmsg)
+      !! Parse a single %molecule block with its sections
+      integer, intent(in) :: unit
+      type(molecule_t), intent(inout) :: mol
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos
+
+      stat = 0
+
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Unexpected end of file in %molecule"
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         ! Check for key=value pairs (like name)
+         eq_pos = index(line, '=')
+         if (eq_pos > 0) then
+            key = adjustl(line(1:eq_pos - 1))
+            value = adjustl(line(eq_pos + 1:))
+            if (trim(key) == 'name') then
+               mol%name = trim(value)
+               cycle
+            end if
+         end if
+
+         ! Check for subsections
+         if (line(1:1) == '%') then
+            select case (trim(line))
+            case ('%structure')
+               call parse_molecule_structure(unit, mol, stat, errmsg)
+            case ('%geometry')
+               call parse_molecule_geometry(unit, mol, stat, errmsg)
+            case ('%fragments')
+               call parse_molecule_fragments(unit, mol, stat, errmsg)
+            case ('%connectivity')
+               call parse_molecule_connectivity(unit, mol, stat, errmsg)
+            case default
+               ! Skip unknown subsections
+               call skip_to_end(unit, stat, errmsg)
+            end select
+
+            if (stat /= 0) return
+         end if
+      end do
+
+   end subroutine parse_single_molecule
+
+   subroutine parse_molecule_structure(unit, mol, stat, errmsg)
+      !! Parse %structure section for a molecule
+      integer, intent(in) :: unit
+      type(molecule_t), intent(inout) :: mol
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      call parse_structure_generic(unit, mol%charge, mol%multiplicity, stat, errmsg)
+
+   end subroutine parse_molecule_structure
+
+   subroutine parse_molecule_geometry(unit, mol, stat, errmsg)
+      !! Parse %geometry section for a molecule
+      integer, intent(in) :: unit
+      type(molecule_t), intent(inout) :: mol
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      call parse_geometry_generic(unit, mol%geometry, stat, errmsg)
+
+   end subroutine parse_molecule_geometry
+
+   subroutine parse_molecule_fragments(unit, mol, stat, errmsg)
+      !! Parse %fragments section for a molecule
+      integer, intent(in) :: unit
+      type(molecule_t), intent(inout) :: mol
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      call parse_fragments_generic(unit, mol%nfrag, mol%fragments, stat, errmsg)
+
+   end subroutine parse_molecule_fragments
+
+   subroutine parse_molecule_connectivity(unit, mol, stat, errmsg)
+      !! Parse %connectivity section for a molecule
+      integer, intent(in) :: unit
+      type(molecule_t), intent(inout) :: mol
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      call parse_connectivity_generic(unit, mol%nbonds, mol%nbroken, mol%bonds, stat, errmsg)
+
+   end subroutine parse_molecule_connectivity
+
    subroutine skip_to_end(unit, stat, errmsg)
       !! Skip lines until 'end' marker is found
       integer, intent(in) :: unit
@@ -1010,6 +958,26 @@ contains
 
    end function parse_method_string
 
+   subroutine molecule_destroy(this)
+      !! Clean up allocated memory in molecule_t
+      class(molecule_t), intent(inout) :: this
+      integer :: i
+
+      if (allocated(this%name)) deallocate (this%name)
+
+      call this%geometry%destroy()
+
+      if (allocated(this%fragments)) then
+         do i = 1, size(this%fragments)
+            call this%fragments(i)%destroy()
+         end do
+         deallocate (this%fragments)
+      end if
+
+      if (allocated(this%bonds)) deallocate (this%bonds)
+
+   end subroutine molecule_destroy
+
    subroutine config_destroy(this)
       !! Clean up allocated memory in mqc_config_t
       class(mqc_config_t), intent(inout) :: this
@@ -1037,6 +1005,14 @@ contains
 
       if (allocated(this%bonds)) deallocate (this%bonds)
 
+      ! Clean up molecules array (multi-molecule mode)
+      if (allocated(this%molecules)) then
+         do i = 1, size(this%molecules)
+            call this%molecules(i)%destroy()
+         end do
+         deallocate (this%molecules)
+      end if
+
    end subroutine config_destroy
 
    subroutine input_fragment_destroy(this)
@@ -1044,5 +1020,334 @@ contains
       class(input_fragment_t), intent(inout) :: this
       if (allocated(this%indices)) deallocate (this%indices)
    end subroutine input_fragment_destroy
+
+   !! ========================================================================
+   !! Generic parsing helpers to eliminate redundancy
+   !! ========================================================================
+
+   subroutine parse_structure_generic(unit, charge, multiplicity, stat, errmsg)
+      !! Generic parser for %structure section (works for both config and molecule)
+      integer, intent(in) :: unit
+      integer, intent(inout) :: charge, multiplicity
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos
+
+      stat = 0
+
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Unexpected end of file in %structure section"
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos == 0) cycle
+
+         key = adjustl(line(1:eq_pos - 1))
+         value = adjustl(line(eq_pos + 1:))
+
+         select case (trim(key))
+         case ('charge')
+            read (value, *, iostat=io_stat) charge
+         case ('multiplicity')
+            read (value, *, iostat=io_stat) multiplicity
+         case default
+            stat = 1
+            errmsg = "Unknown key in %structure section: "//trim(key)
+            return
+         end select
+      end do
+
+   end subroutine parse_structure_generic
+
+   subroutine parse_geometry_generic(unit, geom, stat, errmsg)
+      !! Generic parser for %geometry section (works for both config and molecule)
+      integer, intent(in) :: unit
+      type(geometry_type), intent(inout) :: geom
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, elem
+      integer :: io_stat, natoms, i
+      real(dp) :: x, y, z
+
+      stat = 0
+
+      ! Read number of atoms
+      read (unit, '(A)', iostat=io_stat) line
+      if (io_stat /= 0) then
+         stat = 1
+         errmsg = "Error reading natoms in %geometry section"
+         return
+      end if
+
+      read (line, *, iostat=io_stat) natoms
+      if (io_stat /= 0) then
+         stat = 1
+         errmsg = "Invalid natoms in %geometry section"
+         return
+      end if
+
+      geom%natoms = natoms
+
+      ! Read blank line (comment line in XYZ format)
+      read (unit, '(A)', iostat=io_stat) line
+      if (io_stat /= 0) then
+         stat = 1
+         errmsg = "Error reading comment line in %geometry section"
+         return
+      end if
+
+      geom%comment = trim(line)
+
+      ! Allocate arrays
+      allocate (character(len=4) :: geom%elements(natoms))
+      allocate (geom%coords(3, natoms))
+
+      ! Read coordinates
+      do i = 1, natoms
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Error reading geometry coordinates"
+            return
+         end if
+
+         line = adjustl(line)
+         if (trim(strip_comment(line)) == 'end') then
+            stat = 1
+            errmsg = "Unexpected 'end' while reading geometry"
+            return
+         end if
+
+         read (line, *, iostat=io_stat) elem, x, y, z
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Invalid coordinate format in %geometry section"
+            return
+         end if
+
+         geom%elements(i) = trim(elem)
+         geom%coords(1, i) = x
+         geom%coords(2, i) = y
+         geom%coords(3, i) = z
+      end do
+
+      ! Read 'end' marker
+      read (unit, '(A)', iostat=io_stat) line
+      if (io_stat /= 0) then
+         stat = 1
+         errmsg = "Missing 'end' in %geometry section"
+         return
+      end if
+
+      line = adjustl(line)
+      if (trim(strip_comment(line)) /= 'end') then
+         stat = 1
+         errmsg = "Expected 'end' after geometry coordinates"
+         return
+      end if
+
+   end subroutine parse_geometry_generic
+
+   subroutine parse_fragments_generic(unit, nfrag, fragments, stat, errmsg)
+      !! Generic parser for %fragments section (works for both config and molecule)
+      integer, intent(in) :: unit
+      integer, intent(inout) :: nfrag
+      type(input_fragment_t), allocatable, intent(inout) :: fragments(:)
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos, nfrag_local, ifrag
+
+      stat = 0
+      nfrag_local = 0
+
+      ! First pass: read nfrag
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Unexpected end of file in %fragments section"
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos > 0) then
+            key = adjustl(line(1:eq_pos - 1))
+            value = adjustl(line(eq_pos + 1:))
+
+            if (trim(key) == 'nfrag') then
+               read (value, *, iostat=io_stat) nfrag_local
+               if (io_stat /= 0) then
+                  stat = 1
+                  errmsg = "Invalid nfrag value"
+                  return
+               end if
+               exit
+            end if
+         end if
+      end do
+
+      if (nfrag_local == 0) then
+         ! No fragments, just skip to end
+         call skip_to_end(unit, stat, errmsg)
+         return
+      end if
+
+      nfrag = nfrag_local
+      allocate (fragments(nfrag))
+
+      ! Parse individual fragments
+      ifrag = 0
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) exit
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         if (trim(line) == '%fragment') then
+            ifrag = ifrag + 1
+            if (ifrag > nfrag) then
+               stat = 1
+               errmsg = "More fragments than declared nfrag"
+               return
+            end if
+            call parse_fragment(unit, fragments(ifrag), stat, errmsg)
+            if (stat /= 0) return
+         end if
+      end do
+
+      if (ifrag /= nfrag) then
+         stat = 1
+         write (errmsg, '(A,I0,A,I0)') "Expected ", nfrag, " fragments, found ", ifrag
+         return
+      end if
+
+   end subroutine parse_fragments_generic
+
+   subroutine parse_connectivity_generic(unit, nbonds, nbroken, bonds, stat, errmsg)
+      !! Generic parser for %connectivity section (works for both config and molecule)
+      integer, intent(in) :: unit
+      integer, intent(inout) :: nbonds, nbroken
+      type(bond_t), allocatable, intent(inout) :: bonds(:)
+      integer, intent(out) :: stat
+      character(len=:), allocatable, intent(out) :: errmsg
+
+      character(len=MAX_LINE_LEN) :: line, key, value, status_str
+      integer :: io_stat, eq_pos, nbonds_local, ibond
+      integer :: atom_i, atom_j, order
+
+      stat = 0
+      nbonds_local = 0
+
+      ! First pass: read nbonds
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Unexpected end of file in %connectivity section"
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos > 0) then
+            key = adjustl(line(1:eq_pos - 1))
+            value = adjustl(line(eq_pos + 1:))
+
+            if (trim(key) == 'nbonds') then
+               read (value, *, iostat=io_stat) nbonds_local
+               if (io_stat /= 0) then
+                  stat = 1
+                  errmsg = "Invalid nbonds value"
+                  return
+               end if
+               exit
+            end if
+         end if
+      end do
+
+      if (nbonds_local == 0) then
+         ! No bonds, just skip to end
+         call skip_to_end(unit, stat, errmsg)
+         return
+      end if
+
+      nbonds = nbonds_local
+      allocate (bonds(nbonds))
+
+      ! Read bonds
+      ibond = 0
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) exit
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         ! Check for key=value pairs (like nbroken=9)
+         eq_pos = index(line, '=')
+         if (eq_pos > 0) then
+            key = adjustl(line(1:eq_pos - 1))
+            value = adjustl(line(eq_pos + 1:))
+            if (trim(key) == 'nbroken') then
+               read (value, *, iostat=io_stat) nbroken
+            end if
+            cycle
+         end if
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         ! Parse bond line: atom_i atom_j order broken/preserved
+         read (line, *, iostat=io_stat) atom_i, atom_j, order, status_str
+         if (io_stat /= 0) then
+            stat = 1
+            errmsg = "Invalid bond format in %connectivity section"
+            return
+         end if
+
+         ibond = ibond + 1
+         if (ibond > nbonds) then
+            stat = 1
+            errmsg = "More bonds than declared nbonds"
+            return
+         end if
+
+         bonds(ibond)%atom_i = atom_i
+         bonds(ibond)%atom_j = atom_j
+         bonds(ibond)%order = order
+         bonds(ibond)%is_broken = (trim(status_str) == 'broken')
+      end do
+
+   end subroutine parse_connectivity_generic
 
 end module mqc_config_parser

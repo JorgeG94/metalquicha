@@ -83,9 +83,6 @@ program main
       call abort_comm(world_comm, 1)
    end if
 
-   ! Convert to driver configuration
-   call config_to_driver(mqc_config, config)
-
    ! Configure logger
    if (allocated(mqc_config%log_level)) then
       call logger%configure(get_logger_level(mqc_config%log_level))
@@ -94,16 +91,24 @@ program main
       end if
    end if
 
-   ! Convert geometry to system_geometry_t
-   call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg)
-   if (stat /= 0) then
-      if (world_comm%rank() == 0) then
-         call logger%error("Error converting geometry: "//errmsg)
+   ! Handle single vs multiple molecules
+   if (mqc_config%nmol == 0) then
+      ! Single molecule mode (backward compatible)
+      call config_to_driver(mqc_config, config)
+      call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg)
+      if (stat /= 0) then
+         if (world_comm%rank() == 0) then
+            call logger%error("Error converting geometry: "//errmsg)
+         end if
+         call abort_comm(world_comm, 1)
       end if
-      call abort_comm(world_comm, 1)
-   end if
 
-   call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%bonds)
+      call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%bonds)
+      call sys_geom%destroy()
+   else
+      ! Multi-molecule mode: loop over all molecules
+      call run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
+   end if
 
    if (world_comm%rank() == 0) then
       call my_timer%stop()
@@ -111,12 +116,171 @@ program main
    end if
 
    call mqc_config%destroy()
-   call sys_geom%destroy()
    call world_comm%finalize()
    call node_comm%finalize()
    call pic_mpi_finalize()
 
 contains
+
+   subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
+      !! Run calculations for multiple molecules with MPI parallelization
+      !! Each molecule is independent, so assign one molecule per rank
+      type(comm_t), intent(in) :: world_comm
+      type(comm_t), intent(in) :: node_comm
+      type(mqc_config_t), intent(in) :: mqc_config
+
+      type(driver_config_t) :: config
+      type(system_geometry_t) :: sys_geom
+      type(comm_t) :: mol_comm, mol_node_comm
+      integer :: imol, stat, my_rank, num_ranks, color
+      integer :: molecules_processed
+      character(len=:), allocatable :: errmsg
+      character(len=:), allocatable :: mol_name
+      logical :: has_fragmented_molecules
+
+      my_rank = world_comm%rank()
+      num_ranks = world_comm%size()
+
+      ! Check if any molecules have fragments (nlevel > 0)
+      has_fragmented_molecules = .false.
+      do imol = 1, mqc_config%nmol
+         if (mqc_config%molecules(imol)%nfrag > 0) then
+            has_fragmented_molecules = .true.
+            exit
+         end if
+      end do
+
+      if (my_rank == 0) then
+         call logger%info(" ")
+         call logger%info("============================================")
+         call logger%info("Multi-molecule mode: "//to_char(mqc_config%nmol)//" molecules")
+         call logger%info("MPI ranks: "//to_char(num_ranks))
+         if (has_fragmented_molecules) then
+            call logger%info("Mode: Sequential execution (fragmented molecules detected)")
+            call logger%info("  Each molecule will use all "//to_char(num_ranks)//" rank(s) for its calculation")
+         else if (num_ranks == 1) then
+            call logger%info("Mode: Sequential execution (single rank)")
+         else if (num_ranks > mqc_config%nmol) then
+            call logger%info("Mode: Parallel execution (one molecule per rank)")
+            call logger%info("Note: More ranks than molecules - ranks "//to_char(mqc_config%nmol)// &
+                             " to "//to_char(num_ranks - 1)//" will be idle")
+         else
+            call logger%info("Mode: Parallel execution (one molecule per rank)")
+         end if
+         call logger%info("============================================")
+         call logger%info(" ")
+      end if
+
+      ! Determine execution mode:
+      ! 1. Sequential: Single rank OR fragmented molecules (each molecule needs all ranks)
+      ! 2. Parallel: Multiple ranks AND unfragmented molecules (distribute molecules across ranks)
+      molecules_processed = 0
+
+      if (num_ranks == 1 .or. has_fragmented_molecules) then
+         ! Sequential mode: process all molecules one after another
+         ! Each molecule uses all available ranks for its calculation
+         do imol = 1, mqc_config%nmol
+            ! Determine molecule name for logging
+            if (allocated(mqc_config%molecules(imol)%name)) then
+               mol_name = mqc_config%molecules(imol)%name
+            else
+               mol_name = "molecule_"//to_char(imol)
+            end if
+
+            if (my_rank == 0) then
+               call logger%info(" ")
+               call logger%info("--------------------------------------------")
+               call logger%info("Processing molecule "//to_char(imol)//"/"//to_char(mqc_config%nmol)//": "//mol_name)
+               call logger%info("--------------------------------------------")
+            end if
+
+            ! Convert to driver configuration for this molecule
+            call config_to_driver(mqc_config, config, molecule_index=imol)
+
+            ! Convert geometry for this molecule
+            call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index=imol)
+            if (stat /= 0) then
+               if (my_rank == 0) then
+                  call logger%error("Error converting geometry for "//mol_name//": "//errmsg)
+               end if
+               call abort_comm(world_comm, 1)
+            end if
+
+            ! Run calculation for this molecule
+            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Clean up for this molecule
+            call sys_geom%destroy()
+
+            if (my_rank == 0) then
+               call logger%info("Completed molecule "//to_char(imol)//"/"//to_char(mqc_config%nmol)//": "//mol_name)
+            end if
+            molecules_processed = molecules_processed + 1
+         end do
+      else
+         ! Multiple ranks: distribute molecules across ranks (one per rank)
+         if (my_rank < mqc_config%nmol) then
+            imol = my_rank + 1
+            ! This rank has a molecule to process
+            ! Determine molecule name for logging
+            if (allocated(mqc_config%molecules(imol)%name)) then
+               mol_name = mqc_config%molecules(imol)%name
+            else
+               mol_name = "molecule_"//to_char(imol)
+            end if
+
+            call logger%info(" ")
+            call logger%info("--------------------------------------------")
+            call logger%info("Rank "//to_char(my_rank)//": Processing molecule "//to_char(imol)// &
+                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
+            call logger%info("--------------------------------------------")
+
+            ! Convert to driver configuration for this molecule
+            call config_to_driver(mqc_config, config, molecule_index=imol)
+
+            ! Convert geometry for this molecule
+            call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index=imol)
+            if (stat /= 0) then
+               call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//errmsg)
+               call abort_comm(world_comm, 1)
+            end if
+
+            ! Run calculation for this molecule
+            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Clean up for this molecule
+            call sys_geom%destroy()
+
+            call logger%info("Rank "//to_char(my_rank)//": Completed molecule "//to_char(imol)// &
+                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
+
+            molecules_processed = 1
+         else
+            ! Idle rank - no molecule assigned
+            call logger%verbose("Rank "//to_char(my_rank)//": No molecule assigned (idle)")
+         end if
+      end if
+
+      ! Synchronize all ranks
+      call world_comm%barrier()
+
+      if (my_rank == 0) then
+         call logger%info(" ")
+         call logger%info("============================================")
+         call logger%info("All "//to_char(mqc_config%nmol)//" molecules completed")
+         if (has_fragmented_molecules) then
+            call logger%info("Execution: Sequential (each molecule used all ranks)")
+         else if (num_ranks == 1) then
+            call logger%info("Execution: Sequential (single rank)")
+         else if (num_ranks > mqc_config%nmol) then
+           call logger%info("Execution: Parallel (active ranks: "//to_char(mqc_config%nmol)//"/"//to_char(num_ranks)//")")
+         else
+            call logger%info("Execution: Parallel (all ranks active)")
+         end if
+         call logger%info("============================================")
+      end if
+
+   end subroutine run_multi_molecule_calculations
 
    logical function ends_with(str, suffix)
       !! Check if string ends with suffix
