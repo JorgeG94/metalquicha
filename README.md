@@ -13,15 +13,8 @@ with focus on using the [pic](https://github.com/JorgeG94/pic) library and its d
 which are Fortran based implementations of commonly used routines such as sorting algorithms,
 array handling, strings, loggers, timers, etc.
 
-While pic-mpi and pic-blas provide modern Fortran wrappers and interfaces to MPI and BLAS implementations in a portable way. Specifically, the MPI
-library lets the user switch betwen the `mpi` and `mpi_f08` modules with ease.
-
 Additionally, users can opt to try the [vapaa](https://github.com/jeffhammond/vapaa) backend for the `mpi_f08` module
 to ensure cross compiler portability. Please report any issues associated here and in vapaa.
-
-The main purpose of this package is to showcase the ability of being able to write
-simple, powerful Fortran based programs that are able to access massively parallel
-ecosystems with ease.
 
 Metalquicha implements a naive backend for unfragmented and fragmented quantum chemistry
 calculations. Currently, metalquicha uses [tblite](https://github.com/tblite/tblite) as
