@@ -11,6 +11,8 @@ This is the user guide to Metalquicha, a Fortran program for quanutm chemistry
 calculations. It is designed to be modular and extensible, allowing users to
 easily add new features and methods.
 
+The API docs for the code itself can be found here: https://jorgeg94.github.io/metalquicha/
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
