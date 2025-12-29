@@ -137,18 +137,18 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-body_level~2">body_level</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-current_log_level~3">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-delta_e~3">delta_E</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-delta_energies~3">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-delta_energies~5">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-delta_gradients~2">delta_gradients</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-do_detailed_print~2">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-energies~3">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-fragment_size~7">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-i~27">i</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-iatom~3">iatom</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-energies~5">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-fragment_size~4">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-i~18">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-iatom~2">iatom</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-lookup~4">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-lookup_timer~2">lookup_timer</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-sum_by_level~2">sum_by_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient.html#variable-sum_by_level~3">sum_by_level</a>
         </div>
       </div>
     </div>
@@ -350,7 +350,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -365,7 +365,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -380,7 +380,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~8"></span>
+              <span class="anchor" id="variable-max_level~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -395,7 +395,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -410,7 +410,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~15"></span>
+              <span class="anchor" id="variable-sys_geom~3"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -425,7 +425,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~2"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -440,7 +440,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1237,7 +1237,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1271,7 +1271,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~3"></span>
+              <span class="anchor" id="variable-delta_energies~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1322,7 +1322,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~3"></span>
+              <span class="anchor" id="variable-energies~5"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1339,7 +1339,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~7"></span>
+              <span class="anchor" id="variable-fragment_size~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1356,7 +1356,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~27"></span>
+              <span class="anchor" id="variable-i~18"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1373,7 +1373,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~3"></span>
+              <span class="anchor" id="variable-iatom~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1424,7 +1424,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~2"></span>
+              <span class="anchor" id="variable-sum_by_level~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1630,7 +1630,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 06:24 +0000             </p>
+ on 2025-12-29 06:29 +0000             </p>
           </div>
         </div>
         <br>

@@ -229,12 +229,12 @@ Closest approach distance</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
-                  <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
-                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
+                  <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1051,7 +1051,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~8'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
+  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~10'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
               <tr>
@@ -1191,7 +1191,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~2"></span>
+              <span class="anchor" id="variable-total_atoms~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -1217,7 +1217,7 @@ parameter
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
+  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~11'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
           </tbody>
@@ -1390,7 +1390,7 @@ Returns coordinates in the same units as the fragment (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~13"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1437,7 +1437,7 @@ Returns coordinates in the same units as the fragment (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1639,7 +1639,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~17"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1669,7 +1669,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~11"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1684,7 +1684,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~8"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1754,7 +1754,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~13"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1769,7 +1769,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stat~22"></span>
+              <span class="anchor" id="variable-stat~29"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1784,7 +1784,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-errmsg~21"></span>
+              <span class="anchor" id="variable-errmsg~26"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -1824,7 +1824,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~13"></span>
+              <span class="anchor" id="variable-this~27"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1864,7 +1864,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~12"></span>
+              <span class="anchor" id="variable-this~26"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1904,7 +1904,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~14"></span>
+              <span class="anchor" id="variable-this~28"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1959,7 +1959,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~15"></span>
+              <span class="anchor" id="variable-this~29"></span>
               class(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2002,7 +2002,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 06:24 +0000             </p>
+ on 2025-12-29 06:29 +0000             </p>
           </div>
         </div>
         <br>
