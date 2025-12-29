@@ -103,36 +103,27 @@ contains
    subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds)
       !! Handle unfragmented calculation (nlevel=0)
       !!
-      !! Validates single MPI rank requirement and runs direct calculation
-      !! on entire system using OpenMP for parallelization.
+      !! For single-molecule mode: Only rank 0 runs (validates single rank)
+      !! For multi-molecule mode: ALL ranks can run (each with their own molecule)
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
 
-      ! Validate that only a single rank is used for unfragmented calculation
-      ! (parallelism comes from OpenMP threads, not MPI ranks)
-      if (world_comm%size() > 1) then
-         ! TODO JORGE: maybe don't fail? prune the extra ranks ?
-         if (world_comm%rank() == 0) then
-            call logger%error(" ")
-            call logger%error("Unfragmented calculation (nlevel=0) requires exactly 1 MPI rank")
-            call logger%error("  Parallelism is achieved through OpenMP threads, not MPI")
-            call logger%error("  Current number of MPI ranks: "//to_char(world_comm%size())//" (must be 1)")
-            call logger%error(" ")
-            call logger%error("Please run with a single MPI rank (e.g., mpirun -np 1 ...)")
-            call logger%error("Use OMP_NUM_THREADS to control thread-level parallelism")
-            call logger%error(" ")
-         end if
-         call abort_comm(world_comm, 1)
-      end if
-
-      if (world_comm%rank() == 0) then
+      ! Check if this is multi-molecule mode or single-molecule mode
+      ! In multi-molecule mode, each rank processes its own molecule
+      ! In single-molecule mode, only rank 0 should work
+      if (world_comm%size() == 1 .or. world_comm%rank() == 0) then
+         ! Either single-rank calculation, or rank 0 in multi-rank setup
          call logger%info(" ")
          call logger%info("Running unfragmented calculation")
          call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
+         call unfragmented_calculation(sys_geom, method, calc_type, bonds)
+      else if (sys_geom%total_atoms > 0) then
+         ! Multi-molecule mode: non-zero rank with a molecule
+         call logger%verbose("Rank "//to_char(world_comm%rank())//": Running unfragmented calculation")
          call unfragmented_calculation(sys_geom, method, calc_type, bonds)
       end if
 
