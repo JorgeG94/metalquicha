@@ -77,7 +77,7 @@ you can also provide the geometry direclty in the json, for example:
     }
 
 Fragments group
-================
+----------------
 
 In the "fragments" field, you can provide a list of fragments, where each fragment is a list of
 atom indices (0-based). The "fragment_charges" and "fragment_multiplicities" fields provide the
@@ -89,7 +89,7 @@ molecular charge and multiplicity.
 
 
 Model group
-============
+-------------
 
 The "model" field provides the method and basis set to be used in the calculation. The "method"
 field can be any method supported by Metalquicha, such as "HF", "DFT", "XTB-GFN1", etc.
@@ -98,7 +98,7 @@ Right now, only the XTB methods are supported. So anything that's not XTB-GFN1 o
 in an error. Support for more methods will be added in the future.
 
 Driver group
-============
+-------------
 
 The "driver" field provides the type of calculation to be performed. The "driver" field can be
 "Energy", "Gradient", "Hessian", etc. Right now, only "Energy" and "Gradient" are supported.
