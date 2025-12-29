@@ -3,6 +3,7 @@ module mqc_cli_parser
    !! Handles parsing of command line options including geometry files,
    !! basis set specifications, and help/usage display.
    use mqc_basis_utils, only: normalize_basis_name, find_basis_file
+   use mqc_error, only: error_t, ERROR_PARSE, ERROR_IO
    implicit none
    private
 
@@ -25,20 +26,18 @@ module mqc_cli_parser
 
 contains
 
-   subroutine parse_command_line(args, stat, errmsg)
+   subroutine parse_command_line(args, error)
       !! Parse command line arguments for geometry file and basis set
       !!
       !! Extracts XYZ file path and basis set name from command line,
       !! validates arguments, and handles help requests.
       type(cli_args_type), intent(out) :: args  !! Parsed argument container
-      integer, intent(out) :: stat              !! Status (0=success, >0=error)
-      character(len=:), allocatable, intent(out) :: errmsg  !! Error message
+      type(error_t), intent(out) :: error       !! Error object
 
       integer :: nargs        !! Number of command line arguments
       character(len=256) :: arg_buffer  !! Temporary argument buffer
       integer :: arg_len      !! Length of current argument
-
-      stat = 0
+      integer :: stat         !! Local status for intrinsic calls
 
       ! Get number of command line arguments
       nargs = command_argument_count()
@@ -47,29 +46,27 @@ contains
       if (nargs >= 1) then
          call get_command_argument(1, arg_buffer, arg_len, stat)
          if (stat /= 0) then
-            errmsg = "Error reading command line argument 1"
+            call error%set(ERROR_PARSE, "Error reading command line argument 1")
             return
          end if
          arg_buffer = trim(arg_buffer)
 
          if (arg_buffer == "-h" .or. arg_buffer == "--help") then
             call print_usage()
-            stat = -1  ! Special code to indicate help was requested
+            call error%set(ERROR_PARSE, "HELP_REQUESTED")  ! Special marker for help
             return
          end if
       end if
 
       ! Validate number of arguments
       if (nargs < 2) then
-         stat = 1
-         errmsg = "Error: Insufficient arguments. Expected 2 arguments (geometry.xyz basis_name)"
+         call error%set(ERROR_PARSE, "Error: Insufficient arguments. Expected 2 arguments (geometry.xyz basis_name)")
          call print_usage()
          return
       end if
 
       if (nargs > 2) then
-         stat = 1
-         errmsg = "Error: Too many arguments. Expected 2 arguments (geometry.xyz basis_name)"
+         call error%set(ERROR_PARSE, "Error: Too many arguments. Expected 2 arguments (geometry.xyz basis_name)")
          call print_usage()
          return
       end if
@@ -77,7 +74,7 @@ contains
       ! Parse argument 1: XYZ file
       call get_command_argument(1, arg_buffer, arg_len, stat)
       if (stat /= 0) then
-         errmsg = "Error reading geometry file argument"
+         call error%set(ERROR_PARSE, "Error reading geometry file argument")
          return
       end if
       args%xyz_file = trim(arg_buffer)
@@ -85,13 +82,10 @@ contains
       ! Parse argument 2: Basis set name
       call get_command_argument(2, arg_buffer, arg_len, stat)
       if (stat /= 0) then
-         errmsg = "Error reading basis set name argument"
+         call error%set(ERROR_PARSE, "Error reading basis set name argument")
          return
       end if
       args%basis_name = trim(arg_buffer)
-
-      ! Reset stat to success
-      stat = 0
 
    end subroutine parse_command_line
 

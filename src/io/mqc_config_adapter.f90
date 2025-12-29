@@ -6,6 +6,7 @@ module mqc_config_adapter
    use mqc_config_parser, only: mqc_config_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
@@ -60,21 +61,18 @@ contains
 
    end subroutine config_to_driver
 
-   subroutine config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index)
+   subroutine config_to_system_geometry(mqc_config, sys_geom, error, molecule_index)
       !! Convert mqc_config_t geometry to system_geometry_t
       !! For unfragmented calculations (nfrag=0), treats entire system as single unit
       !! For fragmented calculations, currently assumes monomer-based fragmentation
       !! If molecule_index is provided, uses that specific molecule from multi-molecule mode
       type(mqc_config_t), intent(in) :: mqc_config
       type(system_geometry_t), intent(out) :: sys_geom
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
 
       integer :: i
       logical :: use_angstrom
-
-      stat = 0
 
       ! Determine units
       use_angstrom = .true.
@@ -88,18 +86,16 @@ contains
       if (present(molecule_index)) then
          ! Multi-molecule mode: extract specific molecule
          if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) then
-            stat = 1
-            errmsg = "Invalid molecule_index in multi-molecule mode"
+            call error%set(ERROR_VALIDATION, "Invalid molecule_index in multi-molecule mode")
             return
          end if
-         call molecule_to_system_geometry(mqc_config%molecules(molecule_index), sys_geom, use_angstrom, &
-                                          mqc_config%allow_overlapping_fragments, stat, errmsg)
+         call molecule_to_system_geometry(mqc_config%molecules(molecule_index), &
+                                          sys_geom, use_angstrom, mqc_config%allow_overlapping_fragments, error)
       else
          ! Single molecule mode (backward compatible)
          ! Check if geometry is loaded
          if (mqc_config%geometry%natoms == 0) then
-            stat = 1
-            errmsg = "No geometry loaded in mqc_config"
+            call error%set(ERROR_VALIDATION, "No geometry loaded in mqc_config")
             return
          end if
 
@@ -108,8 +104,8 @@ contains
             call geometry_to_system_unfragmented(mqc_config%geometry, sys_geom, use_angstrom)
          else
             ! Fragmented calculation with explicit fragments
-            call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, stat, errmsg)
-            if (stat /= 0) return
+            call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
+            if (error%has_error()) return
          end if
       end if
 
@@ -148,19 +144,16 @@ contains
 
    end subroutine geometry_to_system_unfragmented
 
-   subroutine geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, stat, errmsg)
+   subroutine geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
       !! Convert geometry to system_geometry_t for fragmented calculation
       !! Supports both identical and variable-sized fragments
       type(mqc_config_t), intent(in) :: mqc_config
       type(system_geometry_t), intent(out) :: sys_geom
       logical, intent(in) :: use_angstrom
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: i, j, atoms_in_first_frag, max_frag_size
       logical :: all_same_size
-
-      stat = 0
 
       ! Set up basic system geometry
       sys_geom%n_monomers = mqc_config%nfrag
@@ -195,8 +188,8 @@ contains
 
       ! Check for overlapping fragments if not allowed
       if (.not. mqc_config%allow_overlapping_fragments) then
-         call check_fragment_overlap(mqc_config%fragments, mqc_config%nfrag, stat, errmsg)
-         if (stat /= 0) return
+         call check_fragment_overlap(mqc_config%fragments, mqc_config%nfrag, error)
+         if (error%has_error()) return
       end if
 
       ! Set atoms_per_monomer: use common size if identical, else 0
@@ -223,7 +216,7 @@ contains
 
    end subroutine geometry_to_system_fragmented
 
-   subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, allow_overlapping, stat, errmsg)
+   subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, allow_overlapping, error)
       !! Convert a molecule_t to system_geometry_t
       !! Handles both unfragmented (nfrag=0) and fragmented molecules
       use mqc_config_parser, only: molecule_t
@@ -231,19 +224,15 @@ contains
       type(molecule_t), intent(in) :: mol
       type(system_geometry_t), intent(out) :: sys_geom
       logical, intent(in) :: use_angstrom
+      type(error_t), intent(out) :: error
       logical, intent(in) :: allow_overlapping
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
 
       integer :: i, j, atoms_in_first_frag, max_frag_size
       logical :: all_same_size
 
-      stat = 0
-
       ! Check if geometry is loaded
       if (mol%geometry%natoms == 0) then
-         stat = 1
-         errmsg = "No geometry loaded in molecule"
+         call error%set(ERROR_VALIDATION, "No geometry loaded in molecule")
          return
       end if
 
@@ -284,8 +273,8 @@ contains
 
          ! Check for overlapping fragments if not allowed
          if (.not. allow_overlapping) then
-            call check_fragment_overlap(mol%fragments, mol%nfrag, stat, errmsg)
-            if (stat /= 0) return
+            call check_fragment_overlap(mol%fragments, mol%nfrag, error)
+            if (error%has_error()) return
          end if
 
          ! Set atoms_per_monomer: use common size if identical, else 0
@@ -355,7 +344,7 @@ contains
       end select
    end function get_logger_level
 
-   subroutine check_fragment_overlap(fragments, nfrag, stat, errmsg)
+   subroutine check_fragment_overlap(fragments, nfrag, error)
       !! Check if any atoms appear in multiple fragments
       !! This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes
       use mqc_config_parser, only: input_fragment_t
@@ -363,13 +352,10 @@ contains
 
       type(input_fragment_t), intent(in) :: fragments(:)
       integer, intent(in) :: nfrag
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: i, j, k, l
       integer :: atom_i, atom_j
-
-      stat = 0
 
       ! Compare each pair of fragments
       do i = 1, nfrag - 1
@@ -381,10 +367,9 @@ contains
                   atom_j = fragments(j)%indices(l)
                   if (atom_i == atom_j) then
                      ! Found overlapping atom
-                     stat = 1
-                     errmsg = "Overlapping fragments detected: fragments "//to_char(i)//" and "// &
-                              to_char(j)//" both contain atom "//to_char(atom_i)// &
-                              ". Set allow_overlapping_fragments = true to allow this."
+                    call error%set(ERROR_VALIDATION, "Overlapping fragments detected: fragments "//to_char(i)//" and "// &
+                                    to_char(j)//" both contain atom "//to_char(atom_i)// &
+                                    ". Set allow_overlapping_fragments = true to allow this.")
                      return
                   end if
                end do

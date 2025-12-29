@@ -2,6 +2,7 @@ module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_parser, only: input_fragment_t
    use mqc_config_adapter, only: check_fragment_overlap
+   use mqc_error, only: error_t
    implicit none
    private
    public :: collect_mqc_config_adapter_tests
@@ -24,8 +25,7 @@ contains
       !! Test that non-overlapping fragments pass validation
       type(error_type), allocatable, intent(out) :: error
       type(input_fragment_t), allocatable :: fragments(:)
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Create two non-overlapping fragments
       allocate (fragments(2))
@@ -43,9 +43,9 @@ contains
       fragments(2)%multiplicity = 1
 
       ! Check for overlap - should find none
-      call check_fragment_overlap(fragments, 2, stat, errmsg)
+      call check_fragment_overlap(fragments, 2, parse_error)
 
-      call check(error, stat == 0, "Non-overlapping fragments should pass validation")
+      call check(error,.not. parse_error%has_error(), "Non-overlapping fragments should pass validation")
       if (allocated(error)) return
 
       ! Clean up
@@ -58,8 +58,7 @@ contains
       !! Test that overlapping fragments are detected
       type(error_type), allocatable, intent(out) :: error
       type(input_fragment_t), allocatable :: fragments(:)
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Create two overlapping fragments
       allocate (fragments(2))
@@ -77,16 +76,13 @@ contains
       fragments(2)%multiplicity = 1
 
       ! Check for overlap - should detect it
-      call check_fragment_overlap(fragments, 2, stat, errmsg)
+      call check_fragment_overlap(fragments, 2, parse_error)
 
-      call check(error, stat /= 0, "Overlapping fragments should be detected")
-      if (allocated(error)) return
-
-      call check(error, allocated(errmsg), "Error message should be allocated")
+      call check(error, parse_error%has_error(), "Overlapping fragments should be detected")
       if (allocated(error)) return
 
       ! Check that error message mentions the overlapping atom
-      call check(error, index(errmsg, "atom 2") > 0, &
+      call check(error, index(parse_error%get_message(), "atom 2") > 0, &
                  "Error message should mention overlapping atom")
       if (allocated(error)) return
 
@@ -100,8 +96,7 @@ contains
       !! Test that a single fragment has no overlap (edge case)
       type(error_type), allocatable, intent(out) :: error
       type(input_fragment_t), allocatable :: fragments(:)
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Create a single fragment
       allocate (fragments(1))
@@ -113,9 +108,9 @@ contains
       fragments(1)%multiplicity = 1
 
       ! Check for overlap - single fragment should pass
-      call check_fragment_overlap(fragments, 1, stat, errmsg)
+      call check_fragment_overlap(fragments, 1, parse_error)
 
-      call check(error, stat == 0, "Single fragment should pass validation")
+      call check(error,.not. parse_error%has_error(), "Single fragment should pass validation")
       if (allocated(error)) return
 
       ! Clean up

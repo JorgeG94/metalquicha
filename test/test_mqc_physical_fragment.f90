@@ -6,6 +6,7 @@ module test_mqc_physical_fragment
                                     distance_between_fragments, minimal_distance_between_fragments, &
                                     system_geometry_t, physical_fragment_t
    use mqc_config_parser, only: bond_t
+   use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
    private
@@ -77,18 +78,17 @@ contains
    subroutine test_initialize_system_geometry(error)
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Create test files
       call create_test_water_trimer()
 
       ! Initialize system geometry
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Failed to initialize system: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
          call cleanup_test_files()
          return
       end if
@@ -134,8 +134,7 @@ contains
    subroutine test_initialize_system_invalid(error)
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Create test files with mismatched sizes
       call create_test_water_trimer()
@@ -143,9 +142,9 @@ contains
 
       ! Initialize system geometry - should fail
       call initialize_system_geometry("test_water_trimer.xyz", "test_mismatched.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      call check(error, stat /= 0, "Should fail with mismatched monomer size")
+      call check(error, parse_error%has_error(), "Should fail with mismatched monomer size")
 
       call cleanup_test_files()
       call delete_file("test_mismatched.xyz")
@@ -155,13 +154,14 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
+      type(error_t) :: parse_error
       integer :: stat
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
 
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
       if (stat /= 0) then
          call check(error, .false., "Failed to initialize system")
@@ -193,13 +193,14 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
+      type(error_t) :: parse_error
       integer :: stat
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
 
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
       if (stat /= 0) then
          call check(error, .false., "Failed to initialize system")
@@ -509,16 +510,17 @@ contains
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
       integer :: stat
       character(len=:), allocatable :: errmsg
 
       ! Create test system: 2 monomers, 3 atoms each
       call create_test_water_trimer()
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Failed to initialize system: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
          call cleanup_test_files()
          return
       end if
@@ -569,15 +571,16 @@ contains
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
       integer :: stat
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Failed to initialize system: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
          call cleanup_test_files()
          return
       end if
@@ -613,15 +616,16 @@ contains
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
       integer :: stat
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Failed to initialize system: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
          call cleanup_test_files()
          return
       end if
@@ -657,16 +661,17 @@ contains
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       type(bond_t), allocatable :: bonds(:)
+      type(error_t) :: parse_error
       integer :: stat, i
       character(len=:), allocatable :: errmsg
       real(dp) :: replaced_atom_coords(3), cap_coords(3)
 
       call create_test_water_trimer()
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
-                                      sys_geom, stat, errmsg)
+                                      sys_geom, parse_error)
 
-      if (stat /= 0) then
-         call check(error, .false., "Failed to initialize system: "//errmsg)
+      if (parse_error%has_error()) then
+         call check(error, .false., "Failed to initialize system: "//parse_error%get_message())
          call cleanup_test_files()
          return
       end if

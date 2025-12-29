@@ -163,7 +163,7 @@ contains
       allocate (sigma(3, 3))
 
       ! Create wavefunction and run single point calculation with gradient
-      call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, this%kt)
+      call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, this%kt, grad=.true.)
       energy = 0.0_wp
 
       verbosity = merge(1, 0, this%verbose)

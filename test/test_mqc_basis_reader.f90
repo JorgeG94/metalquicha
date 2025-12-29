@@ -3,6 +3,7 @@ module test_mqc_basis_reader
    use mqc_basis_reader, only: classify_line, parse_element_basis, &
                                build_molecular_basis, ang_mom_int_to_char
    use mqc_cgto, only: atomic_basis_type, molecular_basis_type
+   use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
    private
@@ -100,12 +101,11 @@ contains
    subroutine test_parse_hydrogen_basis(error)
       type(error_type), allocatable, intent(out) :: error
       type(atomic_basis_type) :: h_basis
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
-      call parse_element_basis(test_basis, "HYDROGEN", h_basis, stat, errmsg)
+      call parse_element_basis(test_basis, "HYDROGEN", h_basis, parse_error)
 
-      call check(error, stat, 0, "Should successfully parse hydrogen basis")
+      call check(error,.not. parse_error%has_error(), "Should successfully parse hydrogen basis")
       if (allocated(error)) return
 
       call check(error, trim(h_basis%element), "HYDROGEN", "Element name should match")
@@ -128,13 +128,13 @@ contains
    subroutine test_build_h2_molecular_basis(error)
       type(error_type), allocatable, intent(out) :: error
       type(molecular_basis_type) :: h2_basis
-      integer :: stat, nbf
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: nbf
       character(len=*), dimension(2), parameter :: h2_atoms = ["HYDROGEN", "HYDROGEN"]
 
-      call build_molecular_basis(test_basis, h2_atoms, h2_basis, stat, errmsg)
+      call build_molecular_basis(test_basis, h2_atoms, h2_basis, parse_error)
 
-      call check(error, stat, 0, "Should successfully build H2 molecular basis")
+      call check(error,.not. parse_error%has_error(), "Should successfully build H2 molecular basis")
       if (allocated(error)) return
 
       call check(error, h2_basis%nelements, 2, "H2 should have 2 atoms")

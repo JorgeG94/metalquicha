@@ -5,6 +5,7 @@ module test_mqc_xyz_reader_detailed
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_string, read_xyz_file
+   use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
    private
@@ -32,18 +33,17 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
       character(len=*), parameter :: minimal_xyz = "1"//new_line('a')//""//new_line('a')//"H 0 0 0"
 
       write (*, *) "DEBUG: Testing minimal XYZ: '", minimal_xyz, "'"
       write (*, *) "DEBUG: Length of minimal_xyz: ", len(minimal_xyz)
 
-      call read_xyz_string(minimal_xyz, geom, stat, errmsg)
+      call read_xyz_string(minimal_xyz, geom, parse_error)
 
-      write (*, *) "DEBUG: stat = ", stat
-      if (stat /= 0) then
-         write (*, *) "DEBUG: errmsg = ", errmsg
+      write (*, *) "DEBUG: has_error = ", parse_error%has_error()
+      if (parse_error%has_error()) then
+         write (*, *) "DEBUG: error message = ", parse_error%get_message()
       else
          write (*, *) "DEBUG: Success! geom%natoms = ", geom%natoms
          if (allocated(geom%elements)) then
@@ -58,14 +58,14 @@ contains
          end if
       end if
 
-      if (stat == 0) then
-         call check(error, stat, 0, "Minimal XYZ should parse")
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "Minimal XYZ should parse")
       else
-         call check(error, stat, 0, "Minimal XYZ should parse: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "Minimal XYZ should parse: "//parse_error%get_message())
       end if
       if (allocated(error)) return
 
-      if (stat == 0) then
+      if (.not. parse_error%has_error()) then
          call check(error, geom%natoms, 1, "Should have 1 atom")
          if (allocated(error)) return
 
@@ -81,18 +81,17 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
       character(len=*), parameter :: spaced_xyz = " 1 "//new_line('a')// &
                                      "  Test  "//new_line('a')// &
                                      "  H   0.0   0.0   0.0  "
 
-      call read_xyz_string(spaced_xyz, geom, stat, errmsg)
+      call read_xyz_string(spaced_xyz, geom, parse_error)
 
-      if (stat == 0) then
-         call check(error, stat, 0, "Whitespace XYZ should parse")
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "Whitespace XYZ should parse")
       else
-         call check(error, stat, 0, "Whitespace XYZ should parse: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "Whitespace XYZ should parse: "//parse_error%get_message())
       end if
       if (allocated(error)) return
 
@@ -107,8 +106,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
       character(len=*), parameter :: debug_xyz = "2"//new_line('a')// &
                                      "Debug test"//new_line('a')// &
                                      "H 0.0 0.0 0.0"//new_line('a')// &
@@ -127,15 +125,15 @@ contains
          write (*, *) "DEBUG: Manual parse of '2' gave stat=", test_stat, " natoms=", test_natoms
       end block
 
-      call read_xyz_string(debug_xyz, geom, stat, errmsg)
+      call read_xyz_string(debug_xyz, geom, parse_error)
 
-      write (*, *) "DEBUG: Final result: stat=", stat
-      if (stat /= 0) write (*, *) "DEBUG: Final error: ", errmsg
+      write (*, *) "DEBUG: Final result: has_error=", parse_error%has_error()
+      if (parse_error%has_error()) write (*, *) "DEBUG: Final error: ", parse_error%get_message()
 
-      if (stat == 0) then
-         call check(error, stat, 0, "Debug XYZ should parse")
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "Debug XYZ should parse")
       else
-         call check(error, stat, 0, "Debug XYZ should parse: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "Debug XYZ should parse: "//parse_error%get_message())
       end if
       if (allocated(error)) return
 
@@ -164,7 +162,7 @@ contains
          read (test_strings(i), *, iostat=stat) natoms
          write (*, *) "DEBUG: Reading '", trim(test_strings(i)), "' gave stat=", stat, " value=", natoms
 
-         call check(error, stat, 0, "Should read integer from: '"//trim(test_strings(i))//"'")
+         call check(error, stat == 0, "Should read integer from: '"//trim(test_strings(i))//"'")
          if (allocated(error)) return
       end do
 
@@ -194,27 +192,26 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
       character(len=*), parameter :: lf_xyz = "1"//achar(10)//"comment"//achar(10)//"H 0 0 0"
       character(len=*), parameter :: crlf_xyz = "1"//achar(13)//achar(10)//"comment"//achar(13)//achar(10)//"H 0 0 0"
 
       ! Test LF only
-      call read_xyz_string(lf_xyz, geom, stat, errmsg)
-      if (stat == 0) then
-         call check(error, stat, 0, "LF-only XYZ should parse")
+      call read_xyz_string(lf_xyz, geom, parse_error)
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "LF-only XYZ should parse")
       else
-         call check(error, stat, 0, "LF-only XYZ should parse: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "LF-only XYZ should parse: "//parse_error%get_message())
       end if
       if (allocated(error)) return
       call geom%destroy()
 
       ! Test CRLF
-      call read_xyz_string(crlf_xyz, geom, stat, errmsg)
-      if (stat == 0) then
-         call check(error, stat, 0, "CRLF XYZ should parse")
+      call read_xyz_string(crlf_xyz, geom, parse_error)
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "CRLF XYZ should parse")
       else
-         call check(error, stat, 0, "CRLF XYZ should parse: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "CRLF XYZ should parse: "//parse_error%get_message())
       end if
       if (allocated(error)) return
       call geom%destroy()
@@ -226,8 +223,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       ! Test the exact case from the failing test
       character(len=*), parameter :: water_xyz = &
@@ -240,15 +236,15 @@ contains
       write (*, *) "DEBUG: Testing original failing case"
       write (*, *) "DEBUG: String length: ", len(water_xyz)
 
-      call read_xyz_string(water_xyz, geom, stat, errmsg)
+      call read_xyz_string(water_xyz, geom, parse_error)
 
-      write (*, *) "DEBUG: Result stat=", stat
-      if (stat /= 0) write (*, *) "DEBUG: Error message: ", errmsg
+      write (*, *) "DEBUG: Result has_error=", parse_error%has_error()
+      if (parse_error%has_error()) write (*, *) "DEBUG: Error message: ", parse_error%get_message()
 
-      if (stat == 0) then
-         call check(error, stat, 0, "Original water test should work")
+      if (.not. parse_error%has_error()) then
+         call check(error,.not. parse_error%has_error(), "Original water test should work")
       else
-         call check(error, stat, 0, "Original water test should work: "//errmsg)
+         call check(error,.not. parse_error%has_error(), "Original water test should work: "//parse_error%get_message())
       end if
       if (allocated(error)) return
 

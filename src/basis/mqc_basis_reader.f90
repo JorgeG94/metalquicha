@@ -6,6 +6,7 @@ module mqc_basis_reader
    !! from text files and building molecular basis sets for quantum calculations.
    use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type
    use mqc_basis_file_reader, only: strings_equal
+   use mqc_error, only: error_t, ERROR_PARSE
    use pic_types, only: dp
    implicit none
    private
@@ -152,25 +153,21 @@ contains
 
    end function is_shell_header
 
-   pure subroutine parse_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+   pure subroutine parse_element_basis(basis_string, element_name, atom_basis, error)
       !! Parse basis set for a specific element from a GAMESS formatted basis string
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       type(atomic_basis_type), intent(out) :: atom_basis
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: nshells
 
-      stat = 0
-
       ! Pass 1: Find the element and count its shells
-      call count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
-      if (stat /= 0) return
+      call count_shells_for_element(basis_string, element_name, nshells, error)
+      if (error%has_error()) return
 
       if (nshells == 0) then
-         stat = 1
-         errmsg = "Element "//trim(element_name)//" not found in basis file"
+         call error%set(ERROR_PARSE, "Element "//trim(element_name)//" not found in basis file")
          return
       end if
 
@@ -179,24 +176,22 @@ contains
       call atom_basis%allocate_shells(nshells)
 
       ! ! Pass 2: Parse and fill shell data
-      call fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+      call fill_element_basis(basis_string, element_name, atom_basis, error)
 
    end subroutine parse_element_basis
 
-   pure subroutine count_shells_for_element(basis_string, element_name, nshells, stat, errmsg)
+   pure subroutine count_shells_for_element(basis_string, element_name, nshells, error)
       !! Count the number of shells for a specific element in a GAMESS formatted basis string,
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       integer, intent(out) :: nshells
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: line_start, line_end, line_type
       character(len=256) :: line
       logical :: in_target_element, found_element
       character(len=1) :: ang_mom
 
-      stat = 0
       nshells = 0
       in_target_element = .false.
       found_element = .false.
@@ -248,8 +243,7 @@ contains
 
       ! Check if we found the element at all
       if (.not. found_element) then
-         stat = 1
-         errmsg = "Element not found in basis string: "//trim(element_name)
+         call error%set(ERROR_PARSE, "Element not found in basis string: "//trim(element_name))
       end if
 
    end subroutine count_shells_for_element
@@ -327,13 +321,12 @@ contains
 
    end subroutine parse_function_line
 
-   pure subroutine fill_element_basis(basis_string, element_name, atom_basis, stat, errmsg)
+   pure subroutine fill_element_basis(basis_string, element_name, atom_basis, error)
       !! Fill in the shell data for a specific element from a GAMESS formatted basis string
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_name
       type(atomic_basis_type), intent(inout) :: atom_basis
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: line_start, line_end, line_type
       character(len=256) :: line
@@ -346,8 +339,8 @@ contains
       ! L shell handling: we split into two shells, need to track both
       logical :: reading_l_shell
       integer :: l_shell_s_idx, l_shell_p_idx
+      integer :: stat
 
-      stat = 0
       in_data_block = .false.
       in_target_element = .false.
       ishell = 0
@@ -382,7 +375,7 @@ contains
                ! Parse shell header
                call parse_shell_header(line, ang_mom, nfunc, stat)
                if (stat /= 0) then
-                  errmsg = "Failed to parse shell header: "//trim(line)
+                  call error%set(ERROR_PARSE, "Failed to parse shell header: "//trim(line))
                   return
                end if
 
@@ -418,7 +411,7 @@ contains
             if (in_target_element) then
                call parse_function_line(line, func_num, exponent, coeff_s, coeff_p, has_p, stat)
                if (stat /= 0) then
-                  errmsg = "Failed to parse function line: "//trim(line)
+                  call error%set(ERROR_PARSE, "Failed to parse function line: "//trim(line))
                   return
                end if
 
@@ -426,8 +419,7 @@ contains
 
                if (reading_l_shell) then
                if (.not. has_p) then
-                  stat = 1
-                  errmsg = "L shell requires both S and P coefficients"
+                  call error%set(ERROR_PARSE, "L shell requires both S and P coefficients")
                   return
                end if
                ! Store in both S and P shells
@@ -509,14 +501,13 @@ contains
 
    end subroutine copy_atomic_basis
 
-   subroutine build_molecular_basis(basis_string, element_names, mol_basis, stat, errmsg)
+   subroutine build_molecular_basis(basis_string, element_names, mol_basis, error)
       !! Build molecular basis from geometry and basis file
       !! Only parses unique elements, then copies basis data to atoms
       character(len=*), intent(in) :: basis_string
       character(len=*), intent(in) :: element_names(:)  !! Element for each atom in geometry order
       type(molecular_basis_type), intent(out) :: mol_basis
-      integer, intent(out) :: stat
-      character(len=:), allocatable, intent(out) :: errmsg
+      type(error_t), intent(out) :: error
 
       integer :: iatom, natoms, iunique, nunique
       character(len=:), allocatable :: unique_elements(:)
@@ -524,7 +515,6 @@ contains
       integer :: match_idx
 
       match_idx = 0
-      stat = 0
       natoms = size(element_names)
 
       ! Find unique elements
@@ -539,10 +529,11 @@ contains
       do iunique = 1, nunique
          print *, "Parsing basis for: ", trim(unique_elements(iunique))
          call parse_element_basis(basis_string, unique_elements(iunique), &
-                                  unique_bases(iunique), stat, errmsg)
-         if (stat /= 0) then
-            errmsg = "Failed to parse basis for element "//trim(unique_elements(iunique))// &
-                     ": "//errmsg
+                                  unique_bases(iunique), error)
+         if (error%has_error()) then
+            ! Prepend context to error message
+            call error%set(ERROR_PARSE, "Failed to parse basis for element "// &
+                           trim(unique_elements(iunique))//": "//error%get_message())
             return
          end if
       end do

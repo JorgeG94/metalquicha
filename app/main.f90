@@ -15,6 +15,7 @@ program main
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_logo, only: print_logo
    use pic_timer, only: timer_type
+   use mqc_error, only: error_t
    implicit none
 
    type(timer_type) :: my_timer      !! Execution timing
@@ -23,8 +24,9 @@ program main
    type(driver_config_t) :: config   !! Driver configuration
    type(mqc_config_t) :: mqc_config  !! Parsed .mqc file
    type(system_geometry_t) :: sys_geom  !! Loaded molecular system
-   integer :: stat                  !! Status code for error handling
-   character(len=:), allocatable :: errmsg  !! Error messages
+   type(error_t) :: error            !! Error handling
+   integer :: stat                   !! Status code for file I/O
+   character(len=:), allocatable :: errmsg  !! Error messages for file I/O
    character(len=256) :: input_file  !! Input file name
 
    ! Initialize MPI
@@ -75,10 +77,10 @@ program main
       call logger%info("Reading input file: "//trim(input_file))
    end if
 
-   call read_mqc_file(input_file, mqc_config, stat, errmsg)
-   if (stat /= 0) then
+   call read_mqc_file(input_file, mqc_config, error)
+   if (error%has_error()) then
       if (world_comm%rank() == 0) then
-         call logger%error("Error reading .mqc file: "//errmsg)
+         call logger%error("Error reading .mqc file: "//error%get_message())
       end if
       call abort_comm(world_comm, 1)
    end if
@@ -95,10 +97,10 @@ program main
    if (mqc_config%nmol == 0) then
       ! Single molecule mode (backward compatible)
       call config_to_driver(mqc_config, config)
-      call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg)
-      if (stat /= 0) then
+      call config_to_system_geometry(mqc_config, sys_geom, error)
+      if (error%has_error()) then
          if (world_comm%rank() == 0) then
-            call logger%error("Error converting geometry: "//errmsg)
+            call logger%error("Error converting geometry: "//error%get_message())
          end if
          call abort_comm(world_comm, 1)
       end if
@@ -132,9 +134,9 @@ contains
       type(driver_config_t) :: config
       type(system_geometry_t) :: sys_geom
       type(comm_t) :: mol_comm, mol_node_comm
-      integer :: imol, stat, my_rank, num_ranks, color
+      type(error_t) :: error
+      integer :: imol, my_rank, num_ranks, color
       integer :: molecules_processed
-      character(len=:), allocatable :: errmsg
       character(len=:), allocatable :: mol_name
       logical :: has_fragmented_molecules
 
@@ -198,10 +200,10 @@ contains
             call config_to_driver(mqc_config, config, molecule_index=imol)
 
             ! Convert geometry for this molecule
-            call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index=imol)
-            if (stat /= 0) then
+            call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
+            if (error%has_error()) then
                if (my_rank == 0) then
-                  call logger%error("Error converting geometry for "//mol_name//": "//errmsg)
+                  call logger%error("Error converting geometry for "//mol_name//": "//error%get_message())
                end if
                call abort_comm(world_comm, 1)
             end if
@@ -239,9 +241,9 @@ contains
             call config_to_driver(mqc_config, config, molecule_index=imol)
 
             ! Convert geometry for this molecule
-            call config_to_system_geometry(mqc_config, sys_geom, stat, errmsg, molecule_index=imol)
-            if (stat /= 0) then
-               call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//errmsg)
+            call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
+            if (error%has_error()) then
+     call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//error%get_message())
                call abort_comm(world_comm, 1)
             end if
 

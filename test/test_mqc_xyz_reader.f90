@@ -2,6 +2,7 @@ module test_mqc_xyz_reader
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_geometry, only: geometry_type
    use mqc_xyz_reader, only: read_xyz_string, read_xyz_file
+   use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none
    private
@@ -27,8 +28,7 @@ contains
    subroutine test_read_water_molecule(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
       character(len=*), parameter :: test_xyz = &
                                      "3"//new_line('a')// &
                                      "Water molecule"//new_line('a')// &
@@ -36,9 +36,9 @@ contains
                                      "H    0.000000    0.763239   -0.477047"//new_line('a')// &
                                      "H    0.000000   -0.763239   -0.477047"
 
-      call read_xyz_string(test_xyz, geom, stat, errmsg)
+      call read_xyz_string(test_xyz, geom, parse_error)
 
-      call check(error, stat, 0, "read_xyz_string should succeed")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed")
       if (allocated(error)) return
 
       call check(error, geom%natoms, 3, "Water molecule should have 3 atoms")
@@ -60,14 +60,13 @@ contains
    subroutine test_read_single_atom(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       call read_xyz_string("1"//new_line('a')// &
                            "Single carbon atom"//new_line('a')// &
-                           "C  1.0  2.0  3.0", geom, stat, errmsg)
+                           "C  1.0  2.0  3.0", geom, parse_error)
 
-      call check(error, stat, 0, "read_xyz_string should succeed for single atom")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed for single atom")
       if (allocated(error)) return
 
       call check(error, geom%natoms, 1, "Should have 1 atom")
@@ -86,15 +85,14 @@ contains
    subroutine test_empty_comment_line(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       call read_xyz_string("2"//new_line('a')// &
                            new_line('a')// &
                            "He  0.0  0.0  0.0"//new_line('a')// &
-                           "Ne  5.0  0.0  0.0", geom, stat, errmsg)
+                           "Ne  5.0  0.0  0.0", geom, parse_error)
 
-      call check(error, stat, 0, "read_xyz_string should handle empty comment")
+      call check(error,.not. parse_error%has_error(), "read_xyz_string should handle empty comment")
       if (allocated(error)) return
 
       call check(error, geom%natoms, 2, "Should have 2 atoms")
@@ -106,41 +104,38 @@ contains
    subroutine test_error_insufficient_lines(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       call read_xyz_string("3"//new_line('a')// &
                            "Should fail"//new_line('a')// &
-                           "H  0.0  0.0  0.0", geom, stat, errmsg)
+                           "H  0.0  0.0  0.0", geom, parse_error)
 
-      call check(error, stat /= 0, "Should detect insufficient lines")
+      call check(error, parse_error%has_error(), "Should detect insufficient lines")
       if (allocated(error)) return
    end subroutine test_error_insufficient_lines
 
    subroutine test_error_invalid_atom_count(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       call read_xyz_string("not_a_number"//new_line('a')// &
-                           "Comment", geom, stat, errmsg)
+                           "Comment", geom, parse_error)
 
-      call check(error, stat /= 0, "Should detect invalid atom count")
+      call check(error, parse_error%has_error(), "Should detect invalid atom count")
       if (allocated(error)) return
    end subroutine test_error_invalid_atom_count
 
    subroutine test_error_malformed_coordinates(error)
       type(error_type), allocatable, intent(out) :: error
       type(geometry_type) :: geom
-      integer :: stat
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
 
       call read_xyz_string("1"//new_line('a')// &
                            "Test"//new_line('a')// &
-                           "C  1.0  invalid  3.0", geom, stat, errmsg)
+                           "C  1.0  invalid  3.0", geom, parse_error)
 
-      call check(error, stat /= 0, "Should detect malformed coordinates")
+      call check(error, parse_error%has_error(), "Should detect malformed coordinates")
       if (allocated(error)) return
    end subroutine test_error_malformed_coordinates
 

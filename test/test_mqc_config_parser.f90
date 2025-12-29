@@ -4,11 +4,11 @@ program test_mqc_config_parser
    use mqc_config_parser, only: mqc_config_t, read_mqc_file
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
+   use mqc_error, only: error_t
    use pic_test_helpers, only: is_equal
    implicit none
-   integer :: stat
+   type(error_t) :: error
    type(unittest_type), allocatable :: testsuite(:)
-   character(len=:), allocatable :: errmsg
 
    ! Build test suite
    testsuite = [ &
@@ -23,10 +23,10 @@ program test_mqc_config_parser
                new_unittest("error_missing_geometry", test_error_missing_geometry) &
                ]
 
-   call run_testsuite(testsuite, stat, errmsg)
+   call run_testsuite(testsuite, error%code, error%message)
 
-   if (stat /= 0) then
-      write (*, '(A)') "Test suite failed: "//errmsg
+   if (error%has_error()) then
+      write (*, '(A)') "Test suite failed: "//error%get_message()
       stop 1
    else
       write (*, '(A)') "All tests passed!"
@@ -39,8 +39,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_minimal.mqc"
 
       ! Create minimal test file
@@ -74,9 +74,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, config%schema_name, "mqc-frag", "schema_name should be 'mqc-frag'")
@@ -128,8 +128,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_fragments.mqc"
 
       ! Create test file with fragments
@@ -186,9 +186,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, config%method, METHOD_TYPE_GFN1, "method should be GFN1")
@@ -235,8 +235,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_connectivity.mqc"
 
       ! Create test file with connectivity
@@ -265,9 +265,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, config%nbonds, 1, "nbonds should be 1")
@@ -299,8 +299,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_no_fragments.mqc"
 
       ! Create test file without fragments
@@ -320,9 +320,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, config%nfrag, 0, "nfrag should be 0 (no fragments)")
@@ -339,8 +339,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_method.mqc"
 
       ! Create test file
@@ -364,9 +364,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, config%method, METHOD_TYPE_GFN1, "method should be GFN1 from XTB-GFN1")
@@ -383,8 +383,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_system.mqc"
 
       ! Create test file with %system section
@@ -408,9 +408,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
       if (allocated(error)) return
 
       call check(error, allocated(config%log_level), "log_level should be allocated")
@@ -430,8 +430,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_comments.mqc"
 
       ! Create test file with comments after 'end' keywords
@@ -488,9 +488,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat, 0, "Parser should succeed with comments")
+      call check(error,.not. parse_error%has_error(), "Parser should succeed with comments")
       if (allocated(error)) return
 
       call check(error, config%schema_name, "mqc-frag", "schema_name should be 'mqc-frag'")
@@ -525,8 +525,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_missing_schema.mqc"
 
       ! Create test file without schema
@@ -539,9 +539,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat /= 0, "Parser should fail for missing schema")
+      call check(error, parse_error%has_error(), "Parser should fail for missing schema")
       if (allocated(error)) return
 
       call config%destroy()
@@ -555,8 +555,8 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       type(mqc_config_t) :: config
-      integer :: stat, unit
-      character(len=:), allocatable :: errmsg
+      type(error_t) :: parse_error
+      integer :: unit
       character(len=*), parameter :: test_file = "test_missing_geometry.mqc"
 
       ! Create test file without geometry
@@ -570,9 +570,9 @@ contains
       close (unit)
 
       ! Parse file
-      call read_mqc_file(test_file, config, stat, errmsg)
+      call read_mqc_file(test_file, config, parse_error)
 
-      call check(error, stat /= 0, "Parser should fail for missing geometry")
+      call check(error, parse_error%has_error(), "Parser should fail for missing geometry")
       if (allocated(error)) return
 
       call config%destroy()
