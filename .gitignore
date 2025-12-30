@@ -44,3 +44,5 @@ bin/*
 build/*
 
 *.mqc
+validation_logs/
+output_*.json

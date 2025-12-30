@@ -21,13 +21,20 @@ class Colors:
     BOLD = '\033[1m'
 
 
-def run_calculation(input_file: str, exe_path: str = "./build/mqc") -> bool:
-    """Run a metalquicha calculation"""
+def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: bool = False) -> bool:
+    """Run a metalquicha calculation and cache stdout/stderr"""
     import os
 
     # Set environment for reproducible calculations
     env = os.environ.copy()
     env['OMP_NUM_THREADS'] = '1'
+
+    # Determine log filename from input file
+    input_path = Path(input_file)
+    log_file = f"validation_logs/{input_path.stem}.log"
+
+    # Create logs directory if needed
+    Path("validation_logs").mkdir(exist_ok=True)
 
     try:
         result = subprocess.run(
@@ -37,12 +44,40 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc") -> bool:
             timeout=300,  # 5 minute timeout
             env=env
         )
+
+        # Save stdout and stderr to log file
+        with open(log_file, 'w') as f:
+            f.write("=" * 80 + "\n")
+            f.write(f"Calculation: {input_file}\n")
+            f.write(f"Executable: {exe_path}\n")
+            f.write("=" * 80 + "\n\n")
+            f.write("STDOUT:\n")
+            f.write("-" * 80 + "\n")
+            f.write(result.stdout)
+            f.write("\n" + "-" * 80 + "\n\n")
+            f.write("STDERR:\n")
+            f.write("-" * 80 + "\n")
+            f.write(result.stderr)
+            f.write("\n" + "-" * 80 + "\n\n")
+            f.write(f"Return code: {result.returncode}\n")
+
+        if verbose:
+            print(f"  Log saved to: {log_file}")
+
         return result.returncode == 0
     except subprocess.TimeoutExpired:
         print(f"  {Colors.RED}✗ Timeout running {input_file}{Colors.RESET}")
+        # Save timeout info to log
+        with open(log_file, 'w') as f:
+            f.write(f"TIMEOUT after 300 seconds\n")
+            f.write(f"Calculation: {input_file}\n")
         return False
     except Exception as e:
         print(f"  {Colors.RED}✗ Error running {input_file}: {e}{Colors.RESET}")
+        # Save error info to log
+        with open(log_file, 'w') as f:
+            f.write(f"ERROR: {e}\n")
+            f.write(f"Calculation: {input_file}\n")
         return False
 
 
@@ -164,8 +199,9 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
         if verbose:
             print(f"  Running: {exe_path} {input_file}")
 
-        if not run_calculation(input_file, exe_path):
-            print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Calculation error\n")
+        if not run_calculation(input_file, exe_path, verbose=verbose):
+            print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Calculation error")
+            print(f"  See validation_logs/{Path(input_file).stem}.log for details\n")
             failed += 1
             errors.append((test_name, "Calculation failed"))
             continue

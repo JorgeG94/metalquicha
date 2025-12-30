@@ -55,7 +55,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: validation-outputs-tblite
-          path: output_*.json
+          path: |
+            output_*.json
+            validation_logs/*.log
           retention-days: 7
 
       - name: Clean build dir
