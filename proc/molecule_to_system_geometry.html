@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for procedures.">57 statements</a>
+                 title=" 1.6% of total for procedures.">65 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-all_same_size~2">all_same_size</a>
             <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-atoms_in_first_frag~2">atoms_in_first_frag</a>
-            <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-i~21">i</a>
+            <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-i~28">i</a>
             <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-j~5">j</a>
             <a class="list-group-item" href="../proc/molecule_to_system_geometry.html#variable-max_frag_size~2">max_frag_size</a>
         </div>
@@ -407,7 +407,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol"></span>
+              <span class="anchor" id="variable-mol~8"></span>
               type(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(in)</td>
@@ -422,7 +422,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~13"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -467,7 +467,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~36"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -948,7 +948,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~21"></span>
+              <span class="anchor" id="variable-i~28"></span>
               integer,
             </td>
               <td>private</td>
@@ -1036,13 +1036,19 @@ large graphs.</div>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! Unfragmented molecule</span>
 <span class="w">         </span><span class="k">call </span><span class="n">geometry_to_system_unfragmented</span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">use_angstrom</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">charge</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">multiplicity</span>
 <span class="w">      </span><span class="k">else</span>
 <span class="w">         </span><span class="c">! Fragmented molecule</span>
 <span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span>
 <span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">geometry</span><span class="p">%</span><span class="n">natoms</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">charge</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">multiplicity</span>
 
 <span class="w">         </span><span class="c">! Allocate fragment info arrays</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span><span class="p">))</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span><span class="p">))</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span><span class="p">))</span>
 
 <span class="w">         </span><span class="c">! Get fragment sizes</span>
 <span class="w">         </span><span class="n">max_frag_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
@@ -1051,6 +1057,8 @@ large graphs.</div>
 
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">nfrag</span>
 <span class="w">            </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">mol</span><span class="p">%</span><span class="n">fragments</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">indices</span><span class="p">)</span>
+<span class="w">            </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">fragments</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">charge</span>
+<span class="w">            </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mol</span><span class="p">%</span><span class="n">fragments</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">multiplicity</span>
 <span class="w">            </span><span class="n">max_frag_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">max_frag_size</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">atoms_in_first_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               </span><span class="n">all_same_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
@@ -1121,7 +1129,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-29 13:50 +0000             </p>
+ on 2025-12-30 03:38 +0000             </p>
           </div>
         </div>
         <br>

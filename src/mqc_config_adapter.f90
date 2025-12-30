@@ -102,6 +102,8 @@ contains
          if (mqc_config%nfrag == 0) then
             ! Unfragmented calculation: entire system is one "monomer"
             call geometry_to_system_unfragmented(mqc_config%geometry, sys_geom, use_angstrom)
+            sys_geom%charge = mqc_config%charge
+            sys_geom%multiplicity = mqc_config%multiplicity
          else
             ! Fragmented calculation with explicit fragments
             call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
@@ -158,9 +160,13 @@ contains
       ! Set up basic system geometry
       sys_geom%n_monomers = mqc_config%nfrag
       sys_geom%total_atoms = mqc_config%geometry%natoms
+      sys_geom%charge = mqc_config%charge
+      sys_geom%multiplicity = mqc_config%multiplicity
 
       ! Allocate fragment info arrays
       allocate (sys_geom%fragment_sizes(mqc_config%nfrag))
+      allocate (sys_geom%fragment_charges(mqc_config%nfrag))
+      allocate (sys_geom%fragment_multiplicities(mqc_config%nfrag))
 
       ! Get fragment sizes
       max_frag_size = 0
@@ -169,6 +175,8 @@ contains
 
       do i = 1, mqc_config%nfrag
          sys_geom%fragment_sizes(i) = size(mqc_config%fragments(i)%indices)
+         sys_geom%fragment_charges(i) = mqc_config%fragments(i)%charge
+         sys_geom%fragment_multiplicities(i) = mqc_config%fragments(i)%multiplicity
          max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
          if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
             all_same_size = .false.
@@ -239,13 +247,19 @@ contains
       if (mol%nfrag == 0) then
          ! Unfragmented molecule
          call geometry_to_system_unfragmented(mol%geometry, sys_geom, use_angstrom)
+         sys_geom%charge = mol%charge
+         sys_geom%multiplicity = mol%multiplicity
       else
          ! Fragmented molecule
          sys_geom%n_monomers = mol%nfrag
          sys_geom%total_atoms = mol%geometry%natoms
+         sys_geom%charge = mol%charge
+         sys_geom%multiplicity = mol%multiplicity
 
          ! Allocate fragment info arrays
          allocate (sys_geom%fragment_sizes(mol%nfrag))
+         allocate (sys_geom%fragment_charges(mol%nfrag))
+         allocate (sys_geom%fragment_multiplicities(mol%nfrag))
 
          ! Get fragment sizes
          max_frag_size = 0
@@ -254,6 +268,8 @@ contains
 
          do i = 1, mol%nfrag
             sys_geom%fragment_sizes(i) = size(mol%fragments(i)%indices)
+            sys_geom%fragment_charges(i) = mol%fragments(i)%charge
+            sys_geom%fragment_multiplicities(i) = mol%fragments(i)%multiplicity
             max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
             if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
                all_same_size = .false.

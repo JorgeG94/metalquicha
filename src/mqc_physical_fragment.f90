@@ -63,9 +63,15 @@ module mqc_physical_fragment
       integer, allocatable :: element_numbers(:)  !! Atomic numbers for all atoms
       real(dp), allocatable :: coordinates(:, :)  !! All coordinates (3, total_atoms) in Bohr
 
+      ! Electronic structure properties
+      integer :: charge         !! Net molecular charge (electrons)
+      integer :: multiplicity   !! Spin multiplicity (2S+1)
+
       ! For variable-sized fragments (explicit fragment definitions)
       integer, allocatable :: fragment_sizes(:)      !! Number of atoms in each fragment (n_monomers)
       integer, allocatable :: fragment_atoms(:, :)   !! Atom indices for each fragment (max_frag_size, n_monomers), 0-indexed
+      integer, allocatable :: fragment_charges(:)    !! Charge for each fragment (n_monomers)
+      integer, allocatable :: fragment_multiplicities(:)  !! Multiplicity for each fragment (n_monomers)
    contains
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
@@ -288,6 +294,33 @@ contains
          end do
       end if
 
+      ! Set electronic structure properties from system geometry
+      if (use_explicit_fragments .and. allocated(sys_geom%fragment_charges) .and. &
+          allocated(sys_geom%fragment_multiplicities)) then
+         ! Explicit fragments: sum charges and multiplicities from constituent fragments
+         fragment%charge = 0
+         fragment%multiplicity = 1  ! Start with singlet assumption
+
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            fragment%charge = fragment%charge + sys_geom%fragment_charges(mono_idx)
+         end do
+
+         ! For single fragment, use its specific multiplicity
+         if (n_monomers_in_frag == 1) then
+            fragment%multiplicity = sys_geom%fragment_multiplicities(monomer_indices(1))
+         else
+            ! For multi-fragment composites, multiplicity needs careful treatment
+            ! For now, default to system multiplicity (this may need refinement)
+            fragment%multiplicity = sys_geom%multiplicity
+         end if
+      else
+         ! Fixed-size monomers: use system defaults
+         fragment%charge = sys_geom%charge
+         fragment%multiplicity = sys_geom%multiplicity
+      end if
+      call fragment%compute_nelec()
+
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
@@ -339,6 +372,8 @@ contains
       if (allocated(this%coordinates)) deallocate (this%coordinates)
       if (allocated(this%fragment_sizes)) deallocate (this%fragment_sizes)
       if (allocated(this%fragment_atoms)) deallocate (this%fragment_atoms)
+      if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
+      if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
       this%n_monomers = 0
       this%atoms_per_monomer = 0
       this%total_atoms = 0
