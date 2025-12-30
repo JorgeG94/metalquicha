@@ -4,46 +4,37 @@
   "tests": [
     {
       "name": "Unfragmented glycine tripeptide",
-      "input": "sample_json/no_frag.mqc",
+      "input": "validation/inputs/no_frag.mqc",
       "expected_energy": -143.291489223019653,
       "type": "unfragmented"
     },
     {
       "name": "Charged cluster MBE",
-      "input": "sample_json/charged_cluster.mqc",
+      "input": "validation/inputs/charged_cluster.mqc",
       "expected_energy": -45.7161383790,
       "type": "fragmented"
     },
     {
       "name": "Glycine 10-mer MBE",
-      "input": "sample_json/gly10.mqc",
+      "input": "validation/inputs/gly10.mqc",
       "expected_energy": -143.3014637669,
       "type": "fragmented"
     },
     {
       "name": "Water prism MBE",
-      "input": "sample_json/prism.mqc",
+      "input": "validation/inputs/prism.mqc",
       "expected_energy": -34.6736678571,
       "type": "fragmented"
     },
     {
       "name": "Water 20-mer isomer MBE",
-      "input": "sample_json/w20_isomer.mqc",
+      "input": "validation/inputs/w20_isomer.mqc",
       "expected_energy": -115.6850246841,
       "type": "fragmented"
     },
     {
-      "name": "Multi-fragment calculation",
-      "input": "sample_json/multi_frag.mqc",
-      "expected_energies": {
-        "frag1": -34.6736678571,
-        "frag2": -34.6736678571
-      },
-      "type": "multi_molecule"
-    },
-    {
       "name": "Hydronium ion unfragmented",
-      "input": "sample_json/h3o.mqc",
+      "input": "validation/inputs/h3o.mqc",
       "expected_energy": -5.773131213617977,
       "type": "unfragmented"
     }

@@ -88,6 +88,45 @@ def validate_energy(calculated: float, expected: float, tolerance: float) -> boo
     return abs(calculated - expected) < tolerance
 
 
+def prepare_mqc_files(validation_dir: str = "validation", prep_script: str = "mqc_prep.py", verbose: bool = False) -> None:
+    """Run mqc_prep.py on all JSON files in validation/inputs/"""
+    inputs_dir = Path(validation_dir) / "inputs"
+
+    if not inputs_dir.exists():
+        print(f"{Colors.YELLOW}Warning: {inputs_dir} does not exist{Colors.RESET}")
+        return
+
+    json_files = list(inputs_dir.glob("*.json"))
+
+    if not json_files:
+        print(f"{Colors.YELLOW}No JSON files found in {inputs_dir}{Colors.RESET}")
+        return
+
+    print(f"\n{Colors.BOLD}Preparing .mqc files from {len(json_files)} JSON inputs...{Colors.RESET}\n")
+
+    for json_file in json_files:
+        output_mqc = inputs_dir / f"{json_file.stem}.mqc"
+
+        if verbose:
+            print(f"  {json_file.name} -> {output_mqc.name}")
+
+        try:
+            result = subprocess.run(
+                ["python", prep_script, str(json_file), "-o", str(output_mqc)],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if result.returncode != 0:
+                print(f"  {Colors.RED}✗ Failed to prepare {json_file.name}{Colors.RESET}")
+                if verbose:
+                    print(f"    {result.stderr}")
+        except Exception as e:
+            print(f"  {Colors.RED}✗ Error preparing {json_file.name}: {e}{Colors.RESET}")
+
+    print()
+
+
 def run_validation_tests(manifest_file: str = "validation_tests.json",
                         exe_path: str = "./build/mqc",
                         verbose: bool = False) -> tuple:
@@ -212,10 +251,24 @@ def main():
                        help="Path to validation manifest JSON")
     parser.add_argument("--exe", default="./build/mqc",
                        help="Path to metalquicha executable")
+    parser.add_argument("--prep-script", default="mqc_prep.py",
+                       help="Path to mqc_prep.py script")
+    parser.add_argument("--validation-dir", default="validation",
+                       help="Path to validation directory containing inputs/")
+    parser.add_argument("--skip-prep", action="store_true",
+                       help="Skip .mqc file preparation step")
     parser.add_argument("-v", "--verbose", action="store_true",
                        help="Verbose output")
 
     args = parser.parse_args()
+
+    # Prepare .mqc files from JSON inputs (unless skipped)
+    if not args.skip_prep:
+        prepare_mqc_files(
+            validation_dir=args.validation_dir,
+            prep_script=args.prep_script,
+            verbose=args.verbose
+        )
 
     # Run tests
     passed, failed, errors = run_validation_tests(
