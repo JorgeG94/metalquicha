@@ -382,7 +382,7 @@ contains
          close (unit_in)
 
          ! Delete individual file
-         open (newunit=unit_in, file=trim(individual_files(imol)), status='old')
+         open (newunit=unit_in, file=trim(individual_files(imol)), status='old', action='readwrite')
          close (unit_in, status='delete')
       end do
 
