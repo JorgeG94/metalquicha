@@ -1,29 +1,8 @@
 {
     "schema": { "name": "mqc-frag", "version": "1.0" },
     "molecules": [{
-        "xyz": "sample_inputs/charged_cluster.xyz",
-        "fragments": [
-          [0,1,2,3],
-          [4,5,6,7],
-          [8,9,10,11],
-          [12,13,14,15],
-          [16,17,18],
-          [19,20,21],
-          [22,23,24],
-          [25,26,27]
-        ],
-        "fragment_charges": [
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0
-        ],
-        "fragment_multiplicities": [1, 1, 1, 1, 1, 1,1,1],
-        "molecular_charge": 4,
+        "xyz": "sample_inputs/h3op.xyz",
+        "molecular_charge": 1,
         "molecular_multiplicity": 1
     }],
   "model": {
@@ -38,7 +17,7 @@
     },
     "fragmentation":{
         "method": "MBE",
-        "allow_overlapping_fragments": true,
+        "allow_overlapping_fragments": false,
         "level": 2,
         "embedding": "none",
         "cutoff_method": "distance",

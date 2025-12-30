@@ -44,7 +44,7 @@
     },
     "fragmentation":{
         "method": "MBE",
-        "allow_overlapping_fragments": true,
+        "allow_overlapping_fragments": false,
         "level": 2,
         "embedding": "none",
         "cutoff_method": "distance",
