@@ -19,6 +19,7 @@ module mqc_physical_fragment
    public :: system_geometry_t          !! Complete system geometry type
    public :: initialize_system_geometry  !! System geometry initialization
    public :: build_fragment_from_indices  !! Extract fragment from system
+   public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: fragment_centroid          !! Geometric centroid calculation
    public :: fragment_center_of_mass    !! Mass-weighted center calculation
@@ -324,6 +325,93 @@ contains
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
+
+   subroutine build_fragment_from_atom_list(sys_geom, atom_indices, n_atoms, fragment, bonds)
+      !! Build a fragment from explicit atom list (for GMBE intersection fragments)
+      !!
+      !! Similar to build_fragment_from_indices but takes atom indices directly instead of
+      !! monomer indices. Used for building intersection fragments in GMBE calculations.
+      !! Intersection fragments are ALWAYS NEUTRAL (charge=0, multiplicity=1).
+      !!
+      !! Example: atom_indices = [3, 4, 5] builds fragment from atoms 3, 4, 5 of the system
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: atom_indices(:)  !! 0-indexed atom indices
+      integer, intent(in) :: n_atoms          !! Number of atoms in list
+      type(physical_fragment_t), intent(out) :: fragment
+      type(bond_t), intent(in), optional :: bonds(:)  !! Connectivity for capping
+
+      integer :: i, frag_atom_idx, atom_global_idx
+      integer :: ibond, n_caps, cap_idx
+      logical :: atom_i_in_frag, atom_j_in_frag
+
+      ! Count how many caps we need
+      n_caps = 0
+      if (present(bonds)) then
+         do ibond = 1, size(bonds)
+            if (.not. bonds(ibond)%is_broken) cycle
+
+            ! Check if exactly one atom of this bond is in the fragment
+            atom_i_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_i)
+            atom_j_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_j)
+
+            ! Add cap only if one atom in fragment, other not (XOR condition)
+            if ((atom_i_in_frag .and. .not. atom_j_in_frag) .or. &
+                (.not. atom_i_in_frag .and. atom_j_in_frag)) then
+               n_caps = n_caps + 1
+            end if
+         end do
+      end if
+
+      ! Allocate arrays with space for original atoms + caps
+      fragment%n_atoms = n_atoms + n_caps
+      fragment%n_caps = n_caps
+      allocate (fragment%element_numbers(fragment%n_atoms))
+      allocate (fragment%coordinates(3, fragment%n_atoms))
+      if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
+
+      ! Copy original atoms (atom_indices are 0-indexed, add 1 for Fortran arrays)
+      do i = 1, n_atoms
+         atom_global_idx = atom_indices(i) + 1  ! Convert to 1-indexed
+         fragment%element_numbers(i) = sys_geom%element_numbers(atom_global_idx)
+         fragment%coordinates(:, i) = sys_geom%coordinates(:, atom_global_idx)
+      end do
+
+      ! Add hydrogen caps at end (if any)
+      if (present(bonds) .and. n_caps > 0) then
+         cap_idx = 0
+         do ibond = 1, size(bonds)
+            if (.not. bonds(ibond)%is_broken) cycle
+
+            atom_i_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_i)
+            atom_j_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_j)
+
+            if (atom_i_in_frag .and. .not. atom_j_in_frag) then
+               ! atom_i is in fragment, atom_j is not → cap at position of atom_j
+               cap_idx = cap_idx + 1
+               fragment%element_numbers(n_atoms + cap_idx) = 1  ! Hydrogen
+               fragment%coordinates(:, n_atoms + cap_idx) = &
+                  sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
+               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
+
+            else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
+               ! atom_j is in fragment, atom_i is not → cap at position of atom_i
+               cap_idx = cap_idx + 1
+               fragment%element_numbers(n_atoms + cap_idx) = 1  ! Hydrogen
+               fragment%coordinates(:, n_atoms + cap_idx) = &
+                  sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
+               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
+            end if
+         end do
+      end if
+
+      ! Intersection fragments are ALWAYS NEUTRAL
+      ! Rationale: For polypeptides, intersections are backbone atoms;
+      ! charged side chains are in non-overlapping regions
+      fragment%charge = 0
+      fragment%multiplicity = 1
+      call fragment%compute_nelec()
+
+   end subroutine build_fragment_from_atom_list
 
    subroutine fragment_destroy(this)
       !! Clean up allocated memory in physical_fragment_t
