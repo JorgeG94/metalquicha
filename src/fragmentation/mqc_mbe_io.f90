@@ -5,7 +5,7 @@ module mqc_mbe_io
    use mqc_physical_fragment, only: physical_fragment_t, to_angstrom
    use mqc_elements, only: element_number_to_symbol
    use mqc_result_types, only: calculation_result_t
-   use mqc_output_filename, only: get_output_json_filename
+   use mqc_output_filename, only: get_output_json_filename, get_basename
    implicit none
    private
    public :: print_fragment_xyz, print_detailed_breakdown, print_detailed_breakdown_json
@@ -170,9 +170,10 @@ contains
       logical :: first_level, first_fragment
       character(len=32) :: level_name
       integer :: total_atoms
-      character(len=256) :: output_file
+      character(len=256) :: output_file, basename
 
       output_file = get_output_json_filename()
+      basename = get_basename()
 
       open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
       if (io_stat /= 0) then
@@ -188,7 +189,8 @@ contains
       end if
 
       write (unit, '(a)') "{"
-      write (unit, '(a)') '  "mbe_breakdown": {'
+      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
+      write (unit, '(a)') trim(json_line)
 
       write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
       write (unit, '(a)') trim(json_line)
@@ -315,9 +317,10 @@ contains
 
       integer :: unit, io_stat, iatom, total_atoms
       character(len=512) :: json_line
-      character(len=256) :: output_file
+      character(len=256) :: output_file, basename
 
       output_file = get_output_json_filename()
+      basename = get_basename()
 
       open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
       if (io_stat /= 0) then
@@ -328,7 +331,8 @@ contains
       call logger%info("Writing JSON output to "//trim(output_file))
 
       write (unit, '(a)') "{"
-      write (unit, '(a)') '  "unfragmented_result": {'
+      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
+      write (unit, '(a)') trim(json_line)
 
       if (result%has_energy) then
          write (json_line, '(a,f25.15)') '    "total_energy": ', result%energy%total()

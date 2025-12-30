@@ -13,7 +13,7 @@ program main
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_parser, only: mqc_config_t, read_mqc_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
-   use mqc_output_filename, only: set_output_json_filename
+   use mqc_output_filename, only: set_output_json_filename, set_molecule_suffix, get_output_json_filename
    use mqc_logo, only: print_logo
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
@@ -141,9 +141,13 @@ contains
       integer :: molecules_processed
       character(len=:), allocatable :: mol_name
       logical :: has_fragmented_molecules
+      character(len=256), allocatable :: individual_json_files(:)
 
       my_rank = world_comm%rank()
       num_ranks = world_comm%size()
+
+      ! Allocate array to track individual JSON files for merging
+      allocate (individual_json_files(mqc_config%nmol))
 
       ! Check if any molecules have fragments (nlevel > 0)
       has_fragmented_molecules = .false.
@@ -210,8 +214,14 @@ contains
                call abort_comm(world_comm, 1)
             end if
 
+            ! Set output filename suffix for this molecule
+            call set_molecule_suffix("_"//trim(mol_name))
+
             ! Run calculation for this molecule
             call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Track the JSON filename for later merging
+            individual_json_files(imol) = get_output_json_filename()
 
             ! Clean up for this molecule
             call sys_geom%destroy()
@@ -249,8 +259,14 @@ contains
                call abort_comm(world_comm, 1)
             end if
 
+            ! Set output filename suffix for this molecule
+            call set_molecule_suffix("_"//trim(mol_name))
+
             ! Run calculation for this molecule
             call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Track the JSON filename for later merging
+            individual_json_files(imol) = get_output_json_filename()
 
             ! Clean up for this molecule
             call sys_geom%destroy()
@@ -267,6 +283,11 @@ contains
 
       ! Synchronize all ranks
       call world_comm%barrier()
+
+      ! Merge individual JSON files into one combined file (rank 0 only)
+      if (my_rank == 0) then
+         call merge_multi_molecule_json(individual_json_files, mqc_config%nmol)
+      end if
 
       if (my_rank == 0) then
          call logger%info(" ")
@@ -285,6 +306,121 @@ contains
       end if
 
    end subroutine run_multi_molecule_calculations
+
+   subroutine merge_multi_molecule_json(individual_files, nmol)
+      !! Merge individual molecule JSON files into a single combined file
+      character(len=256), intent(in) :: individual_files(:)
+      integer, intent(in) :: nmol
+
+      integer :: imol, unit_in, unit_out, io_stat, slash_pos, dot_pos
+      character(len=10000) :: line
+      character(len=256) :: output_file, basename
+      logical :: file_exists
+
+      ! Determine combined output filename from first individual file
+      ! Example: "output_multi_structure_molecule_1.json" -> "output_multi_structure.json"
+      basename = individual_files(1)
+      slash_pos = index(basename, '/', back=.true.)
+      if (slash_pos > 0) then
+         basename = basename(slash_pos + 1:)
+      end if
+
+      ! Remove "_molecule_1" or similar suffix
+      dot_pos = index(basename, '_molecule_')
+      if (dot_pos > 0) then
+         output_file = basename(1:dot_pos - 1)//".json"
+      else
+         output_file = "output_combined.json"
+      end if
+
+      ! Open combined output file
+      open (newunit=unit_out, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         return
+      end if
+
+      call logger%info("Merging "//to_char(nmol)//" molecule JSON files into "//trim(output_file))
+
+      ! Write opening brace and top-level key (basename without "output_" and ".json")
+      dot_pos = index(output_file, '.json')
+      if (dot_pos > 0) then
+         basename = output_file(8:dot_pos - 1)  ! Skip "output_"
+      else
+         basename = "combined"
+      end if
+
+      write (unit_out, '(a)') "{"
+      write (unit_out, '(a)') '  "'//trim(basename)//'": {'
+
+      ! Process each individual JSON file
+      do imol = 1, nmol
+         inquire (file=trim(individual_files(imol)), exist=file_exists)
+         if (.not. file_exists) cycle
+
+         open (newunit=unit_in, file=trim(individual_files(imol)), status='old', action='read', iostat=io_stat)
+         if (io_stat /= 0) cycle
+
+         ! Read and write the molecule's JSON content
+         ! Skip first line (opening brace) and  second line (molecule key with opening brace)
+         read (unit_in, '(a)', iostat=io_stat) line  ! Skip "{"
+         read (unit_in, '(a)', iostat=io_stat) line  ! Read molecule key line
+
+         ! Extract molecule name from the line (between quotes)
+         ! Write molecule name as key
+         if (imol > 1) write (unit_out, '(a)') '    },'
+         write (unit_out, '(a)') '    "'//trim(get_molecule_name(individual_files(imol)))//'" : {'
+
+         ! Copy content lines (energy, gradient, etc.)
+         do
+            read (unit_in, '(a)', iostat=io_stat) line
+            if (io_stat /= 0) exit
+            if (index(line, '}') > 0 .and. len_trim(line) < 10) exit  ! End of molecule data
+            write (unit_out, '(a)') '  '//trim(line)  ! Indent by 2 more spaces
+         end do
+
+         close (unit_in)
+
+         ! Delete individual file
+         open (newunit=unit_in, file=trim(individual_files(imol)), status='old')
+         close (unit_in, status='delete')
+      end do
+
+      ! Close last molecule
+      write (unit_out, '(a)') '    }'
+
+      ! Close top-level key and file
+      write (unit_out, '(a)') '  }'
+      write (unit_out, '(a)') '}'
+
+      close (unit_out)
+      call logger%info("Combined JSON written to "//trim(output_file))
+
+   end subroutine merge_multi_molecule_json
+
+   function get_molecule_name(filename) result(name)
+      !! Extract molecule name from filename
+      !! Example: "output_multi_structure_molecule_1.json" -> "molecule_1"
+      character(len=*), intent(in) :: filename
+      character(len=256) :: name
+      integer :: start_pos, end_pos
+
+      ! Find "_molecule_" or similar pattern
+      start_pos = index(filename, '_molecule_')
+      if (start_pos == 0) start_pos = index(filename, '_mol_')
+
+      if (start_pos > 0) then
+         start_pos = start_pos + 1  ! Skip leading underscore
+         end_pos = index(filename, '.json') - 1
+         if (end_pos > start_pos) then
+            name = filename(start_pos:end_pos)
+         else
+            name = "unknown"
+         end if
+      else
+         name = "unknown"
+      end if
+   end function get_molecule_name
 
    logical function ends_with(str, suffix)
       !! Check if string ends with suffix
