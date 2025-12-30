@@ -60,6 +60,14 @@ contains
          call logger%info("============================================")
       end if
 
+      ! Warn if overlapping fragments flag is set but nlevel=0
+      if (config%allow_overlapping_fragments .and. max_level == 0) then
+         if (world_comm%rank() == 0) then
+            call logger%warning("allow_overlapping_fragments is set to true, but nlevel=0")
+            call logger%warning("Running unfragmented calculation - overlapping fragments flag will be ignored")
+         end if
+      end if
+
       ! Validate GMBE (overlapping fragments) settings
       if (config%allow_overlapping_fragments .and. max_level > 1) then
          if (world_comm%rank() == 0) then
