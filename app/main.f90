@@ -361,23 +361,8 @@ contains
          open (newunit=unit_in, file=trim(individual_files(imol)), status='old', action='read', iostat=io_stat)
          if (io_stat /= 0) cycle
 
-         ! Read and write the molecule's JSON content
-         ! Skip first line (opening brace) and  second line (molecule key with opening brace)
-         read (unit_in, '(a)', iostat=io_stat) line  ! Skip "{"
-         read (unit_in, '(a)', iostat=io_stat) line  ! Read molecule key line
-
-         ! Extract molecule name from the line (between quotes)
-         ! Write molecule name as key
-         if (imol > 1) write (unit_out, '(a)') '    },'
-         write (unit_out, '(a)') '    "'//trim(get_molecule_name(individual_files(imol)))//'" : {'
-
-         ! Copy content lines (energy, gradient, etc.)
-         do
-            read (unit_in, '(a)', iostat=io_stat) line
-            if (io_stat /= 0) exit
-            if (index(line, '}') > 0 .and. len_trim(line) < 10) exit  ! End of molecule data
-            write (unit_out, '(a)') '  '//trim(line)  ! Indent by 2 more spaces
-         end do
+         ! Read all lines from the individual JSON file
+         call read_json_content(unit_in, imol, unit_out, individual_files(imol))
 
          close (unit_in)
 
@@ -397,6 +382,57 @@ contains
       call logger%info("Combined JSON written to "//trim(output_file))
 
    end subroutine merge_multi_molecule_json
+
+   subroutine read_json_content(unit_in, mol_index, unit_out, filename)
+      !! Read and write JSON content from an individual molecule file
+      !! Properly handles nested structures from fragmented calculations
+      integer, intent(in) :: unit_in, mol_index, unit_out
+      character(len=*), intent(in) :: filename
+
+      character(len=10000), allocatable :: all_lines(:)
+      character(len=10000) :: line
+      integer :: io_stat, nlines, i, brace_count
+
+      ! Read all lines into memory
+      allocate (all_lines(1000))  ! Reasonable size for most JSON files
+      nlines = 0
+
+      do
+         read (unit_in, '(a)', iostat=io_stat) line
+         if (io_stat /= 0) exit
+         nlines = nlines + 1
+         if (nlines > size(all_lines)) then
+            ! Reallocate if needed
+            call logger%error("JSON file too large: "//trim(filename))
+            return
+         end if
+         all_lines(nlines) = line
+      end do
+
+      ! Lines structure:
+      ! 1: "{"
+      ! 2: '  "molecule_name": {'
+      ! 3..(n-2): content
+      ! n-1: "  }"
+      ! n: "}"
+
+      if (nlines < 3) then
+         call logger%error("Invalid JSON structure: "//trim(filename))
+         return
+      end if
+
+      ! Write molecule key (extracted from filename)
+      if (mol_index > 1) write (unit_out, '(a)') '    },'
+      write (unit_out, '(a)') '    "'//trim(get_molecule_name(filename))//'" : {'
+
+      ! Write all content lines (from line 3 to line n-2)
+      do i = 3, nlines - 2
+         write (unit_out, '(a)') '  '//trim(all_lines(i))  ! Add 2 spaces for proper indentation
+      end do
+
+      deallocate (all_lines)
+
+   end subroutine read_json_content
 
    function get_molecule_name(filename) result(name)
       !! Extract molecule name from filename
