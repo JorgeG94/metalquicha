@@ -5,7 +5,7 @@ module mqc_mbe_io
    use mqc_physical_fragment, only: physical_fragment_t, to_angstrom
    use mqc_elements, only: element_number_to_symbol
    use mqc_result_types, only: calculation_result_t
-   use mqc_output_filename, only: get_output_json_filename, get_basename
+   use mqc_io_helpers, only: get_output_json_filename, get_basename
    implicit none
    private
    public :: print_fragment_xyz, print_detailed_breakdown, print_detailed_breakdown_json

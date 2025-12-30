@@ -1,6 +1,6 @@
-!! Module to store the base name for output files
-!! This is set once from the input filename and used by all JSON writers
-module mqc_output_filename
+!! IO helper utilities for file naming and string operations
+!! Provides utilities for output filename management and string parsing
+module mqc_io_helpers
    implicit none
    private
 
@@ -8,6 +8,7 @@ module mqc_output_filename
    character(len=256), save :: current_basename = ""
    public :: set_output_json_filename, get_output_json_filename, get_basename
    public :: set_molecule_suffix
+   public :: get_molecule_name, ends_with
 
 contains
 
@@ -76,4 +77,44 @@ contains
       end if
    end function get_basename
 
-end module mqc_output_filename
+   function get_molecule_name(filename) result(name)
+      !! Extract molecule name from filename
+      !! Example: "output_multi_structure_molecule_1.json" -> "molecule_1"
+      character(len=*), intent(in) :: filename
+      character(len=256) :: name
+      integer :: start_pos, end_pos
+
+      ! Find "_molecule_" or similar pattern
+      start_pos = index(filename, '_molecule_')
+      if (start_pos == 0) start_pos = index(filename, '_mol_')
+
+      if (start_pos > 0) then
+         start_pos = start_pos + 1  ! Skip leading underscore
+         end_pos = index(filename, '.json') - 1
+         if (end_pos > start_pos) then
+            name = filename(start_pos:end_pos)
+         else
+            name = "unknown"
+         end if
+      else
+         name = "unknown"
+      end if
+   end function get_molecule_name
+
+   logical function ends_with(str, suffix)
+      !! Check if string ends with suffix
+      character(len=*), intent(in) :: str, suffix
+      integer :: str_len, suffix_len
+
+      str_len = len_trim(str)
+      suffix_len = len_trim(suffix)
+
+      if (suffix_len > str_len) then
+         ends_with = .false.
+         return
+      end if
+
+      ends_with = (str(str_len - suffix_len + 1:str_len) == suffix)
+   end function ends_with
+
+end module mqc_io_helpers

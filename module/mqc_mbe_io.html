@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.7% of total for modules and submodules.">282 statements</a>
+                 title=" 5.4% of total for modules and submodules.">282 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -186,12 +186,12 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_output_filename.html'>mqc_output_filename</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
               </ul>
             </li>
@@ -228,18 +228,18 @@
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M576.16,-188.04C564.36,-191.41 551.23,-194.75 539,-197 479.35,-207.97 409.93,-213.3 362.89,-215.83"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="362.42,-212.35 352.61,-216.36 362.78,-219.34 362.42,-212.35"/>
 </g>
-<!-- module~mqc_output_filename -->
+<!-- module~mqc_io_helpers -->
 <g id="module~~mqc_mbe_io~~UsesGraph_node3" class="node">
-<title>module~mqc_output_filename</title>
-<g id="a_module~~mqc_mbe_io~~UsesGraph_node3"><a xlink:href="../module/mqc_output_filename.html" xlink:title="mqc_output_filename">
-<polygon fill="#337ab7" stroke="#337ab7" points="533.5,-146 405.5,-146 405.5,-122 533.5,-122 533.5,-146"/>
-<text text-anchor="middle" x="469.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_output_filename</text>
+<title>module~mqc_io_helpers</title>
+<g id="a_module~~mqc_mbe_io~~UsesGraph_node3"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
+<polygon fill="#337ab7" stroke="#337ab7" points="517.5,-146 421.5,-146 421.5,-122 517.5,-122 517.5,-146"/>
+<text text-anchor="middle" x="469.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
 </a>
 </g>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;module~mqc_output_filename -->
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers -->
 <g id="module~~mqc_mbe_io~~UsesGraph_edge2" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;module~mqc_output_filename</title>
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M574.79,-164.52C558.42,-159.73 539.18,-154.1 521.71,-148.99"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="522.25,-145.5 511.67,-146.05 520.28,-152.22 522.25,-145.5"/>
 </g>
@@ -880,7 +880,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count"></span>
+              <span class="anchor" id="variable-fragment_count~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -910,7 +910,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies"></span>
+              <span class="anchor" id="variable-energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -925,7 +925,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -983,7 +983,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~2"></span>
+              <span class="anchor" id="variable-fragment_count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1013,7 +1013,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1028,7 +1028,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1043,7 +1043,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level"></span>
+              <span class="anchor" id="variable-sum_by_level~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1058,7 +1058,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~2"></span>
+              <span class="anchor" id="variable-total_energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1073,7 +1073,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1113,7 +1113,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~8"></span>
+              <span class="anchor" id="variable-fragment_idx~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1212,7 +1212,7 @@ Outputs structured JSON with energy and optionally gradient</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 14:04 +0000             </p>
+ on 2025-12-30 23:20 +0000             </p>
           </div>
         </div>
         <br>

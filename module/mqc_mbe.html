@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.4% of total for modules and submodules.">321 statements</a>
+                 title=" 6.1% of total for modules and submodules.">321 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -189,16 +189,16 @@ GMBE energy with intersection correction</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item">pic_blas_interfaces</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_timer</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -426,20 +426,20 @@ GMBE energy with intersection correction</p>
 <path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M468.5,-156.29C427.48,-158.3 382.2,-170.55 350.22,-180.97"/>
 <polygon fill="#ff9900" stroke="#ff9900" points="348.7,-177.79 340.33,-184.27 350.92,-184.43 348.7,-177.79"/>
 </g>
-<!-- module~mqc_output_filename -->
+<!-- module~mqc_io_helpers -->
 <g id="module~~mqc_mbe~~UsesGraph_node17" class="node">
-<title>module~mqc_output_filename</title>
-<g id="a_module~~mqc_mbe~~UsesGraph_node17"><a xlink:href="../module/mqc_output_filename.html" xlink:title="mqc_output_filename">
-<polygon fill="#337ab7" stroke="#337ab7" points="533.5,-208.29 405.5,-208.29 405.5,-184.29 533.5,-184.29 533.5,-208.29"/>
-<text text-anchor="middle" x="469.5" y="-193.89" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_output_filename</text>
+<title>module~mqc_io_helpers</title>
+<g id="a_module~~mqc_mbe~~UsesGraph_node17"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
+<polygon fill="#337ab7" stroke="#337ab7" points="517.5,-208.29 421.5,-208.29 421.5,-184.29 517.5,-184.29 517.5,-208.29"/>
+<text text-anchor="middle" x="469.5" y="-193.89" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
 </a>
 </g>
 </g>
-<!-- module~mqc_mbe_io&#45;&gt;module~mqc_output_filename -->
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers -->
 <g id="module~~mqc_mbe~~UsesGraph_edge16" class="edge">
-<title>module~mqc_mbe_io&#45;&gt;module~mqc_output_filename</title>
-<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.74,-169.1C574.43,-172.98 553.65,-177.64 534.21,-182"/>
-<polygon fill="#ff9900" stroke="#ff9900" points="533.19,-178.64 524.2,-184.25 534.72,-185.47 533.19,-178.64"/>
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.74,-169.1C572.43,-173.43 548.79,-178.73 527.54,-183.5"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="526.63,-180.11 517.64,-185.72 528.17,-186.94 526.63,-180.11"/>
 </g>
 <!-- module~mqc_result_types -->
 <g id="module~~mqc_mbe~~UsesGraph_node18" class="node">
@@ -937,7 +937,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~9"></span>
+              <span class="anchor" id="variable-fragment_idx"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -952,7 +952,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -982,7 +982,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~4"></span>
+              <span class="anchor" id="variable-energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -997,7 +997,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~4"></span>
+              <span class="anchor" id="variable-delta_energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1012,7 +1012,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~10"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1062,7 +1062,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~8"></span>
+              <span class="anchor" id="variable-monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1077,7 +1077,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~6"></span>
+              <span class="anchor" id="variable-n_monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1107,7 +1107,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~4"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1137,7 +1137,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_pairs~4"></span>
+              <span class="anchor" id="variable-intersection_pairs"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1152,7 +1152,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~5"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1197,7 +1197,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1212,7 +1212,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1227,7 +1227,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1242,7 +1242,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1257,7 +1257,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~3"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1299,7 +1299,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-polymers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1314,7 +1314,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1329,7 +1329,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~10"></span>
+              <span class="anchor" id="variable-max_level~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1344,7 +1344,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1359,7 +1359,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~22"></span>
+              <span class="anchor" id="variable-sys_geom~3"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1374,7 +1374,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~4"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1389,7 +1389,7 @@ as it only builds the lookup table once and processes all fragments in one loop<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1431,7 +1431,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1446,7 +1446,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1476,7 +1476,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
+              <span class="anchor" id="variable-results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1506,7 +1506,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~11"></span>
+              <span class="anchor" id="variable-n~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1521,7 +1521,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~21"></span>
+              <span class="anchor" id="variable-sys_geom~2"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1577,7 +1577,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~7"></span>
+              <span class="anchor" id="variable-monomers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1592,7 +1592,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~20"></span>
+              <span class="anchor" id="variable-sys_geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1650,7 +1650,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 14:04 +0000             </p>
+ on 2025-12-30 23:20 +0000             </p>
           </div>
         </div>
         <br>

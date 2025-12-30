@@ -378,7 +378,7 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../program/main.html'>main</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Check if string ends with suffix</p></td>
                </tr>
@@ -561,7 +561,7 @@ Treats entire system as a single monomer</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_basename.html'>get_basename</a></td>
-                 <td><a href='../module/mqc_output_filename.html'>mqc_output_filename</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Get the base name without &ldquo;output_&rdquo; prefix and &ldquo;.json&rdquo; suffix
 Example: &ldquo;output_w1.json&rdquo; -&gt; &ldquo;w1&rdquo;</p></td>
@@ -582,7 +582,7 @@ This function uses the pic_logger constants</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_molecule_name.html'>get_molecule_name</a></td>
-                 <td><a href='../program/main.html'>main</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Extract molecule name from filename
 Example: &ldquo;output_multi_structure_molecule_1.json&rdquo; -&gt; &ldquo;molecule_1&rdquo;</p></td>
@@ -608,7 +608,7 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_output_json_filename.html'>get_output_json_filename</a></td>
-                 <td><a href='../module/mqc_output_filename.html'>mqc_output_filename</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Get the current JSON output filename</p></td>
                </tr>
@@ -689,7 +689,7 @@ Zeroes out sys_grad first, then copies fragment gradients to appropriate positio
                </tr>
 			   <tr>
                  <td><a href='../proc/merge_multi_molecule_json.html'>merge_multi_molecule_json</a></td>
-                 <td><a href='../program/main.html'>main</a></td>
+                 <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td>Subroutine</td>
                  <td><p>Merge individual molecule JSON files into a single combined file</p></td>
                </tr>
@@ -1002,7 +1002,7 @@ Outputs structured JSON with energy and optionally gradient</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_json_content.html'>read_json_content</a></td>
-                 <td><a href='../program/main.html'>main</a></td>
+                 <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td>Subroutine</td>
                  <td><p>Read and write JSON content from an individual molecule file
 Properly handles nested structures from fragmented calculations</p></td>
@@ -1079,7 +1079,7 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                </tr>
 			   <tr>
                  <td><a href='../proc/run_multi_molecule_calculations.html'>run_multi_molecule_calculations</a></td>
-                 <td><a href='../program/main.html'>main</a></td>
+                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Run calculations for multiple molecules with MPI parallelization
 Each molecule is independent, so assign one molecule per rank</p></td>
@@ -1119,14 +1119,14 @@ This is used when running with only 1 MPI rank</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/set_molecule_suffix.html'>set_molecule_suffix</a></td>
-                 <td><a href='../module/mqc_output_filename.html'>mqc_output_filename</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Subroutine</td>
                  <td><p>Append a suffix to the output filename (e.g., for multi-molecule mode)
 Example: suffix=&rdquo;_mol1&rdquo; -&gt; &ldquo;output_multi_structure_mol1.json&rdquo;</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/set_output_json_filename.html'>set_output_json_filename</a></td>
-                 <td><a href='../module/mqc_output_filename.html'>mqc_output_filename</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Subroutine</td>
                  <td><p>Set the JSON output filename based on input filename
 Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
@@ -2867,7 +2867,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 14:04 +0000             </p>
+ on 2025-12-30 23:20 +0000             </p>
           </div>
         </div>
         <br>

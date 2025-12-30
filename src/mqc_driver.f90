@@ -12,16 +12,20 @@ module mqc_driver
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
-   use mqc_config_adapter, only: driver_config_t
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT
-   use mqc_config_parser, only: bond_t
+   use mqc_config_parser, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe_energy
    use mqc_result_types, only: calculation_result_t
+   use mqc_error, only: error_t
+   use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
+   use mqc_json, only: merge_multi_molecule_json
    implicit none
    private
 
    public :: run_calculation  !! Main entry point for all calculations
+   public :: run_multi_molecule_calculations  !! Multi-molecule calculation dispatcher
 
 contains
 
@@ -414,5 +418,192 @@ contains
       deallocate (all_results, monomer_indices)
 
    end subroutine serial_gmbe_processor
+
+   subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
+      !! Run calculations for multiple molecules with MPI parallelization
+      !! Each molecule is independent, so assign one molecule per rank
+      use mqc_config_parser, only: mqc_config_t
+      use mqc_config_adapter, only: config_to_system_geometry
+      use mqc_error, only: error_t
+      use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
+      use mqc_json, only: merge_multi_molecule_json
+
+      type(comm_t), intent(in) :: world_comm
+      type(comm_t), intent(in) :: node_comm
+      type(mqc_config_t), intent(in) :: mqc_config
+
+      type(driver_config_t) :: config
+      type(system_geometry_t) :: sys_geom
+      type(comm_t) :: mol_comm, mol_node_comm
+      type(error_t) :: error
+      integer :: imol, my_rank, num_ranks, color
+      integer :: molecules_processed
+      character(len=:), allocatable :: mol_name
+      logical :: has_fragmented_molecules
+      character(len=256), allocatable :: individual_json_files(:)
+
+      my_rank = world_comm%rank()
+      num_ranks = world_comm%size()
+
+      ! Allocate array to track individual JSON files for merging
+      allocate (individual_json_files(mqc_config%nmol))
+
+      ! Check if any molecules have fragments (nlevel > 0)
+      has_fragmented_molecules = .false.
+      do imol = 1, mqc_config%nmol
+         if (mqc_config%molecules(imol)%nfrag > 0) then
+            has_fragmented_molecules = .true.
+            exit
+         end if
+      end do
+
+      if (my_rank == 0) then
+         call logger%info(" ")
+         call logger%info("============================================")
+         call logger%info("Multi-molecule mode: "//to_char(mqc_config%nmol)//" molecules")
+         call logger%info("MPI ranks: "//to_char(num_ranks))
+         if (has_fragmented_molecules) then
+            call logger%info("Mode: Sequential execution (fragmented molecules detected)")
+            call logger%info("  Each molecule will use all "//to_char(num_ranks)//" rank(s) for its calculation")
+         else if (num_ranks == 1) then
+            call logger%info("Mode: Sequential execution (single rank)")
+         else if (num_ranks > mqc_config%nmol) then
+            call logger%info("Mode: Parallel execution (one molecule per rank)")
+            call logger%info("Note: More ranks than molecules - ranks "//to_char(mqc_config%nmol)// &
+                             " to "//to_char(num_ranks - 1)//" will be idle")
+         else
+            call logger%info("Mode: Parallel execution (one molecule per rank)")
+         end if
+         call logger%info("============================================")
+         call logger%info(" ")
+      end if
+
+      ! Determine execution mode:
+      ! 1. Sequential: Single rank OR fragmented molecules (each molecule needs all ranks)
+      ! 2. Parallel: Multiple ranks AND unfragmented molecules (distribute molecules across ranks)
+      molecules_processed = 0
+
+      if (num_ranks == 1 .or. has_fragmented_molecules) then
+         ! Sequential mode: process all molecules one after another
+         ! Each molecule uses all available ranks for its calculation
+         do imol = 1, mqc_config%nmol
+            ! Determine molecule name for logging
+            if (allocated(mqc_config%molecules(imol)%name)) then
+               mol_name = mqc_config%molecules(imol)%name
+            else
+               mol_name = "molecule_"//to_char(imol)
+            end if
+
+            if (my_rank == 0) then
+               call logger%info(" ")
+               call logger%info("--------------------------------------------")
+               call logger%info("Processing molecule "//to_char(imol)//"/"//to_char(mqc_config%nmol)//": "//mol_name)
+               call logger%info("--------------------------------------------")
+            end if
+
+            ! Convert to driver configuration for this molecule
+            call config_to_driver(mqc_config, config, molecule_index=imol)
+
+            ! Convert geometry for this molecule
+            call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
+            if (error%has_error()) then
+               if (my_rank == 0) then
+                  call logger%error("Error converting geometry for "//mol_name//": "//error%get_message())
+               end if
+               call abort_comm(world_comm, 1)
+            end if
+
+            ! Set output filename suffix for this molecule
+            call set_molecule_suffix("_"//trim(mol_name))
+
+            ! Run calculation for this molecule
+            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Track the JSON filename for later merging
+            individual_json_files(imol) = get_output_json_filename()
+
+            ! Clean up for this molecule
+            call sys_geom%destroy()
+
+            if (my_rank == 0) then
+               call logger%info("Completed molecule "//to_char(imol)//"/"//to_char(mqc_config%nmol)//": "//mol_name)
+            end if
+            molecules_processed = molecules_processed + 1
+         end do
+      else
+         ! Multiple ranks: distribute molecules across ranks (one per rank)
+         if (my_rank < mqc_config%nmol) then
+            imol = my_rank + 1
+            ! This rank has a molecule to process
+            ! Determine molecule name for logging
+            if (allocated(mqc_config%molecules(imol)%name)) then
+               mol_name = mqc_config%molecules(imol)%name
+            else
+               mol_name = "molecule_"//to_char(imol)
+            end if
+
+            call logger%info(" ")
+            call logger%info("--------------------------------------------")
+            call logger%info("Rank "//to_char(my_rank)//": Processing molecule "//to_char(imol)// &
+                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
+            call logger%info("--------------------------------------------")
+
+            ! Convert to driver configuration for this molecule
+            call config_to_driver(mqc_config, config, molecule_index=imol)
+
+            ! Convert geometry for this molecule
+            call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
+            if (error%has_error()) then
+     call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//error%get_message())
+               call abort_comm(world_comm, 1)
+            end if
+
+            ! Set output filename suffix for this molecule
+            call set_molecule_suffix("_"//trim(mol_name))
+
+            ! Run calculation for this molecule
+            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+            ! Track the JSON filename for later merging
+            individual_json_files(imol) = get_output_json_filename()
+
+            ! Clean up for this molecule
+            call sys_geom%destroy()
+
+            call logger%info("Rank "//to_char(my_rank)//": Completed molecule "//to_char(imol)// &
+                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
+
+            molecules_processed = 1
+         else
+            ! Idle rank - no molecule assigned
+            call logger%verbose("Rank "//to_char(my_rank)//": No molecule assigned (idle)")
+         end if
+      end if
+
+      ! Synchronize all ranks
+      call world_comm%barrier()
+
+      ! Merge individual JSON files into one combined file (rank 0 only)
+      if (my_rank == 0) then
+         call merge_multi_molecule_json(individual_json_files, mqc_config%nmol)
+      end if
+
+      if (my_rank == 0) then
+         call logger%info(" ")
+         call logger%info("============================================")
+         call logger%info("All "//to_char(mqc_config%nmol)//" molecules completed")
+         if (has_fragmented_molecules) then
+            call logger%info("Execution: Sequential (each molecule used all ranks)")
+         else if (num_ranks == 1) then
+            call logger%info("Execution: Sequential (single rank)")
+         else if (num_ranks > mqc_config%nmol) then
+           call logger%info("Execution: Parallel (active ranks: "//to_char(mqc_config%nmol)//"/"//to_char(num_ranks)//")")
+         else
+            call logger%info("Execution: Parallel (all ranks active)")
+         end if
+         call logger%info("============================================")
+      end if
+
+   end subroutine run_multi_molecule_calculations
 
 end module mqc_driver
