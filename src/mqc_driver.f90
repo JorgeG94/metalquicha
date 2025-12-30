@@ -10,7 +10,8 @@ module mqc_driver
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
                                                    serial_fragment_processor, do_fragment_work
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections
-   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, build_fragment_from_atom_list
+   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
+                                    build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT

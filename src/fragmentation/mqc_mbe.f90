@@ -457,7 +457,7 @@ contains
       type(calculation_result_t), intent(in) :: monomer_results(:)     !! Monomer energies
       integer, intent(in) :: n_intersections          !! Number of intersection fragments
       type(calculation_result_t), intent(in) :: intersection_results(:)  !! Intersection energies
-      integer, intent(in) :: intersection_pairs(:, :) !! Pairs (i,j) that created each intersection (2, n_intersections)
+      integer, intent(in) :: intersection_pairs(:, :)  !! Pairs (i,j) that created each intersection (2, n_intersections)
       real(dp), intent(out) :: total_energy           !! Total GMBE energy
 
       integer :: i
