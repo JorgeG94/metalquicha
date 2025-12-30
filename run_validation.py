@@ -112,7 +112,7 @@ def prepare_mqc_files(validation_dir: str = "validation", prep_script: str = "mq
 
         try:
             result = subprocess.run(
-                ["python", prep_script, str(json_file), "-o", str(output_mqc)],
+                ["python3", prep_script, str(json_file), "-o", str(output_mqc)],
                 capture_output=True,
                 text=True,
                 timeout=30
