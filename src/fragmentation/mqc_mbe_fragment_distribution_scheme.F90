@@ -553,18 +553,21 @@ contains
       call logger%info("  Total atoms: "//to_char(total_atoms))
       call logger%info("============================================")
 
-      ! Build the full system as a single fragment (all monomers)
-      block
-         integer, allocatable :: all_monomer_indices(:)
+      ! Build the full system as a single fragment
+      ! For overlapping fragments, we use the full system directly (not concatenating fragments)
+      full_system%n_atoms = total_atoms
+      full_system%n_caps = 0
+      allocate (full_system%element_numbers(total_atoms))
+      allocate (full_system%coordinates(3, total_atoms))
 
-         allocate (all_monomer_indices(sys_geom%n_monomers))
-         do i = 1, sys_geom%n_monomers
-            all_monomer_indices(i) = i
-         end do
+      ! Copy all atoms from system geometry
+      full_system%element_numbers = sys_geom%element_numbers
+      full_system%coordinates = sys_geom%coordinates
 
-         call build_fragment_from_indices(sys_geom, all_monomer_indices, full_system, bonds)
-         deallocate (all_monomer_indices)
-      end block
+      ! Set charge and multiplicity from system
+      full_system%charge = sys_geom%charge
+      full_system%multiplicity = sys_geom%multiplicity
+      call full_system%compute_nelec()
 
       ! Process the full system
       call do_fragment_work(0_int32, result, method, phys_frag=full_system, calc_type=calc_type)

@@ -20,6 +20,7 @@ module mqc_config_adapter
       integer(int32) :: method      !! QC method constant
       integer(int32) :: calc_type   !! Calculation type constant
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
+      logical :: allow_overlapping_fragments  !! Enable GMBE for overlapping fragments
    end type driver_config_t
 
 contains
@@ -58,6 +59,9 @@ contains
       else
          driver_config%nlevel = mqc_config%frag_level
       end if
+
+      ! Set GMBE overlapping fragments flag
+      driver_config%allow_overlapping_fragments = mqc_config%allow_overlapping_fragments
 
    end subroutine config_to_driver
 

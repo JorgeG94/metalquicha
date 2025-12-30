@@ -14,6 +14,8 @@ module mqc_frag_utils
    public :: get_nfrags            !! Calculate total number of fragments
    public :: get_next_combination      !! Generate next combination in sequence
    public :: fragment_lookup_t     !! Hash-based lookup table for fast fragment index retrieval
+   public :: find_fragment_intersection  !! Find shared atoms between two fragments (for GMBE)
+   public :: generate_intersections     !! Generate all pairwise intersections for GMBE
 
    type :: hash_entry_t
       !! Single entry in hash table (private helper type)
@@ -349,5 +351,168 @@ contains
          p = p + 2
       end do
    end function next_prime_internal
+
+   function find_fragment_intersection(frag1_atoms, n1, frag2_atoms, n2, &
+                                       intersection, n_intersect) result(has_intersection)
+      !! Find shared atoms between two fragments (for GMBE with overlapping fragments)
+      !!
+      !! This function identifies atoms that appear in both fragments, which is essential
+      !! for computing intersection-corrected energies in GMBE.
+      !!
+      !! Algorithm: O(n1 * n2) brute-force comparison
+      !! - Loop through all atoms in fragment 1
+      !! - For each atom, check if it appears in fragment 2
+      !! - Collect all shared atoms
+      !!
+      !! Returns:
+      !!   .true. if fragments share at least one atom, .false. otherwise
+      !!
+      !! Output:
+      !!   intersection - allocatable array containing shared atom indices
+      !!   n_intersect - number of shared atoms
+      integer, intent(in) :: frag1_atoms(:)  !! Atom indices in fragment 1 (0-indexed)
+      integer, intent(in) :: n1              !! Number of atoms in fragment 1
+      integer, intent(in) :: frag2_atoms(:)  !! Atom indices in fragment 2 (0-indexed)
+      integer, intent(in) :: n2              !! Number of atoms in fragment 2
+      integer, allocatable, intent(out) :: intersection(:)  !! Shared atom indices
+      integer, intent(out) :: n_intersect    !! Number of shared atoms
+      logical :: has_intersection
+
+      integer :: i, j
+      integer, allocatable :: temp_intersection(:)
+      integer :: temp_count
+
+      ! Allocate temporary array (max possible size is min(n1, n2))
+      allocate (temp_intersection(min(n1, n2)))
+      temp_count = 0
+
+      ! Find all shared atoms
+      do i = 1, n1
+         do j = 1, n2
+            if (frag1_atoms(i) == frag2_atoms(j)) then
+               ! Found a shared atom
+               temp_count = temp_count + 1
+               temp_intersection(temp_count) = frag1_atoms(i)
+               exit  ! Move to next atom in frag1
+            end if
+         end do
+      end do
+
+      ! Set output
+      n_intersect = temp_count
+      has_intersection = (temp_count > 0)
+
+      ! Allocate and copy result if intersection exists
+      if (has_intersection) then
+         allocate (intersection(n_intersect))
+         intersection = temp_intersection(1:n_intersect)
+      end if
+
+      deallocate (temp_intersection)
+
+   end function find_fragment_intersection
+
+   subroutine generate_intersections(sys_geom, monomers, polymers, n_monomers, &
+                                     intersections, intersection_pairs, n_intersections)
+      !! Generate all pairwise intersections between fragments
+      !!\n!! For a system with overlapping fragments, this identifies all pairs of fragments
+      !! that share atoms and stores the intersection atom lists.
+      !!\n!! Algorithm:
+      !! - Loop through all pairs (i,j) where i < j
+      !! - Call find_fragment_intersection for each pair
+      !! - Store non-empty intersections and track which monomer pair created them
+      use mqc_physical_fragment, only: system_geometry_t
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomers(:)           !! Monomer indices
+      integer, intent(inout) :: polymers(:, :)     !! Output: monomers stored here
+      integer, intent(in) :: n_monomers            !! Number of monomers
+      integer, allocatable, intent(out) :: intersections(:, :)  !! Intersection atom lists
+      integer, allocatable, intent(out) :: intersection_pairs(:, :)  !! Which pair (i,j) created each intersection
+      integer, intent(out) :: n_intersections      !! Number of intersections found
+
+      ! Temporaries for storing intersections
+      integer, allocatable :: temp_intersections(:, :)
+      integer, allocatable :: temp_pairs(:, :)
+      integer, allocatable :: temp_intersection(:)
+      integer :: temp_n_intersect
+      logical :: has_intersection
+      integer :: i, j, pair_count, max_atoms, max_intersections
+      integer :: mono_i, mono_j, size_i, size_j
+
+      ! Store monomers in polymers array
+      polymers(1:n_monomers, 1) = monomers(1:n_monomers)
+
+      ! Count maximum possible intersections: C(n,2) = n*(n-1)/2
+      max_intersections = (n_monomers*(n_monomers - 1))/2
+
+      if (max_intersections == 0) then
+         n_intersections = 0
+         return
+      end if
+
+      ! Find maximum atoms in any fragment for allocation
+      max_atoms = maxval(sys_geom%fragment_sizes(1:n_monomers))
+
+      ! Allocate temporary arrays
+      allocate (temp_intersections(max_atoms, max_intersections))
+      allocate (temp_pairs(2, max_intersections))
+      temp_intersections = 0
+      pair_count = 0
+
+      ! Loop through all pairs (i, j) where i < j
+      do i = 1, n_monomers - 1
+         do j = i + 1, n_monomers
+            ! Get fragment atoms for this pair
+            mono_i = monomers(i)
+            mono_j = monomers(j)
+            size_i = sys_geom%fragment_sizes(mono_i)
+            size_j = sys_geom%fragment_sizes(mono_j)
+
+            ! Find intersection
+            has_intersection = find_fragment_intersection( &
+                               sys_geom%fragment_atoms(1:size_i, mono_i), size_i, &
+                               sys_geom%fragment_atoms(1:size_j, mono_j), size_j, &
+                               temp_intersection, temp_n_intersect)
+
+            if (has_intersection) then
+               pair_count = pair_count + 1
+               temp_pairs(1, pair_count) = mono_i
+               temp_pairs(2, pair_count) = mono_j
+               temp_intersections(1:temp_n_intersect, pair_count) = temp_intersection
+
+               ! Warn if mixing charged monomers (intersection assumed neutral)
+               if (allocated(sys_geom%fragment_charges)) then
+                  if (sys_geom%fragment_charges(mono_i) /= 0 .and. &
+                      sys_geom%fragment_charges(mono_j) /= 0) then
+                     block
+                        character(len=20) :: str_i, str_j
+                        write (str_i, '(I0)') mono_i
+                        write (str_j, '(I0)') mono_j
+                        call logger%warning("generate_intersections", &
+                                            "Creating intersection between two charged monomers "// &
+                                            "(fragments "//trim(str_i)//" and "//trim(str_j)//"). "// &
+                                            "Intersection fragment will be NEUTRAL (charge=0), which may be unphysical.")
+                     end block
+                  end if
+               end if
+
+               deallocate (temp_intersection)
+            end if
+         end do
+      end do
+
+      n_intersections = pair_count
+
+      ! Allocate output arrays
+      if (n_intersections > 0) then
+         allocate (intersections(max_atoms, n_intersections))
+         allocate (intersection_pairs(2, n_intersections))
+         intersections = temp_intersections(1:max_atoms, 1:n_intersections)
+         intersection_pairs = temp_pairs(1:2, 1:n_intersections)
+      end if
+
+      deallocate (temp_intersections, temp_pairs)
+
+   end subroutine generate_intersections
 
 end module mqc_frag_utils
