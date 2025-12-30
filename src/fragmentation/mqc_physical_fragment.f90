@@ -20,6 +20,7 @@ module mqc_physical_fragment
    public :: initialize_system_geometry  !! System geometry initialization
    public :: build_fragment_from_indices  !! Extract fragment from system
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
+   public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: fragment_centroid          !! Geometric centroid calculation
    public :: fragment_center_of_mass    !! Mass-weighted center calculation
@@ -322,6 +323,9 @@ contains
       end if
       call fragment%compute_nelec()
 
+      ! Validate: check for spatially overlapping atoms
+      call check_duplicate_atoms(fragment)
+
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
@@ -411,7 +415,60 @@ contains
       fragment%multiplicity = 1
       call fragment%compute_nelec()
 
+      ! Validate: check for spatially overlapping atoms
+      call check_duplicate_atoms(fragment)
+
    end subroutine build_fragment_from_atom_list
+
+   subroutine check_duplicate_atoms(fragment)
+      !! Validate that fragment has no spatially overlapping atoms
+      !! Checks if any two atoms are too close together (< 0.01 Bohr)
+      !! This catches bugs in geometry construction or fragment building
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+
+      type(physical_fragment_t), intent(in) :: fragment
+
+      integer :: i, j, n_atoms
+      real(dp) :: distance, dx, dy, dz
+      real(dp), parameter :: MIN_ATOM_DISTANCE = 0.01_dp  !! Bohr - atoms closer than this are overlapping
+
+      ! Only check non-cap atoms (caps can be close to replaced atoms)
+      n_atoms = fragment%n_atoms - fragment%n_caps
+
+      if (n_atoms < 2) return
+
+      do i = 1, n_atoms - 1
+         do j = i + 1, n_atoms
+            dx = fragment%coordinates(1, i) - fragment%coordinates(1, j)
+            dy = fragment%coordinates(2, i) - fragment%coordinates(2, j)
+            dz = fragment%coordinates(3, i) - fragment%coordinates(3, j)
+            distance = sqrt(dx*dx + dy*dy + dz*dz)
+
+            if (distance < MIN_ATOM_DISTANCE) then
+               call logger%error("ERROR: Fragment contains overlapping atoms!")
+               call logger%error("  Atoms "//to_char(i)//" and "//to_char(j)//" are too close together")
+               call logger%error("  Distance: "//to_char(distance)//" Bohr ("// &
+                                 to_char(distance*0.529177_dp)//" Angstrom)")
+               call logger%error("  Atom "//to_char(i)//": "// &
+                                 element_number_to_symbol(fragment%element_numbers(i))// &
+                                 " at ("//to_char(fragment%coordinates(1, i))//", "// &
+                                 to_char(fragment%coordinates(2, i))//", "// &
+                                 to_char(fragment%coordinates(3, i))//") Bohr")
+               call logger%error("  Atom "//to_char(j)//": "// &
+                                 element_number_to_symbol(fragment%element_numbers(j))// &
+                                 " at ("//to_char(fragment%coordinates(1, j))//", "// &
+                                 to_char(fragment%coordinates(2, j))//", "// &
+                                 to_char(fragment%coordinates(3, j))//") Bohr")
+               call logger%error(" ")
+               call logger%error("This indicates either:")
+               call logger%error("  1. Bad input geometry (atoms on top of each other)")
+               call logger%error("  2. Bug in fragment construction (duplicate atoms)")
+               error stop "Overlapping atoms in fragment"
+            end if
+         end do
+      end do
+   end subroutine check_duplicate_atoms
 
    subroutine fragment_destroy(this)
       !! Clean up allocated memory in physical_fragment_t

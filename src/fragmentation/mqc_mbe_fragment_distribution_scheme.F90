@@ -15,7 +15,8 @@ module mqc_mbe_fragment_distribution_scheme
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
-   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
+   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
+                                    to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
    use mqc_config_parser, only: bond_t
@@ -568,6 +569,9 @@ contains
       full_system%charge = sys_geom%charge
       full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
+
+      ! Validate geometry (check for spatially overlapping atoms)
+      call check_duplicate_atoms(full_system)
 
       ! Process the full system
       call do_fragment_work(0_int32, result, method, phys_frag=full_system, calc_type=calc_type)
