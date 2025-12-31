@@ -10,8 +10,7 @@ module mqc_driver
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
                                                    serial_fragment_processor, do_fragment_work
    use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_processor, gmbe_coordinator
-   use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
-                             generate_polymer_intersections, binomial, combine
+   use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
@@ -75,9 +74,23 @@ contains
          end if
       end if
 
-      ! GMBE (overlapping fragments) with N>1 uses inclusion-exclusion on N-level polymers
-      ! We generate all N-level fragments, then compute intersections between them
-      ! The intersections naturally produce lower-order fragments (e.g., dimers -> monomers)
+      ! Validate GMBE (overlapping fragments) settings - only nlevel=1 supported
+      if (config%allow_overlapping_fragments .and. max_level > 1) then
+         if (world_comm%rank() == 0) then
+            call logger%error(" ")
+            call logger%error("ERROR: Overlapping fragments (GMBE) only supported with nlevel=1")
+            call logger%error(" ")
+            call logger%error("Current settings:")
+            call logger%error("  nlevel = "//to_char(max_level))
+            call logger%error("  allow_overlapping_fragments = true")
+            call logger%error(" ")
+            call logger%error("GMBE uses inclusion-exclusion on overlapping BASE fragments only.")
+            call logger%error("For higher-order MBE with overlapping fragments, use nlevel=1.")
+            call logger%error("To control intersection depth, use max_intersection_level parameter.")
+            call logger%error(" ")
+         end if
+         call abort_comm(world_comm, 1)
+      end if
 
       ! Validate gradient calculations with overlapping fragments
       if (config%allow_overlapping_fragments .and. max_level > 0 .and. config%calc_type == CALC_TYPE_GRADIENT) then
@@ -203,80 +216,39 @@ contains
       integer, allocatable :: intersection_sets(:, :)  !! k-tuples for each intersection (n_monomers, n_intersections)
       integer, allocatable :: intersection_levels(:)  !! Level k of each intersection (n_intersections)
       integer :: n_intersections, n_monomers  !! Counts for GMBE
-      integer(int64) :: n_level_frags  !! Number of N-level fragments for GMBE(N>1)
 
       ! Generate fragments
       if (world_comm%rank() == 0) then
          if (allow_overlapping_fragments) then
-            ! GMBE mode: inclusion-exclusion on overlapping fragments
-            ! GMBE(1): intersections of base monomers
-            ! GMBE(N>1): intersections of N-level polymers
+            ! GMBE mode: inclusion-exclusion on overlapping base fragments
+            ! Only nlevel=1 is supported (validated above)
+            n_monomers = sys_geom%n_monomers
+            allocate (monomers(n_monomers))
+            allocate (polymers(n_monomers, 1))
+            polymers = 0
 
-            if (max_level == 1) then
-               ! GMBE(1): Use base monomer intersections
-               n_monomers = sys_geom%n_monomers
-               allocate (monomers(n_monomers))
-               allocate (polymers(n_monomers, 1))
-               polymers = 0
+            ! Create monomer list
+            call create_monomer_list(monomers)
 
-               ! Create monomer list
-               call create_monomer_list(monomers)
+            ! Add monomers to polymers array
+            do i = 1, n_monomers
+               polymers(i, 1) = i
+            end do
 
-               ! Add monomers to polymers array
-               do i = 1, n_monomers
-                  polymers(i, 1) = i
-               end do
+            ! Generate k-way intersections of base monomers
+            call generate_intersections(sys_geom, monomers, polymers, n_monomers, &
+                                        max_intersection_level, &
+                                        intersections, intersection_sets, intersection_levels, n_intersections)
 
-               ! Generate k-way intersections of base monomers
-               call generate_intersections(sys_geom, monomers, polymers, n_monomers, &
-                                           max_intersection_level, &
-                                           intersections, intersection_sets, intersection_levels, n_intersections)
+            ! Total fragments = base monomers + intersections
+            total_fragments = int(n_monomers, int64) + int(n_intersections, int64)
 
-               ! Total fragments = base monomers + intersections
-               total_fragments = int(n_monomers, int64) + int(n_intersections, int64)
+            call logger%info("Generated GMBE fragments:")
+            call logger%info("  Base monomers: "//to_char(n_monomers))
+            call logger%info("  Intersections: "//to_char(n_intersections))
+            call logger%info("  Total fragments: "//to_char(total_fragments))
 
-               call logger%info("Generated GMBE(1) fragments:")
-               call logger%info("  Base monomers: "//to_char(n_monomers))
-               call logger%info("  Intersections: "//to_char(n_intersections))
-               call logger%info("  Total fragments: "//to_char(total_fragments))
-
-               deallocate (monomers)
-            else
-               ! GMBE(N>1): Use N-level polymer intersections
-               ! Only generate fragments at level N (e.g., only dimers for N=2)
-               ! Calculate number of N-level fragments: C(n_monomers, N)
-               n_level_frags = binomial(sys_geom%n_monomers, max_level)
-               n_rows = n_level_frags
-
-               allocate (monomers(sys_geom%n_monomers))
-               allocate (polymers(n_rows, max_level))
-               polymers = 0
-
-               ! Create monomer list
-               call create_monomer_list(monomers)
-
-               ! Generate ONLY N-level polymers (not all levels from 1 to N)
-               total_fragments = 0_int64
-               call combine(monomers, sys_geom%n_monomers, max_level, polymers, total_fragments)
-
-               ! Set n_monomers to the number of N-level polymers (these are the "base" fragments for GMBE(N))
-               n_monomers = int(total_fragments)
-
-               ! Compute intersections between the N-level polymers
-               call generate_polymer_intersections(sys_geom, polymers(:total_fragments, :), int(total_fragments), &
-                                                   max_intersection_level, &
-                                                   intersections, intersection_sets, intersection_levels, n_intersections)
-
-               ! Total fragments to compute = N-level polymers + their intersections
-               total_fragments = total_fragments + int(n_intersections, int64)
-
-               call logger%info("Generated GMBE("//to_char(max_level)//") fragments:")
-               call logger%info("  "//to_char(max_level)//"-level polymers: "//to_char(n_monomers))
-               call logger%info("  Intersections: "//to_char(n_intersections))
-               call logger%info("  Total fragments: "//to_char(total_fragments))
-
-               deallocate (monomers)
-            end if
+            deallocate (monomers)
          else
             ! Standard MBE mode
             ! Calculate expected number of fragments
