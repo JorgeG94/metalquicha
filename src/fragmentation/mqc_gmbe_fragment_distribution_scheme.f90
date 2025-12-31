@@ -16,6 +16,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_config_parser, only: bond_t
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
+   use mqc_mbe_io, only: print_gmbe_json
    implicit none
    private
 
@@ -93,6 +94,24 @@ contains
       call logger%info("GMBE calculation completed successfully")
       call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
       call logger%info(" ")
+
+      ! Write JSON output
+      if (n_intersections > 0) then
+         call print_gmbe_json(n_monomers, monomer_indices, all_results(1:n_monomers), &
+                              n_intersections, all_results(n_monomers + 1:n_monomers + n_intersections), &
+                              intersection_sets, intersection_levels, total_energy)
+      else
+         ! No intersections - need dummy arrays
+         block
+            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
+            type(calculation_result_t), allocatable :: dummy_results(:)
+            allocate (dummy_sets(1, 0), dummy_levels(0), dummy_results(0))
+            call print_gmbe_json(n_monomers, monomer_indices, all_results(1:n_monomers), &
+                                 0, dummy_results, &
+                                 dummy_sets, dummy_levels, total_energy)
+            deallocate (dummy_sets, dummy_levels, dummy_results)
+         end block
+      end if
 
       deallocate (all_results, monomer_indices)
 
@@ -313,6 +332,24 @@ contains
       call logger%info("GMBE calculation completed successfully")
       call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
       call logger%info(" ")
+
+      ! Write JSON output
+      if (n_intersections > 0) then
+         call print_gmbe_json(n_monomers, monomer_indices, monomer_results, &
+                              n_intersections, intersection_results, &
+                              intersection_sets, intersection_levels, total_energy)
+      else
+         ! No intersections - need dummy arrays
+         block
+            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
+            type(calculation_result_t), allocatable :: dummy_results(:)
+            allocate (dummy_sets(1, 0), dummy_levels(0), dummy_results(0))
+            call print_gmbe_json(n_monomers, monomer_indices, monomer_results, &
+                                 0, dummy_results, &
+                                 dummy_sets, dummy_levels, total_energy)
+            deallocate (dummy_sets, dummy_levels, dummy_results)
+         end block
+      end if
 
       ! Cleanup
       deallocate (monomer_results, monomer_indices)
