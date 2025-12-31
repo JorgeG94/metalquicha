@@ -4,6 +4,7 @@ module mqc_frag_utils
    !! fragments, managing fragment lists, and performing many-body expansion calculations.
    use pic_types, only: default_int, int32, int64, dp
    use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    use pic_sorting, only: sort
    use pic_hash_32bit, only: fnv_1a_hash
    implicit none
@@ -413,106 +414,206 @@ contains
    end function find_fragment_intersection
 
    subroutine generate_intersections(sys_geom, monomers, polymers, n_monomers, &
-                                     intersections, intersection_pairs, n_intersections)
-      !! Generate all pairwise intersections between fragments
-      !!\n!! For a system with overlapping fragments, this identifies all pairs of fragments
-      !! that share atoms and stores the intersection atom lists.
+                                     intersections, intersection_sets, intersection_levels, n_intersections)
+      !! Generate all k-way intersections for k=2 to n_monomers (full inclusion-exclusion)
+      !!\n!! For a system with overlapping fragments, this computes all k-way intersections
+      !! following the inclusion-exclusion principle for GMBE.
       !!\n!! Algorithm:
-      !! - Loop through all pairs (i,j) where i < j
-      !! - Call find_fragment_intersection for each pair
-      !! - Store non-empty intersections and track which monomer pair created them
+      !! - For each k from 2 to n_monomers:
+      !!   - Generate all C(n_monomers, k) combinations
+      !!   - For each combination, compute intersection of all k fragments
+      !!   - Store non-empty intersections with their level k
       use mqc_physical_fragment, only: system_geometry_t
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomers(:)           !! Monomer indices
       integer, intent(inout) :: polymers(:, :)     !! Output: monomers stored here
       integer, intent(in) :: n_monomers            !! Number of monomers
       integer, allocatable, intent(out) :: intersections(:, :)  !! Intersection atom lists
-      integer, allocatable, intent(out) :: intersection_pairs(:, :)  !! Which pair (i,j) created each intersection
+      integer, allocatable, intent(out) :: intersection_sets(:, :)  !! Which k-tuple created each intersection
+      integer, allocatable, intent(out) :: intersection_levels(:)  !! Level (k) of each intersection
       integer, intent(out) :: n_intersections      !! Number of intersections found
 
       ! Temporaries for storing intersections
       integer, allocatable :: temp_intersections(:, :)
-      integer, allocatable :: temp_pairs(:, :)
+      integer, allocatable :: temp_sets(:, :)
+      integer, allocatable :: temp_levels(:)
       integer, allocatable :: temp_intersection(:)
-      integer :: temp_n_intersect
+      integer, allocatable :: current_intersection(:)
+      integer :: temp_n_intersect, current_n_intersect
       logical :: has_intersection
-      integer :: i, j, pair_count, max_atoms, max_intersections
-      integer :: mono_i, mono_j, size_i, size_j
+      integer :: k, intersection_count, max_atoms, max_intersections
+      integer :: i, idx
+      integer, allocatable :: combination(:)
 
       ! Store monomers in polymers array
       polymers(1:n_monomers, 1) = monomers(1:n_monomers)
 
-      ! Count maximum possible intersections: C(n,2) = n*(n-1)/2
-      max_intersections = (n_monomers*(n_monomers - 1))/2
-
-      if (max_intersections == 0) then
+      if (n_monomers < 2) then
          n_intersections = 0
          return
       end if
+
+      ! Count maximum possible intersections: sum of C(n,k) for k=2 to n
+      ! For small n, this is 2^n - n - 1
+      max_intersections = 2**n_monomers - n_monomers - 1
 
       ! Find maximum atoms in any fragment for allocation
       max_atoms = maxval(sys_geom%fragment_sizes(1:n_monomers))
 
       ! Allocate temporary arrays
       allocate (temp_intersections(max_atoms, max_intersections))
-      allocate (temp_pairs(2, max_intersections))
+      allocate (temp_sets(n_monomers, max_intersections))
+      allocate (temp_levels(max_intersections))
       temp_intersections = 0
-      pair_count = 0
+      temp_sets = 0
+      intersection_count = 0
 
-      ! Loop through all pairs (i, j) where i < j
-      do i = 1, n_monomers - 1
-         do j = i + 1, n_monomers
-            ! Get fragment atoms for this pair
-            mono_i = monomers(i)
-            mono_j = monomers(j)
-            size_i = sys_geom%fragment_sizes(mono_i)
-            size_j = sys_geom%fragment_sizes(mono_j)
+      call logger%info("Generating all k-way intersections for GMBE (inclusion-exclusion principle)")
 
-            ! Find intersection
-            has_intersection = find_fragment_intersection( &
-                               sys_geom%fragment_atoms(1:size_i, mono_i), size_i, &
-                               sys_geom%fragment_atoms(1:size_j, mono_j), size_j, &
-                               temp_intersection, temp_n_intersect)
-
-            if (has_intersection) then
-               pair_count = pair_count + 1
-               temp_pairs(1, pair_count) = mono_i
-               temp_pairs(2, pair_count) = mono_j
-               temp_intersections(1:temp_n_intersect, pair_count) = temp_intersection
-
-               ! Warn if mixing charged monomers (intersection assumed neutral)
-               if (allocated(sys_geom%fragment_charges)) then
-                  if (sys_geom%fragment_charges(mono_i) /= 0 .and. &
-                      sys_geom%fragment_charges(mono_j) /= 0) then
-                     block
-                        character(len=20) :: str_i, str_j
-                        write (str_i, '(I0)') mono_i
-                        write (str_j, '(I0)') mono_j
-                        call logger%warning("generate_intersections", &
-                                            "Creating intersection between two charged monomers "// &
-                                            "(fragments "//trim(str_i)//" and "//trim(str_j)//"). "// &
-                                            "Intersection fragment will be NEUTRAL (charge=0), which may be unphysical.")
-                     end block
-                  end if
-               end if
-
-               deallocate (temp_intersection)
-            end if
-         end do
+      ! Loop over intersection levels k from 2 to n_monomers
+      do k = 2, n_monomers
+         ! Generate all C(n_monomers, k) combinations
+         allocate (combination(k))
+         call generate_k_way_intersections_for_level(sys_geom, monomers, n_monomers, k, &
+                                                     combination, max_atoms, &
+                                                     temp_intersections, temp_sets, temp_levels, intersection_count)
+         deallocate (combination)
       end do
 
-      n_intersections = pair_count
+      n_intersections = intersection_count
 
       ! Allocate output arrays
       if (n_intersections > 0) then
          allocate (intersections(max_atoms, n_intersections))
-         allocate (intersection_pairs(2, n_intersections))
+         allocate (intersection_sets(n_monomers, n_intersections))
+         allocate (intersection_levels(n_intersections))
          intersections = temp_intersections(1:max_atoms, 1:n_intersections)
-         intersection_pairs = temp_pairs(1:2, 1:n_intersections)
+         intersection_sets = temp_sets(1:n_monomers, 1:n_intersections)
+         intersection_levels = temp_levels(1:n_intersections)
+
+         call logger%info("Generated "//to_char(n_intersections)//" total intersections:")
+         do k = 2, n_monomers
+            idx = count(intersection_levels == k)
+            if (idx > 0) then
+               call logger%info("  "//to_char(idx)//" intersections at level "//to_char(k))
+            end if
+         end do
+      else
+         call logger%info("No intersections found (fragments are non-overlapping)")
       end if
 
-      deallocate (temp_intersections, temp_pairs)
+      deallocate (temp_intersections, temp_sets, temp_levels)
 
    end subroutine generate_intersections
+
+   recursive subroutine generate_k_way_intersections_for_level(sys_geom, monomers, n_monomers, k, &
+                                                               combination, max_atoms, &
+                                                           temp_intersections, temp_sets, temp_levels, intersection_count)
+      !! Helper to generate all k-way intersections at a specific level k
+      use mqc_physical_fragment, only: system_geometry_t
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomers(:), n_monomers, k, max_atoms
+      integer, intent(inout) :: combination(:)
+      integer, intent(inout) :: temp_intersections(:, :), temp_sets(:, :), temp_levels(:)
+      integer, intent(inout) :: intersection_count
+
+      integer, allocatable :: current_intersection(:), temp_intersection(:)
+      integer :: current_n_intersect, temp_n_intersect
+      integer :: i, j, mono_idx, frag_size
+      logical :: has_intersection
+
+      ! Generate combinations using an iterative approach
+      call next_combination_init(combination, k)
+
+      do
+         ! Compute intersection of all fragments in this combination
+         has_intersection = .false.
+
+         ! Start with the first fragment in the combination
+         mono_idx = monomers(combination(1))
+         frag_size = sys_geom%fragment_sizes(mono_idx)
+         allocate (current_intersection(frag_size))
+         current_intersection = sys_geom%fragment_atoms(1:frag_size, mono_idx)
+         current_n_intersect = frag_size
+
+         ! Intersect with each subsequent fragment
+         do i = 2, k
+            mono_idx = monomers(combination(i))
+            frag_size = sys_geom%fragment_sizes(mono_idx)
+
+            has_intersection = find_fragment_intersection( &
+                               current_intersection, current_n_intersect, &
+                               sys_geom%fragment_atoms(1:frag_size, mono_idx), frag_size, &
+                               temp_intersection, temp_n_intersect)
+
+            if (.not. has_intersection) then
+               ! Intersection is empty, break early
+               deallocate (current_intersection)
+               if (allocated(temp_intersection)) deallocate (temp_intersection)
+               exit
+            end if
+
+            ! Replace current_intersection with the new intersection
+            deallocate (current_intersection)
+            allocate (current_intersection(temp_n_intersect))
+            current_intersection = temp_intersection
+            current_n_intersect = temp_n_intersect
+            deallocate (temp_intersection)
+         end do
+
+         ! If we have a non-empty intersection, store it
+         if (has_intersection .and. allocated(current_intersection)) then
+            intersection_count = intersection_count + 1
+            temp_intersections(1:current_n_intersect, intersection_count) = current_intersection
+            temp_sets(1:k, intersection_count) = monomers(combination)
+            temp_levels(intersection_count) = k
+            deallocate (current_intersection)
+         end if
+
+         ! Get next combination
+         if (.not. next_combination(combination, k, n_monomers)) exit
+      end do
+
+   end subroutine generate_k_way_intersections_for_level
+
+   subroutine next_combination_init(combination, k)
+      !! Initialize combination to [1, 2, ..., k]
+      integer, intent(inout) :: combination(:)
+      integer, intent(in) :: k
+      integer :: i
+      do i = 1, k
+         combination(i) = i
+      end do
+   end subroutine next_combination_init
+
+   function next_combination(combination, k, n) result(has_next)
+      !! Generate next combination in lexicographic order
+      !! Returns .true. if there's a next combination, .false. if we've exhausted all
+      integer, intent(inout) :: combination(:)
+      integer, intent(in) :: k, n
+      logical :: has_next
+      integer :: i
+
+      has_next = .true.
+
+      ! Find the rightmost element that can be incremented
+      i = k
+      do while (i >= 1)
+         if (combination(i) < n - k + i) then
+            combination(i) = combination(i) + 1
+            ! Reset all elements to the right
+            do while (i < k)
+               i = i + 1
+               combination(i) = combination(i - 1) + 1
+            end do
+            return
+         end if
+         i = i - 1
+      end do
+
+      ! No more combinations
+      has_next = .false.
+
+   end function next_combination
 
 end module mqc_frag_utils

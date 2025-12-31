@@ -252,7 +252,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
       integer, allocatable :: monomers(:), polymers(:, :)
-      integer, allocatable :: intersections(:, :), intersection_pairs(:, :)
+      integer, allocatable :: intersections(:, :), intersection_sets(:, :), intersection_levels(:)
       integer :: n_intersections
 
       ! Create a simple system with 2 non-overlapping fragments
@@ -277,7 +277,7 @@ contains
       allocate (polymers(2, 1))
 
       call generate_intersections(sys_geom, monomers, polymers, 2, &
-                                  intersections, intersection_pairs, n_intersections)
+                                  intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 0 intersections
       call check(error, n_intersections, 0, &
@@ -295,7 +295,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
       integer, allocatable :: monomers(:), polymers(:, :)
-      integer, allocatable :: intersections(:, :), intersection_pairs(:, :)
+      integer, allocatable :: intersections(:, :), intersection_sets(:, :), intersection_levels(:)
       integer :: n_intersections
 
       ! Create a system with 2 overlapping fragments (polypeptide-like)
@@ -320,20 +320,25 @@ contains
       allocate (polymers(2, 1))
 
       call generate_intersections(sys_geom, monomers, polymers, 2, &
-                                  intersections, intersection_pairs, n_intersections)
+                                  intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 1 intersection
       call check(error, n_intersections, 1, &
                  "Two overlapping fragments should produce 1 intersection")
       if (allocated(error)) goto 100
 
-      ! Check intersection pairs
-      call check(error, intersection_pairs(1, 1), 1, &
-                 "First fragment in pair should be 1")
+      ! Check intersection level (should be 2 for pairwise)
+      call check(error, intersection_levels(1), 2, &
+                 "Intersection level should be 2 for pairwise")
       if (allocated(error)) goto 100
 
-      call check(error, intersection_pairs(2, 1), 2, &
-                 "Second fragment in pair should be 2")
+      ! Check intersection sets
+      call check(error, intersection_sets(1, 1), 1, &
+                 "First fragment in set should be 1")
+      if (allocated(error)) goto 100
+
+      call check(error, intersection_sets(2, 1), 2, &
+                 "Second fragment in set should be 2")
       if (allocated(error)) goto 100
 
       ! Check intersection atoms (should be 3, 4, 5)
@@ -346,7 +351,8 @@ contains
       ! Clean up
       deallocate (monomers, polymers)
       if (allocated(intersections)) deallocate (intersections)
-      if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+      if (allocated(intersection_sets)) deallocate (intersection_sets)
+      if (allocated(intersection_levels)) deallocate (intersection_levels)
       call sys_geom%destroy()
 
    end subroutine test_generate_single_overlap
@@ -356,7 +362,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(system_geometry_t) :: sys_geom
       integer, allocatable :: monomers(:), polymers(:, :)
-      integer, allocatable :: intersections(:, :), intersection_pairs(:, :)
+      integer, allocatable :: intersections(:, :), intersection_sets(:, :), intersection_levels(:)
       integer :: n_intersections
 
       ! Create a system with 3 fragments in a chain (like tripeptide)
@@ -386,7 +392,7 @@ contains
       allocate (polymers(3, 1))
 
       call generate_intersections(sys_geom, monomers, polymers, 3, &
-                                  intersections, intersection_pairs, n_intersections)
+                                  intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 2 intersections: (1,2) and (2,3)
       ! Note: (1,3) should have no intersection
@@ -398,7 +404,8 @@ contains
       ! Clean up
       deallocate (monomers, polymers)
       if (allocated(intersections)) deallocate (intersections)
-      if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+      if (allocated(intersection_sets)) deallocate (intersection_sets)
+      if (allocated(intersection_levels)) deallocate (intersection_levels)
       call sys_geom%destroy()
 
    end subroutine test_generate_multiple_overlaps

@@ -440,16 +440,22 @@ contains
 
    subroutine compute_gmbe_energy(monomers, n_monomers, monomer_results, &
                                   n_intersections, intersection_results, &
-                                  intersection_pairs, total_energy)
-      !! Compute GMBE (Generalized Many-Body Expansion) energy with intersection correction
+                                  intersection_sets, intersection_levels, total_energy)
+      !! Compute GMBE (Generalized Many-Body Expansion) energy with full inclusion-exclusion
       !!
-      !! For overlapping fragments, the GMBE formula is:
-      !!   E_total = sum(E_monomers) - sum(E_intersections)
+      !! For overlapping fragments, the GMBE formula follows the inclusion-exclusion principle:
+      !!   E_total = sum(E_monomers)
+      !!             - sum(E_2-way_intersections)
+      !!             + sum(E_3-way_intersections)
+      !!             - sum(E_4-way_intersections)
+      !!             + ...
       !!
-      !! Example for two overlapping fragments (gly0, gly1) sharing atoms [3,4,5]:
-      !!   E = E(gly0) + E(gly1) - E(intersection[3,4,5])
+      !! Example for three overlapping fragments (gly0, gly1, gly2):
+      !!   E = E(gly0) + E(gly1) + E(gly2)
+      !!       - E(gly0∩gly1) - E(gly0∩gly2) - E(gly1∩gly2)
+      !!       + E(gly0∩gly1∩gly2)
       !!
-      !! This corrects for double-counting of atoms in overlapping regions.
+      !! This correctly accounts for all overlapping regions following inclusion-exclusion.
       use mqc_result_types, only: calculation_result_t
 
       integer, intent(in) :: monomers(:)              !! Monomer indices (1-based)
@@ -457,11 +463,15 @@ contains
       type(calculation_result_t), intent(in) :: monomer_results(:)     !! Monomer energies
       integer, intent(in) :: n_intersections          !! Number of intersection fragments
       type(calculation_result_t), intent(in) :: intersection_results(:)  !! Intersection energies
-      integer, intent(in) :: intersection_pairs(:, :)  !! Pairs (i,j) that created each intersection (2, n_intersections)
+      integer, intent(in) :: intersection_sets(:, :)  !! k-tuples that created each intersection (n_monomers, n_intersections)
+      integer, intent(in) :: intersection_levels(:)   !! Level k of each intersection
       real(dp), intent(out) :: total_energy           !! Total GMBE energy
 
-      integer :: i
-      real(dp) :: monomer_energy, intersection_energy
+      integer :: i, k, max_level
+      real(dp) :: monomer_energy
+      real(dp), allocatable :: level_energies(:)
+      integer, allocatable :: level_counts(:)
+      real(dp) :: sign_factor
 
       ! Sum monomer energies
       monomer_energy = 0.0_dp
@@ -469,42 +479,98 @@ contains
          monomer_energy = monomer_energy + monomer_results(i)%energy%total()
       end do
 
-      ! Sum intersection energies
-      intersection_energy = 0.0_dp
-      do i = 1, n_intersections
-         intersection_energy = intersection_energy + intersection_results(i)%energy%total()
-      end do
+      ! Start with monomer contribution
+      total_energy = monomer_energy
 
-      ! Apply GMBE formula: E = sum(monomers) - sum(intersections)
-      total_energy = monomer_energy - intersection_energy
-
-      ! Print breakdown
-      call logger%info("GMBE Energy breakdown:")
-      block
-         character(len=256) :: line
-         write (line, '(a,i0,a,f20.10)') "  Monomer energies (", n_monomers, "):      ", monomer_energy
-         call logger%info(trim(line))
-
-         write (line, '(a,i0,a,f20.10)') "  Intersection energies (", n_intersections, "): ", intersection_energy
-         call logger%info(trim(line))
-
-         write (line, '(a,f20.10)') "  Total GMBE energy:         ", total_energy
-         call logger%info(trim(line))
-      end block
-
-      ! Print intersection pairs if there are any
       if (n_intersections > 0) then
-         call logger%debug("GMBE intersection correction details:")
+         ! Find maximum intersection level
+         max_level = maxval(intersection_levels)
+
+         ! Allocate arrays to track contributions by level
+         allocate (level_energies(2:max_level))
+         allocate (level_counts(2:max_level))
+         level_energies = 0.0_dp
+         level_counts = 0
+
+         ! Sum intersection energies by level with alternating signs
          do i = 1, n_intersections
-            block
-               character(len=256) :: pair_line
-               write (pair_line, '(a,i0,a,i0,a,i0,a,f16.8)') &
-                  "  Intersection ", i, ": fragments (", &
-                  intersection_pairs(1, i), ", ", intersection_pairs(2, i), &
-                  ") energy = ", intersection_results(i)%energy%total()
-               call logger%debug(trim(pair_line))
-            end block
+            k = intersection_levels(i)
+            level_energies(k) = level_energies(k) + intersection_results(i)%energy%total()
+            level_counts(k) = level_counts(k) + 1
          end do
+
+         ! Apply inclusion-exclusion: sign is (-1)^(k+1) for k-way intersections
+         do k = 2, max_level
+            if (level_counts(k) > 0) then
+               sign_factor = real((-1)**(k + 1), dp)
+               total_energy = total_energy + sign_factor*level_energies(k)
+            end if
+         end do
+
+         ! Print breakdown
+         call logger%info("GMBE Energy breakdown (Inclusion-Exclusion Principle):")
+         block
+            character(len=256) :: line
+            write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "):  ", monomer_energy
+            call logger%info(trim(line))
+
+            do k = 2, max_level
+               if (level_counts(k) > 0) then
+                  sign_factor = real((-1)**(k + 1), dp)
+                  if (sign_factor > 0.0_dp) then
+                     write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  +", level_energies(k)
+                  else
+                     write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  ", level_energies(k)
+                  end if
+                  call logger%info(trim(line))
+               end if
+            end do
+
+            write (line, '(a,f20.10)') "  Total GMBE:      ", total_energy
+            call logger%info(trim(line))
+         end block
+
+         ! Print detailed intersection info at debug level
+         if (n_intersections > 0) then
+            call logger%debug("GMBE intersection details:")
+            do i = 1, n_intersections
+               block
+                  character(len=512) :: detail_line
+                  character(len=256) :: set_str
+                  integer :: j, set_size
+
+                  ! Build string of fragment indices in this intersection
+                  set_str = "("
+                  set_size = 0
+                  do j = 1, n_monomers
+                     if (intersection_sets(j, i) > 0) then
+                        if (set_size > 0) set_str = trim(set_str)//","
+                        write (set_str, '(a,i0)') trim(set_str), intersection_sets(j, i)
+                        set_size = set_size + 1
+                     end if
+                  end do
+                  set_str = trim(set_str)//")"
+
+                  sign_factor = real((-1)**(intersection_levels(i) + 1), dp)
+                  write (detail_line, '(a,i0,a,i0,a,a,a,f16.8)') &
+                     "  Intersection ", i, ": level=", intersection_levels(i), &
+                     " fragments=", trim(set_str), " energy=", intersection_results(i)%energy%total()
+                  call logger%debug(trim(detail_line))
+               end block
+            end do
+         end if
+
+         deallocate (level_energies, level_counts)
+      else
+         ! No intersections - just report monomer sum
+         call logger%info("GMBE Energy breakdown:")
+         block
+            character(len=256) :: line
+            write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "): ", monomer_energy
+            call logger%info(trim(line))
+            write (line, '(a,f20.10)') "  Total GMBE:  ", total_energy
+            call logger%info(trim(line))
+         end block
       end if
 
    end subroutine compute_gmbe_energy

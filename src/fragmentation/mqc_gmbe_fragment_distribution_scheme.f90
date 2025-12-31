@@ -24,15 +24,16 @@ module mqc_gmbe_fragment_distribution_scheme
 
 contains
 
-   subroutine serial_gmbe_processor(n_monomers, polymers, intersections, intersection_pairs, n_intersections, &
-                                    sys_geom, method, calc_type, bonds)
+   subroutine serial_gmbe_processor(n_monomers, polymers, intersections, intersection_sets, intersection_levels, &
+                                    n_intersections, sys_geom, method, calc_type, bonds)
       !! Serial GMBE processor: builds all fragments (monomers + intersections) and computes GMBE energy
       use mqc_mbe, only: compute_gmbe_energy
 
       integer, intent(in) :: n_monomers  !! Number of monomers
       integer, intent(in) :: polymers(:, :)  !! Monomer indices (n_monomers, 1)
       integer, intent(in) :: intersections(:, :)  !! Intersection atom lists
-      integer, intent(in) :: intersection_pairs(:, :)  !! Pairs that created intersections
+      integer, intent(in) :: intersection_sets(:, :)  !! k-tuples that created intersections
+      integer, intent(in) :: intersection_levels(:)  !! Level k of each intersection
       integer, intent(in) :: n_intersections  !! Number of intersection fragments
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method, calc_type
@@ -86,7 +87,7 @@ contains
 
       call compute_gmbe_energy(monomer_indices, n_monomers, all_results(1:n_monomers), &
                                n_intersections, all_results(n_monomers + 1:n_monomers + n_intersections), &
-                               intersection_pairs, total_energy)
+                               intersection_sets, intersection_levels, total_energy)
 
       call logger%info(" ")
       call logger%info("GMBE calculation completed successfully")
@@ -97,8 +98,8 @@ contains
 
    end subroutine serial_gmbe_processor
 
-   subroutine gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_pairs, &
-                               n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+   subroutine gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_sets, &
+                   intersection_levels, n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
       !! MPI-enabled GMBE coordinator: distributes monomers and intersections across ranks
       !! Similar to global_coordinator but handles GMBE-specific fragment types
       use mqc_mbe, only: compute_gmbe_energy
@@ -107,7 +108,8 @@ contains
       integer, intent(in) :: n_monomers  !! Number of monomers
       integer, intent(in) :: polymers(:, :)  !! Monomer indices (n_monomers, 1)
       integer, intent(in) :: intersections(:, :)  !! Intersection atom lists
-      integer, intent(in) :: intersection_pairs(:, :)  !! Pairs that created intersections
+      integer, intent(in) :: intersection_sets(:, :)  !! k-tuples that created intersections
+      integer, intent(in) :: intersection_levels(:)  !! Level k of each intersection
       integer, intent(in) :: n_intersections  !! Number of intersection fragments
       integer, intent(in) :: node_leader_ranks(:), num_nodes
       type(system_geometry_t), intent(in) :: sys_geom
@@ -292,11 +294,17 @@ contains
       if (n_intersections > 0) then
          call compute_gmbe_energy(monomer_indices, n_monomers, monomer_results, &
                                   n_intersections, intersection_results, &
-                                  intersection_pairs, total_energy)
+                                  intersection_sets, intersection_levels, total_energy)
       else
-         call compute_gmbe_energy(monomer_indices, n_monomers, monomer_results, &
-                                  0, monomer_results(1:0), &
-                                  intersection_pairs, total_energy)
+         ! No intersections case - need dummy arrays
+         block
+            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
+            allocate (dummy_sets(1, 0), dummy_levels(0))
+            call compute_gmbe_energy(monomer_indices, n_monomers, monomer_results, &
+                                     0, monomer_results(1:0), &
+                                     dummy_sets, dummy_levels, total_energy)
+            deallocate (dummy_sets, dummy_levels)
+         end block
       end if
 
       call coord_timer%stop()

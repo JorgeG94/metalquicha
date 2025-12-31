@@ -212,7 +212,8 @@ contains
 
       ! GMBE-specific variables
       integer, allocatable :: intersections(:, :)  !! Intersection atom lists (max_atoms, n_intersections)
-      integer, allocatable :: intersection_pairs(:, :)  !! Monomer pairs for each intersection (2, n_intersections)
+      integer, allocatable :: intersection_sets(:, :)  !! k-tuples for each intersection (n_monomers, n_intersections)
+      integer, allocatable :: intersection_levels(:)  !! Level k of each intersection (n_intersections)
       integer :: n_intersections, n_monomers  !! Counts for GMBE
 
       ! Generate fragments
@@ -234,7 +235,7 @@ contains
 
             ! Generate intersections
             call generate_intersections(sys_geom, monomers, polymers, n_monomers, &
-                                        intersections, intersection_pairs, n_intersections)
+                                        intersections, intersection_sets, intersection_levels, n_intersections)
 
             ! Total fragments = monomers + intersections
             total_fragments = int(n_monomers, int64) + int(n_intersections, int64)
@@ -311,8 +312,8 @@ contains
          call logger%info("Running in serial mode (single MPI rank)")
          if (allow_overlapping_fragments) then
             ! GMBE serial processing
-            call serial_gmbe_processor(n_monomers, polymers, intersections, intersection_pairs, n_intersections, &
-                                       sys_geom, method, calc_type, bonds)
+            call serial_gmbe_processor(n_monomers, polymers, intersections, intersection_sets, intersection_levels, &
+                                       n_intersections, sys_geom, method, calc_type, bonds)
          else
             ! Standard MBE serial processing
             call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
@@ -323,8 +324,8 @@ contains
          call logger%verbose("Rank 0: Acting as global coordinator")
          if (allow_overlapping_fragments) then
             ! GMBE MPI processing
-            call gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_pairs, &
-                                  n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+            call gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_sets, &
+                   intersection_levels, n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
          else
             ! Standard MBE MPI processing
             call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
@@ -346,7 +347,8 @@ contains
          if (allocated(polymers)) deallocate (polymers)
          if (allocated(node_leader_ranks)) deallocate (node_leader_ranks)
          if (allocated(intersections)) deallocate (intersections)
-         if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+         if (allocated(intersection_sets)) deallocate (intersection_sets)
+         if (allocated(intersection_levels)) deallocate (intersection_levels)
       end if
 
    end subroutine run_fragmented_calculation

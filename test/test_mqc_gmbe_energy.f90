@@ -26,7 +26,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: monomer_results(:)
       type(calculation_result_t), allocatable :: intersection_results(:)
-      integer, allocatable :: monomers(:), intersection_pairs(:, :)
+      integer, allocatable :: monomers(:), intersection_sets(:, :), intersection_levels(:)
       real(dp) :: total_energy
       integer :: n_monomers, n_intersections
 
@@ -45,12 +45,13 @@ contains
 
       ! No intersections
       allocate (intersection_results(0))
-      allocate (intersection_pairs(2, 0))
+      allocate (intersection_sets(n_monomers, 0))
+      allocate (intersection_levels(0))
 
       ! Compute GMBE energy
       call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
                                n_intersections, intersection_results, &
-                               intersection_pairs, total_energy)
+                               intersection_sets, intersection_levels, total_energy)
 
       ! Total should be -10 + (-15) = -25
       call check(error, total_energy, -25.0_dp, thr=1.0e-10_dp, &
@@ -61,7 +62,8 @@ contains
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)
-      if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+      if (allocated(intersection_sets)) deallocate (intersection_sets)
+      if (allocated(intersection_levels)) deallocate (intersection_levels)
 
    end subroutine test_gmbe_no_intersections
 
@@ -71,7 +73,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: monomer_results(:)
       type(calculation_result_t), allocatable :: intersection_results(:)
-      integer, allocatable :: monomers(:), intersection_pairs(:, :)
+      integer, allocatable :: monomers(:), intersection_sets(:, :), intersection_levels(:)
       real(dp) :: total_energy
       integer :: n_monomers, n_intersections
 
@@ -81,7 +83,8 @@ contains
       allocate (monomers(n_monomers))
       allocate (monomer_results(n_monomers))
       allocate (intersection_results(n_intersections))
-      allocate (intersection_pairs(2, n_intersections))
+      allocate (intersection_sets(n_monomers, n_intersections))
+      allocate (intersection_levels(n_intersections))
       monomers = [1, 2]
 
       ! Set monomer energies: gly0 = -100.0, gly1 = -95.0
@@ -94,13 +97,14 @@ contains
       intersection_results(1)%energy%scf = -8.0_dp
       intersection_results(1)%has_energy = .true.
 
-      ! Intersection is between monomers 1 and 2
-      intersection_pairs(:, 1) = [1, 2]
+      ! Intersection is between monomers 1 and 2 (2-way intersection)
+      intersection_sets(:, 1) = [1, 2]
+      intersection_levels(1) = 2
 
       ! Compute GMBE energy
       call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
                                n_intersections, intersection_results, &
-                               intersection_pairs, total_energy)
+                               intersection_sets, intersection_levels, total_energy)
 
       ! Total = -100 + (-95) - (-8) = -100 - 95 + 8 = -187
       call check(error, total_energy, -187.0_dp, thr=1.0e-10_dp, &
@@ -111,7 +115,8 @@ contains
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)
-      if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+      if (allocated(intersection_sets)) deallocate (intersection_sets)
+      if (allocated(intersection_levels)) deallocate (intersection_levels)
 
    end subroutine test_gmbe_single_intersection
 
@@ -121,7 +126,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: monomer_results(:)
       type(calculation_result_t), allocatable :: intersection_results(:)
-      integer, allocatable :: monomers(:), intersection_pairs(:, :)
+      integer, allocatable :: monomers(:), intersection_sets(:, :), intersection_levels(:)
       real(dp) :: total_energy
       integer :: n_monomers, n_intersections
 
@@ -131,7 +136,8 @@ contains
       allocate (monomers(n_monomers))
       allocate (monomer_results(n_monomers))
       allocate (intersection_results(n_intersections))
-      allocate (intersection_pairs(2, n_intersections))
+      allocate (intersection_sets(n_monomers, n_intersections))
+      allocate (intersection_levels(n_intersections))
       monomers = [1, 2, 3]
 
       ! Set monomer energies
@@ -148,14 +154,16 @@ contains
       intersection_results(2)%energy%scf = -7.5_dp   ! int(1,2)
       intersection_results(2)%has_energy = .true.
 
-      ! Intersection pairs
-      intersection_pairs(:, 1) = [1, 2]  ! gly0-gly1
-      intersection_pairs(:, 2) = [2, 3]  ! gly1-gly2
+      ! Intersection sets (both are 2-way)
+      intersection_sets(:, 1) = [1, 2, 0]  ! gly0-gly1
+      intersection_sets(:, 2) = [2, 3, 0]  ! gly1-gly2
+      intersection_levels(1) = 2
+      intersection_levels(2) = 2
 
       ! Compute GMBE energy
       call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
                                n_intersections, intersection_results, &
-                               intersection_pairs, total_energy)
+                               intersection_sets, intersection_levels, total_energy)
 
       ! Total = -100 + (-95) + (-98) - (-8) - (-7.5)
       !       = -100 - 95 - 98 + 8 + 7.5
@@ -168,7 +176,8 @@ contains
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)
-      if (allocated(intersection_pairs)) deallocate (intersection_pairs)
+      if (allocated(intersection_sets)) deallocate (intersection_sets)
+      if (allocated(intersection_levels)) deallocate (intersection_levels)
 
    end subroutine test_gmbe_multiple_intersections
 
