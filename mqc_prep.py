@@ -485,12 +485,13 @@ def write_indices_block(f, indices: List[int], per_line: int = 20) -> None:
         f.write(" ".join(str(v) for v in chunk) + "\n")
     f.write("end  ! indices\n")
 
-def find_atom_fragment(atom_idx: int, fragments: List[List[int]]) -> Optional[int]:
-    """Find which fragment (0-indexed) contains the given atom index"""
+def find_atom_fragments(atom_idx: int, fragments: List[List[int]]) -> List[int]:
+    """Find all fragments (0-indexed) that contain the given atom index"""
+    result = []
     for fi, frag in enumerate(fragments):
         if atom_idx in frag:
-            return fi
-    return None
+            result.append(fi)
+    return result
 
 def write_connectivity(f, mol: Molecule) -> None:
     """Write connectivity section, marking broken bonds"""
@@ -504,11 +505,18 @@ def write_connectivity(f, mol: Molecule) -> None:
     broken_count = 0
 
     for bi, (i, j, order) in enumerate(mol.connectivity):
-        frag_i = find_atom_fragment(i, mol.fragments)
-        frag_j = find_atom_fragment(j, mol.fragments)
+        # For overlapping fragments: find ALL fragments containing each atom
+        frags_i = find_atom_fragments(i, mol.fragments)
+        frags_j = find_atom_fragments(j, mol.fragments)
 
-        # Check if bond is broken (atoms in different fragments)
-        is_broken = (frag_i is not None and frag_j is not None and frag_i != frag_j)
+        # Bond is broken if there exists a fragment containing one atom but not the other
+        # This happens when the sets of fragments are different
+        frags_i_set = set(frags_i)
+        frags_j_set = set(frags_j)
+
+        # Check if atoms always appear together
+        # Bond is preserved only if both atoms appear in exactly the same fragments
+        is_broken = (frags_i_set != frags_j_set)
 
         if is_broken:
             broken_count += 1
