@@ -21,6 +21,7 @@ module mqc_config_adapter
       integer(int32) :: calc_type   !! Calculation type constant
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments  !! Enable GMBE for overlapping fragments
+      integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
    end type driver_config_t
 
 contains
@@ -62,6 +63,9 @@ contains
 
       ! Set GMBE overlapping fragments flag
       driver_config%allow_overlapping_fragments = mqc_config%allow_overlapping_fragments
+
+      ! Set GMBE maximum intersection level
+      driver_config%max_intersection_level = mqc_config%max_intersection_level
 
    end subroutine config_to_driver
 

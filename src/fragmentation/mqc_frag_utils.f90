@@ -415,13 +415,14 @@ contains
 
    end function find_fragment_intersection
 
-   subroutine generate_intersections(sys_geom, monomers, polymers, n_monomers, &
+   subroutine generate_intersections(sys_geom, monomers, polymers, n_monomers, max_intersection_level, &
                                      intersections, intersection_sets, intersection_levels, n_intersections)
-      !! Generate all k-way intersections for k=2 to n_monomers (full inclusion-exclusion)
-      !!\n!! For a system with overlapping fragments, this computes all k-way intersections
+      !! Generate all k-way intersections for k=2 to min(max_intersection_level, n_monomers)
+      !!\n!! For a system with overlapping fragments, this computes k-way intersections
       !! following the inclusion-exclusion principle for GMBE.
+      !! The max_intersection_level parameter controls the maximum depth to avoid combinatorial explosion.
       !!\n!! Algorithm:
-      !! - For each k from 2 to n_monomers:
+      !! - For each k from 2 to min(max_intersection_level, n_monomers):
       !!   - Generate all C(n_monomers, k) combinations
       !!   - For each combination, compute intersection of all k fragments
       !!   - Store non-empty intersections with their level k
@@ -430,6 +431,7 @@ contains
       integer, intent(in) :: monomers(:)           !! Monomer indices
       integer, intent(inout) :: polymers(:, :)     !! Output: monomers stored here
       integer, intent(in) :: n_monomers            !! Number of monomers
+      integer, intent(in) :: max_intersection_level  !! Maximum k-way intersection depth
       integer, allocatable, intent(out) :: intersections(:, :)  !! Intersection atom lists
       integer, allocatable, intent(out) :: intersection_sets(:, :)  !! Which k-tuple created each intersection
       integer, allocatable, intent(out) :: intersection_levels(:)  !! Level (k) of each intersection
@@ -443,7 +445,7 @@ contains
       integer, allocatable :: current_intersection(:)
       integer :: temp_n_intersect, current_n_intersect
       logical :: has_intersection
-      integer :: k, intersection_count, max_atoms, max_intersections
+      integer :: k, intersection_count, max_atoms, max_intersections, max_k_level
       integer :: i, idx
       integer, allocatable :: combination(:)
 
@@ -470,10 +472,18 @@ contains
       temp_sets = 0
       intersection_count = 0
 
-      call logger%info("Generating all k-way intersections for GMBE (inclusion-exclusion principle)")
+      ! Determine actual maximum intersection level to use
+      max_k_level = min(max_intersection_level, n_monomers)
 
-      ! Loop over intersection levels k from 2 to n_monomers
-      do k = 2, n_monomers
+      if (max_k_level < n_monomers) then
+         call logger%info("Generating k-way intersections up to k="//to_char(max_k_level)// &
+                          " (limited by max_intersection_level)")
+      else
+         call logger%info("Generating all k-way intersections for GMBE (inclusion-exclusion principle)")
+      end if
+
+      ! Loop over intersection levels k from 2 to max_k_level
+      do k = 2, max_k_level
          ! Generate all C(n_monomers, k) combinations
          allocate (combination(k))
          call generate_k_way_intersections_for_level(sys_geom, monomers, n_monomers, k, &
@@ -494,7 +504,7 @@ contains
          intersection_levels = temp_levels(1:n_intersections)
 
          call logger%info("Generated "//to_char(n_intersections)//" total intersections:")
-         do k = 2, n_monomers
+         do k = 2, max_k_level
             idx = count(intersection_levels == k)
             if (idx > 0) then
                call logger%info("  "//to_char(idx)//" intersections at level "//to_char(k))

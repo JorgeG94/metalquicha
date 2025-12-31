@@ -280,7 +280,7 @@ contains
       monomers = [1, 2]
       allocate (polymers(2, 1))
 
-      call generate_intersections(sys_geom, monomers, polymers, 2, &
+      call generate_intersections(sys_geom, monomers, polymers, 2, 999, &
                                   intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 0 intersections
@@ -323,7 +323,7 @@ contains
       monomers = [1, 2]
       allocate (polymers(2, 1))
 
-      call generate_intersections(sys_geom, monomers, polymers, 2, &
+      call generate_intersections(sys_geom, monomers, polymers, 2, 999, &
                                   intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 1 intersection
@@ -395,7 +395,7 @@ contains
       monomers = [1, 2, 3]
       allocate (polymers(3, 1))
 
-      call generate_intersections(sys_geom, monomers, polymers, 3, &
+      call generate_intersections(sys_geom, monomers, polymers, 3, 999, &
                                   intersections, intersection_sets, intersection_levels, n_intersections)
 
       ! Should have 2 intersections: (1,2) and (2,3)

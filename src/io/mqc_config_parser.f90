@@ -104,6 +104,7 @@ module mqc_config_parser
       character(len=:), allocatable :: frag_method  !! MBE, etc.
       integer :: frag_level = 1
       logical :: allow_overlapping_fragments = .false.
+      integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric
@@ -605,6 +606,8 @@ contains
                read (value, *, iostat=io_stat) config%frag_level
             case ('allow_overlapping_fragments')
                config%allow_overlapping_fragments = (trim(value) == 'true')
+            case ('max_intersection_level')
+               read (value, *, iostat=io_stat) config%max_intersection_level
             case ('embedding')
                config%embedding = trim(value)
             case ('cutoff_method')
