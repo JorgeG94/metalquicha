@@ -9,7 +9,7 @@ module mqc_mbe_io
    implicit none
    private
    public :: print_fragment_xyz, print_detailed_breakdown, print_detailed_breakdown_json
-   public :: print_unfragmented_json, print_gmbe_json
+   public :: print_unfragmented_json, print_gmbe_json, print_gmbe_pie_json
 
 contains
 
@@ -520,5 +520,91 @@ contains
       call logger%info("GMBE JSON output written successfully to "//trim(output_file))
 
    end subroutine print_gmbe_json
+
+   subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)
+      !! Write GMBE PIE calculation results to output JSON file
+      !! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
+      integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
+      integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
+      real(dp), intent(in) :: pie_energies(:)  !! Raw energy for each term
+      integer, intent(in) :: n_pie_terms
+      real(dp), intent(in) :: total_energy
+
+      integer :: i, j, max_atoms, n_atoms
+      integer :: unit, io_stat
+      character(len=512) :: json_line
+      character(len=256) :: output_file, basename
+
+      output_file = get_output_json_filename()
+      basename = get_basename()
+
+      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         return
+      end if
+
+      call logger%info("Writing GMBE PIE JSON output to "//trim(output_file))
+
+      write (unit, '(a)') "{"
+      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
+      write (unit, '(a)') trim(json_line)
+
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (unit, '(a)') trim(json_line)
+
+      ! PIE terms section
+      write (unit, '(a)') '    "pie_terms": {'
+      write (json_line, '(a,i0,a)') '      "count": ', n_pie_terms, ','
+      write (unit, '(a)') trim(json_line)
+      write (unit, '(a)') '      "terms": ['
+
+      max_atoms = size(pie_atom_sets, 1)
+
+      do i = 1, n_pie_terms
+         write (unit, '(a)') '        {'
+
+         ! Extract atom list size
+         n_atoms = 0
+         do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, i) >= 0)
+            n_atoms = n_atoms + 1
+         end do
+
+         ! Write atom indices
+         json_line = '          "atom_indices": ['
+         do j = 1, n_atoms
+            if (j > 1) then
+               write (json_line, '(a,a,i0)') trim(json_line), ', ', pie_atom_sets(j, i)
+            else
+               write (json_line, '(a,i0)') trim(json_line), pie_atom_sets(j, i)
+            end if
+         end do
+         write (json_line, '(a,a)') trim(json_line), '],'
+         write (unit, '(a)') trim(json_line)
+
+         write (json_line, '(a,i0,a)') '          "coefficient": ', pie_coefficients(i), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f20.10,a)') '          "energy": ', pie_energies(i), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f20.10)') '          "weighted_energy": ', &
+            real(pie_coefficients(i), dp)*pie_energies(i)
+         write (unit, '(a)') trim(json_line)
+
+         if (i < n_pie_terms) then
+            write (unit, '(a)') '        },'
+         else
+            write (unit, '(a)') '        }'
+         end if
+      end do
+
+      write (unit, '(a)') '      ]'
+      write (unit, '(a)') '    }'
+      write (unit, '(a)') '  }'
+      write (unit, '(a)') '}'
+
+      close (unit)
+      call logger%info("GMBE PIE JSON output written successfully to "//trim(output_file))
+
+   end subroutine print_gmbe_pie_json
 
 end module mqc_mbe_io

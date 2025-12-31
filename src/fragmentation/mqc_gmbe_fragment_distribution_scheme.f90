@@ -16,7 +16,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_config_parser, only: bond_t
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
-   use mqc_mbe_io, only: print_gmbe_json
+   use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json
    implicit none
    private
 
@@ -459,12 +459,14 @@ contains
       integer :: i, n_atoms, max_atoms
       integer, allocatable :: atom_list(:)
       real(dp) :: total_energy, term_energy
+      real(dp), allocatable :: pie_energies(:)  !! Store individual energies for JSON output
       integer :: coeff
 
       call logger%info("Processing "//to_char(n_pie_terms)//" unique PIE terms...")
 
       total_energy = 0.0_dp
       max_atoms = size(pie_atom_sets, 1)
+      allocate (pie_energies(n_pie_terms))
 
       do i = 1, n_pie_terms
          coeff = pie_coefficients(i)
@@ -490,6 +492,9 @@ contains
          call do_fragment_work(i, result, method, phys_frag, calc_type)
          term_energy = result%energy%total()
 
+         ! Store energy for JSON output
+         pie_energies(i) = term_energy
+
          ! Accumulate with PIE coefficient
          total_energy = total_energy + real(coeff, dp)*term_energy
 
@@ -502,9 +507,14 @@ contains
       end do
 
       call logger%info(" ")
-      call logger%info("GMBE PIE Energy Calculation:")
-      call logger%info("  Total GMBE energy: "//to_char(total_energy)//" Hartree")
+      call logger%info("GMBE PIE calculation completed successfully")
+      call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
       call logger%info(" ")
+
+      ! Write JSON output
+      call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)
+
+      deallocate (pie_energies)
 
    end subroutine serial_gmbe_pie_processor
 
