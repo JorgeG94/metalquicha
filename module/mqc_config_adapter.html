@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.1% of total for modules and submodules.">268 statements</a>
+                 title=" 4.4% of total for modules and submodules.">270 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -204,11 +204,11 @@ Check for overlapping fragments (for testing)</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -747,7 +747,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments"></span>
               logical,
             </td>
               <td>public</td>
@@ -764,7 +764,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~12"></span>
+              <span class="anchor" id="variable-calc_type~4"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -781,7 +781,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~8"></span>
+              <span class="anchor" id="variable-max_intersection_level"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_intersection_level</strong></td>
+<td> =</td>
+                <td>999</td>
+            <td>
+<p>Maximum k-way intersection depth for GMBE (default: no limit)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~4"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -929,7 +946,7 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~15"></span>
+              <span class="anchor" id="variable-error~4"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -971,7 +988,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config~2"></span>
+              <span class="anchor" id="variable-mqc_config"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1044,7 +1061,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config~3"></span>
+              <span class="anchor" id="variable-mqc_config~2"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1059,7 +1076,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~13"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1074,7 +1091,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~12"></span>
+              <span class="anchor" id="variable-error"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1130,7 +1147,7 @@ Deprecated: use config_to_system_geometry instead</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~4"></span>
+              <span class="anchor" id="variable-geom~2"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -1145,7 +1162,7 @@ Deprecated: use config_to_system_geometry instead</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~17"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1201,7 +1218,7 @@ Supports both identical and variable-sized fragments</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_config~4"></span>
+              <span class="anchor" id="variable-mqc_config~3"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1216,7 +1233,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~15"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1246,7 +1263,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~13"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1287,7 +1304,7 @@ Treats entire system as a single monomer</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~3"></span>
+              <span class="anchor" id="variable-geom"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(in)</td>
@@ -1302,7 +1319,7 @@ Treats entire system as a single monomer</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~14"></span>
+              <span class="anchor" id="variable-sys_geom~5"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1358,7 +1375,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~3"></span>
+              <span class="anchor" id="variable-mol"></span>
               type(<a href='../type/molecule_t.html'>molecule_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1373,7 +1390,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1418,7 +1435,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~14"></span>
+              <span class="anchor" id="variable-error~3"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1461,7 +1478,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

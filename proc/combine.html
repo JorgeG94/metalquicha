@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">8 statements</a>
+                 title=" 0.1% of total for procedures.">8 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -172,7 +172,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private recursive subroutine combine(arr, n, r, out_array, count)  
+    <h2>public recursive subroutine combine(arr, n, r, out_array, count)  
 </h2>
     
 
@@ -253,7 +253,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~2"></span>
+              <span class="anchor" id="variable-count~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -422,16 +422,16 @@ large graphs.</div>
 <g id="proc~~combine~~CalledByGraph_node2" class="node">
 <title>proc~generate_fragment_list</title>
 <g id="a_proc~~combine~~CalledByGraph_node2"><a xlink:href="../proc/generate_fragment_list.html" xlink:title="generate_fragment_list">
-<polygon fill="#d9534f" stroke="#d9534f" points="778,-44 642,-44 642,-20 778,-20 778,-44"/>
-<text text-anchor="middle" x="710" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_fragment_list</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="778,-24 642,-24 642,0 778,0 778,-24"/>
+<text text-anchor="middle" x="710" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_fragment_list</text>
 </a>
 </g>
 </g>
 <!-- proc~generate_fragment_list&#45;&gt;proc~combine -->
 <g id="proc~~combine~~CalledByGraph_edge1" class="edge">
 <title>proc~generate_fragment_list&#45;&gt;proc~combine</title>
-<path fill="none" stroke="#ff0000" d="M778.29,-32C786.99,-32 795.65,-32 803.67,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="803.79,-35.5 813.79,-32 803.79,-28.5 803.79,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M778.29,-22.23C786.99,-23.56 795.65,-24.88 803.67,-26.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="803.38,-29.59 813.79,-27.63 804.43,-22.67 803.38,-29.59"/>
 </g>
 <!-- proc~run_fragmented_calculation -->
 <g id="proc~~combine~~CalledByGraph_node3" class="node">
@@ -442,11 +442,17 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_fragment_list -->
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~combine -->
 <g id="proc~~combine~~CalledByGraph_edge2" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~combine</title>
+<path fill="none" stroke="#ff0000" d="M606.24,-32.8C655.8,-33.17 720.58,-33.45 778,-33 786.36,-32.94 795.33,-32.82 803.84,-32.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="803.98,-36.2 813.92,-32.54 803.87,-29.2 803.98,-36.2"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~generate_fragment_list -->
+<g id="proc~~combine~~CalledByGraph_edge3" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~generate_fragment_list</title>
-<path fill="none" stroke="#ff0000" d="M606.25,-32C614.73,-32 623.33,-32 631.77,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="631.96,-35.5 641.96,-32 631.96,-28.5 631.96,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M606.25,-23.2C614.73,-22.27 623.33,-21.34 631.77,-20.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="632.39,-23.87 641.96,-19.31 631.63,-16.91 632.39,-23.87"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~combine~~CalledByGraph_node4" class="node">
@@ -458,10 +464,10 @@ large graphs.</div>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~combine~~CalledByGraph_edge3" class="edge">
+<g id="proc~~combine~~CalledByGraph_edge4" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
+<path fill="none" stroke="#00ffff" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
 <g id="proc~~combine~~CalledByGraph_node5" class="node">
@@ -473,7 +479,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~combine~~CalledByGraph_edge4" class="edge">
+<g id="proc~~combine~~CalledByGraph_edge5" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
@@ -488,13 +494,13 @@ large graphs.</div>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~combine~~CalledByGraph_edge5" class="edge">
+<g id="proc~~combine~~CalledByGraph_edge6" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~combine~~CalledByGraph_edge6" class="edge">
+<g id="proc~~combine~~CalledByGraph_edge7" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
 <path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
@@ -667,7 +673,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

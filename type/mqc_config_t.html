@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p>14.2% of total for derived types.</p>Including implementation: 61 statements,  8.4% of total for derived types.">33 statements</a>
+                 title="<p>14.5% of total for derived types.</p>Including implementation: 62 statements,  8.5% of total for derived types.">34 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/mqc_config_t.html#variable-allow_overlapping_fragments~3">allow_overlapping_fragments</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-allow_overlapping_fragments~2">allow_overlapping_fragments</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-aux_basis">aux_basis</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-basis">basis</a>
-            <a class="list-group-item" href="../type/mqc_config_t.html#variable-bonds~9">bonds</a>
-            <a class="list-group-item" href="../type/mqc_config_t.html#variable-calc_type~13">calc_type</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-bonds~5">bonds</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-calc_type~5">calc_type</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-charge~3">charge</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-cutoff_method">cutoff_method</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-dimer_cutoff">dimer_cutoff</a>
@@ -152,13 +152,14 @@
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-geometry~2">geometry</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-index_base">index_base</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-log_level">log_level</a>
-            <a class="list-group-item" href="../type/mqc_config_t.html#variable-method~9">method</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-max_intersection_level~2">max_intersection_level</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-method~5">method</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-molecules">molecules</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-multiplicity~3">multiplicity</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-nbonds~2">nbonds</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-nbroken~2">nbroken</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-nfrag~3">nfrag</a>
-            <a class="list-group-item" href="../type/mqc_config_t.html#variable-nmol~2">nmol</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#variable-nmol">nmol</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-scf_maxiter">scf_maxiter</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-scf_tolerance">scf_tolerance</a>
             <a class="list-group-item" href="../type/mqc_config_t.html#variable-schema_name">schema_name</a>
@@ -191,7 +192,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/mqc_config_t.html#boundprocedure-destroy~10">destroy</a>
+            <a class="list-group-item" href="../type/mqc_config_t.html#boundprocedure-destroy~7">destroy</a>
         </div>
       </div>
     </div>
@@ -391,7 +392,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~3"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -442,7 +443,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='bond_t.html'>bond_t</a>),
             </td>
               <td>public,</td>
@@ -459,7 +460,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~13"></span>
+              <span class="anchor" id="variable-calc_type~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -663,7 +664,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~9"></span>
+              <span class="anchor" id="variable-max_intersection_level~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_intersection_level</strong></td>
+<td> =</td>
+                <td>999</td>
+            <td>
+                <p>Maximum k-way intersection depth for GMBE (default: no limit)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -765,7 +783,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nmol~2"></span>
+              <span class="anchor" id="variable-nmol"></span>
               integer,
             </td>
               <td>public</td>
@@ -895,7 +913,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~10"></span>
+      <span class="anchor" id="boundprocedure-destroy~7"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_destroy.html'>config_destroy</a>
@@ -996,6 +1014,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_method</span><span class="w">  </span><span class="c">!! MBE, etc.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">999</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE (default: no limit)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">embedding</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cutoff_method</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">distance_metric</span>
@@ -1030,7 +1049,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

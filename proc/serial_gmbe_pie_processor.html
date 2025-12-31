@@ -1,0 +1,1434 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>serial_gmbe_pie_processor &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>serial_gmbe_pie_processor
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.8% of total for procedures.">44 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_fragment_distribution_scheme.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">serial_gmbe_pie_processor</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-atom_list">atom_list</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-coeff">coeff</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-i~10">i</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-max_atoms~2">max_atoms</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-n_atoms~2">n_atoms</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-phys_frag~3">phys_frag</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-pie_energies~2">pie_energies</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-result~6">result</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-term_energy">term_energy</a>
+            <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#variable-total_energy~6">total_energy</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/serial_gmbe_pie_processor.html#src">serial_gmbe_pie_processor</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds)  
+</h2>
+    
+
+    <p>Serial GMBE processor using PIE coefficients
+Evaluates each unique atom set once and sums with PIE coefficients</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+                <p>Unique atom sets (max_atoms, n_pie_terms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_coefficients~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_coefficients</strong>(:)</td>
+            <td>
+                <p>PIE coefficient for each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~3"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~3"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calc_type~3"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calc_type</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~3"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~serial_gmbe_pie_processor~~CallsGraph Pages: 1 -->
+<svg id="procserial_gmbe_pie_processorCallsGraph" width="641pt" height="375pt"
+ viewBox="0.00 0.00 641.00 375.33" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph" class="graph" transform="scale(0.54 0.54) rotate(0) translate(4 688.11)">
+<title>proc~~serial_gmbe_pie_processor~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-688.11 1178,-688.11 1178,4 -4,4"/>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node1" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<polygon fill="none" stroke="black" points="157,-290 0,-290 0,-266 157,-266 157,-290"/>
+<text text-anchor="middle" x="78.5" y="-275.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_gmbe_pie_processor</text>
+</g>
+<!-- info -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="897.5,-684 843.5,-684 843.5,-660 897.5,-660 897.5,-684"/>
+<text text-anchor="middle" x="870.5" y="-669.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;info -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge1" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M82,-290.27C90.57,-329.53 122.25,-453.79 193,-526 371.8,-708.5 720.31,-688.55 833.24,-676.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="833.87,-680.01 843.42,-675.43 833.1,-673.05 833.87,-680.01"/>
+</g>
+<!-- proc~build_fragment_from_atom_list -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node3" class="node">
+<title>proc~build_fragment_from_atom_list</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node3"><a xlink:href="../proc/build_fragment_from_atom_list.html" xlink:title="build_fragment_from_atom_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="393,-310 216,-310 216,-286 393,-286 393,-310"/>
+<text text-anchor="middle" x="304.5" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~build_fragment_from_atom_list -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge2" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~build_fragment_from_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M157.22,-284.94C172.91,-286.34 189.6,-287.83 205.88,-289.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="205.68,-292.78 215.95,-290.18 206.3,-285.81 205.68,-292.78"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node4" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node4"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="360.5,-436 248.5,-436 248.5,-412 360.5,-412 360.5,-436"/>
+<text text-anchor="middle" x="304.5" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge3" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M98.21,-290.2C137.84,-316.03 230.36,-376.33 276.43,-406.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="274.71,-409.41 285,-411.94 278.53,-403.55 274.71,-409.41"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node5" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node5"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="938.5,-276 802.5,-276 802.5,-252 938.5,-252 938.5,-276"/>
+<text text-anchor="middle" x="870.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~energy_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge4" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0000" d="M110.74,-265.96C133.23,-257.95 164.51,-248.18 193,-244 423.87,-210.16 485.17,-228.7 718,-244 742.21,-245.59 768.45,-248.6 792.18,-251.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="791.8,-255.28 802.19,-253.19 792.76,-248.35 791.8,-255.28"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node6" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node6"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="416,-192 193,-192 193,-168 416,-168 416,-192"/>
+<text text-anchor="middle" x="304.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge5" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M94.73,-265.97C115.69,-249.98 155.14,-221.93 193,-206 203.54,-201.57 214.97,-197.81 226.36,-194.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="227.55,-197.95 236.33,-192.02 225.77,-191.18 227.55,-197.95"/>
+</g>
+<!-- proc~print_gmbe_pie_json -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node7" class="node">
+<title>proc~print_gmbe_pie_json</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node7"><a xlink:href="../proc/print_gmbe_pie_json.html" xlink:title="print_gmbe_pie_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="646,-642 524,-642 524,-618 646,-618 646,-642"/>
+<text text-anchor="middle" x="585" y="-627.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_gmbe_pie_json</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~print_gmbe_pie_json -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge6" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~print_gmbe_pie_json</title>
+<path fill="none" stroke="#ff0000" d="M85.39,-290.27C100.09,-319.89 140.97,-396.45 193,-445 290.42,-535.91 328.76,-545.35 452,-596 471.56,-604.04 493.55,-610.61 513.9,-615.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="513.18,-619.19 523.73,-618.17 514.85,-612.39 513.18,-619.19"/>
+</g>
+<!-- to_char -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node8" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="897.5,-352 843.5,-352 843.5,-328 897.5,-328 897.5,-352"/>
+<text text-anchor="middle" x="870.5" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;to_char -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge7" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M157.12,-268.11C278.27,-254.86 519.07,-237.29 718,-277 761.86,-285.76 808.91,-307.47 838.73,-322.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="837.31,-326.16 847.79,-327.74 840.58,-319.97 837.31,-326.16"/>
+</g>
+<!-- verbose -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node9" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="332,-150 277,-150 277,-126 332,-126 332,-150"/>
+<text text-anchor="middle" x="304.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;verbose -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge8" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;verbose</title>
+<path fill="none" stroke="#ff0000" d="M87.18,-265.86C103.43,-241.29 143.85,-185.75 193,-159 215.65,-146.67 244.35,-141.47 266.82,-139.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="267.28,-142.81 276.97,-138.53 266.73,-135.83 267.28,-142.81"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node14" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node14"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="653.5,-352 516.5,-352 516.5,-328 653.5,-328 653.5,-352"/>
+<text text-anchor="middle" x="585" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge9" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#ffbf00" d="M385.31,-310.04C423.37,-315.78 468.74,-322.62 506.5,-328.31"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="506.03,-331.78 516.44,-329.81 507.07,-324.86 506.03,-331.78"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node16" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node16"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="718,-310 452,-310 452,-286 718,-286 718,-310"/>
+<text text-anchor="middle" x="585" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ffbf00" d="M393.24,-298C408.69,-298 425.12,-298 441.61,-298"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="441.88,-301.5 451.88,-298 441.88,-294.5 441.88,-301.5"/>
+</g>
+<!-- configuration -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node10" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="627,-520 543,-520 543,-496 627,-496 627,-520"/>
+<text text-anchor="middle" x="585" y="-505.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge11" class="edge">
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#7fff00" d="M328.69,-436.12C357.02,-450.42 406.79,-473.9 452,-487 478.13,-494.57 508.02,-499.61 532.74,-502.85"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="532.63,-506.37 542.99,-504.13 533.5,-499.42 532.63,-506.37"/>
+</g>
+<!-- error -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node11" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="897.5,-558 843.5,-558 843.5,-534 897.5,-534 897.5,-558"/>
+<text text-anchor="middle" x="870.5" y="-543.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;error -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge12" class="edge">
+<title>proc~do_fragment_work&#45;&gt;error</title>
+<path fill="none" stroke="#7fff00" d="M318.23,-436.29C338.94,-456.33 381.11,-497.4 416,-533 432.28,-549.62 430.63,-561.81 452,-571 560.6,-617.71 600.17,-580.66 718,-571 739.8,-569.21 795.89,-559.45 833.36,-552.66"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="834.18,-556.07 843.39,-550.84 832.92,-549.19 834.18,-556.07"/>
+</g>
+<!-- proc~calc_type_to_string -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node13" class="node">
+<title>proc~calc_type_to_string</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node13"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="642,-478 528,-478 528,-454 642,-454 642,-478"/>
+<text text-anchor="middle" x="585" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge13" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#7fff00" d="M360.52,-432.3C405.66,-439.11 469.71,-448.76 517.68,-456"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="517.25,-459.47 527.66,-457.5 518.29,-452.55 517.25,-459.47"/>
+</g>
+<!-- proc~energy_reset -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node15" class="node">
+<title>proc~energy_reset</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node15"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="654,-436 516,-436 516,-412 654,-412 654,-436"/>
+<text text-anchor="middle" x="585" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~energy_reset -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge14" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~energy_reset</title>
+<path fill="none" stroke="#7fff00" d="M360.52,-424C401.94,-424 459.27,-424 505.49,-424"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="505.78,-427.5 515.78,-424 505.78,-420.5 505.78,-427.5"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node19" class="node">
+<title>proc~method_type_to_string</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node19"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="651.5,-394 518.5,-394 518.5,-370 651.5,-370 651.5,-394"/>
+<text text-anchor="middle" x="585" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~method_type_to_string -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge15" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~method_type_to_string</title>
+<path fill="none" stroke="#7fff00" d="M360.52,-415.7C402.76,-409.33 461.56,-400.46 508.24,-393.42"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="508.95,-396.86 518.31,-391.91 507.9,-389.94 508.95,-396.86"/>
+</g>
+<!-- proc~print_fragment_xyz -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node21" class="node">
+<title>proc~print_fragment_xyz</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node21"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
+<polygon fill="#d9534f" stroke="#d9534f" points="642.5,-562 527.5,-562 527.5,-538 642.5,-538 642.5,-562"/>
+<text text-anchor="middle" x="585" y="-547.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge16" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#7fff00" d="M317.97,-436.13C341.81,-458.52 396.43,-506.17 452,-529 472.38,-537.37 495.81,-542.42 517.21,-545.47"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="516.84,-548.95 527.21,-546.76 517.74,-542.01 516.84,-548.95"/>
+</g>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node22" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node22"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="675.5,-192 494.5,-192 494.5,-168 675.5,-168 675.5,-192"/>
+<text text-anchor="middle" x="585" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge17" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#7fff00" d="M319.19,-411.82C340.51,-392.68 382.64,-354.11 416,-319 432.93,-301.18 433.98,-293.72 452,-277 485.3,-246.11 528.43,-216.01 556.16,-197.73"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="558.13,-200.63 564.59,-192.23 554.3,-194.76 558.13,-200.63"/>
+</g>
+<!-- proc~xtb_calc_gradient -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node23" class="node">
+<title>proc~xtb_calc_gradient</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node23"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="679,-150 491,-150 491,-126 679,-126 679,-150"/>
+<text text-anchor="middle" x="585" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge18" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#7fff00" d="M323.97,-411.81C348.91,-394.34 392.88,-359.74 416,-319 451.97,-255.61 398.85,-208.88 452,-159 460.38,-151.14 470.45,-145.53 481.25,-141.61"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="482.41,-144.91 490.9,-138.57 480.31,-138.23 482.41,-144.91"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node20" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node20"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1174,-276 1023,-276 1023,-252 1174,-252 1174,-276"/>
+<text text-anchor="middle" x="1098.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge19" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#00ff3f" d="M938.7,-264C961.81,-264 988,-264 1012.35,-264"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="1012.65,-267.5 1022.65,-264 1012.65,-260.5 1012.65,-267.5"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node12" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node12"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="699.5,-66 470.5,-66 470.5,-42 699.5,-42 699.5,-66"/>
+<text text-anchor="middle" x="585" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge20" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#00ffff" d="M396.58,-167.94C403.36,-165.47 409.92,-162.52 416,-159 437.27,-146.68 432.48,-131.95 452,-117 478.48,-96.71 512.54,-80.66 539.43,-69.83"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="540.96,-72.99 548.99,-66.08 538.4,-66.48 540.96,-72.99"/>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;info -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge22" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;info</title>
+<path fill="none" stroke="#003fff" d="M646.12,-638.91C702.79,-647.3 785.85,-659.61 833.09,-666.61"/>
+<polygon fill="#003fff" stroke="#003fff" points="832.77,-670.1 843.17,-668.1 833.79,-663.17 832.77,-670.1"/>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;error -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge21" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;error</title>
+<path fill="none" stroke="#003fff" d="M646.1,-625.89C669.61,-622.35 696.13,-615.86 718,-604 738.17,-593.06 733.75,-577.79 754,-567 778.44,-553.98 809.48,-548.86 833.23,-546.93"/>
+<polygon fill="#003fff" stroke="#003fff" points="833.5,-550.42 843.24,-546.27 833.03,-543.44 833.5,-550.42"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node17" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node17"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="916,-642 825,-642 825,-618 916,-618 916,-642"/>
+<text text-anchor="middle" x="870.5" y="-627.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_basename -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge23" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#003fff" d="M646.12,-630C695.94,-630 766.17,-630 814.51,-630"/>
+<polygon fill="#003fff" stroke="#003fff" points="814.78,-633.5 824.78,-630 814.78,-626.5 814.78,-633.5"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node18" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node18"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="945,-600 796,-600 796,-576 945,-576 945,-600"/>
+<text text-anchor="middle" x="870.5" y="-585.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge24" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#003fff" d="M646.12,-621.09C686.77,-615.07 741,-607.04 785.85,-600.39"/>
+<polygon fill="#003fff" stroke="#003fff" points="786.48,-603.84 795.86,-598.91 785.45,-596.91 786.48,-603.84"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node28" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node28"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="987,-24 754,-24 754,0 987,0 987,-24"/>
+<text text-anchor="middle" x="870.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge25" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffda00" d="M667.24,-41.96C701.94,-36.82 742.59,-30.8 778.31,-25.51"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="778.87,-28.97 788.25,-24.04 777.84,-22.04 778.87,-28.97"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge28" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#48ff00" d="M653.55,-340C709.8,-340 787.76,-340 832.99,-340"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="833.21,-343.5 843.21,-340 833.21,-336.5 833.21,-343.5"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge26" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#48ff00" d="M653.82,-336.09C676.81,-338.26 700.95,-344.92 718,-361 772.28,-412.21 700.29,-473.2 754,-525 774.76,-545.02 807.86,-549.32 833.31,-549.17"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="833.45,-552.67 843.35,-548.88 833.25,-545.67 833.45,-552.67"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node29" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node29"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="952,-394 789,-394 789,-370 952,-370 952,-394"/>
+<text text-anchor="middle" x="870.5" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge27" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#48ff00" d="M653.55,-350.01C691.07,-355.57 738.25,-362.56 778.94,-368.58"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="778.45,-372.05 788.86,-370.05 779.48,-365.13 778.45,-372.05"/>
+</g>
+<!-- proc~mp2_reset -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node30" class="node">
+<title>proc~mp2_reset</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node30"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="947.5,-436 793.5,-436 793.5,-412 947.5,-412 947.5,-436"/>
+<text text-anchor="middle" x="870.5" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge29" class="edge">
+<title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
+<path fill="none" stroke="#00ff24" d="M654.27,-424C693.01,-424 741.89,-424 783.27,-424"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="783.34,-427.5 793.34,-424 783.34,-420.5 783.34,-427.5"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;info -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge30" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;info</title>
+<path fill="none" stroke="#b600ff" d="M624.52,-562.1C652.21,-571.97 689.54,-587.75 718,-609 737.7,-623.71 732.68,-638.76 754,-651 778.17,-664.87 809.48,-669.92 833.4,-671.61"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="833.32,-675.11 843.49,-672.15 833.7,-668.12 833.32,-675.11"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;to_char -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge33" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;to_char</title>
+<path fill="none" stroke="#b600ff" d="M642.73,-554.68C668.78,-553.72 698.21,-547.76 718,-529 773.42,-476.46 699.17,-414.15 754,-361 774.71,-340.93 807.81,-336.63 833.28,-336.8"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="833.22,-340.3 843.32,-337.09 833.43,-333.3 833.22,-340.3"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge31" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#b600ff" d="M642.52,-554.08C668.36,-552.94 697.68,-547.01 718,-529 761.59,-490.37 710.84,-442.11 754,-403 761.36,-396.33 770.11,-391.44 779.45,-387.89"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="780.54,-391.21 788.95,-384.77 778.36,-384.56 780.54,-391.21"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node31" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node31"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="910,-516 831,-516 831,-492 910,-492 910,-516"/>
+<text text-anchor="middle" x="870.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~to_angstrom -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge32" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#b600ff" d="M642.54,-541.08C665.9,-537.37 693.26,-533.01 718,-529 752.37,-523.43 791.1,-517.04 820.8,-512.11"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="821.61,-515.52 830.9,-510.43 820.47,-508.62 821.61,-515.52"/>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~energy_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge38" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff00da" d="M675.55,-190C690.27,-193.77 704.96,-198.93 718,-206 738.17,-216.94 733.75,-232.21 754,-243 765.75,-249.26 779.03,-253.69 792.29,-256.82"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="791.89,-260.32 802.4,-258.97 793.35,-253.47 791.89,-260.32"/>
+</g>
+<!-- new -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node24" class="node">
+<title>new</title>
+<polygon fill="#777777" stroke="#777777" points="897.5,-234 843.5,-234 843.5,-210 897.5,-210 897.5,-234"/>
+<text text-anchor="middle" x="870.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge34" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new</title>
+<path fill="none" stroke="#ff00da" d="M667.24,-192.04C722.14,-200.17 791.96,-210.51 833.56,-216.68"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="833.09,-220.14 843.5,-218.15 834.12,-213.22 833.09,-220.14"/>
+</g>
+<!-- new_gfn1_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node25" class="node">
+<title>new_gfn1_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="931.5,-192 809.5,-192 809.5,-168 931.5,-168 931.5,-192"/>
+<text text-anchor="middle" x="870.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge35" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#ff00da" d="M675.7,-180C715.59,-180 761.86,-180 799.19,-180"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="799.46,-183.5 809.46,-180 799.46,-176.5 799.46,-183.5"/>
+</g>
+<!-- new_gfn2_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node26" class="node">
+<title>new_gfn2_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="931.5,-150 809.5,-150 809.5,-126 931.5,-126 931.5,-150"/>
+<text text-anchor="middle" x="870.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge36" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator</title>
+<path fill="none" stroke="#ff00da" d="M667.24,-167.96C709.02,-161.77 759.44,-154.31 799.48,-148.37"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="800.05,-151.83 809.43,-146.9 799.02,-144.9 800.05,-151.83"/>
+</g>
+<!-- new_wavefunction -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node27" class="node">
+<title>new_wavefunction</title>
+<polygon fill="#777777" stroke="#777777" points="926,-108 815,-108 815,-84 926,-84 926,-108"/>
+<text text-anchor="middle" x="870.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;new_wavefunction -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge37" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;new_wavefunction</title>
+<path fill="none" stroke="#ff00da" d="M675.5,-174.51C690.31,-171.19 705.04,-166.25 718,-159 739.46,-147 732.68,-129.24 754,-117 769.29,-108.22 787.44,-102.98 804.77,-99.88"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="805.51,-103.31 814.85,-98.3 804.43,-96.4 805.51,-103.31"/>
+</g>
+<!-- xtb_singlepoint -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node32" class="node">
+<title>xtb_singlepoint</title>
+<polygon fill="#777777" stroke="#777777" points="917,-66 824,-66 824,-42 917,-42 917,-66"/>
+<text text-anchor="middle" x="870.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;xtb_singlepoint -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge39" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;xtb_singlepoint</title>
+<path fill="none" stroke="#ff00da" d="M675.55,-178.19C690.85,-174.55 705.74,-168.55 718,-159 750.04,-134.04 722.24,-100.31 754,-75 770.78,-61.63 793.29,-55.7 813.98,-53.36"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="814.3,-56.85 823.96,-52.48 813.69,-49.87 814.3,-56.85"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;proc~energy_total -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge44" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff006d" d="M679.31,-140.76C693.28,-144.46 706.74,-150.23 718,-159 750.04,-183.96 722.24,-217.69 754,-243 765.03,-251.79 778.54,-257.36 792.38,-260.81"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="791.97,-264.31 802.48,-262.97 793.43,-257.46 791.97,-264.31"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge40" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new</title>
+<path fill="none" stroke="#ff006d" d="M679.32,-144.38C692.83,-147.68 706.15,-152.37 718,-159 739.46,-171 732.68,-188.76 754,-201 778.17,-214.87 809.48,-219.92 833.4,-221.61"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="833.32,-225.11 843.49,-222.15 833.7,-218.12 833.32,-225.11"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge41" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#ff006d" d="M667.24,-150.04C709.02,-156.23 759.44,-163.69 799.48,-169.63"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="799.02,-173.1 809.43,-171.1 800.05,-166.17 799.02,-173.1"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge42" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator</title>
+<path fill="none" stroke="#ff006d" d="M679.22,-138C718.15,-138 762.62,-138 798.78,-138"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="799.24,-141.5 809.24,-138 799.24,-134.5 799.24,-141.5"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_wavefunction -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge43" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_wavefunction</title>
+<path fill="none" stroke="#ff006d" d="M667.24,-125.96C710.83,-119.51 763.82,-111.66 804.63,-105.61"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="805.35,-109.04 814.73,-104.11 804.32,-102.12 805.35,-109.04"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge45" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint</title>
+<path fill="none" stroke="#ff006d" d="M613.44,-125.97C646.29,-111.98 703.25,-89.01 754,-75 773.23,-69.69 794.65,-65.37 813.76,-62.06"/>
+<polygon fill="#ff006d" stroke="#ff006d" points="814.54,-65.48 823.82,-60.37 813.38,-58.58 814.54,-65.48"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_node33" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CallsGraph_node33"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1169.5,-24 1027.5,-24 1027.5,0 1169.5,0 1169.5,-24"/>
+<text text-anchor="middle" x="1098.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~serial_gmbe_pie_processor~~CallsGraph_edge46" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#00ffa9" d="M987.15,-12C997.3,-12 1007.43,-12 1017.2,-12"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="1017.24,-15.5 1027.24,-12 1017.24,-8.5 1017.24,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocserial_gmbe_pie_processorCallsGraph = svgPanZoom('#procserial_gmbe_pie_processorCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~serial_gmbe_pie_processor~~CalledByGraph Pages: 1 -->
+<svg id="procserial_gmbe_pie_processorCalledByGraph" width="641pt" height="41pt"
+ viewBox="0.00 0.00 641.00 41.30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph" class="graph" transform="scale(0.79 0.79) rotate(0) translate(4 48)">
+<title>proc~~serial_gmbe_pie_processor~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-48 803,-48 803,4 -4,4"/>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_node1" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<polygon fill="none" stroke="black" points="799,-44 642,-44 642,-20 799,-20 799,-44"/>
+<text text-anchor="middle" x="720.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_gmbe_pie_processor</text>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_node2" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CalledByGraph_node2"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-44 443,-44 443,-20 606,-20 606,-44"/>
+<text text-anchor="middle" x="524.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_edge1" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#ff0000" d="M606.09,-32C614.62,-32 623.32,-32 631.93,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="631.97,-35.5 641.97,-32 631.97,-28.5 631.97,-35.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_node3" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-44 313,-44 313,-20 407,-20 407,-44"/>
+<text text-anchor="middle" x="360" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_edge2" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
+</g>
+<!-- program~main -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_node5" class="node">
+<title>program~main</title>
+<g id="a_proc~~serial_gmbe_pie_processor~~CalledByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~serial_gmbe_pie_processor~~CalledByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocserial_gmbe_pie_processorCalledByGraph = svgPanZoom('#procserial_gmbe_pie_processorCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_list"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_list</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coeff"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coeff</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~10"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-phys_frag~3"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>phys_frag</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_energies~2"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pie_energies</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Store individual energies for JSON output</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~6"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~6"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">serial_gmbe_pie_processor</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Serial GMBE processor using PIE coefficients</span>
+<span class="w">      </span><span class="c">!! Evaluates each unique atom set once and sums with PIE coefficients</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Unique atom sets (max_atoms, n_pie_terms)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! PIE coefficient for each term</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">phys_frag</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<span class="k">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_list</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="n">term_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Store individual energies for JSON output</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coeff</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; unique PIE terms...&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">max_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">))</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">         </span><span class="n">coeff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! Skip terms with zero coefficient (shouldn&#39;t happen, but safety check)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">coeff</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="w">         </span><span class="c">! Extract atom list for this term</span>
+<span class="w">         </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_atoms</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">            </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end do</span>
+
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">         </span><span class="n">atom_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! Build fragment from atom list</span>
+<span class="w">         </span><span class="k">call </span><span class="n">build_fragment_from_atom_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! Compute energy</span>
+<span class="w">         </span><span class="k">call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">)</span>
+<span class="w">         </span><span class="n">term_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
+
+<span class="w">         </span><span class="c">! Store energy for JSON output</span>
+<span class="w">         </span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term_energy</span>
+
+<span class="w">         </span><span class="c">! Accumulate with PIE coefficient</span>
+<span class="w">         </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="n">term_energy</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;PIE term &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">&quot;: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; atoms, coeff=&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">coeff</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="s2">&quot;, E=&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">term_energy</span><span class="p">))</span>
+
+<span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">phys_frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE PIE calculation completed successfully&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Final GMBE energy: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_energy</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Hartree&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Write JSON output</span>
+<span class="w">      </span><span class="k">call </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">pie_energies</span><span class="p">)</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">serial_gmbe_pie_processor</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-31 16:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

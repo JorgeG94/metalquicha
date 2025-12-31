@@ -9,7 +9,7 @@ module mqc_mbe_io
    implicit none
    private
    public :: print_fragment_xyz, print_detailed_breakdown, print_detailed_breakdown_json
-   public :: print_unfragmented_json
+   public :: print_unfragmented_json, print_gmbe_json, print_gmbe_pie_json
 
 contains
 
@@ -373,5 +373,238 @@ contains
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine print_unfragmented_json
+
+   subroutine print_gmbe_json(n_monomers, monomer_indices, monomer_results, &
+                              n_intersections, intersection_results, &
+                              intersection_sets, intersection_levels, total_energy)
+      !! Write GMBE calculation results to output JSON file
+      !! Outputs structured JSON with monomers, intersections, and total energy
+      integer, intent(in) :: n_monomers
+      integer, intent(in) :: monomer_indices(:)
+      type(calculation_result_t), intent(in) :: monomer_results(:)
+      integer, intent(in) :: n_intersections
+      type(calculation_result_t), intent(in) :: intersection_results(:)
+      integer, intent(in) :: intersection_sets(:, :)  !! (n_monomers, n_intersections)
+      integer, intent(in) :: intersection_levels(:)
+      real(dp), intent(in) :: total_energy
+
+      integer :: i, j, k, max_level, unit, io_stat
+      character(len=512) :: json_line
+      character(len=256) :: output_file, basename
+      logical :: first_level, first_intersection
+      integer :: level_count
+
+      output_file = get_output_json_filename()
+      basename = get_basename()
+
+      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         return
+      end if
+
+      call logger%info("Writing GMBE JSON output to "//trim(output_file))
+
+      write (unit, '(a)') "{"
+      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
+      write (unit, '(a)') trim(json_line)
+
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (unit, '(a)') trim(json_line)
+
+      ! Monomers section
+      write (unit, '(a)') '    "monomers": {'
+      write (json_line, '(a,i0,a)') '      "count": ', n_monomers, ','
+      write (unit, '(a)') trim(json_line)
+      write (unit, '(a)') '      "fragments": ['
+
+      do i = 1, n_monomers
+         write (unit, '(a)') '        {'
+         write (json_line, '(a,i0,a)') '          "index": ', monomer_indices(i), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f20.10)') '          "energy": ', monomer_results(i)%energy%total()
+         write (unit, '(a)') trim(json_line)
+         if (i < n_monomers) then
+            write (unit, '(a)') '        },'
+         else
+            write (unit, '(a)') '        }'
+         end if
+      end do
+
+      write (unit, '(a)') '      ]'
+
+      if (n_intersections > 0) then
+         write (unit, '(a)') '    },'
+      else
+         write (unit, '(a)') '    }'
+      end if
+
+      ! Intersections section
+      if (n_intersections > 0) then
+         max_level = maxval(intersection_levels)
+
+         write (unit, '(a)') '    "intersections": {'
+         write (json_line, '(a,i0,a)') '      "total_count": ', n_intersections, ','
+         write (unit, '(a)') trim(json_line)
+         write (unit, '(a)') '      "levels": ['
+
+         first_level = .true.
+         do k = 2, max_level
+            ! Count intersections at this level
+            level_count = 0
+            do i = 1, n_intersections
+               if (intersection_levels(i) == k) level_count = level_count + 1
+            end do
+
+            if (level_count > 0) then
+               if (.not. first_level) then
+                  write (unit, '(a)') '        },'
+               end if
+               first_level = .false.
+
+               write (unit, '(a)') '        {'
+               write (json_line, '(a,i0,a)') '          "level": ', k, ','
+               write (unit, '(a)') trim(json_line)
+               write (json_line, '(a,i0,a)') '          "count": ', level_count, ','
+               write (unit, '(a)') trim(json_line)
+               write (unit, '(a)') '          "fragments": ['
+
+               first_intersection = .true.
+               do i = 1, n_intersections
+                  if (intersection_levels(i) == k) then
+                     if (.not. first_intersection) then
+                        write (unit, '(a)') '            },'
+                     end if
+                     first_intersection = .false.
+
+                     write (unit, '(a)') '            {'
+
+                     ! Write indices
+                     json_line = '              "indices": ['
+                     do j = 1, n_monomers
+                        if (intersection_sets(j, i) > 0) then
+                           if (j > 1 .and. intersection_sets(j - 1, i) > 0) then
+                              write (json_line, '(a,a,i0)') trim(json_line), ', ', intersection_sets(j, i)
+                           else
+                              write (json_line, '(a,i0)') trim(json_line), intersection_sets(j, i)
+                           end if
+                        end if
+                     end do
+                     write (json_line, '(a,a)') trim(json_line), '],'
+                     write (unit, '(a)') trim(json_line)
+
+                     write (json_line, '(a,f20.10)') '              "energy": ', intersection_results(i)%energy%total()
+                     write (unit, '(a)') trim(json_line)
+                  end if
+               end do
+
+               if (.not. first_intersection) then
+                  write (unit, '(a)') '            }'
+               end if
+               write (unit, '(a)') '          ]'
+            end if
+         end do
+
+         if (.not. first_level) then
+            write (unit, '(a)') '        }'
+         end if
+
+         write (unit, '(a)') '      ]'
+         write (unit, '(a)') '    }'
+      end if
+
+      write (unit, '(a)') '  }'
+      write (unit, '(a)') '}'
+
+      close (unit)
+      call logger%info("GMBE JSON output written successfully to "//trim(output_file))
+
+   end subroutine print_gmbe_json
+
+   subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)
+      !! Write GMBE PIE calculation results to output JSON file
+      !! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
+      integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
+      integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
+      real(dp), intent(in) :: pie_energies(:)  !! Raw energy for each term
+      integer, intent(in) :: n_pie_terms
+      real(dp), intent(in) :: total_energy
+
+      integer :: i, j, max_atoms, n_atoms
+      integer :: unit, io_stat
+      character(len=512) :: json_line
+      character(len=256) :: output_file, basename
+
+      output_file = get_output_json_filename()
+      basename = get_basename()
+
+      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         return
+      end if
+
+      call logger%info("Writing GMBE PIE JSON output to "//trim(output_file))
+
+      write (unit, '(a)') "{"
+      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
+      write (unit, '(a)') trim(json_line)
+
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (unit, '(a)') trim(json_line)
+
+      ! PIE terms section
+      write (unit, '(a)') '    "pie_terms": {'
+      write (json_line, '(a,i0,a)') '      "count": ', n_pie_terms, ','
+      write (unit, '(a)') trim(json_line)
+      write (unit, '(a)') '      "terms": ['
+
+      max_atoms = size(pie_atom_sets, 1)
+
+      do i = 1, n_pie_terms
+         write (unit, '(a)') '        {'
+
+         ! Extract atom list size
+         n_atoms = 0
+         do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, i) >= 0)
+            n_atoms = n_atoms + 1
+         end do
+
+         ! Write atom indices
+         json_line = '          "atom_indices": ['
+         do j = 1, n_atoms
+            if (j > 1) then
+               write (json_line, '(a,a,i0)') trim(json_line), ', ', pie_atom_sets(j, i)
+            else
+               write (json_line, '(a,i0)') trim(json_line), pie_atom_sets(j, i)
+            end if
+         end do
+         write (json_line, '(a,a)') trim(json_line), '],'
+         write (unit, '(a)') trim(json_line)
+
+         write (json_line, '(a,i0,a)') '          "coefficient": ', pie_coefficients(i), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f20.10,a)') '          "energy": ', pie_energies(i), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f20.10)') '          "weighted_energy": ', &
+            real(pie_coefficients(i), dp)*pie_energies(i)
+         write (unit, '(a)') trim(json_line)
+
+         if (i < n_pie_terms) then
+            write (unit, '(a)') '        },'
+         else
+            write (unit, '(a)') '        }'
+         end if
+      end do
+
+      write (unit, '(a)') '      ]'
+      write (unit, '(a)') '    }'
+      write (unit, '(a)') '  }'
+      write (unit, '(a)') '}'
+
+      close (unit)
+      call logger%info("GMBE PIE JSON output written successfully to "//trim(output_file))
+
+   end subroutine print_gmbe_pie_json
 
 end module mqc_mbe_io

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">41 statements</a>
+                 title=" 1.6% of total for procedures.">91 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,9 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-i~9">i</a>
-            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-intersection_energy">intersection_energy</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-i~33">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-k~3">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-level_counts">level_counts</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-level_energies">level_energies</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-max_level~8">max_level</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-monomer_energy">monomer_energy</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy.html#variable-sign_factor">sign_factor</a>
         </div>
       </div>
     </div>
@@ -174,7 +178,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine compute_gmbe_energy(monomers, n_monomers, monomer_results, n_intersections, intersection_results, intersection_pairs, total_energy)  
+    <h2>public  subroutine compute_gmbe_energy(monomers, n_monomers, monomer_results, n_intersections, intersection_results, intersection_sets, intersection_levels, total_energy)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -322,12 +326,18 @@ large graphs.</div>
     </div>
 
 
-    <p>Compute GMBE (Generalized Many-Body Expansion) energy with intersection correction</p>
-<p>For overlapping fragments, the GMBE formula is:
-  E_total = sum(E_monomers) - sum(E_intersections)</p>
-<p>Example for two overlapping fragments (gly0, gly1) sharing atoms [3,4,5]:
-  E = E(gly0) + E(gly1) - E(intersection[3,4,5])</p>
-<p>This corrects for double-counting of atoms in overlapping regions.</p>
+    <p>Compute GMBE (Generalized Many-Body Expansion) energy with full inclusion-exclusion</p>
+<p>For overlapping fragments, the GMBE formula follows the inclusion-exclusion principle:
+  E_total = sum(E_monomers)
+            - sum(E_2-way_intersections)
+            + sum(E_3-way_intersections)
+            - sum(E_4-way_intersections)
+            + &hellip;</p>
+<p>Example for three overlapping fragments (gly0, gly1, gly2):
+  E = E(gly0) + E(gly1) + E(gly2)
+      - E(gly0∩gly1) - E(gly0∩gly2) - E(gly1∩gly2)
+      + E(gly0∩gly1∩gly2)</p>
+<p>This correctly accounts for all overlapping regions following inclusion-exclusion.</p>
 
 
     <h3>Arguments</h3>
@@ -343,7 +353,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~2"></span>
+              <span class="anchor" id="variable-monomers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -358,7 +368,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers"></span>
+              <span class="anchor" id="variable-n_monomers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -373,7 +383,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_results"></span>
+              <span class="anchor" id="variable-monomer_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -388,7 +398,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections"></span>
+              <span class="anchor" id="variable-n_intersections~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -403,7 +413,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results"></span>
+              <span class="anchor" id="variable-intersection_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -418,7 +428,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_pairs"></span>
+              <span class="anchor" id="variable-intersection_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -426,14 +436,29 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>intersection_pairs</strong>(:,:)</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
             <td>
-                <p>Pairs (i,j) that created each intersection (2, n_intersections)</p>
+                <p>k-tuples that created each intersection (n_monomers, n_intersections)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~3"></span>
+              <span class="anchor" id="variable-intersection_levels~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+                <p>Level k of each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~9"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -620,97 +645,112 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~compute_gmbe_energy~~CalledByGraph Pages: 1 -->
-<svg id="proccompute_gmbe_energyCalledByGraph" width="641pt" height="35pt"
- viewBox="0.00 0.00 641.00 34.72" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~compute_gmbe_energy~~CalledByGraph" class="graph" transform="scale(0.67 0.67) rotate(0) translate(4 48)">
+<svg id="proccompute_gmbe_energyCalledByGraph" width="641pt" height="49pt"
+ viewBox="0.00 0.00 641.00 49.41" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph" class="graph" transform="scale(0.67 0.67) rotate(0) translate(4 70)">
 <title>proc~~compute_gmbe_energy~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-48 956,-48 956,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 956,-70 956,4 -4,4"/>
 <!-- proc~compute_gmbe_energy -->
 <g id="proc~~compute_gmbe_energy~~CalledByGraph_node1" class="node">
 <title>proc~compute_gmbe_energy</title>
-<polygon fill="none" stroke="black" points="952,-44 813,-44 813,-20 952,-20 952,-44"/>
-<text text-anchor="middle" x="882.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_gmbe_energy</text>
+<polygon fill="none" stroke="black" points="952,-45 813,-45 813,-21 952,-21 952,-45"/>
+<text text-anchor="middle" x="882.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_gmbe_energy</text>
+</g>
+<!-- proc~gmbe_coordinator -->
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node2" class="node">
+<title>proc~gmbe_coordinator</title>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node2"><a xlink:href="../proc/gmbe_coordinator.html" xlink:title="gmbe_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="765,-66 654,-66 654,-42 765,-42 765,-66"/>
+<text text-anchor="middle" x="709.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~compute_gmbe_energy -->
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge1" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~compute_gmbe_energy</title>
+<path fill="none" stroke="#ff0000" d="M765.08,-47.3C777.03,-45.83 789.92,-44.25 802.61,-42.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="803.22,-46.14 812.72,-41.45 802.37,-39.19 803.22,-46.14"/>
 </g>
 <!-- proc~serial_gmbe_processor -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_node2" class="node">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node3" class="node">
 <title>proc~serial_gmbe_processor</title>
-<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node2"><a xlink:href="../proc/serial_gmbe_processor.html" xlink:title="serial_gmbe_processor">
-<polygon fill="#d9534f" stroke="#d9534f" points="777,-44 642,-44 642,-20 777,-20 777,-44"/>
-<text text-anchor="middle" x="709.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_processor</text>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node3"><a xlink:href="../proc/serial_gmbe_processor.html" xlink:title="serial_gmbe_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="777,-24 642,-24 642,0 777,0 777,-24"/>
+<text text-anchor="middle" x="709.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_processor</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_gmbe_processor&#45;&gt;proc~compute_gmbe_energy -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge1" class="edge">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge2" class="edge">
 <title>proc~serial_gmbe_processor&#45;&gt;proc~compute_gmbe_energy</title>
-<path fill="none" stroke="#ff0000" d="M777.1,-32C785.53,-32 794.21,-32 802.8,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="802.82,-35.5 812.82,-32 802.82,-28.5 802.82,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M777.1,-20.18C785.53,-21.21 794.21,-22.28 802.8,-23.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="802.47,-26.82 812.82,-24.57 803.32,-19.87 802.47,-26.82"/>
 </g>
 <!-- proc~run_fragmented_calculation -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_node3" class="node">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node4" class="node">
 <title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node3"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="606,-44 443,-44 443,-20 606,-20 606,-44"/>
-<text text-anchor="middle" x="524.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node4"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-66 443,-66 443,-42 606,-42 606,-66"/>
+<text text-anchor="middle" x="524.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_processor -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge2" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_processor</title>
-<path fill="none" stroke="#ff0000" d="M606.03,-32C614.55,-32 623.2,-32 631.68,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="631.92,-35.5 641.92,-32 631.92,-28.5 631.92,-35.5"/>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_coordinator -->
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge3" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M606.03,-54C618.69,-54 631.64,-54 643.88,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="643.97,-57.5 653.97,-54 643.97,-50.5 643.97,-57.5"/>
 </g>
 <!-- proc~run_calculation -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_node4" class="node">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node5" class="node">
 <title>proc~run_calculation</title>
-<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node4"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="407,-44 313,-44 313,-20 407,-20 407,-44"/>
-<text text-anchor="middle" x="360" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node5"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-66 313,-66 313,-42 407,-42 407,-66"/>
+<text text-anchor="middle" x="360" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge3" class="edge">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge4" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M407.13,-54C415.24,-54 423.94,-54 432.78,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-57.5 442.8,-54 432.8,-50.5 432.8,-57.5"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_node5" class="node">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node6" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node5"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
-<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-46 90,-46 90,-22 277,-22 277,-46"/>
+<text text-anchor="middle" x="183.5" y="-31.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge4" class="edge">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge5" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
+<path fill="none" stroke="#ff0000" d="M277.11,-44.61C285.83,-45.61 294.48,-46.61 302.7,-47.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-51.05 312.87,-48.71 303.33,-44.1 302.54,-51.05"/>
 </g>
 <!-- program~main -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_node6" class="node">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_node7" class="node">
 <title>program~main</title>
-<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node6"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
-<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~compute_gmbe_energy~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
+<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge5" class="edge">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge6" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
+<path fill="none" stroke="#ff0000" d="M54.24,-54.52C65.28,-54.71 78.27,-54.91 90,-55 173.11,-55.67 193.89,-55.51 277,-55 285.2,-54.95 293.86,-54.87 302.36,-54.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-58.28 312.6,-54.66 302.56,-51.28 302.64,-58.28"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge6" class="edge">
+<g id="proc~~compute_gmbe_energy~~CalledByGraph_edge7" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+<path fill="none" stroke="#ff0000" d="M54.21,-50.61C61.81,-49.62 70.61,-48.48 79.96,-47.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-50.74 89.89,-45.99 79.52,-43.8 80.42,-50.74"/>
 </g>
 </g>
 </svg>
@@ -816,7 +856,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~9"></span>
+              <span class="anchor" id="variable-i~33"></span>
               integer,
             </td>
               <td>private</td>
@@ -833,15 +873,66 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_energy"></span>
-              real(kind=dp),
+              <span class="anchor" id="variable-k~3"></span>
+              integer,
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>intersection_energy</strong></td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_counts"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>level_counts</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_energies"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>level_energies</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -859,6 +950,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>monomer_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sign_factor"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sign_factor</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -883,16 +991,22 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_gmbe_energy</span><span class="p">(</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                  </span><span class="n">intersection_pairs</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Compute GMBE (Generalized Many-Body Expansion) energy with intersection correction</span>
+<span class="w">                                  </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Compute GMBE (Generalized Many-Body Expansion) energy with full inclusion-exclusion</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! For overlapping fragments, the GMBE formula is:</span>
-<span class="w">      </span><span class="c">!!   E_total = sum(E_monomers) - sum(E_intersections)</span>
+<span class="w">      </span><span class="c">!! For overlapping fragments, the GMBE formula follows the inclusion-exclusion principle:</span>
+<span class="w">      </span><span class="c">!!   E_total = sum(E_monomers)</span>
+<span class="w">      </span><span class="c">!!             - sum(E_2-way_intersections)</span>
+<span class="w">      </span><span class="c">!!             + sum(E_3-way_intersections)</span>
+<span class="w">      </span><span class="c">!!             - sum(E_4-way_intersections)</span>
+<span class="w">      </span><span class="c">!!             + ...</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Example for two overlapping fragments (gly0, gly1) sharing atoms [3,4,5]:</span>
-<span class="w">      </span><span class="c">!!   E = E(gly0) + E(gly1) - E(intersection[3,4,5])</span>
+<span class="w">      </span><span class="c">!! Example for three overlapping fragments (gly0, gly1, gly2):</span>
+<span class="w">      </span><span class="c">!!   E = E(gly0) + E(gly1) + E(gly2)</span>
+<span class="w">      </span><span class="c">!!       - E(gly0∩gly1) - E(gly0∩gly2) - E(gly1∩gly2)</span>
+<span class="w">      </span><span class="c">!!       + E(gly0∩gly1∩gly2)</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! This corrects for double-counting of atoms in overlapping regions.</span>
+<span class="w">      </span><span class="c">!! This correctly accounts for all overlapping regions following inclusion-exclusion.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomers</span><span class="p">(:)</span><span class="w">              </span><span class="c">!! Monomer indices (1-based)</span>
@@ -900,11 +1014,15 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(:)</span><span class="w">     </span><span class="c">!! Monomer energies</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_intersections</span><span class="w">          </span><span class="c">!! Number of intersection fragments</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Intersection energies</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_pairs</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Pairs (i,j) that created each intersection (2, n_intersections)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! k-tuples that created each intersection (n_monomers, n_intersections)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span><span class="w">   </span><span class="c">!! Level k of each intersection</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span><span class="w">           </span><span class="c">!! Total GMBE energy</span>
 
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_energy</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_energy</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_energies</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_counts</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sign_factor</span>
 
 <span class="w">      </span><span class="c">! Sum monomer energies</span>
 <span class="w">      </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -912,42 +1030,98 @@ large graphs.</div>
 <span class="w">         </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
 <span class="w">      </span><span class="k">end do</span>
 
-<span class="w">      </span><span class="c">! Sum intersection energies</span>
-<span class="w">      </span><span class="n">intersection_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
-<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span>
-<span class="w">         </span><span class="n">intersection_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intersection_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
-<span class="w">      </span><span class="k">end do</span>
+<span class="w">      </span><span class="c">! Start with monomer contribution</span>
+<span class="w">      </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_energy</span>
 
-<span class="w">      </span><span class="c">! Apply GMBE formula: E = sum(monomers) - sum(intersections)</span>
-<span class="w">      </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">intersection_energy</span>
-
-<span class="w">      </span><span class="c">! Print breakdown</span>
-<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE Energy breakdown:&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">block</span>
-<span class="k">         </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Monomer energies (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;):      &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_energy</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
-
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Intersection energies (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;): &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_energy</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
-
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Total GMBE energy:         &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
-<span class="w">      </span><span class="k">end block</span>
-
-<span class="w">      </span><span class="c">! Print intersection pairs if there are any</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;GMBE intersection correction details:&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="c">! Find maximum intersection level</span>
+<span class="w">         </span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! Allocate arrays to track contributions by level</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">level_energies</span><span class="p">(</span><span class="mi">2</span><span class="p">:</span><span class="n">max_level</span><span class="p">))</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">level_counts</span><span class="p">(</span><span class="mi">2</span><span class="p">:</span><span class="n">max_level</span><span class="p">))</span>
+<span class="w">         </span><span class="n">level_energies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="n">level_counts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">         </span><span class="c">! Sum intersection energies by level with alternating signs</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span>
-<span class="w">            </span><span class="k">block</span>
-<span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pair_line</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">pair_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,i0,a,i0,a,f16.8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                  </span><span class="s2">&quot;  Intersection &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: fragments (&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                  </span><span class="n">intersection_pairs</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot;, &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_pairs</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                  </span><span class="s2">&quot;) energy = &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
-<span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">pair_line</span><span class="p">))</span>
-<span class="w">            </span><span class="k">end block</span>
+<span class="w">            </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">            </span><span class="n">level_energies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">level_energies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
+<span class="w">            </span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end do</span>
+
+<span class="w">         </span><span class="c">! Apply inclusion-exclusion: sign is (-1)^(k+1) for k-way intersections</span>
+<span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               </span><span class="n">sign_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">               </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sign_factor</span><span class="o">*</span><span class="n">level_energies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
 <span class="k">         end do</span>
+
+<span class="w">         </span><span class="c">! Print breakdown</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE Energy breakdown (Inclusion-Exclusion Principle):&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">block</span>
+<span class="k">            </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Monomers (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;):  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_energy</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+<span class="w">            </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  </span><span class="n">sign_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sign_factor</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-way ∩ (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot;):  +&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">level_energies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">else</span>
+<span class="k">                     write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-way ∩ (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">level_counts</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot;):  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">level_energies</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">end if</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">            end do</span>
+
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Total GMBE:      &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end block</span>
+
+<span class="w">         </span><span class="c">! Print detailed intersection info at debug level</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;GMBE intersection details:&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span>
+<span class="w">               </span><span class="k">block</span>
+<span class="k">                  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">detail_line</span>
+<span class="w">                  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">set_str</span>
+<span class="w">                  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">set_size</span>
+
+<span class="w">                  </span><span class="c">! Build string of fragment indices in this intersection</span>
+<span class="w">                  </span><span class="n">set_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;(&quot;</span>
+<span class="w">                  </span><span class="n">set_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">                  </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">                     </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                        if</span><span class="w"> </span><span class="p">(</span><span class="n">set_size</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">set_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">set_str</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;,&quot;</span>
+<span class="w">                        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">set_str</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">set_str</span><span class="p">),</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="w">                        </span><span class="n">set_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">set_size</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                     </span><span class="k">end if</span>
+<span class="k">                  end do</span>
+<span class="k">                  </span><span class="n">set_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">set_str</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span>
+
+<span class="w">                  </span><span class="n">sign_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">real</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">detail_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,i0,a,a,a,f16.8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="s2">&quot;  Intersection &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: level=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="s2">&quot; fragments=&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">set_str</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot; energy=&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">debug</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">detail_line</span><span class="p">))</span>
+<span class="w">               </span><span class="k">end block</span>
+<span class="k">            end do</span>
+<span class="k">         end if</span>
+
+<span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">level_energies</span><span class="p">,</span><span class="w"> </span><span class="n">level_counts</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="w">         </span><span class="c">! No intersections - just report monomer sum</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE Energy breakdown:&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">block</span>
+<span class="k">            </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Monomers (&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;): &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_energy</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  Total GMBE:  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end block</span>
 <span class="k">      end if</span>
 
 <span class="k">   end subroutine </span><span class="n">compute_gmbe_energy</span>
@@ -974,7 +1148,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

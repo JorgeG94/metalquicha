@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.7% of total for modules and submodules.">349 statements</a>
+                 title="12.6% of total for modules and submodules.">777 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -161,7 +161,9 @@
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-find_fragment_intersection">find_fragment_intersection</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-get_nfrags">get_nfrags</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-arrays_equal_internal">arrays_equal_internal</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-atom_sets_equal">atom_sets_equal</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-fragment_lookup_find">fragment_lookup_find</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-next_combination">next_combination</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-next_prime_internal">next_prime_internal</a>
         </div>
       </div>
@@ -174,15 +176,24 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-combine">combine</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-compute_polymer_atoms">compute_polymer_atoms</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-create_monomer_list">create_monomer_list</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_fragment_list">generate_fragment_list</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_intersections">generate_intersections</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_polymer_intersections">generate_polymer_intersections</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-get_next_combination">get_next_combination</a>
-            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-combine">combine</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-gmbe_enumerate_pie_terms">gmbe_enumerate_pie_terms</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-combine_util">combine_util</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-dfs_pie_accumulate">dfs_pie_accumulate</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-fragment_lookup_destroy">fragment_lookup_destroy</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-fragment_lookup_init">fragment_lookup_init</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-fragment_lookup_insert">fragment_lookup_insert</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_intersections_from_atom_lists">generate_intersections_from_atom_lists</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_k_way_intersections_for_level">generate_k_way_intersections_for_level</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-generate_k_way_intersections_from_lists">generate_k_way_intersections_from_lists</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-intersect_atom_lists">intersect_atom_lists</a>
+            <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-next_combination_init">next_combination_init</a>
             <a class="list-group-item" href="../module/mqc_frag_utils.html#proc-print_combos">print_combos</a>
         </div>
       </div>
@@ -207,21 +218,26 @@ fragments, managing fragment lists, and performing many-body expansion calculati
 Binomial coefficient calculation
 Generate sequential monomer indices
 Generate all fragments up to max level
+Generate all combinations of size r (helper for single-level generation)
 Calculate total number of fragments
 Generate next combination in sequence
 Hash-based lookup table for fast fragment index retrieval
 Find shared atoms between two fragments (for GMBE)
-Generate all pairwise intersections for GMBE</p>
+Generate all k-way intersections for GMBE (base fragments)
+Compute atom list for a polymer (union of base fragments)
+Generate intersections for polymers at any level
+DFS-based PIE coefficient enumeration for GMBE(N)</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_sorting</li>
+                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_hash_32bit</li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item">pic_sorting</li>
+                  <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -231,64 +247,76 @@ Generate all pairwise intersections for GMBE</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: module~~mqc_frag_utils~~UsesGraph Pages: 1 -->
-<svg id="modulemqc_frag_utilsUsesGraph" width="225pt" height="158pt"
- viewBox="0.00 0.00 225.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="module~~mqc_frag_utils~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<svg id="modulemqc_frag_utilsUsesGraph" width="225pt" height="200pt"
+ viewBox="0.00 0.00 225.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_frag_utils~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
 <title>module~~mqc_frag_utils~~UsesGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 221,-154 221,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 221,-196 221,4 -4,4"/>
 <!-- module~mqc_frag_utils -->
 <g id="module~~mqc_frag_utils~~UsesGraph_node1" class="node">
 <title>module~mqc_frag_utils</title>
-<polygon fill="none" stroke="black" points="217,-87 127,-87 127,-63 217,-63 217,-87"/>
-<text text-anchor="middle" x="172" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_frag_utils</text>
+<polygon fill="none" stroke="black" points="217,-108 127,-108 127,-84 217,-84 217,-108"/>
+<text text-anchor="middle" x="172" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_frag_utils</text>
 </g>
 <!-- pic_hash_32bit -->
 <g id="module~~mqc_frag_utils~~UsesGraph_node2" class="node">
 <title>pic_hash_32bit</title>
-<polygon fill="#337ab7" stroke="#337ab7" points="91,-150 0,-150 0,-126 91,-126 91,-150"/>
-<text text-anchor="middle" x="45.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="91,-192 0,-192 0,-168 91,-168 91,-192"/>
+<text text-anchor="middle" x="45.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_hash_32bit -->
 <g id="module~~mqc_frag_utils~~UsesGraph_edge1" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_hash_32bit</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M148.72,-87.02C132.74,-95.56 110.66,-107.21 91,-117 88.02,-118.49 84.91,-120.01 81.79,-121.52"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="79.99,-118.5 72.47,-125.97 83.01,-124.81 79.99,-118.5"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M157.54,-108.16C142.19,-121.65 115.96,-143.56 91,-159 88.7,-160.43 86.28,-161.82 83.81,-163.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="82.06,-160.13 74.78,-167.83 85.28,-166.35 82.06,-160.13"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_frag_utils~~UsesGraph_node3" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="72.5,-150 18.5,-150 18.5,-126 72.5,-126 72.5,-150"/>
+<text text-anchor="middle" x="45.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_io -->
+<g id="module~~mqc_frag_utils~~UsesGraph_edge2" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M135.32,-108.04C118.78,-113.62 99.16,-120.24 82.57,-125.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="81.04,-122.65 72.68,-129.17 83.28,-129.29 81.04,-122.65"/>
 </g>
 <!-- pic_logger -->
-<g id="module~~mqc_frag_utils~~UsesGraph_node3" class="node">
+<g id="module~~mqc_frag_utils~~UsesGraph_node4" class="node">
 <title>pic_logger</title>
 <polygon fill="#337ab7" stroke="#337ab7" points="79.5,-108 11.5,-108 11.5,-84 79.5,-84 79.5,-108"/>
 <text text-anchor="middle" x="45.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_logger -->
-<g id="module~~mqc_frag_utils~~UsesGraph_edge2" class="edge">
+<g id="module~~mqc_frag_utils~~UsesGraph_edge3" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_logger</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M126.76,-82.46C114.75,-84.49 101.78,-86.68 89.83,-88.69"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="88.92,-85.3 79.64,-90.41 90.08,-92.2 88.92,-85.3"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M126.76,-96C114.75,-96 101.78,-96 89.83,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="89.64,-92.5 79.64,-96 89.64,-99.5 89.64,-92.5"/>
 </g>
 <!-- pic_sorting -->
-<g id="module~~mqc_frag_utils~~UsesGraph_node4" class="node">
+<g id="module~~mqc_frag_utils~~UsesGraph_node5" class="node">
 <title>pic_sorting</title>
 <polygon fill="#337ab7" stroke="#337ab7" points="80.5,-66 10.5,-66 10.5,-42 80.5,-42 80.5,-66"/>
 <text text-anchor="middle" x="45.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_sorting</text>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_sorting -->
-<g id="module~~mqc_frag_utils~~UsesGraph_edge3" class="edge">
+<g id="module~~mqc_frag_utils~~UsesGraph_edge4" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_sorting</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M126.76,-67.54C115.08,-65.57 102.48,-63.44 90.8,-61.47"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="91.26,-58 80.82,-59.79 90.1,-64.9 91.26,-58"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M135.32,-83.96C121.43,-79.28 105.36,-73.86 90.74,-68.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="91.49,-65.48 80.89,-65.6 89.25,-72.12 91.49,-65.48"/>
 </g>
 <!-- pic_types -->
-<g id="module~~mqc_frag_utils~~UsesGraph_node5" class="node">
+<g id="module~~mqc_frag_utils~~UsesGraph_node6" class="node">
 <title>pic_types</title>
 <polygon fill="#337ab7" stroke="#337ab7" points="76.5,-24 14.5,-24 14.5,0 76.5,0 76.5,-24"/>
 <text text-anchor="middle" x="45.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
 </g>
 <!-- module~mqc_frag_utils&#45;&gt;pic_types -->
-<g id="module~~mqc_frag_utils~~UsesGraph_edge4" class="edge">
+<g id="module~~mqc_frag_utils~~UsesGraph_edge5" class="edge">
 <title>module~mqc_frag_utils&#45;&gt;pic_types</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M148.72,-62.98C132.74,-54.44 110.66,-42.79 91,-33 88.02,-31.51 84.91,-29.99 81.79,-28.48"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="83.01,-25.19 72.47,-24.03 79.99,-31.5 83.01,-25.19"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M157.54,-83.84C142.19,-70.35 115.96,-48.44 91,-33 88.7,-31.57 86.28,-30.18 83.81,-28.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="85.28,-25.65 74.78,-24.17 82.06,-31.87 85.28,-25.65"/>
 </g>
 </g>
 </svg>
@@ -380,89 +408,140 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: module~~mqc_frag_utils~~UsedByGraph Pages: 1 -->
-<svg id="modulemqc_frag_utilsUsedByGraph" width="641pt" height="58pt"
- viewBox="0.00 0.00 641.00 57.78" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="module~~mqc_frag_utils~~UsedByGraph" class="graph" transform="scale(0.96 0.96) rotate(0) translate(4 56.03)">
+<svg id="modulemqc_frag_utilsUsedByGraph" width="641pt" height="99pt"
+ viewBox="0.00 0.00 641.00 98.90" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_frag_utils~~UsedByGraph" class="graph" transform="scale(0.68 0.68) rotate(0) translate(4 141.18)">
 <title>module~~mqc_frag_utils~~UsedByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-56.03 662,-56.03 662,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-141.18 937,-141.18 937,4 -4,4"/>
 <!-- module~mqc_frag_utils -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_node1" class="node">
 <title>module~mqc_frag_utils</title>
-<polygon fill="none" stroke="black" points="90,-44 0,-44 0,-20 90,-20 90,-44"/>
-<text text-anchor="middle" x="45" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_frag_utils</text>
+<polygon fill="none" stroke="black" points="90,-33.18 0,-33.18 0,-9.18 90,-9.18 90,-33.18"/>
+<text text-anchor="middle" x="45" y="-18.78" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_frag_utils</text>
 </g>
 <!-- module~mqc_driver -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_node2" class="node">
 <title>module~mqc_driver</title>
 <g id="a_module~~mqc_frag_utils~~UsedByGraph_node2"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
-<polygon fill="#337ab7" stroke="#337ab7" points="568,-44 495,-44 495,-20 568,-20 568,-44"/>
-<text text-anchor="middle" x="531.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="843,-97.18 770,-97.18 770,-73.18 843,-73.18 843,-97.18"/>
+<text text-anchor="middle" x="806.5" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_driver&#45;&gt;module~mqc_frag_utils -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_edge1" class="edge">
 <title>module~mqc_driver&#45;&gt;module~mqc_frag_utils</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M342,-52C257.46,-51.9 159.64,-43.71 100.32,-37.84"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="100.37,-34.33 90.07,-36.81 99.67,-41.29 100.37,-34.33"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M770.83,-73.15C694.46,-47.9 505.62,7.55 344,-1.18"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M342,-1.18C257.46,-0.48 159.64,-8.9 100.33,-15.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.65,-11.58 90.07,-16.11 100.38,-18.55 99.65,-11.58"/>
 </g>
 <!-- module~mqc_mbe -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_node3" class="node">
 <title>module~mqc_mbe</title>
 <g id="a_module~~mqc_frag_utils~~UsedByGraph_node3"><a xlink:href="../module/mqc_mbe.html" xlink:title="mqc_mbe">
-<polygon fill="#337ab7" stroke="#337ab7" points="191,-24 126,-24 126,0 191,0 191,-24"/>
-<text text-anchor="middle" x="158.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-53.18 126,-53.18 126,-29.18 191,-29.18 191,-53.18"/>
+<text text-anchor="middle" x="158.5" y="-38.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_driver&#45;&gt;module~mqc_mbe -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_edge4" class="edge">
 <title>module~mqc_driver&#45;&gt;module~mqc_mbe</title>
-<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M494.87,-38.13C457.43,-44.04 396.75,-52.06 344,-52"/>
-<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M342,-52C292.64,-51.94 237.46,-37.82 200.84,-26.37"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="201.61,-22.94 191.02,-23.23 199.48,-29.61 201.61,-22.94"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M342,-1.18C290.27,-3.98 277.41,-8.24 227,-20.18 218.5,-22.19 209.51,-24.71 200.96,-27.3"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="199.69,-24.02 191.18,-30.33 201.77,-30.71 199.69,-24.02"/>
 </g>
 <!-- module~mqc_mbe_fragment_distribution_scheme -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_node4" class="node">
 <title>module~mqc_mbe_fragment_distribution_scheme</title>
 <g id="a_module~~mqc_frag_utils~~UsedByGraph_node4"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
-<polygon fill="#337ab7" stroke="#337ab7" points="459,-24 227,-24 227,0 459,0 459,-24"/>
-<text text-anchor="middle" x="343" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+<polygon fill="#337ab7" stroke="#337ab7" points="459,-137.18 227,-137.18 227,-113.18 459,-113.18 459,-137.18"/>
+<text text-anchor="middle" x="343" y="-122.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
 </a>
 </g>
 </g>
 <!-- module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
-<g id="module~~mqc_frag_utils~~UsedByGraph_edge6" class="edge">
+<g id="module~~mqc_frag_utils~~UsedByGraph_edge8" class="edge">
 <title>module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M494.98,-28.19C486.25,-27.25 476.41,-26.2 466.04,-25.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="466.27,-21.59 455.96,-24.01 465.53,-28.55 466.27,-21.59"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M770.61,-97.22C759.09,-100.72 746.12,-104.14 734,-106.18 646.36,-120.97 546.19,-125.59 469.32,-126.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="469.07,-123.09 459.1,-126.7 469.14,-130.09 469.07,-123.09"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_node8" class="node">
+<title>module~mqc_gmbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_frag_utils~~UsedByGraph_node8"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="734,-97.18 495,-97.18 495,-73.18 734,-73.18 734,-97.18"/>
+<text text-anchor="middle" x="614.5" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_edge10" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M769.76,-85.18C762.03,-85.18 753.42,-85.18 744.33,-85.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="744.31,-81.68 734.31,-85.18 744.31,-88.68 744.31,-81.68"/>
 </g>
 <!-- module~mqc_mbe&#45;&gt;module~mqc_frag_utils -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_edge2" class="edge">
 <title>module~mqc_mbe&#45;&gt;module~mqc_frag_utils</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M125.85,-17.68C117.8,-19.12 108.93,-20.71 100.11,-22.29"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="99.44,-18.86 90.22,-24.07 100.68,-25.75 99.44,-18.86"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M125.85,-35.5C117.8,-34.06 108.93,-32.47 100.11,-30.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.68,-27.43 90.22,-29.11 99.44,-34.32 100.68,-27.43"/>
 </g>
 <!-- module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_edge5" class="edge">
 <title>module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe</title>
-<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M226.94,-12C217.93,-12 209.26,-12 201.3,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="201.29,-8.5 191.29,-12 201.29,-15.5 201.29,-8.5"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M249.44,-113.16C241.66,-110.69 234.07,-107.74 227,-104.18 206.53,-93.89 187.87,-75.45 175.39,-61.17"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="177.9,-58.72 168.78,-53.33 172.55,-63.23 177.9,-58.72"/>
+</g>
+<!-- proc~gmbe_coordinator -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_node5" class="node">
+<title>proc~gmbe_coordinator</title>
+<g id="a_module~~mqc_frag_utils~~UsedByGraph_node5"><a xlink:href="../proc/gmbe_coordinator.html" xlink:title="gmbe_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="398.5,-95.18 287.5,-95.18 287.5,-71.18 398.5,-71.18 398.5,-95.18"/>
+<text text-anchor="middle" x="343" y="-80.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_edge6" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M287.31,-74.59C268.13,-71.21 246.51,-66.98 227,-62.18 218.52,-60.1 209.54,-57.55 200.99,-54.95"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="201.8,-51.54 191.21,-51.91 199.72,-58.22 201.8,-51.54"/>
+</g>
+<!-- proc~serial_gmbe_processor -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_node6" class="node">
+<title>proc~serial_gmbe_processor</title>
+<g id="a_module~~mqc_frag_utils~~UsedByGraph_node6"><a xlink:href="../proc/serial_gmbe_processor.html" xlink:title="serial_gmbe_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="410.5,-53.18 275.5,-53.18 275.5,-29.18 410.5,-29.18 410.5,-53.18"/>
+<text text-anchor="middle" x="343" y="-38.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_processor&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_edge7" class="edge">
+<title>proc~serial_gmbe_processor&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M275.34,-41.18C250.66,-41.18 223.39,-41.18 201.52,-41.18"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="201.24,-37.68 191.24,-41.18 201.24,-44.68 201.24,-37.68"/>
 </g>
 <!-- program~main -->
-<g id="module~~mqc_frag_utils~~UsedByGraph_node5" class="node">
+<g id="module~~mqc_frag_utils~~UsedByGraph_node7" class="node">
 <title>program~main</title>
-<g id="a_module~~mqc_frag_utils~~UsedByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="658,-44 604,-44 604,-20 658,-20 658,-44"/>
-<text text-anchor="middle" x="631" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_module~~mqc_frag_utils~~UsedByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="933,-97.18 879,-97.18 879,-73.18 933,-73.18 933,-97.18"/>
+<text text-anchor="middle" x="906" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;module~mqc_driver -->
 <g id="module~~mqc_frag_utils~~UsedByGraph_edge3" class="edge">
 <title>program~main&#45;&gt;module~mqc_driver</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M603.87,-32C596.01,-32 587.13,-32 578.38,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="578.23,-28.5 568.23,-32 578.23,-35.5 578.23,-28.5"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M878.87,-85.18C871.01,-85.18 862.13,-85.18 853.38,-85.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="853.23,-81.68 843.23,-85.18 853.23,-88.68 853.23,-81.68"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_frag_utils~~UsedByGraph_edge9" class="edge">
+<title>module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M532.64,-97.18C502,-101.73 466.91,-106.94 435.37,-111.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="434.64,-108.19 425.27,-113.12 435.67,-115.11 434.64,-108.19"/>
 </g>
 </g>
 </svg>
@@ -658,7 +737,7 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/fragment_lookup_t.html#boundprocedure-destroy~4'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_lookup_destroy.html'>fragment_lookup_destroy</a></td>
+  <strong><a href='../type/fragment_lookup_t.html#boundprocedure-destroy~9'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_lookup_destroy.html'>fragment_lookup_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -706,7 +785,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-key"></span>
+              <span class="anchor" id="variable-key~13"></span>
               integer,
             </td>
               <td>public,</td>
@@ -740,7 +819,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value"></span>
+              <span class="anchor" id="variable-value~13"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -969,7 +1048,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~4"></span>
+              <span class="anchor" id="variable-n_monomers~8"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -984,7 +1063,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1085,6 +1164,81 @@ large graphs.</div>
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-atom_sets_equal"></span> <h3>private  function <a href='../proc/atom_sets_equal.html'>atom_sets_equal</a>(set1, set2, n_atoms) result(equal)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Check if two atom sets are equal (assuming sorted)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-set1"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>set1</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-set2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>set2</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-fragment_lookup_find"></span> <h3>private  function <a href='../proc/fragment_lookup_find.html'>fragment_lookup_find</a>(this, monomers, n) result(idx)  
 </h3></div>
     <div class="card-body">
@@ -1104,7 +1258,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~27"></span>
+              <span class="anchor" id="variable-this~29"></span>
               class(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1153,6 +1307,82 @@ large graphs.</div>
     <h4>
     Return Value
     <small>integer(kind=int64)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-next_combination"></span> <h3>private  function <a href='../proc/next_combination.html'>next_combination</a>(combination, k, n) result(has_next)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate next combination in lexicographic order
+Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhausted all</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~13"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
     </h4>
     
 
@@ -1210,355 +1440,7 @@ large graphs.</div>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-create_monomer_list"></span> <h3>public pure subroutine <a href='../proc/create_monomer_list.html'>create_monomer_list</a>(monomers)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Generate a list of monomer indices from 1 to N</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-monomers~4"></span>
-              integer(kind=default_int),
-            </td>
-<td>intent(inout),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>monomers</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-generate_fragment_list"></span> <h3>public recursive subroutine <a href='../proc/generate_fragment_list.html'>generate_fragment_list</a>(monomers, max_level, polymers, count)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Generate all possible fragments (combinations of monomers) up to max_level
-Uses int64 for count to handle large numbers of fragments that overflow int32.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-monomers~5"></span>
-              integer(kind=default_int),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>monomers</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_level~10"></span>
-              integer(kind=default_int),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_level</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~11"></span>
-              integer(kind=default_int),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-count"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>count</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-generate_intersections"></span> <h3>public  subroutine <a href='../proc/generate_intersections.html'>generate_intersections</a>(sys_geom, monomers, polymers, n_monomers, intersections, intersection_pairs, n_intersections)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Generate all pairwise intersections between fragments
-\n!! For a system with overlapping fragments, this identifies all pairs of fragments
- that share atoms and stores the intersection atom lists.
-\n!! Algorithm:
- - Loop through all pairs (i,j) where i &lt; j
- - Call find_fragment_intersection for each pair
- - Store non-empty intersections and track which monomer pair created them</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sys_geom~18"></span>
-              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>sys_geom</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-monomers~8"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>monomers</strong>(:)</td>
-            <td>
-<p>Monomer indices</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~12"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-<p>Output: monomers stored here</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_monomers~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_monomers</strong></td>
-            <td>
-<p>Number of monomers</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-intersections~3"></span>
-              integer,
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>intersections</strong>(:,:)</td>
-            <td>
-<p>Intersection atom lists</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-intersection_pairs~4"></span>
-              integer,
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>intersection_pairs</strong>(:,:)</td>
-            <td>
-<p>Which pair (i,j) created each intersection</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_intersections~4"></span>
-              integer,
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_intersections</strong></td>
-            <td>
-<p>Number of intersections found</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-get_next_combination"></span> <h3>public pure subroutine <a href='../proc/get_next_combination.html'>get_next_combination</a>(indices, k, n, has_next)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Generate next combination (updates indices in place)
-has_next = .true. if there&rsquo;s a next combination</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-indices~3"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>indices</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-k~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>k</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n~8"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-has_next~3"></span>
-              logical,
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>has_next</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-combine"></span> <h3>private recursive subroutine <a href='../proc/combine.html'>combine</a>(arr, n, r, out_array, count)  
+    <div class="card-header codesum"><span class="anchor" id="proc-combine"></span> <h3>public recursive subroutine <a href='../proc/combine.html'>combine</a>(arr, n, r, out_array, count)  
 </h3></div>
     <div class="card-body">
           
@@ -1638,6 +1520,233 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-count~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_polymer_atoms"></span> <h3>public  subroutine <a href='../proc/compute_polymer_atoms.html'>compute_polymer_atoms</a>(sys_geom, polymer, polymer_size, atom_list, n_atoms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute the atom list for a polymer (union of atoms from base fragments)
+polymer(:) contains base fragment indices (1-based)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~23"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer</strong>(:)</td>
+            <td>
+<p>Base fragment indices in this polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer_size"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer_size</strong></td>
+            <td>
+<p>Number of base fragments in polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_list~2"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_list</strong>(:)</td>
+            <td>
+<p>Unique atoms in this polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~3"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+<p>Number of unique atoms</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-create_monomer_list"></span> <h3>public pure subroutine <a href='../proc/create_monomer_list.html'>create_monomer_list</a>(monomers)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate a list of monomer indices from 1 to N</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~4"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_fragment_list"></span> <h3>public recursive subroutine <a href='../proc/generate_fragment_list.html'>generate_fragment_list</a>(monomers, max_level, polymers, count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all possible fragments (combinations of monomers) up to max_level
+Uses int64 for count to handle large numbers of fragments that overflow int32.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~5"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~12"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~14"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-count~2"></span>
               integer(kind=int64),
             </td>
@@ -1649,6 +1758,552 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
             <td><strong>count</strong></td>
             <td>
 
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_intersections"></span> <h3>public  subroutine <a href='../proc/generate_intersections.html'>generate_intersections</a>(sys_geom, monomers, polymers, n_monomers, max_intersection_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections for k=2 to min(max_intersection_level, n_monomers)
+\n!! For a system with overlapping fragments, this computes k-way intersections
+ following the inclusion-exclusion principle for GMBE.
+ The max_intersection_level parameter controls the maximum depth to avoid combinatorial explosion.
+\n!! Algorithm:
+ - For each k from 2 to min(max_intersection_level, n_monomers):
+   - Generate all C(n_monomers, k) combinations
+   - For each combination, compute intersection of all k fragments
+   - Store non-empty intersections with their level k</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~21"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+<p>Monomer indices</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~15"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+<p>Output: monomers stored here</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+<p>Number of monomers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_intersection_level~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_intersection_level</strong></td>
+            <td>
+<p>Maximum k-way intersection depth</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+<p>Intersection atom lists</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+<p>Which k-tuple created each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+<p>Level (k) of each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~6"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+<p>Number of intersections found</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_polymer_intersections"></span> <h3>public  subroutine <a href='../proc/generate_polymer_intersections.html'>generate_polymer_intersections</a>(sys_geom, polymers, n_polymers, max_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections for polymers at any level (GMBE-N)
+This works with dynamically generated polymers, not just base fragments</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~24"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~16"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+<p>Polymer definitions (n_polymers, max_level)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_polymers"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_polymers</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~13"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~7"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-get_next_combination"></span> <h3>public pure subroutine <a href='../proc/get_next_combination.html'>get_next_combination</a>(indices, k, n, has_next)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate next combination (updates indices in place)
+has_next = .true. if there&rsquo;s a next combination</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-indices~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>indices</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_next~3"></span>
+              logical,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_next</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-gmbe_enumerate_pie_terms"></span> <h3>public  subroutine <a href='../proc/gmbe_enumerate_pie_terms.html'>gmbe_enumerate_pie_terms</a>(sys_geom, primaries, n_primaries, polymer_level, max_k_level, pie_atom_sets, pie_coefficients, n_pie_terms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Enumerate all unique intersections via DFS and accumulate PIE coefficients
+This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a href="../proc/gmbe_enumerate_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~25"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primaries"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primaries</strong>(:,:)</td>
+            <td>
+<p>Primary polymers (n_primaries, polymer_level)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_primaries~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_primaries</strong></td>
+            <td>
+<p>Number of primary polymers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer_level"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer_level</strong></td>
+            <td>
+<p>Level of primaries (1=monomers, 2=dimers, etc.)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+<p>Maximum clique size (intersection depth limit)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+<p>Unique atom sets (max_atoms, n_terms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pie_coefficients</strong>(:)</td>
+            <td>
+<p>PIE coefficient for each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+<p>Number of unique PIE terms</p>
             </td>
         </tr>
     </tbody>
@@ -1754,7 +2409,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~29"></span>
+              <span class="anchor" id="variable-i~38"></span>
               integer(kind=default_int),
             </td>
 <td>intent(in)</td>
@@ -1784,7 +2439,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~3"></span>
+              <span class="anchor" id="variable-count~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1793,6 +2448,256 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
             </td>
             <td>::</td>
             <td><strong>count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dfs_pie_accumulate"></span> <h3>private recursive subroutine <a href='../proc/dfs_pie_accumulate.html'>dfs_pie_accumulate</a>(primary_atoms, primary_n_atoms, n_primaries, max_atoms, clique, clique_size, current_atoms, n_current_atoms, candidates, n_candidates, max_k_level, atom_sets, coefficients, n_terms, max_terms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>DFS helper: accumulate PIE coefficients for intersections</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primary_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primary_atoms</strong>(:,:)</td>
+            <td>
+<p>Precomputed atom lists</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primary_n_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primary_n_atoms</strong>(:)</td>
+            <td>
+<p>Atom counts</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_primaries~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_primaries</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-clique~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>clique</strong>(:)</td>
+            <td>
+<p>Current clique</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-clique_size"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>clique_size</strong></td>
+            <td>
+<p>Size of current clique</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-current_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>current_atoms</strong>(:)</td>
+            <td>
+<p>Atoms in current intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_current_atoms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_current_atoms</strong></td>
+            <td>
+<p>Number of atoms in intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-candidates~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>candidates</strong>(:)</td>
+            <td>
+<p>Candidate primaries</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_candidates~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_candidates</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_sets"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coefficients~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coefficients</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_terms"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_terms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_terms</strong></td>
             <td>
 
             </td>
@@ -1824,7 +2729,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~28"></span>
+              <span class="anchor" id="variable-this~30"></span>
               class(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1864,7 +2769,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~25"></span>
+              <span class="anchor" id="variable-this~27"></span>
               class(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1919,7 +2824,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~26"></span>
+              <span class="anchor" id="variable-this~28"></span>
               class(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1964,7 +2869,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx~13"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1973,6 +2878,672 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
             </td>
             <td>::</td>
             <td><strong>fragment_idx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_intersections_from_atom_lists"></span> <h3>private  subroutine <a href='../proc/generate_intersections_from_atom_lists.html'>generate_intersections_from_atom_lists</a>(atom_lists, n_atoms_list, n_sets, max_k_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate k-way intersections from arbitrary atom lists (not tied to sys_geom)
+max_k_level limits the maximum intersection order to prevent combinatorial explosion</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_lists"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_lists</strong>(:,:)</td>
+            <td>
+<p>(max_atoms, n_sets)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms_list"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms_list</strong>(:)</td>
+            <td>
+<p>Number of atoms in each set</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_sets"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_sets</strong></td>
+            <td>
+<p>Number of sets (polymers)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+<p>Maximum intersection level to compute</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~8"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_k_way_intersections_for_level"></span> <h3>private recursive subroutine <a href='../proc/generate_k_way_intersections_for_level.html'>generate_k_way_intersections_for_level</a>(sys_geom, monomers, n_monomers, k, combination, max_atoms, temp_intersections, temp_sets, temp_levels, intersection_count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Helper to generate all k-way intersections at a specific level k</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~22"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_intersections~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_sets~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_levels~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_count~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_k_way_intersections_from_lists"></span> <h3>private  subroutine <a href='../proc/generate_k_way_intersections_from_lists.html'>generate_k_way_intersections_from_lists</a>(atom_lists, n_atoms_list, n_sets, k, combination, max_atoms, temp_intersections, temp_sets, temp_levels, intersection_count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections from atom lists</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_lists~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_lists</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms_list~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms_list</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_sets~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_sets</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~6"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_intersections~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_sets~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_levels~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_count~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-intersect_atom_lists"></span> <h3>private  subroutine <a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a>(atoms1, n1, atoms2, n2, intersection, n_intersect)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute intersection of two atom lists</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms1"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms1</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n1~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n1</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms2</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n2~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n2</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection~2"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersect~2"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersect</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-next_combination_init"></span> <h3>private  subroutine <a href='../proc/next_combination_init.html'>next_combination_init</a>(combination, k)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Initialize combination to [1, 2, &hellip;, k]</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~3"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
             <td>
 
             </td>
@@ -2020,7 +3591,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-count~4"></span>
+              <span class="anchor" id="variable-count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2078,7 +3649,7 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

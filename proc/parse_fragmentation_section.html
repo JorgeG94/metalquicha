@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.4% of total for procedures.">64 statements</a>
+                 title=" 1.2% of total for procedures.">66 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,10 +138,10 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-eq_pos~6">eq_pos</a>
             <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-in_cutoffs">in_cutoffs</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-io_stat~14">io_stat</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-key~7">key</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-line~20">line</a>
-            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-value~7">value</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-io_stat~12">io_stat</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-key~6">key</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-line~9">line</a>
+            <a class="list-group-item" href="../proc/parse_fragmentation_section.html#variable-value~6">value</a>
         </div>
       </div>
     </div>
@@ -196,7 +196,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~15"></span>
+              <span class="anchor" id="variable-unit~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -211,7 +211,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~13"></span>
+              <span class="anchor" id="variable-config~10"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -226,7 +226,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~28"></span>
+              <span class="anchor" id="variable-error~16"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -564,7 +564,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~14"></span>
+              <span class="anchor" id="variable-io_stat~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -581,7 +581,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~7"></span>
+              <span class="anchor" id="variable-key~6"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -598,7 +598,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~20"></span>
+              <span class="anchor" id="variable-line~9"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -615,7 +615,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~7"></span>
+              <span class="anchor" id="variable-value~6"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -705,6 +705,8 @@ large graphs.</div>
 <span class="w">               </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">frag_level</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;allow_overlapping_fragments&#39;</span><span class="p">)</span>
 <span class="w">               </span><span class="n">config</span><span class="p">%</span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;max_intersection_level&#39;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">max_intersection_level</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;embedding&#39;</span><span class="p">)</span>
 <span class="w">               </span><span class="n">config</span><span class="p">%</span><span class="n">embedding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
 <span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;cutoff_method&#39;</span><span class="p">)</span>
@@ -742,7 +744,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-30 23:20 +0000             </p>
+ on 2025-12-31 16:28 +0000             </p>
           </div>
         </div>
         <br>

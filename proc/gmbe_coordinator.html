@@ -1,0 +1,2329 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>gmbe_coordinator &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>gmbe_coordinator
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 2.9% of total for procedures.">161 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_fragment_distribution_scheme.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">gmbe_coordinator</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-coord_timer">coord_timer</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-current_fragment_idx">current_fragment_idx</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-dummy_msg">dummy_msg</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-finished_nodes">finished_nodes</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-fragment_idx~2">fragment_idx</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-has_pending">has_pending</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-intersection_results~2">intersection_results</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-intersection_size~2">intersection_size</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-is_monomer">is_monomer</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-local_dummy">local_dummy</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-local_finished_workers">local_finished_workers</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-local_status">local_status</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-monomer_indices~3">monomer_indices</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-monomer_results~2">monomer_results</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-req~3">req</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-request_source">request_source</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-results_received">results_received</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-status~3">status</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-total_energy~5">total_energy</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-total_fragments">total_fragments</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-worker_fragment_map">worker_fragment_map</a>
+            <a class="list-group-item" href="../proc/gmbe_coordinator.html#variable-worker_source">worker_source</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/gmbe_coordinator.html#src">gmbe_coordinator</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_sets, intersection_levels, n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~gmbe_coordinator~~UsesGraph Pages: 1 -->
+<svg id="procgmbe_coordinatorUsesGraph" width="641pt" height="400pt"
+ viewBox="0.00 0.00 641.00 399.94" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~gmbe_coordinator~~UsesGraph" class="graph" transform="scale(0.68 0.68) rotate(0) translate(4 585.62)">
+<title>proc~~gmbe_coordinator~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-585.62 941,-585.62 941,4 -4,4"/>
+<!-- proc~gmbe_coordinator -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node1" class="node">
+<title>proc~gmbe_coordinator</title>
+<polygon fill="none" stroke="black" points="937,-357.62 826,-357.62 826,-333.62 937,-333.62 937,-357.62"/>
+<text text-anchor="middle" x="881.5" y="-343.22" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_coordinator</text>
+</g>
+<!-- module~mqc_mbe -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node2" class="node">
+<title>module~mqc_mbe</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node2"><a xlink:href="../module/mqc_mbe.html" xlink:title="mqc_mbe">
+<polygon fill="#337ab7" stroke="#337ab7" points="790,-357.62 725,-357.62 725,-333.62 790,-333.62 790,-357.62"/>
+<text text-anchor="middle" x="757.5" y="-343.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;module~mqc_mbe -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge1" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M825.92,-345.62C817.36,-345.62 808.62,-345.62 800.4,-345.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="800.32,-342.12 790.32,-345.62 800.32,-349.12 800.32,-342.12"/>
+</g>
+<!-- module~mqc_frag_utils -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node3" class="node">
+<title>module~mqc_frag_utils</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node3"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="677,-377.62 587,-377.62 587,-353.62 677,-353.62 677,-377.62"/>
+<text text-anchor="middle" x="632" y="-363.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_frag_utils -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge2" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_frag_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M724.7,-350.77C713.3,-352.62 700.12,-354.75 687.36,-356.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="686.57,-353.4 677.26,-358.45 687.69,-360.31 686.57,-353.4"/>
+</g>
+<!-- module~mqc_mbe_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node4" class="node">
+<title>module~mqc_mbe_io</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node4"><a xlink:href="../module/mqc_mbe_io.html" xlink:title="mqc_mbe_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="672,-295.62 592,-295.62 592,-271.62 672,-271.62 672,-295.62"/>
+<text text-anchor="middle" x="632" y="-281.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_io</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_mbe_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge3" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_mbe_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M732.45,-333.49C719.57,-326.99 703.42,-318.86 689,-311.62 681.69,-307.95 673.84,-304.02 666.4,-300.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="667.77,-297.07 657.26,-295.73 664.64,-303.34 667.77,-297.07"/>
+</g>
+<!-- module~mqc_mpi_tags -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node5" class="node">
+<title>module~mqc_mpi_tags</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node5"><a xlink:href="../module/mqc_mpi_tags.html" xlink:title="mqc_mpi_tags">
+<polygon fill="#337ab7" stroke="#337ab7" points="676.5,-581.62 587.5,-581.62 587.5,-557.62 676.5,-557.62 676.5,-581.62"/>
+<text text-anchor="middle" x="632" y="-567.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_tags</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_mpi_tags -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge4" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_mpi_tags</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M755.6,-357.97C752.5,-391.84 739.51,-487.45 689,-543.62 686.1,-546.85 682.71,-549.71 679.07,-552.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="676.99,-549.39 670.21,-557.53 680.58,-555.4 676.99,-549.39"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node6" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node6"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="539,-135.62 400,-135.62 400,-111.62 539,-111.62 539,-135.62"/>
+<text text-anchor="middle" x="469.5" y="-121.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge5" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M752.84,-333.28C744.99,-308.72 724.3,-253.29 689,-220.62 643.93,-178.9 577.96,-153.01 530.31,-138.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="531.01,-135.14 520.43,-135.67 529.04,-141.85 531.01,-135.14"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node7" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="689,-419.62 575,-419.62 575,-395.62 689,-395.62 689,-419.62"/>
+<text text-anchor="middle" x="632" y="-405.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_blas_interfaces -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge6" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M738.68,-357.71C725.36,-366.43 706.51,-378.11 689,-386.62 685.27,-388.43 681.34,-390.19 677.37,-391.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="676.04,-388.63 668.08,-395.62 678.66,-395.12 676.04,-388.63"/>
+</g>
+<!-- pic_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node8" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="496.5,-459.62 442.5,-459.62 442.5,-435.62 496.5,-435.62 496.5,-459.62"/>
+<text text-anchor="middle" x="469.5" y="-445.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge7" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M753.5,-357.75C743.75,-394 709.08,-500.76 633,-529.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M631,-529.62C585.13,-547.02 583.36,-489.58 539,-468.62 528.77,-463.79 517.17,-459.74 506.45,-456.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="507.11,-453.07 496.53,-453.7 505.19,-459.81 507.11,-453.07"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node9" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="503.5,-337.62 435.5,-337.62 435.5,-313.62 503.5,-313.62 503.5,-337.62"/>
+<text text-anchor="middle" x="469.5" y="-323.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_logger -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge8" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M724.8,-343.4C673.46,-339.81 572.02,-332.72 513.97,-328.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="513.88,-325.15 503.66,-327.94 513.4,-332.13 513.88,-325.15"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node10" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-418.62 271,-418.62 271,-394.62 343,-394.62 343,-418.62"/>
+<text text-anchor="middle" x="307" y="-404.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_mpi_lib -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge9" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M631,-529.62C564.3,-554.92 540.67,-542.45 470.5,-529.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M468.5,-529.62C437.42,-523.94 426.79,-527.36 400,-510.62 365.71,-489.19 336.86,-451.2 321.04,-427.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="323.84,-425.42 315.45,-418.95 317.97,-429.24 323.84,-425.42"/>
+</g>
+<!-- pic_timer -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node11" class="node">
+<title>pic_timer</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="663,-253.62 601,-253.62 601,-229.62 663,-229.62 663,-253.62"/>
+<text text-anchor="middle" x="632" y="-239.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_timer</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_timer -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge10" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_timer</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M749.54,-333.48C738.74,-315.61 716.29,-282.25 689,-262.62 684.09,-259.09 678.51,-256.07 672.82,-253.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="673.83,-250.16 663.24,-249.67 671.21,-256.65 673.83,-250.16"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node12" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-154.62 0,-154.62 0,-130.62 62,-130.62 62,-154.62"/>
+<text text-anchor="middle" x="31" y="-140.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge11" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M468.5,-529.62C398.33,-516.79 377.81,-544.26 308,-529.62"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge13" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M591.54,-377.66C585.76,-380.19 580.06,-383.17 575,-386.62 555.24,-400.09 559.17,-413.76 539,-426.62 529.2,-432.87 517.44,-437.35 506.44,-440.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="505.43,-437.18 496.64,-443.09 507.2,-443.95 505.43,-437.18"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_logger -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge14" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M586.72,-354.58C563.95,-348.91 536.3,-342.02 513.69,-336.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="514.24,-332.91 503.69,-333.89 512.55,-339.71 514.24,-332.91"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge16" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M586.62,-358.2C537.32,-352.33 457.16,-350.06 400,-384.62 334.69,-424.1 382.56,-545.93 308,-529.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M306,-529.62C222.18,-510.95 229.56,-452.55 157,-406.62"/>
+</g>
+<!-- pic_hash_32bit -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node21" class="node">
+<title>pic_hash_32bit</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="515,-501.62 424,-501.62 424,-477.62 515,-477.62 515,-501.62"/>
+<text text-anchor="middle" x="469.5" y="-487.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_hash_32bit -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge12" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_hash_32bit</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M587.62,-377.75C583.03,-380.2 578.7,-383.12 575,-386.62 546.09,-413.98 568.73,-442.16 539,-468.62 534.76,-472.39 529.86,-475.49 524.66,-478.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="522.95,-474.95 515.07,-482.02 525.65,-481.41 522.95,-474.95"/>
+</g>
+<!-- pic_sorting -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node22" class="node">
+<title>pic_sorting</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="504.5,-417.62 434.5,-417.62 434.5,-393.62 504.5,-393.62 504.5,-417.62"/>
+<text text-anchor="middle" x="469.5" y="-403.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_sorting</text>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_sorting -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge15" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_sorting</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M586.72,-376.66C564.27,-382.25 537.08,-389.03 514.65,-394.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="513.57,-391.28 504.72,-397.09 515.26,-398.07 513.57,-391.28"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge19" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.76,-274.16C585.55,-271.27 579.65,-267.51 575,-262.62 538.68,-224.42 575.24,-187.89 539,-149.62 535.81,-146.26 532.15,-143.32 528.2,-140.77"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="529.64,-137.56 519.2,-135.75 526.23,-143.68 529.64,-137.56"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_io -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge21" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M617.65,-295.68C605.37,-307.3 587.26,-325.84 575,-344.62 553.25,-377.95 568.73,-400.16 539,-426.62 530.02,-434.62 518.05,-439.57 506.63,-442.63"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="505.8,-439.23 496.83,-444.87 507.36,-446.06 505.8,-439.23"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_logger -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge22" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.74,-293.9C568,-300.11 537.73,-308.03 513.37,-314.4"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="512.46,-311.02 503.67,-316.94 514.23,-317.8 512.46,-311.02"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge23" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.94,-272.67C575.7,-268.65 556.58,-264.6 539,-262.62 477.61,-255.7 461.39,-255.7 400,-262.62 358.32,-267.32 346.58,-267.17 308,-283.62"/>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M306,-283.62C226.21,-315.36 229.56,-452.55 157,-406.62"/>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M155,-406.62C68.24,-351.71 41.73,-217.81 34.47,-164.78"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="37.93,-164.23 33.2,-154.75 30.99,-165.11 37.93,-164.23"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node15" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node15"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="352.5,-255.62 261.5,-255.62 261.5,-231.62 352.5,-231.62 352.5,-255.62"/>
+<text text-anchor="middle" x="307" y="-241.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_elements -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge17" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.93,-273.57C585.77,-270.75 579.85,-267.17 575,-262.62 546.56,-235.95 571.74,-203.79 539,-182.62 487.12,-149.08 457.24,-159.38 400,-182.62 379.32,-191.02 382.38,-204.97 364,-217.62 359.08,-221.01 353.65,-224.15 348.16,-227"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="346.4,-223.97 338.95,-231.5 349.47,-230.26 346.4,-223.97"/>
+</g>
+<!-- module~mqc_io_helpers -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node18" class="node">
+<title>module~mqc_io_helpers</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node18"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
+<polygon fill="#337ab7" stroke="#337ab7" points="517.5,-215.62 421.5,-215.62 421.5,-191.62 517.5,-191.62 517.5,-215.62"/>
+<text text-anchor="middle" x="469.5" y="-201.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge18" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M592.72,-271.52C586.6,-268.96 580.49,-265.99 575,-262.62 556.5,-251.27 557.48,-241.01 539,-229.62 533.03,-225.94 526.46,-222.65 519.82,-219.73"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="520.69,-216.3 510.11,-215.74 518.03,-222.78 520.69,-216.3"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node19" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node19"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="521.5,-295.62 417.5,-295.62 417.5,-271.62 521.5,-271.62 521.5,-295.62"/>
+<text text-anchor="middle" x="469.5" y="-281.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_result_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge20" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M591.74,-283.62C573.72,-283.62 551.92,-283.62 531.81,-283.62"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="531.79,-280.12 521.79,-283.62 531.79,-287.12 531.79,-280.12"/>
+</g>
+<!-- module~mqc_mpi_tags&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge24" class="edge">
+<title>module~mqc_mpi_tags&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M587.45,-566.89C524.97,-562.38 406.59,-551.58 308,-529.62"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge31" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M441.21,-135.76C428.41,-141.8 413.11,-149.54 400,-157.62 382.97,-168.11 382.66,-177.43 364,-184.62 277.78,-217.82 248.21,-218.3 157,-203.62"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node13" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node13"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="339,-175.62 275,-175.62 275,-151.62 339,-151.62 339,-175.62"/>
+<text text-anchor="middle" x="307" y="-161.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge25" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M420.34,-135.62C397.71,-141.26 370.99,-147.92 349.29,-153.33"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="348.25,-149.98 339.39,-155.8 349.94,-156.77 348.25,-149.98"/>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node14" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node14"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="364,-133.62 250,-133.62 250,-109.62 364,-109.62 364,-133.62"/>
+<text text-anchor="middle" x="307" y="-119.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge26" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M399.97,-122.77C391.49,-122.66 382.83,-122.55 374.38,-122.45"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="374.25,-118.95 364.21,-122.32 374.16,-125.95 374.25,-118.95"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge27" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M422.78,-135.67C414.59,-139.24 406.58,-143.81 400,-149.62 374.37,-172.25 388.8,-194.08 364,-217.62 360.45,-220.99 356.37,-223.99 352.08,-226.64"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="350.15,-223.71 343.07,-231.6 353.52,-229.85 350.15,-223.71"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node16" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node16"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-91.62 122.5,-91.62 122.5,-67.62 189.5,-67.62 189.5,-91.62"/>
+<text text-anchor="middle" x="156" y="-77.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge28" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M419.29,-111.56C401.9,-107.63 382.16,-103.53 364,-100.62 307.61,-91.59 241.92,-85.7 199.92,-82.52"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="200.01,-79.02 189.78,-81.77 199.49,-86 200.01,-79.02"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node17" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node17"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-49.62 109.5,-49.62 109.5,-25.62 202.5,-25.62 202.5,-49.62"/>
+<text text-anchor="middle" x="156" y="-35.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge29" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M460.89,-111.37C445.78,-88.34 409.49,-39.27 364,-20.62 310.92,1.14 243.86,-10.71 200.7,-22.81"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="199.69,-19.46 191.07,-25.62 201.65,-26.17 199.69,-19.46"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node20" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node20"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="356.5,-53.62 257.5,-53.62 257.5,-29.62 356.5,-29.62 356.5,-53.62"/>
+<text text-anchor="middle" x="307" y="-39.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge30" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#33ff00" stroke-dasharray="5,2" d="M446.67,-111.45C425.66,-99.85 392.91,-82.06 364,-67.62 357.69,-64.47 350.92,-61.21 344.34,-58.12"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="345.47,-54.79 334.92,-53.74 342.51,-61.14 345.47,-54.79"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge32" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M274.78,-175.24C238.15,-188.3 179.54,-207.25 157,-203.62"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge37" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M266.18,-133.68C260.51,-136.2 254.93,-139.17 250,-142.62 229.86,-156.71 234.4,-170.9 214,-184.62 191.84,-199.52 183.36,-207.86 157,-203.62"/>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M155,-203.62C128.64,-199.38 122.11,-196.1 98,-184.62 83.83,-177.88 69.01,-168.66 57,-160.59"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="58.66,-157.47 48.44,-154.69 54.69,-163.24 58.66,-157.47"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge34" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M263.3,-109.59C243.29,-103.94 219.51,-97.24 199.53,-91.61"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="200.33,-88.2 189.76,-88.85 198.43,-94.94 200.33,-88.2"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge35" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M290.79,-109.45C273.12,-95.74 242.72,-73.45 214,-58.62 210.52,-56.82 206.84,-55.1 203.1,-53.48"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="204.34,-50.2 193.76,-49.64 201.68,-56.68 204.34,-50.2"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node23" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node23"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-175.62 107.5,-175.62 107.5,-151.62 204.5,-151.62 204.5,-175.62"/>
+<text text-anchor="middle" x="156" y="-161.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge33" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M263.3,-133.66C246.63,-138.36 227.33,-143.8 209.79,-148.74"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="208.38,-145.5 199.7,-151.58 210.28,-152.24 208.38,-145.5"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node24" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~gmbe_coordinator~~UsesGraph_node24"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-133.62 98,-133.62 98,-109.62 214,-109.62 214,-133.62"/>
+<text text-anchor="middle" x="156" y="-119.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge36" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M249.67,-121.62C241.47,-121.62 232.95,-121.62 224.56,-121.62"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="224.4,-118.12 214.4,-121.62 224.4,-125.12 224.4,-118.12"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge39" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M269.41,-231.54C239.53,-222.22 196,-209.9 157,-203.62"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_node25" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-255.62 127,-255.62 127,-231.62 185,-231.62 185,-255.62"/>
+<text text-anchor="middle" x="156" y="-241.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge38" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M261.3,-243.62C240.27,-243.62 215.46,-243.62 195.31,-243.62"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="195.24,-240.12 185.24,-243.62 195.24,-247.12 195.24,-240.12"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge40" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M113.73,-49.68C108.19,-52.19 102.78,-55.15 98,-58.62 74.65,-75.61 55.29,-103 43.7,-121.86"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="40.61,-120.21 38.51,-130.6 46.63,-123.79 40.61,-120.21"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge41" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M417.72,-295.75C411.52,-298.22 405.46,-301.15 400,-304.62 366.44,-326 337.55,-362.84 321.49,-385.9"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="318.52,-384.05 315.8,-394.29 324.31,-387.99 318.52,-384.05"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge42" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M417.29,-273.64C384.71,-269.66 342.35,-268.98 308,-283.62"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge45" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M281.5,-29.48C240.35,-10.98 156.19,18.59 98,-16.62 60.55,-39.28 43.32,-90.96 36.26,-120.61"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="32.83,-119.93 34.11,-130.45 39.67,-121.43 32.83,-119.93"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge43" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M258.86,-53.64C239.86,-58.49 218.12,-64.03 199.61,-68.75"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="198.52,-65.42 189.7,-71.28 200.25,-72.2 198.52,-65.42"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge44" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#3200ff" stroke-dasharray="5,2" d="M257.21,-40.31C243.07,-39.93 227.53,-39.51 212.99,-39.12"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="212.7,-35.61 202.61,-38.85 212.52,-42.61 212.7,-35.61"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge46" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M107.44,-155.5C95.75,-153.5 83.34,-151.39 72.04,-149.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.47,-145.98 62.02,-147.75 71.29,-152.88 72.47,-145.98"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~gmbe_coordinator~~UsesGraph_edge47" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M97.82,-131.38C89.18,-132.86 80.42,-134.35 72.23,-135.75"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="71.49,-132.33 62.22,-137.46 72.66,-139.23 71.49,-132.33"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocgmbe_coordinatorUsesGraph = svgPanZoom('#procgmbe_coordinatorUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>MPI-enabled GMBE coordinator: distributes monomers and intersections across ranks
+Similar to global_coordinator but handles GMBE-specific fragment types</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-node_comm"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>node_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+                <p>Number of monomers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+                <p>Monomer indices (n_monomers, 1)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+                <p>Intersection atom lists</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+                <p>k-tuples that created intersections</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+                <p>Level k of each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+                <p>Number of intersection fragments</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>node_leader_ranks</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-num_nodes"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>num_nodes</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~2"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calc_type~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calc_type</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~2"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~gmbe_coordinator~~CallsGraph Pages: 1 -->
+<svg id="procgmbe_coordinatorCallsGraph" width="641pt" height="618pt"
+ viewBox="0.00 0.00 641.00 617.66" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~gmbe_coordinator~~CallsGraph" class="graph" transform="scale(0.9 0.9) rotate(0) translate(4 684)">
+<title>proc~~gmbe_coordinator~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-684 710,-684 710,4 -4,4"/>
+<!-- proc~gmbe_coordinator -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node1" class="node">
+<title>proc~gmbe_coordinator</title>
+<polygon fill="none" stroke="black" points="111,-352 0,-352 0,-328 111,-328 111,-352"/>
+<text text-anchor="middle" x="55.5" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_coordinator</text>
+</g>
+<!-- dummy_levels -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node2" class="node">
+<title>dummy_levels</title>
+<polygon fill="#777777" stroke="#777777" points="285,-680 196,-680 196,-656 285,-656 285,-680"/>
+<text text-anchor="middle" x="240.5" y="-665.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dummy_levels</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;dummy_levels -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge1" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;dummy_levels</title>
+<path fill="none" stroke="#ff0000" d="M56.06,-352.17C55.12,-398.26 58.27,-563.72 147,-647 157.53,-656.88 171.71,-662.46 185.79,-665.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="185.52,-669.03 195.97,-667.33 186.74,-662.14 185.52,-669.03"/>
+</g>
+<!-- dummy_results -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node3" class="node">
+<title>dummy_results</title>
+<polygon fill="#777777" stroke="#777777" points="287,-638 194,-638 194,-614 287,-614 287,-638"/>
+<text text-anchor="middle" x="240.5" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dummy_results</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;dummy_results -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge2" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;dummy_results</title>
+<path fill="none" stroke="#ff0000" d="M56.72,-352.24C58.17,-394.4 68.92,-534.78 147,-605 157.15,-614.13 170.42,-619.54 183.73,-622.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="183.37,-626.2 193.86,-624.69 184.73,-619.33 183.37,-626.2"/>
+</g>
+<!-- dummy_sets -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node4" class="node">
+<title>dummy_sets</title>
+<polygon fill="#777777" stroke="#777777" points="280,-596 201,-596 201,-572 280,-572 280,-596"/>
+<text text-anchor="middle" x="240.5" y="-581.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dummy_sets</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;dummy_sets -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge3" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;dummy_sets</title>
+<path fill="none" stroke="#ff0000" d="M57.88,-352.26C62.69,-389.21 82.17,-500.48 147,-558 159.08,-568.72 175.25,-575.05 190.69,-578.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="190.17,-582.24 200.68,-580.87 191.61,-575.39 190.17,-582.24"/>
+</g>
+<!-- error -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node5" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-601 417.5,-601 417.5,-577 471.5,-577 471.5,-601"/>
+<text text-anchor="middle" x="444.5" y="-586.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;error -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge4" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M58.65,-352.28C65.19,-385.81 88.16,-479.51 147,-525 214.09,-576.87 251.18,-544.76 334,-563 358.6,-568.42 386.19,-574.97 407.52,-580.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="406.9,-583.6 417.45,-582.56 408.56,-576.8 406.9,-583.6"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node6" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="293.5,-394 187.5,-394 187.5,-370 293.5,-370 293.5,-394"/>
+<text text-anchor="middle" x="240.5" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;get_elapsed_time -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge5" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#ff0000" d="M108.18,-352.04C120.87,-354.98 134.42,-358.11 147,-361 156.75,-363.24 167.08,-365.6 177.17,-367.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="176.62,-371.36 187.15,-370.16 178.17,-364.53 176.62,-371.36"/>
+</g>
+<!-- info -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node7" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-433 417.5,-433 417.5,-409 471.5,-409 471.5,-433"/>
+<text text-anchor="middle" x="444.5" y="-418.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;info -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge6" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M69.01,-352.15C85.38,-367.18 115.72,-392.13 147,-403 236.43,-434.07 350.06,-429.84 407.21,-424.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="407.56,-428.44 417.2,-424.04 406.92,-421.46 407.56,-428.44"/>
+</g>
+<!-- iprobe -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node8" class="node">
+<title>iprobe</title>
+<polygon fill="#777777" stroke="#777777" points="267.5,-352 213.5,-352 213.5,-328 267.5,-328 267.5,-352"/>
+<text text-anchor="middle" x="240.5" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;iprobe -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge7" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;iprobe</title>
+<path fill="none" stroke="#ff0000" d="M111.41,-340C141.02,-340 176.75,-340 202.94,-340"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.18,-343.5 213.18,-340 203.18,-336.5 203.18,-343.5"/>
+</g>
+<!-- irecv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node9" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-312 417.5,-312 417.5,-288 471.5,-288 471.5,-312"/>
+<text text-anchor="middle" x="444.5" y="-297.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;irecv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge8" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;irecv</title>
+<path fill="none" stroke="#ff0000" d="M101.8,-327.95C116.16,-324.55 132.16,-321.18 147,-319 240.01,-305.32 350.87,-301.49 407.02,-300.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="407.23,-303.91 417.17,-300.24 407.11,-296.91 407.23,-303.91"/>
+</g>
+<!-- isend -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node10" class="node">
+<title>isend</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-192 417.5,-192 417.5,-168 471.5,-168 471.5,-192"/>
+<text text-anchor="middle" x="444.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;isend -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge9" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;isend</title>
+<path fill="none" stroke="#ff0000" d="M63.7,-327.74C77.11,-306.06 108.14,-261.16 147,-239 149.85,-237.37 329.25,-202.27 407.58,-187"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="408.34,-190.41 417.49,-185.06 407,-183.54 408.34,-190.41"/>
+</g>
+<!-- proc~compute_gmbe_energy -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node11" class="node">
+<title>proc~compute_gmbe_energy</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node11"><a xlink:href="../proc/compute_gmbe_energy.html" xlink:title="compute_gmbe_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="310,-474 171,-474 171,-450 310,-450 310,-474"/>
+<text text-anchor="middle" x="240.5" y="-459.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_gmbe_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~compute_gmbe_energy -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge10" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~compute_gmbe_energy</title>
+<path fill="none" stroke="#ff0000" d="M64.47,-352C78.62,-372.38 110.16,-413.7 147,-436 153.72,-440.07 161.1,-443.52 168.67,-446.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="167.73,-449.83 178.32,-449.88 170.07,-443.23 167.73,-449.83"/>
+</g>
+<!-- proc~print_gmbe_json -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node12" class="node">
+<title>proc~print_gmbe_json</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node12"><a xlink:href="../proc/print_gmbe_json.html" xlink:title="print_gmbe_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="290.5,-516 190.5,-516 190.5,-492 290.5,-492 290.5,-516"/>
+<text text-anchor="middle" x="240.5" y="-501.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_gmbe_json</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~print_gmbe_json -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge11" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~print_gmbe_json</title>
+<path fill="none" stroke="#ff0000" d="M60.56,-352.25C70.48,-380.21 98.76,-448.93 147,-483 156.88,-489.98 168.7,-494.68 180.54,-497.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="179.91,-501.28 190.45,-500.14 181.5,-494.47 179.91,-501.28"/>
+</g>
+<!-- proc~result_irecv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node13" class="node">
+<title>proc~result_irecv</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node13"><a xlink:href="../proc/result_irecv.html" xlink:title="result_irecv">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-272 204,-272 204,-248 277,-248 277,-272"/>
+<text text-anchor="middle" x="240.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_irecv</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~result_irecv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge12" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~result_irecv</title>
+<path fill="none" stroke="#ff0000" d="M73.79,-327.79C91.48,-315.76 120.11,-297.56 147,-286 161.83,-279.62 178.68,-274.35 193.88,-270.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.8,-273.64 203.61,-267.74 193.05,-266.86 194.8,-273.64"/>
+</g>
+<!-- proc~send_gmbe_fragment_to_node -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node14" class="node">
+<title>proc~send_gmbe_fragment_to_node</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node14"><a xlink:href="../proc/send_gmbe_fragment_to_node.html" xlink:title="send_gmbe_fragment_to_node">
+<polygon fill="#d9534f" stroke="#d9534f" points="329,-192 152,-192 152,-168 329,-168 329,-192"/>
+<text text-anchor="middle" x="240.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_gmbe_fragment_to_node</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~send_gmbe_fragment_to_node -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge13" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~send_gmbe_fragment_to_node</title>
+<path fill="none" stroke="#ff0000" d="M61.23,-327.89C72.15,-301.53 101.71,-238.7 147,-206 152.45,-202.06 158.48,-198.72 164.77,-195.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.18,-199.09 174.13,-192.08 163.55,-192.6 166.18,-199.09"/>
+</g>
+<!-- proc~send_gmbe_fragment_to_worker -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node15" class="node">
+<title>proc~send_gmbe_fragment_to_worker</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node15"><a xlink:href="../proc/send_gmbe_fragment_to_worker.html" xlink:title="send_gmbe_fragment_to_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="334,-150 147,-150 147,-126 334,-126 334,-150"/>
+<text text-anchor="middle" x="240.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_gmbe_fragment_to_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;proc~send_gmbe_fragment_to_worker -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge14" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;proc~send_gmbe_fragment_to_worker</title>
+<path fill="none" stroke="#ff0000" d="M58.89,-327.58C65.92,-294.53 89.78,-203.89 147,-159 148.79,-157.6 150.66,-156.28 152.58,-155.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="154.33,-158.09 161.4,-150.19 150.95,-151.96 154.33,-158.09"/>
+</g>
+<!-- start -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node16" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="267.5,-108 213.5,-108 213.5,-84 267.5,-84 267.5,-108"/>
+<text text-anchor="middle" x="240.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;start -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge15" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;start</title>
+<path fill="none" stroke="#ff0000" d="M57.59,-327.85C61.65,-290.19 79.34,-174.49 147,-117 162.39,-103.93 184.26,-98.56 202.87,-96.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.41,-99.98 213.09,-95.68 202.84,-93.01 203.41,-99.98"/>
+</g>
+<!-- to_char -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node17" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="267.5,-66 213.5,-66 213.5,-42 267.5,-42 267.5,-66"/>
+<text text-anchor="middle" x="240.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;to_char -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge16" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M56.72,-327.76C58.17,-285.6 68.92,-145.22 147,-75 162.19,-61.34 184.37,-55.99 203.21,-54.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.54,-57.58 213.26,-53.38 203.04,-50.6 203.54,-57.58"/>
+</g>
+<!-- verbose -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node18" class="node">
+<title>verbose</title>
+<polygon fill="#777777" stroke="#777777" points="268,-24 213,-24 213,0 268,0 268,-24"/>
+<text text-anchor="middle" x="240.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;verbose -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge17" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;verbose</title>
+<path fill="none" stroke="#ff0000" d="M56.06,-327.83C55.12,-281.74 58.27,-116.28 147,-33 161.79,-19.12 183.77,-13.73 202.59,-11.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="202.92,-15.37 212.65,-11.19 202.43,-8.38 202.92,-15.37"/>
+</g>
+<!-- proc~compute_gmbe_energy&#45;&gt;info -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge19" class="edge">
+<title>proc~compute_gmbe_energy&#45;&gt;info</title>
+<path fill="none" stroke="#00d1ff" d="M300.74,-449.98C335.32,-442.96 377.81,-434.33 407.41,-428.33"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="408.2,-431.74 417.3,-426.32 406.81,-424.88 408.2,-431.74"/>
+</g>
+<!-- debug -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node19" class="node">
+<title>debug</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-391 417.5,-391 417.5,-367 471.5,-367 471.5,-391"/>
+<text text-anchor="middle" x="444.5" y="-376.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
+</g>
+<!-- proc~compute_gmbe_energy&#45;&gt;debug -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge18" class="edge">
+<title>proc~compute_gmbe_energy&#45;&gt;debug</title>
+<path fill="none" stroke="#00d1ff" d="M263.73,-449.83C288.95,-436.36 331.57,-414.64 370,-400 382.01,-395.42 395.46,-391.3 407.54,-387.95"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="408.55,-391.3 417.29,-385.32 406.73,-384.54 408.55,-391.3"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node20" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node20"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="512.5,-475 376.5,-475 376.5,-451 512.5,-451 512.5,-475"/>
+<text text-anchor="middle" x="444.5" y="-460.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy&#45;&gt;proc~energy_total -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge20" class="edge">
+<title>proc~compute_gmbe_energy&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#00d1ff" d="M310.17,-462.34C328.22,-462.43 347.8,-462.53 366.26,-462.62"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="366.37,-466.12 376.39,-462.67 366.41,-459.12 366.37,-466.12"/>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;error -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge21" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;error</title>
+<path fill="none" stroke="#0078ff" d="M290.57,-512.57C305.22,-516.48 320.86,-522.07 334,-530 353.92,-542.03 350.11,-555.93 370,-568 381.26,-574.83 394.83,-579.52 407.23,-582.7"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="406.76,-586.19 417.3,-585.04 408.34,-579.37 406.76,-586.19"/>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;info -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge22" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;info</title>
+<path fill="none" stroke="#0078ff" d="M290.72,-498.73C305.37,-495.64 320.98,-490.75 334,-483 354.84,-470.6 349.51,-454.97 370,-442 381.13,-434.96 394.67,-430.22 407.08,-427.06"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="408.2,-430.39 417.17,-424.76 406.64,-423.57 408.2,-430.39"/>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;proc~energy_total -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge23" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#0078ff" d="M290.66,-494.02C315.72,-488.94 346.63,-482.66 374.08,-477.09"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="374.92,-480.49 384.02,-475.07 373.53,-473.63 374.92,-480.49"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node21" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node21"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="490,-559 399,-559 399,-535 490,-535 490,-559"/>
+<text text-anchor="middle" x="444.5" y="-544.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;proc~get_basename -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge24" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#0078ff" d="M290.66,-514.46C320.35,-520.78 358.24,-528.85 388.87,-535.37"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="388.45,-538.86 398.96,-537.52 389.91,-532.01 388.45,-538.86"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node22" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node22"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="519,-517 370,-517 370,-493 519,-493 519,-517"/>
+<text text-anchor="middle" x="444.5" y="-502.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge25" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#0078ff" d="M290.66,-504.24C311.5,-504.35 336.39,-504.47 359.97,-504.59"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="359.96,-508.09 369.98,-504.64 359.99,-501.09 359.96,-508.09"/>
+</g>
+<!-- proc~result_irecv&#45;&gt;irecv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge26" class="edge">
+<title>proc~result_irecv&#45;&gt;irecv</title>
+<path fill="none" stroke="#001dff" d="M277.15,-267.06C313.8,-274.32 370.57,-285.56 407.38,-292.85"/>
+<polygon fill="#001dff" stroke="#001dff" points="406.72,-296.28 417.21,-294.79 408.08,-289.42 406.72,-296.28"/>
+</g>
+<!-- recv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node23" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="471.5,-270 417.5,-270 417.5,-246 471.5,-246 471.5,-270"/>
+<text text-anchor="middle" x="444.5" y="-255.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~result_irecv&#45;&gt;recv -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge27" class="edge">
+<title>proc~result_irecv&#45;&gt;recv</title>
+<path fill="none" stroke="#001dff" d="M277.15,-259.65C313.64,-259.29 370.08,-258.73 406.91,-258.36"/>
+<polygon fill="#001dff" stroke="#001dff" points="407.24,-261.86 417.21,-258.26 407.17,-254.86 407.24,-261.86"/>
+</g>
+<!-- proc~send_gmbe_fragment_to_node&#45;&gt;isend -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge28" class="edge">
+<title>proc~send_gmbe_fragment_to_node&#45;&gt;isend</title>
+<path fill="none" stroke="#3c00ff" d="M329.22,-180C356.67,-180 385.45,-180 407.26,-180"/>
+<polygon fill="#3c00ff" stroke="#3c00ff" points="407.38,-183.5 417.37,-180 407.37,-176.5 407.38,-183.5"/>
+</g>
+<!-- proc~send_gmbe_fragment_to_worker&#45;&gt;isend -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge29" class="edge">
+<title>proc~send_gmbe_fragment_to_worker&#45;&gt;isend</title>
+<path fill="none" stroke="#9500ff" d="M299.39,-150.04C334.22,-157.28 377.47,-166.27 407.46,-172.51"/>
+<polygon fill="#9500ff" stroke="#9500ff" points="406.97,-175.98 417.47,-174.59 408.4,-169.13 406.97,-175.98"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_node24" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~gmbe_coordinator~~CallsGraph_node24"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="706,-475 555,-475 555,-451 706,-451 706,-475"/>
+<text text-anchor="middle" x="630.5" y="-460.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~gmbe_coordinator~~CallsGraph_edge30" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#cbff00" d="M512.71,-463C523.06,-463 533.86,-463 544.53,-463"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="544.7,-466.5 554.7,-463 544.7,-459.5 544.7,-466.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocgmbe_coordinatorCallsGraph = svgPanZoom('#procgmbe_coordinatorCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~gmbe_coordinator~~CalledByGraph Pages: 1 -->
+<svg id="procgmbe_coordinatorCalledByGraph" width="641pt" height="44pt"
+ viewBox="0.00 0.00 641.00 43.80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~gmbe_coordinator~~CalledByGraph" class="graph" transform="scale(0.84 0.84) rotate(0) translate(4 48)">
+<title>proc~~gmbe_coordinator~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-48 757,-48 757,4 -4,4"/>
+<!-- proc~gmbe_coordinator -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_node1" class="node">
+<title>proc~gmbe_coordinator</title>
+<polygon fill="none" stroke="black" points="753,-44 642,-44 642,-20 753,-20 753,-44"/>
+<text text-anchor="middle" x="697.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_coordinator</text>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_node2" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~gmbe_coordinator~~CalledByGraph_node2"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-44 443,-44 443,-20 606,-20 606,-44"/>
+<text text-anchor="middle" x="524.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_coordinator -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_edge1" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M606.24,-32C614.85,-32 623.52,-32 631.91,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="631.97,-35.5 641.97,-32 631.97,-28.5 631.97,-35.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_node3" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~gmbe_coordinator~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-44 313,-44 313,-20 407,-20 407,-44"/>
+<text text-anchor="middle" x="360" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_edge2" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M407.13,-32C415.24,-32 423.94,-32 432.78,-32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-35.5 442.8,-32 432.8,-28.5 432.8,-35.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~gmbe_coordinator~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
+</g>
+<!-- program~main -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_node5" class="node">
+<title>program~main</title>
+<g id="a_proc~~gmbe_coordinator~~CalledByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~gmbe_coordinator~~CalledByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocgmbe_coordinatorCalledByGraph = svgPanZoom('#procgmbe_coordinatorCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer"></span>
+              type(timer_type),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_timer</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-current_fragment_idx"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>current_fragment_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dummy_msg"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dummy_msg</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-finished_nodes"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>finished_nodes</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_idx~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handling_local_workers"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>handling_local_workers</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_pending"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_pending</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_results~2"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_results</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_size~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-is_monomer"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>is_monomer</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_dummy"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_dummy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_finished_workers"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_finished_workers</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_status"></span>
+              type(MPI_Status),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_indices~3"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>monomer_indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_results~2"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>monomer_results</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-req~3"></span>
+              type(request_t),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>req</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-request_source"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>request_source</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results_received"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results_received</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-status~3"></span>
+              type(MPI_Status),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~5"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_fragments"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_fragments</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-worker_fragment_map"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>worker_fragment_map</strong>(node_comm%size())</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-worker_source"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>worker_source</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">gmbe_coordinator</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                   </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">node_leader_ranks</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! MPI-enabled GMBE coordinator: distributes monomers and intersections across ranks</span>
+<span class="w">      </span><span class="c">!! Similar to global_coordinator but handles GMBE-specific fragment types</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_mbe</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">compute_gmbe_energy</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers</span><span class="w">  </span><span class="c">!! Number of monomers</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Monomer indices (n_monomers, 1)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersections</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Intersection atom lists</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! k-tuples that created intersections</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Level k of each intersection</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_intersections</span><span class="w">  </span><span class="c">!! Number of intersection fragments</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node_leader_ranks</span><span class="p">(:),</span><span class="w"> </span><span class="n">num_nodes</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">timer_type</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coord_timer</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">current_fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">results_received</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">finished_nodes</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">request_source</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handling_local_workers</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_pending</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_monomer</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_size</span>
+
+<span class="w">      </span><span class="c">! For local workers</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="p">,</span><span class="w"> </span><span class="n">local_dummy</span>
+
+<span class="w">      </span><span class="c">! Storage for results</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(:),</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">node_comm</span><span class="p">%</span><span class="n">size</span><span class="p">())</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">worker_source</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
+
+<span class="w">      </span><span class="c">! MPI request handles for non-blocking operations</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
+
+<span class="w">      </span><span class="c">! Total fragments = monomers + intersections</span>
+<span class="w">      </span><span class="n">total_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_monomers</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_intersections</span>
+<span class="w">      </span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_fragments</span>
+<span class="w">      </span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">handling_local_workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">node_comm</span><span class="p">%</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="n">results_received</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">worker_fragment_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="c">! Allocate storage for results</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_results</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">))</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_results</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;GMBE coordinator starting with &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="s2">&quot; monomers and &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_intersections</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; intersections for &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                          </span><span class="n">to_char</span><span class="p">(</span><span class="n">num_nodes</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; nodes&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">coord_timer</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
+<span class="w">      </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">)</span>
+
+<span class="w">         </span><span class="c">! PRIORITY 1: Check for incoming results from local workers</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">handling_local_workers</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            do</span>
+<span class="k">               call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">               </span><span class="n">worker_source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span>
+
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Received result from worker &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="s2">&quot; but no fragment was assigned!&quot;</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Invalid worker_fragment_map state&quot;</span>
+<span class="w">               </span><span class="k">end if</span>
+
+<span class="w">               </span><span class="c">! Determine if this was a monomer or intersection</span>
+<span class="w">               </span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)</span>
+<span class="w">               </span><span class="n">is_monomer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span>
+
+<span class="w">               </span><span class="c">! Receive result and store it</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_monomer</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">result_irecv</span><span class="p">(</span><span class="n">monomer_results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">),</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">worker_source</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="k">                  call </span><span class="n">result_irecv</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">),</span><span class="w"> </span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">worker_source</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">               </span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">worker_source</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">               </span><span class="n">results_received</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results_received</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="o">/</span><span class="mi">10</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                   </span><span class="n">results_received</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Processed &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">results_received</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                   </span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments [&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                   </span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s]&quot;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">            end do</span>
+<span class="k">         end if</span>
+
+<span class="w">         </span><span class="c">! PRIORITY 1b: Check for incoming results from remote node coordinators</span>
+<span class="w">         </span><span class="k">do</span>
+<span class="k">            call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="w">            </span><span class="c">! Receive fragment index</span>
+<span class="w">            </span><span class="k">call </span><span class="n">irecv</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Determine if this was a monomer or intersection</span>
+<span class="w">            </span><span class="n">is_monomer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Receive result</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_monomer</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">result_irecv</span><span class="p">(</span><span class="n">monomer_results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">),</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">TAG_NODE_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               call </span><span class="n">result_irecv</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">),</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">TAG_NODE_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="n">results_received</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results_received</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="o">/</span><span class="mi">10</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="n">results_received</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Processed &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">results_received</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="n">to_char</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; fragments [&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s]&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">         end do</span>
+
+<span class="w">         </span><span class="c">! PRIORITY 2: Remote node coordinator requests</span>
+<span class="w">         </span><span class="k">call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">irecv</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="n">request_source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">send_gmbe_fragment_to_node</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">current_fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                               </span><span class="n">intersections</span><span class="p">,</span><span class="w"> </span><span class="n">request_source</span><span class="p">)</span>
+<span class="w">               </span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="k">               call </span><span class="n">isend</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">request_source</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_FINISH</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">               </span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">         end if</span>
+
+<span class="w">         </span><span class="c">! PRIORITY 3: Local workers (shared memory) - send new work</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">handling_local_workers</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">node_comm</span><span class="p">%</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">irecv</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">local_dummy</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     call </span><span class="n">send_gmbe_fragment_to_worker</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">current_fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                       </span><span class="n">intersections</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span>
+<span class="w">                     </span><span class="n">worker_fragment_map</span><span class="p">(</span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_fragment_idx</span>
+<span class="w">                     </span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_fragment_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="k">else</span>
+<span class="k">                     call </span><span class="n">isend</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FINISH</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">                     </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="k">end if</span>
+<span class="k">               end if</span>
+<span class="k">            end if</span>
+<span class="k">         end if</span>
+
+<span class="w">         </span><span class="c">! Finalize local worker completion</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">handling_local_workers</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">node_comm</span><span class="p">%</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">             </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">results_received</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">handling_local_workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">            </span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">finished_nodes</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;GMBE coordinator finished all fragments&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">coord_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Time to evaluate all fragments &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s&quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute GMBE energy</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Computing Generalized Many-Body Expansion (GMBE)...&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">coord_timer</span><span class="p">%</span><span class="n">start</span><span class="p">()</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">fragment_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">         </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">compute_gmbe_energy</span><span class="p">(</span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="w">         </span><span class="c">! No intersections case - need dummy arrays</span>
+<span class="w">         </span><span class="k">block</span>
+<span class="k">            </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dummy_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">(:)</span>
+<span class="w">            </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">dummy_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">compute_gmbe_energy</span><span class="p">(</span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                     </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                     </span><span class="n">dummy_sets</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">dummy_sets</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end block</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">coord_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Time to compute GMBE &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE calculation completed successfully&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Final GMBE energy: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_energy</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; Hartree&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Write JSON output</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">print_gmbe_json</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                              </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="w">         </span><span class="c">! No intersections - need dummy arrays</span>
+<span class="w">         </span><span class="k">block</span>
+<span class="k">            </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dummy_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">(:)</span>
+<span class="w">            </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dummy_results</span><span class="p">(:)</span>
+<span class="w">            </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">dummy_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="n">dummy_results</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">print_gmbe_json</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">dummy_sets</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">dummy_sets</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_levels</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_results</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end block</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! Cleanup</span>
+<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_results</span><span class="p">)</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">gmbe_coordinator</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2025-12-31 16:28 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

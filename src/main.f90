@@ -46,7 +46,7 @@ program main
    ! Parse command line arguments
    if (command_argument_count() == 0) then
       if (world_comm%rank() == 0) then
-         call logger%error("No input file specified. Usage: metalquicha input_file.mqc")
+         call logger%error("No input file specified. Usage: mqc input_file.mqc")
       end if
       call abort_comm(world_comm, 1)
    else if (command_argument_count() == 1) then
