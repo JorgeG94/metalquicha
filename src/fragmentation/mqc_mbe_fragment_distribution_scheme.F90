@@ -310,7 +310,8 @@ contains
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
-      integer :: fragment_size, fragment_type
+      integer :: fragment_size
+      integer(int32) :: fragment_type
       integer, allocatable :: fragment_indices(:)
       type(request_t) :: req(4)
       integer(int32) :: fragment_idx_int32
@@ -345,7 +346,8 @@ contains
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
-      integer :: fragment_size, fragment_type
+      integer :: fragment_size
+      integer(int32) :: fragment_type
       integer, allocatable :: fragment_indices(:)
       type(request_t) :: req(4)
       integer(int32) :: fragment_idx_int32

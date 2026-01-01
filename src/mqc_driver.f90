@@ -271,9 +271,9 @@ contains
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          if (allow_overlapping_fragments) then
-            ! GMBE MPI processing
-            call gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_sets, &
-                   intersection_levels, n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+            ! GMBE MPI processing - PIE-based approach
+            call gmbe_pie_coordinator(world_comm, node_comm, pie_atom_sets, pie_coefficients, n_pie_terms, &
+                                      node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
          else
             ! Standard MBE MPI processing
             call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
@@ -282,11 +282,13 @@ contains
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
+         ! Node coordinator works for both MBE and GMBE (receives fragments from global coordinator)
          call node_coordinator(world_comm, node_comm, calc_type)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
+         ! Worker processes work for both MBE and GMBE (fragment_type distinguishes them)
          call node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       end if
 
