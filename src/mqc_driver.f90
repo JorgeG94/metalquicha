@@ -9,7 +9,7 @@ module mqc_driver
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
                                                    serial_fragment_processor, do_fragment_work
-   use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_processor, gmbe_coordinator, serial_gmbe_pie_processor
+   use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_pie_processor, gmbe_pie_coordinator
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
@@ -45,7 +45,6 @@ contains
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: i  !! Loop counter
-      logical :: has_broken_bonds  !! Flag for broken bonds (H-capping will occur)
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -73,56 +72,6 @@ contains
       ! GMBE(N): Base fragments are N-mers (e.g., dimers for N=2)
       ! Algorithm: Generate primaries, use DFS to enumerate overlapping cliques,
       ! accumulate PIE coefficients per unique atom set, evaluate each once
-
-      ! Validate gradient calculations with overlapping fragments
-      if (config%allow_overlapping_fragments .and. max_level > 0 .and. config%calc_type == CALC_TYPE_GRADIENT) then
-         if (world_comm%rank() == 0) then
-            call logger%error(" ")
-            call logger%error("ERROR: Gradient calculations with overlapping fragments are not supported")
-            call logger%error(" ")
-            call logger%error("Current settings:")
-            call logger%error("  nlevel = "//to_char(max_level))
-            call logger%error("  allow_overlapping_fragments = true")
-            call logger%error("  calc_type = Gradient")
-            call logger%error(" ")
-            call logger%error("GMBE gradients require implementing gradient intersection corrections,")
-            call logger%error("which is not currently supported.")
-            call logger%error(" ")
-            call logger%error("Solutions:")
-            call logger%error("  1. Use calc_type = Energy instead of Gradient")
-            call logger%error("  2. Set allow_overlapping_fragments = false")
-            call logger%error("  3. Use unfragmented calculation (nlevel = 0)")
-            call logger%error(" ")
-         end if
-         call abort_comm(world_comm, 1)
-      end if
-
-      ! Validate gradient calculations with H-capping
-      if (max_level > 0 .and. config%calc_type == CALC_TYPE_GRADIENT) then
-         if (present(bonds)) then
-            has_broken_bonds = .false.
-            do i = 1, size(bonds)
-               if (bonds(i)%is_broken) then
-                  has_broken_bonds = .true.
-                  exit
-               end if
-            end do
-
-            if (has_broken_bonds) then
-               if (world_comm%rank() == 0) then
-                  call logger%error(" ")
-                  call logger%error("ERROR: Gradient calculations with hydrogen capping are not supported yet")
-                  call logger%error(" ")
-                  call logger%error("Solutions:")
-                  call logger%error("  1. Use calc_type = Energy instead of Gradient")
-                  call logger%error("  2. Remove broken bonds from connectivity (no H-capping)")
-                  call logger%error("  3. Use unfragmented calculation (nlevel = 0)")
-                  call logger%error(" ")
-               end if
-               call abort_comm(world_comm, 1)
-            end if
-         end if
-      end if
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
@@ -322,22 +271,24 @@ contains
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          if (allow_overlapping_fragments) then
-            ! GMBE MPI processing
-            call gmbe_coordinator(world_comm, node_comm, n_monomers, polymers, intersections, intersection_sets, &
-                   intersection_levels, n_intersections, node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+            ! GMBE MPI processing - PIE-based approach
+            call gmbe_pie_coordinator(world_comm, node_comm, pie_atom_sets, pie_coefficients, n_pie_terms, &
+                                      node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
          else
             ! Standard MBE MPI processing
             call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                    node_leader_ranks, num_nodes, sys_geom, calc_type)
+                                    node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
          end if
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
+         ! Node coordinator works for both MBE and GMBE (receives fragments from global coordinator)
          call node_coordinator(world_comm, node_comm, calc_type)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
+         ! Worker processes work for both MBE and GMBE (fragment_type distinguishes them)
          call node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       end if
 

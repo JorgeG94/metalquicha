@@ -21,6 +21,7 @@ module mqc_physical_fragment
    public :: build_fragment_from_indices  !! Extract fragment from system
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
+   public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: fragment_centroid          !! Geometric centroid calculation
    public :: fragment_center_of_mass    !! Mass-weighted center calculation
@@ -45,6 +46,9 @@ module mqc_physical_fragment
       ! Hydrogen capping for broken bonds
       integer :: n_caps = 0  !! Number of hydrogen caps added (always at end of atom list)
       integer, allocatable :: cap_replaces_atom(:)  !! Original atom index that each cap replaces (size: n_caps)
+
+      ! Gradient redistribution support
+      integer, allocatable :: local_to_global(:)  !! Map fragment atom index to system atom index (size: n_atoms - n_caps)
 
       ! Quantum chemistry basis set
       type(molecular_basis_type), allocatable :: basis  !! Gaussian basis functions
@@ -290,8 +294,9 @@ contains
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
+      allocate (fragment%local_to_global(n_atoms_no_caps))  ! Only non-cap atoms
 
-      ! Copy original atoms
+      ! Copy original atoms and build local→global mapping
       frag_atom_idx = 0
       if (use_explicit_fragments) then
          ! Variable-sized: copy atoms based on explicit fragment definitions
@@ -303,6 +308,7 @@ contains
                atom_global_idx = sys_geom%fragment_atoms(j, mono_idx) + 1
                fragment%element_numbers(frag_atom_idx) = sys_geom%element_numbers(atom_global_idx)
                fragment%coordinates(:, frag_atom_idx) = sys_geom%coordinates(:, atom_global_idx)
+               fragment%local_to_global(frag_atom_idx) = atom_global_idx  ! Store 1-indexed global position
             end do
          end do
       else
@@ -312,13 +318,13 @@ contains
             atom_start = (mono_idx - 1)*atoms_per_monomer + 1
             atom_end = mono_idx*atoms_per_monomer
 
-            fragment%element_numbers(frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
-               sys_geom%element_numbers(atom_start:atom_end)
-
-            fragment%coordinates(:, frag_atom_idx + 1:frag_atom_idx + atoms_per_monomer) = &
-               sys_geom%coordinates(:, atom_start:atom_end)
-
-            frag_atom_idx = frag_atom_idx + atoms_per_monomer
+            ! Copy coordinates and elements
+            do atom_i = atom_start, atom_end
+               frag_atom_idx = frag_atom_idx + 1
+               fragment%element_numbers(frag_atom_idx) = sys_geom%element_numbers(atom_i)
+               fragment%coordinates(:, frag_atom_idx) = sys_geom%coordinates(:, atom_i)
+               fragment%local_to_global(frag_atom_idx) = atom_i  ! Store 1-indexed global position
+            end do
          end do
       end if
 
@@ -387,12 +393,14 @@ contains
       allocate (fragment%element_numbers(fragment%n_atoms))
       allocate (fragment%coordinates(3, fragment%n_atoms))
       if (n_caps > 0) allocate (fragment%cap_replaces_atom(n_caps))
+      allocate (fragment%local_to_global(n_atoms))  ! Only non-cap atoms
 
-      ! Copy original atoms (atom_indices are 0-indexed, add 1 for Fortran arrays)
+      ! Copy original atoms and build local→global mapping (atom_indices are 0-indexed, add 1 for Fortran arrays)
       do i = 1, n_atoms
          atom_global_idx = atom_indices(i) + 1  ! Convert to 1-indexed
          fragment%element_numbers(i) = sys_geom%element_numbers(atom_global_idx)
          fragment%coordinates(:, i) = sys_geom%coordinates(:, atom_global_idx)
+         fragment%local_to_global(i) = atom_global_idx  ! Store 1-indexed global position
       end do
 
       ! Add hydrogen caps at end (if any)
@@ -411,6 +419,55 @@ contains
       call check_duplicate_atoms(fragment)
 
    end subroutine build_fragment_from_atom_list
+
+   subroutine redistribute_cap_gradients(fragment, fragment_gradient, system_gradient)
+      !! Redistribute hydrogen cap gradients to original atoms
+      !!
+      !! This subroutine handles gradient redistribution for fragments with hydrogen caps.
+      !! Hydrogen caps are virtual atoms added at broken bonds - their gradients represent
+      !! forces at the bond breakpoint and must be transferred to the original atoms they replace.
+      !!
+      !! Algorithm:
+      !!   1. For real atoms (indices 1 to n_atoms - n_caps):
+      !!      Accumulate gradient to system using local_to_global mapping
+      !!   2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):
+      !!      Add cap gradient to the original atom it replaces (from cap_replaces_atom)
+      !!
+      !! Example:
+      !!   Fragment: [C, C, H_cap] where H_cap replaces atom 5 in system
+      !!   Fragment gradient: [(3,1), (3,2), (3,3)]
+      !!   - Atoms 1,2: accumulate to system using local_to_global
+      !!   - Atom 3 (cap): add gradient to system atom 5 (cap_replaces_atom(1) + 1)
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp), intent(in) :: fragment_gradient(:, :)   !! (3, n_atoms_fragment)
+      real(dp), intent(inout) :: system_gradient(:, :)  !! (3, n_atoms_system)
+
+      integer :: i, local_idx, global_idx
+      integer :: i_cap, local_cap_idx, global_original_idx
+      integer :: n_real_atoms
+
+      n_real_atoms = fragment%n_atoms - fragment%n_caps
+
+      ! Accumulate gradients for real atoms using local→global mapping
+      do i = 1, n_real_atoms
+         global_idx = fragment%local_to_global(i)
+         system_gradient(:, global_idx) = system_gradient(:, global_idx) + fragment_gradient(:, i)
+      end do
+
+      ! Redistribute cap gradients to original atoms they replace
+      if (fragment%n_caps > 0) then
+         do i_cap = 1, fragment%n_caps
+            local_cap_idx = n_real_atoms + i_cap
+            ! cap_replaces_atom is 0-indexed, add 1 for Fortran arrays
+            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+
+            ! Add cap gradient to the atom it replaces
+            system_gradient(:, global_original_idx) = system_gradient(:, global_original_idx) + &
+                                                      fragment_gradient(:, local_cap_idx)
+         end do
+      end if
+
+   end subroutine redistribute_cap_gradients
 
    subroutine check_duplicate_atoms(fragment)
       !! Validate that fragment has no spatially overlapping atoms
@@ -468,6 +525,7 @@ contains
       if (allocated(this%element_numbers)) deallocate (this%element_numbers)
       if (allocated(this%coordinates)) deallocate (this%coordinates)
       if (allocated(this%cap_replaces_atom)) deallocate (this%cap_replaces_atom)
+      if (allocated(this%local_to_global)) deallocate (this%local_to_global)
       if (allocated(this%basis)) then
          call this%basis%destroy()
          deallocate (this%basis)
