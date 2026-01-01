@@ -21,7 +21,9 @@ module mqc_physical_fragment
    public :: build_fragment_from_indices  !! Extract fragment from system
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
+   ! TODO: in theory there should be a nice way to redistribute for a general matrix of any shape, need to think about this!
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
+   public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: fragment_centroid          !! Geometric centroid calculation
    public :: fragment_center_of_mass    !! Mass-weighted center calculation
@@ -468,6 +470,99 @@ contains
       end if
 
    end subroutine redistribute_cap_gradients
+
+   subroutine redistribute_cap_hessian(fragment, fragment_hessian, system_hessian)
+      !! Redistribute hydrogen cap Hessian to original atoms
+      !!
+      !! This subroutine handles Hessian redistribution for fragments with hydrogen caps.
+      !! The Hessian is a rank-2 tensor (3N × 3N) representing second derivatives of energy
+      !! with respect to atomic coordinates. Similar to gradient redistribution, cap contributions
+      !! must be transferred to the original atoms they replace.
+      !!
+      !! Algorithm:
+      !!   1. For real atoms (indices 1 to n_atoms - n_caps):
+      !!      Accumulate Hessian blocks to system using local_to_global mapping for both dimensions
+      !!   2. For hydrogen caps (indices n_atoms - n_caps + 1 to n_atoms):
+      !!      Add cap Hessian blocks (row and column) to the original atom it replaces
+      !!
+      !! Note: Hessian is stored as a flattened 2D array (3*n_atoms, 3*n_atoms)
+      !!       where rows and columns are grouped by atoms (x,y,z for atom 1, then x,y,z for atom 2, etc.)
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp), intent(in) :: fragment_hessian(:, :)   !! (3*n_atoms_fragment, 3*n_atoms_fragment)
+      real(dp), intent(inout) :: system_hessian(:, :)  !! (3*n_atoms_system, 3*n_atoms_system)
+
+      integer :: i, j, local_i, local_j, global_i, global_j
+      integer :: icart, jcart
+      integer :: i_cap, local_cap_idx, global_original_idx
+      integer :: n_real_atoms
+
+      n_real_atoms = fragment%n_atoms - fragment%n_caps
+
+      ! Accumulate Hessian blocks for real atoms using local→global mapping
+      ! Both row (i) and column (j) dimensions need mapping
+      do i = 1, n_real_atoms
+         global_i = fragment%local_to_global(i)
+         do j = 1, n_real_atoms
+            global_j = fragment%local_to_global(j)
+
+            ! Copy 3×3 block for atom pair (i,j)
+            do icart = 0, 2  ! x, y, z for atom i
+               do jcart = 0, 2  ! x, y, z for atom j
+                  system_hessian(3*(global_i - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
+                     system_hessian(3*(global_i - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
+                     fragment_hessian(3*(i - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+               end do
+            end do
+         end do
+      end do
+
+      ! Redistribute cap Hessian blocks to original atoms they replace
+      if (fragment%n_caps > 0) then
+         do i_cap = 1, fragment%n_caps
+            local_cap_idx = n_real_atoms + i_cap
+            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+
+            ! Cap rows: redistribute to original atom (cap derivatives w.r.t. all other atoms)
+            do j = 1, n_real_atoms
+               global_j = fragment%local_to_global(j)
+               do icart = 0, 2
+                  do jcart = 0, 2
+                     system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
+                        system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
+                        fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+                  end do
+               end do
+            end do
+
+            ! Cap columns: redistribute to original atom (all other atoms' derivatives w.r.t. cap)
+            do i = 1, n_real_atoms
+               global_i = fragment%local_to_global(i)
+               do icart = 0, 2
+                  do jcart = 0, 2
+                     system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) = &
+                        system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) + &
+                        fragment_hessian(3*(i - 1) + icart + 1, 3*(local_cap_idx - 1) + jcart + 1)
+                  end do
+               end do
+            end do
+
+            ! Cap-cap blocks: redistribute to original atom diagonal block
+            do i_cap_2 = 1, fragment%n_caps
+               local_cap_idx_2 = n_real_atoms + i_cap_2
+               global_original_idx_2 = fragment%cap_replaces_atom(i_cap_2) + 1
+
+               do icart = 0, 2
+                  do jcart = 0, 2
+                    system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) = &
+                    system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) + &
+                        fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(local_cap_idx_2 - 1) + jcart + 1)
+                  end do
+               end do
+            end do
+         end do
+      end if
+
+   end subroutine redistribute_cap_hessian
 
    subroutine check_duplicate_atoms(fragment)
       !! Validate that fragment has no spatially overlapping atoms
