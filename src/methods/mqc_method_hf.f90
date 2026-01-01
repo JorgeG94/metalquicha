@@ -29,6 +29,7 @@ module mqc_method_hf
    contains
       procedure :: calc_energy => hf_calc_energy
       procedure :: calc_gradient => hf_calc_gradient
+      procedure :: calc_hessian => null_hessian  !! Placeholder for Hessian calculation
    end type hf_method_t
 
 contains
@@ -83,5 +84,16 @@ contains
       print *, "HF: Dummy gradient allocated"
 
    end subroutine hf_calc_gradient
+
+   subroutine null_hessian(this, fragment, result)
+      !! Placeholder for Hessian calculation
+      class(hf_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+
+      print *, "HF: Hessian calculation not implemented yet."
+      result%has_hessian = .false.
+
+   end subroutine null_hessian
 
 end module mqc_method_hf

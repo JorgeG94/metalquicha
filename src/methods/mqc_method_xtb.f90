@@ -34,6 +34,7 @@ module mqc_method_xtb
    contains
       procedure :: calc_energy => xtb_calc_energy      !! Energy-only calculation
       procedure :: calc_gradient => xtb_calc_gradient  !! Energy + gradient calculation
+      procedure :: calc_hessian => xtb_calc_hessian  !! Placeholder for Hessian calculation
    end type xtb_method_t
 
 contains
@@ -193,5 +194,23 @@ contains
       deallocate (num, xyz, gradient, sigma)
 
    end subroutine xtb_calc_gradient
+
+   subroutine xtb_calc_hessian(this, fragment, result)
+      !! Placeholder for Hessian calculation using Extended Tight-Binding (xTB) method
+      class(xtb_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+
+      ! Currently, tblite does not support Hessian calculations.
+      ! This is a placeholder to comply with the interface.
+
+      if (this%verbose) then
+         print *, "XTB: Hessian calculation is not implemented."
+      end if
+
+      ! Indicate that Hessian is not available
+      result%has_hessian = .false.
+
+   end subroutine xtb_calc_hessian
 
 end module mqc_method_xtb

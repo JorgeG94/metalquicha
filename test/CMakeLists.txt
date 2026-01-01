@@ -54,6 +54,7 @@ addtest(mqc_config_adapter)
 addtest(mqc_cli_parser)
 addtest(mqc_split_lines)
 addtest(mqc_result_types)
+addtest(mqc_finite_differences)
 
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)
