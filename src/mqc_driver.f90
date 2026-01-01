@@ -44,17 +44,11 @@ contains
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
-      integer :: matrix_size  !! Size of gradient matrix (natoms*3), tmp
       integer :: i  !! Loop counter
       logical :: has_broken_bonds  !! Flag for broken bonds (H-capping will occur)
 
       ! Set max_level from config
-      ! TODO JORGE: change to max fragmentation level
       max_level = config%nlevel
-
-      ! Set matrix_size based on atoms per monomer (natoms * 3 for gradient)
-      ! TODO JORGE: this is temporary, until we define a result_struct that will initialize itself
-      matrix_size = sys_geom%atoms_per_monomer*3
 
       if (world_comm%rank() == 0) then
          call logger%info("============================================")
@@ -63,7 +57,6 @@ contains
          call logger%info("  Atoms per monomer: "//to_char(sys_geom%atoms_per_monomer))
          call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
          call logger%info("  Fragment level: "//to_char(max_level))
-         call logger%info("  Matrix size (natoms*3): "//to_char(matrix_size))
          call logger%info("============================================")
       end if
 
@@ -136,7 +129,7 @@ contains
          call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
-                                         matrix_size, config%allow_overlapping_fragments, &
+                                         config%allow_overlapping_fragments, &
                                          config%max_intersection_level, bonds)
       end if
 
@@ -171,7 +164,7 @@ contains
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, matrix_size, &
+   subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, &
                                          allow_overlapping_fragments, max_intersection_level, bonds)
       !! Handle fragmented calculation (nlevel > 0)
       !!
@@ -184,7 +177,6 @@ contains
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
-      integer, intent(in) :: matrix_size  !! Size of gradient matrix (natoms*3)
       logical, intent(in) :: allow_overlapping_fragments  !! Use GMBE for overlapping fragments
       integer, intent(in) :: max_intersection_level  !! Maximum k-way intersection depth for GMBE
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
