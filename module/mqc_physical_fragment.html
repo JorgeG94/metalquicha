@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.5% of total for modules and submodules.">402 statements</a>
+                 title=" 6.3% of total for modules and submodules.">392 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -190,6 +190,8 @@
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-build_fragment_from_indices">build_fragment_from_indices</a>
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-check_duplicate_atoms">check_duplicate_atoms</a>
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-initialize_system_geometry">initialize_system_geometry</a>
+            <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-add_hydrogen_caps">add_hydrogen_caps</a>
+            <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-count_hydrogen_caps">count_hydrogen_caps</a>
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-fragment_compute_nelec">fragment_compute_nelec</a>
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-fragment_destroy">fragment_destroy</a>
             <a class="list-group-item" href="../module/mqc_physical_fragment.html#proc-fragment_set_basis">fragment_set_basis</a>
@@ -234,12 +236,12 @@ Closest approach distance</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
-                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
-                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
+                  <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1078,7 +1080,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~2"></span>
+              <span class="anchor" id="variable-basis"></span>
               type(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
               <td>public,</td>
@@ -1112,7 +1114,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~5"></span>
+              <span class="anchor" id="variable-charge"></span>
               integer,
             </td>
               <td>public</td>
@@ -1163,7 +1165,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~5"></span>
+              <span class="anchor" id="variable-multiplicity"></span>
               integer,
             </td>
               <td>public</td>
@@ -1180,7 +1182,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~5"></span>
+              <span class="anchor" id="variable-n_atoms"></span>
               integer,
             </td>
               <td>public</td>
@@ -1245,7 +1247,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~11'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
+  <strong><a href='../type/physical_fragment_t.html#boundprocedure-destroy~4'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/fragment_destroy.html'>fragment_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
               <tr>
@@ -1300,7 +1302,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~6"></span>
+              <span class="anchor" id="variable-charge~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1419,7 +1421,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~6"></span>
+              <span class="anchor" id="variable-multiplicity~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1436,7 +1438,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~11"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1453,7 +1455,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~4"></span>
+              <span class="anchor" id="variable-total_atoms"></span>
               integer,
             </td>
               <td>public</td>
@@ -1479,7 +1481,7 @@ parameter
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~12'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
+  <strong><a href='../type/system_geometry_t.html#boundprocedure-destroy~5'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/system_destroy.html'>system_destroy</a></td>
                   <td><p>Memory cleanup</p></td>
               </tr>
           </tbody>
@@ -1652,7 +1654,7 @@ Returns coordinates in the same units as the fragment (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~15"></span>
+              <span class="anchor" id="variable-fragment~10"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1699,7 +1701,7 @@ Returns coordinates in the same units as the fragment (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~14"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1901,7 +1903,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1931,7 +1933,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~6"></span>
+              <span class="anchor" id="variable-n_atoms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1946,7 +1948,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~12"></span>
+              <span class="anchor" id="variable-fragment~7"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1961,7 +1963,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2001,7 +2003,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2016,7 +2018,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_indices~4"></span>
+              <span class="anchor" id="variable-monomer_indices"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2031,7 +2033,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~6"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2046,7 +2048,7 @@ Distance is in the same units as the fragment coordinates (typically Bohr)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~13"></span>
+              <span class="anchor" id="variable-bonds~3"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2088,7 +2090,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~13"></span>
+              <span class="anchor" id="variable-fragment~8"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2158,7 +2160,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2173,7 +2175,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~39"></span>
+              <span class="anchor" id="variable-error"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2182,6 +2184,178 @@ This catches bugs in geometry construction or fragment building</p>
             </td>
             <td>::</td>
             <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-add_hydrogen_caps"></span> <h3>private  subroutine <a href='../proc/add_hydrogen_caps.html'>add_hydrogen_caps</a>(atoms_in_fragment, bonds, sys_geom, fragment, base_atom_count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Add hydrogen caps to fragment for broken bonds
+Caps are placed at the position of the atom outside the fragment</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms_in_fragment~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms_in_fragment</strong>(:)</td>
+            <td>
+<p>0-indexed atom indices in fragment</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~2"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~5"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~5"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-base_atom_count"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>base_atom_count</strong></td>
+            <td>
+<p>Number of non-cap atoms</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-count_hydrogen_caps"></span> <h3>private  subroutine <a href='../proc/count_hydrogen_caps.html'>count_hydrogen_caps</a>(atoms_in_fragment, bonds, n_caps)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Count how many hydrogen caps are needed for a fragment
+A cap is needed when exactly one atom of a broken bond is in the fragment</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms_in_fragment"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms_in_fragment</strong>(:)</td>
+            <td>
+<p>0-indexed atom indices in fragment</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_caps~2"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_caps</strong></td>
             <td>
 
             </td>
@@ -2213,7 +2387,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~33"></span>
+              <span class="anchor" id="variable-this~9"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2253,7 +2427,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~32"></span>
+              <span class="anchor" id="variable-this~8"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2293,7 +2467,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~34"></span>
+              <span class="anchor" id="variable-this~10"></span>
               class(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2308,7 +2482,7 @@ This catches bugs in geometry construction or fragment building</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis~3"></span>
+              <span class="anchor" id="variable-basis~2"></span>
               type(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2348,7 +2522,7 @@ This catches bugs in geometry construction or fragment building</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~35"></span>
+              <span class="anchor" id="variable-this~11"></span>
               class(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2384,14 +2558,14 @@ This catches bugs in geometry construction or fragment building</p>
           <div class="col">
             <p>
               metalquicha
- was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-31 16:28 +0000             </p>
+ on 2026-01-01 10:51 +0000             </p>
           </div>
         </div>
         <br>

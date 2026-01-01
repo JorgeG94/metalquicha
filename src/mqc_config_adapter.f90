@@ -154,37 +154,45 @@ contains
 
    end subroutine geometry_to_system_unfragmented
 
-   subroutine geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
-      !! Convert geometry to system_geometry_t for fragmented calculation
-      !! Supports both identical and variable-sized fragments
-      type(mqc_config_t), intent(in) :: mqc_config
-      type(system_geometry_t), intent(out) :: sys_geom
+   subroutine initialize_fragmented_system(nfrag, geom, fragments, charge, multiplicity, &
+                                           allow_overlapping, use_angstrom, sys_geom, error)
+      !! Shared helper to initialize system_geometry_t for fragmented calculations
+      !! Handles fragment allocation, size checking, and overlap validation
+      use mqc_geometry, only: geometry_type
+      use mqc_config_parser, only: input_fragment_t
+
+      integer, intent(in) :: nfrag
+      type(geometry_type), intent(in) :: geom
+      type(input_fragment_t), intent(in) :: fragments(:)
+      integer, intent(in) :: charge, multiplicity
+      logical, intent(in) :: allow_overlapping
       logical, intent(in) :: use_angstrom
+      type(system_geometry_t), intent(out) :: sys_geom
       type(error_t), intent(out) :: error
 
       integer :: i, j, atoms_in_first_frag, max_frag_size
       logical :: all_same_size
 
       ! Set up basic system geometry
-      sys_geom%n_monomers = mqc_config%nfrag
-      sys_geom%total_atoms = mqc_config%geometry%natoms
-      sys_geom%charge = mqc_config%charge
-      sys_geom%multiplicity = mqc_config%multiplicity
+      sys_geom%n_monomers = nfrag
+      sys_geom%total_atoms = geom%natoms
+      sys_geom%charge = charge
+      sys_geom%multiplicity = multiplicity
 
       ! Allocate fragment info arrays
-      allocate (sys_geom%fragment_sizes(mqc_config%nfrag))
-      allocate (sys_geom%fragment_charges(mqc_config%nfrag))
-      allocate (sys_geom%fragment_multiplicities(mqc_config%nfrag))
+      allocate (sys_geom%fragment_sizes(nfrag))
+      allocate (sys_geom%fragment_charges(nfrag))
+      allocate (sys_geom%fragment_multiplicities(nfrag))
 
       ! Get fragment sizes
       max_frag_size = 0
-      atoms_in_first_frag = size(mqc_config%fragments(1)%indices)
+      atoms_in_first_frag = size(fragments(1)%indices)
       all_same_size = .true.
 
-      do i = 1, mqc_config%nfrag
-         sys_geom%fragment_sizes(i) = size(mqc_config%fragments(i)%indices)
-         sys_geom%fragment_charges(i) = mqc_config%fragments(i)%charge
-         sys_geom%fragment_multiplicities(i) = mqc_config%fragments(i)%multiplicity
+      do i = 1, nfrag
+         sys_geom%fragment_sizes(i) = size(fragments(i)%indices)
+         sys_geom%fragment_charges(i) = fragments(i)%charge
+         sys_geom%fragment_multiplicities(i) = fragments(i)%multiplicity
          max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
          if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
             all_same_size = .false.
@@ -192,19 +200,19 @@ contains
       end do
 
       ! Allocate fragment_atoms array
-      allocate (sys_geom%fragment_atoms(max_frag_size, mqc_config%nfrag))
+      allocate (sys_geom%fragment_atoms(max_frag_size, nfrag))
       sys_geom%fragment_atoms = -1  ! Initialize with invalid index
 
       ! Store fragment atom indices (0-indexed from input file)
-      do i = 1, mqc_config%nfrag
+      do i = 1, nfrag
          do j = 1, sys_geom%fragment_sizes(i)
-            sys_geom%fragment_atoms(j, i) = mqc_config%fragments(i)%indices(j)
+            sys_geom%fragment_atoms(j, i) = fragments(i)%indices(j)
          end do
       end do
 
       ! Check for overlapping fragments if not allowed
-      if (.not. mqc_config%allow_overlapping_fragments) then
-         call check_fragment_overlap(mqc_config%fragments, mqc_config%nfrag, error)
+      if (.not. allow_overlapping) then
+         call check_fragment_overlap(fragments, nfrag, error)
          if (error%has_error()) return
       end if
 
@@ -220,15 +228,30 @@ contains
 
       ! Convert element symbols to atomic numbers
       do i = 1, sys_geom%total_atoms
-         sys_geom%element_numbers(i) = element_symbol_to_number(mqc_config%geometry%elements(i))
+         sys_geom%element_numbers(i) = element_symbol_to_number(geom%elements(i))
       end do
 
       ! Store coordinates (convert to Bohr if needed)
       if (use_angstrom) then
-         sys_geom%coordinates = to_bohr(mqc_config%geometry%coords)
+         sys_geom%coordinates = to_bohr(geom%coords)
       else
-         sys_geom%coordinates = mqc_config%geometry%coords
+         sys_geom%coordinates = geom%coords
       end if
+
+   end subroutine initialize_fragmented_system
+
+   subroutine geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
+      !! Convert geometry to system_geometry_t for fragmented calculation
+      !! Supports both identical and variable-sized fragments
+      type(mqc_config_t), intent(in) :: mqc_config
+      type(system_geometry_t), intent(out) :: sys_geom
+      logical, intent(in) :: use_angstrom
+      type(error_t), intent(out) :: error
+
+      call initialize_fragmented_system(mqc_config%nfrag, mqc_config%geometry, mqc_config%fragments, &
+                                        mqc_config%charge, mqc_config%multiplicity, &
+                                        mqc_config%allow_overlapping_fragments, use_angstrom, &
+                                        sys_geom, error)
 
    end subroutine geometry_to_system_fragmented
 
@@ -243,9 +266,6 @@ contains
       type(error_t), intent(out) :: error
       logical, intent(in) :: allow_overlapping
 
-      integer :: i, j, atoms_in_first_frag, max_frag_size
-      logical :: all_same_size
-
       ! Check if geometry is loaded
       if (mol%geometry%natoms == 0) then
          call error%set(ERROR_VALIDATION, "No geometry loaded in molecule")
@@ -259,85 +279,13 @@ contains
          sys_geom%multiplicity = mol%multiplicity
       else
          ! Fragmented molecule
-         sys_geom%n_monomers = mol%nfrag
-         sys_geom%total_atoms = mol%geometry%natoms
-         sys_geom%charge = mol%charge
-         sys_geom%multiplicity = mol%multiplicity
-
-         ! Allocate fragment info arrays
-         allocate (sys_geom%fragment_sizes(mol%nfrag))
-         allocate (sys_geom%fragment_charges(mol%nfrag))
-         allocate (sys_geom%fragment_multiplicities(mol%nfrag))
-
-         ! Get fragment sizes
-         max_frag_size = 0
-         atoms_in_first_frag = size(mol%fragments(1)%indices)
-         all_same_size = .true.
-
-         do i = 1, mol%nfrag
-            sys_geom%fragment_sizes(i) = size(mol%fragments(i)%indices)
-            sys_geom%fragment_charges(i) = mol%fragments(i)%charge
-            sys_geom%fragment_multiplicities(i) = mol%fragments(i)%multiplicity
-            max_frag_size = max(max_frag_size, sys_geom%fragment_sizes(i))
-            if (sys_geom%fragment_sizes(i) /= atoms_in_first_frag) then
-               all_same_size = .false.
-            end if
-         end do
-
-         ! Allocate fragment_atoms array
-         allocate (sys_geom%fragment_atoms(max_frag_size, mol%nfrag))
-         sys_geom%fragment_atoms = -1  ! Initialize with invalid index
-
-         ! Store fragment atom indices (0-indexed from input file)
-         do i = 1, mol%nfrag
-            do j = 1, sys_geom%fragment_sizes(i)
-               sys_geom%fragment_atoms(j, i) = mol%fragments(i)%indices(j)
-            end do
-         end do
-
-         ! Check for overlapping fragments if not allowed
-         if (.not. allow_overlapping) then
-            call check_fragment_overlap(mol%fragments, mol%nfrag, error)
-            if (error%has_error()) return
-         end if
-
-         ! Set atoms_per_monomer: use common size if identical, else 0
-         if (all_same_size) then
-            sys_geom%atoms_per_monomer = atoms_in_first_frag
-         else
-            sys_geom%atoms_per_monomer = 0  ! Signal variable-sized fragments
-         end if
-
-         allocate (sys_geom%element_numbers(sys_geom%total_atoms))
-         allocate (sys_geom%coordinates(3, sys_geom%total_atoms))
-
-         ! Convert element symbols to atomic numbers
-         do i = 1, sys_geom%total_atoms
-            sys_geom%element_numbers(i) = element_symbol_to_number(mol%geometry%elements(i))
-         end do
-
-         ! Store coordinates (convert to Bohr if needed)
-         if (use_angstrom) then
-            sys_geom%coordinates = to_bohr(mol%geometry%coords)
-         else
-            sys_geom%coordinates = mol%geometry%coords
-         end if
+         call initialize_fragmented_system(mol%nfrag, mol%geometry, mol%fragments, &
+                                           mol%charge, mol%multiplicity, &
+                                           allow_overlapping, use_angstrom, &
+                                           sys_geom, error)
       end if
 
    end subroutine molecule_to_system_geometry
-
-   subroutine geometry_to_system(geom, sys_geom, use_angstrom)
-      !! Simple conversion for backward compatibility
-      !! Deprecated: use config_to_system_geometry instead
-      use mqc_geometry, only: geometry_type
-
-      type(geometry_type), intent(in) :: geom
-      type(system_geometry_t), intent(out) :: sys_geom
-      logical, intent(in) :: use_angstrom
-
-      call geometry_to_system_unfragmented(geom, sys_geom, use_angstrom)
-
-   end subroutine geometry_to_system
 
    function get_logger_level(level_string) result(level_int)
       !! Convert string log level to integer value

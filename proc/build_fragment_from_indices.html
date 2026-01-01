@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.1% of total for procedures.">119 statements</a>
+                 title=" 1.7% of total for procedures.">92 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,22 +138,18 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_end">atom_end</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_global_idx">atom_global_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_i~4">atom_i</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_i_in_frag">atom_i_in_frag</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_j~4">atom_j</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_j_in_frag">atom_j_in_frag</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_i">atom_i</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_j">atom_j</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atom_start">atom_start</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atoms_in_fragment">atoms_in_fragment</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atoms_in_fragment~3">atoms_in_fragment</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-atoms_per_monomer~2">atoms_per_monomer</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-cap_idx">cap_idx</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-frag_atom_idx~2">frag_atom_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-i~59">i</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-iatom~7">iatom</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-ibond~2">ibond</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-j~18">j</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-mono_idx~2">mono_idx</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-i~9">i</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-iatom~3">iatom</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-j">j</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-mono_idx">mono_idx</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_atoms_no_caps">n_atoms_no_caps</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_caps~2">n_caps</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_caps~3">n_caps</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-n_monomers_in_frag">n_monomers_in_frag</a>
             <a class="list-group-item" href="../proc/build_fragment_from_indices.html#variable-use_explicit_fragments">use_explicit_fragments</a>
         </div>
@@ -216,7 +212,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -231,7 +227,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_indices~4"></span>
+              <span class="anchor" id="variable-monomer_indices"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -246,7 +242,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~6"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(out)</td>
@@ -261,7 +257,7 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~13"></span>
+              <span class="anchor" id="variable-bonds~3"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -289,85 +285,115 @@ Supports both fixed-size (identical monomers) and variable-sized fragments.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~build_fragment_from_indices~~CallsGraph Pages: 1 -->
-<svg id="procbuild_fragment_from_indicesCallsGraph" width="641pt" height="110pt"
- viewBox="0.00 0.00 641.00 110.16" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~build_fragment_from_indices~~CallsGraph" class="graph" transform="scale(0.95 0.95) rotate(0) translate(4 112)">
+<svg id="procbuild_fragment_from_indicesCallsGraph" width="641pt" height="150pt"
+ viewBox="0.00 0.00 641.00 150.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_fragment_from_indices~~CallsGraph" class="graph" transform="scale(0.95 0.95) rotate(0) translate(4 154)">
 <title>proc~~build_fragment_from_indices~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 671,-112 671,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 671,-154 671,4 -4,4"/>
 <!-- proc~build_fragment_from_indices -->
 <g id="proc~~build_fragment_from_indices~~CallsGraph_node1" class="node">
 <title>proc~build_fragment_from_indices</title>
-<polygon fill="none" stroke="black" points="166,-45 0,-45 0,-21 166,-21 166,-45"/>
-<text text-anchor="middle" x="83" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_fragment_from_indices</text>
+<polygon fill="none" stroke="black" points="166,-87 0,-87 0,-63 166,-63 166,-87"/>
+<text text-anchor="middle" x="83" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_fragment_from_indices</text>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node2" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node2"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="394,-150 276,-150 276,-126 394,-126 394,-150"/>
+<text text-anchor="middle" x="335" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge1" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M113.11,-87.06C136.72,-96.42 171.03,-109.1 202,-117 222.48,-122.23 245.1,-126.39 265.74,-129.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="265.29,-133.06 275.7,-131.08 266.33,-126.14 265.29,-133.06"/>
 </g>
 <!-- proc~check_duplicate_atoms -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node2" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node3" class="node">
 <title>proc~check_duplicate_atoms</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node2"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="403.5,-66 266.5,-66 266.5,-42 403.5,-42 403.5,-66"/>
-<text text-anchor="middle" x="335" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node3"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="403.5,-108 266.5,-108 266.5,-84 403.5,-84 403.5,-108"/>
+<text text-anchor="middle" x="335" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge1" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge2" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
-<path fill="none" stroke="#ff0000" d="M166.21,-39.91C195.1,-42.33 227.47,-45.05 256.02,-47.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="256.09,-50.97 266.34,-48.32 256.67,-43.99 256.09,-50.97"/>
+<path fill="none" stroke="#ff0000" d="M166.21,-81.91C195.1,-84.33 227.47,-87.05 256.02,-89.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="256.09,-92.97 266.34,-90.32 256.67,-85.99 256.09,-92.97"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node4" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node4"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="399,-66 271,-66 271,-42 399,-42 399,-66"/>
+<text text-anchor="middle" x="335" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge3" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M166.21,-68.09C196.63,-65.54 230.9,-62.66 260.51,-60.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="261.1,-63.64 270.77,-59.31 260.51,-56.66 261.1,-63.64"/>
 </g>
 <!-- proc~fragment_compute_nelec -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node3" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node5" class="node">
 <title>proc~fragment_compute_nelec</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node3"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node5"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
 <polygon fill="#d9534f" stroke="#d9534f" points="468,-24 202,-24 202,0 468,0 468,-24"/>
 <text text-anchor="middle" x="335" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge2" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge4" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
-<path fill="none" stroke="#ff0000" d="M166.21,-26.09C174.49,-25.4 183.06,-24.68 191.75,-23.95"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="192.31,-27.41 201.98,-23.09 191.72,-20.44 192.31,-27.41"/>
+<path fill="none" stroke="#ff0000" d="M113.11,-62.94C136.72,-53.58 171.03,-40.9 202,-33 212.33,-30.36 223.2,-28 234.09,-25.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.89,-29.3 244.08,-24.03 233.61,-22.42 234.89,-29.3"/>
 </g>
 <!-- error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node4" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node6" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="612.5,-108 558.5,-108 558.5,-84 612.5,-84 612.5,-108"/>
-<text text-anchor="middle" x="585.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="612.5,-150 558.5,-150 558.5,-126 612.5,-126 612.5,-150"/>
+<text text-anchor="middle" x="585.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge3" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge5" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M403.58,-65.42C450.21,-73.3 510.41,-83.48 548.24,-89.87"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="547.85,-93.35 558.29,-91.57 549.01,-86.45 547.85,-93.35"/>
+<path fill="none" stroke="#7fff00" d="M403.53,-106.47C424.23,-109.75 447.07,-113.45 468,-117 494.88,-121.56 525.19,-127.04 548.16,-131.25"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="547.69,-134.72 558.15,-133.09 548.95,-127.84 547.69,-134.72"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node5" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node7" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node5"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="667,-66 504,-66 504,-42 667,-42 667,-66"/>
-<text text-anchor="middle" x="585.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~build_fragment_from_indices~~CallsGraph_node7"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="667,-108 504,-108 504,-84 667,-84 667,-108"/>
+<text text-anchor="middle" x="585.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge4" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge6" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#ff0000" d="M403.58,-54C431.22,-54 463.62,-54 493.31,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="493.68,-57.5 503.68,-54 493.68,-50.5 493.68,-57.5"/>
+<path fill="none" stroke="#7fff00" d="M403.58,-96C431.22,-96 463.62,-96 493.31,-96"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="493.68,-99.5 503.68,-96 493.68,-92.5 493.68,-99.5"/>
 </g>
 <!-- to_char -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_node6" class="node">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_node8" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="612.5,-24 558.5,-24 558.5,0 612.5,0 612.5,-24"/>
-<text text-anchor="middle" x="585.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="612.5,-66 558.5,-66 558.5,-42 612.5,-42 612.5,-66"/>
+<text text-anchor="middle" x="585.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~build_fragment_from_indices~~CallsGraph_edge5" class="edge">
+<g id="proc~~build_fragment_from_indices~~CallsGraph_edge7" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M403.53,-43.53C424.23,-40.25 447.07,-36.55 468,-33 494.88,-28.44 525.19,-22.96 548.16,-18.75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="548.95,-22.16 558.15,-16.91 547.69,-15.28 548.95,-22.16"/>
+<path fill="none" stroke="#7fff00" d="M403.53,-85.53C424.23,-82.25 447.07,-78.55 468,-75 494.88,-70.44 525.19,-64.96 548.16,-60.75"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="548.95,-64.16 558.15,-58.91 547.69,-57.28 548.95,-64.16"/>
 </g>
 </g>
 </svg>
@@ -733,7 +759,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~4"></span>
+              <span class="anchor" id="variable-atom_i"></span>
               integer,
             </td>
               <td>private</td>
@@ -750,24 +776,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i_in_frag"></span>
-              logical,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_i_in_frag</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_j~4"></span>
+              <span class="anchor" id="variable-atom_j"></span>
               integer,
             </td>
               <td>private</td>
@@ -776,23 +785,6 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>atom_j</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-atom_j_in_frag"></span>
-              logical,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>atom_j_in_frag</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -818,7 +810,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms_in_fragment"></span>
+              <span class="anchor" id="variable-atoms_in_fragment~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -852,23 +844,6 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cap_idx"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>cap_idx</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
               <span class="anchor" id="variable-frag_atom_idx~2"></span>
               integer,
             </td>
@@ -886,7 +861,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~59"></span>
+              <span class="anchor" id="variable-i~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -903,7 +878,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~7"></span>
+              <span class="anchor" id="variable-iatom~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -920,24 +895,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ibond~2"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ibond</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-j~18"></span>
+              <span class="anchor" id="variable-j"></span>
               integer,
             </td>
               <td>private</td>
@@ -954,7 +912,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mono_idx~2"></span>
+              <span class="anchor" id="variable-mono_idx"></span>
               integer,
             </td>
               <td>private</td>
@@ -988,7 +946,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_caps~2"></span>
+              <span class="anchor" id="variable-n_caps~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1069,8 +1027,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers_in_frag</span><span class="p">,</span><span class="w"> </span><span class="n">atoms_per_monomer</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">mono_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_start</span><span class="p">,</span><span class="w"> </span><span class="n">atom_end</span><span class="p">,</span><span class="w"> </span><span class="n">frag_atom_idx</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ibond</span><span class="p">,</span><span class="w"> </span><span class="n">atom_i</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j</span><span class="p">,</span><span class="w"> </span><span class="n">n_caps</span><span class="p">,</span><span class="w"> </span><span class="n">cap_idx</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_i_in_frag</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j_in_frag</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_i</span><span class="p">,</span><span class="w"> </span><span class="n">atom_j</span><span class="p">,</span><span class="w"> </span><span class="n">n_caps</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atoms_in_fragment</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! List of all atom indices in this fragment</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_global_idx</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_explicit_fragments</span>
@@ -1117,22 +1074,7 @@ large graphs.</div>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Count how many caps we need</span>
-<span class="w">      </span><span class="n">n_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         do </span><span class="n">ibond</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">is_broken</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-
-<span class="w">            </span><span class="c">! Check if exactly one atom of this bond is in the fragment</span>
-<span class="w">            </span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span><span class="p">)</span>
-<span class="w">            </span><span class="n">atom_j_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span><span class="p">)</span>
-
-<span class="w">            </span><span class="c">! Add cap only if one atom in fragment, other not (XOR condition)</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j_in_frag</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j_in_frag</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               </span><span class="n">n_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">         end do</span>
-<span class="k">      end if</span>
+<span class="w">      </span><span class="k">call </span><span class="n">count_hydrogen_caps</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">n_caps</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Allocate arrays with space for original atoms + caps</span>
 <span class="w">      </span><span class="n">fragment</span><span class="p">%</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n_caps</span>
@@ -1174,33 +1116,8 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Add hydrogen caps at end (if any)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_caps</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">         </span><span class="k">do </span><span class="n">ibond</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">is_broken</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-
-<span class="k">            </span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span><span class="p">)</span>
-<span class="w">            </span><span class="n">atom_j_in_frag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">any</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span><span class="p">)</span>
-
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_i_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_j_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">               </span><span class="c">! atom_i is in fragment, atom_j is not → cap at position of atom_j</span>
-<span class="w">               </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c">! Hydrogen</span>
-<span class="w">               </span><span class="c">! Place H at position of atom_j (1-indexed for coordinates array)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                  </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_j</span>
-
-<span class="w">            </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">atom_j_in_frag</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">atom_i_in_frag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="w">               </span><span class="c">! atom_j is in fragment, atom_i is not → cap at position of atom_i</span>
-<span class="w">               </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cap_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c">! Hydrogen</span>
-<span class="w">               </span><span class="c">! Place H at position of atom_i (1-indexed for coordinates array)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                  </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">               </span><span class="n">fragment</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">cap_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bonds</span><span class="p">(</span><span class="n">ibond</span><span class="p">)%</span><span class="n">atom_i</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">         end do</span>
-<span class="k">      end if</span>
+<span class="k">         call </span><span class="n">add_hydrogen_caps</span><span class="p">(</span><span class="n">atoms_in_fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms_no_caps</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Set electronic structure properties from system geometry</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_explicit_fragments</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1251,14 +1168,14 @@ large graphs.</div>
           <div class="col">
             <p>
               metalquicha
- was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-31 16:28 +0000             </p>
+ on 2026-01-01 10:51 +0000             </p>
           </div>
         </div>
         <br>

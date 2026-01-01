@@ -102,16 +102,9 @@ contains
                               n_intersections, all_results(n_monomers + 1:n_monomers + n_intersections), &
                               intersection_sets, intersection_levels, total_energy)
       else
-         ! No intersections - need dummy arrays
-         block
-            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
-            type(calculation_result_t), allocatable :: dummy_results(:)
-            allocate (dummy_sets(1, 0), dummy_levels(0), dummy_results(0))
-            call print_gmbe_json(n_monomers, monomer_indices, all_results(1:n_monomers), &
-                                 0, dummy_results, &
-                                 dummy_sets, dummy_levels, total_energy)
-            deallocate (dummy_sets, dummy_levels, dummy_results)
-         end block
+         ! No intersections - omit optional parameters
+         call print_gmbe_json(n_monomers, monomer_indices, all_results(1:n_monomers), &
+                              0, total_energy=total_energy)
       end if
 
       deallocate (all_results, monomer_indices)
@@ -316,15 +309,9 @@ contains
                                   n_intersections, intersection_results, &
                                   intersection_sets, intersection_levels, total_energy)
       else
-         ! No intersections case - need dummy arrays
-         block
-            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
-            allocate (dummy_sets(1, 0), dummy_levels(0))
-            call compute_gmbe_energy(monomer_indices, n_monomers, monomer_results, &
-                                     0, monomer_results(1:0), &
-                                     dummy_sets, dummy_levels, total_energy)
-            deallocate (dummy_sets, dummy_levels)
-         end block
+         ! No intersections - omit optional parameters
+         call compute_gmbe_energy(monomer_indices, n_monomers, monomer_results, &
+                                  0, total_energy=total_energy)
       end if
 
       call coord_timer%stop()
@@ -340,16 +327,9 @@ contains
                               n_intersections, intersection_results, &
                               intersection_sets, intersection_levels, total_energy)
       else
-         ! No intersections - need dummy arrays
-         block
-            integer, allocatable :: dummy_sets(:, :), dummy_levels(:)
-            type(calculation_result_t), allocatable :: dummy_results(:)
-            allocate (dummy_sets(1, 0), dummy_levels(0), dummy_results(0))
-            call print_gmbe_json(n_monomers, monomer_indices, monomer_results, &
-                                 0, dummy_results, &
-                                 dummy_sets, dummy_levels, total_energy)
-            deallocate (dummy_sets, dummy_levels, dummy_results)
-         end block
+         ! No intersections - omit optional parameters
+         call print_gmbe_json(n_monomers, monomer_indices, monomer_results, &
+                              0, total_energy=total_energy)
       end if
 
       ! Cleanup
@@ -472,7 +452,10 @@ contains
          coeff = pie_coefficients(i)
 
          ! Skip terms with zero coefficient (shouldn't happen, but safety check)
-         if (coeff == 0) cycle
+         if (coeff == 0) then
+            pie_energies(i) = 0.0_dp  ! Mark as skipped
+            cycle
+         end if
 
          ! Extract atom list for this term
          n_atoms = 0
@@ -480,7 +463,10 @@ contains
             n_atoms = n_atoms + 1
          end do
 
-         if (n_atoms == 0) cycle
+         if (n_atoms == 0) then
+            pie_energies(i) = 0.0_dp  ! Mark as skipped
+            cycle
+         end if
 
          allocate (atom_list(n_atoms))
          atom_list = pie_atom_sets(1:n_atoms, i)

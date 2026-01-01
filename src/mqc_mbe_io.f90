@@ -379,13 +379,14 @@ contains
                               intersection_sets, intersection_levels, total_energy)
       !! Write GMBE calculation results to output JSON file
       !! Outputs structured JSON with monomers, intersections, and total energy
+      !! Intersection parameters are optional and should be omitted when n_intersections=0
       integer, intent(in) :: n_monomers
       integer, intent(in) :: monomer_indices(:)
       type(calculation_result_t), intent(in) :: monomer_results(:)
       integer, intent(in) :: n_intersections
-      type(calculation_result_t), intent(in) :: intersection_results(:)
-      integer, intent(in) :: intersection_sets(:, :)  !! (n_monomers, n_intersections)
-      integer, intent(in) :: intersection_levels(:)
+      type(calculation_result_t), intent(in), optional :: intersection_results(:)
+      integer, intent(in), optional :: intersection_sets(:, :)  !! (n_monomers, n_intersections)
+      integer, intent(in), optional :: intersection_levels(:)
       real(dp), intent(in) :: total_energy
 
       integer :: i, j, k, max_level, unit, io_stat
@@ -433,14 +434,17 @@ contains
 
       write (unit, '(a)') '      ]'
 
-      if (n_intersections > 0) then
+      ! Add comma after monomers if we have intersections
+      if (n_intersections > 0 .and. present(intersection_results) .and. &
+          present(intersection_sets) .and. present(intersection_levels)) then
          write (unit, '(a)') '    },'
       else
          write (unit, '(a)') '    }'
       end if
 
       ! Intersections section
-      if (n_intersections > 0) then
+      if (n_intersections > 0 .and. present(intersection_results) .and. &
+          present(intersection_sets) .and. present(intersection_levels)) then
          max_level = maxval(intersection_levels)
 
          write (unit, '(a)') '    "intersections": {'
@@ -532,6 +536,8 @@ contains
 
       integer :: i, j, max_atoms, n_atoms
       integer :: unit, io_stat
+      integer :: n_nonzero_terms
+      logical :: first_term
       character(len=512) :: json_line
       character(len=256) :: output_file, basename
 
@@ -554,14 +560,27 @@ contains
       write (unit, '(a)') trim(json_line)
 
       ! PIE terms section
+      ! First count non-zero coefficient terms
+      n_nonzero_terms = 0
+      do i = 1, n_pie_terms
+         if (pie_coefficients(i) /= 0) n_nonzero_terms = n_nonzero_terms + 1
+      end do
+
       write (unit, '(a)') '    "pie_terms": {'
-      write (json_line, '(a,i0,a)') '      "count": ', n_pie_terms, ','
+      write (json_line, '(a,i0,a)') '      "count": ', n_nonzero_terms, ','
       write (unit, '(a)') trim(json_line)
       write (unit, '(a)') '      "terms": ['
 
       max_atoms = size(pie_atom_sets, 1)
+      first_term = .true.
 
       do i = 1, n_pie_terms
+         ! Skip terms with zero coefficient
+         if (pie_coefficients(i) == 0) cycle
+
+         if (.not. first_term) write (unit, '(a)') '        },'
+         first_term = .false.
+
          write (unit, '(a)') '        {'
 
          ! Extract atom list size
@@ -589,13 +608,9 @@ contains
          write (json_line, '(a,f20.10)') '          "weighted_energy": ', &
             real(pie_coefficients(i), dp)*pie_energies(i)
          write (unit, '(a)') trim(json_line)
-
-         if (i < n_pie_terms) then
-            write (unit, '(a)') '        },'
-         else
-            write (unit, '(a)') '        }'
-         end if
       end do
+
+      if (.not. first_term) write (unit, '(a)') '        }'
 
       write (unit, '(a)') '      ]'
       write (unit, '(a)') '    }'

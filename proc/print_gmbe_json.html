@@ -139,15 +139,15 @@
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-basename~3">basename</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-first_intersection">first_intersection</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-first_level~2">first_level</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-i~4">i</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-io_stat~3">io_stat</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-j~3">j</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-i~37">i</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-io_stat~21">io_stat</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-j~8">j</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-json_line~3">json_line</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-k">k</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-k~5">k</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-level_count">level_count</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-max_level~3">max_level</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-max_level~8">max_level</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-output_file~3">output_file</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-unit~3">unit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-unit~27">unit</a>
         </div>
       </div>
     </div>
@@ -188,7 +188,8 @@
     
 
     <p>Write GMBE calculation results to output JSON file
-Outputs structured JSON with monomers, intersections, and total energy</p>
+Outputs structured JSON with monomers, intersections, and total energy
+Intersection parameters are optional and should be omitted when n_intersections=0</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +205,7 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers"></span>
+              <span class="anchor" id="variable-n_monomers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -219,7 +220,7 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_indices"></span>
+              <span class="anchor" id="variable-monomer_indices~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -234,7 +235,7 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_results"></span>
+              <span class="anchor" id="variable-monomer_results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -249,7 +250,7 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections"></span>
+              <span class="anchor" id="variable-n_intersections~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -264,11 +265,11 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results"></span>
+              <span class="anchor" id="variable-intersection_results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -279,11 +280,11 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets"></span>
+              <span class="anchor" id="variable-intersection_sets~2"></span>
               integer,
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -294,11 +295,11 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels"></span>
+              <span class="anchor" id="variable-intersection_levels~2"></span>
               integer,
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -309,7 +310,7 @@ Outputs structured JSON with monomers, intersections, and total energy</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~2"></span>
+              <span class="anchor" id="variable-total_energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -788,7 +789,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~4"></span>
+              <span class="anchor" id="variable-i~37"></span>
               integer,
             </td>
               <td>private</td>
@@ -805,7 +806,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~3"></span>
+              <span class="anchor" id="variable-io_stat~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -822,7 +823,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~3"></span>
+              <span class="anchor" id="variable-j~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -856,7 +857,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k"></span>
+              <span class="anchor" id="variable-k~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -890,7 +891,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -924,7 +925,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~3"></span>
+              <span class="anchor" id="variable-unit~27"></span>
               integer,
             </td>
               <td>private</td>
@@ -960,13 +961,14 @@ large graphs.</div>
 <span class="w">                              </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write GMBE calculation results to output JSON file</span>
 <span class="w">      </span><span class="c">!! Outputs structured JSON with monomers, intersections, and total energy</span>
+<span class="w">      </span><span class="c">!! Intersection parameters are optional and should be omitted when n_intersections=0</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_intersections</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_monomers, n_intersections)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_monomers, n_intersections)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
@@ -1014,14 +1016,17 @@ large graphs.</div>
 
 <span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      ]&#39;</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="c">! Add comma after monomers if we have intersections</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">          </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    },&#39;</span>
 <span class="w">      </span><span class="k">else</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Intersections section</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">          </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">)</span>
 
 <span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;intersections&quot;: {&#39;</span>
@@ -1117,14 +1122,14 @@ large graphs.</div>
           <div class="col">
             <p>
               metalquicha
- was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-31 16:28 +0000             </p>
+ on 2026-01-01 10:51 +0000             </p>
           </div>
         </div>
         <br>

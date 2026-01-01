@@ -1,0 +1,2371 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_gmbe_utils &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_gmbe_utils
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 8.5% of total for modules and submodules.">528 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_utils.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_utils.f90.html'>mqc_gmbe_utils.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_gmbe_utils</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-find_fragment_intersection">find_fragment_intersection</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-atom_sets_equal">atom_sets_equal</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-next_combination~2">next_combination</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-compute_polymer_atoms">compute_polymer_atoms</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-generate_intersections">generate_intersections</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-generate_polymer_intersections">generate_polymer_intersections</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-gmbe_enumerate_pie_terms">gmbe_enumerate_pie_terms</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-dfs_pie_accumulate">dfs_pie_accumulate</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-generate_intersections_from_atom_lists">generate_intersections_from_atom_lists</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-generate_k_way_intersections_for_level">generate_k_way_intersections_for_level</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-generate_k_way_intersections_from_lists">generate_k_way_intersections_from_lists</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-intersect_atom_lists">intersect_atom_lists</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_utils.html#proc-next_combination_init~2">next_combination_init</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Provides functions for computing fragment intersections, generating k-way
+intersections, and enumerating PIE (Principle of Inclusion-Exclusion) terms
+for GMBE calculations with overlapping molecular fragments.
+Find shared atoms between two fragments
+Generate all k-way intersections for GMBE
+Compute atom list for polymer (union of fragments)
+Generate intersections for polymers
+DFS-based PIE coefficient enumeration</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_io</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_gmbe_utils~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_gmbe_utilsUsesGraph" width="211pt" height="116pt"
+ viewBox="0.00 0.00 211.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_gmbe_utils~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<title>module~~mqc_gmbe_utils~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 207,-112 207,4 -4,4"/>
+<!-- module~mqc_gmbe_utils -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_node1" class="node">
+<title>module~mqc_gmbe_utils</title>
+<polygon fill="none" stroke="black" points="203,-66 104,-66 104,-42 203,-42 203,-66"/>
+<text text-anchor="middle" x="153.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_gmbe_utils</text>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_node2" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="61,-108 7,-108 7,-84 61,-84 61,-108"/>
+<text text-anchor="middle" x="34" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_io -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_edge1" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M118.83,-66.04C103.81,-71.4 86.1,-77.74 70.83,-83.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="69.45,-79.97 61.21,-86.63 71.8,-86.56 69.45,-79.97"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_node3" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="68,-66 0,-66 0,-42 68,-42 68,-66"/>
+<text text-anchor="middle" x="34" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_logger -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_edge2" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M103.69,-54C95.27,-54 86.56,-54 78.3,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="78.12,-50.5 68.12,-54 78.12,-57.5 78.12,-50.5"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_node4" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="65,-24 3,-24 3,0 65,0 65,-24"/>
+<text text-anchor="middle" x="34" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_gmbe_utils~~UsesGraph_edge3" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M118.83,-41.96C105.05,-37.04 89.02,-31.31 74.68,-26.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="75.66,-22.82 65.07,-22.75 73.31,-29.41 75.66,-22.82"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_gmbe_utils~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_gmbe_utilsUsedByGraph" width="641pt" height="86pt"
+ viewBox="0.00 0.00 641.00 86.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_gmbe_utils~~UsedByGraph" class="graph" transform="scale(0.6 0.6) rotate(0) translate(4 141.18)">
+<title>module~~mqc_gmbe_utils~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-141.18 1072,-141.18 1072,4 -4,4"/>
+<!-- module~mqc_gmbe_utils -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node1" class="node">
+<title>module~mqc_gmbe_utils</title>
+<polygon fill="none" stroke="black" points="99,-33.18 0,-33.18 0,-9.18 99,-9.18 99,-33.18"/>
+<text text-anchor="middle" x="49.5" y="-18.78" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_gmbe_utils</text>
+</g>
+<!-- module~mqc_frag_utils -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node2" class="node">
+<title>module~mqc_frag_utils</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node2"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="225,-33.18 135,-33.18 135,-9.18 225,-9.18 225,-33.18"/>
+<text text-anchor="middle" x="180" y="-18.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M134.78,-21.18C126.62,-21.18 117.99,-21.18 109.48,-21.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="109.2,-17.68 99.2,-21.18 109.2,-24.68 109.2,-17.68"/>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node3" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node3"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="978,-97.18 905,-97.18 905,-73.18 978,-73.18 978,-97.18"/>
+<text text-anchor="middle" x="941.5" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_frag_utils -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_frag_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M905.83,-73.15C829.46,-47.9 640.62,7.55 479,-1.18"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M477,-1.18C392.46,-0.48 294.64,-8.9 235.33,-15.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.65,-11.58 225.07,-16.11 235.38,-18.55 234.65,-11.58"/>
+</g>
+<!-- module~mqc_mbe -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node4" class="node">
+<title>module~mqc_mbe</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node4"><a xlink:href="../module/mqc_mbe.html" xlink:title="mqc_mbe">
+<polygon fill="#337ab7" stroke="#337ab7" points="326,-53.18 261,-53.18 261,-29.18 326,-29.18 326,-53.18"/>
+<text text-anchor="middle" x="293.5" y="-38.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge5" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M477,-1.18C425.27,-3.98 412.41,-8.24 362,-20.18 353.5,-22.19 344.51,-24.71 335.96,-27.3"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="334.69,-24.02 326.18,-30.33 336.77,-30.71 334.69,-24.02"/>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node5" class="node">
+<title>module~mqc_mbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node5"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="594,-137.18 362,-137.18 362,-113.18 594,-113.18 594,-137.18"/>
+<text text-anchor="middle" x="478" y="-122.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge9" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M905.61,-97.22C894.09,-100.72 881.12,-104.14 869,-106.18 781.36,-120.97 681.19,-125.59 604.32,-126.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="604.07,-123.09 594.1,-126.7 604.14,-130.09 604.07,-123.09"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node9" class="node">
+<title>module~mqc_gmbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node9"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="869,-97.18 630,-97.18 630,-73.18 869,-73.18 869,-97.18"/>
+<text text-anchor="middle" x="749.5" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge11" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M904.76,-85.18C897.03,-85.18 888.42,-85.18 879.33,-85.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="879.31,-81.68 869.31,-85.18 879.31,-88.68 879.31,-81.68"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_frag_utils -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_frag_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M260.85,-35.5C252.8,-34.06 243.93,-32.47 235.11,-30.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.68,-27.43 225.22,-29.11 234.44,-34.32 235.68,-27.43"/>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M384.44,-113.16C376.66,-110.69 369.07,-107.74 362,-104.18 341.53,-93.89 322.87,-75.45 310.39,-61.17"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="312.9,-58.72 303.78,-53.33 307.55,-63.23 312.9,-58.72"/>
+</g>
+<!-- proc~gmbe_coordinator -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node6" class="node">
+<title>proc~gmbe_coordinator</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node6"><a xlink:href="../proc/gmbe_coordinator.html" xlink:title="gmbe_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="533.5,-95.18 422.5,-95.18 422.5,-71.18 533.5,-71.18 533.5,-95.18"/>
+<text text-anchor="middle" x="478" y="-80.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_coordinator&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge7" class="edge">
+<title>proc~gmbe_coordinator&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M422.31,-74.59C403.13,-71.21 381.51,-66.98 362,-62.18 353.52,-60.1 344.54,-57.55 335.99,-54.95"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="336.8,-51.54 326.21,-51.91 334.72,-58.22 336.8,-51.54"/>
+</g>
+<!-- proc~serial_gmbe_processor -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node7" class="node">
+<title>proc~serial_gmbe_processor</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node7"><a xlink:href="../proc/serial_gmbe_processor.html" xlink:title="serial_gmbe_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="545.5,-53.18 410.5,-53.18 410.5,-29.18 545.5,-29.18 545.5,-53.18"/>
+<text text-anchor="middle" x="478" y="-38.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_processor&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge8" class="edge">
+<title>proc~serial_gmbe_processor&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M410.34,-41.18C385.66,-41.18 358.39,-41.18 336.52,-41.18"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="336.24,-37.68 326.24,-41.18 336.24,-44.68 336.24,-37.68"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_node8" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_gmbe_utils~~UsedByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1068,-97.18 1014,-97.18 1014,-73.18 1068,-73.18 1068,-97.18"/>
+<text text-anchor="middle" x="1041" y="-82.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1013.87,-85.18C1006.01,-85.18 997.13,-85.18 988.38,-85.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="988.23,-81.68 978.23,-85.18 988.23,-88.68 988.23,-81.68"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_gmbe_utils~~UsedByGraph_edge10" class="edge">
+<title>module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M667.64,-97.18C637,-101.73 601.91,-106.94 570.37,-111.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="569.64,-108.19 560.27,-113.12 570.67,-115.11 569.64,-108.19"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_gmbe_utilsUsedByGraph = svgPanZoom('#modulemqc_gmbe_utilsUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-find_fragment_intersection"></span> <h3>public  function <a href='../proc/find_fragment_intersection.html'>find_fragment_intersection</a>(frag1_atoms, n1, frag2_atoms, n2, intersection, n_intersect) result(has_intersection)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Find shared atoms between two fragments (for GMBE with overlapping fragments)</p><a href="../proc/find_fragment_intersection.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag1_atoms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag1_atoms</strong>(:)</td>
+            <td>
+<p>Atom indices in fragment 1 (0-indexed)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n1"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n1</strong></td>
+            <td>
+<p>Number of atoms in fragment 1</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag2_atoms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag2_atoms</strong>(:)</td>
+            <td>
+<p>Atom indices in fragment 2 (0-indexed)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n2</strong></td>
+            <td>
+<p>Number of atoms in fragment 2</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection</strong>(:)</td>
+            <td>
+<p>Shared atom indices</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersect"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersect</strong></td>
+            <td>
+<p>Number of shared atoms</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-atom_sets_equal"></span> <h3>private  function <a href='../proc/atom_sets_equal.html'>atom_sets_equal</a>(set1, set2, n_atoms) result(equal)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Check if two atom sets are equal (assuming sorted)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-set1"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>set1</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-set2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>set2</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-next_combination~2"></span> <h3>private  function <a href='../proc/next_combination~2.html'>next_combination</a>(combination, k, n) result(has_next)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate next combination in lexicographic order
+Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhausted all</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~6"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~14"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_polymer_atoms"></span> <h3>public  subroutine <a href='../proc/compute_polymer_atoms.html'>compute_polymer_atoms</a>(sys_geom, polymer, polymer_size, atom_list, n_atoms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute the atom list for a polymer (union of atoms from base fragments)
+polymer(:) contains base fragment indices (1-based)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~23"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer</strong>(:)</td>
+            <td>
+<p>Base fragment indices in this polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer_size"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer_size</strong></td>
+            <td>
+<p>Number of base fragments in polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_list~2"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_list</strong>(:)</td>
+            <td>
+<p>Unique atoms in this polymer</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~6"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+<p>Number of unique atoms</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_intersections"></span> <h3>public  subroutine <a href='../proc/generate_intersections.html'>generate_intersections</a>(sys_geom, monomers, polymers, n_monomers, max_intersection_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections for k=2 to min(max_intersection_level, n_monomers)</p><a href="../proc/generate_intersections.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~21"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+<p>Monomer indices</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~11"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+<p>Output: monomers stored here</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+<p>Number of monomers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_intersection_level~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_intersection_level</strong></td>
+            <td>
+<p>Maximum k-way intersection depth</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+<p>Intersection atom lists</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+<p>Which k-tuple created each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~6"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+<p>Level (k) of each intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~6"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+<p>Number of intersections found</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_polymer_intersections"></span> <h3>public  subroutine <a href='../proc/generate_polymer_intersections.html'>generate_polymer_intersections</a>(sys_geom, polymers, n_polymers, max_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections for polymers at any level (GMBE-N)
+This works with dynamically generated polymers, not just base fragments</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~24"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~12"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+<p>Polymer definitions (n_polymers, max_level)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_polymers"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_polymers</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~11"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~7"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~7"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-gmbe_enumerate_pie_terms"></span> <h3>public  subroutine <a href='../proc/gmbe_enumerate_pie_terms.html'>gmbe_enumerate_pie_terms</a>(sys_geom, primaries, n_primaries, polymer_level, max_k_level, pie_atom_sets, pie_coefficients, n_pie_terms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Enumerate all unique intersections via DFS and accumulate PIE coefficients
+This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a href="../proc/gmbe_enumerate_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~25"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primaries"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primaries</strong>(:,:)</td>
+            <td>
+<p>Primary polymers (n_primaries, polymer_level)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_primaries~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_primaries</strong></td>
+            <td>
+<p>Number of primary polymers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymer_level"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymer_level</strong></td>
+            <td>
+<p>Level of primaries (1=monomers, 2=dimers, etc.)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+<p>Maximum clique size (intersection depth limit)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+<p>Unique atom sets (max_atoms, n_terms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>pie_coefficients</strong>(:)</td>
+            <td>
+<p>PIE coefficient for each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+<p>Number of unique PIE terms</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-dfs_pie_accumulate"></span> <h3>private recursive subroutine <a href='../proc/dfs_pie_accumulate.html'>dfs_pie_accumulate</a>(primary_atoms, primary_n_atoms, n_primaries, max_atoms, clique, clique_size, current_atoms, n_current_atoms, candidates, n_candidates, max_k_level, atom_sets, coefficients, n_terms, max_terms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>DFS helper: accumulate PIE coefficients for intersections</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primary_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primary_atoms</strong>(:,:)</td>
+            <td>
+<p>Precomputed atom lists</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-primary_n_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>primary_n_atoms</strong>(:)</td>
+            <td>
+<p>Atom counts</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_primaries~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_primaries</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-clique~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>clique</strong>(:)</td>
+            <td>
+<p>Current clique</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-clique_size"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>clique_size</strong></td>
+            <td>
+<p>Size of current clique</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-current_atoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>current_atoms</strong>(:)</td>
+            <td>
+<p>Atoms in current intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_current_atoms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_current_atoms</strong></td>
+            <td>
+<p>Number of atoms in intersection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-candidates~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>candidates</strong>(:)</td>
+            <td>
+<p>Candidate primaries</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_candidates~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_candidates</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_sets"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coefficients~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coefficients</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_terms"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_terms"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_intersections_from_atom_lists"></span> <h3>private  subroutine <a href='../proc/generate_intersections_from_atom_lists.html'>generate_intersections_from_atom_lists</a>(atom_lists, n_atoms_list, n_sets, max_k_level, intersections, intersection_sets, intersection_levels, n_intersections)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate k-way intersections from arbitrary atom lists (not tied to sys_geom)
+max_k_level limits the maximum intersection order to prevent combinatorial explosion</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_lists"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_lists</strong>(:,:)</td>
+            <td>
+<p>(max_atoms, n_sets)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms_list"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms_list</strong>(:)</td>
+            <td>
+<p>Number of atoms in each set</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_sets"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_sets</strong></td>
+            <td>
+<p>Number of sets (polymers)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_k_level~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_k_level</strong></td>
+            <td>
+<p>Maximum intersection level to compute</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersections~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~8"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~8"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_k_way_intersections_for_level"></span> <h3>private recursive subroutine <a href='../proc/generate_k_way_intersections_for_level.html'>generate_k_way_intersections_for_level</a>(sys_geom, monomers, n_monomers, k, combination, max_atoms, temp_intersections, temp_sets, temp_levels, intersection_count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Helper to generate all k-way intersections at a specific level k</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~22"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~11"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_intersections~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_sets~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_levels~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_count~2"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_k_way_intersections_from_lists"></span> <h3>private  subroutine <a href='../proc/generate_k_way_intersections_from_lists.html'>generate_k_way_intersections_from_lists</a>(atom_lists, n_atoms_list, n_sets, k, combination, max_atoms, temp_intersections, temp_sets, temp_levels, intersection_count)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all k-way intersections from atom lists</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_lists~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_lists</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms_list~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms_list</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_sets~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_sets</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~12"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~8"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_intersections~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_intersections</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_sets~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_levels~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temp_levels</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_count~4"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_count</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-intersect_atom_lists"></span> <h3>private  subroutine <a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a>(atoms1, n1, atoms2, n2, intersection, n_intersect)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute intersection of two atom lists</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms1"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms1</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n1~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n1</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atoms2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atoms2</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n2~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n2</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection~2"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersect~2"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersect</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-next_combination_init~2"></span> <h3>private  subroutine <a href='../proc/next_combination_init~2.html'>next_combination_init</a>(combination, k)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Initialize combination to [1, 2, &hellip;, k]</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-combination~5"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>combination</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-01 10:51 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

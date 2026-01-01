@@ -147,6 +147,78 @@ contains
 
    end subroutine initialize_system_geometry
 
+   subroutine count_hydrogen_caps(atoms_in_fragment, bonds, n_caps)
+      !! Count how many hydrogen caps are needed for a fragment
+      !! A cap is needed when exactly one atom of a broken bond is in the fragment
+      integer, intent(in) :: atoms_in_fragment(:)  !! 0-indexed atom indices in fragment
+      type(bond_t), intent(in), optional :: bonds(:)
+      integer, intent(out) :: n_caps
+
+      integer :: ibond
+      logical :: atom_i_in_frag, atom_j_in_frag
+
+      n_caps = 0
+      if (.not. present(bonds)) return
+
+      do ibond = 1, size(bonds)
+         if (.not. bonds(ibond)%is_broken) cycle
+
+         ! Check if exactly one atom of this bond is in the fragment
+         atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
+         atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
+
+         ! Add cap only if one atom in fragment, other not (XOR condition)
+         if ((atom_i_in_frag .and. .not. atom_j_in_frag) .or. &
+             (.not. atom_i_in_frag .and. atom_j_in_frag)) then
+            n_caps = n_caps + 1
+         end if
+      end do
+
+   end subroutine count_hydrogen_caps
+
+   subroutine add_hydrogen_caps(atoms_in_fragment, bonds, sys_geom, fragment, base_atom_count)
+      !! Add hydrogen caps to fragment for broken bonds
+      !! Caps are placed at the position of the atom outside the fragment
+      integer, intent(in) :: atoms_in_fragment(:)  !! 0-indexed atom indices in fragment
+      type(bond_t), intent(in) :: bonds(:)
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(physical_fragment_t), intent(inout) :: fragment
+      integer, intent(in) :: base_atom_count  !! Number of non-cap atoms
+
+      integer :: ibond, cap_idx
+      logical :: atom_i_in_frag, atom_j_in_frag
+
+      if (fragment%n_caps == 0) return
+
+      cap_idx = 0
+      do ibond = 1, size(bonds)
+         if (.not. bonds(ibond)%is_broken) cycle
+
+         atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
+         atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
+
+         if (atom_i_in_frag .and. .not. atom_j_in_frag) then
+            ! atom_i is in fragment, atom_j is not → cap at position of atom_j
+            cap_idx = cap_idx + 1
+            fragment%element_numbers(base_atom_count + cap_idx) = 1  ! Hydrogen
+            ! Place H at position of atom_j (1-indexed for coordinates array)
+            fragment%coordinates(:, base_atom_count + cap_idx) = &
+               sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
+            fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
+
+         else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
+            ! atom_j is in fragment, atom_i is not → cap at position of atom_i
+            cap_idx = cap_idx + 1
+            fragment%element_numbers(base_atom_count + cap_idx) = 1  ! Hydrogen
+            ! Place H at position of atom_i (1-indexed for coordinates array)
+            fragment%coordinates(:, base_atom_count + cap_idx) = &
+               sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
+            fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
+         end if
+      end do
+
+   end subroutine add_hydrogen_caps
+
    subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, bonds)
       !! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds
       !!
@@ -163,8 +235,7 @@ contains
 
       integer :: n_monomers_in_frag, atoms_per_monomer, n_atoms_no_caps
       integer :: i, j, mono_idx, atom_start, atom_end, frag_atom_idx
-      integer :: ibond, atom_i, atom_j, n_caps, cap_idx
-      logical :: atom_i_in_frag, atom_j_in_frag
+      integer :: atom_i, atom_j, n_caps
       integer, allocatable :: atoms_in_fragment(:)  !! List of all atom indices in this fragment
       integer :: iatom, atom_global_idx
       logical :: use_explicit_fragments
@@ -211,22 +282,7 @@ contains
       end if
 
       ! Count how many caps we need
-      n_caps = 0
-      if (present(bonds)) then
-         do ibond = 1, size(bonds)
-            if (.not. bonds(ibond)%is_broken) cycle
-
-            ! Check if exactly one atom of this bond is in the fragment
-            atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
-            atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
-
-            ! Add cap only if one atom in fragment, other not (XOR condition)
-            if ((atom_i_in_frag .and. .not. atom_j_in_frag) .or. &
-                (.not. atom_i_in_frag .and. atom_j_in_frag)) then
-               n_caps = n_caps + 1
-            end if
-         end do
-      end if
+      call count_hydrogen_caps(atoms_in_fragment, bonds, n_caps)
 
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms_no_caps + n_caps
@@ -268,32 +324,7 @@ contains
 
       ! Add hydrogen caps at end (if any)
       if (present(bonds) .and. n_caps > 0) then
-         cap_idx = 0
-         do ibond = 1, size(bonds)
-            if (.not. bonds(ibond)%is_broken) cycle
-
-            atom_i_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_i)
-            atom_j_in_frag = any(atoms_in_fragment == bonds(ibond)%atom_j)
-
-            if (atom_i_in_frag .and. .not. atom_j_in_frag) then
-               ! atom_i is in fragment, atom_j is not → cap at position of atom_j
-               cap_idx = cap_idx + 1
-               fragment%element_numbers(n_atoms_no_caps + cap_idx) = 1  ! Hydrogen
-               ! Place H at position of atom_j (1-indexed for coordinates array)
-               fragment%coordinates(:, n_atoms_no_caps + cap_idx) = &
-                  sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
-               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
-
-            else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
-               ! atom_j is in fragment, atom_i is not → cap at position of atom_i
-               cap_idx = cap_idx + 1
-               fragment%element_numbers(n_atoms_no_caps + cap_idx) = 1  ! Hydrogen
-               ! Place H at position of atom_i (1-indexed for coordinates array)
-               fragment%coordinates(:, n_atoms_no_caps + cap_idx) = &
-                  sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
-               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
-            end if
-         end do
+         call add_hydrogen_caps(atoms_in_fragment, bonds, sys_geom, fragment, n_atoms_no_caps)
       end if
 
       ! Set electronic structure properties from system geometry
@@ -345,26 +376,10 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Connectivity for capping
 
       integer :: i, frag_atom_idx, atom_global_idx
-      integer :: ibond, n_caps, cap_idx
-      logical :: atom_i_in_frag, atom_j_in_frag
+      integer :: n_caps
 
       ! Count how many caps we need
-      n_caps = 0
-      if (present(bonds)) then
-         do ibond = 1, size(bonds)
-            if (.not. bonds(ibond)%is_broken) cycle
-
-            ! Check if exactly one atom of this bond is in the fragment
-            atom_i_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_i)
-            atom_j_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_j)
-
-            ! Add cap only if one atom in fragment, other not (XOR condition)
-            if ((atom_i_in_frag .and. .not. atom_j_in_frag) .or. &
-                (.not. atom_i_in_frag .and. atom_j_in_frag)) then
-               n_caps = n_caps + 1
-            end if
-         end do
-      end if
+      call count_hydrogen_caps(atom_indices(1:n_atoms), bonds, n_caps)
 
       ! Allocate arrays with space for original atoms + caps
       fragment%n_atoms = n_atoms + n_caps
@@ -382,30 +397,7 @@ contains
 
       ! Add hydrogen caps at end (if any)
       if (present(bonds) .and. n_caps > 0) then
-         cap_idx = 0
-         do ibond = 1, size(bonds)
-            if (.not. bonds(ibond)%is_broken) cycle
-
-            atom_i_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_i)
-            atom_j_in_frag = any(atom_indices(1:n_atoms) == bonds(ibond)%atom_j)
-
-            if (atom_i_in_frag .and. .not. atom_j_in_frag) then
-               ! atom_i is in fragment, atom_j is not → cap at position of atom_j
-               cap_idx = cap_idx + 1
-               fragment%element_numbers(n_atoms + cap_idx) = 1  ! Hydrogen
-               fragment%coordinates(:, n_atoms + cap_idx) = &
-                  sys_geom%coordinates(:, bonds(ibond)%atom_j + 1)
-               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_j
-
-            else if (atom_j_in_frag .and. .not. atom_i_in_frag) then
-               ! atom_j is in fragment, atom_i is not → cap at position of atom_i
-               cap_idx = cap_idx + 1
-               fragment%element_numbers(n_atoms + cap_idx) = 1  ! Hydrogen
-               fragment%coordinates(:, n_atoms + cap_idx) = &
-                  sys_geom%coordinates(:, bonds(ibond)%atom_i + 1)
-               fragment%cap_replaces_atom(cap_idx) = bonds(ibond)%atom_i
-            end if
-         end do
+         call add_hydrogen_caps(atom_indices(1:n_atoms), bonds, sys_geom, fragment, n_atoms)
       end if
 
       ! Intersection fragments are ALWAYS NEUTRAL

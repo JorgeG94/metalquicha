@@ -99,15 +99,15 @@
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_frag_utils.f90"> Source File</a>
+              <a href="../src/mqc_gmbe_utils.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_frag_utils.f90.html'>mqc_frag_utils.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_utils.f90.html'>mqc_gmbe_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
             <li class="breadcrumb-item active" aria-current="page">generate_polymer_intersections</li>
           </ol>
         </nav>
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-i~51">i</a>
+            <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-i~61">i</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-max_atoms_per_polymer">max_atoms_per_polymer</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-max_intersection_level~5">max_intersection_level</a>
             <a class="list-group-item" href="../proc/generate_polymer_intersections.html#variable-polymer_atoms">polymer_atoms</a>
@@ -185,9 +185,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -573,7 +573,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~16"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -603,7 +603,7 @@ This works with dynamically generated polymers, not just base fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -795,35 +795,35 @@ This works with dynamically generated polymers, not just base fragments</p>
 <path fill="none" stroke="#0066ff" d="M443.3,-52.85C451.63,-52.92 460.06,-52.98 468.46,-53.05"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="468.64,-56.55 478.67,-53.13 468.7,-49.55 468.64,-56.55"/>
 </g>
-<!-- proc~next_combination -->
+<!-- proc~next_combination_init~2 -->
 <g id="proc~~generate_polymer_intersections~~CallsGraph_node8" class="node">
-<title>proc~next_combination</title>
-<g id="a_proc~~generate_polymer_intersections~~CallsGraph_node8"><a xlink:href="../proc/next_combination.html" xlink:title="next_combination">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="861,-87 754,-87 754,-63 861,-63 861,-87"/>
-<text text-anchor="middle" x="807.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_combination</text>
+<title>proc~next_combination_init~2</title>
+<g id="a_proc~~generate_polymer_intersections~~CallsGraph_node8"><a xlink:href="../proc/next_combination_init~2.html" xlink:title="next_combination_init">
+<polygon fill="#d9534f" stroke="#d9534f" points="872,-87 743,-87 743,-63 872,-63 872,-87"/>
+<text text-anchor="middle" x="807.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_combination_init</text>
 </a>
 </g>
 </g>
-<!-- proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination -->
+<!-- proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination_init~2 -->
 <g id="proc~~generate_polymer_intersections~~CallsGraph_edge9" class="edge">
-<title>proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination</title>
-<path fill="none" stroke="#ff0000" d="M707.09,-65.18C719.74,-66.43 732.26,-67.66 743.93,-68.82"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="743.65,-72.31 753.95,-69.81 744.34,-65.34 743.65,-72.31"/>
+<title>proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination_init~2</title>
+<path fill="none" stroke="#ff0000" d="M707.09,-65.18C715.83,-66.04 724.51,-66.9 732.88,-67.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="732.64,-71.22 742.94,-68.72 733.33,-64.25 732.64,-71.22"/>
 </g>
-<!-- proc~next_combination_init -->
+<!-- proc~next_combination~2 -->
 <g id="proc~~generate_polymer_intersections~~CallsGraph_node9" class="node">
-<title>proc~next_combination_init</title>
-<g id="a_proc~~generate_polymer_intersections~~CallsGraph_node9"><a xlink:href="../proc/next_combination_init.html" xlink:title="next_combination_init">
-<polygon fill="#d9534f" stroke="#d9534f" points="872,-45 743,-45 743,-21 872,-21 872,-45"/>
-<text text-anchor="middle" x="807.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_combination_init</text>
+<title>proc~next_combination~2</title>
+<g id="a_proc~~generate_polymer_intersections~~CallsGraph_node9"><a xlink:href="../proc/next_combination~2.html" xlink:title="next_combination">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="861,-45 754,-45 754,-21 861,-21 861,-45"/>
+<text text-anchor="middle" x="807.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_combination</text>
 </a>
 </g>
 </g>
-<!-- proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination_init -->
+<!-- proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination~2 -->
 <g id="proc~~generate_polymer_intersections~~CallsGraph_edge10" class="edge">
-<title>proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination_init</title>
-<path fill="none" stroke="#ff0000" d="M707.09,-42.82C715.83,-41.96 724.51,-41.1 732.88,-40.28"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="733.33,-43.75 742.94,-39.28 732.64,-36.78 733.33,-43.75"/>
+<title>proc~generate_k_way_intersections_from_lists&#45;&gt;proc~next_combination~2</title>
+<path fill="none" stroke="#ff0000" d="M707.09,-42.82C719.74,-41.57 732.26,-40.34 743.93,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="744.34,-42.66 753.95,-38.19 743.65,-35.69 744.34,-42.66"/>
 </g>
 </g>
 </svg>
@@ -929,7 +929,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~51"></span>
+              <span class="anchor" id="variable-i~61"></span>
               integer,
             </td>
               <td>private</td>
@@ -1125,14 +1125,14 @@ large graphs.</div>
           <div class="col">
             <p>
               metalquicha
- was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2025 
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2025-12-31 16:28 +0000             </p>
+ on 2026-01-01 10:51 +0000             </p>
           </div>
         </div>
         <br>
