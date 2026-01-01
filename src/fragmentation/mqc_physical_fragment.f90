@@ -495,6 +495,7 @@ contains
       integer :: icart, jcart
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
+      integer :: i_cap_2, local_cap_idx_2, global_original_idx_2
 
       n_real_atoms = fragment%n_atoms - fragment%n_caps
 
