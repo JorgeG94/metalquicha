@@ -73,29 +73,6 @@ contains
       ! Algorithm: Generate primaries, use DFS to enumerate overlapping cliques,
       ! accumulate PIE coefficients per unique atom set, evaluate each once
 
-      ! Validate gradient calculations with overlapping fragments
-      if (config%allow_overlapping_fragments .and. max_level > 0 .and. config%calc_type == CALC_TYPE_GRADIENT) then
-         if (world_comm%rank() == 0) then
-            call logger%error(" ")
-            call logger%error("ERROR: Gradient calculations with overlapping fragments are not supported")
-            call logger%error(" ")
-            call logger%error("Current settings:")
-            call logger%error("  nlevel = "//to_char(max_level))
-            call logger%error("  allow_overlapping_fragments = true")
-            call logger%error("  calc_type = Gradient")
-            call logger%error(" ")
-            call logger%error("GMBE gradients require implementing gradient intersection corrections,")
-            call logger%error("which is not currently supported.")
-            call logger%error(" ")
-            call logger%error("Solutions:")
-            call logger%error("  1. Use calc_type = Energy instead of Gradient")
-            call logger%error("  2. Set allow_overlapping_fragments = false")
-            call logger%error("  3. Use unfragmented calculation (nlevel = 0)")
-            call logger%error(" ")
-         end if
-         call abort_comm(world_comm, 1)
-      end if
-
       if (max_level == 0) then
          call omp_set_num_threads(1)
          call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds)
