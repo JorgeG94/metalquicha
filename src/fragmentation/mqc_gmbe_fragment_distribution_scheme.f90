@@ -367,17 +367,20 @@ contains
       integer :: fragment_size, intersection_size, i
       integer, allocatable :: fragment_indices(:)
       logical :: is_monomer
-      type(request_t) :: req(3)
+      integer :: fragment_type  !! 0 = monomer (indices), 1 = intersection (atom list)
+      type(request_t) :: req(4)
 
       is_monomer = (fragment_idx <= n_monomers)
 
       if (is_monomer) then
          ! Monomer fragment
+         fragment_type = 0
          fragment_size = 1
          allocate (fragment_indices(fragment_size))
          fragment_indices(1) = polymers(fragment_idx, 1)
       else
          ! Intersection fragment
+         fragment_type = 1
          intersection_size = 0
          do while (intersection_size < size(intersections, 1))
             if (intersections(intersection_size + 1, fragment_idx - n_monomers) == 0) exit
@@ -389,12 +392,14 @@ contains
       end if
 
       call isend(world_comm, fragment_idx, dest_rank, TAG_NODE_FRAGMENT, req(1))
-      call isend(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT, req(2))
-      call isend(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT, req(3))
+      call isend(world_comm, fragment_type, dest_rank, TAG_NODE_FRAGMENT, req(2))
+      call isend(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT, req(3))
+      call isend(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT, req(4))
 
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
+      call wait(req(4))
 
       deallocate (fragment_indices)
    end subroutine send_gmbe_fragment_to_node
@@ -410,17 +415,20 @@ contains
       integer :: fragment_size, intersection_size
       integer, allocatable :: fragment_indices(:)
       logical :: is_monomer
-      type(request_t) :: req(3)
+      integer :: fragment_type  !! 0 = monomer (indices), 1 = intersection (atom list)
+      type(request_t) :: req(4)
 
       is_monomer = (fragment_idx <= n_monomers)
 
       if (is_monomer) then
          ! Monomer fragment
+         fragment_type = 0
          fragment_size = 1
          allocate (fragment_indices(fragment_size))
          fragment_indices(1) = polymers(fragment_idx, 1)
       else
          ! Intersection fragment
+         fragment_type = 1
          intersection_size = 0
          do while (intersection_size < size(intersections, 1))
             if (intersections(intersection_size + 1, fragment_idx - n_monomers) == 0) exit
@@ -432,12 +440,14 @@ contains
       end if
 
       call isend(node_comm, fragment_idx, dest_rank, TAG_WORKER_FRAGMENT, req(1))
-      call isend(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT, req(2))
-      call isend(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT, req(3))
+      call isend(node_comm, fragment_type, dest_rank, TAG_WORKER_FRAGMENT, req(2))
+      call isend(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT, req(3))
+      call isend(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT, req(4))
 
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
+      call wait(req(4))
 
       deallocate (fragment_indices)
    end subroutine send_gmbe_fragment_to_worker

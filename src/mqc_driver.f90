@@ -277,7 +277,7 @@ contains
          else
             ! Standard MBE MPI processing
             call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                    node_leader_ranks, num_nodes, sys_geom, calc_type)
+                                    node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
          end if
       else if (node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)

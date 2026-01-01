@@ -16,7 +16,7 @@ module mqc_mbe_fragment_distribution_scheme
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
-                                    to_angstrom, check_duplicate_atoms
+                                    build_fragment_from_atom_list, to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
    use mqc_config_parser, only: bond_t
@@ -310,25 +310,30 @@ contains
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
-      integer :: fragment_size
+      integer :: fragment_size, fragment_type
       integer, allocatable :: fragment_indices(:)
-      type(request_t) :: req(3)
+      type(request_t) :: req(4)
       integer(int32) :: fragment_idx_int32
 
       fragment_size = count(polymers(fragment_idx, :) > 0)
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
+      ! Standard MBE always uses monomer indices (type 0)
+      fragment_type = 0
+
       ! TODO: serialize the data for better performance
       fragment_idx_int32 = int(fragment_idx, kind=int32)
       call isend(world_comm, fragment_idx_int32, dest_rank, TAG_NODE_FRAGMENT, req(1))
-      call isend(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT, req(2))
-      call isend(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT, req(3))
+      call isend(world_comm, fragment_type, dest_rank, TAG_NODE_FRAGMENT, req(2))
+      call isend(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT, req(3))
+      call isend(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT, req(4))
 
       ! Wait for all sends to complete
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
+      call wait(req(4))
 
       deallocate (fragment_indices)
    end subroutine send_fragment_to_node
@@ -340,25 +345,30 @@ contains
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
-      integer :: fragment_size
+      integer :: fragment_size, fragment_type
       integer, allocatable :: fragment_indices(:)
-      type(request_t) :: req(3)
+      type(request_t) :: req(4)
       integer(int32) :: fragment_idx_int32
 
       fragment_size = count(polymers(fragment_idx, :) > 0)
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
+      ! Standard MBE always uses monomer indices (type 0)
+      fragment_type = 0
+
       ! TODO: serialize the data for better performance
       fragment_idx_int32 = int(fragment_idx, kind=int32)
       call isend(node_comm, fragment_idx_int32, dest_rank, TAG_WORKER_FRAGMENT, req(1))
-      call isend(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT, req(2))
-      call isend(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT, req(3))
+      call isend(node_comm, fragment_type, dest_rank, TAG_WORKER_FRAGMENT, req(2))
+      call isend(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT, req(3))
+      call isend(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT, req(4))
 
       ! Wait for all sends to complete
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
+      call wait(req(4))
 
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
@@ -369,7 +379,7 @@ contains
       class(comm_t), intent(in) :: world_comm, node_comm
       integer(int32), intent(in), optional :: calc_type
 
-      integer(int32) :: fragment_idx, fragment_size, dummy_msg
+      integer(int32) :: fragment_idx, fragment_size, fragment_type, dummy_msg
       integer(int32) :: finished_workers
       integer(int32), allocatable :: fragment_indices(:)
       type(MPI_Status) :: status, global_status
@@ -433,13 +443,19 @@ contains
                   call wait(req, global_status)
 
                   if (global_status%MPI_TAG == TAG_NODE_FRAGMENT) then
+                     ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
+                     call irecv(world_comm, fragment_type, 0, TAG_NODE_FRAGMENT, req)
+                     call wait(req)
                      call irecv(world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, req)
                      call wait(req)
                      ! Note: must use blocking recv for allocatable arrays since size is unknown
                      allocate (fragment_indices(fragment_size))
                      call recv(world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
 
+                     ! Forward to worker
                      call isend(node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                     call wait(req)
+                     call isend(node_comm, fragment_type, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
                      call isend(node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
@@ -475,6 +491,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int32) :: fragment_idx, fragment_size, dummy_msg
+      integer(int32) :: fragment_type  !! 0 = monomer (indices), 1 = intersection (atom list)
       integer(int32), allocatable :: fragment_indices(:)
       type(calculation_result_t) :: result
       type(MPI_Status) :: status
@@ -493,15 +510,24 @@ contains
 
          select case (status%MPI_TAG)
          case (TAG_WORKER_FRAGMENT)
+            ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
+            call irecv(node_comm, fragment_type, 0, TAG_WORKER_FRAGMENT, req)
+            call wait(req)
             call irecv(node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, req)
             call wait(req)
             ! Note: must use blocking recv for allocatable arrays since size is unknown
             allocate (fragment_indices(fragment_size))
             call recv(node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
 
-            ! Build physical fragment from indices if sys_geom is available
+            ! Build physical fragment based on type
             if (present(sys_geom)) then
-               call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
+               if (fragment_type == 0) then
+                  ! Monomer: fragment_indices are monomer indices
+                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
+               else
+                  ! Intersection: fragment_indices are atom indices
+                  call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, bonds)
+               end if
 
                ! Process the chemistry fragment with physical geometry
                call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
