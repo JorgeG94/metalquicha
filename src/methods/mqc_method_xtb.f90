@@ -34,6 +34,7 @@ module mqc_method_xtb
    contains
       procedure :: calc_energy => xtb_calc_energy      !! Energy-only calculation
       procedure :: calc_gradient => xtb_calc_gradient  !! Energy + gradient calculation
+      procedure :: calc_hessian => xtb_calc_hessian  !! Placeholder for Hessian calculation
    end type xtb_method_t
 
 contains
@@ -193,5 +194,111 @@ contains
       deallocate (num, xyz, gradient, sigma)
 
    end subroutine xtb_calc_gradient
+
+   subroutine xtb_calc_hessian(this, fragment, result)
+      !! Calculate Hessian using finite differences of gradients
+      !!
+      !! Since tblite does not natively support analytic Hessians, this routine
+      !! computes the Hessian numerically via central finite differences:
+      !!   H[i,j] = (grad_j(x_i + h) - grad_j(x_i - h)) / (2h)
+      !!
+      !! This requires 6N gradient calculations (forward and backward for each coordinate)
+      use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
+                                        finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT
+      use pic_logger, only: logger => global_logger
+      use pic_io, only: to_char
+
+      class(xtb_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(out) :: result
+
+      type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
+      real(dp), allocatable :: forward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
+      real(dp), allocatable :: backward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
+      type(calculation_result_t) :: disp_result
+      real(dp) :: displacement
+      integer :: n_atoms, n_displacements, i
+
+      n_atoms = fragment%n_atoms
+      n_displacements = 3*n_atoms
+
+      if (this%verbose) then
+         call logger%info("XTB: Computing Hessian via finite differences")
+         call logger%info("  Method: Central differences of gradients")
+         call logger%info("  Atoms: "//to_char(n_atoms))
+         call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
+      end if
+
+      ! Use default displacement (0.001 Bohr ~ 0.0005 Angstrom)
+      displacement = DEFAULT_DISPLACEMENT
+
+      ! Generate all perturbed geometries
+      call generate_perturbed_geometries(fragment, displacement, forward_geoms, backward_geoms)
+
+      ! Allocate storage for gradients at displaced geometries
+      allocate (forward_gradients(n_displacements, 3, n_atoms))
+      allocate (backward_gradients(n_displacements, 3, n_atoms))
+
+      ! Compute gradients at all forward-displaced geometries
+      if (this%verbose) then
+         call logger%info("  Computing forward-displaced gradients...")
+      end if
+      do i = 1, n_displacements
+         call this%calc_gradient(forward_geoms(i)%geometry, disp_result)
+         if (.not. disp_result%has_gradient) then
+            call logger%error("Failed to compute gradient for forward displacement "//to_char(i))
+            error stop "Finite difference Hessian: gradient calculation failed"
+         end if
+         forward_gradients(i, :, :) = disp_result%gradient
+         call disp_result%destroy()
+      end do
+
+      ! Compute gradients at all backward-displaced geometries
+      if (this%verbose) then
+         call logger%info("  Computing backward-displaced gradients...")
+      end if
+      do i = 1, n_displacements
+         call this%calc_gradient(backward_geoms(i)%geometry, disp_result)
+         if (.not. disp_result%has_gradient) then
+            call logger%error("Failed to compute gradient for backward displacement "//to_char(i))
+            error stop "Finite difference Hessian: gradient calculation failed"
+         end if
+         backward_gradients(i, :, :) = disp_result%gradient
+         call disp_result%destroy()
+      end do
+
+      ! Compute Hessian from finite differences
+      if (this%verbose) then
+         call logger%info("  Assembling Hessian matrix...")
+      end if
+      call finite_diff_hessian_from_gradients(fragment, forward_gradients, backward_gradients, &
+                                              displacement, result%hessian)
+
+      ! Also compute energy and gradient at reference geometry for completeness
+      call this%calc_gradient(fragment, disp_result)
+      result%energy = disp_result%energy
+      result%has_energy = disp_result%has_energy
+      if (disp_result%has_gradient) then
+         allocate (result%gradient(3, n_atoms))
+         result%gradient = disp_result%gradient
+         result%has_gradient = .true.
+      end if
+      call disp_result%destroy()
+
+      result%has_hessian = .true.
+
+      if (this%verbose) then
+         call logger%info("  Hessian calculation complete")
+      end if
+
+      ! Cleanup
+      deallocate (forward_gradients, backward_gradients)
+      do i = 1, n_displacements
+         call forward_geoms(i)%destroy()
+         call backward_geoms(i)%destroy()
+      end do
+      deallocate (forward_geoms, backward_geoms)
+
+   end subroutine xtb_calc_hessian
 
 end module mqc_method_xtb
