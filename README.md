@@ -3,6 +3,7 @@
 <p align="center">
   <img src="images/sunflower.png" alt="Otter coding logo" title="Project logo" width="250">
 </p>
+
 Yes, this is AI generated (the image) if you know an artist, please let me know.
 
 
