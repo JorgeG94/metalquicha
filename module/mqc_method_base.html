@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for modules and submodules.">29 statements</a>
+                 title=" 0.6% of total for modules and submodules.">37 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -145,6 +145,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_method_base.html#interface-calc_energy_interface">calc_energy_interface</a>
             <a class="list-group-item" href="../module/mqc_method_base.html#interface-calc_gradient_interface">calc_gradient_interface</a>
+            <a class="list-group-item" href="../module/mqc_method_base.html#interface-calc_hessian_interface">calc_hessian_interface</a>
         </div>
       </div>
     </div>
@@ -793,7 +794,7 @@ using the specified quantum chemistry method.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~17"></span>
+              <span class="anchor" id="variable-this~13"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -808,7 +809,7 @@ using the specified quantum chemistry method.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~9"></span>
+              <span class="anchor" id="variable-fragment~11"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -823,7 +824,7 @@ using the specified quantum chemistry method.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~5"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -871,7 +872,7 @@ molecular fragment using the specified quantum chemistry method.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~18"></span>
+              <span class="anchor" id="variable-this~14"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -886,7 +887,7 @@ molecular fragment using the specified quantum chemistry method.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -901,7 +902,85 @@ molecular fragment using the specified quantum chemistry method.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~6"></span>
+              <span class="anchor" id="variable-result~8"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+      </li>
+    </ul>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="interface-calc_hessian_interface"></span><h3>abstract interface
+        
+    </h3></div>
+    <ul class="list-group">
+      <li class="list-group-item">
+            <h3>
+    private  subroutine calc_hessian_interface(this, fragment, result)  
+
+    </h3>
+  <p>Interface for energy, gradient, and Hessian calculations</p>
+<p>Computes electronic energy, nuclear gradients, and Hessian matrix for a
+molecular fragment using the specified quantum chemistry method.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~15"></span>
+              class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+                <p>Method instance</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~13"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+                <p>Molecular fragment</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -947,13 +1026,18 @@ molecular fragment using the specified quantum chemistry method.</p>
           <tbody>
               <tr>
                 <td>  procedure(<a href='../interface/calc_energy_interface.html'>calc_energy_interface</a>), public, deferred ::
-  <strong><a href='../type/qc_method_t.html#boundprocedure-calc_energy'>calc_energy</a></strong></td>
+  <strong><a href='../type/qc_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong></td>
                   <td><p>Energy calculation interface</p></td>
               </tr>
               <tr>
                 <td>  procedure(<a href='../interface/calc_gradient_interface.html'>calc_gradient_interface</a>), public, deferred ::
-  <strong><a href='../type/qc_method_t.html#boundprocedure-calc_gradient'>calc_gradient</a></strong></td>
+  <strong><a href='../type/qc_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong></td>
                   <td><p>Gradient calculation interface</p></td>
+              </tr>
+              <tr>
+                <td>  procedure(<a href='../interface/calc_hessian_interface.html'>calc_hessian_interface</a>), public, deferred ::
+  <strong><a href='../type/qc_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong></td>
+                  <td><p>Hessian calculation interface</p></td>
               </tr>
           </tbody>
         </table>
@@ -985,7 +1069,7 @@ molecular fragment using the specified quantum chemistry method.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-01 13:57 +0000             </p>
+ on 2026-01-01 14:53 +0000             </p>
           </div>
         </div>
         <br>

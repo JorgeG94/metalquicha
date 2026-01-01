@@ -1,0 +1,618 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>copy_and_displace_geometry &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>copy_and_displace_geometry
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.4% of total for procedures.">26 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_finite_differences.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_finite_differences.f90.html'>mqc_finite_differences.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
+            <li class="breadcrumb-item active" aria-current="page">copy_and_displace_geometry</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/copy_and_displace_geometry.html#src">copy_and_displace_geometry</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine copy_and_displace_geometry(reference_geom, atom_idx, coord_idx, displacement, displaced_geom)  
+</h2>
+    
+
+    <p>Create a copy of reference geometry with one coordinate displaced</p>
+<p>Args:
+  reference_geom: Original geometry to copy
+  atom_idx: Atom to displace (1-based)
+  coord_idx: Coordinate to displace (1=x, 2=y, 3=z)
+  displacement: Amount to displace in Bohr (positive or negative)
+  displaced_geom: Output displaced geometry</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_geom~2"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_idx"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_idx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_idx"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_idx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displaced_geom"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displaced_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~copy_and_displace_geometry~~CalledByGraph Pages: 1 -->
+<svg id="proccopy_and_displace_geometryCalledByGraph" width="641pt" height="86pt"
+ viewBox="0.00 0.00 641.00 86.34" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph" class="graph" transform="scale(0.55 0.55) rotate(0) translate(4 154)">
+<title>proc~~copy_and_displace_geometry~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 1169,-154 1169,4 -4,4"/>
+<!-- proc~copy_and_displace_geometry -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node1" class="node">
+<title>proc~copy_and_displace_geometry</title>
+<polygon fill="none" stroke="black" points="1165,-87 995,-87 995,-63 1165,-63 1165,-87"/>
+<text text-anchor="middle" x="1080" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">copy_and_displace_geometry</text>
+</g>
+<!-- proc~generate_perturbed_geometries -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node2" class="node">
+<title>proc~generate_perturbed_geometries</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node2"><a xlink:href="../proc/generate_perturbed_geometries.html" xlink:title="generate_perturbed_geometries">
+<polygon fill="#d9534f" stroke="#d9534f" points="959,-87 773,-87 773,-63 959,-63 959,-87"/>
+<text text-anchor="middle" x="866" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_perturbed_geometries</text>
+</a>
+</g>
+</g>
+<!-- proc~generate_perturbed_geometries&#45;&gt;proc~copy_and_displace_geometry -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge1" class="edge">
+<title>proc~generate_perturbed_geometries&#45;&gt;proc~copy_and_displace_geometry</title>
+<path fill="none" stroke="#ff0000" d="M959.06,-75C967.48,-75 976.02,-75 984.46,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="984.7,-78.5 994.7,-75 984.7,-71.5 984.7,-78.5"/>
+</g>
+<!-- proc~xtb_calc_hessian -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node3" class="node">
+<title>proc~xtb_calc_hessian</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node3"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="737,-87 553,-87 553,-63 737,-63 737,-87"/>
+<text text-anchor="middle" x="645" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_hessian&#45;&gt;proc~generate_perturbed_geometries -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge2" class="edge">
+<title>proc~xtb_calc_hessian&#45;&gt;proc~generate_perturbed_geometries</title>
+<path fill="none" stroke="#ff0000" d="M737.29,-75C745.63,-75 754.12,-75 762.56,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="762.8,-78.5 772.8,-75 762.8,-71.5 762.8,-78.5"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node4" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node4"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="517,-87 405,-87 405,-63 517,-63 517,-87"/>
+<text text-anchor="middle" x="461" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge3" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian</title>
+<path fill="none" stroke="#ff0000" d="M517.1,-75C525.22,-75 533.8,-75 542.5,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="542.76,-78.5 552.76,-75 542.76,-71.5 542.76,-78.5"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node5" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node5"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="331.5,-150 249.5,-150 249.5,-126 331.5,-126 331.5,-150"/>
+<text text-anchor="middle" x="290.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge4" class="edge">
+<title>proc~node_worker&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M331.72,-128.47C343.84,-125.24 357.08,-121.33 369,-117 388.87,-109.78 410.38,-99.95 427.49,-91.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="429.09,-94.73 436.51,-87.17 425.99,-88.46 429.09,-94.73"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node6" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node6"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="367.5,-108 213.5,-108 213.5,-84 367.5,-84 367.5,-108"/>
+<text text-anchor="middle" x="290.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge5" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M367.86,-86.48C376.75,-85.38 385.75,-84.25 394.48,-83.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="395.07,-86.62 404.56,-81.91 394.21,-79.67 395.07,-86.62"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node7" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node7"><a xlink:href="../proc/serial_gmbe_pie_processor.html" xlink:title="serial_gmbe_pie_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="369,-66 212,-66 212,-42 369,-42 369,-66"/>
+<text text-anchor="middle" x="290.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_pie_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge6" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M369.34,-63.7C377.8,-64.76 386.34,-65.82 394.63,-66.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="394.24,-70.33 404.6,-68.09 395.1,-63.39 394.24,-70.33"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node8" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node8"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="367,-24 214,-24 214,0 367,0 367,-24"/>
+<text text-anchor="middle" x="290.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge7" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M341.09,-24.1C350.45,-26.76 360.09,-29.76 369,-33 388.87,-40.22 410.38,-50.05 427.49,-58.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="425.99,-61.54 436.51,-62.83 429.09,-55.27 425.99,-61.54"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node9" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node9"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="169.5,-108 6.5,-108 6.5,-84 169.5,-84 169.5,-108"/>
+<text text-anchor="middle" x="88" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~node_worker -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge8" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#ff0000" d="M146.46,-108.04C175.72,-114.17 210.99,-121.55 239.17,-127.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="238.71,-130.94 249.22,-129.56 240.15,-124.09 238.71,-130.94"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge9" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#7fff00" d="M169.68,-96C180.68,-96 192.01,-96 203.1,-96"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="203.21,-99.5 213.21,-96 203.21,-92.5 203.21,-99.5"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge10" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#00ffff" d="M146.46,-83.96C170.05,-79.02 197.54,-73.26 222.08,-68.12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="222.97,-71.51 232.04,-66.04 221.53,-64.66 222.97,-71.51"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_node10" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~copy_and_displace_geometry~~CalledByGraph_node10"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="176,-24 0,-24 0,0 176,0 176,-24"/>
+<text text-anchor="middle" x="88" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~copy_and_displace_geometry~~CalledByGraph_edge11" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#7f00ff" d="M176.07,-12C185.2,-12 194.49,-12 203.61,-12"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="203.83,-15.5 213.83,-12 203.83,-8.5 203.83,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccopy_and_displace_geometryCalledByGraph = svgPanZoom('#proccopy_and_displace_geometryCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">copy_and_displace_geometry</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">,</span><span class="w"> </span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">displaced_geom</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Create a copy of reference geometry with one coordinate displaced</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Args:</span>
+<span class="w">      </span><span class="c">!!   reference_geom: Original geometry to copy</span>
+<span class="w">      </span><span class="c">!!   atom_idx: Atom to displace (1-based)</span>
+<span class="w">      </span><span class="c">!!   coord_idx: Coordinate to displace (1=x, 2=y, 3=z)</span>
+<span class="w">      </span><span class="c">!!   displacement: Amount to displace in Bohr (positive or negative)</span>
+<span class="w">      </span><span class="c">!!   displaced_geom: Output displaced geometry</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reference_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">,</span><span class="w"> </span><span class="n">coord_idx</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displaced_geom</span>
+
+<span class="w">      </span><span class="c">! Copy basic properties</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">charge</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">multiplicity</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">nelec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">nelec</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">n_caps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">n_caps</span>
+
+<span class="w">      </span><span class="c">! Allocate and copy arrays</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">n_atoms</span><span class="p">))</span>
+
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">element_numbers</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">coordinates</span>
+
+<span class="w">      </span><span class="c">! Copy hydrogen cap information if present</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">reference_geom</span><span class="p">%</span><span class="n">n_caps</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">n_caps</span><span class="p">))</span>
+<span class="w">         </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">cap_replaces_atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">cap_replaces_atom</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Copy gradient redistribution mapping if present</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">%</span><span class="n">local_to_global</span><span class="p">)))</span>
+<span class="w">         </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">local_to_global</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reference_geom</span><span class="p">%</span><span class="n">local_to_global</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Apply displacement to specified coordinate</span>
+<span class="w">      </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="n">displaced_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(</span><span class="n">coord_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_idx</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">displacement</span>
+
+<span class="w">      </span><span class="c">! Copy basis set if present (same basis, just different geometry)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">reference_geom</span><span class="p">%</span><span class="n">basis</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! Note: Basis set will need to be rebuilt with new coordinates</span>
+<span class="w">         </span><span class="c">! For now, we don&#39;t copy it - it should be set up during calculation</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">   end subroutine </span><span class="n">copy_and_displace_geometry</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-01 14:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,1187 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_finite_differences &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_finite_differences
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.6% of total for modules and submodules.">107 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_finite_differences.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_finite_differences.f90.html'>mqc_finite_differences.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_finite_differences</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#variable-default_displacement">DEFAULT_DISPLACEMENT</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#type-displaced_geometry_t">displaced_geometry_t</a>
+        </div>
+      </div>
+    </div>
+
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#proc-finite_diff_hessian_from_gradients">finite_diff_hessian_from_gradients</a>
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#proc-generate_perturbed_geometries">generate_perturbed_geometries</a>
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#proc-copy_and_displace_geometry">copy_and_displace_geometry</a>
+            <a class="list-group-item" href="../module/mqc_finite_differences.html#proc-displaced_geometry_destroy">displaced_geometry_destroy</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Provides utilities for generating perturbed geometries and computing
+numerical derivatives via finite differences (gradients, Hessians, etc.)
+Generate forward/backward displacements
+Container for displaced geometry
+Compute Hessian from gradient differences</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_finite_differences~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_finite_differencesUsesGraph" width="641pt" height="287pt"
+ viewBox="0.00 0.00 641.00 287.14" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_finite_differences~~UsesGraph" class="graph" transform="scale(0.9 0.9) rotate(0) translate(4 316.74)">
+<title>module~~mqc_finite_differences~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-316.74 712,-316.74 712,4 -4,4"/>
+<!-- module~mqc_finite_differences -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node1" class="node">
+<title>module~mqc_finite_differences</title>
+<polygon fill="none" stroke="black" points="708,-271 575,-271 575,-247 708,-247 708,-271"/>
+<text text-anchor="middle" x="641.5" y="-256.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_finite_differences</text>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node2" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node2"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="539,-230 400,-230 400,-206 539,-206 539,-230"/>
+<text text-anchor="middle" x="469.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_finite_differences&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge1" class="edge">
+<title>module~mqc_finite_differences&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M590.41,-246.92C571.56,-242.37 549.94,-237.16 530.29,-232.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="531.06,-229.01 520.52,-230.06 529.42,-235.81 531.06,-229.01"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node3" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-125 0,-125 0,-101 62,-101 62,-125"/>
+<text text-anchor="middle" x="31" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_finite_differences&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge2" class="edge">
+<title>module~mqc_finite_differences&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M574.88,-267.06C507.81,-275.3 400.64,-288.49 308,-300"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge9" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M453.76,-230.08C426.83,-251.05 367,-292.67 308,-300"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M306,-300C240.28,-308.16 218.99,-323.28 157,-300"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node4" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node4"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="339,-272 275,-272 275,-248 339,-248 339,-272"/>
+<text text-anchor="middle" x="307" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge3" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M422.51,-230.04C399.37,-236.09 371.56,-243.37 349.14,-249.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="348.04,-245.9 339.26,-251.82 349.82,-252.68 348.04,-245.9"/>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node5" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node5"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="364,-106 250,-106 250,-82 364,-82 364,-106"/>
+<text text-anchor="middle" x="307" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge4" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M457.5,-205.91C439.39,-186.48 401.53,-147.86 364,-122 358.17,-117.98 351.67,-114.19 345.24,-110.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="346.43,-107.46 335.93,-106.06 343.26,-113.7 346.43,-107.46"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node6" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node6"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="352.5,-230 261.5,-230 261.5,-206 352.5,-206 352.5,-230"/>
+<text text-anchor="middle" x="307" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge5" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M399.97,-218C387.58,-218 374.81,-218 362.87,-218"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="362.63,-214.5 352.63,-218 362.63,-221.5 362.63,-214.5"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node7" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node7"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-188 122.5,-188 122.5,-164 189.5,-164 189.5,-188"/>
+<text text-anchor="middle" x="156" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge6" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M306,-136C285.61,-132.48 235.58,-147.77 199.1,-160.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="197.47,-157.32 189.2,-163.95 199.8,-163.92 197.47,-157.32"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node8" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node8"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-146 109.5,-146 109.5,-122 202.5,-122 202.5,-146"/>
+<text text-anchor="middle" x="156" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge7" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M452.81,-205.84C425.35,-185.54 365.97,-146.02 308,-136"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M306,-136C275.46,-130.72 240.88,-129.95 212.72,-130.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.55,-127.12 202.66,-130.92 212.76,-134.12 212.55,-127.12"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node9" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node9"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="356.5,-188 257.5,-188 257.5,-164 356.5,-164 356.5,-188"/>
+<text text-anchor="middle" x="307" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge8" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M422.51,-205.96C404.21,-201.18 382.98,-195.62 363.81,-190.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="364.56,-187.18 354,-188.04 362.79,-193.95 364.56,-187.18"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge10" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M276.96,-272.08C240.16,-286.65 178.88,-308.22 157,-300"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge15" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M271.06,-82C229.14,-69.45 157.13,-53.78 98,-71 82.05,-75.64 66.28,-85.44 54.15,-94.4"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="51.78,-91.81 46.01,-100.69 56.06,-97.34 51.78,-91.81"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge12" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M278.08,-106.07C268.83,-110.55 258.69,-116.02 250,-122 232.12,-134.31 232.53,-143.7 214,-155 209.33,-157.85 204.21,-160.4 199.02,-162.67"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="197.64,-159.45 189.67,-166.43 200.25,-165.94 197.64,-159.45"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge13" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M261.3,-106C245.75,-110.17 228.13,-114.9 211.86,-119.27"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="210.68,-115.96 201.93,-121.94 212.5,-122.73 210.68,-115.96"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node10" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node10"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-24 107.5,-24 107.5,0 204.5,0 204.5,-24"/>
+<text text-anchor="middle" x="156" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge11" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M287.7,-81.97C269.4,-70.15 240.27,-51.92 214,-38 207.8,-34.71 201.11,-31.43 194.56,-28.37"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="195.7,-25.04 185.15,-24.04 192.78,-31.4 195.7,-25.04"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node11" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_module~~mqc_finite_differences~~UsesGraph_node11"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-104 98,-104 98,-80 214,-80 214,-104"/>
+<text text-anchor="middle" x="156" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge14" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M249.67,-93.24C241.47,-93.13 232.95,-93.02 224.56,-92.91"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="224.45,-89.41 214.4,-92.77 224.35,-96.4 224.45,-89.41"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge17" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M266.92,-230.02C261.03,-232.57 255.19,-235.56 250,-239 230.61,-251.86 233.23,-263.9 214,-277 191.42,-292.38 182.57,-309.6 157,-300"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M155,-300C129.43,-290.4 117.31,-296.33 98,-277 58.07,-237.03 41.44,-169.75 35.25,-135.1"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="38.67,-134.36 33.59,-125.07 31.77,-135.51 38.67,-134.36"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_finite_differences~~UsesGraph_node12" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-268 127,-268 127,-244 185,-244 185,-268"/>
+<text text-anchor="middle" x="156" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge16" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M261.3,-229.4C240.18,-234.79 215.23,-241.15 195.03,-246.3"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="194.07,-242.93 185.24,-248.8 195.8,-249.72 194.07,-242.93"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge18" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M109.2,-126.18C97.05,-124.11 84.02,-121.88 72.2,-119.86"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="72.61,-116.38 62.16,-118.15 71.43,-123.28 72.61,-116.38"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge21" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M262.36,-188.07C247.18,-191.7 229.95,-195.2 214,-197 162.77,-202.77 144.37,-219.54 98,-197 71.34,-184.04 52.24,-154.52 41.65,-134.17"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="44.71,-132.44 37.15,-125.02 38.43,-135.54 44.71,-132.44"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge19" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M257.21,-176C238.77,-176 217.92,-176 200.04,-176"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="199.89,-172.5 189.89,-176 199.89,-179.5 199.89,-172.5"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge20" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M263.3,-163.96C246.63,-159.26 227.33,-153.82 209.79,-148.88"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="210.28,-145.38 199.7,-146.04 208.38,-152.12 210.28,-145.38"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge22" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M122.32,-24.06C114,-27.88 105.34,-32.55 98,-38 77.32,-53.35 58.42,-76.13 46.2,-92.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="43.16,-90.78 40.13,-100.94 48.83,-94.89 43.16,-90.78"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="module~~mqc_finite_differences~~UsesGraph_edge23" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M97.82,-101.76C89.18,-103.24 80.42,-104.73 72.23,-106.13"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="71.49,-102.71 62.22,-107.84 72.66,-109.61 71.49,-102.71"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_finite_differencesUsesGraph = svgPanZoom('#modulemqc_finite_differencesUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_finite_differences~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_finite_differencesUsedByGraph" width="361pt" height="32pt"
+ viewBox="0.00 0.00 361.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_finite_differences~~UsedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>module~~mqc_finite_differences~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 357,-28 357,4 -4,4"/>
+<!-- module~mqc_finite_differences -->
+<g id="module~~mqc_finite_differences~~UsedByGraph_node1" class="node">
+<title>module~mqc_finite_differences</title>
+<polygon fill="none" stroke="black" points="133,-24 0,-24 0,0 133,0 133,-24"/>
+<text text-anchor="middle" x="66.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_finite_differences</text>
+</g>
+<!-- proc~xtb_calc_hessian -->
+<g id="module~~mqc_finite_differences~~UsedByGraph_node2" class="node">
+<title>proc~xtb_calc_hessian</title>
+<g id="a_module~~mqc_finite_differences~~UsedByGraph_node2"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="353,-24 169,-24 169,0 353,0 353,-24"/>
+<text text-anchor="middle" x="261" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_hessian&#45;&gt;module~mqc_finite_differences -->
+<g id="module~~mqc_finite_differences~~UsedByGraph_edge1" class="edge">
+<title>proc~xtb_calc_hessian&#45;&gt;module~mqc_finite_differences</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M168.82,-12C160.26,-12 151.64,-12 143.23,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.11,-8.5 133.11,-12 143.11,-15.5 143.11,-8.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-default_displacement"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>DEFAULT_DISPLACEMENT</strong></td>
+<td> =</td>
+                <td>0.01_dp</td>
+            <td>
+                <p>~0.05 Angstrom</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-displaced_geometry_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>Container for a single displaced geometry</p>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_index"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_index</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Which atom was displaced (1-based)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinate"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coordinate</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Which coordinate was displaced (1=x, 2=y, 3=z)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-direction"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>direction</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>+1 for forward, -1 for backward</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Displacement magnitude in Bohr</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-geometry"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>geometry</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+<p>The displaced geometry</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+        <h4>Type-Bound Procedures</h4>
+        <table class="table table-striped varlist">
+          <tbody>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/displaced_geometry_t.html#boundprocedure-destroy'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
+                  <td></td>
+              </tr>
+          </tbody>
+        </table>
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-finite_diff_hessian_from_gradients"></span> <h3>public  subroutine <a href='../proc/finite_diff_hessian_from_gradients.html'>finite_diff_hessian_from_gradients</a>(reference_geom, forward_gradients, backward_gradients, displacement, hessian)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute Hessian matrix from finite differences of gradients</p><a href="../proc/finite_diff_hessian_from_gradients.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_geom~3"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-forward_gradients"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>forward_gradients</strong>(:,:,:)</td>
+            <td>
+<p>(n_displacements, 3, n_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-backward_gradients"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>backward_gradients</strong>(:,:,:)</td>
+            <td>
+<p>(n_displacements, 3, n_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hessian"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>hessian</strong>(:,:)</td>
+            <td>
+<p>(3<em>n_atoms, 3</em>n_atoms)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-generate_perturbed_geometries"></span> <h3>public  subroutine <a href='../proc/generate_perturbed_geometries.html'>generate_perturbed_geometries</a>(reference_geom, displacement, forward_geoms, backward_geoms)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Generate all forward and backward displaced geometries for finite difference calculations</p><a href="../proc/generate_perturbed_geometries.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_geom"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-forward_geoms"></span>
+              type(<a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>forward_geoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-backward_geoms"></span>
+              type(<a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>backward_geoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-copy_and_displace_geometry"></span> <h3>private  subroutine <a href='../proc/copy_and_displace_geometry.html'>copy_and_displace_geometry</a>(reference_geom, atom_idx, coord_idx, displacement, displaced_geom)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Create a copy of reference geometry with one coordinate displaced</p><a href="../proc/copy_and_displace_geometry.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-reference_geom~2"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>reference_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_idx"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_idx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_idx"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_idx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displaced_geom"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displaced_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-displaced_geometry_destroy"></span> <h3>private  subroutine <a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a>(this)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Clean up memory for displaced geometry</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this"></span>
+              class(<a href='../type/displaced_geometry_t.html'>displaced_geometry_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-01 14:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

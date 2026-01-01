@@ -18,7 +18,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list, to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_parser, only: bond_t
 
    ! Method API imports
@@ -86,6 +86,8 @@ contains
             call xtb_calc%calc_energy(phys_frag, result)
          case (CALC_TYPE_GRADIENT)
             call xtb_calc%calc_gradient(phys_frag, result)
+         case (CALC_TYPE_HESSIAN)
+            call xtb_calc%calc_hessian(phys_frag, result)
          case default
             call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
             error stop "Invalid calc_type in do_fragment_work"
@@ -609,7 +611,8 @@ contains
       call logger%info("Unfragmented calculation completed")
       block
          character(len=256) :: result_line
-         integer :: current_log_level, iatom
+         integer :: current_log_level, iatom, i, j
+         real(dp) :: hess_norm
 
          write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
@@ -626,6 +629,25 @@ contains
                do iatom = 1, total_atoms
                   write (result_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
                      result%gradient(1, iatom), result%gradient(2, iatom), result%gradient(3, iatom)
+                  call logger%info(trim(result_line))
+               end do
+               call logger%info(" ")
+            end if
+         end if
+
+         if (result%has_hessian) then
+            ! Compute Frobenius norm of Hessian
+            hess_norm = sqrt(sum(result%hessian**2))
+            write (result_line, '(a,f25.15)') "  Hessian Frobenius norm: ", hess_norm
+            call logger%info(trim(result_line))
+
+            ! Print full Hessian if verbose and system is small
+            call logger%configuration(level=current_log_level)
+            if (current_log_level >= verbose_level .and. total_atoms < 20) then
+               call logger%info(" ")
+               call logger%info("Hessian matrix (Hartree/Bohr^2):")
+               do i = 1, 3*total_atoms
+                  write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*total_atoms)
                   call logger%info(trim(result_line))
                end do
                call logger%info(" ")

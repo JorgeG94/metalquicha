@@ -16,7 +16,7 @@ module mqc_driver
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_parser, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe_energy
    use mqc_result_types, only: calculation_result_t
@@ -153,6 +153,13 @@ contains
       integer, allocatable :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
       integer :: n_pie_terms  !! Number of unique PIE terms
+
+      ! Validate calculation type
+      if (calc_type == CALC_TYPE_HESSIAN) then
+         call logger%error("Hessian calculations are not yet implemented for fragmented systems (MBE/GMBE)")
+         call logger%error("Please use an unfragmented calculation (nlevel = 0) for Hessian computations")
+         error stop "Unsupported calculation type for fragmented system"
+      end if
 
       ! Generate fragments
       if (world_comm%rank() == 0) then
