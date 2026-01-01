@@ -1,8 +1,10 @@
 .. _validation:
 
-=========================
+===========================
 Physics Validation Testing
-=========================
+===========================
+
+(this file was partially generated with an LLM but carefully checked by me, Jorge)
 
 This document describes the physics validation test suite for metalquicha, which ensures that code changes don't introduce numerical regressions.
 
@@ -230,9 +232,9 @@ Many-body expansion calculations with fragment-based energies.
      "type": "fragmented"
    }
 
-**JSON output structure**:
+**JSON output structure** (abbreviated):
 
-.. code-block:: json
+.. code-block:: text
 
    {
      "prism": {
@@ -307,7 +309,7 @@ Extracted value: ``-123.456789``
 Fragmented Calculations (MBE/GMBE)
 -----------------------------------
 
-.. code-block:: json
+.. code-block:: text
 
    {
      "basename": {
@@ -337,7 +339,7 @@ Tolerance Configuration
 
 Default energy tolerance is ``1.0e-6`` Hartree, configurable in ``validation_tests.json``:
 
-.. code-block:: json
+.. code-block:: text
 
    {
      "description": "Physics validation tests for metalquicha",
@@ -465,8 +467,8 @@ Common Issues
 **Test fails intermittently**
    May indicate:
 
+   - A bug in xtb caused by a compiler version, math library, etc. (this has been observed in MacOS)
    - Numerical instabilities in SCF convergence
-   - Race conditions in parallel code
    - Compiler-specific floating-point behavior
 
 Debugging Failed Tests
@@ -556,7 +558,7 @@ Validation Test Manifest Schema
 
 The ``validation_tests.json`` file has the following structure:
 
-.. code-block:: json
+.. code-block:: text
 
    {
      "description": "Physics validation tests for metalquicha",
@@ -565,8 +567,8 @@ The ``validation_tests.json`` file has the following structure:
        {
          "name": "Test name (required)",
          "input": "path/to/input.mqc (required)",
-         "expected_energy": -123.456 (for single molecule),
-         "expected_energies": {...} (for multi-molecule),
+         "expected_energy": -123.456,  // for single molecule
+         "expected_energies": {...},   // for multi-molecule
          "type": "unfragmented|fragmented|multi_molecule (required)"
        }
      ]

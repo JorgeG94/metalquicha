@@ -6,6 +6,8 @@ Getting Started
 
 This guide is for developers who want to understand the metalquicha codebase, even without prior quantum chemistry or Fortran experience.
 
+(this file was partially generated with an LLM but carefully checked by me, Jorge)
+
 .. contents::
    :local:
    :depth: 2

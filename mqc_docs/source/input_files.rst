@@ -4,6 +4,8 @@
 Input File Formats
 ==================
 
+(this file was partially generated with an LLM but carefully checked by me, Jorge)
+
 Metalquicha supports two input file formats: JSON (for user convenience) and ``.mqc`` (the native format that the Fortran code reads).
 
 .. contents::
