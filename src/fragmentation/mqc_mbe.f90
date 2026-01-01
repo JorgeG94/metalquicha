@@ -616,6 +616,7 @@ contains
       use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
                                        redistribute_cap_gradients
       use mqc_config_parser, only: bond_t
+      use pic_logger, only: info_level
 
       integer, intent(in) :: monomers(:)              !! Monomer indices (1-based)
       integer, intent(in) :: n_monomers               !! Number of monomers
@@ -629,7 +630,7 @@ contains
       real(dp), intent(out) :: total_gradient(:, :)   !! Total GMBE gradient (3, total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
 
-      integer :: i, k, max_level
+      integer :: i, k, max_level, current_log_level
       real(dp) :: monomer_energy
       real(dp), allocatable :: level_energies(:)
       integer, allocatable :: level_counts(:)
@@ -700,7 +701,7 @@ contains
          end do
 
          ! Print breakdown
-         call logger%info("GMBE Energy and Gradient breakdown (Inclusion-Exclusion Principle):")
+         call logger%info("GMBE Energy breakdown (Inclusion-Exclusion Principle):")
          block
             character(len=256) :: line
             write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "):  ", monomer_energy
@@ -720,23 +721,39 @@ contains
 
             write (line, '(a,f20.10)') "  Total GMBE:      ", total_energy
             call logger%info(trim(line))
-            write (line, '(a,f20.10)') "  Gradient norm:   ", sqrt(sum(total_gradient**2))
-            call logger%info(trim(line))
          end block
 
          deallocate (level_energies, level_counts)
       else
          ! No intersections - just report monomer sum
-         call logger%info("GMBE Energy and Gradient breakdown:")
+         call logger%info("GMBE Energy breakdown:")
          block
             character(len=256) :: line
             write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "): ", monomer_energy
             call logger%info(trim(line))
             write (line, '(a,f20.10)') "  Total GMBE:  ", total_energy
             call logger%info(trim(line))
-            write (line, '(a,f20.10)') "  Gradient norm: ", sqrt(sum(total_gradient**2))
-            call logger%info(trim(line))
          end block
+      end if
+
+      ! Print gradient info (same format as MBE)
+      call logger%info("GMBE gradient computation completed")
+      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
+
+      ! Print detailed gradient if info level and small system
+      call logger%configuration(level=current_log_level)
+      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
+         call logger%info(" ")
+         call logger%info("Total GMBE Gradient (Hartree/Bohr):")
+         do i = 1, sys_geom%total_atoms
+            block
+               character(len=256) :: grad_line
+               write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", i, ": ", &
+                  total_gradient(1, i), total_gradient(2, i), total_gradient(3, i)
+               call logger%info(trim(grad_line))
+            end block
+         end do
+         call logger%info(" ")
       end if
 
    end subroutine compute_gmbe_energy_gradient
