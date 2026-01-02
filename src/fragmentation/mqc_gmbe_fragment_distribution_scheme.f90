@@ -30,9 +30,9 @@ contains
    subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds)
       !! Serial GMBE processor using PIE coefficients
       !! Evaluates each unique atom set once and sums with PIE coefficients
-      !! Supports both energy-only and energy+gradient calculations
-      use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_ENERGY, calc_type_to_string
-      use mqc_physical_fragment, only: redistribute_cap_gradients
+      !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
+      use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
+      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
       use pic_logger, only: info_level
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
@@ -43,12 +43,14 @@ contains
 
       type(physical_fragment_t) :: phys_frag
       type(calculation_result_t), allocatable :: results(:)
-      integer :: i, n_atoms, max_atoms, iatom, current_log_level
+      integer :: i, n_atoms, max_atoms, iatom, current_log_level, hess_dim
       integer, allocatable :: atom_list(:)
       real(dp) :: total_energy, term_energy
       real(dp), allocatable :: pie_energies(:)  !! Store individual energies for JSON output
       real(dp), allocatable :: total_gradient(:, :)  !! Total gradient (3, total_atoms)
       real(dp), allocatable :: term_gradient(:, :)  !! Temporary gradient for each term
+      real(dp), allocatable :: total_hessian(:, :)  !! Total Hessian (3*total_atoms, 3*total_atoms)
+      real(dp), allocatable :: term_hessian(:, :)  !! Temporary Hessian for each term
       integer :: coeff
 
       call logger%info("Processing "//to_char(n_pie_terms)//" unique PIE terms...")
@@ -59,11 +61,18 @@ contains
       allocate (pie_energies(n_pie_terms))
       allocate (results(n_pie_terms))
 
-      ! Allocate gradient arrays if needed
-      if (calc_type == CALC_TYPE_GRADIENT) then
+      ! Allocate gradient and Hessian arrays if needed
+      if (calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) then
          allocate (total_gradient(3, sys_geom%total_atoms))
          allocate (term_gradient(3, sys_geom%total_atoms))
          total_gradient = 0.0_dp
+      end if
+
+      if (calc_type == CALC_TYPE_HESSIAN) then
+         hess_dim = 3*sys_geom%total_atoms
+         allocate (total_hessian(hess_dim, hess_dim))
+         allocate (term_hessian(hess_dim, hess_dim))
+         total_hessian = 0.0_dp
       end if
 
       do i = 1, n_pie_terms
@@ -103,13 +112,23 @@ contains
          total_energy = total_energy + real(coeff, dp)*term_energy
 
          ! Accumulate gradient if present
-         if (calc_type == CALC_TYPE_GRADIENT .and. results(i)%has_gradient) then
+         if ((calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) .and. results(i)%has_gradient) then
             ! Map fragment gradient to system coordinates with proper cap handling
             term_gradient = 0.0_dp
             call redistribute_cap_gradients(phys_frag, results(i)%gradient, term_gradient)
 
             ! Accumulate with PIE coefficient
             total_gradient = total_gradient + real(coeff, dp)*term_gradient
+         end if
+
+         ! Accumulate Hessian if present
+         if (calc_type == CALC_TYPE_HESSIAN .and. results(i)%has_hessian) then
+            ! Map fragment Hessian to system coordinates with proper cap handling
+            term_hessian = 0.0_dp
+            call redistribute_cap_hessian(phys_frag, results(i)%hessian, term_hessian)
+
+            ! Accumulate with PIE coefficient
+            total_hessian = total_hessian + real(coeff, dp)*term_hessian
          end if
 
          call logger%verbose("PIE term "//to_char(i)//"/"//to_char(n_pie_terms)// &
@@ -125,7 +144,7 @@ contains
       call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
 
       ! Print gradient info if computed
-      if (calc_type == CALC_TYPE_GRADIENT) then
+      if (calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) then
          call logger%info("GMBE PIE gradient computation completed")
          call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
 
@@ -146,6 +165,12 @@ contains
          end if
       end if
 
+      ! Print Hessian info if computed
+      if (calc_type == CALC_TYPE_HESSIAN) then
+         call logger%info("GMBE PIE Hessian computation completed")
+         call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
+      end if
+
       call logger%info(" ")
 
       ! Write JSON output
@@ -154,6 +179,8 @@ contains
       deallocate (pie_energies, results)
       if (allocated(total_gradient)) deallocate (total_gradient)
       if (allocated(term_gradient)) deallocate (term_gradient)
+      if (allocated(total_hessian)) deallocate (total_hessian)
+      if (allocated(term_hessian)) deallocate (term_hessian)
 
    end subroutine serial_gmbe_pie_processor
 
@@ -161,8 +188,8 @@ contains
                                    node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
-      use mqc_calc_types, only: CALC_TYPE_GRADIENT
-      use mqc_physical_fragment, only: redistribute_cap_gradients
+      use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
 
       type(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
@@ -186,6 +213,8 @@ contains
       integer :: worker_source
       real(dp) :: total_energy
       real(dp), allocatable :: total_gradient(:, :)
+      real(dp), allocatable :: total_hessian(:, :)
+      integer :: hess_dim
 
       ! MPI request handles
       type(request_t) :: req
@@ -375,6 +404,76 @@ contains
          end block
 
          deallocate (total_gradient)
+      end if
+
+      ! Handle Hessians if computed
+      if (calc_type == CALC_TYPE_HESSIAN) then
+         hess_dim = 3*sys_geom%total_atoms
+         allocate (total_hessian(hess_dim, hess_dim))
+         total_hessian = 0.0_dp
+
+         ! Also allocate gradient for Hessian calculations
+         if (.not. allocated(total_gradient)) then
+            allocate (total_gradient(3, sys_geom%total_atoms))
+            total_gradient = 0.0_dp
+         end if
+
+         do term_idx = 1, n_pie_terms
+            if (results(term_idx)%has_hessian .or. results(term_idx)%has_gradient) then
+               block
+                  real(dp), allocatable :: term_gradient(:, :), term_hessian(:, :)
+                  type(physical_fragment_t) :: phys_frag
+                  integer :: n_atoms, max_atoms
+                  integer, allocatable :: atom_list(:)
+
+                  ! Extract atom list for this term
+                  max_atoms = size(pie_atom_sets, 1)
+                  n_atoms = 0
+                  do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, term_idx) >= 0)
+                     n_atoms = n_atoms + 1
+                  end do
+
+                  if (n_atoms > 0) then
+                     allocate (atom_list(n_atoms))
+                     atom_list = pie_atom_sets(1:n_atoms, term_idx)
+
+                     ! Build fragment to get proper mapping
+                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, bonds)
+
+                     ! Redistribute gradient if present
+                     if (results(term_idx)%has_gradient) then
+                        allocate (term_gradient(3, sys_geom%total_atoms))
+                        term_gradient = 0.0_dp
+                        call redistribute_cap_gradients(phys_frag, results(term_idx)%gradient, term_gradient)
+                        total_gradient = total_gradient + real(pie_coefficients(term_idx), dp)*term_gradient
+                        deallocate (term_gradient)
+                     end if
+
+                     ! Redistribute Hessian if present
+                     if (results(term_idx)%has_hessian) then
+                        allocate (term_hessian(hess_dim, hess_dim))
+                        term_hessian = 0.0_dp
+                        call redistribute_cap_hessian(phys_frag, results(term_idx)%hessian, term_hessian)
+                        total_hessian = total_hessian + real(pie_coefficients(term_idx), dp)*term_hessian
+                        deallocate (term_hessian)
+                     end if
+
+                     call phys_frag%destroy()
+                     deallocate (atom_list)
+                  end if
+               end block
+            end if
+         end do
+
+         ! Print gradient information
+         call logger%info("GMBE PIE gradient computation completed")
+         call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
+
+         ! Print Hessian information
+         call logger%info("GMBE PIE Hessian computation completed")
+         call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
+
+         deallocate (total_gradient, total_hessian)
       end if
 
       call coord_timer%stop()
