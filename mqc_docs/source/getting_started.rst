@@ -473,9 +473,8 @@ For Understanding Fragmentation
 For Understanding I/O
 ---------------------
 
-1. **INPUT_FORMAT.md** - See what input files look like
-2. **mqc_config_parser.f90** - How we parse ``.mqc`` files
-3. **mqc_xyz_reader.f90** - How we read geometries
+1. **mqc_config_parser.f90** - How we parse ``.mqc`` files
+2. **mqc_xyz_reader.f90** - How we read geometries
 
 For Understanding Quantum Chemistry Methods
 --------------------------------------------
@@ -537,7 +536,7 @@ Prepare Your Own Input
 
 .. code-block:: bash
 
-   # Create a JSON input (see INPUT_FORMAT.md for schema)
+   # Create a JSON input
    cat > my_input.json << EOF
    {
      "schema": {"name": "mqc-frag", "version": "1.0"},
@@ -771,8 +770,6 @@ Additional Resources
 
 - **pic library**: https://github.com/JorgeG94/pic - Fortran utilities used throughout
 - **tblite**: https://github.com/tblite/tblite - XTB quantum chemistry engine
-- **INPUT_FORMAT.md**: Detailed input file specification
-- **VALIDATION.md**: Physics validation and testing approach
 - **README.md**: Build instructions and overview
 
 Getting Help
