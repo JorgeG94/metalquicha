@@ -6,7 +6,7 @@ module mqc_calculation_config
    implicit none
    private
 
-   public :: hessian_keywords_t, aimd_keywords_t, calculation_config_t
+   public :: hessian_keywords_t, aimd_keywords_t, scf_keywords_t, calculation_config_t
 
    type :: hessian_keywords_t
       !! Hessian calculation keywords
@@ -21,13 +21,22 @@ module mqc_calculation_config
       integer :: output_frequency = 1            !! Write output every N steps
    end type aimd_keywords_t
 
+   type :: scf_keywords_t
+      !! SCF calculation keywords (placeholder for future use)
+      logical :: use_diis = .true.               !! Use DIIS acceleration
+      integer :: max_iterations = 100             !! Maximum SCF iterations
+      real(dp) :: convergence_threshold = 1.0e-6_dp  !! Convergence threshold for SCF
+   end type scf_keywords_t
+
    type :: calculation_config_t
       !! Container for all calculation-specific configuration
       type(hessian_keywords_t) :: hessian
       type(aimd_keywords_t) :: aimd
+      type(scf_keywords_t) :: scf
    contains
       procedure :: get_hess_keywords => calc_config_get_hess_keywords
       procedure :: get_aimd_keywords => calc_config_get_aimd_keywords
+      procedure :: get_scf_keywords => calc_config_get_scf_keywords
    end type calculation_config_t
 
 contains
@@ -45,5 +54,13 @@ contains
       type(aimd_keywords_t) :: aimd_kw
       aimd_kw = this%aimd
    end function calc_config_get_aimd_keywords
+
+   function calc_config_get_scf_keywords(this) result(scf_kw)
+      !! Get SCF keywords from calculation config
+      class(calculation_config_t), intent(in) :: this
+      type(scf_keywords_t) :: scf_kw
+
+      scf_kw = this%scf
+   end function calc_config_get_scf_keywords
 
 end module mqc_calculation_config
