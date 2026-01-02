@@ -1,5 +1,5 @@
-!! Dynamics interface for geometry optimization, AIMD, and Monte Carlo
-module mqc_dynamics_interface
+!! External calculation interface for geometry optimization, AIMD, and Monte Carlo
+module mqc_calculation_interface
    !! Provides a clean interface for computing energies and forces
    !! that can be used by optimization algorithms, MD integrators, and MC samplers
    use pic_types, only: int32, dp
@@ -97,4 +97,4 @@ contains
 
    end subroutine compute_energy_and_forces
 
-end module mqc_dynamics_interface
+end module mqc_calculation_interface
