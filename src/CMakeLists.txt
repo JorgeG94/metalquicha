@@ -1,6 +1,7 @@
 add_subdirectory(basis)
 add_subdirectory(cli)
 add_subdirectory(core)
+add_subdirectory(dynamics)
 add_subdirectory(fragmentation)
 add_subdirectory(io)
 add_subdirectory(methods)

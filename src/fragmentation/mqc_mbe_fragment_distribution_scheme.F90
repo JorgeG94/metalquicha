@@ -572,13 +572,15 @@ contains
       end do
    end subroutine node_worker
 
-   subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds)
+   subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
+      !! If result_out is present, returns result instead of writing JSON and destroying it
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in), optional :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
+      type(calculation_result_t), intent(out), optional :: result_out
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -667,9 +669,16 @@ contains
          end if
       end block
       call logger%info("============================================")
-      call print_unfragmented_json(result)
 
-      call result%destroy()
+      ! Return result to caller or write JSON
+      if (present(result_out)) then
+         ! Transfer result to output (for dynamics/optimization)
+         result_out = result
+      else
+         ! Write JSON and clean up (normal mode)
+         call print_unfragmented_json(result)
+         call result%destroy()
+      end if
 
    end subroutine unfragmented_calculation
 
