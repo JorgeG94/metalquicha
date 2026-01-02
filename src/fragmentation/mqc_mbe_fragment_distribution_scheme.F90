@@ -892,6 +892,14 @@ contains
             else
                backward_gradients(disp_idx, :, :) = grad_buffer
             end if
+
+            ! Log progress every 10% or at completion (count both forward and backward)
+            if (gradient_type == 2) then  ! Only log after backward gradient to count complete displacements
+               if (mod(disp_idx, max(1, n_displacements/10)) == 0 .or. disp_idx == n_displacements) then
+                  call logger%info("  Completed "//to_char(disp_idx)//"/"//to_char(n_displacements)// &
+                                   " displacement pairs")
+               end if
+            end if
          end if
 
          ! Check for work requests from workers
