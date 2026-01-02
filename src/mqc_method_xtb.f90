@@ -10,6 +10,7 @@ module mqc_method_xtb
    ! tblite imports (reuse from mqc_mbe)
    use mctc_env, only: wp, error_type
    use mctc_io, only: structure_type, new
+   use pic_timer, only: timer_type
    use tblite_context_type, only: context_type
    use tblite_wavefunction, only: wavefunction_type, new_wavefunction
    use tblite_xtb_calculator, only: xtb_calculator
@@ -213,6 +214,7 @@ contains
       type(calculation_result_t), intent(out) :: result
 
       type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
+      type(timer_type) :: vib_timer
       real(dp), allocatable :: forward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
       real(dp), allocatable :: backward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
       type(calculation_result_t) :: disp_result
@@ -243,7 +245,15 @@ contains
       if (this%verbose) then
          call logger%info("  Computing forward-displaced gradients...")
       end if
+      call vib_timer%start()
       do i = 1, n_displacements
+
+         if (mod(i, max(1, n_displacements/10)) == 0 .or. i == n_displacements) then
+            call logger%info("  Completed "//to_char(i)//"/"//to_char(n_displacements)// &
+                             " displacement pairs in "//to_char(vib_timer%get_elapsed_time())//" s")
+         end if
+
+         ! Forward
          call this%calc_gradient(forward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for forward displacement "//to_char(i))
@@ -251,13 +261,8 @@ contains
          end if
          forward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()
-      end do
 
-      ! Compute gradients at all backward-displaced geometries
-      if (this%verbose) then
-         call logger%info("  Computing backward-displaced gradients...")
-      end if
-      do i = 1, n_displacements
+         ! Backward
          call this%calc_gradient(backward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for backward displacement "//to_char(i))
@@ -265,8 +270,12 @@ contains
          end if
          backward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()
-      end do
 
+      end do
+      call vib_timer%stop()
+      if (this%verbose) then
+call logger%info("  Forward and backward gradient calculations complete in "//to_char(vib_timer%get_elapsed_time())//" s")
+      end if
       ! Compute Hessian from finite differences
       if (this%verbose) then
          call logger%info("  Assembling Hessian matrix...")
