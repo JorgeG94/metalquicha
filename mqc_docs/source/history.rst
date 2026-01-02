@@ -9,9 +9,8 @@ History
 
 Origin of Metalquicha
 =====================
-
-Metalquicha originated as a "I need to write this code for an invited talk at Pacifichem" throughout
-the year 2025. Metalquicha depends on a personal hobby project of mine, called `pic <https://github.com/JorgeG94/pic>`_ history,
+Met'al q'uicha (the Huastec (tenek) word for sunflower), originated as a "I need to write this code for an invited talk at Pacifichem" throughout
+the year 2025. Metalquicha depends on a personal hobby project of mine, called `pic <https://github.com/JorgeG94/pic>`_,
 which is a Fortran library that resembles a standard library, like the STL from C/C++.
 
 The pic library provides data structures, algorithms, and utilities that make development

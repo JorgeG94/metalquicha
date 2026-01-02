@@ -7,7 +7,7 @@
 User guide to Metalquicha
 =========================
 
-This is the user guide to Metalquicha, a Fortran program for quanutm chemistry
+This is the user guide to Metalquicha, a Fortran program for quantum chemistry
 calculations. It is designed to be modular and extensible, allowing users to
 easily add new features and methods.
 
