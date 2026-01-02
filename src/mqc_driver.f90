@@ -77,7 +77,7 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, result_out)
+       call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config, result_out)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
                                          config%allow_overlapping_fragments, &
@@ -86,7 +86,7 @@ contains
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, result_out)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config, result_out)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! For single-molecule mode: Only rank 0 runs (validates single rank)
@@ -98,6 +98,7 @@ contains
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
+      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
 
       ! For Hessian calculations with multiple ranks, use distributed approach
@@ -108,7 +109,7 @@ contains
             call logger%info("  MPI ranks: "//to_char(world_comm%size()))
             call logger%info(" ")
          end if
-         call distributed_unfragmented_hessian(world_comm, sys_geom, method)
+         call distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
          return
       end if
 

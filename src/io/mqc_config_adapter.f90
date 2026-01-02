@@ -7,6 +7,7 @@ module mqc_config_adapter
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    implicit none
    private
 
@@ -15,13 +16,21 @@ module mqc_config_adapter
    public :: get_logger_level  !! Convert log level string to integer
    public :: check_fragment_overlap  !! Check for overlapping fragments (for testing)
 
-   !! Minimal configuration for driver (internal use only)
+   !! Runtime configuration for driver (internal use only)
    type :: driver_config_t
+      ! Core calculation settings
       integer(int32) :: method      !! QC method constant
       integer(int32) :: calc_type   !! Calculation type constant
+
+      ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
-      logical :: allow_overlapping_fragments  !! Enable GMBE for overlapping fragments
+      logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
+
+      ! Calculation-specific keywords (structured)
+      type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
+      type(aimd_keywords_t) :: aimd        !! AIMD calculation keywords
+      type(scf_keywords_t) :: scf          !! SCF calculation keywords
    end type driver_config_t
 
 contains
@@ -66,6 +75,15 @@ contains
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level
+
+      ! Set calculation-specific keywords
+      driver_config%hessian%displacement = mqc_config%hessian_displacement
+      driver_config%aimd%dt = mqc_config%aimd_dt
+      driver_config%aimd%nsteps = mqc_config%aimd_nsteps
+      driver_config%aimd%initial_temperature = mqc_config%aimd_initial_temperature
+      driver_config%aimd%output_frequency = mqc_config%aimd_output_frequency
+      driver_config%scf%max_iterations = mqc_config%scf_maxiter
+      driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
 
    end subroutine config_to_driver
 
