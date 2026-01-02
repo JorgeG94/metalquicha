@@ -1,0 +1,1291 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>map_fragment_to_system_hessian &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>map_fragment_to_system_hessian
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.7% of total for procedures.">43 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe.f90.html'>mqc_mbe.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+            <li class="breadcrumb-item active" aria-current="page">map_fragment_to_system_hessian</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/map_fragment_to_system_hessian.html#variable-fragment~13">fragment</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/map_fragment_to_system_hessian.html#src">map_fragment_to_system_hessian</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess, bonds)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~map_fragment_to_system_hessian~~UsesGraph Pages: 1 -->
+<svg id="procmap_fragment_to_system_hessianUsesGraph" width="641pt" height="262pt"
+ viewBox="0.00 0.00 641.00 261.67" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph" class="graph" transform="scale(0.82 0.82) rotate(0) translate(4 314)">
+<title>proc~~map_fragment_to_system_hessian~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-314 775,-314 775,4 -4,4"/>
+<!-- proc~map_fragment_to_system_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node1" class="node">
+<title>proc~map_fragment_to_system_hessian</title>
+<polygon fill="none" stroke="black" points="771,-166 575,-166 575,-142 771,-142 771,-166"/>
+<text text-anchor="middle" x="673" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50">map_fragment_to_system_hessian</text>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node2" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node2"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="364,-226 250,-226 250,-202 364,-202 364,-226"/>
+<text text-anchor="middle" x="307" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge1" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M598.78,-166.07C533.06,-176.9 437.45,-192.66 374.03,-203.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="373.44,-199.67 364.14,-204.75 374.57,-206.57 373.44,-199.67"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node3" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node3"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="539,-146 400,-146 400,-122 539,-122 539,-146"/>
+<text text-anchor="middle" x="469.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge2" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M574.79,-144.35C566.21,-143.5 557.59,-142.64 549.18,-141.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="549.35,-138.31 539.05,-140.8 548.66,-145.27 549.35,-138.31"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node4" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node4"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-230 107.5,-230 107.5,-206 204.5,-206 204.5,-230"/>
+<text text-anchor="middle" x="156" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge3" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.67,-215.51C238.31,-215.82 226.36,-216.14 214.94,-216.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="214.55,-212.95 204.65,-216.72 214.74,-219.95 214.55,-212.95"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node7" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node7"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-146 122.5,-146 122.5,-122 189.5,-122 189.5,-146"/>
+<text text-anchor="middle" x="156" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge4" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M275.44,-201.87C266.92,-197.94 257.85,-193.23 250,-188 231.94,-175.95 232.53,-166.3 214,-155 209.33,-152.15 204.21,-149.6 199.02,-147.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="200.25,-144.06 189.67,-143.57 197.64,-150.55 200.25,-144.06"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node8" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node8"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-188 109.5,-188 109.5,-164 202.5,-164 202.5,-188"/>
+<text text-anchor="middle" x="156" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge5" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M258.86,-201.98C244.1,-198.21 227.68,-194.03 212.41,-190.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.12,-186.7 202.57,-187.62 211.39,-193.48 213.12,-186.7"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node9" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node9"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-310 98,-310 98,-286 214,-286 214,-310"/>
+<text text-anchor="middle" x="156" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge6" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M288.44,-226.07C270.24,-238.34 240.75,-257.55 214,-272 207.89,-275.3 201.29,-278.57 194.81,-281.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="193.11,-278.55 185.49,-285.91 196.04,-284.91 193.11,-278.55"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node11" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-209 0,-209 0,-185 62,-185 62,-209"/>
+<text text-anchor="middle" x="31" y="-194.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge7" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M272.55,-226.07C230.89,-239.29 157.89,-256.44 98,-239 82.05,-234.36 66.28,-224.56 54.15,-215.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="56.06,-212.66 46.01,-209.31 51.78,-218.19 56.06,-212.66"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge9" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M445.81,-146.08C424.74,-157.21 392.42,-174.07 364,-188 357.6,-191.14 350.74,-194.4 344.1,-197.51"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="342.19,-194.54 334.6,-201.93 345.15,-200.89 342.19,-194.54"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node5" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node5"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="339,-24 275,-24 275,0 339,0 339,-24"/>
+<text text-anchor="middle" x="307" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge8" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M458.79,-121.77C441.66,-100.93 404.1,-58.34 364,-33 359.23,-29.98 353.96,-27.3 348.61,-24.95"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="349.59,-21.57 339.01,-21.06 346.97,-28.06 349.59,-21.57"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node6" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node6"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="352.5,-66 261.5,-66 261.5,-42 352.5,-42 352.5,-66"/>
+<text text-anchor="middle" x="307" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M445.81,-121.92C424.74,-110.79 392.42,-93.93 364,-80 357.6,-76.86 350.74,-73.6 344.1,-70.49"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="345.15,-67.11 334.6,-66.07 342.19,-73.46 345.15,-67.11"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M435.56,-146.04C403.5,-156.84 353.15,-171.37 308,-174"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M306,-174C285.47,-175.19 235.96,-160.56 199.62,-148.66"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="200.35,-145.22 189.75,-145.39 198.14,-151.86 200.35,-145.22"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M306,-174C275.18,-175.79 240.71,-176.35 212.7,-176.43"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="212.68,-172.93 202.69,-176.44 212.69,-179.93 212.68,-172.93"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node10" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~UsesGraph_node10"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="356.5,-146 257.5,-146 257.5,-122 356.5,-122 356.5,-146"/>
+<text text-anchor="middle" x="307" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M399.97,-134C388.99,-134 377.72,-134 366.99,-134"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="366.9,-130.5 356.9,-134 366.9,-137.5 366.9,-130.5"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M437.37,-121.87C380.59,-101.52 256.86,-65.42 157,-94"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M155,-94C129.35,-101.43 119.84,-97.63 98,-113 74.39,-129.62 55.08,-157.09 43.58,-176.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="40.46,-174.47 38.44,-184.87 46.51,-178.01 40.46,-174.47"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge15" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M107.44,-209.88C95.75,-207.88 83.34,-205.77 72.04,-203.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.47,-200.36 62.02,-202.13 71.29,-207.26 72.47,-200.36"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge16" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M274.78,-5.46C243.51,-0.47 194.74,3 157,-14"/>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M155,-14C130.65,-24.97 117.45,-14.7 98,-33 56.85,-71.71 40.76,-139.55 34.96,-174.61"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="31.46,-174.35 33.42,-184.76 38.38,-175.4 31.46,-174.35"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge18" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M270.37,-41.91C229.68,-28.5 167.38,-9.33 157,-14"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_node12" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-66 127,-66 127,-42 185,-42 185,-66"/>
+<text text-anchor="middle" x="156" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge17" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M261.3,-54C240.27,-54 215.46,-54 195.31,-54"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="195.24,-50.5 185.24,-54 195.24,-57.5 195.24,-50.5"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge19" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M109.2,-183.82C97.05,-185.89 84.02,-188.12 72.2,-190.14"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="71.43,-186.72 62.16,-191.85 72.61,-193.62 71.43,-186.72"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge20" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#003fff" stroke-dasharray="5,2" d="M122.32,-285.94C114,-282.12 105.34,-277.45 98,-272 77.32,-256.65 58.42,-233.87 46.2,-217.45"/>
+<polygon fill="#003fff" stroke="#003fff" points="48.83,-215.11 40.13,-209.06 43.16,-219.22 48.83,-215.11"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge21" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M257.21,-134C238.77,-134 217.92,-134 200.04,-134"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="199.89,-130.5 189.89,-134 199.89,-137.5 199.89,-130.5"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge22" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M263.3,-146.04C246.63,-150.74 227.33,-156.18 209.79,-161.12"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="208.38,-157.88 199.7,-163.96 210.28,-164.62 208.38,-157.88"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~map_fragment_to_system_hessian~~UsesGraph_edge23" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M275.87,-121.98C239.14,-108.02 179.21,-87.64 157,-94"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocmap_fragment_to_system_hessianUsesGraph = svgPanZoom('#procmap_fragment_to_system_hessianUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_hess"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_hess</strong>(:,:)</td>
+            <td>
+                <p>(3<em>natoms_frag, 3</em>natoms_frag)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~10"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_hess"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_hess</strong>(:,:)</td>
+            <td>
+                <p>(3<em>total_atoms, 3</em>total_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~8"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~map_fragment_to_system_hessian~~CallsGraph Pages: 1 -->
+<svg id="procmap_fragment_to_system_hessianCallsGraph" width="641pt" height="117pt"
+ viewBox="0.00 0.00 641.00 116.88" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph" class="graph" transform="scale(0.53 0.53) rotate(0) translate(4 217)">
+<title>proc~~map_fragment_to_system_hessian~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-217 1208,-217 1208,4 -4,4"/>
+<!-- proc~map_fragment_to_system_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node1" class="node">
+<title>proc~map_fragment_to_system_hessian</title>
+<polygon fill="none" stroke="black" points="196,-66 0,-66 0,-42 196,-42 196,-66"/>
+<text text-anchor="middle" x="98" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">map_fragment_to_system_hessian</text>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node2" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node2"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="426.5,-129 260.5,-129 260.5,-105 426.5,-105 426.5,-129"/>
+<text text-anchor="middle" x="343.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge1" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0000" d="M145.66,-66.07C185.68,-76.43 243.45,-91.37 286.06,-102.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="285.44,-105.85 296,-104.97 287.19,-99.08 285.44,-105.85"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node3" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node3"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="455,-66 232,-66 232,-42 455,-42 455,-66"/>
+<text text-anchor="middle" x="343.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge2" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M196.29,-54C204.67,-54 213.21,-54 221.74,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="221.74,-57.5 231.74,-54 221.74,-50.5 221.74,-57.5"/>
+</g>
+<!-- proc~redistribute_cap_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node4" class="node">
+<title>proc~redistribute_cap_hessian</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node4"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="415.5,-24 271.5,-24 271.5,0 415.5,0 415.5,-24"/>
+<text text-anchor="middle" x="343.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge3" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian</title>
+<path fill="none" stroke="#ff0000" d="M168.78,-41.96C198.07,-36.91 232.3,-31.01 262.6,-25.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="263.45,-29.19 272.71,-24.04 262.26,-22.29 263.45,-29.19"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node5" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node5"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="683,-213 565,-213 565,-189 683,-189 683,-213"/>
+<text text-anchor="middle" x="624" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge4" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M367.69,-129.12C396.02,-143.42 445.79,-166.9 491,-180 511.4,-185.91 534.08,-190.28 554.81,-193.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="554.41,-196.93 564.81,-194.91 555.43,-190 554.41,-196.93"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node7" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node7"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="692.5,-171 555.5,-171 555.5,-147 692.5,-147 692.5,-171"/>
+<text text-anchor="middle" x="624" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge5" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#ff0000" d="M424.31,-129.04C462.37,-134.78 507.74,-141.62 545.5,-147.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="545.03,-150.78 555.44,-148.81 546.07,-143.86 545.03,-150.78"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node8" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node8"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="688,-129 560,-129 560,-105 688,-105 688,-129"/>
+<text text-anchor="middle" x="624" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge6" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#ff0000" d="M426.55,-117C465.42,-117 511.48,-117 549.23,-117"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="549.64,-120.5 559.64,-117 549.64,-113.5 549.64,-120.5"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node9" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node9"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="757,-87 491,-87 491,-63 757,-63 757,-87"/>
+<text text-anchor="middle" x="624" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge7" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ff0000" d="M424.31,-104.96C458.25,-99.85 497.99,-93.85 532.97,-88.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="533.82,-91.99 543.18,-87.04 532.77,-85.07 533.82,-91.99"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node6" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node6"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="738.5,-45 509.5,-45 509.5,-21 738.5,-21 738.5,-45"/>
+<text text-anchor="middle" x="624" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge8" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#00ff00" d="M455.37,-45.64C469.79,-44.55 484.63,-43.43 499.25,-42.33"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="499.61,-45.81 509.32,-41.57 499.09,-38.83 499.61,-45.81"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node11" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node11"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1026,-45 793,-45 793,-21 1026,-21 1026,-45"/>
+<text text-anchor="middle" x="909.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge9" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#cbff00" d="M738.68,-33C753.2,-33 768.12,-33 782.82,-33"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="782.95,-36.5 792.95,-33 782.95,-29.5 782.95,-36.5"/>
+</g>
+<!-- error -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node10" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="936.5,-213 882.5,-213 882.5,-189 936.5,-189 936.5,-213"/>
+<text text-anchor="middle" x="909.5" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge10" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff66" d="M692.55,-169.01C748.92,-177.36 827.09,-188.94 872.28,-195.63"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="871.81,-199.1 882.21,-197.11 872.83,-192.18 871.81,-199.1"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node12" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node12"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="991,-171 828,-171 828,-147 991,-147 991,-171"/>
+<text text-anchor="middle" x="909.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge11" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff66" d="M692.55,-159C729.99,-159 777.05,-159 817.68,-159"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="817.86,-162.5 827.86,-159 817.86,-155.5 817.86,-162.5"/>
+</g>
+<!-- to_char -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node13" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="936.5,-129 882.5,-129 882.5,-105 936.5,-105 936.5,-129"/>
+<text text-anchor="middle" x="909.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge12" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff66" d="M692.55,-148.99C748.92,-140.64 827.09,-129.06 872.28,-122.37"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="872.83,-125.82 882.21,-120.89 871.81,-118.9 872.83,-125.82"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_node14" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CallsGraph_node14"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1204,-45 1062,-45 1062,-21 1204,-21 1204,-45"/>
+<text text-anchor="middle" x="1133" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~map_fragment_to_system_hessian~~CallsGraph_edge13" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#7fff00" d="M1026.12,-33C1034.77,-33 1043.38,-33 1051.74,-33"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1051.79,-36.5 1061.79,-33 1051.79,-29.5 1051.79,-36.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocmap_fragment_to_system_hessianCallsGraph = svgPanZoom('#procmap_fragment_to_system_hessianCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~map_fragment_to_system_hessian~~CalledByGraph Pages: 1 -->
+<svg id="procmap_fragment_to_system_hessianCalledByGraph" width="641pt" height="34pt"
+ viewBox="0.00 0.00 641.00 34.35" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph" class="graph" transform="scale(0.46 0.46) rotate(0) translate(4 70)">
+<title>proc~~map_fragment_to_system_hessian~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1377,-70 1377,4 -4,4"/>
+<!-- proc~map_fragment_to_system_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node1" class="node">
+<title>proc~map_fragment_to_system_hessian</title>
+<polygon fill="none" stroke="black" points="1373,-45 1177,-45 1177,-21 1373,-21 1373,-45"/>
+<text text-anchor="middle" x="1275" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">map_fragment_to_system_hessian</text>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node2" class="node">
+<title>proc~compute_mbe_energy_gradient_hessian</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node2"><a xlink:href="../proc/compute_mbe_energy_gradient_hessian.html" xlink:title="compute_mbe_energy_gradient_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="970,-45 742,-45 742,-21 970,-21 970,-45"/>
+<text text-anchor="middle" x="856" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge1" class="edge">
+<title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_hessian</title>
+<path fill="none" stroke="#ff0000" d="M970.08,-33.84C982.21,-33.9 994.36,-33.96 1006,-34 1066,-34.2 1081,-34.23 1141,-34 1149.3,-33.97 1157.89,-33.93 1166.52,-33.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1166.69,-37.38 1176.67,-33.82 1166.65,-30.38 1166.69,-37.38"/>
+</g>
+<!-- proc~compute_mbe_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node3" class="node">
+<title>proc~compute_mbe_hessian</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node3"><a xlink:href="../proc/compute_mbe_hessian.html" xlink:title="compute_mbe_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1141,-25 1006,-25 1006,-1 1141,-1 1141,-25"/>
+<text text-anchor="middle" x="1073.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge5" class="edge">
+<title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian</title>
+<path fill="none" stroke="#00ffff" d="M970.11,-22.5C978.78,-21.7 987.41,-20.9 995.76,-20.12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="996.16,-23.6 1005.79,-19.19 995.51,-16.63 996.16,-23.6"/>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian</title>
+<path fill="none" stroke="#ff0000" d="M1141.21,-19.69C1149.43,-20.51 1157.99,-21.37 1166.63,-22.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1166.49,-25.74 1176.79,-23.25 1167.19,-18.77 1166.49,-25.74"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node4" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="685.5,-66 572.5,-66 572.5,-42 685.5,-42 685.5,-66"/>
+<text text-anchor="middle" x="629" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge3" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#ff0000" d="M685.62,-48.81C699.84,-47.48 715.72,-46 731.88,-44.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="732.34,-47.96 741.97,-43.55 731.69,-40.99 732.34,-47.96"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node5" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node5"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="706,-24 552,-24 552,0 706,0 706,-24"/>
+<text text-anchor="middle" x="629" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge4" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#ff0000" d="M706.17,-19.11C714.42,-19.88 722.96,-20.68 731.59,-21.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="731.46,-24.98 741.74,-22.43 732.11,-18.01 731.46,-24.98"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node6" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node6"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="516,-45 353,-45 353,-21 516,-21 516,-45"/>
+<text text-anchor="middle" x="434.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge6" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M516.02,-41.78C531.42,-43.46 547.38,-45.21 562.25,-46.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="562.03,-50.32 572.35,-47.93 562.79,-43.37 562.03,-50.32"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge7" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#00ffff" d="M516.02,-24.22C524.54,-23.29 533.22,-22.34 541.8,-21.4"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="542.24,-24.88 551.8,-20.31 541.48,-17.92 542.24,-24.88"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node7" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node7"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-45 223,-45 223,-21 317,-21 317,-45"/>
+<text text-anchor="middle" x="270" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge8" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M317.13,-33C325.24,-33 333.94,-33 342.78,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.8,-36.5 352.8,-33 342.8,-29.5 342.8,-36.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node8" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node8"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge9" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M187.11,-42.85C195.83,-41.81 204.48,-40.76 212.7,-39.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-43.22 222.87,-38.55 212.52,-36.27 213.36,-43.22"/>
+</g>
+<!-- program~main -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_node9" class="node">
+<title>program~main</title>
+<g id="a_proc~~map_fragment_to_system_hessian~~CalledByGraph_node9"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
+<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~map_fragment_to_system_hessian~~CalledByGraph_edge10" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M120.62,-15.14C144.88,-18.06 181.81,-22.51 212.76,-26.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-29.74 223,-27.46 213.49,-22.79 212.65,-29.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocmap_fragment_to_system_hessianCalledByGraph = svgPanZoom('#procmap_fragment_to_system_hessianCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~13"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">map_fragment_to_system_hessian</span><span class="p">(</span><span class="n">frag_hess</span><span class="p">,</span><span class="w"> </span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">sys_hess</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_fragment_from_indices</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_hessian</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_config_parser</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">bond_t</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_hess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*natoms_frag, 3*natoms_frag)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomers</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_hess</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
+
+<span class="w">      </span><span class="c">! Zero out</span>
+<span class="w">      </span><span class="n">sys_hess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! Rebuild fragment to get local→global mapping and cap information</span>
+<span class="w">         </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">redistribute_cap_hessian</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">frag_hess</span><span class="p">,</span><span class="w"> </span><span class="n">sys_hess</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">fragment</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="w">         </span><span class="c">! Old code path for fragments without hydrogen caps</span>
+<span class="w">         </span><span class="c">! Map fragment Hessian to system positions (fixed-size monomers only)</span>
+<span class="w">         </span><span class="k">block</span>
+<span class="k">            </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i_mon</span><span class="p">,</span><span class="w"> </span><span class="n">j_mon</span><span class="p">,</span><span class="w"> </span><span class="n">i_atom</span><span class="p">,</span><span class="w"> </span><span class="n">j_atom</span>
+<span class="w">            </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_atom_i</span><span class="p">,</span><span class="w"> </span><span class="n">frag_atom_j</span><span class="p">,</span><span class="w"> </span><span class="n">sys_atom_i</span><span class="p">,</span><span class="w"> </span><span class="n">sys_atom_j</span>
+<span class="w">            </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_row_start</span><span class="p">,</span><span class="w"> </span><span class="n">frag_col_start</span><span class="p">,</span><span class="w"> </span><span class="n">sys_row_start</span><span class="p">,</span><span class="w"> </span><span class="n">sys_col_start</span>
+<span class="w">            </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers</span>
+
+<span class="w">            </span><span class="n">n_monomers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">monomers</span><span class="p">)</span>
+<span class="w">            </span><span class="n">frag_atom_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">            </span><span class="c">! Map each monomer&#39;s atoms</span>
+<span class="w">            </span><span class="k">do </span><span class="n">i_mon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">               </span><span class="k">do </span><span class="n">i_atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
+<span class="w">                  </span><span class="n">frag_atom_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frag_atom_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="n">sys_atom_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">monomers</span><span class="p">(</span><span class="n">i_mon</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i_atom</span>
+<span class="w">                  </span><span class="n">frag_row_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">frag_atom_i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="n">sys_row_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">sys_atom_i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="w">                  </span><span class="c">! Map this atom&#39;s Hessian blocks with all other atoms in fragment</span>
+<span class="w">                  </span><span class="n">frag_atom_j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">                  </span><span class="k">do </span><span class="n">j_mon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">                     </span><span class="k">do </span><span class="n">j_atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
+<span class="w">                        </span><span class="n">frag_atom_j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frag_atom_j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                        </span><span class="n">sys_atom_j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">monomers</span><span class="p">(</span><span class="n">j_mon</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j_atom</span>
+<span class="w">                        </span><span class="n">frag_col_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">frag_atom_j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                        </span><span class="n">sys_col_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">sys_atom_j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="w">                        </span><span class="c">! Copy the 3×3 block for this atom pair</span>
+<span class="w">                        </span><span class="n">sys_hess</span><span class="p">(</span><span class="n">sys_row_start</span><span class="p">:</span><span class="n">sys_row_start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">sys_col_start</span><span class="p">:</span><span class="n">sys_col_start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                           </span><span class="n">frag_hess</span><span class="p">(</span><span class="n">frag_row_start</span><span class="p">:</span><span class="n">frag_row_start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">frag_col_start</span><span class="p">:</span><span class="n">frag_col_start</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">end do</span>
+<span class="k">                  end do</span>
+<span class="k">               end do</span>
+<span class="k">            end do</span>
+<span class="k">         end block</span>
+<span class="k">      end if</span>
+
+<span class="k">   end subroutine </span><span class="n">map_fragment_to_system_hessian</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-02 07:44 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

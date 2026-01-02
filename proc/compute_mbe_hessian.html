@@ -1,0 +1,1398 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>compute_mbe_hessian &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>compute_mbe_hessian
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for procedures.">32 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe.f90.html'>mqc_mbe.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_mbe_hessian</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-has_next~5">has_next</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-hess_dim~2">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-i~35">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-indices~5">indices</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-subset~3">subset</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-subset_idx~3">subset_idx</a>
+            <a class="list-group-item" href="../proc/compute_mbe_hessian.html#variable-subset_size~3">subset_size</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/compute_mbe_hessian.html#src">compute_mbe_hessian</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine compute_mbe_hessian(fragment_idx, fragment, lookup, results, delta_hessians, n, sys_geom, bonds)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_mbe_hessian~~UsesGraph Pages: 1 -->
+<svg id="proccompute_mbe_hessianUsesGraph" width="543pt" height="262pt"
+ viewBox="0.00 0.00 543.00 262.49" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe_hessian~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 258.49)">
+<title>proc~~compute_mbe_hessian~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-258.49 539,-258.49 539,4 -4,4"/>
+<!-- proc~compute_mbe_hessian -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node1" class="node">
+<title>proc~compute_mbe_hessian</title>
+<polygon fill="none" stroke="black" points="535,-88.49 400,-88.49 400,-64.49 535,-64.49 535,-88.49"/>
+<text text-anchor="middle" x="467.5" y="-74.09" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_hessian</text>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node2" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node2"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="364,-149.49 250,-149.49 250,-125.49 364,-125.49 364,-149.49"/>
+<text text-anchor="middle" x="307" y="-135.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge1" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M435.19,-88.55C410.44,-98.07 375.7,-111.44 348.78,-121.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="347.33,-118.61 339.25,-125.47 349.84,-125.14 347.33,-118.61"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node3" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node3"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="359,-48.49 255,-48.49 255,-24.49 359,-24.49 359,-48.49"/>
+<text text-anchor="middle" x="307" y="-34.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;module~mqc_result_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge2" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M418.94,-64.49C402.25,-60.28 383.31,-55.5 365.87,-51.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="366.35,-47.61 355.8,-48.56 364.63,-54.4 366.35,-47.61"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node4" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node4"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-254.49 107.5,-254.49 107.5,-230.49 204.5,-230.49 204.5,-254.49"/>
+<text text-anchor="middle" x="156" y="-240.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge3" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M295.55,-149.66C279.59,-167.58 247.45,-201.15 214,-221.49 211.21,-223.19 208.25,-224.79 205.22,-226.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.65,-223.15 195.97,-230.45 206.52,-229.53 203.65,-223.15"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node5" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node5"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-212.49 122.5,-212.49 122.5,-188.49 189.5,-188.49 189.5,-212.49"/>
+<text text-anchor="middle" x="156" y="-198.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge4" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M280.84,-149.6C262.48,-158.28 236.89,-170.07 214,-179.49 209.25,-181.45 204.24,-183.42 199.24,-185.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="197.84,-182.12 189.72,-188.92 200.31,-188.67 197.84,-182.12"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node6" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node6"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-170.49 109.5,-170.49 109.5,-146.49 202.5,-146.49 202.5,-170.49"/>
+<text text-anchor="middle" x="156" y="-156.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge5" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.67,-145.43C237.57,-147.14 224.78,-148.94 212.7,-150.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.16,-147.18 202.75,-152.05 213.14,-154.12 212.16,-147.18"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node7" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~compute_mbe_hessian~~UsesGraph_node7"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-128.49 98,-128.49 98,-104.49 214,-104.49 214,-128.49"/>
+<text text-anchor="middle" x="156" y="-114.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge6" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.67,-129.55C241.47,-128.4 232.95,-127.2 224.56,-126.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="224.79,-122.51 214.4,-124.58 223.81,-129.44 224.79,-122.51"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node9" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-128.49 0,-128.49 0,-104.49 62,-104.49 62,-128.49"/>
+<text text-anchor="middle" x="31" y="-114.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge7" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M286.05,-125.34C267.98,-115.09 240.25,-101.2 214,-95.49 163.62,-84.54 148.95,-87.58 98,-95.49 89.37,-96.83 80.33,-99.1 71.81,-101.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="70.55,-98.39 62.09,-104.77 72.68,-105.06 70.55,-98.39"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_node8" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="192,-48.49 120,-48.49 120,-24.49 192,-24.49 192,-48.49"/>
+<text text-anchor="middle" x="156" y="-34.09" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge8" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M254.72,-36.49C237.87,-36.49 219.26,-36.49 202.84,-36.49"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="202.41,-32.99 192.41,-36.49 202.41,-39.99 202.41,-32.99"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge9" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M278.47,-24.36C236.72,-7.93 156.1,15.94 98,-15.49 67.05,-32.24 48.3,-70.5 39.06,-94.83"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="35.75,-93.71 35.68,-104.3 42.34,-96.06 35.75,-93.71"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge10" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M112.51,-230.46C107.33,-227.98 102.34,-225.01 98,-221.49 70.32,-199.05 50.84,-161.74 40.53,-138.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="43.66,-136.56 36.56,-128.69 37.2,-139.27 43.66,-136.56"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge11" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M119.75,-146.46C104.85,-141.37 87.4,-135.41 72.02,-130.16"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="72.84,-126.74 62.25,-126.82 70.58,-133.37 72.84,-126.74"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~compute_mbe_hessian~~UsesGraph_edge12" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M97.82,-116.49C89.18,-116.49 80.42,-116.49 72.23,-116.49"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="72.22,-112.99 62.22,-116.49 72.22,-119.99 72.22,-112.99"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Bottom-up computation of n-body Hessian correction
+Mirrors MBE gradient logic but for second derivatives</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_idx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~14"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lookup~6"></span>
+              type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lookup</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results~5"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-delta_hessians~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>delta_hessians</strong>(:,:,:)</td>
+            <td>
+                <p>(3<em>total_atoms, 3</em>total_atoms, fragment_count)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~11"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~9"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_mbe_hessian~~CallsGraph Pages: 1 -->
+<svg id="proccompute_mbe_hessianCallsGraph" width="641pt" height="109pt"
+ viewBox="0.00 0.00 641.00 108.86" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe_hessian~~CallsGraph" class="graph" transform="scale(0.45 0.45) rotate(0) translate(4 238)">
+<title>proc~~compute_mbe_hessian~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-238 1421,-238 1421,4 -4,4"/>
+<!-- proc~compute_mbe_hessian -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node1" class="node">
+<title>proc~compute_mbe_hessian</title>
+<polygon fill="none" stroke="black" points="135,-139 0,-139 0,-115 135,-115 135,-139"/>
+<text text-anchor="middle" x="67.5" y="-124.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_hessian</text>
+</g>
+<!-- proc~fragment_lookup_find -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node2" class="node">
+<title>proc~fragment_lookup_find</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node2"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="409,-186 171,-186 171,-162 409,-162 409,-186"/>
+<text text-anchor="middle" x="290" y="-171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;proc~fragment_lookup_find -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge1" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;proc~fragment_lookup_find</title>
+<path fill="none" stroke="#ff0000" d="M125,-139.04C154.82,-145.4 191.59,-153.24 222.75,-159.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="222.14,-163.33 232.65,-161.99 223.6,-156.48 222.14,-163.33"/>
+</g>
+<!-- proc~get_next_combination -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node3" class="node">
+<title>proc~get_next_combination</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node3"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="355,-139 225,-139 225,-115 355,-115 355,-139"/>
+<text text-anchor="middle" x="290" y="-124.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;proc~get_next_combination -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge2" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;proc~get_next_combination</title>
+<path fill="none" stroke="#ff0000" d="M135.26,-127C160.32,-127 188.96,-127 214.67,-127"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="214.74,-130.5 224.74,-127 214.74,-123.5 214.74,-130.5"/>
+</g>
+<!-- proc~map_fragment_to_system_hessian -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node4" class="node">
+<title>proc~map_fragment_to_system_hessian</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node4"><a xlink:href="../proc/map_fragment_to_system_hessian.html" xlink:title="map_fragment_to_system_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="388,-87 192,-87 192,-63 388,-63 388,-87"/>
+<text text-anchor="middle" x="290" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge3" class="edge">
+<title>proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian</title>
+<path fill="none" stroke="#ff0000" d="M119.64,-114.94C151.95,-107.32 193.87,-97.43 227.92,-89.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="228.82,-92.79 237.75,-87.09 227.22,-85.97 228.82,-92.79"/>
+</g>
+<!-- fnv_1a_hash -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node5" class="node">
+<title>fnv_1a_hash</title>
+<polygon fill="#777777" stroke="#777777" points="596,-234 517,-234 517,-210 596,-210 596,-234"/>
+<text text-anchor="middle" x="556.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
+</g>
+<!-- proc~fragment_lookup_find&#45;&gt;fnv_1a_hash -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge4" class="edge">
+<title>proc~fragment_lookup_find&#45;&gt;fnv_1a_hash</title>
+<path fill="none" stroke="#ff0000" d="M357.4,-186.05C403.91,-194.49 465.01,-205.58 506.99,-213.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="506.5,-216.66 516.96,-215.01 507.75,-209.78 506.5,-216.66"/>
+</g>
+<!-- proc~arrays_equal_internal -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node6" class="node">
+<title>proc~arrays_equal_internal</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node6"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="620.5,-192 492.5,-192 492.5,-168 620.5,-168 620.5,-192"/>
+<text text-anchor="middle" x="556.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge5" class="edge">
+<title>proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal</title>
+<path fill="none" stroke="#ff0000" d="M409.32,-176.68C434.13,-177.25 459.61,-177.82 482.19,-178.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="482.28,-181.84 492.36,-178.57 482.44,-174.84 482.28,-181.84"/>
+</g>
+<!-- sort -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node10" class="node">
+<title>sort</title>
+<polygon fill="#777777" stroke="#777777" points="583.5,-150 529.5,-150 529.5,-126 583.5,-126 583.5,-150"/>
+<text text-anchor="middle" x="556.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
+</g>
+<!-- proc~fragment_lookup_find&#45;&gt;sort -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge6" class="edge">
+<title>proc~fragment_lookup_find&#45;&gt;sort</title>
+<path fill="none" stroke="#ff0000" d="M379.44,-161.96C427.15,-155.47 483.42,-147.81 519.27,-142.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="519.83,-146.39 529.27,-141.57 518.89,-139.45 519.83,-146.39"/>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node7" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node7"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="639.5,-108 473.5,-108 473.5,-84 639.5,-84 639.5,-108"/>
+<text text-anchor="middle" x="556.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge7" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#0000ff" d="M388.36,-82.73C412.72,-84.66 438.78,-86.73 462.9,-88.65"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="462.87,-92.16 473.11,-89.46 463.42,-85.18 462.87,-92.16"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node8" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node8"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="668,-66 445,-66 445,-42 668,-42 668,-66"/>
+<text text-anchor="middle" x="556.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge8" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#0000ff" d="M388.36,-67.27C403.47,-66.07 419.23,-64.82 434.77,-63.59"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="435.25,-67.06 444.94,-62.78 434.7,-60.08 435.25,-67.06"/>
+</g>
+<!-- proc~redistribute_cap_hessian -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node9" class="node">
+<title>proc~redistribute_cap_hessian</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node9"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="628.5,-24 484.5,-24 484.5,0 628.5,0 628.5,-24"/>
+<text text-anchor="middle" x="556.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge9" class="edge">
+<title>proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian</title>
+<path fill="none" stroke="#0000ff" d="M331.63,-62.98C362.56,-54.06 406.25,-41.95 445,-33 455.49,-30.58 466.58,-28.22 477.54,-26.02"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="478.4,-29.42 487.54,-24.05 477.05,-22.55 478.4,-29.42"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node11" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node11"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="896,-192 778,-192 778,-168 896,-168 896,-192"/>
+<text text-anchor="middle" x="837" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#00ff00" d="M639.72,-105.14C649.62,-108.1 659.3,-111.96 668,-117 689.27,-129.32 682.54,-147 704,-159 723.23,-169.76 746.36,-175.42 767.84,-178.29"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="767.57,-181.79 777.91,-179.46 768.38,-174.83 767.57,-181.79"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node13" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node13"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="905.5,-150 768.5,-150 768.5,-126 905.5,-126 905.5,-150"/>
+<text text-anchor="middle" x="837" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#00ff00" d="M637.31,-108.04C675.37,-113.78 720.74,-120.62 758.5,-126.31"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="758.03,-129.78 768.44,-127.81 759.07,-122.86 758.03,-129.78"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node14" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node14"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="901,-108 773,-108 773,-84 901,-84 901,-108"/>
+<text text-anchor="middle" x="837" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge12" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#00ff00" d="M639.55,-96C678.42,-96 724.48,-96 762.23,-96"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="762.64,-99.5 772.64,-96 762.64,-92.5 762.64,-99.5"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node15" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node15"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="970,-66 704,-66 704,-42 970,-42 970,-66"/>
+<text text-anchor="middle" x="837" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge13" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#00ff00" d="M637.31,-83.96C671.25,-78.85 710.99,-72.85 745.97,-67.58"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="746.82,-70.99 756.18,-66.04 745.77,-64.07 746.82,-70.99"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node12" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node12"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="951.5,-24 722.5,-24 722.5,0 951.5,0 951.5,-24"/>
+<text text-anchor="middle" x="837" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge14" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#00ffff" d="M637.31,-41.96C671.25,-36.85 710.99,-30.85 745.97,-25.58"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="746.82,-28.99 756.18,-24.04 745.77,-22.07 746.82,-28.99"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node17" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node17"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1239,-24 1006,-24 1006,0 1239,0 1239,-24"/>
+<text text-anchor="middle" x="1122.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge15" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#cbff00" d="M951.68,-12C966.2,-12 981.12,-12 995.82,-12"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="995.95,-15.5 1005.95,-12 995.95,-8.5 995.95,-15.5"/>
+</g>
+<!-- error -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node16" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1149.5,-192 1095.5,-192 1095.5,-168 1149.5,-168 1149.5,-192"/>
+<text text-anchor="middle" x="1122.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge16" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff66" d="M905.55,-148.01C961.92,-156.36 1040.09,-167.94 1085.28,-174.63"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1084.81,-178.1 1095.21,-176.11 1085.83,-171.18 1084.81,-178.1"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node18" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node18"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1204,-150 1041,-150 1041,-126 1204,-126 1204,-150"/>
+<text text-anchor="middle" x="1122.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge17" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff66" d="M905.55,-138C942.99,-138 990.05,-138 1030.68,-138"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1030.86,-141.5 1040.86,-138 1030.86,-134.5 1030.86,-141.5"/>
+</g>
+<!-- to_char -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node19" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1149.5,-108 1095.5,-108 1095.5,-84 1149.5,-84 1149.5,-108"/>
+<text text-anchor="middle" x="1122.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge18" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff66" d="M905.55,-127.99C961.92,-119.64 1040.09,-108.06 1085.28,-101.37"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1085.83,-104.82 1095.21,-99.89 1084.81,-97.9 1085.83,-104.82"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_node20" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~compute_mbe_hessian~~CallsGraph_node20"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1417,-24 1275,-24 1275,0 1417,0 1417,-24"/>
+<text text-anchor="middle" x="1346" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~compute_mbe_hessian~~CallsGraph_edge19" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#7fff00" d="M1239.12,-12C1247.77,-12 1256.38,-12 1264.74,-12"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="1264.79,-15.5 1274.79,-12 1264.79,-8.5 1264.79,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_mbe_hessianCallsGraph = svgPanZoom('#proccompute_mbe_hessianCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_mbe_hessian~~CalledByGraph Pages: 1 -->
+<svg id="proccompute_mbe_hessianCalledByGraph" width="641pt" height="41pt"
+ viewBox="0.00 0.00 641.00 41.28" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe_hessian~~CalledByGraph" class="graph" transform="scale(0.56 0.56) rotate(0) translate(4 70)">
+<title>proc~~compute_mbe_hessian~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1145,-70 1145,4 -4,4"/>
+<!-- proc~compute_mbe_hessian -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node1" class="node">
+<title>proc~compute_mbe_hessian</title>
+<polygon fill="none" stroke="black" points="1141,-45 1006,-45 1006,-21 1141,-21 1141,-45"/>
+<text text-anchor="middle" x="1073.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_hessian</text>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node2" class="node">
+<title>proc~compute_mbe_energy_gradient_hessian</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node2"><a xlink:href="../proc/compute_mbe_energy_gradient_hessian.html" xlink:title="compute_mbe_energy_gradient_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="970,-45 742,-45 742,-21 970,-21 970,-45"/>
+<text text-anchor="middle" x="856" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge1" class="edge">
+<title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian</title>
+<path fill="none" stroke="#ff0000" d="M970.11,-33C978.78,-33 987.41,-33 995.76,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="995.79,-36.5 1005.79,-33 995.79,-29.5 995.79,-36.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node3" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node3"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="685.5,-66 572.5,-66 572.5,-42 685.5,-42 685.5,-66"/>
+<text text-anchor="middle" x="629" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge2" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#ff0000" d="M685.62,-48.81C699.84,-47.48 715.72,-46 731.88,-44.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="732.34,-47.96 741.97,-43.55 731.69,-40.99 732.34,-47.96"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node4" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node4"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="706,-24 552,-24 552,0 706,0 706,-24"/>
+<text text-anchor="middle" x="629" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge3" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#ff0000" d="M706.17,-19.11C714.42,-19.88 722.96,-20.68 731.59,-21.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="731.46,-24.98 741.74,-22.43 732.11,-18.01 731.46,-24.98"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node5" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node5"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="516,-45 353,-45 353,-21 516,-21 516,-45"/>
+<text text-anchor="middle" x="434.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge4" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M516.02,-41.78C531.42,-43.46 547.38,-45.21 562.25,-46.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="562.03,-50.32 572.35,-47.93 562.79,-43.37 562.03,-50.32"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge5" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#00ffff" d="M516.02,-24.22C524.54,-23.29 533.22,-22.34 541.8,-21.4"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="542.24,-24.88 551.8,-20.31 541.48,-17.92 542.24,-24.88"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node6" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node6"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-45 223,-45 223,-21 317,-21 317,-45"/>
+<text text-anchor="middle" x="270" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge6" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M317.13,-33C325.24,-33 333.94,-33 342.78,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.8,-36.5 352.8,-33 342.8,-29.5 342.8,-36.5"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node7" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node7"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge7" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M187.11,-42.85C195.83,-41.81 204.48,-40.76 212.7,-39.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-43.22 222.87,-38.55 212.52,-36.27 213.36,-43.22"/>
+</g>
+<!-- program~main -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_node8" class="node">
+<title>program~main</title>
+<g id="a_proc~~compute_mbe_hessian~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
+<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_mbe_hessian~~CalledByGraph_edge8" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M120.62,-15.14C144.88,-18.06 181.81,-22.51 212.76,-26.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-29.74 223,-27.46 213.49,-22.79 212.65,-29.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_mbe_hessianCalledByGraph = svgPanZoom('#proccompute_mbe_hessianCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_next~5"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_next</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hess_dim~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hess_dim</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~35"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-indices~5"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-subset~3"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>subset</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-subset_idx~3"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>subset_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-subset_size~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>subset_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_mbe_hessian</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">lookup</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">delta_hessians</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Bottom-up computation of n-body Hessian correction</span>
+<span class="w">      </span><span class="c">!! Mirrors MBE gradient logic but for second derivatives</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_config_parser</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">bond_t</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span><span class="p">(:),</span><span class="w"> </span><span class="n">n</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">fragment_lookup_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">lookup</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">delta_hessians</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms, fragment_count)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">hess_dim</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(:),</span><span class="w"> </span><span class="n">subset</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_idx</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span>
+
+<span class="w">      </span><span class="n">hess_dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
+
+<span class="w">      </span><span class="c">! Start with the full n-mer Hessian mapped to system coordinates</span>
+<span class="w">      </span><span class="k">call </span><span class="n">map_fragment_to_system_hessian</span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">)%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                          </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">delta_hessians</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">),</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Subtract all proper subsets (size 1 to n-1)</span>
+<span class="w">      </span><span class="k">do </span><span class="n">subset_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">subset_size</span><span class="p">))</span>
+<span class="w">         </span><span class="n">indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span><span class="p">)]</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">subset_size</span><span class="p">))</span>
+
+<span class="w">         </span><span class="n">has_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">has_next</span><span class="p">)</span>
+<span class="w">            </span><span class="n">subset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fragment</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+<span class="w">            </span><span class="n">subset_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lookup</span><span class="p">%</span><span class="n">find</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">subset_idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">               </span><span class="c">! Subtract this subset&#39;s delta Hessian</span>
+<span class="w">               </span><span class="n">delta_hessians</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">delta_hessians</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                    </span><span class="n">delta_hessians</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">subset_idx</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="k">            call </span><span class="n">get_next_combination</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end do</span>
+
+<span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">,</span><span class="w"> </span><span class="n">subset</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">   end subroutine </span><span class="n">compute_mbe_hessian</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-02 07:44 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

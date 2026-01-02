@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.0% of total for procedures.">117 statements</a>
+                 title=" 1.8% of total for procedures.">113 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,21 +136,21 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-basename~4">basename</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-basename">basename</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-count_by_level~2">count_by_level</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_fragment">first_fragment</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_level">first_level</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-frag_level~4">frag_level</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~9">fragment_size</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~68">i</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~10">iatom</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-io_stat~21">io_stat</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~18">j</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~2">fragment_size</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~27">i</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~4">iatom</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-io_stat~17">io_stat</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~6">j</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-json_line">json_line</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-level_name~2">level_name</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-output_file~2">output_file</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-total_atoms~3">total_atoms</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-unit~26">unit</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-output_file">output_file</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-total_atoms">total_atoms</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-unit~25">unit</a>
         </div>
       </div>
     </div>
@@ -186,13 +186,13 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy, total_gradient)  
+    <h2>public  subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy, total_gradient, total_hessian)  
 </h2>
     
 
     <p>Write detailed energy breakdown to results.json file
 Outputs structured JSON with all fragment energies and deltaE corrections
-Optionally includes total gradient if provided
+Optionally includes total gradient and Hessian if provided
 Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
 
@@ -209,7 +209,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -224,7 +224,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -239,7 +239,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -254,7 +254,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~5"></span>
+              <span class="anchor" id="variable-energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -269,7 +269,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~5"></span>
+              <span class="anchor" id="variable-delta_energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -284,7 +284,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~3"></span>
+              <span class="anchor" id="variable-sum_by_level"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -299,7 +299,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -314,7 +314,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -325,6 +325,21 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
             <td><strong>total_gradient</strong>(:,:)</td>
             <td>
                 <p>(3, total_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
+            <td>
+                <p>(3<em>total_atoms, 3</em>total_atoms)</p>
             </td>
         </tr>
     </tbody>
@@ -528,154 +543,181 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~print_detailed_breakdown_json~~CalledByGraph Pages: 1 -->
-<svg id="procprint_detailed_breakdown_jsonCalledByGraph" width="641pt" height="41pt"
- viewBox="0.00 0.00 641.00 41.43" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph" class="graph" transform="scale(0.56 0.56) rotate(0) translate(4 70)">
+<svg id="procprint_detailed_breakdown_jsonCalledByGraph" width="641pt" height="62pt"
+ viewBox="0.00 0.00 641.00 62.43" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph" class="graph" transform="scale(0.54 0.54) rotate(0) translate(4 112)">
 <title>proc~~print_detailed_breakdown_json~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1141,-70 1141,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 1187,-112 1187,4 -4,4"/>
 <!-- proc~print_detailed_breakdown_json -->
 <g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node1" class="node">
 <title>proc~print_detailed_breakdown_json</title>
-<polygon fill="none" stroke="black" points="1137,-45 960,-45 960,-21 1137,-21 1137,-45"/>
-<text text-anchor="middle" x="1048.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_detailed_breakdown_json</text>
+<polygon fill="none" stroke="black" points="1183,-66 1006,-66 1006,-42 1183,-42 1183,-66"/>
+<text text-anchor="middle" x="1094.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_detailed_breakdown_json</text>
 </g>
 <!-- proc~compute_mbe_energy -->
 <g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node2" class="node">
 <title>proc~compute_mbe_energy</title>
 <g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node2"><a xlink:href="../proc/compute_mbe_energy.html" xlink:title="compute_mbe_energy">
-<polygon fill="#d9534f" stroke="#d9534f" points="899,-66 767,-66 767,-42 899,-42 899,-66"/>
-<text text-anchor="middle" x="833" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="922,-108 790,-108 790,-84 922,-84 922,-108"/>
+<text text-anchor="middle" x="856" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json -->
 <g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge1" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json</title>
-<path fill="none" stroke="#ff0000" d="M899.22,-47.59C915.21,-46.01 932.67,-44.29 949.82,-42.61"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="950.26,-46.08 959.87,-41.62 949.58,-39.11 950.26,-46.08"/>
+<path fill="none" stroke="#ff0000" d="M922.25,-84.41C951.12,-79.29 985.3,-73.22 1015.5,-67.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1016.34,-71.26 1025.58,-66.06 1015.12,-64.37 1016.34,-71.26"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient -->
 <g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node3" class="node">
 <title>proc~compute_mbe_energy_gradient</title>
 <g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node3"><a xlink:href="../proc/compute_mbe_energy_gradient.html" xlink:title="compute_mbe_energy_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="924,-24 742,-24 742,0 924,0 924,-24"/>
-<text text-anchor="middle" x="833" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="947,-66 765,-66 765,-42 947,-42 947,-66"/>
+<text text-anchor="middle" x="856" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json -->
 <g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge2" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json</title>
-<path fill="none" stroke="#ff0000" d="M924.23,-20.88C932.74,-21.71 941.39,-22.56 949.96,-23.41"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="949.68,-26.9 959.97,-24.39 950.36,-19.93 949.68,-26.9"/>
+<path fill="none" stroke="#ff0000" d="M947.09,-54C962.83,-54 979.27,-54 995.22,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="995.62,-57.5 1005.62,-54 995.62,-50.5 995.62,-57.5"/>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node4" class="node">
+<title>proc~compute_mbe_energy_gradient_hessian</title>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node4"><a xlink:href="../proc/compute_mbe_energy_gradient_hessian.html" xlink:title="compute_mbe_energy_gradient_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="970,-24 742,-24 742,0 970,0 970,-24"/>
+<text text-anchor="middle" x="856" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~print_detailed_breakdown_json -->
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge3" class="edge">
+<title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~print_detailed_breakdown_json</title>
+<path fill="none" stroke="#ff0000" d="M924.77,-24.04C953.1,-29.07 986.18,-34.94 1015.51,-40.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1015.26,-43.66 1025.72,-41.96 1016.48,-36.77 1015.26,-43.66"/>
 </g>
 <!-- proc~global_coordinator -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node4" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node5" class="node">
 <title>proc~global_coordinator</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#d9534f" stroke="#d9534f" points="685.5,-66 572.5,-66 572.5,-42 685.5,-42 685.5,-66"/>
-<text text-anchor="middle" x="629" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node5"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="685.5,-87 572.5,-87 572.5,-63 685.5,-63 685.5,-87"/>
+<text text-anchor="middle" x="629" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
 </a>
 </g>
 </g>
 <!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge3" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge4" class="edge">
 <title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy</title>
-<path fill="none" stroke="#ff0000" d="M685.73,-54C707.6,-54 733.04,-54 756.52,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="756.79,-57.5 766.79,-54 756.79,-50.5 756.79,-57.5"/>
+<path fill="none" stroke="#ff0000" d="M685.62,-80.19C713.91,-82.83 748.72,-86.08 779.41,-88.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="779.36,-92.46 789.64,-89.9 780.01,-85.49 779.36,-92.46"/>
 </g>
 <!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge5" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge6" class="edge">
 <title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient</title>
-<path fill="none" stroke="#00ffff" d="M685.73,-42.41C709.96,-37.37 738.57,-31.43 764.03,-26.13"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="764.91,-29.53 773.98,-24.06 763.48,-22.67 764.91,-29.53"/>
+<path fill="none" stroke="#00ff00" d="M685.62,-69.81C706.46,-67.86 730.83,-65.59 754.48,-63.38"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="754.93,-66.85 764.57,-62.44 754.28,-59.89 754.93,-66.85"/>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge8" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#0000ff" d="M680.91,-62.9C689.41,-60.32 698.05,-57.35 706,-54 723.07,-46.81 724.64,-39.45 742,-33 748.41,-30.62 755.13,-28.5 761.96,-26.61"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="763.21,-29.9 772.02,-24.01 761.46,-23.12 763.21,-29.9"/>
 </g>
 <!-- proc~serial_fragment_processor -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node5" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node6" class="node">
 <title>proc~serial_fragment_processor</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node5"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
-<polygon fill="#d9534f" stroke="#d9534f" points="706,-24 552,-24 552,0 706,0 706,-24"/>
-<text text-anchor="middle" x="629" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node6"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="706,-45 552,-45 552,-21 706,-21 706,-45"/>
+<text text-anchor="middle" x="629" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge4" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge5" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy</title>
-<path fill="none" stroke="#ff0000" d="M687.89,-24.04C711.66,-28.98 739.35,-34.74 764.07,-39.88"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="763.6,-43.35 774.11,-41.96 765.03,-36.5 763.6,-43.35"/>
+<path fill="none" stroke="#ff0000" d="M680.91,-45.1C689.41,-47.68 698.05,-50.65 706,-54 723.07,-61.19 724.64,-68.55 742,-75 753.88,-79.42 766.82,-82.93 779.57,-85.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="779.22,-89.23 789.72,-87.81 780.63,-82.37 779.22,-89.23"/>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge6" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge7" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient</title>
-<path fill="none" stroke="#00ffff" d="M706.08,-12C714.44,-12 723.04,-12 731.64,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="731.71,-15.5 741.71,-12 731.71,-8.5 731.71,-15.5"/>
+<path fill="none" stroke="#00ff00" d="M706.17,-40.11C721.8,-41.57 738.47,-43.12 754.8,-44.65"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="754.62,-48.15 764.9,-45.59 755.27,-41.18 754.62,-48.15"/>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge9" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#0000ff" d="M706.17,-25.89C714.42,-25.12 722.96,-24.32 731.59,-23.52"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="732.11,-26.99 741.74,-22.57 731.46,-20.02 732.11,-26.99"/>
 </g>
 <!-- proc~run_fragmented_calculation -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node6" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node7" class="node">
 <title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node6"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="516,-45 353,-45 353,-21 516,-21 516,-45"/>
-<text text-anchor="middle" x="434.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node7"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="516,-66 353,-66 353,-42 516,-42 516,-66"/>
+<text text-anchor="middle" x="434.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge7" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge10" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ff0000" d="M516.02,-41.78C531.42,-43.46 547.38,-45.21 562.25,-46.83"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="562.03,-50.32 572.35,-47.93 562.79,-43.37 562.03,-50.32"/>
+<path fill="none" stroke="#ff0000" d="M516.02,-62.78C531.42,-64.46 547.38,-66.21 562.25,-67.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="562.03,-71.32 572.35,-68.93 562.79,-64.37 562.03,-71.32"/>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge8" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge11" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
-<path fill="none" stroke="#00ffff" d="M516.02,-24.22C524.54,-23.29 533.22,-22.34 541.8,-21.4"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="542.24,-24.88 551.8,-20.31 541.48,-17.92 542.24,-24.88"/>
+<path fill="none" stroke="#00ffff" d="M516.02,-45.22C524.54,-44.29 533.22,-43.34 541.8,-42.4"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="542.24,-45.88 551.8,-41.31 541.48,-38.92 542.24,-45.88"/>
 </g>
 <!-- proc~run_calculation -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node7" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node8" class="node">
 <title>proc~run_calculation</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node7"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="317,-45 223,-45 223,-21 317,-21 317,-45"/>
-<text text-anchor="middle" x="270" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node8"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-66 223,-66 223,-42 317,-42 317,-66"/>
+<text text-anchor="middle" x="270" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge9" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge12" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M317.13,-33C325.24,-33 333.94,-33 342.78,-33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="342.8,-36.5 352.8,-33 342.8,-29.5 342.8,-36.5"/>
+<path fill="none" stroke="#ff0000" d="M317.13,-54C325.24,-54 333.94,-54 342.78,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.8,-57.5 352.8,-54 342.8,-50.5 342.8,-57.5"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node8" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node9" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node8"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
-<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node9"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-87 0,-87 0,-63 187,-63 187,-87"/>
+<text text-anchor="middle" x="93.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge10" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge13" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-42.85C195.83,-41.81 204.48,-40.76 212.7,-39.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-43.22 222.87,-38.55 212.52,-36.27 213.36,-43.22"/>
+<path fill="none" stroke="#ff0000" d="M187.11,-63.85C195.83,-62.81 204.48,-61.76 212.7,-60.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-64.22 222.87,-59.55 212.52,-57.27 213.36,-64.22"/>
 </g>
 <!-- program~main -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node9" class="node">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_node10" class="node">
 <title>program~main</title>
-<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node9"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
-<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~print_detailed_breakdown_json~~CalledByGraph_node10"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-45 66.5,-45 66.5,-21 120.5,-21 120.5,-45"/>
+<text text-anchor="middle" x="93.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge11" class="edge">
+<g id="proc~~print_detailed_breakdown_json~~CalledByGraph_edge14" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.62,-15.14C144.88,-18.06 181.81,-22.51 212.76,-26.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-29.74 223,-27.46 213.49,-22.79 212.65,-29.74"/>
+<path fill="none" stroke="#ff0000" d="M120.62,-36.14C144.88,-39.06 181.81,-43.51 212.76,-47.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-50.74 223,-48.46 213.49,-43.79 212.65,-50.74"/>
 </g>
 </g>
 </svg>
@@ -781,7 +823,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~4"></span>
+              <span class="anchor" id="variable-basename"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -866,7 +908,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~9"></span>
+              <span class="anchor" id="variable-fragment_size~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -883,7 +925,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~68"></span>
+              <span class="anchor" id="variable-i~27"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -900,7 +942,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~10"></span>
+              <span class="anchor" id="variable-iatom~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -917,7 +959,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~21"></span>
+              <span class="anchor" id="variable-io_stat~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -934,7 +976,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~18"></span>
+              <span class="anchor" id="variable-j~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -985,7 +1027,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_file~2"></span>
+              <span class="anchor" id="variable-output_file"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -1002,7 +1044,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~3"></span>
+              <span class="anchor" id="variable-total_atoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -1019,7 +1061,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~26"></span>
+              <span class="anchor" id="variable-unit~25"></span>
               integer,
             </td>
               <td>private</td>
@@ -1052,16 +1094,17 @@ large graphs.</div>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_detailed_breakdown_json</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                            </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                            </span><span class="n">total_gradient</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write detailed energy breakdown to results.json file</span>
 <span class="w">      </span><span class="c">!! Outputs structured JSON with all fragment energies and deltaE corrections</span>
-<span class="w">      </span><span class="c">!! Optionally includes total gradient if provided</span>
+<span class="w">      </span><span class="c">!! Optionally includes total gradient and Hessian if provided</span>
 <span class="w">      </span><span class="c">!! Uses int64 for fragment_count to handle large fragment counts that overflow int32.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energies</span><span class="p">(:),</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(:),</span><span class="w"> </span><span class="n">total_energy</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, total_atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms)</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">frag_level</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span>
@@ -1170,40 +1213,32 @@ large graphs.</div>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      }&#39;</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    ]&#39;</span>
-
-<span class="w">      </span><span class="c">! Close mbe_breakdown section with or without comma depending on gradient presence</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  },&#39;</span>
+<span class="w">      </span><span class="c">! Close levels array (with comma if we have more fields)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    ],&#39;</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  }&#39;</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Add gradient section if present</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">total_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
-
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  &quot;gradient&quot;: {&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;components&quot;: [&#39;</span>
-
-<span class="w">         </span><span class="k">do </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total_atoms</span>
-<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,3(f20.12,a))&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      [&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="n">total_gradient</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="n">total_gradient</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">               </span><span class="n">total_gradient</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;]&#39;</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iatom</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">total_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">end do</span>
-
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    ]&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  }&#39;</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;}&#39;</span>
+<span class="w">      </span><span class="c">! Add gradient norm if present (inside basename object)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;gradient_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Add Hessian Frobenius norm if present (inside basename object)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;hessian_frobenius_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Close basename object</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  }&#39;</span>
+<span class="w">      </span><span class="c">! Close outer object</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;}&#39;</span>
 
 <span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;JSON output written successfully to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
@@ -1232,7 +1267,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-01 14:53 +0000             </p>
+ on 2026-01-02 07:44 +0000             </p>
           </div>
         </div>
         <br>

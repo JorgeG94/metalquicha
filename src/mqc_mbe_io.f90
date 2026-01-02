@@ -152,16 +152,17 @@ contains
 
    subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
                                             energies, delta_energies, sum_by_level, total_energy, &
-                                            total_gradient)
+                                            total_gradient, total_hessian)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
-      !! Optionally includes total gradient if provided
+      !! Optionally includes total gradient and Hessian if provided
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
       integer, intent(in) :: polymers(:, :), max_level
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
       real(dp), intent(in) :: sum_by_level(:), total_energy
       real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
+      real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
 
       integer(int64) :: i
       integer :: fragment_size, j, frag_level, unit, io_stat, iatom
@@ -270,39 +271,31 @@ contains
          write (unit, '(a)') '      }'
       end if
 
-      write (unit, '(a)') '    ]'
-
-      ! Close mbe_breakdown section with or without comma depending on gradient presence
-      if (present(total_gradient)) then
-         write (unit, '(a)') '  },'
+      ! Close levels array (with comma if we have more fields)
+      if (present(total_gradient) .or. present(total_hessian)) then
+         write (unit, '(a)') '    ],'
       else
-         write (unit, '(a)') '  }'
-      end if
-
-      ! Add gradient section if present
-      if (present(total_gradient)) then
-         total_atoms = size(total_gradient, 2)
-
-         write (unit, '(a)') '  "gradient": {'
-         write (json_line, '(a,f20.10,a)') '    "norm": ', sqrt(sum(total_gradient**2)), ','
-         write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '    "components": ['
-
-         do iatom = 1, total_atoms
-            write (json_line, '(a,3(f20.12,a))') '      [', &
-               total_gradient(1, iatom), ', ', &
-               total_gradient(2, iatom), ', ', &
-               total_gradient(3, iatom), ']'
-            if (iatom < total_atoms) then
-               write (json_line, '(a,a)') trim(json_line), ','
-            end if
-            write (unit, '(a)') trim(json_line)
-         end do
-
          write (unit, '(a)') '    ]'
-         write (unit, '(a)') '  }'
       end if
 
+      ! Add gradient norm if present (inside basename object)
+      if (present(total_gradient)) then
+         write (json_line, '(a,f20.10)') '    "gradient_norm": ', sqrt(sum(total_gradient**2))
+         if (present(total_hessian)) then
+            write (json_line, '(a,a)') trim(json_line), ','
+         end if
+         write (unit, '(a)') trim(json_line)
+      end if
+
+      ! Add Hessian Frobenius norm if present (inside basename object)
+      if (present(total_hessian)) then
+         write (json_line, '(a,f20.10)') '    "hessian_frobenius_norm": ', sqrt(sum(total_hessian**2))
+         write (unit, '(a)') trim(json_line)
+      end if
+
+      ! Close basename object
+      write (unit, '(a)') '  }'
+      ! Close outer object
       write (unit, '(a)') '}'
 
       close (unit)
@@ -336,34 +329,25 @@ contains
 
       if (result%has_energy) then
          write (json_line, '(a,f25.15)') '    "total_energy": ', result%energy%total()
-         if (result%has_gradient) then
+         if (result%has_gradient .or. result%has_hessian) then
             write (json_line, '(a,a)') trim(json_line), ','
          end if
          write (unit, '(a)') trim(json_line)
       end if
 
-      ! Add gradient section if present
+      ! Add gradient norm if present
       if (result%has_gradient) then
-         total_atoms = size(result%gradient, 2)
-
-         write (unit, '(a)') '    "gradient": {'
-         write (json_line, '(a,f25.15,a)') '      "norm": ', sqrt(sum(result%gradient**2)), ','
+         write (json_line, '(a,f25.15)') '    "gradient_norm": ', sqrt(sum(result%gradient**2))
+         if (result%has_hessian) then
+            write (json_line, '(a,a)') trim(json_line), ','
+         end if
          write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '      "components": ['
+      end if
 
-         do iatom = 1, total_atoms
-            write (json_line, '(a,3(f25.15,a))') '        [', &
-               result%gradient(1, iatom), ', ', &
-               result%gradient(2, iatom), ', ', &
-               result%gradient(3, iatom), ']'
-            if (iatom < total_atoms) then
-               write (json_line, '(a,a)') trim(json_line), ','
-            end if
-            write (unit, '(a)') trim(json_line)
-         end do
-
-         write (unit, '(a)') '      ]'
-         write (unit, '(a)') '    }'
+      ! Add Hessian Frobenius norm if present
+      if (result%has_hessian) then
+         write (json_line, '(a,f25.15)') '    "hessian_frobenius_norm": ', sqrt(sum(result%hessian**2))
+         write (unit, '(a)') trim(json_line)
       end if
 
       write (unit, '(a)') '  }'
@@ -525,14 +509,18 @@ contains
 
    end subroutine print_gmbe_json
 
-   subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)
+   subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
+                                  total_gradient, total_hessian)
       !! Write GMBE PIE calculation results to output JSON file
       !! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
+      !! Optionally includes total gradient and Hessian norms
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       real(dp), intent(in) :: pie_energies(:)  !! Raw energy for each term
       integer, intent(in) :: n_pie_terms
       real(dp), intent(in) :: total_energy
+      real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
+      real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
 
       integer :: i, j, max_atoms, n_atoms
       integer :: unit, io_stat
@@ -558,6 +546,18 @@ contains
 
       write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
       write (unit, '(a)') trim(json_line)
+
+      ! Add gradient if present
+      if (present(total_gradient)) then
+         write (json_line, '(a,f20.10,a)') '    "gradient_norm": ', sqrt(sum(total_gradient**2)), ','
+         write (unit, '(a)') trim(json_line)
+      end if
+
+      ! Add Hessian if present
+      if (present(total_hessian)) then
+         write (json_line, '(a,f20.10,a)') '    "hessian_frobenius_norm": ', sqrt(sum(total_hessian**2)), ','
+         write (unit, '(a)') trim(json_line)
+      end if
 
       ! PIE terms section
       ! First count non-zero coefficient terms

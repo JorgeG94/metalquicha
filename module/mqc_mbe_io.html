@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 7.0% of total for modules and submodules.">464 statements</a>
+                 title=" 6.7% of total for modules and submodules.">465 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -188,13 +188,13 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
+                  <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -895,7 +895,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -910,7 +910,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -925,7 +925,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -940,7 +940,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~4"></span>
+              <span class="anchor" id="variable-energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -955,7 +955,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~4"></span>
+              <span class="anchor" id="variable-delta_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -976,13 +976,13 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-print_detailed_breakdown_json"></span> <h3>public  subroutine <a href='../proc/print_detailed_breakdown_json.html'>print_detailed_breakdown_json</a>(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy, total_gradient)  
+    <div class="card-header codesum"><span class="anchor" id="proc-print_detailed_breakdown_json"></span> <h3>public  subroutine <a href='../proc/print_detailed_breakdown_json.html'>print_detailed_breakdown_json</a>(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy, total_gradient, total_hessian)  
 </h3></div>
     <div class="card-body">
           
   <p>Write detailed energy breakdown to results.json file
 Outputs structured JSON with all fragment energies and deltaE corrections
-Optionally includes total gradient if provided
+Optionally includes total gradient and Hessian if provided
 Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
   <h4>Arguments</h4>
@@ -998,7 +998,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1013,7 +1013,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1028,7 +1028,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1043,7 +1043,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~5"></span>
+              <span class="anchor" id="variable-energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1058,7 +1058,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~5"></span>
+              <span class="anchor" id="variable-delta_energies~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1073,7 +1073,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~3"></span>
+              <span class="anchor" id="variable-sum_by_level"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1088,7 +1088,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1103,7 +1103,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -1114,6 +1114,21 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
             <td><strong>total_gradient</strong>(:,:)</td>
             <td>
 <p>(3, total_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
+            <td>
+<p>(3<em>total_atoms, 3</em>total_atoms)</p>
             </td>
         </tr>
     </tbody>
@@ -1143,7 +1158,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~10"></span>
+              <span class="anchor" id="variable-fragment_idx"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1158,7 +1173,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~5"></span>
+              <span class="anchor" id="variable-phys_frag"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1200,7 +1215,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~8"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1215,7 +1230,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_indices~2"></span>
+              <span class="anchor" id="variable-monomer_indices"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1230,7 +1245,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_results~3"></span>
+              <span class="anchor" id="variable-monomer_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1245,7 +1260,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~7"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1260,7 +1275,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~3"></span>
+              <span class="anchor" id="variable-intersection_results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1275,7 +1290,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~7"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1290,7 +1305,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~7"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1305,7 +1320,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~8"></span>
+              <span class="anchor" id="variable-total_energy~2"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1326,12 +1341,13 @@ Intersection parameters are optional and should be omitted when n_intersections=
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-print_gmbe_pie_json"></span> <h3>public  subroutine <a href='../proc/print_gmbe_pie_json.html'>print_gmbe_pie_json</a>(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)  
+    <div class="card-header codesum"><span class="anchor" id="proc-print_gmbe_pie_json"></span> <h3>public  subroutine <a href='../proc/print_gmbe_pie_json.html'>print_gmbe_pie_json</a>(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, total_gradient, total_hessian)  
 </h3></div>
     <div class="card-body">
           
   <p>Write GMBE PIE calculation results to output JSON file
-Outputs structured JSON with PIE terms (atom sets with coefficients and energies)</p>
+Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
+Optionally includes total gradient and Hessian norms</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1346,7 +1362,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1361,7 +1377,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~5"></span>
+              <span class="anchor" id="variable-pie_coefficients"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1376,7 +1392,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_energies~2"></span>
+              <span class="anchor" id="variable-pie_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1391,7 +1407,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1406,7 +1422,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~9"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1417,6 +1433,36 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
             <td><strong>total_energy</strong></td>
             <td>
 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_gradient~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_gradient</strong>(:,:)</td>
+            <td>
+<p>(3, total_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
+            <td>
+<p>(3<em>total_atoms, 3</em>total_atoms)</p>
             </td>
         </tr>
     </tbody>
@@ -1447,7 +1493,7 @@ Outputs structured JSON with energy and optionally gradient</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~13"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1490,7 +1536,7 @@ Outputs structured JSON with energy and optionally gradient</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-01 14:53 +0000             </p>
+ on 2026-01-02 07:44 +0000             </p>
           </div>
         </div>
         <br>

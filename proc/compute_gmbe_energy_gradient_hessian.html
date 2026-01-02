@@ -1,0 +1,1473 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>compute_gmbe_energy_gradient_hessian &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>compute_gmbe_energy_gradient_hessian
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.9% of total for procedures.">55 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe.f90.html'>mqc_mbe.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_gmbe_energy_gradient_hessian</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-current_log_level~6">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-fragment~16">fragment</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-hess_dim~3">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-i~38">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-k~8">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-level_counts~3">level_counts</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-level_energies~3">level_energies</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-max_level~11">max_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-monomer_energy~3">monomer_energy</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-monomer_idx~2">monomer_idx</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#variable-sign_factor~3">sign_factor</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient_hessian.html#src">compute_gmbe_energy_gradient_hessian</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine compute_gmbe_energy_gradient_hessian(monomers, n_monomers, monomer_results, n_intersections, intersection_results, intersection_sets, intersection_levels, sys_geom, total_energy, total_gradient, total_hessian, bonds)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph Pages: 1 -->
+<svg id="proccompute_gmbe_energy_gradient_hessianUsesGraph" width="641pt" height="282pt"
+ viewBox="0.00 0.00 641.00 282.10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph" class="graph" transform="scale(0.78 0.78) rotate(0) translate(4 356)">
+<title>proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-356 814,-356 814,4 -4,4"/>
+<!-- proc~compute_gmbe_energy_gradient_hessian -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node1" class="node">
+<title>proc~compute_gmbe_energy_gradient_hessian</title>
+<polygon fill="none" stroke="black" points="810,-176 575,-176 575,-152 810,-152 810,-176"/>
+<text text-anchor="middle" x="692.5" y="-161.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_gmbe_energy_gradient_hessian</text>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node2" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node2"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="364,-226 250,-226 250,-202 364,-202 364,-226"/>
+<text text-anchor="middle" x="307" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge1" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M599.15,-176.04C529.77,-185.09 436.38,-197.26 374.28,-205.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="373.67,-201.91 364.21,-206.67 374.58,-208.85 373.67,-201.91"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node3" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node3"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="539,-156 400,-156 400,-132 539,-132 539,-156"/>
+<text text-anchor="middle" x="469.5" y="-141.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge2" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M574.85,-153.44C566.15,-152.66 557.49,-151.87 549.11,-151.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="549.3,-147.62 539.03,-150.2 548.67,-154.59 549.3,-147.62"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node4" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node4"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="521.5,-312 417.5,-312 417.5,-288 521.5,-288 521.5,-312"/>
+<text text-anchor="middle" x="469.5" y="-297.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_result_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge3" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M671.89,-176.07C632.65,-200.21 544.37,-254.54 498.84,-282.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="496.75,-279.74 490.07,-287.96 500.42,-285.7 496.75,-279.74"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node5" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="503.5,-114 435.5,-114 435.5,-90 503.5,-90 503.5,-114"/>
+<text text-anchor="middle" x="469.5" y="-99.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;pic_logger -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge4" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M648.63,-151.97C609.68,-141.05 552.52,-125.01 513.53,-114.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="514.11,-110.6 503.53,-111.27 512.22,-117.34 514.11,-110.6"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node6" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node6"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-272 107.5,-272 107.5,-248 204.5,-248 204.5,-272"/>
+<text text-anchor="middle" x="156" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge5" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M266.85,-226.09C248.12,-231.87 225.5,-238.85 205.67,-244.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="204.41,-241.7 195.89,-247.99 206.47,-248.39 204.41,-241.7"/>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node9" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node9"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="189.5,-188 122.5,-188 122.5,-164 189.5,-164 189.5,-188"/>
+<text text-anchor="middle" x="156" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge6" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M258.86,-201.98C239.86,-197.13 218.12,-191.59 199.61,-186.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="200.25,-183.42 189.7,-184.34 198.52,-190.2 200.25,-183.42"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node10" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node10"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="202.5,-146 109.5,-146 109.5,-122 202.5,-122 202.5,-146"/>
+<text text-anchor="middle" x="156" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge7" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M275.44,-201.87C266.92,-197.94 257.85,-193.23 250,-188 231.94,-175.95 232.53,-166.3 214,-155 211.21,-153.3 208.26,-151.7 205.23,-150.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.53,-146.95 195.97,-146.04 203.65,-153.34 206.53,-146.95"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node11" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node11"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-230 98,-230 98,-206 214,-206 214,-230"/>
+<text text-anchor="middle" x="156" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge8" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.67,-215.51C241.47,-215.73 232.95,-215.96 224.56,-216.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="224.3,-212.69 214.4,-216.46 224.49,-219.69 224.3,-212.69"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node14" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-188 0,-188 0,-164 62,-164 62,-188"/>
+<text text-anchor="middle" x="31" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge9" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M296.37,-226.28C273.84,-253.41 215.14,-314.97 157,-300"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M155,-300C129.14,-293.34 119,-297.49 98,-281 69.97,-258.99 50.6,-221.55 40.4,-197.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="43.52,-196.22 36.48,-188.3 37.05,-198.88 43.52,-196.22"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M440.91,-156.03C414.5,-167.55 374.46,-185.01 345.23,-197.76"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="343.53,-194.68 335.77,-201.89 346.33,-201.1 343.53,-194.68"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node7" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node7"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="339,-24 275,-24 275,0 339,0 339,-24"/>
+<text text-anchor="middle" x="307" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M412.99,-131.93C408.27,-129.48 403.84,-126.54 400,-123 368.3,-93.83 394.79,-63.13 364,-33 359.63,-28.72 354.3,-25.3 348.69,-22.56"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="349.67,-19.18 339.09,-18.59 346.99,-25.65 349.67,-19.18"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node8" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node8"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="352.5,-66 261.5,-66 261.5,-42 352.5,-42 352.5,-66"/>
+<text text-anchor="middle" x="307" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M417.24,-131.91C411.19,-129.45 405.29,-126.51 400,-123 379.23,-109.22 383.78,-95.17 364,-80 359.53,-76.58 354.55,-73.46 349.44,-70.68"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="350.7,-67.39 340.19,-66.02 347.55,-73.64 350.7,-67.39"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M306,-174C270.14,-175.03 229.42,-175.53 199.62,-175.77"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="199.53,-172.27 189.56,-175.85 199.59,-179.27 199.53,-172.27"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M424.62,-156.03C392.58,-163.87 347.95,-172.85 308,-174"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M306,-174C285.93,-174.58 238.28,-160.76 202.22,-149.21"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="202.98,-145.78 192.39,-146.03 200.83,-152.44 202.98,-145.78"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node12" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node12"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="356.5,-146 257.5,-146 257.5,-122 356.5,-122 356.5,-146"/>
+<text text-anchor="middle" x="307" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M399.97,-139.73C388.99,-139.05 377.72,-138.34 366.99,-137.68"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="367.09,-134.18 356.9,-137.05 366.66,-141.16 367.09,-134.18"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M429.28,-131.96C402.47,-123.8 370.64,-114.28 364,-113 273.28,-95.56 247.07,-73.44 157,-94"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M155,-94C128.9,-99.65 120.88,-99.23 98,-113 78.94,-124.47 60.93,-142.32 48.55,-156.09"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="45.89,-153.82 41.95,-163.65 51.17,-158.42 45.89,-153.82"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node13" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-352 271,-352 271,-328 343,-328 343,-352"/>
+<text text-anchor="middle" x="307" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge17" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M420.34,-312C399,-317.32 374.03,-323.54 353.05,-328.77"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="351.97,-325.43 343.11,-331.25 353.66,-332.23 351.97,-325.43"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge18" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M417.35,-307.69C354.82,-315.36 246.29,-322.99 157,-300"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge19" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M115.67,-247.93C109.55,-245.38 103.46,-242.4 98,-239 79.12,-227.23 61.1,-209.41 48.67,-195.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.28,-193.4 42.03,-188.22 46.03,-198.03 51.28,-193.4"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge20" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M274.98,-5.93C243.87,-1.29 195.22,1.9 157,-14"/>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M155,-14C130.34,-24.26 117.9,-15.19 98,-33 61.55,-65.62 43.81,-122.49 36.43,-153.78"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="32.98,-153.18 34.24,-163.7 39.82,-154.69 32.98,-153.18"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge22" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M270.05,-41.89C229.4,-28.59 167.48,-9.64 157,-14"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_node15" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-66 127,-66 127,-42 185,-42 185,-66"/>
+<text text-anchor="middle" x="156" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge21" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M261.3,-54C240.27,-54 215.46,-54 195.31,-54"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="195.24,-50.5 185.24,-54 195.24,-57.5 195.24,-50.5"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge23" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffa9" stroke-dasharray="5,2" d="M119.75,-146.04C104.85,-151.13 87.4,-157.08 72.02,-162.34"/>
+<polygon fill="#00ffa9" stroke="#00ffa9" points="70.58,-159.13 62.25,-165.67 72.84,-165.75 70.58,-159.13"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge24" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00a9ff" stroke-dasharray="5,2" d="M119.75,-205.96C104.85,-200.87 87.4,-194.92 72.02,-189.66"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="72.84,-186.25 62.25,-186.33 70.58,-192.87 72.84,-186.25"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge25" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M263.3,-146.04C243.29,-151.68 219.51,-158.38 199.53,-164.01"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="198.43,-160.68 189.76,-166.77 200.33,-167.42 198.43,-160.68"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge26" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M257.21,-134C243.07,-134 227.53,-134 212.99,-134"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="212.61,-130.5 202.61,-134 212.61,-137.5 212.61,-130.5"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~UsesGraph_edge27" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M274.69,-121.89C237.96,-108.35 179.26,-88.92 157,-94"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_gmbe_energy_gradient_hessianUsesGraph = svgPanZoom('#proccompute_gmbe_energy_gradient_hessianUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Compute GMBE energy, gradient, and Hessian with full inclusion-exclusion
+TODO: Full implementation with intersection Hessians pending</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomers</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_results~4"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomer_results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_intersections~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_intersections</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_results~4"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_sets~4"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_sets</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersection_levels~4"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intersection_levels</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~13"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_energy~9"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_energy</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_gradient~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_gradient</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds~11"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph Pages: 1 -->
+<svg id="proccompute_gmbe_energy_gradient_hessianCallsGraph" width="641pt" height="219pt"
+ viewBox="0.00 0.00 641.00 218.79" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph" class="graph" transform="scale(0.51 0.51) rotate(0) translate(4 423)">
+<title>proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-423 1247,-423 1247,4 -4,4"/>
+<!-- proc~compute_gmbe_energy_gradient_hessian -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node1" class="node">
+<title>proc~compute_gmbe_energy_gradient_hessian</title>
+<polygon fill="none" stroke="black" points="235,-170 0,-170 0,-146 235,-146 235,-170"/>
+<text text-anchor="middle" x="117.5" y="-155.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_gmbe_energy_gradient_hessian</text>
+</g>
+<!-- info -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="409.5,-335 355.5,-335 355.5,-311 409.5,-311 409.5,-335"/>
+<text text-anchor="middle" x="382.5" y="-320.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;info -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge1" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M127.25,-170.05C148.42,-198.23 205.5,-268.54 271,-302 293.97,-313.73 322.65,-318.95 345.04,-321.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="344.88,-324.75 355.15,-322.14 345.5,-317.78 344.88,-324.75"/>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node3" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node3"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="465.5,-293 299.5,-293 299.5,-269 465.5,-269 465.5,-293"/>
+<text text-anchor="middle" x="382.5" y="-278.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge2" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0000" d="M139.3,-170.12C168.27,-186.75 222.67,-217.09 271,-239 292.2,-248.61 316.31,-257.96 336.59,-265.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="335.61,-268.75 346.2,-268.86 337.99,-262.16 335.61,-268.75"/>
+</g>
+<!-- proc~energy_total -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node4" class="node">
+<title>proc~energy_total</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node4"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="450.5,-230 314.5,-230 314.5,-206 450.5,-206 450.5,-230"/>
+<text text-anchor="middle" x="382.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~energy_total -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge3" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0000" d="M171.41,-170.07C213.94,-179.77 273.8,-193.43 318.75,-203.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="318.15,-207.14 328.68,-205.95 319.71,-200.31 318.15,-207.14"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node5" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node5"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="494,-66 271,-66 271,-42 494,-42 494,-66"/>
+<text text-anchor="middle" x="382.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge4" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M136.41,-145.83C164.05,-127.62 219.34,-93.46 271,-75 277.76,-72.58 284.86,-70.43 292.07,-68.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="293.08,-71.86 301.93,-66.03 291.38,-65.07 293.08,-71.86"/>
+</g>
+<!-- proc~redistribute_cap_gradients -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node6" class="node">
+<title>proc~redistribute_cap_gradients</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node6"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
+<polygon fill="#d9534f" stroke="#d9534f" points="459.5,-150 305.5,-150 305.5,-126 459.5,-126 459.5,-150"/>
+<text text-anchor="middle" x="382.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~redistribute_cap_gradients -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge5" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~redistribute_cap_gradients</title>
+<path fill="none" stroke="#ff0000" d="M235,-149.14C255.15,-147.61 275.78,-146.04 294.95,-144.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="295.43,-148.06 305.14,-143.81 294.9,-141.08 295.43,-148.06"/>
+</g>
+<!-- proc~redistribute_cap_hessian -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node7" class="node">
+<title>proc~redistribute_cap_hessian</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node7"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="454.5,-108 310.5,-108 310.5,-84 454.5,-84 454.5,-108"/>
+<text text-anchor="middle" x="382.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~redistribute_cap_hessian -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge6" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~redistribute_cap_hessian</title>
+<path fill="none" stroke="#ff0000" d="M160.04,-145.93C190.58,-137.28 233.19,-125.66 271,-117 281.57,-114.58 292.74,-112.22 303.77,-110.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="304.7,-113.4 313.84,-108.03 303.35,-106.53 304.7,-113.4"/>
+</g>
+<!-- to_char -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node8" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="975.5,-273 921.5,-273 921.5,-249 975.5,-249 975.5,-273"/>
+<text text-anchor="middle" x="948.5" y="-258.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;to_char -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge7" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M235.22,-159.92C400.14,-163.46 692.8,-172.99 796,-197 839.66,-207.16 886.76,-228.93 916.65,-244.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="915.23,-247.46 925.72,-248.97 918.47,-241.25 915.23,-247.46"/>
+</g>
+<!-- warning -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node9" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="410,-24 355,-24 355,0 410,0 410,-24"/>
+<text text-anchor="middle" x="382.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;warning -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge8" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;warning</title>
+<path fill="none" stroke="#ff0000" d="M129.33,-145.69C152.53,-120.18 209.9,-61.55 271,-33 294.21,-22.15 322.66,-16.91 344.88,-14.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="345.32,-17.84 354.92,-13.36 344.62,-10.88 345.32,-17.84"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node10" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node10"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="722,-272 604,-272 604,-248 722,-248 722,-272"/>
+<text text-anchor="middle" x="663" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge9" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#ffbf00" d="M465.55,-274.81C506.35,-271.74 555.08,-268.06 593.8,-265.14"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="594.22,-268.62 603.92,-264.38 593.69,-261.64 594.22,-268.62"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node12" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node12"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="731.5,-398 594.5,-398 594.5,-374 731.5,-374 731.5,-398"/>
+<text text-anchor="middle" x="663" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#ffbf00" d="M465.58,-288.24C475.72,-291.48 485.5,-295.93 494,-302 520.25,-320.73 503.47,-346.67 530,-365 545.85,-375.95 565.3,-382.01 584.36,-385.2"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="583.87,-388.66 594.26,-386.61 584.86,-381.73 583.87,-388.66"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node13" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node13"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="727,-356 599,-356 599,-332 727,-332 727,-356"/>
+<text text-anchor="middle" x="663" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#ffbf00" d="M464.35,-293.05C474.48,-295.52 484.58,-298.48 494,-302 511.35,-308.49 512.56,-316.77 530,-323 548.52,-329.61 569.24,-334.15 588.67,-337.26"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="588.29,-340.74 598.7,-338.76 589.33,-333.81 588.29,-340.74"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node14" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node14"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="796,-314 530,-314 530,-290 796,-290 796,-314"/>
+<text text-anchor="middle" x="663" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge12" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ffbf00" d="M465.55,-287.19C482.69,-288.48 501.23,-289.88 519.83,-291.28"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="519.63,-294.77 529.86,-292.04 520.15,-287.79 519.63,-294.77"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node15" class="node">
+<title>proc~mp2_total</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node15"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="738.5,-230 587.5,-230 587.5,-206 738.5,-206 738.5,-230"/>
+<text text-anchor="middle" x="663" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge13" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#7fff00" d="M450.56,-218C488.55,-218 536.44,-218 577.03,-218"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="577.18,-221.5 587.18,-218 577.18,-214.5 577.18,-221.5"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node11" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node11"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="777.5,-66 548.5,-66 548.5,-42 777.5,-42 777.5,-66"/>
+<text text-anchor="middle" x="663" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge14" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#00ff3f" d="M494.37,-54C508.79,-54 523.63,-54 538.25,-54"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="538.32,-57.5 548.32,-54 538.32,-50.5 538.32,-57.5"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node17" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node17"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1065,-66 832,-66 832,-42 1065,-42 1065,-66"/>
+<text text-anchor="middle" x="948.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge15" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffff00" d="M777.68,-54C792.2,-54 807.12,-54 821.82,-54"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="821.95,-57.5 831.95,-54 821.95,-50.5 821.95,-57.5"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge18" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff00" d="M731.68,-381.08C752.81,-378.01 775.85,-373.04 796,-365 809.74,-359.52 883.09,-307.39 922.47,-279.08"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="924.71,-281.78 930.78,-273.1 920.62,-276.1 924.71,-281.78"/>
+</g>
+<!-- error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node16" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="975.5,-419 921.5,-419 921.5,-395 975.5,-395 975.5,-419"/>
+<text text-anchor="middle" x="948.5" y="-404.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge16" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff00" d="M731.55,-391C787.8,-395.17 865.76,-400.95 910.99,-404.3"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="910.98,-407.8 921.21,-405.05 911.5,-400.82 910.98,-407.8"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node18" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node18"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1030,-377 867,-377 867,-353 1030,-353 1030,-377"/>
+<text text-anchor="middle" x="948.5" y="-362.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge17" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff00" d="M731.55,-381C768.99,-378.22 816.05,-374.74 856.68,-371.73"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="857.14,-375.2 866.86,-370.97 856.63,-368.22 857.14,-375.2"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node19" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_node19"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1243,-66 1101,-66 1101,-42 1243,-42 1243,-66"/>
+<text text-anchor="middle" x="1172" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~compute_gmbe_energy_gradient_hessian~~CallsGraph_edge19" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#00ff00" d="M1065.12,-54C1073.77,-54 1082.38,-54 1090.74,-54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1090.79,-57.5 1100.79,-54 1090.79,-50.5 1090.79,-57.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_gmbe_energy_gradient_hessianCallsGraph = svgPanZoom('#proccompute_gmbe_energy_gradient_hessianCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-current_log_level~6"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>current_log_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~16"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hess_dim~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hess_dim</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~38"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_counts~3"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>level_counts</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_energies~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>level_energies</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~11"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_energy~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>monomer_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_idx~2"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>monomer_idx</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sign_factor~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sign_factor</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_gmbe_energy_gradient_hessian</span><span class="p">(</span><span class="n">monomers</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                   </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                   </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                   </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Compute GMBE energy, gradient, and Hessian with full inclusion-exclusion</span>
+<span class="w">      </span><span class="c">!! TODO: Full implementation with intersection Hessians pending</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_fragment_from_indices</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_gradients</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">redistribute_cap_hessian</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_config_parser</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">bond_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">pic_logger</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">info_level</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomers</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_intersections</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">current_log_level</span><span class="p">,</span><span class="w"> </span><span class="n">hess_dim</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_energies</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_counts</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sign_factor</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_idx</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="c">! Zero out outputs</span>
+<span class="w">      </span><span class="n">total_gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">total_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">hess_dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
+
+<span class="w">      </span><span class="c">! Sum monomer energies, gradients, and Hessians</span>
+<span class="w">      </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">         </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
+
+<span class="w">         </span><span class="c">! Accumulate monomer gradients</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_idx</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="w">            </span><span class="n">monomer_idx</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomers</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_idx</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">redistribute_cap_gradients</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">redistribute_cap_hessian</span><span class="p">(</span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            call </span><span class="n">fragment</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_idx</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      </span><span class="n">total_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">monomer_energy</span>
+
+<span class="w">      </span><span class="c">! Intersection Hessians not yet implemented</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;GMBE Hessian with intersections not yet fully implemented!&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Only monomer Hessians will be included&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Print info</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE Energy breakdown:&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Monomers (&quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">n_monomers</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;): &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">monomer_energy</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total GMBE:  &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">total_energy</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE gradient computation completed&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total gradient norm: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE Hessian computation completed&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total Hessian Frobenius norm: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">compute_gmbe_energy_gradient_hessian</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-02 07:44 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

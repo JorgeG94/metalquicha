@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.0% of total for procedures.">178 statements</a>
+                 title=" 3.7% of total for procedures.">231 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -142,17 +142,19 @@
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-finished_nodes">finished_nodes</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-has_pending">has_pending</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-hess_dim~5">hess_dim</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_dummy">local_dummy</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_finished_workers">local_finished_workers</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_status">local_status</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-req">req</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-req~3">req</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-request_source">request_source</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results~5">results</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results~7">results</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results_received">results_received</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-status">status</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-term_idx~2">term_idx</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~6">total_energy</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~4">total_gradient</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-status~3">status</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-term_idx">term_idx</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~11">total_energy</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~8">total_gradient</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_hessian~6">total_hessian</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_source">worker_source</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_term_map">worker_term_map</a>
         </div>
@@ -565,7 +567,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -580,7 +582,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -595,7 +597,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -610,7 +612,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -625,7 +627,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -640,7 +642,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -655,7 +657,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~2"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -670,7 +672,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~24"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -685,7 +687,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -700,7 +702,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -715,7 +717,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~16"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -743,475 +745,490 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~gmbe_pie_coordinator~~CallsGraph Pages: 1 -->
-<svg id="procgmbe_pie_coordinatorCallsGraph" width="641pt" height="488pt"
- viewBox="0.00 0.00 641.00 487.58" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph" class="graph" transform="scale(0.56 0.56) rotate(0) translate(4 870)">
+<svg id="procgmbe_pie_coordinatorCallsGraph" width="641pt" height="511pt"
+ viewBox="0.00 0.00 641.00 511.01" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph" class="graph" transform="scale(0.56 0.56) rotate(0) translate(4 912)">
 <title>proc~~gmbe_pie_coordinator~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-870 1145,-870 1145,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-912 1145,-912 1145,4 -4,4"/>
 <!-- proc~gmbe_pie_coordinator -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node1" class="node">
 <title>proc~gmbe_pie_coordinator</title>
-<polygon fill="none" stroke="black" points="133,-376 0,-376 0,-352 133,-352 133,-376"/>
-<text text-anchor="middle" x="66.5" y="-361.6" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_pie_coordinator</text>
+<polygon fill="none" stroke="black" points="133,-398 0,-398 0,-374 133,-374 133,-398"/>
+<text text-anchor="middle" x="66.5" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_pie_coordinator</text>
 </g>
 <!-- configuration -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node2" class="node">
 <title>configuration</title>
-<polygon fill="#777777" stroke="#777777" points="322.5,-866 238.5,-866 238.5,-842 322.5,-842 322.5,-866"/>
-<text text-anchor="middle" x="280.5" y="-851.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+<polygon fill="#777777" stroke="#777777" points="322.5,-908 238.5,-908 238.5,-884 322.5,-884 322.5,-908"/>
+<text text-anchor="middle" x="280.5" y="-893.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;configuration -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge1" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;configuration</title>
-<path fill="none" stroke="#ff0000" d="M68.44,-376.15C73.81,-442.52 102.76,-760.71 169,-828 184.39,-843.63 207.28,-850.58 228.24,-853.45"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="228.02,-856.95 238.34,-854.55 228.77,-849.99 228.02,-856.95"/>
+<path fill="none" stroke="#ff0000" d="M68.33,-398.22C73.18,-466.42 100.19,-799.49 169,-870 184.32,-885.7 207.2,-892.66 228.18,-895.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="227.96,-899.01 238.28,-896.61 228.71,-892.05 227.96,-899.01"/>
 </g>
 <!-- error -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node3" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="873.5,-746 819.5,-746 819.5,-722 873.5,-722 873.5,-746"/>
-<text text-anchor="middle" x="846.5" y="-731.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="873.5,-788 819.5,-788 819.5,-764 873.5,-764 873.5,-788"/>
+<text text-anchor="middle" x="846.5" y="-773.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;error -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge2" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M68.75,-376.2C75.3,-437.54 107.67,-711.31 169,-765 256.92,-841.97 579.28,-817.23 694,-795 737.45,-786.58 784.25,-765.75 814.15,-750.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="815.92,-753.8 823.24,-746.14 812.74,-747.56 815.92,-753.8"/>
+<path fill="none" stroke="#ff0000" d="M68.61,-398.38C74.59,-461.9 104.97,-750.3 169,-807 256.49,-884.47 579.28,-859.23 694,-837 737.45,-828.58 784.25,-807.75 814.15,-792.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="815.92,-795.8 823.24,-788.14 812.74,-789.56 815.92,-795.8"/>
 </g>
 <!-- get_elapsed_time -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node4" class="node">
 <title>get_elapsed_time</title>
-<polygon fill="#777777" stroke="#777777" points="333.5,-478 227.5,-478 227.5,-454 333.5,-454 333.5,-478"/>
-<text text-anchor="middle" x="280.5" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+<polygon fill="#777777" stroke="#777777" points="333.5,-520 227.5,-520 227.5,-496 333.5,-496 333.5,-520"/>
+<text text-anchor="middle" x="280.5" y="-505.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;get_elapsed_time -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge3" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#ff0000" d="M78.69,-376.1C96.14,-394.16 131.72,-427.87 169,-445 183.99,-451.89 201.12,-456.51 217.34,-459.62"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="216.84,-463.09 227.3,-461.37 218.05,-456.2 216.84,-463.09"/>
+<path fill="none" stroke="#ff0000" d="M75.93,-398.28C91.55,-420 127.22,-464.96 169,-487 183.73,-494.77 200.91,-499.69 217.28,-502.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.89,-506.29 227.33,-504.52 218.06,-499.39 216.89,-506.29"/>
 </g>
 <!-- info -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node5" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="588,-786 534,-786 534,-762 588,-762 588,-786"/>
-<text text-anchor="middle" x="561" y="-771.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="588,-828 534,-828 534,-804 588,-804 588,-828"/>
+<text text-anchor="middle" x="561" y="-813.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;info -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge4" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M69.24,-376.13C77.59,-432.47 115.33,-667.97 169,-715 270.83,-804.23 447.83,-790.99 523.73,-780.21"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="524.38,-783.65 533.76,-778.71 523.35,-776.73 524.38,-783.65"/>
+<path fill="none" stroke="#ff0000" d="M69.03,-398.02C76.68,-456.11 112.61,-706.86 169,-757 270.31,-847.07 447.96,-833.29 523.91,-822.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="524.57,-825.72 533.93,-820.76 523.52,-818.8 524.57,-825.72"/>
 </g>
 <!-- iprobe -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node6" class="node">
 <title>iprobe</title>
-<polygon fill="#777777" stroke="#777777" points="307.5,-436 253.5,-436 253.5,-412 307.5,-412 307.5,-436"/>
-<text text-anchor="middle" x="280.5" y="-421.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+<polygon fill="#777777" stroke="#777777" points="307.5,-478 253.5,-478 253.5,-454 307.5,-454 307.5,-478"/>
+<text text-anchor="middle" x="280.5" y="-463.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;iprobe -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge5" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;iprobe</title>
-<path fill="none" stroke="#ff0000" d="M101.09,-376.12C120.75,-382.99 146.12,-391.49 169,-398 193.71,-405.03 221.91,-411.64 243.63,-416.44"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="242.91,-419.86 253.43,-418.58 244.4,-413.02 242.91,-419.86"/>
+<path fill="none" stroke="#ff0000" d="M86.63,-398.11C106.53,-410.24 138.92,-428.68 169,-440 193.2,-449.11 221.63,-455.71 243.58,-459.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="243.01,-463.44 253.49,-461.84 244.3,-456.56 243.01,-463.44"/>
 </g>
 <!-- irecv -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node7" class="node">
 <title>irecv</title>
-<polygon fill="#777777" stroke="#777777" points="588,-396 534,-396 534,-372 588,-372 588,-396"/>
-<text text-anchor="middle" x="561" y="-381.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+<polygon fill="#777777" stroke="#777777" points="588,-438 534,-438 534,-414 588,-414 588,-438"/>
+<text text-anchor="middle" x="561" y="-423.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;irecv -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge6" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;irecv</title>
-<path fill="none" stroke="#ff0000" d="M133.15,-366.67C238.4,-370.94 441.41,-379.18 523.87,-382.53"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="523.86,-386.04 534,-382.94 524.15,-379.04 523.86,-386.04"/>
+<path fill="none" stroke="#ff0000" d="M117.84,-398.03C134.08,-401.47 152.22,-404.87 169,-407 298.59,-423.45 454.01,-425.91 523.41,-426.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="523.79,-429.61 533.8,-426.13 523.8,-422.61 523.79,-429.61"/>
 </g>
 <!-- isend -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node8" class="node">
 <title>isend</title>
-<polygon fill="#777777" stroke="#777777" points="588,-276 534,-276 534,-252 588,-252 588,-276"/>
-<text text-anchor="middle" x="561" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+<polygon fill="#777777" stroke="#777777" points="588,-318 534,-318 534,-294 588,-294 588,-318"/>
+<text text-anchor="middle" x="561" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;isend -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge7" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;isend</title>
-<path fill="none" stroke="#ff0000" d="M92.79,-351.85C112.99,-342.62 142.23,-330.32 169,-323 235.84,-304.73 440.39,-278.59 523.91,-268.35"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="524.44,-271.81 533.94,-267.12 523.59,-264.86 524.44,-271.81"/>
+<path fill="none" stroke="#ff0000" d="M122.97,-373.96C137.89,-370.87 154.03,-367.68 169,-365 299.17,-341.73 454.8,-320.08 523.9,-310.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="524.39,-314.25 533.84,-309.45 523.46,-307.31 524.39,-314.25"/>
 </g>
 <!-- proc~build_fragment_from_atom_list -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node9" class="node">
 <title>proc~build_fragment_from_atom_list</title>
 <g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node9"><a xlink:href="../proc/build_fragment_from_atom_list.html" xlink:title="build_fragment_from_atom_list">
-<polygon fill="#d9534f" stroke="#d9534f" points="369,-558 192,-558 192,-534 369,-534 369,-558"/>
-<text text-anchor="middle" x="280.5" y="-543.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="369,-600 192,-600 192,-576 369,-576 369,-600"/>
+<text text-anchor="middle" x="280.5" y="-585.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~build_fragment_from_atom_list -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge8" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~build_fragment_from_atom_list</title>
-<path fill="none" stroke="#ff0000" d="M71.69,-376C82.64,-405.54 115.07,-482.1 169,-520 174.58,-523.92 180.67,-527.26 187.03,-530.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="185.93,-533.42 196.51,-533.9 188.54,-526.93 185.93,-533.42"/>
+<path fill="none" stroke="#ff0000" d="M70.79,-398.09C80.21,-430.25 110.41,-518.43 169,-562 174.14,-565.82 179.75,-569.09 185.64,-571.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="184.51,-575.21 195.08,-575.9 187.25,-568.77 184.51,-575.21"/>
 </g>
 <!-- proc~energy_total -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node10" class="node">
 <title>proc~energy_total</title>
 <g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node10"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="348.5,-192 212.5,-192 212.5,-168 348.5,-168 348.5,-192"/>
-<text text-anchor="middle" x="280.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="348.5,-234 212.5,-234 212.5,-210 348.5,-210 348.5,-234"/>
+<text text-anchor="middle" x="280.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~energy_total -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge9" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff0000" d="M71.27,-351.77C81.45,-320.92 112.63,-239.63 169,-201 178.94,-194.19 190.51,-189.44 202.35,-186.15"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="203.43,-189.49 212.32,-183.73 201.78,-182.69 203.43,-189.49"/>
+<path fill="none" stroke="#ff0000" d="M72.41,-373.61C84.3,-345.36 117.5,-276.06 169,-243 179.08,-236.53 190.67,-231.96 202.47,-228.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.5,-232.09 212.4,-226.34 201.86,-225.29 203.5,-232.09"/>
 </g>
 <!-- proc~fragment_destroy -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node11" class="node">
 <title>proc~fragment_destroy</title>
 <g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node11"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="392,-150 169,-150 169,-126 392,-126 392,-150"/>
-<text text-anchor="middle" x="280.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="392,-192 169,-192 169,-168 392,-168 392,-192"/>
+<text text-anchor="middle" x="280.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~fragment_destroy -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge10" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~fragment_destroy</title>
-<path fill="none" stroke="#ff0000" d="M69.62,-351.92C76.58,-316.08 102.26,-209.67 169,-159 170.86,-157.58 172.8,-156.26 174.78,-155.01"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="176.75,-157.92 183.84,-150.05 173.39,-151.78 176.75,-157.92"/>
+<path fill="none" stroke="#ff0000" d="M70.37,-373.65C78.88,-339.93 107.36,-245.79 169,-201 171.11,-199.47 173.3,-198.04 175.55,-196.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="177.29,-199.75 184.55,-192.03 174.06,-193.54 177.29,-199.75"/>
 </g>
 <!-- proc~print_gmbe_pie_json -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node12" class="node">
 <title>proc~print_gmbe_pie_json</title>
 <g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node12"><a xlink:href="../proc/print_gmbe_pie_json.html" xlink:title="print_gmbe_pie_json">
-<polygon fill="#d9534f" stroke="#d9534f" points="341.5,-706 219.5,-706 219.5,-682 341.5,-682 341.5,-706"/>
-<text text-anchor="middle" x="280.5" y="-691.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_gmbe_pie_json</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="341.5,-748 219.5,-748 219.5,-724 341.5,-724 341.5,-748"/>
+<text text-anchor="middle" x="280.5" y="-733.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_gmbe_pie_json</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~print_gmbe_pie_json -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge11" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~print_gmbe_pie_json</title>
-<path fill="none" stroke="#ff0000" d="M72.25,-376.01C85.27,-408.33 123.63,-499.22 169,-567 196.6,-608.24 236.2,-650.65 259.74,-674.53"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="257.53,-677.27 267.07,-681.89 262.49,-672.33 257.53,-677.27"/>
+<path fill="none" stroke="#ff0000" d="M71.64,-398.23C83.69,-432.91 120.91,-534.23 169,-609 195.82,-650.7 235.62,-692.9 259.42,-716.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="256.97,-719.13 266.54,-723.66 261.88,-714.15 256.97,-719.13"/>
 </g>
 <!-- proc~redistribute_cap_gradients -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_node13" class="node">
 <title>proc~redistribute_cap_gradients</title>
 <g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node13"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
-<polygon fill="#d9534f" stroke="#d9534f" points="357.5,-108 203.5,-108 203.5,-84 357.5,-84 357.5,-108"/>
-<text text-anchor="middle" x="280.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="357.5,-150 203.5,-150 203.5,-126 357.5,-126 357.5,-150"/>
+<text text-anchor="middle" x="280.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~redistribute_cap_gradients -->
 <g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge12" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~redistribute_cap_gradients</title>
-<path fill="none" stroke="#ff0000" d="M68.53,-351.87C72.67,-311.4 91.77,-180.01 169,-117 176.36,-111 184.9,-106.52 193.92,-103.2"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="195.01,-106.53 203.46,-100.15 192.87,-99.86 195.01,-106.53"/>
+<path fill="none" stroke="#ff0000" d="M69.02,-373.77C74.5,-335.31 96.87,-216.03 169,-159 176.31,-153.22 184.74,-148.86 193.61,-145.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.92,-148.86 203.38,-142.48 192.79,-142.19 194.92,-148.86"/>
+</g>
+<!-- proc~redistribute_cap_hessian -->
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node14" class="node">
+<title>proc~redistribute_cap_hessian</title>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node14"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="352.5,-108 208.5,-108 208.5,-84 352.5,-84 352.5,-108"/>
+<text text-anchor="middle" x="280.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~redistribute_cap_hessian -->
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge13" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~redistribute_cap_hessian</title>
+<path fill="none" stroke="#ff0000" d="M68.09,-373.73C70.88,-330.85 86.27,-186.53 169,-117 177.53,-109.83 187.74,-104.82 198.46,-101.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="199.72,-104.63 208.42,-98.59 197.85,-97.89 199.72,-104.63"/>
 </g>
 <!-- proc~result_irecv -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node14" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node15" class="node">
 <title>proc~result_irecv</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node14"><a xlink:href="../proc/result_irecv.html" xlink:title="result_irecv">
-<polygon fill="#d9534f" stroke="#d9534f" points="317,-356 244,-356 244,-332 317,-332 317,-356"/>
-<text text-anchor="middle" x="280.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_irecv</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node15"><a xlink:href="../proc/result_irecv.html" xlink:title="result_irecv">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-398 244,-398 244,-374 317,-374 317,-398"/>
+<text text-anchor="middle" x="280.5" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_irecv</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~result_irecv -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge13" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge14" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~result_irecv</title>
-<path fill="none" stroke="#ff0000" d="M133.13,-357.81C165.76,-354.73 204.4,-351.09 233.78,-348.31"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="234.13,-351.8 243.76,-347.37 233.48,-344.83 234.13,-351.8"/>
+<path fill="none" stroke="#ff0000" d="M133.13,-386C165.62,-386 204.06,-386 233.39,-386"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="233.76,-389.5 243.76,-386 233.76,-382.5 233.76,-389.5"/>
 </g>
 <!-- proc~send_pie_term_to_node -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node15" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node16" class="node">
 <title>proc~send_pie_term_to_node</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node15"><a xlink:href="../proc/send_pie_term_to_node.html" xlink:title="send_pie_term_to_node">
-<polygon fill="#d9534f" stroke="#d9534f" points="350,-276 211,-276 211,-252 350,-252 350,-276"/>
-<text text-anchor="middle" x="280.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_pie_term_to_node</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node16"><a xlink:href="../proc/send_pie_term_to_node.html" xlink:title="send_pie_term_to_node">
+<polygon fill="#d9534f" stroke="#d9534f" points="350,-318 211,-318 211,-294 350,-294 350,-318"/>
+<text text-anchor="middle" x="280.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_pie_term_to_node</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~send_pie_term_to_node -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge14" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge15" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~send_pie_term_to_node</title>
-<path fill="none" stroke="#ff0000" d="M80.51,-351.81C98.83,-335.32 133.92,-306.11 169,-290 179.11,-285.36 190.14,-281.5 201.18,-278.3"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="202.15,-281.67 210.87,-275.66 200.31,-274.91 202.15,-281.67"/>
+<path fill="none" stroke="#ff0000" d="M86.63,-373.89C106.53,-361.76 138.92,-343.32 169,-332 180.72,-327.59 193.42,-323.77 205.9,-320.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.99,-323.85 215.84,-318.02 205.29,-317.06 206.99,-323.85"/>
 </g>
 <!-- proc~send_pie_term_to_worker -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node16" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node17" class="node">
 <title>proc~send_pie_term_to_worker</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node16"><a xlink:href="../proc/send_pie_term_to_worker.html" xlink:title="send_pie_term_to_worker">
-<polygon fill="#d9534f" stroke="#d9534f" points="354.5,-234 206.5,-234 206.5,-210 354.5,-210 354.5,-234"/>
-<text text-anchor="middle" x="280.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_pie_term_to_worker</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node17"><a xlink:href="../proc/send_pie_term_to_worker.html" xlink:title="send_pie_term_to_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="354.5,-276 206.5,-276 206.5,-252 354.5,-252 354.5,-276"/>
+<text text-anchor="middle" x="280.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_pie_term_to_worker</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;proc~send_pie_term_to_worker -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge15" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge16" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;proc~send_pie_term_to_worker</title>
-<path fill="none" stroke="#ff0000" d="M73.97,-351.66C87.77,-326.67 122.64,-270.18 169,-243 177.53,-238 187,-234.16 196.72,-231.21"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="197.76,-234.55 206.49,-228.55 195.92,-227.8 197.76,-234.55"/>
+<path fill="none" stroke="#ff0000" d="M75.93,-373.72C91.55,-352 127.22,-307.04 169,-285 177.61,-280.46 187.07,-276.89 196.7,-274.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="197.6,-277.46 206.38,-271.53 195.81,-270.7 197.6,-277.46"/>
 </g>
 <!-- start -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node17" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node18" class="node">
 <title>start</title>
 <polygon fill="#777777" stroke="#777777" points="307.5,-66 253.5,-66 253.5,-42 307.5,-42 307.5,-66"/>
 <text text-anchor="middle" x="280.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;start -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge16" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge17" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;start</title>
-<path fill="none" stroke="#ff0000" d="M67.74,-351.78C69.31,-307.02 81.12,-150.6 169,-75 189.25,-57.58 219.4,-52.78 243.09,-52.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="243.16,-55.59 253.13,-52.02 243.11,-48.59 243.16,-55.59"/>
+<path fill="none" stroke="#ff0000" d="M67.39,-373.86C67.69,-327.12 75.4,-157.35 169,-75 189.05,-57.36 219.21,-52.57 242.96,-51.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="243.04,-55.44 253.03,-51.91 243.02,-48.44 243.04,-55.44"/>
 </g>
 <!-- to_char -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node18" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node19" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="873.5,-518 819.5,-518 819.5,-494 873.5,-494 873.5,-518"/>
-<text text-anchor="middle" x="846.5" y="-503.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="873.5,-560 819.5,-560 819.5,-536 873.5,-536 873.5,-560"/>
+<text text-anchor="middle" x="846.5" y="-545.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;to_char -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge17" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge18" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M72.94,-376.08C85.47,-402.22 119.16,-463.51 169,-487 258.65,-529.25 297.14,-515.72 392,-487 410.4,-481.43 409.6,-468.57 428,-463 541.15,-428.74 576.91,-446.7 694,-463 734.51,-468.64 779.41,-482.37 809.73,-492.81"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="808.83,-496.2 819.43,-496.21 811.15,-489.6 808.83,-496.2"/>
+<path fill="none" stroke="#ff0000" d="M71.69,-398.2C82.44,-427.34 114.09,-500.64 169,-529 257.06,-574.48 297.14,-557.72 392,-529 410.4,-523.43 409.6,-510.57 428,-505 541.15,-470.74 576.91,-488.7 694,-505 734.51,-510.64 779.41,-524.37 809.73,-534.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="808.83,-538.2 819.43,-538.21 811.15,-531.6 808.83,-538.2"/>
 </g>
 <!-- verbose -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node19" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node20" class="node">
 <title>verbose</title>
 <polygon fill="#777777" stroke="#777777" points="308,-24 253,-24 253,0 308,0 308,-24"/>
 <text text-anchor="middle" x="280.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
 </g>
 <!-- proc~gmbe_pie_coordinator&#45;&gt;verbose -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge18" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge19" class="edge">
 <title>proc~gmbe_pie_coordinator&#45;&gt;verbose</title>
-<path fill="none" stroke="#ff0000" d="M67.12,-351.77C66.32,-303.09 70.29,-121.44 169,-33 188.89,-15.18 219.07,-10.41 242.86,-9.83"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="242.95,-13.33 252.95,-9.81 242.95,-6.33 242.95,-13.33"/>
+<path fill="none" stroke="#ff0000" d="M69.27,-373.85C77.76,-317.39 115.99,-81.34 169,-33 188.73,-15.01 218.92,-10.24 242.76,-9.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="242.86,-13.21 252.87,-9.72 242.87,-6.21 242.86,-13.21"/>
 </g>
 <!-- proc~add_hydrogen_caps -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node20" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node21" class="node">
 <title>proc~add_hydrogen_caps</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node20"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="620,-580 502,-580 502,-556 620,-556 620,-580"/>
-<text text-anchor="middle" x="561" y="-565.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node21"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="620,-622 502,-622 502,-598 620,-598 620,-622"/>
+<text text-anchor="middle" x="561" y="-607.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge19" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge20" class="edge">
 <title>proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps</title>
-<path fill="none" stroke="#00ff55" d="M369.24,-552.93C408.73,-556.05 454.66,-559.68 491.56,-562.59"/>
-<polygon fill="#00ff55" stroke="#00ff55" points="491.47,-566.1 501.71,-563.4 492.02,-559.12 491.47,-566.1"/>
+<path fill="none" stroke="#00ff35" d="M369.24,-594.93C408.73,-598.05 454.66,-601.68 491.56,-604.59"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="491.47,-608.1 501.71,-605.4 492.02,-601.12 491.47,-608.1"/>
 </g>
 <!-- proc~check_duplicate_atoms -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node22" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node23" class="node">
 <title>proc~check_duplicate_atoms</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node22"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="629.5,-622 492.5,-622 492.5,-598 629.5,-598 629.5,-622"/>
-<text text-anchor="middle" x="561" y="-607.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node23"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="629.5,-664 492.5,-664 492.5,-640 629.5,-640 629.5,-664"/>
+<text text-anchor="middle" x="561" y="-649.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge20" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge21" class="edge">
 <title>proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms</title>
-<path fill="none" stroke="#00ff55" d="M317.89,-558.09C347.33,-567.53 389.99,-580.43 428,-589 445.31,-592.9 464.07,-596.35 481.85,-599.26"/>
-<polygon fill="#00ff55" stroke="#00ff55" points="481.77,-602.79 492.19,-600.91 482.87,-595.88 481.77,-602.79"/>
+<path fill="none" stroke="#00ff35" d="M317.89,-600.09C347.33,-609.53 389.99,-622.43 428,-631 445.31,-634.9 464.07,-638.35 481.85,-641.26"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="481.77,-644.79 492.19,-642.91 482.87,-637.88 481.77,-644.79"/>
 </g>
 <!-- proc~count_hydrogen_caps -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node23" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node24" class="node">
 <title>proc~count_hydrogen_caps</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node23"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="625,-538 497,-538 497,-514 625,-514 625,-538"/>
-<text text-anchor="middle" x="561" y="-523.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node24"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="625,-580 497,-580 497,-556 625,-556 625,-580"/>
+<text text-anchor="middle" x="561" y="-565.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge21" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge22" class="edge">
 <title>proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps</title>
-<path fill="none" stroke="#00ff55" d="M369.24,-539.7C406.97,-536.99 450.57,-533.86 486.56,-531.27"/>
-<polygon fill="#00ff55" stroke="#00ff55" points="487.26,-534.73 496.98,-530.53 486.76,-527.75 487.26,-534.73"/>
+<path fill="none" stroke="#00ff35" d="M369.24,-581.7C406.97,-578.99 450.57,-575.86 486.56,-573.27"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="487.26,-576.73 496.98,-572.53 486.76,-569.75 487.26,-576.73"/>
 </g>
 <!-- proc~fragment_compute_nelec -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node24" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node25" class="node">
 <title>proc~fragment_compute_nelec</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node24"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
-<polygon fill="#d9534f" stroke="#d9534f" points="694,-496 428,-496 428,-472 694,-472 694,-496"/>
-<text text-anchor="middle" x="561" y="-481.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node25"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="694,-538 428,-538 428,-514 694,-514 694,-538"/>
+<text text-anchor="middle" x="561" y="-523.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge22" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge23" class="edge">
 <title>proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec</title>
-<path fill="none" stroke="#00ff55" d="M340.77,-533.94C357.49,-530.03 375.59,-525.31 392,-520 408.49,-514.66 411.32,-509.73 428,-505 437.29,-502.37 447.05,-500.03 456.88,-497.97"/>
-<polygon fill="#00ff55" stroke="#00ff55" points="457.6,-501.4 466.72,-496 456.23,-494.53 457.6,-501.4"/>
+<path fill="none" stroke="#00ff35" d="M340.77,-575.94C357.49,-572.03 375.59,-567.31 392,-562 408.49,-556.66 411.32,-551.73 428,-547 437.29,-544.37 447.05,-542.03 456.88,-539.97"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="457.6,-543.4 466.72,-538 456.23,-536.53 457.6,-543.4"/>
 </g>
 <!-- proc~mp2_total -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node27" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node28" class="node">
 <title>proc~mp2_total</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node27"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="636.5,-192 485.5,-192 485.5,-168 636.5,-168 636.5,-192"/>
-<text text-anchor="middle" x="561" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node28"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="636.5,-234 485.5,-234 485.5,-210 636.5,-210 636.5,-234"/>
+<text text-anchor="middle" x="561" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_total&#45;&gt;proc~mp2_total -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge23" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge24" class="edge">
 <title>proc~energy_total&#45;&gt;proc~mp2_total</title>
-<path fill="none" stroke="#00ffa9" d="M348.56,-180C386.55,-180 434.44,-180 475.03,-180"/>
-<polygon fill="#00ffa9" stroke="#00ffa9" points="475.18,-183.5 485.18,-180 475.18,-176.5 475.18,-183.5"/>
+<path fill="none" stroke="#00ff86" d="M348.56,-222C386.55,-222 434.44,-222 475.03,-222"/>
+<polygon fill="#00ff86" stroke="#00ff86" points="475.18,-225.5 485.18,-222 475.18,-218.5 475.18,-225.5"/>
 </g>
 <!-- proc~basis_set_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node21" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node22" class="node">
 <title>proc~basis_set_destroy</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node21"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="675.5,-150 446.5,-150 446.5,-126 675.5,-126 675.5,-150"/>
-<text text-anchor="middle" x="561" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node22"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="675.5,-192 446.5,-192 446.5,-168 675.5,-168 675.5,-192"/>
+<text text-anchor="middle" x="561" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge24" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge25" class="edge">
 <title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
-<path fill="none" stroke="#00ffff" d="M392.37,-138C406.79,-138 421.63,-138 436.25,-138"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="436.32,-141.5 446.32,-138 436.32,-134.5 436.32,-141.5"/>
+<path fill="none" stroke="#00ffd6" d="M392.37,-180C406.79,-180 421.63,-180 436.25,-180"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="436.32,-183.5 446.32,-180 436.32,-176.5 436.32,-183.5"/>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;error -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge25" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge26" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;error</title>
-<path fill="none" stroke="#00a9ff" d="M341.57,-703.95C368.01,-707.98 399.48,-712.31 428,-715 568.46,-728.23 736.4,-732.32 809.05,-733.53"/>
-<polygon fill="#00a9ff" stroke="#00a9ff" points="809.01,-737.03 819.06,-733.69 809.12,-730.03 809.01,-737.03"/>
+<path fill="none" stroke="#00d6ff" d="M341.57,-745.95C368.01,-749.98 399.48,-754.31 428,-757 568.46,-770.23 736.4,-774.32 809.05,-775.53"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="809.01,-779.03 819.06,-775.69 809.12,-772.03 809.01,-779.03"/>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;info -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge26" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge27" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;info</title>
-<path fill="none" stroke="#00a9ff" d="M309.96,-706.03C339.16,-718 386.11,-736.24 428,-748 459.96,-756.98 497.12,-764 523.86,-768.47"/>
-<polygon fill="#00a9ff" stroke="#00a9ff" points="523.48,-771.96 533.91,-770.12 524.61,-765.05 523.48,-771.96"/>
+<path fill="none" stroke="#00d6ff" d="M309.96,-748.03C339.16,-760 386.11,-778.24 428,-790 459.96,-798.98 497.12,-806 523.86,-810.47"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="523.48,-813.96 533.91,-812.12 524.61,-807.05 523.48,-813.96"/>
 </g>
 <!-- proc~get_basename -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node25" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node26" class="node">
 <title>proc~get_basename</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node25"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="606.5,-706 515.5,-706 515.5,-682 606.5,-682 606.5,-706"/>
-<text text-anchor="middle" x="561" y="-691.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node26"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="606.5,-748 515.5,-748 515.5,-724 606.5,-724 606.5,-748"/>
+<text text-anchor="middle" x="561" y="-733.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_basename -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge27" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge28" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;proc~get_basename</title>
-<path fill="none" stroke="#00a9ff" d="M341.59,-694C390.15,-694 457.96,-694 505.08,-694"/>
-<polygon fill="#00a9ff" stroke="#00a9ff" points="505.11,-697.5 515.11,-694 505.11,-690.5 505.11,-697.5"/>
+<path fill="none" stroke="#00d6ff" d="M341.59,-736C390.15,-736 457.96,-736 505.08,-736"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="505.11,-739.5 515.11,-736 505.11,-732.5 505.11,-739.5"/>
 </g>
 <!-- proc~get_output_json_filename -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node26" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node27" class="node">
 <title>proc~get_output_json_filename</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node26"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="635.5,-664 486.5,-664 486.5,-640 635.5,-640 635.5,-664"/>
-<text text-anchor="middle" x="561" y="-649.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node27"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="635.5,-706 486.5,-706 486.5,-682 635.5,-682 635.5,-706"/>
+<text text-anchor="middle" x="561" y="-691.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge28" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge29" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename</title>
-<path fill="none" stroke="#00a9ff" d="M341.59,-684.94C380.97,-679 433.01,-671.15 476.42,-664.61"/>
-<polygon fill="#00a9ff" stroke="#00a9ff" points="477.03,-668.05 486.39,-663.1 475.98,-661.13 477.03,-668.05"/>
+<path fill="none" stroke="#00d6ff" d="M341.59,-726.94C380.97,-721 433.01,-713.15 476.42,-706.61"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="477.03,-710.05 486.39,-705.1 475.98,-703.13 477.03,-710.05"/>
 </g>
 <!-- proc~result_irecv&#45;&gt;irecv -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge29" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge30" class="edge">
 <title>proc~result_irecv&#45;&gt;irecv</title>
-<path fill="none" stroke="#0000ff" d="M317.06,-349.11C370.26,-356.75 470.05,-371.08 523.69,-378.79"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="523.38,-382.28 533.78,-380.23 524.38,-375.35 523.38,-382.28"/>
+<path fill="none" stroke="#1a00ff" d="M317.06,-391.11C370.26,-398.75 470.05,-413.08 523.69,-420.79"/>
+<polygon fill="#1a00ff" stroke="#1a00ff" points="523.38,-424.28 533.78,-422.23 524.38,-417.35 523.38,-424.28"/>
 </g>
 <!-- recv -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node28" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node29" class="node">
 <title>recv</title>
-<polygon fill="#777777" stroke="#777777" points="588,-354 534,-354 534,-330 588,-330 588,-354"/>
-<text text-anchor="middle" x="561" y="-339.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+<polygon fill="#777777" stroke="#777777" points="588,-396 534,-396 534,-372 588,-372 588,-396"/>
+<text text-anchor="middle" x="561" y="-381.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
 </g>
 <!-- proc~result_irecv&#45;&gt;recv -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge30" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge31" class="edge">
 <title>proc~result_irecv&#45;&gt;recv</title>
-<path fill="none" stroke="#0000ff" d="M317.06,-343.74C370.26,-343.36 470.05,-342.65 523.69,-342.26"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="523.8,-345.76 533.78,-342.19 523.75,-338.76 523.8,-345.76"/>
+<path fill="none" stroke="#1a00ff" d="M317.06,-385.74C370.26,-385.36 470.05,-384.65 523.69,-384.26"/>
+<polygon fill="#1a00ff" stroke="#1a00ff" points="523.8,-387.76 533.78,-384.19 523.75,-380.76 523.8,-387.76"/>
 </g>
 <!-- proc~send_pie_term_to_node&#45;&gt;isend -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge31" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge32" class="edge">
 <title>proc~send_pie_term_to_node&#45;&gt;isend</title>
-<path fill="none" stroke="#5400ff" d="M350.34,-264C405.25,-264 479.98,-264 523.8,-264"/>
-<polygon fill="#5400ff" stroke="#5400ff" points="523.98,-267.5 533.98,-264 523.98,-260.5 523.98,-267.5"/>
+<path fill="none" stroke="#6b00ff" d="M350.34,-306C405.25,-306 479.98,-306 523.8,-306"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="523.98,-309.5 533.98,-306 523.98,-302.5 523.98,-309.5"/>
 </g>
 <!-- proc~send_pie_term_to_worker&#45;&gt;isend -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge32" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge33" class="edge">
 <title>proc~send_pie_term_to_worker&#45;&gt;isend</title>
-<path fill="none" stroke="#aa00ff" d="M354.67,-233.04C409.16,-241.25 481.23,-252.12 523.9,-258.56"/>
-<polygon fill="#aa00ff" stroke="#aa00ff" points="523.41,-262.02 533.82,-260.05 524.46,-255.1 523.41,-262.02"/>
+<path fill="none" stroke="#bb00ff" d="M354.67,-275.04C409.16,-283.25 481.23,-294.12 523.9,-300.56"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="523.41,-304.02 533.82,-302.05 524.46,-297.1 523.41,-304.02"/>
 </g>
 <!-- proc~atomic_basis_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node29" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node30" class="node">
 <title>proc~atomic_basis_destroy</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node29"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="963,-150 730,-150 730,-126 963,-126 963,-150"/>
-<text text-anchor="middle" x="846.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node30"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="963,-192 730,-192 730,-168 963,-168 963,-192"/>
+<text text-anchor="middle" x="846.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge33" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge34" class="edge">
 <title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
-<path fill="none" stroke="#ffaa00" d="M675.68,-138C690.2,-138 705.12,-138 719.82,-138"/>
-<polygon fill="#ffaa00" stroke="#ffaa00" points="719.95,-141.5 729.95,-138 719.95,-134.5 719.95,-141.5"/>
+<path fill="none" stroke="#ffaa00" d="M675.68,-180C690.2,-180 705.12,-180 719.82,-180"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="719.95,-183.5 729.95,-180 719.95,-176.5 719.95,-183.5"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge34" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge35" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#aaff00" d="M629.66,-614.98C650.79,-618.05 673.83,-623 694,-631 745.18,-651.29 796.41,-691.23 824.23,-714.97"/>
-<polygon fill="#aaff00" stroke="#aaff00" points="822.23,-717.88 832.08,-721.78 826.82,-712.59 822.23,-717.88"/>
+<path fill="none" stroke="#aaff00" d="M629.66,-656.98C650.79,-660.05 673.83,-665 694,-673 745.18,-693.29 796.41,-733.23 824.23,-756.97"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="822.23,-759.88 832.08,-763.78 826.82,-754.59 822.23,-759.88"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge36" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge37" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#aaff00" d="M629.56,-603.79C650.58,-600.66 673.58,-595.98 694,-589 741.06,-572.91 790.73,-542.83 819.88,-523.64"/>
-<polygon fill="#aaff00" stroke="#aaff00" points="821.86,-526.53 828.24,-518.07 817.98,-520.7 821.86,-526.53"/>
+<path fill="none" stroke="#aaff00" d="M629.56,-645.79C650.58,-642.66 673.58,-637.98 694,-631 741.06,-614.91 790.73,-584.83 819.88,-565.64"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="821.86,-568.53 828.24,-560.07 817.98,-562.7 821.86,-568.53"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node30" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node31" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node30"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="928,-622 765,-622 765,-598 928,-598 928,-622"/>
-<text text-anchor="middle" x="846.5" y="-607.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node31"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="928,-664 765,-664 765,-640 928,-640 928,-664"/>
+<text text-anchor="middle" x="846.5" y="-649.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge35" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge36" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#aaff00" d="M629.55,-610C666.99,-610 714.05,-610 754.68,-610"/>
-<polygon fill="#aaff00" stroke="#aaff00" points="754.86,-613.5 764.86,-610 754.86,-606.5 754.86,-613.5"/>
+<path fill="none" stroke="#aaff00" d="M629.55,-652C666.99,-652 714.05,-652 754.68,-652"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="754.86,-655.5 764.86,-652 754.86,-648.5 754.86,-655.5"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node31" class="node">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_node32" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node31"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1141,-150 999,-150 999,-126 1141,-126 1141,-150"/>
-<text text-anchor="middle" x="1070" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+<g id="a_proc~~gmbe_pie_coordinator~~CallsGraph_node32"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1141,-192 999,-192 999,-168 1141,-168 1141,-192"/>
+<text text-anchor="middle" x="1070" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge37" class="edge">
+<g id="proc~~gmbe_pie_coordinator~~CallsGraph_edge38" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
-<path fill="none" stroke="#ff0000" d="M963.12,-138C971.77,-138 980.38,-138 988.74,-138"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="988.79,-141.5 998.79,-138 988.79,-134.5 988.79,-141.5"/>
+<path fill="none" stroke="#ff0000" d="M963.12,-180C971.77,-180 980.38,-180 988.74,-180"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="988.79,-183.5 998.79,-180 988.79,-176.5 988.79,-183.5"/>
 </g>
 </g>
 </svg>
@@ -1594,6 +1611,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-hess_dim~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hess_dim</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-local_dummy"></span>
               integer,
             </td>
@@ -1645,7 +1679,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req"></span>
+              <span class="anchor" id="variable-req~3"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1679,7 +1713,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -1713,7 +1747,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status"></span>
+              <span class="anchor" id="variable-status~3"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1730,7 +1764,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_idx~2"></span>
+              <span class="anchor" id="variable-term_idx"></span>
               integer,
             </td>
               <td>private</td>
@@ -1747,7 +1781,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~11"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1764,7 +1798,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient~8"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1773,6 +1807,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>total_gradient</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian~6"></span>
+              real(kind=dp),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -1833,8 +1884,8 @@ large graphs.</div>
 <span class="w">                                   </span><span class="n">node_leader_ranks</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! MPI coordinator for PIE-based GMBE calculations</span>
 <span class="w">      </span><span class="c">!! Distributes PIE terms across MPI ranks and accumulates results</span>
-<span class="w">      </span><span class="k">use </span><span class="n">mqc_calc_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">CALC_TYPE_GRADIENT</span>
-<span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">redistribute_cap_gradients</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_calc_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">CALC_TYPE_GRADIENT</span><span class="p">,</span><span class="w"> </span><span class="n">CALC_TYPE_HESSIAN</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">redistribute_cap_gradients</span><span class="p">,</span><span class="w"> </span><span class="n">redistribute_cap_hessian</span>
 
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Unique atom sets (max_atoms, n_pie_terms)</span>
@@ -1858,6 +1909,8 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">worker_source</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hess_dim</span>
 
 <span class="w">      </span><span class="c">! MPI request handles</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
@@ -2049,6 +2102,74 @@ large graphs.</div>
 <span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">total_gradient</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
+<span class="w">      </span><span class="c">! Handle Hessians if computed</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">calc_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_HESSIAN</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">hess_dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">total_hessian</span><span class="p">(</span><span class="n">hess_dim</span><span class="p">,</span><span class="w"> </span><span class="n">hess_dim</span><span class="p">))</span>
+<span class="w">         </span><span class="n">total_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+
+<span class="w">         </span><span class="c">! Also allocate gradient for Hessian calculations</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">total_gradient</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">))</span>
+<span class="w">            </span><span class="n">total_gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">         do </span><span class="n">term_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">has_hessian</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               block</span>
+<span class="k">                  </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">term_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">                  </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">phys_frag</span>
+<span class="w">                  </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span>
+<span class="w">                  </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_list</span><span class="p">(:)</span>
+
+<span class="w">                  </span><span class="c">! Extract atom list for this term</span>
+<span class="w">                  </span><span class="n">max_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                  </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">                  </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_atoms</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">term_idx</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">                     </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                  </span><span class="k">end do</span>
+
+<span class="k">                  if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">                     </span><span class="n">atom_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">term_idx</span><span class="p">)</span>
+
+<span class="w">                     </span><span class="c">! Build fragment to get proper mapping</span>
+<span class="w">                     </span><span class="k">call </span><span class="n">build_fragment_from_atom_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+
+<span class="w">                     </span><span class="c">! Redistribute gradient if present</span>
+<span class="w">                     </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                        allocate</span><span class="w"> </span><span class="p">(</span><span class="n">term_gradient</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">term_gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">                        </span><span class="k">call </span><span class="n">redistribute_cap_gradients</span><span class="p">(</span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">term_gradient</span><span class="p">)</span>
+<span class="w">                        </span><span class="n">total_gradient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_gradient</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">term_idx</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="n">term_gradient</span>
+<span class="w">                        </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">term_gradient</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">end if</span>
+
+<span class="w">                     </span><span class="c">! Redistribute Hessian if present</span>
+<span class="w">                     </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                        allocate</span><span class="w"> </span><span class="p">(</span><span class="n">term_hessian</span><span class="p">(</span><span class="n">hess_dim</span><span class="p">,</span><span class="w"> </span><span class="n">hess_dim</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">term_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">                        </span><span class="k">call </span><span class="n">redistribute_cap_hessian</span><span class="p">(</span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="n">term_hessian</span><span class="p">)</span>
+<span class="w">                        </span><span class="n">total_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_hessian</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">term_idx</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="n">term_hessian</span>
+<span class="w">                        </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">term_hessian</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">end if</span>
+
+<span class="k">                     call </span><span class="n">phys_frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">                     </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">end if</span>
+<span class="k">               end block</span>
+<span class="k">            end if</span>
+<span class="k">         end do</span>
+
+<span class="w">         </span><span class="c">! Print gradient information</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE PIE gradient computation completed&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total gradient norm: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+
+<span class="w">         </span><span class="c">! Print Hessian information</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE PIE Hessian computation completed&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Total Hessian Frobenius norm: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+<span class="w">      </span><span class="k">end if</span>
+
 <span class="k">      call </span><span class="n">coord_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Time to compute GMBE PIE &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s&quot;</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
@@ -2063,11 +2184,14 @@ large graphs.</div>
 <span class="w">         </span><span class="k">do </span><span class="n">term_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
 <span class="w">            </span><span class="n">pie_energies</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">term_idx</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
 <span class="w">         </span><span class="k">end do</span>
-<span class="k">         call </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">)</span>
 <span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">pie_energies</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end block</span>
 
 <span class="k">      deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">total_gradient</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">total_hessian</span><span class="p">)</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">gmbe_pie_coordinator</span>
 </pre></div>
@@ -2093,7 +2217,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-01 14:53 +0000             </p>
+ on 2026-01-02 07:44 +0000             </p>
           </div>
         </div>
         <br>

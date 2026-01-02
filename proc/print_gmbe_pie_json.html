@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.2% of total for procedures.">69 statements</a>
+                 title=" 1.3% of total for procedures.">79 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,17 +136,17 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-basename~7">basename</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-basename~4">basename</a>
             <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-first_term">first_term</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-i~70">i</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-io_stat~24">io_stat</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-j~20">j</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-i~29">i</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-io_stat~20">io_stat</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-j~8">j</a>
             <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-json_line~4">json_line</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-max_atoms~10">max_atoms</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_atoms~12">n_atoms</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-max_atoms">max_atoms</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_atoms~3">n_atoms</a>
             <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_nonzero_terms">n_nonzero_terms</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-output_file~5">output_file</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-unit~29">unit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-output_file~4">output_file</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-unit~28">unit</a>
         </div>
       </div>
     </div>
@@ -182,12 +182,13 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy)  
+    <h2>public  subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, total_gradient, total_hessian)  
 </h2>
     
 
     <p>Write GMBE PIE calculation results to output JSON file
-Outputs structured JSON with PIE terms (atom sets with coefficients and energies)</p>
+Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
+Optionally includes total gradient and Hessian norms</p>
 
 
     <h3>Arguments</h3>
@@ -203,7 +204,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -218,7 +219,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~5"></span>
+              <span class="anchor" id="variable-pie_coefficients"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -233,7 +234,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_energies~2"></span>
+              <span class="anchor" id="variable-pie_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -248,7 +249,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -263,7 +264,7 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~9"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -274,6 +275,36 @@ Outputs structured JSON with PIE terms (atom sets with coefficients and energies
             <td><strong>total_energy</strong></td>
             <td>
                 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_gradient~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_gradient</strong>(:,:)</td>
+            <td>
+                <p>(3, total_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_hessian~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_hessian</strong>(:,:)</td>
+            <td>
+                <p>(3<em>total_atoms, 3</em>total_atoms)</p>
             </td>
         </tr>
     </tbody>
@@ -667,7 +698,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~7"></span>
+              <span class="anchor" id="variable-basename~4"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -701,7 +732,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~70"></span>
+              <span class="anchor" id="variable-i~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -718,7 +749,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~24"></span>
+              <span class="anchor" id="variable-io_stat~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -735,7 +766,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~20"></span>
+              <span class="anchor" id="variable-j~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -769,7 +800,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~10"></span>
+              <span class="anchor" id="variable-max_atoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -786,7 +817,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~12"></span>
+              <span class="anchor" id="variable-n_atoms~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -820,7 +851,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_file~5"></span>
+              <span class="anchor" id="variable-output_file~4"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -837,7 +868,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~29"></span>
+              <span class="anchor" id="variable-unit~28"></span>
               integer,
             </td>
               <td>private</td>
@@ -868,14 +899,18 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                  </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write GMBE PIE calculation results to output JSON file</span>
 <span class="w">      </span><span class="c">!! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)</span>
+<span class="w">      </span><span class="c">!! Optionally includes total gradient and Hessian norms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Unique atom sets (max_atoms, n_pie_terms)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! PIE coefficient for each term</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Raw energy for each term</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, total_atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms)</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
@@ -901,6 +936,18 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Add gradient if present</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;gradient_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Add Hessian if present</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;hessian_frobenius_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! PIE terms section</span>
 <span class="w">      </span><span class="c">! First count non-zero coefficient terms</span>
@@ -987,7 +1034,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-01 14:53 +0000             </p>
+ on 2026-01-02 07:44 +0000             </p>
           </div>
         </div>
         <br>

@@ -10,7 +10,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz, print_unfragmented_json
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
-   use mqc_mbe, only: compute_mbe_energy, compute_mbe_energy_gradient
+   use mqc_mbe, only: compute_mbe_energy, compute_mbe_energy_gradient, compute_mbe_energy_gradient_hessian
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
@@ -276,14 +276,25 @@ contains
       block
          real(dp) :: mbe_total_energy
          real(dp), allocatable :: mbe_total_gradient(:, :)
+         real(dp), allocatable :: mbe_total_hessian(:, :)
 
          ! Compute the many-body expansion
          call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
 
-         ! Use combined function if computing gradients (more efficient)
-         if (calc_type_local == CALC_TYPE_GRADIENT) then
+         ! Use combined function if computing gradients or Hessians (more efficient)
+         if (calc_type_local == CALC_TYPE_HESSIAN) then
+            if (.not. present(sys_geom)) then
+               call logger%error("sys_geom required for Hessian calculation in global_coordinator")
+               error stop "Missing sys_geom for Hessian calculation"
+            end if
+            allocate (mbe_total_gradient(3, sys_geom%total_atoms))
+            allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
+            call compute_mbe_energy_gradient_hessian(polymers, total_fragments, max_level, results, sys_geom, &
+                                                     mbe_total_energy, mbe_total_gradient, mbe_total_hessian, bonds)
+            deallocate (mbe_total_gradient, mbe_total_hessian)
+         else if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for gradient calculation in global_coordinator")
                error stop "Missing sys_geom for gradient calculation"
@@ -644,13 +655,32 @@ contains
             ! Print full Hessian if verbose and system is small
             call logger%configuration(level=current_log_level)
             if (current_log_level >= verbose_level .and. total_atoms < 20) then
-               call logger%info(" ")
-               call logger%info("Hessian matrix (Hartree/Bohr^2):")
-               do i = 1, 3*total_atoms
-                  write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*total_atoms)
-                  call logger%info(trim(result_line))
-               end do
-               call logger%info(" ")
+               block
+                  integer :: hess_dim, col_start, col_end, num_cols
+                  character(len=1024) :: hess_line
+                  hess_dim = 3*total_atoms
+
+                  call logger%info(" ")
+                  call logger%info("Hessian matrix (Hartree/Bohr^2):")
+
+                  ! Print in blocks of 5 columns to avoid line length issues
+                  num_cols = 5
+                  do col_start = 1, hess_dim, num_cols
+                     col_end = min(col_start + num_cols - 1, hess_dim)
+
+                     ! Print column header
+                     write (hess_line, '(a,i5,a,i5)') "  Columns ", col_start, " to ", col_end
+                     call logger%info(trim(hess_line))
+
+                     ! Print each row for this block of columns
+                     do i = 1, hess_dim
+                        write (hess_line, '(i5,a,5f15.8)') i, ": ", &
+                           (result%hessian(i, j), j=col_start, col_end)
+                        call logger%info(trim(hess_line))
+                     end do
+                     call logger%info(" ")
+                  end do
+               end block
             end if
          end if
       end block
@@ -677,6 +707,7 @@ contains
       type(calculation_result_t), allocatable :: results(:)
       real(dp) :: mbe_total_energy
       real(dp), allocatable :: mbe_total_gradient(:, :)
+      real(dp), allocatable :: mbe_total_hessian(:, :)
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
@@ -749,8 +780,14 @@ contains
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
 
-      ! Use combined function if computing gradients (more efficient)
-      if (calc_type_local == CALC_TYPE_GRADIENT) then
+      ! Use combined function if computing gradients or Hessians (more efficient)
+      if (calc_type_local == CALC_TYPE_HESSIAN) then
+         allocate (mbe_total_gradient(3, sys_geom%total_atoms))
+         allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
+         call compute_mbe_energy_gradient_hessian(polymers, total_fragments, max_level, results, sys_geom, &
+                                                  mbe_total_energy, mbe_total_gradient, mbe_total_hessian, bonds)
+         deallocate (mbe_total_gradient, mbe_total_hessian)
+      else if (calc_type_local == CALC_TYPE_GRADIENT) then
          allocate (mbe_total_gradient(3, sys_geom%total_atoms))
          call compute_mbe_energy_gradient(polymers, total_fragments, max_level, results, sys_geom, &
                                           mbe_total_energy, mbe_total_gradient, bonds)
