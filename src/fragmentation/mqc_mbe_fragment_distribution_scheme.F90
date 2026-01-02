@@ -833,6 +833,7 @@ contains
       integer(int32), intent(in) :: method
 
       type(physical_fragment_t) :: full_system
+      type(timer_type) :: coord_timer
       real(dp), allocatable :: forward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
       real(dp), allocatable :: backward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
       real(dp), allocatable :: hessian(:, :)
@@ -889,6 +890,7 @@ contains
       finished_workers = 0
 
       ! Process work requests and collect results
+      call coord_timer%start()
       do while (finished_workers < n_ranks - 1)
 
          ! Check for incoming gradient results
@@ -914,7 +916,7 @@ contains
             if (gradient_type == 2) then  ! Only log after backward gradient to count complete displacements
                if (mod(disp_idx, max(1, n_displacements/10)) == 0 .or. disp_idx == n_displacements) then
                   call logger%info("  Completed "//to_char(disp_idx)//"/"//to_char(n_displacements)// &
-                                   " displacement pairs")
+                                   " displacement pairs in "//to_char(coord_timer%get_elapsed_time())//" s")
                end if
             end if
          end if
@@ -941,11 +943,16 @@ contains
       end do
 
       deallocate (grad_buffer)
+      call coord_timer%stop()
+      call logger%info("All gradient calculations completed in "//to_char(coord_timer%get_elapsed_time())//" s")
 
       ! Assemble Hessian from finite differences
       call logger%info("  Assembling Hessian matrix...")
+      call coord_timer%start()
       call finite_diff_hessian_from_gradients(full_system, forward_gradients, backward_gradients, &
                                               displacement, hessian)
+      call coord_timer%stop()
+      call logger%info("Hessian assembly completed in "//to_char(coord_timer%get_elapsed_time())//" s")
 
       ! Compute energy and gradient at reference geometry
       call logger%info("  Computing reference energy and gradient...")
