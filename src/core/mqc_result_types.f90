@@ -235,6 +235,12 @@ contains
       if (result%has_gradient) then
          call send(comm, result%gradient, dest, tag)
       end if
+
+      ! Send Hessian flag and data (blocking to avoid needing multiple request handles)
+      call send(comm, result%has_hessian, dest, tag)
+      if (result%has_hessian) then
+         call send(comm, result%hessian, dest, tag)
+      end if
    end subroutine result_isend
 
    subroutine result_recv(result, comm, source, tag, status)
@@ -259,6 +265,13 @@ contains
       if (result%has_gradient) then
          ! Receive allocatable gradient array (MPI lib handles allocation)
          call recv(comm, result%gradient, source, tag, status)
+      end if
+
+      ! Receive Hessian flag and data if present
+      call recv(comm, result%has_hessian, source, tag, status)
+      if (result%has_hessian) then
+         ! Receive allocatable Hessian array (MPI lib handles allocation)
+         call recv(comm, result%hessian, source, tag, status)
       end if
    end subroutine result_recv
 
@@ -287,6 +300,13 @@ contains
       if (result%has_gradient) then
          ! Receive allocatable gradient array (MPI lib handles allocation)
          call recv(comm, result%gradient, source, tag, status)
+      end if
+
+      ! Receive Hessian flag and data (blocking to avoid needing multiple request handles)
+      call recv(comm, result%has_hessian, source, tag, status)
+      if (result%has_hessian) then
+         ! Receive allocatable Hessian array (MPI lib handles allocation)
+         call recv(comm, result%hessian, source, tag, status)
       end if
    end subroutine result_irecv
 
