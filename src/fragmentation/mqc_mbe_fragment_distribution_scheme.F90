@@ -785,7 +785,7 @@ contains
 
    end subroutine serial_fragment_processor
 
-   subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method)
+   subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
       !! Compute Hessian for unfragmented system using MPI distribution
       !!
       !! Uses a dynamic work queue approach: workers request displacement indices
@@ -794,6 +794,7 @@ contains
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
                                         finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT, &
                                         copy_and_displace_geometry
+      use mqc_config_adapter, only: driver_config_t
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -801,18 +802,27 @@ contains
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
+      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
 
       integer :: my_rank, n_ranks
+      real(dp) :: displacement
 
       my_rank = world_comm%rank()
       n_ranks = world_comm%size()
 
+      ! Use provided displacement or default
+      if (present(driver_config)) then
+         displacement = driver_config%hessian%displacement
+      else
+         displacement = DEFAULT_DISPLACEMENT
+      end if
+
       if (my_rank == 0) then
          ! Rank 0 is the coordinator
-         call hessian_coordinator(world_comm, sys_geom, method)
+         call hessian_coordinator(world_comm, sys_geom, method, displacement)
       else
          ! Other ranks are workers
-         call hessian_worker(world_comm, sys_geom, method)
+         call hessian_worker(world_comm, sys_geom, method, displacement)
       end if
 
       ! Synchronize all ranks before returning
@@ -820,10 +830,10 @@ contains
 
    end subroutine distributed_unfragmented_hessian
 
-   subroutine hessian_coordinator(world_comm, sys_geom, method)
+   subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
-      use mqc_finite_differences, only: finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT
+      use mqc_finite_differences, only: finite_diff_hessian_from_gradients
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -831,6 +841,7 @@ contains
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
+      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
 
       type(physical_fragment_t) :: full_system
       type(timer_type) :: coord_timer
@@ -839,7 +850,6 @@ contains
       real(dp), allocatable :: hessian(:, :)
       real(dp), allocatable :: grad_buffer(:, :)
       type(calculation_result_t) :: result
-      real(dp) :: displacement
       integer :: n_atoms, n_displacements, n_ranks
       integer :: current_disp, finished_workers, dummy_msg, worker_rank
       integer :: disp_idx, gradient_type  ! gradient_type: 1=forward, 2=backward
@@ -858,7 +868,6 @@ contains
       n_ranks = world_comm%size()
       n_atoms = sys_geom%total_atoms
       n_displacements = 3*n_atoms
-      displacement = DEFAULT_DISPLACEMENT
 
       call logger%configuration(level=current_log_level)
       is_verbose = (current_log_level >= verbose_level)
@@ -1006,10 +1015,10 @@ contains
 
    end subroutine hessian_coordinator
 
-   subroutine hessian_worker(world_comm, sys_geom, method)
+   subroutine hessian_worker(world_comm, sys_geom, method, displacement)
       !! Worker for distributed Hessian calculation
       !! Requests displacement indices, computes gradients, and sends results back
-      use mqc_finite_differences, only: DEFAULT_DISPLACEMENT, copy_and_displace_geometry
+      use mqc_finite_differences, only: copy_and_displace_geometry
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -1017,10 +1026,10 @@ contains
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
+      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
 
       type(physical_fragment_t) :: full_system, displaced_geom
       type(calculation_result_t) :: grad_result
-      real(dp) :: displacement
       integer :: n_atoms, disp_idx, atom_idx, coord, gradient_type, dummy_msg
       type(MPI_Status) :: status
       type(request_t) :: req
@@ -1029,7 +1038,6 @@ contains
 #endif
 
       n_atoms = sys_geom%total_atoms
-      displacement = DEFAULT_DISPLACEMENT
 
       ! Build full system geometry
       full_system%n_atoms = n_atoms

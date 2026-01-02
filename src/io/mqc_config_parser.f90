@@ -100,6 +100,15 @@ module mqc_config_parser
       integer :: scf_maxiter = 300
       real(dp) :: scf_tolerance = 1.0e-6_dp
 
+      ! Hessian settings
+      real(dp) :: hessian_displacement = 0.001_dp  !! Finite difference displacement (Bohr)
+
+      ! AIMD settings
+      real(dp) :: aimd_dt = 1.0_dp                    !! Timestep (femtoseconds)
+      integer :: aimd_nsteps = 0                      !! Number of MD steps (0 = no AIMD)
+      real(dp) :: aimd_initial_temperature = 300.0_dp  !! Initial temperature for velocity init (K)
+      integer :: aimd_output_frequency = 1            !! Write output every N steps
+
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.
       integer :: frag_level = 1
@@ -193,6 +202,10 @@ contains
                call parse_connectivity_section(unit, config, parse_error)
             case ('%scf')
                call parse_scf_section(unit, config, parse_error)
+            case ('%hessian')
+               call parse_hessian_section(unit, config, parse_error)
+            case ('%aimd')
+               call parse_aimd_section(unit, config, parse_error)
             case ('%fragmentation')
                call parse_fragmentation_section(unit, config, parse_error)
             case ('%system')
@@ -546,6 +559,86 @@ contains
       end do
 
    end subroutine parse_scf_section
+
+   subroutine parse_hessian_section(unit, config, error)
+      integer, intent(in) :: unit
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(out) :: error
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            call error%set(ERROR_IO, "Unexpected end of file in %hessian section")
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos == 0) cycle
+
+         key = adjustl(line(1:eq_pos - 1))
+         value = adjustl(line(eq_pos + 1:))
+
+         select case (trim(key))
+         case ('finite_difference_displacement', 'displacement')
+            read (value, *, iostat=io_stat) config%hessian_displacement
+         case default
+            call error%set(ERROR_PARSE, "Unknown key in %hessian section: "//trim(key))
+            return
+         end select
+      end do
+
+   end subroutine parse_hessian_section
+
+   subroutine parse_aimd_section(unit, config, error)
+      integer, intent(in) :: unit
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(out) :: error
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            call error%set(ERROR_IO, "Unexpected end of file in %aimd section")
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos == 0) cycle
+
+         key = adjustl(line(1:eq_pos - 1))
+         value = adjustl(line(eq_pos + 1:))
+
+         select case (trim(key))
+         case ('dt', 'timestep')
+            read (value, *, iostat=io_stat) config%aimd_dt
+         case ('nsteps', 'steps')
+            read (value, *, iostat=io_stat) config%aimd_nsteps
+         case ('initial_temperature', 'temperature')
+            read (value, *, iostat=io_stat) config%aimd_initial_temperature
+         case ('output_frequency', 'output_freq')
+            read (value, *, iostat=io_stat) config%aimd_output_frequency
+         case default
+            call error%set(ERROR_PARSE, "Unknown key in %aimd section: "//trim(key))
+            return
+         end select
+      end do
+
+   end subroutine parse_aimd_section
 
    subroutine parse_fragmentation_section(unit, config, error)
       integer, intent(in) :: unit
