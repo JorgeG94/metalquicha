@@ -271,26 +271,24 @@ contains
          write (unit, '(a)') '      }'
       end if
 
-      write (unit, '(a)') '    ]'
-
-      ! Close mbe_breakdown section with or without comma depending on gradient/Hessian presence
+      ! Close levels array (with comma if we have more fields)
       if (present(total_gradient) .or. present(total_hessian)) then
-         write (unit, '(a)') '  },'
+         write (unit, '(a)') '    ],'
       else
-         write (unit, '(a)') '  }'
+         write (unit, '(a)') '    ]'
       end if
 
-      ! Add gradient section if present
+      ! Add gradient section if present (inside basename object)
       if (present(total_gradient)) then
          total_atoms = size(total_gradient, 2)
 
-         write (unit, '(a)') '  "gradient": {'
-         write (json_line, '(a,f20.10,a)') '    "norm": ', sqrt(sum(total_gradient**2)), ','
+         write (unit, '(a)') '    "gradient": {'
+         write (json_line, '(a,f20.10,a)') '      "norm": ', sqrt(sum(total_gradient**2)), ','
          write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '    "components": ['
+         write (unit, '(a)') '      "components": ['
 
          do iatom = 1, total_atoms
-            write (json_line, '(a,3(f20.12,a))') '      [', &
+            write (json_line, '(a,3(f20.12,a))') '        [', &
                total_gradient(1, iatom), ', ', &
                total_gradient(2, iatom), ', ', &
                total_gradient(3, iatom), ']'
@@ -300,22 +298,25 @@ contains
             write (unit, '(a)') trim(json_line)
          end do
 
-         write (unit, '(a)') '    ]'
+         write (unit, '(a)') '      ]'
          if (present(total_hessian)) then
-            write (unit, '(a)') '  },'
+            write (unit, '(a)') '    },'
          else
-            write (unit, '(a)') '  }'
+            write (unit, '(a)') '    }'
          end if
       end if
 
-      ! Add Hessian section if present
+      ! Add Hessian section if present (inside basename object)
       if (present(total_hessian)) then
-         write (unit, '(a)') '  "hessian": {'
-         write (json_line, '(a,f20.10)') '    "frobenius_norm": ', sqrt(sum(total_hessian**2))
+         write (unit, '(a)') '    "hessian": {'
+         write (json_line, '(a,f20.10)') '      "frobenius_norm": ', sqrt(sum(total_hessian**2))
          write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '  }'
+         write (unit, '(a)') '    }'
       end if
 
+      ! Close basename object
+      write (unit, '(a)') '  }'
+      ! Close outer object
       write (unit, '(a)') '}'
 
       close (unit)
