@@ -31,16 +31,18 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(world_comm, node_comm, config, sys_geom, bonds)
+   subroutine run_calculation(world_comm, node_comm, config, sys_geom, bonds, result_out)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
       !! calculation routine with proper MPI setup and validation.
+      !! If result_out is present, returns result instead of writing JSON (for dynamics/optimization)
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
+      type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
@@ -75,7 +77,7 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config)
+       call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config, result_out)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
                                          config%allow_overlapping_fragments, &
@@ -84,18 +86,20 @@ contains
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config, result_out)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! For single-molecule mode: Only rank 0 runs (validates single rank)
       !! For multi-molecule mode: ALL ranks can run (each with their own molecule)
       !! For Hessian calculations with multiple ranks: Uses distributed parallelization
+      !! If result_out is present, returns result instead of writing JSON
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
+      type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
 
       ! For Hessian calculations with multiple ranks, use distributed approach
       if (calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1) then
@@ -118,11 +122,11 @@ contains
          call logger%info("Running unfragmented calculation")
          call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
-         call unfragmented_calculation(sys_geom, method, calc_type, bonds)
+         call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
       else if (sys_geom%total_atoms > 0) then
          ! Multi-molecule mode: non-zero rank with a molecule
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Running unfragmented calculation")
-         call unfragmented_calculation(sys_geom, method, calc_type, bonds)
+         call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
       end if
 
    end subroutine run_unfragmented_calculation
