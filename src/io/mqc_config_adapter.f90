@@ -7,6 +7,7 @@ module mqc_config_adapter
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_calculation_config, only: calculation_config_t
    implicit none
    private
 
@@ -22,6 +23,7 @@ module mqc_config_adapter
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments  !! Enable GMBE for overlapping fragments
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
+      type(calculation_config_t) :: calc_config  !! Calculation-specific configuration (hessian, aimd, etc.)
    end type driver_config_t
 
 contains
@@ -66,6 +68,13 @@ contains
 
       ! Set GMBE maximum intersection level
       driver_config%max_intersection_level = mqc_config%max_intersection_level
+
+      ! Set calculation-specific configuration
+      driver_config%calc_config%hessian%displacement = mqc_config%hessian_displacement
+      driver_config%calc_config%aimd%dt = mqc_config%aimd_dt
+      driver_config%calc_config%aimd%nsteps = mqc_config%aimd_nsteps
+      driver_config%calc_config%aimd%initial_temperature = mqc_config%aimd_initial_temperature
+      driver_config%calc_config%aimd%output_frequency = mqc_config%aimd_output_frequency
 
    end subroutine config_to_driver
 

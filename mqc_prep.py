@@ -67,6 +67,17 @@ class SCF:
     tolerance: float
 
 @dataclass
+class Hessian:
+    finite_difference_displacement: float = 0.001  # Bohr
+
+@dataclass
+class AIMD:
+    dt: float = 1.0  # femtoseconds
+    nsteps: int = 0
+    initial_temperature: float = 300.0  # Kelvin
+    output_frequency: int = 1
+
+@dataclass
 class FragCutoffs:
     dimer: Optional[float] = None
     trimer: Optional[float] = None
@@ -109,6 +120,8 @@ class Input:
     molecules: List[Molecule]
     title: Optional[str] = None
     scf: Optional[SCF] = None
+    hessian: Optional[Hessian] = None
+    aimd: Optional[AIMD] = None
     fragmentation: Optional[Fragmentation] = None
     system: Optional[System] = None
 
@@ -205,8 +218,8 @@ def parse_model(d: Dict[str, Any]) -> Model:
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
     return Model(method=method, basis=basis, aux_basis=aux)
 
-def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Fragmentation]]:
-    require_only_keys(d, {"scf", "fragmentation"}, "keywords")
+def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian], Optional[AIMD], Optional[Fragmentation]]:
+    require_only_keys(d, {"scf", "hessian", "aimd", "fragmentation"}, "keywords")
 
     scf = None
     if "scf" in d:
@@ -221,6 +234,55 @@ def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Fragmenta
         if float(tol) <= 0:
             die("keywords.scf.tolerance must be > 0")
         scf = SCF(maxiter=maxiter, tolerance=float(tol))
+
+    hessian = None
+    if "hessian" in d:
+        hd = req_type(d["hessian"], dict, "keywords.hessian")
+        require_only_keys(hd, {"finite_difference_displacement", "displacement"}, "keywords.hessian")
+        disp = hd.get("finite_difference_displacement") or hd.get("displacement")
+        if disp is None:
+            disp = 0.001  # default
+        if not isinstance(disp, (int, float)):
+            die("keywords.hessian.finite_difference_displacement must be number")
+        if float(disp) <= 0:
+            die("keywords.hessian.finite_difference_displacement must be > 0")
+        hessian = Hessian(finite_difference_displacement=float(disp))
+
+    aimd_obj = None
+    if "aimd" in d:
+        ad = req_type(d["aimd"], dict, "keywords.aimd")
+        require_only_keys(ad, {"dt", "timestep", "nsteps", "steps", "initial_temperature", "temperature", "output_frequency", "output_freq"}, "keywords.aimd")
+        dt = ad.get("dt") or ad.get("timestep")
+        if dt is None:
+            dt = 1.0  # default
+        nsteps = ad.get("nsteps") or ad.get("steps")
+        if nsteps is None:
+            nsteps = 0  # default (no AIMD)
+        init_temp = ad.get("initial_temperature") or ad.get("temperature")
+        if init_temp is None:
+            init_temp = 300.0  # default
+        out_freq = ad.get("output_frequency") or ad.get("output_freq")
+        if out_freq is None:
+            out_freq = 1  # default
+
+        if not isinstance(dt, (int, float)):
+            die("keywords.aimd.dt must be number")
+        if not isinstance(nsteps, int):
+            die("keywords.aimd.nsteps must be int")
+        if not isinstance(init_temp, (int, float)):
+            die("keywords.aimd.initial_temperature must be number")
+        if not isinstance(out_freq, int):
+            die("keywords.aimd.output_frequency must be int")
+        if float(dt) <= 0:
+            die("keywords.aimd.dt must be > 0")
+        if nsteps < 0:
+            die("keywords.aimd.nsteps must be >= 0")
+        if float(init_temp) <= 0:
+            die("keywords.aimd.initial_temperature must be > 0")
+        if out_freq <= 0:
+            die("keywords.aimd.output_frequency must be > 0")
+
+        aimd_obj = AIMD(dt=float(dt), nsteps=nsteps, initial_temperature=float(init_temp), output_frequency=out_freq)
 
     frag = None
     if "fragmentation" in d:
@@ -279,7 +341,7 @@ def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Fragmenta
             cutoffs=cutoffs,
         )
 
-    return scf, frag
+    return scf, hessian, aimd_obj, frag
 
 def parse_system(d: Dict[str, Any]) -> System:
     require_only_keys(d, {"logger"}, "system")
@@ -452,7 +514,7 @@ def parse_json_to_input(json_path: Union[str, Path]) -> Input:
 
     kw = data.get("keywords", {})
     req_type(kw, dict, "keywords")
-    scf, frag = parse_keywords(kw)
+    scf, hessian, aimd, frag = parse_keywords(kw)
 
     # Parse system section (optional)
     system = None
@@ -467,7 +529,7 @@ def parse_json_to_input(json_path: Union[str, Path]) -> Input:
     for mi, m in enumerate(mols):
         molecules.append(parse_molecule(req_type(m, dict, f"molecules[{mi}]"), base_dir, mi))
 
-    return Input(schema=schema, model=model, driver=driver, molecules=molecules, title=title, scf=scf, fragmentation=frag, system=system)
+    return Input(schema=schema, model=model, driver=driver, molecules=molecules, title=title, scf=scf, hessian=hessian, aimd=aimd, fragmentation=frag, system=system)
 
 
 # ----------------------------
@@ -670,6 +732,21 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"maxiter = {inp.scf.maxiter}\n")
         buf.write(f"tolerance = {fmt_float(inp.scf.tolerance)}\n")
         buf.write("end  ! scf\n\n")
+
+    # %hessian (optional)
+    if inp.hessian is not None:
+        buf.write("%hessian\n")
+        buf.write(f"finite_difference_displacement = {fmt_float(inp.hessian.finite_difference_displacement)}\n")
+        buf.write("end  ! hessian\n\n")
+
+    # %aimd (optional)
+    if inp.aimd is not None:
+        buf.write("%aimd\n")
+        buf.write(f"dt = {fmt_float(inp.aimd.dt)}\n")
+        buf.write(f"nsteps = {inp.aimd.nsteps}\n")
+        buf.write(f"initial_temperature = {fmt_float(inp.aimd.initial_temperature)}\n")
+        buf.write(f"output_frequency = {inp.aimd.output_frequency}\n")
+        buf.write("end  ! aimd\n\n")
 
     # %fragmentation (optional)
     if inp.fragmentation is not None:
