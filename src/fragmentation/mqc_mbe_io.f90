@@ -278,40 +278,19 @@ contains
          write (unit, '(a)') '    ]'
       end if
 
-      ! Add gradient section if present (inside basename object)
+      ! Add gradient norm if present (inside basename object)
       if (present(total_gradient)) then
-         total_atoms = size(total_gradient, 2)
-
-         write (unit, '(a)') '    "gradient": {'
-         write (json_line, '(a,f20.10,a)') '      "norm": ', sqrt(sum(total_gradient**2)), ','
-         write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '      "components": ['
-
-         do iatom = 1, total_atoms
-            write (json_line, '(a,3(f20.12,a))') '        [', &
-               total_gradient(1, iatom), ', ', &
-               total_gradient(2, iatom), ', ', &
-               total_gradient(3, iatom), ']'
-            if (iatom < total_atoms) then
-               write (json_line, '(a,a)') trim(json_line), ','
-            end if
-            write (unit, '(a)') trim(json_line)
-         end do
-
-         write (unit, '(a)') '      ]'
+         write (json_line, '(a,f20.10)') '    "gradient_norm": ', sqrt(sum(total_gradient**2))
          if (present(total_hessian)) then
-            write (unit, '(a)') '    },'
-         else
-            write (unit, '(a)') '    }'
+            write (json_line, '(a,a)') trim(json_line), ','
          end if
+         write (unit, '(a)') trim(json_line)
       end if
 
-      ! Add Hessian section if present (inside basename object)
+      ! Add Hessian Frobenius norm if present (inside basename object)
       if (present(total_hessian)) then
-         write (unit, '(a)') '    "hessian": {'
-         write (json_line, '(a,f20.10)') '      "frobenius_norm": ', sqrt(sum(total_hessian**2))
+         write (json_line, '(a,f20.10)') '    "hessian_frobenius_norm": ', sqrt(sum(total_hessian**2))
          write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '    }'
       end if
 
       ! Close basename object
@@ -356,40 +335,19 @@ contains
          write (unit, '(a)') trim(json_line)
       end if
 
-      ! Add gradient section if present
+      ! Add gradient norm if present
       if (result%has_gradient) then
-         total_atoms = size(result%gradient, 2)
-
-         write (unit, '(a)') '    "gradient": {'
-         write (json_line, '(a,f25.15,a)') '      "norm": ', sqrt(sum(result%gradient**2)), ','
-         write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '      "components": ['
-
-         do iatom = 1, total_atoms
-            write (json_line, '(a,3(f25.15,a))') '        [', &
-               result%gradient(1, iatom), ', ', &
-               result%gradient(2, iatom), ', ', &
-               result%gradient(3, iatom), ']'
-            if (iatom < total_atoms) then
-               write (json_line, '(a,a)') trim(json_line), ','
-            end if
-            write (unit, '(a)') trim(json_line)
-         end do
-
-         write (unit, '(a)') '      ]'
+         write (json_line, '(a,f25.15)') '    "gradient_norm": ', sqrt(sum(result%gradient**2))
          if (result%has_hessian) then
-            write (unit, '(a)') '    },'
-         else
-            write (unit, '(a)') '    }'
+            write (json_line, '(a,a)') trim(json_line), ','
          end if
+         write (unit, '(a)') trim(json_line)
       end if
 
-      ! Add Hessian section if present
+      ! Add Hessian Frobenius norm if present
       if (result%has_hessian) then
-         write (unit, '(a)') '    "hessian": {'
-         write (json_line, '(a,f25.15)') '      "frobenius_norm": ', sqrt(sum(result%hessian**2))
+         write (json_line, '(a,f25.15)') '    "hessian_frobenius_norm": ', sqrt(sum(result%hessian**2))
          write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '    }'
       end if
 
       write (unit, '(a)') '  }'
