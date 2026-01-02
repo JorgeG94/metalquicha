@@ -1,0 +1,54 @@
+{
+    "schema": { "name": "mqc-frag", "version": "1.0" },
+    "molecules": [{
+        "xyz": "sample_inputs/prism.xyz",
+        "fragments": [
+          [0,1,2],
+          [3,4,5],
+          [6,7,8],
+          [9,10,11],
+          [12,13,14],
+          [15,16,17]
+        ],
+        "fragment_charges": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "fragment_multiplicities": [1, 1, 1, 1, 1, 1],
+        "molecular_charge": 0,
+        "molecular_multiplicity": 1
+    }],
+  "model": {
+    "method": "XTB-GFN1",
+    "basis": "cc-pVDZ",
+    "aux_basis": "cc-pVDZ-RIFIT"
+  },
+  "keywords":{
+    "scf": {
+      "maxiter": 300,
+      "tolerance": 1e-6
+    },
+    "fragmentation":{
+        "method": "MBE",
+        "allow_overlapping_fragments": false,
+        "level": 2,
+        "embedding": "none",
+        "cutoff_method": "distance",
+        "distance_metric": "min",
+        "cutoffs":{
+            "dimer": 10.0,
+            "trimer": 8.0
+        }
+    }
+  },
+  "system": {
+    "logger":{
+      "level": "Verbose"
+    }
+  },
+  "driver": "Hessian"
+}

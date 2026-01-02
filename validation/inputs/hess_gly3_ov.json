@@ -1,0 +1,65 @@
+{
+    "schema": { "name": "mqc-frag", "version": "1.0" },
+    "molecules": [{
+        "xyz": "sample_inputs/gly3.xyz",
+        "connectivity": [
+            [
+                0,
+                1,
+                1
+            ],
+            [
+                8,
+                9,
+                1
+            ],
+            [
+                15,
+                16,
+                1
+            ]
+        ],
+        "fragments": [
+          [0,1,2,8,3,4,5,6,7,14],
+          [1,4,5,2,3,8,14,9,12,13,10,11,15,21],
+          [9,12,13,10,11,15,21,16,19,20,17,18,22,23]
+        ],
+        "fragment_charges": [
+            0,
+            0,
+            0
+        ],
+        "fragment_multiplicities": [1, 1, 1],
+        "molecular_charge": 0,
+        "molecular_multiplicity": 1
+    }],
+  "model": {
+    "method": "XTB-GFN1",
+    "basis": "cc-pVDZ",
+    "aux_basis": "cc-pVDZ-RIFIT"
+  },
+  "keywords":{
+    "scf": {
+      "maxiter": 300,
+      "tolerance": 1e-6
+    },
+    "fragmentation":{
+        "method": "MBE",
+        "allow_overlapping_fragments": true,
+        "level": 1,
+        "embedding": "none",
+        "cutoff_method": "distance",
+        "distance_metric": "min",
+        "cutoffs":{
+            "dimer": 10.0,
+            "trimer": 8.0
+        }
+    }
+  },
+  "system": {
+    "logger":{
+      "level": "Verbose"
+    }
+  },
+  "driver": "Hessian"
+}

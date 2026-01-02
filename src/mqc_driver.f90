@@ -154,13 +154,6 @@ contains
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
       integer :: n_pie_terms  !! Number of unique PIE terms
 
-      ! Validate calculation type
-      if (calc_type == CALC_TYPE_HESSIAN) then
-         call logger%error("Hessian calculations are not yet implemented for fragmented systems (MBE/GMBE)")
-         call logger%error("Please use an unfragmented calculation (nlevel = 0) for Hessian computations")
-         error stop "Unsupported calculation type for fragmented system"
-      end if
-
       ! Generate fragments
       if (world_comm%rank() == 0) then
          if (allow_overlapping_fragments) then

@@ -69,6 +69,30 @@
         "molecule_6": -34.683832133514869
       },
       "type": "multi_molecule"
+    },
+    {
+      "name": "Hessian + gradient overlapping gly3",
+      "input": "validation/inputs/hess_gly3_ov.mqc",
+      "expected_energy": -47.0192718920,
+      "expected_gradient_norm": 0.1406590140,
+      "expected_hessian_frobenius_norm": 4.0772716405,
+      "type": "fragmented"
+    },
+    {
+      "name": "Hessian + gradient prism",
+      "input": "validation/inputs/prism_hessian.mqc",
+      "expected_energy": -34.6736678571,
+      "expected_gradient_norm": 0.0315774691,
+      "expected_hessian_frobenius_norm": 3.2639067125,
+      "type": "fragmented"
+    },
+    {
+      "name": "Hessian + gradient unfrag h3o",
+      "input": "validation/inputs/hess_h3o.mqc",
+      "expected_energy": -5.773131213617977,
+      "expected_gradient_norm": 0.034523358557187,
+      "expected_hessian_frobenius_norm": 1.410627986768969,
+      "type": "unfragmented"
     }
   ]
 }
