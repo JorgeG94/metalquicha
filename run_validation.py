@@ -107,6 +107,34 @@ def extract_top_level_energy(json_data: Dict, test_type: str) -> Optional[float]
     return None
 
 
+def extract_gradient_norm(json_data: Dict) -> Optional[float]:
+    """Extract gradient_norm from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "gradient_norm" in data:
+        return float(data["gradient_norm"])
+
+    return None
+
+
+def extract_hessian_norm(json_data: Dict) -> Optional[float]:
+    """Extract hessian_frobenius_norm from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "hessian_frobenius_norm" in data:
+        return float(data["hessian_frobenius_norm"])
+
+    return None
+
+
 def extract_multi_molecule_energies(json_data: Dict) -> Dict[str, float]:
     """Extract energies from multi-molecule calculation"""
     energies = {}
@@ -267,20 +295,71 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                 continue
 
             diff = abs(calculated - expected)
+            test_passed = True
+            failure_reasons = []
 
-            if validate_energy(calculated, expected, tolerance):
+            # Validate energy
+            if not validate_energy(calculated, expected, tolerance):
+                print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Energy mismatch")
+                print(f"    Expected:   {expected:.12f}")
+                print(f"    Calculated: {calculated:.12f}")
+                print(f"    Difference: {diff:.2e} (tolerance: {tolerance:.2e})")
+                test_passed = False
+                failure_reasons.append(f"Energy mismatch (diff: {diff:.2e})")
+
+            # Validate gradient norm if present
+            if "expected_gradient_norm" in test:
+                expected_grad = test["expected_gradient_norm"]
+                calculated_grad = extract_gradient_norm(output_data)
+
+                if calculated_grad is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract gradient_norm from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing gradient_norm")
+                else:
+                    grad_diff = abs(calculated_grad - expected_grad)
+                    if not validate_energy(calculated_grad, expected_grad, tolerance):
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Gradient norm mismatch")
+                        print(f"    Expected:   {expected_grad:.12f}")
+                        print(f"    Calculated: {calculated_grad:.12f}")
+                        print(f"    Difference: {grad_diff:.2e} (tolerance: {tolerance:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Gradient mismatch (diff: {grad_diff:.2e})")
+                    elif verbose:
+                        print(f"    Gradient norm: {calculated_grad:.12f} (diff: {grad_diff:.2e})")
+
+            # Validate Hessian Frobenius norm if present
+            if "expected_hessian_frobenius_norm" in test:
+                expected_hess = test["expected_hessian_frobenius_norm"]
+                calculated_hess = extract_hessian_norm(output_data)
+
+                if calculated_hess is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract hessian_frobenius_norm from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing hessian_frobenius_norm")
+                else:
+                    hess_diff = abs(calculated_hess - expected_hess)
+                    if not validate_energy(calculated_hess, expected_hess, tolerance):
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Hessian norm mismatch")
+                        print(f"    Expected:   {expected_hess:.12f}")
+                        print(f"    Calculated: {calculated_hess:.12f}")
+                        print(f"    Difference: {hess_diff:.2e} (tolerance: {tolerance:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Hessian mismatch (diff: {hess_diff:.2e})")
+                    elif verbose:
+                        print(f"    Hessian norm: {calculated_hess:.12f} (diff: {hess_diff:.2e})")
+
+            # Report final test status
+            if test_passed:
                 print(f"  {Colors.GREEN}✓ PASSED{Colors.RESET}")
                 if verbose:
                     print(f"    Energy: {calculated:.12f} (diff: {diff:.2e})")
                 print()
                 passed += 1
             else:
-                print(f"  {Colors.RED}✗ FAILED{Colors.RESET}")
-                print(f"    Expected:   {expected:.12f}")
-                print(f"    Calculated: {calculated:.12f}")
-                print(f"    Difference: {diff:.2e} (tolerance: {tolerance:.2e})\n")
+                print()
                 failed += 1
-                errors.append((test_name, f"Energy mismatch (diff: {diff:.2e})"))
+                errors.append((test_name, "; ".join(failure_reasons)))
 
     return passed, failed, errors
 
