@@ -244,6 +244,8 @@ contains
          call logger%info("  Computing forward-displaced gradients...")
       end if
       do i = 1, n_displacements
+
+         ! Forward
          call this%calc_gradient(forward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for forward displacement "//to_char(i))
@@ -251,13 +253,8 @@ contains
          end if
          forward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()
-      end do
 
-      ! Compute gradients at all backward-displaced geometries
-      if (this%verbose) then
-         call logger%info("  Computing backward-displaced gradients...")
-      end if
-      do i = 1, n_displacements
+         ! Backward
          call this%calc_gradient(backward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for backward displacement "//to_char(i))
@@ -265,8 +262,11 @@ contains
          end if
          backward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()
-      end do
 
+      end do
+      if (this%verbose) then
+         call logger%info("  Forward and backward gradient calculations complete")
+      end if
       ! Compute Hessian from finite differences
       if (this%verbose) then
          call logger%info("  Assembling Hessian matrix...")
