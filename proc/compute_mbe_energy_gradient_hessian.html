@@ -137,20 +137,20 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-body_level~3">body_level</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-current_log_level~4">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-current_log_level~8">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_e~4">delta_E</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_energies~4">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_energies~6">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_gradients~3">delta_gradients</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_hessians">delta_hessians</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-do_detailed_print~3">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-energies~4">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment~4">fragment</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment_size~3">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-hess_dim">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-i~9">i</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-iatom~2">iatom</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-energies~6">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment~7">fragment</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment_size~10">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-hess_dim~3">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-i~41">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-iatom~10">iatom</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-lookup~5">lookup</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-sum_by_level~3">sum_by_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-sum_by_level~4">sum_by_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-temp_hess">temp_hess</a>
         </div>
       </div>
@@ -584,7 +584,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -599,7 +599,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -614,7 +614,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -629,7 +629,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
+              <span class="anchor" id="variable-results~8"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -644,7 +644,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -659,7 +659,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~3"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -674,7 +674,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient~6"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -689,7 +689,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian"></span>
+              <span class="anchor" id="variable-total_hessian~5"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -704,7 +704,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~4"></span>
+              <span class="anchor" id="variable-bonds~14"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1477,118 +1477,133 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph Pages: 1 -->
-<svg id="proccompute_mbe_energy_gradient_hessianCalledByGraph" width="641pt" height="44pt"
- viewBox="0.00 0.00 641.00 44.41" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph" class="graph" transform="scale(0.6 0.6) rotate(0) translate(4 70)">
+<svg id="proccompute_mbe_energy_gradient_hessianCalledByGraph" width="641pt" height="67pt"
+ viewBox="0.00 0.00 641.00 67.22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph" class="graph" transform="scale(0.6 0.6) rotate(0) translate(4 108)">
 <title>proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1064,-70 1064,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 1064,-108 1064,4 -4,4"/>
 <!-- proc~compute_mbe_energy_gradient_hessian -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node1" class="node">
 <title>proc~compute_mbe_energy_gradient_hessian</title>
-<polygon fill="none" stroke="black" points="1060,-45 832,-45 832,-21 1060,-21 1060,-45"/>
-<text text-anchor="middle" x="946" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_energy_gradient_hessian</text>
+<polygon fill="none" stroke="black" points="1060,-64 832,-64 832,-40 1060,-40 1060,-64"/>
+<text text-anchor="middle" x="946" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe_energy_gradient_hessian</text>
 </g>
 <!-- proc~global_coordinator -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node2" class="node">
 <title>proc~global_coordinator</title>
 <g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node2"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#d9534f" stroke="#d9534f" points="775.5,-66 662.5,-66 662.5,-42 775.5,-42 775.5,-66"/>
-<text text-anchor="middle" x="719" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="775.5,-85 662.5,-85 662.5,-61 775.5,-61 775.5,-85"/>
+<text text-anchor="middle" x="719" y="-70.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
 </a>
 </g>
 </g>
 <!-- proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge1" class="edge">
 <title>proc~global_coordinator&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
-<path fill="none" stroke="#ff0000" d="M775.62,-48.81C789.84,-47.48 805.72,-46 821.88,-44.49"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="822.34,-47.96 831.97,-43.55 821.69,-40.99 822.34,-47.96"/>
+<path fill="none" stroke="#ff0000" d="M775.62,-67.81C789.84,-66.48 805.72,-65 821.88,-63.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="822.34,-66.96 831.97,-62.55 821.69,-59.99 822.34,-66.96"/>
 </g>
 <!-- proc~serial_fragment_processor -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node3" class="node">
 <title>proc~serial_fragment_processor</title>
 <g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node3"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
-<polygon fill="#d9534f" stroke="#d9534f" points="796,-24 642,-24 642,0 796,0 796,-24"/>
-<text text-anchor="middle" x="719" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="796,-43 642,-43 642,-19 796,-19 796,-43"/>
+<text text-anchor="middle" x="719" y="-28.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge2" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
-<path fill="none" stroke="#ff0000" d="M796.17,-19.11C804.42,-19.88 812.96,-20.68 821.59,-21.48"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="821.46,-24.98 831.74,-22.43 822.11,-18.01 821.46,-24.98"/>
+<path fill="none" stroke="#ff0000" d="M796.17,-38.11C804.42,-38.88 812.96,-39.68 821.59,-40.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="821.46,-43.98 831.74,-41.43 822.11,-37.01 821.46,-43.98"/>
 </g>
 <!-- proc~run_fragmented_calculation -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node4" class="node">
 <title>proc~run_fragmented_calculation</title>
 <g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node4"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="606,-45 443,-45 443,-21 606,-21 606,-45"/>
-<text text-anchor="middle" x="524.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="606,-64 443,-64 443,-40 606,-40 606,-64"/>
+<text text-anchor="middle" x="524.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge3" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ff0000" d="M606.02,-41.78C621.42,-43.46 637.38,-45.21 652.25,-46.83"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="652.03,-50.32 662.35,-47.93 652.79,-43.37 652.03,-50.32"/>
+<path fill="none" stroke="#ff0000" d="M606.02,-60.78C621.42,-62.46 637.38,-64.21 652.25,-65.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="652.03,-69.32 662.35,-66.93 652.79,-62.37 652.03,-69.32"/>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge4" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
-<path fill="none" stroke="#00ffff" d="M606.02,-24.22C614.54,-23.29 623.22,-22.34 631.8,-21.4"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="632.24,-24.88 641.8,-20.31 631.48,-17.92 632.24,-24.88"/>
+<path fill="none" stroke="#00ffff" d="M606.02,-43.22C614.54,-42.29 623.22,-41.34 631.8,-40.4"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="632.24,-43.88 641.8,-39.31 631.48,-36.92 632.24,-43.88"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node5" class="node">
 <title>proc~run_calculation</title>
 <g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node5"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="407,-45 313,-45 313,-21 407,-21 407,-45"/>
-<text text-anchor="middle" x="360" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
+<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
 <g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge5" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M407.13,-33C415.24,-33 423.94,-33 432.78,-33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-36.5 442.8,-33 432.8,-29.5 432.8,-36.5"/>
+<path fill="none" stroke="#ff0000" d="M407.13,-52C415.24,-52 423.94,-52 432.78,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-55.5 442.8,-52 432.8,-48.5 432.8,-55.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node6" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node6"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
+<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge6" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node6" class="node">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node7" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-25 90,-25 90,-1 277,-1 277,-25"/>
-<text text-anchor="middle" x="183.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node7"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge6" class="edge">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge7" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M277.11,-23.61C285.83,-24.61 294.48,-25.61 302.7,-26.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-30.05 312.87,-27.71 303.33,-23.1 302.54,-30.05"/>
+<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
 </g>
 <!-- program~main -->
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node7" class="node">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node8" class="node">
 <title>program~main</title>
-<g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-45 0,-45 0,-21 54,-21 54,-45"/>
-<text text-anchor="middle" x="27" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge7" class="edge">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge8" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.24,-33.52C65.28,-33.71 78.27,-33.91 90,-34 173.11,-34.67 193.89,-34.51 277,-34 285.2,-33.95 293.86,-33.87 302.36,-33.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-37.28 312.6,-33.66 302.56,-30.28 302.64,-37.28"/>
+<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge8" class="edge">
+<g id="proc~~compute_mbe_energy_gradient_hessian~~CalledByGraph_edge9" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#ff0000" d="M54.21,-29.61C61.81,-28.62 70.61,-27.48 79.96,-26.27"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-29.74 89.89,-24.99 79.52,-22.8 80.42,-29.74"/>
+<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
 </g>
 </g>
 </svg>
@@ -1711,7 +1726,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~4"></span>
+              <span class="anchor" id="variable-current_log_level~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -1745,7 +1760,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~4"></span>
+              <span class="anchor" id="variable-delta_energies~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1813,7 +1828,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~4"></span>
+              <span class="anchor" id="variable-energies~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1830,7 +1845,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~4"></span>
+              <span class="anchor" id="variable-fragment~7"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1847,7 +1862,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~3"></span>
+              <span class="anchor" id="variable-fragment_size~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -1864,7 +1879,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim"></span>
+              <span class="anchor" id="variable-hess_dim~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1881,7 +1896,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~9"></span>
+              <span class="anchor" id="variable-i~41"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1898,7 +1913,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~2"></span>
+              <span class="anchor" id="variable-iatom~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -1932,7 +1947,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~3"></span>
+              <span class="anchor" id="variable-sum_by_level~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2159,7 +2174,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

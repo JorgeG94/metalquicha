@@ -197,7 +197,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~2"></span>
+              <span class="anchor" id="variable-this~7"></span>
               class(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -212,7 +212,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers"></span>
+              <span class="anchor" id="variable-monomers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -227,7 +227,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -242,7 +242,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -545,35 +545,50 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M317.13,-54C325.24,-54 333.94,-54 342.78,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="342.8,-57.5 352.8,-54 342.8,-50.5 342.8,-57.5"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~fragment_lookup_insert~~CalledByGraph_node9" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~fragment_lookup_insert~~CalledByGraph_node9"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-108 10.5,-108 10.5,-84 176.5,-84 176.5,-108"/>
+<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~fragment_lookup_insert~~CalledByGraph_edge13" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M148.85,-83.92C161.39,-81.06 174.67,-77.98 187,-75 195.32,-72.99 204.09,-70.81 212.69,-68.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-71.96 222.65,-66.11 212.1,-65.18 213.82,-71.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~fragment_lookup_insert~~CalledByGraph_node10" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~fragment_lookup_insert~~CalledByGraph_node9"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-87 0,-87 0,-63 187,-63 187,-87"/>
-<text text-anchor="middle" x="93.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~fragment_lookup_insert~~CalledByGraph_node10"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~fragment_lookup_insert~~CalledByGraph_edge13" class="edge">
+<g id="proc~~fragment_lookup_insert~~CalledByGraph_edge14" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-63.85C195.83,-62.81 204.48,-61.76 212.7,-60.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-64.22 222.87,-59.55 212.52,-57.27 213.36,-64.22"/>
+<path fill="none" stroke="#ff0000" d="M187.11,-54C195.83,-54 204.48,-54 212.7,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-57.5 222.87,-54 212.87,-50.5 212.87,-57.5"/>
 </g>
 <!-- program~main -->
-<g id="proc~~fragment_lookup_insert~~CalledByGraph_node10" class="node">
+<g id="proc~~fragment_lookup_insert~~CalledByGraph_node11" class="node">
 <title>program~main</title>
-<g id="a_proc~~fragment_lookup_insert~~CalledByGraph_node10"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-45 66.5,-45 66.5,-21 120.5,-21 120.5,-45"/>
-<text text-anchor="middle" x="93.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~fragment_lookup_insert~~CalledByGraph_node11"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
+<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~fragment_lookup_insert~~CalledByGraph_edge14" class="edge">
+<g id="proc~~fragment_lookup_insert~~CalledByGraph_edge15" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.62,-36.14C144.88,-39.06 181.81,-43.51 212.76,-47.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-50.74 223,-48.46 213.49,-43.79 212.65,-50.74"/>
+<path fill="none" stroke="#ff0000" d="M120.86,-17.78C139.39,-21.9 164.75,-27.63 187,-33 195.32,-35.01 204.09,-37.19 212.69,-39.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-42.82 222.65,-41.89 213.82,-36.04 212.1,-42.82"/>
 </g>
 </g>
 </svg>
@@ -826,7 +841,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

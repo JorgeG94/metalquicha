@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-global_idx">global_idx</a>
             <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-global_original_idx">global_original_idx</a>
-            <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-i~51">i</a>
+            <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-i~69">i</a>
             <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-i_cap">i_cap</a>
             <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-local_cap_idx">local_cap_idx</a>
             <a class="list-group-item" href="../proc/redistribute_cap_gradients.html#variable-local_idx">local_idx</a>
@@ -458,7 +458,7 @@ forces at the bond breakpoint and must be transferred to the original atoms they
 </g>
 </g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
-<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge21" class="edge">
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge22" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
 <path fill="none" stroke="#0000ff" d="M606.02,-74.22C614.54,-73.29 623.22,-72.34 631.8,-71.4"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="632.24,-74.88 641.8,-70.31 631.48,-67.92 632.24,-74.88"/>
@@ -502,41 +502,56 @@ forces at the bond breakpoint and must be transferred to the original atoms they
 <path fill="none" stroke="#7fff00" d="M783.96,-74.01C799.67,-76.96 816.44,-80.1 832,-83 844.3,-85.3 857.36,-87.73 870.07,-90.09"/>
 <polygon fill="#7fff00" stroke="#7fff00" points="869.69,-93.58 880.16,-91.97 870.97,-86.7 869.69,-93.58"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~redistribute_cap_gradients~~CalledByGraph_node14" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~redistribute_cap_gradients~~CalledByGraph_node14"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-135 100.5,-135 100.5,-111 266.5,-111 266.5,-135"/>
+<text text-anchor="middle" x="183.5" y="-120.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge19" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#00ff00" d="M236.86,-111C257.74,-106.21 281.82,-100.69 303.05,-95.82"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="303.94,-99.21 312.9,-93.57 302.37,-92.39 303.94,-99.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_node15" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~redistribute_cap_gradients~~CalledByGraph_node14"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-115 90,-115 90,-91 277,-91 277,-115"/>
-<text text-anchor="middle" x="183.5" y="-100.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~redistribute_cap_gradients~~CalledByGraph_node15"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-55 90,-55 90,-31 277,-31 277,-55"/>
+<text text-anchor="middle" x="183.5" y="-40.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge19" class="edge">
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge20" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#00ff00" d="M277.11,-92.39C285.83,-91.39 294.48,-90.39 302.7,-89.45"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="303.33,-92.9 312.87,-88.29 302.54,-85.95 303.33,-92.9"/>
+<path fill="none" stroke="#00ff00" d="M236.86,-55C257.74,-59.79 281.82,-65.31 303.05,-70.18"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="302.37,-73.61 312.9,-72.43 303.94,-66.79 302.37,-73.61"/>
 </g>
 <!-- program~main -->
-<g id="proc~~redistribute_cap_gradients~~CalledByGraph_node15" class="node">
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_node16" class="node">
 <title>program~main</title>
-<g id="a_proc~~redistribute_cap_gradients~~CalledByGraph_node15"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-95 0,-95 0,-71 54,-71 54,-95"/>
-<text text-anchor="middle" x="27" y="-80.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~redistribute_cap_gradients~~CalledByGraph_node16"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-75 0,-75 0,-51 54,-51 54,-75"/>
+<text text-anchor="middle" x="27" y="-60.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge20" class="edge">
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge21" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#00ff00" d="M54.24,-82.48C65.28,-82.29 78.27,-82.09 90,-82 173.11,-81.33 193.89,-81.49 277,-82 285.2,-82.05 293.86,-82.13 302.36,-82.22"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="302.56,-85.72 312.6,-82.34 302.64,-78.72 302.56,-85.72"/>
+<path fill="none" stroke="#00ff00" d="M54.25,-64.59C107.66,-67.81 230.05,-75.21 302.43,-79.58"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="302.54,-83.09 312.73,-80.2 302.96,-76.11 302.54,-83.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge22" class="edge">
+<g id="proc~~redistribute_cap_gradients~~CalledByGraph_edge23" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#ff0000" d="M54.21,-86.39C61.81,-87.38 70.61,-88.52 79.96,-89.73"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="79.52,-93.2 89.89,-91.01 80.42,-86.26 79.52,-93.2"/>
+<path fill="none" stroke="#00ff00" d="M54.21,-59.61C61.81,-58.62 70.61,-57.48 79.96,-56.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-59.74 89.89,-54.99 79.52,-52.8 80.42,-59.74"/>
 </g>
 </g>
 </svg>
@@ -676,7 +691,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~51"></span>
+              <span class="anchor" id="variable-i~69"></span>
               integer,
             </td>
               <td>private</td>
@@ -846,7 +861,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

@@ -187,19 +187,19 @@ XTB method implementation type</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">tblite_wavefunction</li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item">tblite_xtb_gfn1</li>
-                  <li class="list-inline-item">tblite_xtb_gfn2</li>
                   <li class="list-inline-item">tblite_xtb_calculator</li>
                   <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">tblite_wavefunction</li>
                   <li class="list-inline-item">tblite_context_type</li>
+                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">mctc_env</li>
-                  <li class="list-inline-item">tblite_xtb_singlepoint</li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item">mctc_io</li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">tblite_xtb_gfn1</li>
+                  <li class="list-inline-item">tblite_xtb_gfn2</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -721,10 +721,10 @@ large graphs.</div>
  -->
 <!-- Title: module~~mqc_method_xtb~~UsedByGraph Pages: 1 -->
 <svg id="modulemqc_method_xtbUsedByGraph" width="641pt" height="119pt"
- viewBox="0.00 0.00 641.00 118.59" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="module~~mqc_method_xtb~~UsedByGraph" class="graph" transform="scale(0.75 0.75) rotate(0) translate(4 154)">
+ viewBox="0.00 0.00 641.00 118.78" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_method_xtb~~UsedByGraph" class="graph" transform="scale(0.66 0.66) rotate(0) translate(4 175)">
 <title>module~~mqc_method_xtb~~UsedByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 850,-154 850,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-175 962,-175 962,4 -4,4"/>
 <!-- module~mqc_method_xtb -->
 <g id="module~~mqc_method_xtb~~UsedByGraph_node1" class="node">
 <title>module~mqc_method_xtb</title>
@@ -816,7 +816,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
-<g id="module~~mqc_method_xtb~~UsedByGraph_edge8" class="edge">
+<g id="module~~mqc_method_xtb~~UsedByGraph_edge9" class="edge">
 <title>module~mqc_driver&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
 <path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M682.76,-134.24C673.71,-133.29 663.46,-132.21 652.65,-131.07"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="652.9,-127.58 642.59,-130.01 652.17,-134.54 652.9,-127.58"/>
@@ -827,20 +827,35 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M407.9,-126.8C399.38,-127.43 390.76,-128.07 382.2,-128.71"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="381.89,-125.22 372.18,-129.45 382.41,-132.2 381.89,-125.22"/>
 </g>
-<!-- program~main -->
+<!-- proc~compute_energy_and_forces -->
 <g id="module~~mqc_method_xtb~~UsedByGraph_node8" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_method_xtb~~UsedByGraph_node8"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="958,-171 792,-171 792,-147 958,-147 958,-171"/>
+<text text-anchor="middle" x="875" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_method_xtb~~UsedByGraph_edge7" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M791.86,-147.76C783.04,-146.56 774.31,-145.36 766.15,-144.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="766.53,-140.77 756.15,-142.88 765.58,-147.7 766.53,-140.77"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_method_xtb~~UsedByGraph_node9" class="node">
 <title>program~main</title>
-<g id="a_module~~mqc_method_xtb~~UsedByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="846,-150 792,-150 792,-126 846,-126 846,-150"/>
-<text text-anchor="middle" x="819" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_module~~mqc_method_xtb~~UsedByGraph_node9"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="902,-129 848,-129 848,-105 902,-105 902,-129"/>
+<text text-anchor="middle" x="875" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;module~mqc_driver -->
-<g id="module~~mqc_method_xtb~~UsedByGraph_edge7" class="edge">
+<g id="module~~mqc_method_xtb~~UsedByGraph_edge8" class="edge">
 <title>program~main&#45;&gt;module~mqc_driver</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M791.87,-138C784.01,-138 775.13,-138 766.38,-138"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="766.23,-134.5 756.23,-138 766.23,-141.5 766.23,-134.5"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M847.96,-120.56C825.68,-123.61 793.09,-128.07 766.44,-131.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="765.62,-128.3 756.18,-133.12 766.56,-135.23 765.62,-128.3"/>
 </g>
 </g>
 </svg>
@@ -1010,7 +1025,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~2"></span>
+              <span class="anchor" id="variable-verbose"></span>
               logical,
             </td>
               <td>public</td>
@@ -1036,17 +1051,17 @@ large graphs.</div>
           <tbody>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy~3'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_energy'>calc_energy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
                   <td><p>Energy-only calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient~3'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_gradient'>calc_gradient</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_gradient.html'>xtb_calc_gradient</a></td>
                   <td><p>Energy + gradient calculation</p></td>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian~3'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
+  <strong><a href='../type/xtb_method_t.html#boundprocedure-calc_hessian'>calc_hessian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/xtb_calc_hessian.html'>xtb_calc_hessian</a></td>
                   <td><p>Placeholder for Hessian calculation</p></td>
               </tr>
           </tbody>
@@ -1080,7 +1095,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~32"></span>
+              <span class="anchor" id="variable-this"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1095,7 +1110,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~17"></span>
+              <span class="anchor" id="variable-fragment"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1110,7 +1125,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~15"></span>
+              <span class="anchor" id="variable-result~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1150,7 +1165,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~33"></span>
+              <span class="anchor" id="variable-this~2"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1165,7 +1180,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~18"></span>
+              <span class="anchor" id="variable-fragment~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1180,7 +1195,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~16"></span>
+              <span class="anchor" id="variable-result~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1220,7 +1235,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~34"></span>
+              <span class="anchor" id="variable-this~3"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1235,7 +1250,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~19"></span>
+              <span class="anchor" id="variable-fragment~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1250,7 +1265,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~17"></span>
+              <span class="anchor" id="variable-result~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1293,7 +1308,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

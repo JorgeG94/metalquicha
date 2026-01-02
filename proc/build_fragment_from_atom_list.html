@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/build_fragment_from_atom_list.html#variable-atom_global_idx~2">atom_global_idx</a>
             <a class="list-group-item" href="../proc/build_fragment_from_atom_list.html#variable-frag_atom_idx~3">frag_atom_idx</a>
-            <a class="list-group-item" href="../proc/build_fragment_from_atom_list.html#variable-i~50">i</a>
+            <a class="list-group-item" href="../proc/build_fragment_from_atom_list.html#variable-i~68">i</a>
             <a class="list-group-item" href="../proc/build_fragment_from_atom_list.html#variable-n_caps~4">n_caps</a>
         </div>
       </div>
@@ -199,7 +199,7 @@ Intersection fragments are ALWAYS NEUTRAL (charge=0, multiplicity=1).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~25"></span>
+              <span class="anchor" id="variable-sys_geom~38"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -229,7 +229,7 @@ Intersection fragments are ALWAYS NEUTRAL (charge=0, multiplicity=1).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~8"></span>
+              <span class="anchor" id="variable-n_atoms~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -259,7 +259,7 @@ Intersection fragments are ALWAYS NEUTRAL (charge=0, multiplicity=1).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~19"></span>
+              <span class="anchor" id="variable-bonds~25"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -593,41 +593,56 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M407.13,-54C415.24,-54 423.94,-54 432.78,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="432.8,-57.5 442.8,-54 432.8,-50.5 432.8,-57.5"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~build_fragment_from_atom_list~~CalledByGraph_node7" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~build_fragment_from_atom_list~~CalledByGraph_node7"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-106 100.5,-106 100.5,-82 266.5,-82 266.5,-106"/>
+<text text-anchor="middle" x="183.5" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge8" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-82C257.74,-77.21 281.82,-71.69 303.05,-66.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-70.21 312.9,-64.57 302.37,-63.39 303.94,-70.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_node8" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~build_fragment_from_atom_list~~CalledByGraph_node7"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-46 90,-46 90,-22 277,-22 277,-46"/>
-<text text-anchor="middle" x="183.5" y="-31.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~build_fragment_from_atom_list~~CalledByGraph_node8"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-26 90,-26 90,-2 277,-2 277,-26"/>
+<text text-anchor="middle" x="183.5" y="-11.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge8" class="edge">
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge9" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M277.11,-44.61C285.83,-45.61 294.48,-46.61 302.7,-47.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-51.05 312.87,-48.71 303.33,-44.1 302.54,-51.05"/>
+<path fill="none" stroke="#ff0000" d="M236.86,-26C257.74,-30.79 281.82,-36.31 303.05,-41.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-44.61 312.9,-43.43 303.94,-37.79 302.37,-44.61"/>
 </g>
 <!-- program~main -->
-<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_node8" class="node">
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_node9" class="node">
 <title>program~main</title>
-<g id="a_proc~~build_fragment_from_atom_list~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
-<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~build_fragment_from_atom_list~~CalledByGraph_node9"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-46 0,-46 0,-22 54,-22 54,-46"/>
+<text text-anchor="middle" x="27" y="-31.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge9" class="edge">
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge10" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.24,-54.52C65.28,-54.71 78.27,-54.91 90,-55 173.11,-55.67 193.89,-55.51 277,-55 285.2,-54.95 293.86,-54.87 302.36,-54.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-58.28 312.6,-54.66 302.56,-51.28 302.64,-58.28"/>
+<path fill="none" stroke="#ff0000" d="M54.25,-35.59C107.66,-38.81 230.05,-46.21 302.43,-50.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-54.09 312.73,-51.2 302.96,-47.11 302.54,-54.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge10" class="edge">
+<g id="proc~~build_fragment_from_atom_list~~CalledByGraph_edge11" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#ff0000" d="M54.21,-50.61C61.81,-49.62 70.61,-48.48 79.96,-47.27"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-50.74 89.89,-45.99 79.52,-43.8 80.42,-50.74"/>
+<path fill="none" stroke="#00ff00" d="M54.21,-30.61C61.81,-29.62 70.61,-28.48 79.96,-27.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-30.74 89.89,-25.99 79.52,-23.8 80.42,-30.74"/>
 </g>
 </g>
 </svg>
@@ -767,7 +782,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~50"></span>
+              <span class="anchor" id="variable-i~68"></span>
               integer,
             </td>
               <td>private</td>
@@ -890,7 +905,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

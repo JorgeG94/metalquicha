@@ -186,7 +186,7 @@ Example: &ldquo;output_w1.json&rdquo; -&gt; &ldquo;w1&rdquo;</p>
     <br>
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-basename~2"></span>
+          <span class="anchor" id="variable-basename~7"></span>
           character(len=256)
         </small>
       </h3>
@@ -523,35 +523,50 @@ Example: &ldquo;output_w1.json&rdquo; -&gt; &ldquo;w1&rdquo;</p>
 <path fill="none" stroke="#0066ff" d="M317.18,-84.52C337.09,-79.58 360.6,-73.73 381.7,-68.49"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="382.65,-71.86 391.51,-66.05 380.97,-65.06 382.65,-71.86"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~get_basename~~CalledByGraph_node19" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~get_basename~~CalledByGraph_node19"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-150 10.5,-150 10.5,-126 176.5,-126 176.5,-150"/>
+<text text-anchor="middle" x="93.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~get_basename~~CalledByGraph_edge27" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M148.85,-125.92C161.39,-123.06 174.67,-119.98 187,-117 195.32,-114.99 204.09,-112.81 212.69,-110.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-113.96 222.65,-108.11 212.1,-107.18 213.82,-113.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~get_basename~~CalledByGraph_node20" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~get_basename~~CalledByGraph_node19"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-129 0,-129 0,-105 187,-105 187,-129"/>
-<text text-anchor="middle" x="93.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~get_basename~~CalledByGraph_node20"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-108 0,-108 0,-84 187,-84 187,-108"/>
+<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~get_basename~~CalledByGraph_edge27" class="edge">
+<g id="proc~~get_basename~~CalledByGraph_edge28" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-105.85C195.83,-104.81 204.48,-103.76 212.7,-102.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-106.22 222.87,-101.55 212.52,-99.27 213.36,-106.22"/>
+<path fill="none" stroke="#ff0000" d="M187.11,-96C195.83,-96 204.48,-96 212.7,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-99.5 222.87,-96 212.87,-92.5 212.87,-99.5"/>
 </g>
 <!-- program~main -->
-<g id="proc~~get_basename~~CalledByGraph_node20" class="node">
+<g id="proc~~get_basename~~CalledByGraph_node21" class="node">
 <title>program~main</title>
-<g id="a_proc~~get_basename~~CalledByGraph_node20"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-87 66.5,-87 66.5,-63 120.5,-63 120.5,-87"/>
-<text text-anchor="middle" x="93.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~get_basename~~CalledByGraph_node21"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-66 66.5,-66 66.5,-42 120.5,-42 120.5,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~get_basename~~CalledByGraph_edge28" class="edge">
+<g id="proc~~get_basename~~CalledByGraph_edge29" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.62,-78.14C144.88,-81.06 181.81,-85.51 212.76,-89.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-92.74 223,-90.46 213.49,-85.79 212.65,-92.74"/>
+<path fill="none" stroke="#ff0000" d="M120.86,-59.78C139.39,-63.9 164.75,-69.63 187,-75 195.32,-77.01 204.09,-79.19 212.69,-81.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-84.82 222.65,-83.89 213.82,-78.04 212.1,-84.82"/>
 </g>
 </g>
 </svg>
@@ -746,7 +761,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

@@ -182,7 +182,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_type~3"></span>
+              <span class="anchor" id="variable-method_type~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-method_str~3"></span>
+          <span class="anchor" id="variable-method_str~2"></span>
           character(len=:), allocatable
         </small>
       </h3>
@@ -423,35 +423,50 @@
 <path fill="none" stroke="#00ffff" d="M317.18,-69.26C325.27,-68.26 333.96,-67.18 342.85,-66.07"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="343.44,-69.53 352.93,-64.82 342.58,-62.58 343.44,-69.53"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~method_type_to_string~~CalledByGraph_node13" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~method_type_to_string~~CalledByGraph_node13"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-129 10.5,-129 10.5,-105 176.5,-105 176.5,-129"/>
+<text text-anchor="middle" x="93.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~method_type_to_string~~CalledByGraph_edge17" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M148.85,-104.92C161.39,-102.06 174.67,-98.98 187,-96 195.32,-93.99 204.09,-91.81 212.69,-89.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-92.96 222.65,-87.11 212.1,-86.18 213.82,-92.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~method_type_to_string~~CalledByGraph_node14" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~method_type_to_string~~CalledByGraph_node13"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-108 0,-108 0,-84 187,-84 187,-108"/>
-<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~method_type_to_string~~CalledByGraph_node14"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-87 0,-87 0,-63 187,-63 187,-87"/>
+<text text-anchor="middle" x="93.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~method_type_to_string~~CalledByGraph_edge17" class="edge">
+<g id="proc~~method_type_to_string~~CalledByGraph_edge18" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-84.85C195.83,-83.81 204.48,-82.76 212.7,-81.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-85.22 222.87,-80.55 212.52,-78.27 213.36,-85.22"/>
+<path fill="none" stroke="#ff0000" d="M187.11,-75C195.83,-75 204.48,-75 212.7,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-78.5 222.87,-75 212.87,-71.5 212.87,-78.5"/>
 </g>
 <!-- program~main -->
-<g id="proc~~method_type_to_string~~CalledByGraph_node14" class="node">
+<g id="proc~~method_type_to_string~~CalledByGraph_node15" class="node">
 <title>program~main</title>
-<g id="a_proc~~method_type_to_string~~CalledByGraph_node14"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-66 66.5,-66 66.5,-42 120.5,-42 120.5,-66"/>
-<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~method_type_to_string~~CalledByGraph_node15"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-45 66.5,-45 66.5,-21 120.5,-21 120.5,-45"/>
+<text text-anchor="middle" x="93.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~method_type_to_string~~CalledByGraph_edge18" class="edge">
+<g id="proc~~method_type_to_string~~CalledByGraph_edge19" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.62,-57.14C144.88,-60.06 181.81,-64.51 212.76,-68.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-71.74 223,-69.46 213.49,-64.79 212.65,-71.74"/>
+<path fill="none" stroke="#ff0000" d="M120.86,-38.78C139.39,-42.9 164.75,-48.63 187,-54 195.32,-56.01 204.09,-58.19 212.69,-60.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-63.82 222.65,-62.89 213.82,-57.04 212.1,-63.82"/>
 </g>
 </g>
 </svg>
@@ -596,7 +611,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

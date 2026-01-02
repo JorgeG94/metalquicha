@@ -136,28 +136,28 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-backward_gradients">backward_gradients</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-backward_gradients~2">backward_gradients</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-coord_timer~3">coord_timer</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-current_disp">current_disp</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-current_log_level~9">current_log_level</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-current_log_level~3">current_log_level</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-disp_idx">disp_idx</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-dummy_msg~4">dummy_msg</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-finished_workers~2">finished_workers</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-forward_gradients">forward_gradients</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-forward_gradients~2">forward_gradients</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-full_system~2">full_system</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-grad_buffer">grad_buffer</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-gradient_type">gradient_type</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-has_pending~2">has_pending</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-hess_norm">hess_norm</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-hessian">hessian</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-i~15">i</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-hessian~3">hessian</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-i~9">i</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-is_verbose~2">is_verbose</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-j">j</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-n_atoms">n_atoms</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-n_displacements">n_displacements</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-j~4">j</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-n_atoms~2">n_atoms</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-n_displacements~2">n_displacements</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-n_ranks~2">n_ranks</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-req~6">req</a>
-            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-result~4">result</a>
+            <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-result~8">result</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-result_line">result_line</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-status~4">status</a>
             <a class="list-group-item" href="../proc/hessian_coordinator.html#variable-worker_rank">worker_rank</a>
@@ -772,7 +772,7 @@ Distributes displacement work and collects gradient results</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -787,7 +787,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~14"></span>
+              <span class="anchor" id="variable-sys_geom~17"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -802,7 +802,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -817,7 +817,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-displacement~2"></span>
+              <span class="anchor" id="variable-displacement~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1347,97 +1347,112 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~hessian_coordinator~~CalledByGraph Pages: 1 -->
-<svg id="prochessian_coordinatorCalledByGraph" width="641pt" height="33pt"
- viewBox="0.00 0.00 641.00 32.77" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~hessian_coordinator~~CalledByGraph" class="graph" transform="scale(0.63 0.63) rotate(0) translate(4 48)">
+<svg id="prochessian_coordinatorCalledByGraph" width="641pt" height="71pt"
+ viewBox="0.00 0.00 641.00 70.59" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~hessian_coordinator~~CalledByGraph" class="graph" transform="scale(0.63 0.63) rotate(0) translate(4 108)">
 <title>proc~~hessian_coordinator~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-48 1013,-48 1013,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 1013,-108 1013,4 -4,4"/>
 <!-- proc~hessian_coordinator -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_node1" class="node">
 <title>proc~hessian_coordinator</title>
-<polygon fill="none" stroke="black" points="1009,-44 888,-44 888,-20 1009,-20 1009,-44"/>
-<text text-anchor="middle" x="948.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50">hessian_coordinator</text>
+<polygon fill="none" stroke="black" points="1009,-64 888,-64 888,-40 1009,-40 1009,-64"/>
+<text text-anchor="middle" x="948.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">hessian_coordinator</text>
 </g>
 <!-- proc~distributed_unfragmented_hessian -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_node2" class="node">
 <title>proc~distributed_unfragmented_hessian</title>
 <g id="a_proc~~hessian_coordinator~~CalledByGraph_node2"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="852,-44 655,-44 655,-20 852,-20 852,-44"/>
-<text text-anchor="middle" x="753.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="852,-64 655,-64 655,-40 852,-40 852,-64"/>
+<text text-anchor="middle" x="753.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~distributed_unfragmented_hessian&#45;&gt;proc~hessian_coordinator -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_edge1" class="edge">
 <title>proc~distributed_unfragmented_hessian&#45;&gt;proc~hessian_coordinator</title>
-<path fill="none" stroke="#ff0000" d="M852.13,-32C860.77,-32 869.4,-32 877.74,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="877.75,-35.5 887.75,-32 877.75,-28.5 877.75,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M852.13,-52C860.77,-52 869.4,-52 877.74,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="877.75,-55.5 887.75,-52 877.75,-48.5 877.75,-55.5"/>
 </g>
 <!-- proc~run_unfragmented_calculation -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_node3" class="node">
 <title>proc~run_unfragmented_calculation</title>
 <g id="a_proc~~hessian_coordinator~~CalledByGraph_node3"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="619,-44 443,-44 443,-20 619,-20 619,-44"/>
-<text text-anchor="middle" x="531" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="619,-64 443,-64 443,-40 619,-40 619,-64"/>
+<text text-anchor="middle" x="531" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_unfragmented_calculation&#45;&gt;proc~distributed_unfragmented_hessian -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_edge2" class="edge">
 <title>proc~run_unfragmented_calculation&#45;&gt;proc~distributed_unfragmented_hessian</title>
-<path fill="none" stroke="#ff0000" d="M619.15,-32C627.54,-32 636.12,-32 644.68,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="644.71,-35.5 654.71,-32 644.71,-28.5 644.71,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M619.15,-52C627.54,-52 636.12,-52 644.68,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="644.71,-55.5 654.71,-52 644.71,-48.5 644.71,-55.5"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_node4" class="node">
 <title>proc~run_calculation</title>
 <g id="a_proc~~hessian_coordinator~~CalledByGraph_node4"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="407,-44 313,-44 313,-20 407,-20 407,-44"/>
-<text text-anchor="middle" x="360" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
+<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
 <g id="proc~~hessian_coordinator~~CalledByGraph_edge3" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M407.18,-32C415.27,-32 423.96,-32 432.85,-32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="432.93,-35.5 442.93,-32 432.93,-28.5 432.93,-35.5"/>
+<path fill="none" stroke="#ff0000" d="M407.18,-52C415.27,-52 423.96,-52 432.85,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.93,-55.5 442.93,-52 432.93,-48.5 432.93,-55.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~hessian_coordinator~~CalledByGraph_node5" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~hessian_coordinator~~CalledByGraph_node5"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
+<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~hessian_coordinator~~CalledByGraph_edge4" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~hessian_coordinator~~CalledByGraph_node5" class="node">
+<g id="proc~~hessian_coordinator~~CalledByGraph_node6" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~hessian_coordinator~~CalledByGraph_node5"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<g id="a_proc~~hessian_coordinator~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
 <polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
 <text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~hessian_coordinator~~CalledByGraph_edge4" class="edge">
+<g id="proc~~hessian_coordinator~~CalledByGraph_edge5" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M277.11,-22.61C285.83,-23.61 294.48,-24.61 302.7,-25.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-29.05 312.87,-26.71 303.33,-22.1 302.54,-29.05"/>
+<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
 </g>
 <!-- program~main -->
-<g id="proc~~hessian_coordinator~~CalledByGraph_node6" class="node">
+<g id="proc~~hessian_coordinator~~CalledByGraph_node7" class="node">
 <title>program~main</title>
-<g id="a_proc~~hessian_coordinator~~CalledByGraph_node6"><a xlink:href="../program/main.html" xlink:title="main">
+<g id="a_proc~~hessian_coordinator~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
 <polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
 <text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~hessian_coordinator~~CalledByGraph_edge5" class="edge">
+<g id="proc~~hessian_coordinator~~CalledByGraph_edge6" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.24,-32.52C65.28,-32.71 78.27,-32.91 90,-33 173.11,-33.67 193.89,-33.51 277,-33 285.2,-32.95 293.86,-32.87 302.36,-32.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.64,-36.28 312.6,-32.66 302.56,-29.28 302.64,-36.28"/>
+<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~hessian_coordinator~~CalledByGraph_edge6" class="edge">
+<g id="proc~~hessian_coordinator~~CalledByGraph_edge7" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#ff0000" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
 </g>
 </g>
 </svg>
@@ -1543,7 +1558,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-backward_gradients"></span>
+              <span class="anchor" id="variable-backward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1594,7 +1609,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~9"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1662,7 +1677,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-forward_gradients"></span>
+              <span class="anchor" id="variable-forward_gradients~2"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1764,7 +1779,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian"></span>
+              <span class="anchor" id="variable-hessian~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1781,7 +1796,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~15"></span>
+              <span class="anchor" id="variable-i~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1815,7 +1830,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j"></span>
+              <span class="anchor" id="variable-j~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1832,7 +1847,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms"></span>
+              <span class="anchor" id="variable-n_atoms~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1849,7 +1864,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_displacements"></span>
+              <span class="anchor" id="variable-n_displacements~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1900,7 +1915,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~4"></span>
+              <span class="anchor" id="variable-result~8"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -2206,7 +2221,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>

@@ -139,11 +139,11 @@
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-calc~2">calc</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-ctx~2">ctx</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-energy~3">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~38">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~8">error</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-gradient~2">gradient</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-mol~8">mol</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-mol~3">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-num~2">num</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma~2">sigma</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma">sigma</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-verbosity~2">verbosity</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-wfn~2">wfn</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-xyz~2">xyz</a>
@@ -204,7 +204,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~33"></span>
+              <span class="anchor" id="variable-this~2"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~18"></span>
+              <span class="anchor" id="variable-fragment~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~16"></span>
+              <span class="anchor" id="variable-result~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -684,35 +684,50 @@ large graphs.</div>
 <path fill="none" stroke="#00ffff" d="M317.18,-78.26C325.27,-77.26 333.96,-76.18 342.85,-75.07"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="343.44,-78.53 352.93,-73.82 342.58,-71.58 343.44,-78.53"/>
 </g>
-<!-- proc~run_multi_molecule_calculations -->
+<!-- proc~compute_energy_and_forces -->
 <g id="proc~~xtb_calc_gradient~~CalledByGraph_node14" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~xtb_calc_gradient~~CalledByGraph_node14"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-138 10.5,-138 10.5,-114 176.5,-114 176.5,-138"/>
+<text text-anchor="middle" x="93.5" y="-123.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~xtb_calc_gradient~~CalledByGraph_edge19" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M148.85,-113.92C161.39,-111.06 174.67,-107.98 187,-105 195.32,-102.99 204.09,-100.81 212.69,-98.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-101.96 222.65,-96.11 212.1,-95.18 213.82,-101.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~xtb_calc_gradient~~CalledByGraph_node15" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~xtb_calc_gradient~~CalledByGraph_node14"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-117 0,-117 0,-93 187,-93 187,-117"/>
-<text text-anchor="middle" x="93.5" y="-102.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+<g id="a_proc~~xtb_calc_gradient~~CalledByGraph_node15"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-96 0,-96 0,-72 187,-72 187,-96"/>
+<text text-anchor="middle" x="93.5" y="-81.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~xtb_calc_gradient~~CalledByGraph_edge19" class="edge">
+<g id="proc~~xtb_calc_gradient~~CalledByGraph_edge20" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-93.85C195.83,-92.81 204.48,-91.76 212.7,-90.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.36,-94.22 222.87,-89.55 212.52,-87.27 213.36,-94.22"/>
+<path fill="none" stroke="#ff0000" d="M187.11,-84C195.83,-84 204.48,-84 212.7,-84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-87.5 222.87,-84 212.87,-80.5 212.87,-87.5"/>
 </g>
 <!-- program~main -->
-<g id="proc~~xtb_calc_gradient~~CalledByGraph_node15" class="node">
+<g id="proc~~xtb_calc_gradient~~CalledByGraph_node16" class="node">
 <title>program~main</title>
-<g id="a_proc~~xtb_calc_gradient~~CalledByGraph_node15"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-75 66.5,-75 66.5,-51 120.5,-51 120.5,-75"/>
-<text text-anchor="middle" x="93.5" y="-60.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<g id="a_proc~~xtb_calc_gradient~~CalledByGraph_node16"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-54 66.5,-54 66.5,-30 120.5,-30 120.5,-54"/>
+<text text-anchor="middle" x="93.5" y="-39.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~xtb_calc_gradient~~CalledByGraph_edge20" class="edge">
+<g id="proc~~xtb_calc_gradient~~CalledByGraph_edge21" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.62,-66.14C144.88,-69.06 181.81,-73.51 212.76,-77.23"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.65,-80.74 223,-78.46 213.49,-73.79 212.65,-80.74"/>
+<path fill="none" stroke="#ff0000" d="M120.86,-47.78C139.39,-51.9 164.75,-57.63 187,-63 195.32,-65.01 204.09,-67.19 212.69,-69.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-72.82 222.65,-71.89 213.82,-66.04 212.1,-72.82"/>
 </g>
 </g>
 </svg>
@@ -869,7 +884,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~38"></span>
+              <span class="anchor" id="variable-error~8"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -903,7 +918,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mol~8"></span>
+              <span class="anchor" id="variable-mol~3"></span>
               type(structure_type),
             </td>
               <td>private</td>
@@ -937,7 +952,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma~2"></span>
+              <span class="anchor" id="variable-sigma"></span>
               real(kind=wp),
             </td>
               <td>private,</td>
@@ -1128,7 +1143,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-02 13:49 +0000             </p>
+ on 2026-01-02 13:59 +0000             </p>
           </div>
         </div>
         <br>
