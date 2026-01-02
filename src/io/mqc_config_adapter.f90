@@ -7,7 +7,7 @@ module mqc_config_adapter
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_calculation_config, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
+   use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    implicit none
    private
 
