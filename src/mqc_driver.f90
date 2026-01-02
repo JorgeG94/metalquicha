@@ -75,7 +75,7 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-       call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config%calc_config)
+         call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config)
       else
          call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
                                          config%allow_overlapping_fragments, &
@@ -84,19 +84,18 @@ contains
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, calc_config)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! For single-molecule mode: Only rank 0 runs (validates single rank)
       !! For multi-molecule mode: ALL ranks can run (each with their own molecule)
       !! For Hessian calculations with multiple ranks: Uses distributed parallelization
-      use mqc_calculation_config, only: calculation_config_t
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
-      type(calculation_config_t), intent(in), optional :: calc_config  !! Calculation configuration
+      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
 
       ! For Hessian calculations with multiple ranks, use distributed approach
       if (calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1) then
@@ -106,7 +105,7 @@ contains
             call logger%info("  MPI ranks: "//to_char(world_comm%size()))
             call logger%info(" ")
          end if
-         call distributed_unfragmented_hessian(world_comm, sys_geom, method, calc_config)
+         call distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
          return
       end if
 

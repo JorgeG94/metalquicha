@@ -785,7 +785,7 @@ contains
 
    end subroutine serial_fragment_processor
 
-   subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, calc_config)
+   subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
       !! Compute Hessian for unfragmented system using MPI distribution
       !!
       !! Uses a dynamic work queue approach: workers request displacement indices
@@ -794,7 +794,7 @@ contains
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
                                         finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT, &
                                         copy_and_displace_geometry
-      use mqc_calculation_config, only: calculation_config_t
+      use mqc_config_adapter, only: driver_config_t
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -802,7 +802,7 @@ contains
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
-      type(calculation_config_t), intent(in), optional :: calc_config  !! Calculation configuration
+      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
 
       integer :: my_rank, n_ranks
       real(dp) :: displacement
@@ -811,8 +811,8 @@ contains
       n_ranks = world_comm%size()
 
       ! Use provided displacement or default
-      if (present(calc_config)) then
-         displacement = calc_config%hessian%displacement
+      if (present(driver_config)) then
+         displacement = driver_config%hessian%displacement
       else
          displacement = DEFAULT_DISPLACEMENT
       end if
