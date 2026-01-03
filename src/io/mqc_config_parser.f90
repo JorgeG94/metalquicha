@@ -662,6 +662,9 @@ contains
 
          if (trim(strip_comment(line)) == 'end') then
             if (in_cutoffs) then
+               ! Validate cutoffs before leaving the cutoffs section
+               call validate_cutoffs(config, error)
+               if (error%has_error()) return
                in_cutoffs = .false.
                cycle
             else
@@ -1373,5 +1376,41 @@ contains
       end do
 
    end subroutine parse_connectivity_generic
+
+   subroutine validate_cutoffs(config, error)
+      !! Validate that fragment cutoffs are monotonically decreasing
+      !! For n-mer level N, cutoff(N) must be <= cutoff(N-1)
+      type(mqc_config_t), intent(in) :: config
+      type(error_t), intent(out) :: error
+
+      integer :: i, level_low, level_high
+      real(dp) :: cutoff_low, cutoff_high
+      character(len=256) :: msg
+
+      if (.not. allocated(config%fragment_cutoffs)) return
+
+      ! Check monotonicity for consecutive levels with defined cutoffs
+      do i = 2, size(config%fragment_cutoffs)
+         level_low = i - 1
+         level_high = i
+
+         cutoff_low = config%fragment_cutoffs(level_low)
+         cutoff_high = config%fragment_cutoffs(level_high)
+
+         ! Skip if either cutoff is not defined (negative or zero sentinel value)
+         if (cutoff_low <= 0.0_dp .or. cutoff_high <= 0.0_dp) cycle
+
+         ! Validate monotonic decreasing
+         if (cutoff_high > cutoff_low) then
+            write (msg, '(a,i0,a,f0.2,a,i0,a,f0.2,a)') &
+               "Fragment cutoffs must be monotonically decreasing: ", &
+               level_high, "-mer cutoff (", cutoff_high, ") cannot be larger than ", &
+               level_low, "-mer cutoff (", cutoff_low, "). Check %cutoffs section."
+            call error%set(ERROR_PARSE, trim(msg))
+            return
+         end if
+      end do
+
+   end subroutine validate_cutoffs
 
 end module mqc_config_parser

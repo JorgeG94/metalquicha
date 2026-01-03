@@ -350,7 +350,20 @@ def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian],
 
                 cutoff_dict[nmer_level] = float(value)
 
+            # Validate that cutoffs are monotonically decreasing (or equal)
             if cutoff_dict:
+                sorted_levels = sorted(cutoff_dict.keys())
+                for i in range(len(sorted_levels) - 1):
+                    level_low = sorted_levels[i]
+                    level_high = sorted_levels[i + 1]
+                    cutoff_low = cutoff_dict[level_low]
+                    cutoff_high = cutoff_dict[level_high]
+
+                    if cutoff_high > cutoff_low:
+                        die(f"keywords.fragmentation.cutoffs: {level_high}-mer cutoff ({cutoff_high}) " +
+                            f"cannot be larger than {level_low}-mer cutoff ({cutoff_low}). " +
+                            f"Cutoffs must be monotonically decreasing.")
+
                 cutoffs = FragCutoffs(cutoffs=cutoff_dict)
 
         frag = Fragmentation(

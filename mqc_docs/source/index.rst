@@ -20,5 +20,6 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    history
    installation
    getting_started
+   capabilities
    input_files
    validation
