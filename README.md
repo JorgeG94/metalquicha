@@ -27,6 +27,28 @@ If you are interested in contributing, please see [here](https://github.com/Jorg
 
 You can see [Project](https://github.com/users/JorgeG94/projects/4) for some information on development priorities and things being done!
 
+## AI Disclaimer
+
+The development of Metalquicha has been assisted by LLMs, such as ChatGPT, and Claude. The philosophy of "vibe coding" applied to this project is as follows:
+
+- The programmer (Jorge), describes the overall architecture of a subroutine to be implemented and provides pseudocode
+- The LLM produces an implementation that compiles
+- The programmer writes a unit test for the function and validates the subroutine
+- The LLM is asked to optimize the code while keeping the tests passing
+- The programmer evaluates the code and evaluates if the routine needs to be redone or just upgraded by hand
+- Either the programmer changes the code themselves or if they are lazy or cooking dinner while developing, they ask the LLM to try again
+
+This was applied for routines such as the `mqc_finite_difference` module, which is pretty trivial to implement.
+
+LLMs were also extensively used to add comments and basic documentation for the code. The idea is that
+Metalquicha is a platform for development of fragmentation methods aimed to be suitable for everyone -
+from students with no experience in Fortran and/or Quantum Chemistry to experienced researchers with
+extensive expertise in both.
+
+*Justification for LLM use*
+
+I wanted to see to what extent LLMs can be used for Fortran code development. I can conclude that they are actually quite good.
+
 ## Building
 
 You will need an internet connection to download the dependencies. The main dependencies are:
