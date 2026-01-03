@@ -209,6 +209,10 @@ contains
                   call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
                   n_primaries = int(total_fragments)
                end if
+
+               ! Sort primaries by size (largest first)
+               total_fragments = int(n_primaries, int64)
+               call sort_fragments_by_size(polymers, total_fragments, max_level)
             end if
 
             call logger%info("Generated "//to_char(n_primaries)//" primary "//to_char(max_level)//"-mers for GMBE("// &
@@ -252,6 +256,9 @@ contains
 
             ! Apply distance-based screening if cutoffs are provided
             call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
+
+            ! Sort fragments by size (largest first) for better load balancing
+            call sort_fragments_by_size(polymers, total_fragments, max_level)
 
             call logger%info("Generated fragments:")
             call logger%info("  Total fragments: "//to_char(total_fragments))
@@ -420,6 +427,57 @@ contains
       end if
 
    end subroutine apply_distance_screening
+
+   subroutine sort_fragments_by_size(polymers, total_fragments, max_level)
+      !! Sort fragments by size (largest first) for better load balancing
+      !! Uses in-place sorting to reorder the polymers array
+      !! Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimers)
+      use pic_sorting, only: sort_index
+      use pic_types, only: int_index
+
+      integer, intent(inout) :: polymers(:, :)
+      integer(int64), intent(in) :: total_fragments
+      integer, intent(in) :: max_level
+
+      integer(int64), allocatable :: fragment_sizes(:)
+      integer(int_index), allocatable :: sort_indices(:)
+      integer, allocatable :: polymers_copy(:, :)
+      integer(int64) :: i, j, sorted_idx
+      integer :: fragment_size
+
+      ! Nothing to sort if we have 1 or fewer fragments
+      if (total_fragments <= 1) return
+
+      ! Allocate arrays for sorting (0-indexed for PIC library)
+      allocate (fragment_sizes(0:total_fragments - 1))
+      allocate (sort_indices(0:total_fragments - 1))
+
+      ! Calculate fragment sizes
+      do i = 0, total_fragments - 1
+         fragment_size = count(polymers(i + 1, :) > 0)
+         fragment_sizes(i) = int(fragment_size, int64)
+      end do
+
+      ! Get sort permutation in descending order (largest first)
+      call sort_index(fragment_sizes, sort_indices, reverse=.true.)
+
+      ! Reorder polymers array based on sort permutation
+      allocate (polymers_copy(size(polymers, 1), size(polymers, 2)))
+      polymers_copy = polymers
+
+      ! Reorder: new position j gets data from original position sort_indices(j)
+      do j = 0, total_fragments - 1
+         sorted_idx = sort_indices(j) + 1  ! Convert to 1-indexed
+         polymers(j + 1, :) = polymers_copy(sorted_idx, :)
+      end do
+
+      deallocate (polymers_copy)
+      deallocate (fragment_sizes)
+      deallocate (sort_indices)
+
+      call logger%info("Fragments sorted by size (largest first) for load balancing")
+
+   end subroutine sort_fragments_by_size
 
    subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
       !! Run calculations for multiple molecules with MPI parallelization
