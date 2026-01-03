@@ -45,6 +45,10 @@ Metalquicha is a platform for development of fragmentation methods aimed to be s
 from students with no experience in Fortran and/or Quantum Chemistry to experienced researchers with
 extensive expertise in both.
 
+*Justification for LLM use*
+
+I wanted to see to what extent LLMs can be used for Fortran code development. I can conclude that they are actually quite good.
+
 ## Building
 
 You will need an internet connection to download the dependencies. The main dependencies are:
