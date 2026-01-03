@@ -101,8 +101,9 @@ energy can become a bottleneck if enough fragments are created.
 
 ## Documentation
 
-The code is thoroughly documented using FORD for program extendability and the use of
-Metalquicha is covered in a read-the-docs hosted website.
+The code is thoroughly documented using [FORD](https://forddocs.readthedocs.io/en/stable/)
+for the [code documentation](https://jorgeg94.github.io/metalquicha/),  and the use of
+Metalquicha is covered in a read-the-docs [hosted website](https://metalquicha.readthedocs.io/en/latest/).
 
 ## Testing
 
