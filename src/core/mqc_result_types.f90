@@ -208,6 +208,9 @@ contains
       call send(comm, result%energy%cc%doubles, dest, tag)
       call send(comm, result%energy%cc%triples, dest, tag)
 
+      ! Send fragment metadata
+      call send(comm, result%distance, dest, tag)
+
       ! Send gradient flag and data if present
       call send(comm, result%has_gradient, dest, tag)
       if (result%has_gradient) then
@@ -232,6 +235,9 @@ contains
       call send(comm, result%energy%cc%singles, dest, tag)
       call send(comm, result%energy%cc%doubles, dest, tag)
       call send(comm, result%energy%cc%triples, dest, tag)
+
+      ! Send fragment metadata
+      call send(comm, result%distance, dest, tag)
 
       ! Send gradient flag and data (blocking to avoid needing multiple request handles)
       call send(comm, result%has_gradient, dest, tag)
@@ -262,6 +268,9 @@ contains
       call recv(comm, result%energy%cc%doubles, source, tag, status)
       call recv(comm, result%energy%cc%triples, source, tag, status)
       result%has_energy = .true.
+
+      ! Receive fragment metadata
+      call recv(comm, result%distance, source, tag, status)
 
       ! Receive gradient flag and data if present
       call recv(comm, result%has_gradient, source, tag, status)
@@ -297,6 +306,9 @@ contains
       call recv(comm, result%energy%cc%doubles, source, tag, status)
       call recv(comm, result%energy%cc%triples, source, tag, status)
       result%has_energy = .true.
+
+      ! Receive fragment metadata
+      call recv(comm, result%distance, source, tag, status)
 
       ! Receive gradient flag and data (blocking to avoid needing multiple request handles)
       call recv(comm, result%has_gradient, source, tag, status)
