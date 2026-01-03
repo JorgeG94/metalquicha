@@ -25,6 +25,8 @@ its chemistry engine which performs energy calculations.
 
 If you are interested in contributing, please see [here](https://github.com/JorgeG94/pic/blob/main/contributing.md). Pic is the main project here and all the contributions fall downstream.
 
+You can see [Project](https://github.com/users/JorgeG94/projects/4) for some information on development priorities and things being done!
+
 ## Building
 
 You will need an internet connection to download the dependencies. The main dependencies are:
