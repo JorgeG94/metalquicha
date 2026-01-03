@@ -36,7 +36,15 @@ you will need the following dependencies:
 - An MPI implementation with support for the `mpi_f08` module
 - BLAS and LAPACK libraries
 
-To build Metalquicha, you can use the following commands:
+A simple way to install the dependencies is using conda, simply do:
+
+.. code-block:: bash
+
+   conda env create --name mqc --file environment.yml
+   conda install -c conda-forge -n mqc gfortran=14.2.0
+   conda activate mqc
+
+Then, to build Metalquicha, you can use the following commands:
 
 .. code-block:: bash
 
