@@ -137,18 +137,18 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-body_level~3">body_level</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-current_log_level~4">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_e~4">delta_E</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_energies~4">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_gradients~3">delta_gradients</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-delta_hessians">delta_hessians</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-do_detailed_print~3">do_detailed_print</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-energies~4">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment~16">fragment</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment~4">fragment</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-fragment_size~3">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-hess_dim~3">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-i~26">i</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-iatom~9">iatom</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-hess_dim">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-i~5">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-iatom~2">iatom</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-lookup~5">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-sum_by_level~3">sum_by_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy_gradient_hessian.html#variable-temp_hess">temp_hess</a>
@@ -195,9 +195,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -584,7 +584,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -614,7 +614,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~5"></span>
+              <span class="anchor" id="variable-max_level~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -629,7 +629,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~6"></span>
+              <span class="anchor" id="variable-results~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -644,7 +644,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~22"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -659,7 +659,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~5"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -674,7 +674,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~4"></span>
+              <span class="anchor" id="variable-total_gradient~2"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -689,7 +689,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -704,7 +704,7 @@ Most efficient for simultaneous energy+gradient+Hessian calculations</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~4"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1756,7 +1756,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1875,7 +1875,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~16"></span>
+              <span class="anchor" id="variable-fragment~4"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1909,7 +1909,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~3"></span>
+              <span class="anchor" id="variable-hess_dim"></span>
               integer,
             </td>
               <td>private</td>
@@ -1926,7 +1926,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~26"></span>
+              <span class="anchor" id="variable-i~5"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1943,7 +1943,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~9"></span>
+              <span class="anchor" id="variable-iatom~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -2204,7 +2204,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-03 10:17 +0000             </p>
+ on 2026-01-03 12:12 +0000             </p>
           </div>
         </div>
         <br>

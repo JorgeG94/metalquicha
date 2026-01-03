@@ -142,19 +142,19 @@
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-finished_nodes">finished_nodes</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-has_pending">has_pending</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-hess_dim~2">hess_dim</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-hess_dim~5">hess_dim</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_dummy">local_dummy</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_finished_workers">local_finished_workers</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-local_status">local_status</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-req">req</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-request_source">request_source</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results~2">results</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results~7">results</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results_received">results_received</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-status">status</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-term_idx">term_idx</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~2">total_energy</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~2">total_gradient</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_hessian~2">total_hessian</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~8">total_energy</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~6">total_gradient</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_hessian~4">total_hessian</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_source">worker_source</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_term_map">worker_term_map</a>
         </div>
@@ -200,9 +200,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -567,7 +567,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -582,7 +582,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -597,7 +597,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~3"></span>
+              <span class="anchor" id="variable-pie_atom_sets~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -612,7 +612,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~3"></span>
+              <span class="anchor" id="variable-pie_coefficients~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -627,7 +627,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~3"></span>
+              <span class="anchor" id="variable-n_pie_terms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -642,7 +642,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -657,7 +657,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~2"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -672,7 +672,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~12"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -687,7 +687,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -702,7 +702,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~7"></span>
+              <span class="anchor" id="variable-calc_type~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -717,7 +717,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~10"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1626,7 +1626,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~2"></span>
+              <span class="anchor" id="variable-hess_dim~5"></span>
               integer,
             </td>
               <td>private</td>
@@ -1728,7 +1728,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~2"></span>
+              <span class="anchor" id="variable-results~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -1796,7 +1796,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~2"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -1813,7 +1813,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~2"></span>
+              <span class="anchor" id="variable-total_gradient~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1830,7 +1830,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~2"></span>
+              <span class="anchor" id="variable-total_hessian~4"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2232,7 +2232,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-03 10:17 +0000             </p>
+ on 2026-01-03 12:12 +0000             </p>
           </div>
         </div>
         <br>
