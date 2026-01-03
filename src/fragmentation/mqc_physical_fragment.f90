@@ -25,6 +25,7 @@ module mqc_physical_fragment
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
+   public :: calculate_monomer_distance !! Calculate minimal distance between monomers in a fragment
 
    type :: physical_fragment_t
       !! Physical molecular fragment with atomic coordinates and properties
