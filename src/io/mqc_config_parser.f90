@@ -117,8 +117,7 @@ module mqc_config_parser
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric
-      real(dp) :: dimer_cutoff = 0.0_dp
-      real(dp) :: trimer_cutoff = 0.0_dp
+      real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs indexed by n-mer level (2=dimer, 3=trimer, etc.)
 
       ! Logger settings (kept for compatibility)
       character(len=:), allocatable :: log_level
@@ -682,15 +681,46 @@ contains
          value = adjustl(line(eq_pos + 1:))
 
          if (in_cutoffs) then
-            select case (trim(key))
-            case ('dimer')
-               read (value, *, iostat=io_stat) config%dimer_cutoff
-            case ('trimer')
-               read (value, *, iostat=io_stat) config%trimer_cutoff
-            case default
-               call error%set(ERROR_PARSE, "Unknown key in %fragmentation cutoffs subsection: "//trim(key))
-               return
-            end select
+            ! Parse cutoffs: numeric keys like "2", "3", "4", etc.
+            ! representing n-mer level (2=dimer, 3=trimer, etc.)
+            block
+               integer :: nmer_level
+               real(dp) :: cutoff_value
+
+               ! Try to read the key as an integer (n-mer level)
+               read (key, *, iostat=io_stat) nmer_level
+               if (io_stat /= 0) then
+                  call error%set(ERROR_PARSE, "Invalid n-mer level in cutoffs (expected integer): "//trim(key))
+                  return
+               end if
+
+               ! Validate n-mer level
+               if (nmer_level < 2) then
+                  call error%set(ERROR_PARSE, "N-mer level must be >= 2 in cutoffs")
+                  return
+               end if
+
+               if (nmer_level > 8) then
+                  call error%set(ERROR_PARSE, "N-mer level too large in cutoffs (max 8 for octamer)")
+                  return
+               end if
+
+               ! Read the cutoff value
+               read (value, *, iostat=io_stat) cutoff_value
+               if (io_stat /= 0) then
+                  call error%set(ERROR_PARSE, "Invalid cutoff value: "//trim(value))
+                  return
+               end if
+
+               ! Allocate array if not yet allocated (up to octamer = 8)
+               if (.not. allocated(config%fragment_cutoffs)) then
+                  allocate (config%fragment_cutoffs(8))
+                  config%fragment_cutoffs = -1.0_dp  ! Initialize with sentinel value
+               end if
+
+               ! Store the cutoff value at the appropriate index
+               config%fragment_cutoffs(nmer_level) = cutoff_value
+            end block
          else
             select case (trim(key))
             case ('method')
@@ -1016,6 +1046,7 @@ contains
       if (allocated(this%embedding)) deallocate (this%embedding)
       if (allocated(this%cutoff_method)) deallocate (this%cutoff_method)
       if (allocated(this%distance_metric)) deallocate (this%distance_metric)
+      if (allocated(this%fragment_cutoffs)) deallocate (this%fragment_cutoffs)
 
       call this%geometry%destroy()
 

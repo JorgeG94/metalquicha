@@ -152,17 +152,19 @@ contains
 
    subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
                                             energies, delta_energies, sum_by_level, total_energy, &
-                                            total_gradient, total_hessian)
+                                            total_gradient, total_hessian, results)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
       !! Optionally includes total gradient and Hessian if provided
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      use mqc_result_types, only: calculation_result_t
       integer, intent(in) :: polymers(:, :), max_level
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
       real(dp), intent(in) :: sum_by_level(:), total_energy
       real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
       real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
+      type(calculation_result_t), intent(in), optional :: results(:)  !! Fragment results with distance info
 
       integer(int64) :: i
       integer :: fragment_size, j, frag_level, unit, io_stat, iatom
@@ -250,11 +252,21 @@ contains
                   write (json_line, '(a,a)') trim(json_line), '],'
                   write (unit, '(a)') trim(json_line)
 
-                  write (json_line, '(a,f20.10)') '            "energy": ', energies(i)
-                  if (frag_level > 1) then
-                     write (json_line, '(a,a)') trim(json_line), ','
-                     write (unit, '(a)') trim(json_line)
-                     write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
+                  write (json_line, '(a,f20.10,a)') '            "energy": ', energies(i), ','
+                  write (unit, '(a)') trim(json_line)
+
+                  ! Add distance field if available
+                  if (present(results)) then
+                     write (json_line, '(a,f20.10)') '            "distance": ', results(i)%distance
+                     if (frag_level > 1) then
+                        write (json_line, '(a,a)') trim(json_line), ','
+                        write (unit, '(a)') trim(json_line)
+                        write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
+                     end if
+                  else
+                     if (frag_level > 1) then
+                        write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
+                     end if
                   end if
                   write (unit, '(a)') trim(json_line)
                end if

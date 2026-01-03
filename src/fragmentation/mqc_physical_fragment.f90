@@ -25,11 +25,6 @@ module mqc_physical_fragment
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
-   public :: fragment_centroid          !! Geometric centroid calculation
-   public :: fragment_center_of_mass    !! Mass-weighted center calculation
-   public :: distance_between_points    !! Point-to-point distance
-   public :: distance_between_fragments  !! Inter-fragment distance
-   public :: minimal_distance_between_fragments  !! Closest approach distance
 
    type :: physical_fragment_t
       !! Physical molecular fragment with atomic coordinates and properties
@@ -51,6 +46,9 @@ module mqc_physical_fragment
 
       ! Gradient redistribution support
       integer, allocatable :: local_to_global(:)  !! Map fragment atom index to system atom index (size: n_atoms - n_caps)
+
+      ! Fragment distance (for screening)
+      real(dp) :: distance = 0.0_dp  !! Minimal atomic distance between monomers in fragment (Angstrom, 0 for monomers)
 
       ! Quantum chemistry basis set
       type(molecular_basis_type), allocatable :: basis  !! Gaussian basis functions
@@ -365,6 +363,9 @@ contains
       ! Validate: check for spatially overlapping atoms
       call check_duplicate_atoms(fragment)
 
+      ! Calculate minimal distance between monomers in this fragment
+      fragment%distance = calculate_monomer_distance(sys_geom, monomer_indices)
+
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
@@ -670,107 +671,84 @@ contains
       this%total_atoms = 0
    end subroutine system_destroy
 
-   pure function fragment_centroid(fragment) result(centroid)
-      !! Calculate the geometric centroid (center of geometry) of a fragment
-      !! This is the simple average of all atomic coordinates
-      !! Returns coordinates in the same units as the fragment (typically Bohr)
-      type(physical_fragment_t), intent(in) :: fragment
-      real(dp) :: centroid(3)
-
-      integer :: i
-
-      centroid = 0.0_dp
-
-      do i = 1, fragment%n_atoms
-         centroid = centroid + fragment%coordinates(:, i)
-      end do
-
-      centroid = centroid/real(fragment%n_atoms, dp)
-
-   end function fragment_centroid
-
-   pure function fragment_center_of_mass(fragment) result(com)
-      !! Calculate the center of mass of a fragment
-      !! Weights each atomic position by its atomic mass
-      !! Returns coordinates in the same units as the fragment (typically Bohr)
-      type(physical_fragment_t), intent(in) :: fragment
-      real(dp) :: com(3)
-
-      real(dp) :: total_mass, atom_mass
-      integer :: i
-
-      com = 0.0_dp
-      total_mass = 0.0_dp
-
-      do i = 1, fragment%n_atoms
-         atom_mass = element_mass(fragment%element_numbers(i))
-         com = com + atom_mass*fragment%coordinates(:, i)
-         total_mass = total_mass + atom_mass
-      end do
-
-      com = com/total_mass
-
-   end function fragment_center_of_mass
-
-   pure function distance_between_points(point1, point2) result(distance)
-      !! Calculate Euclidean distance between two 3D points
-      !! Points should be in the same units (typically Bohr)
-      real(dp), intent(in) :: point1(3), point2(3)
-      real(dp) :: distance
-
-      real(dp) :: diff(3)
-
-      diff = point2 - point1
-      distance = sqrt(dot_product(diff, diff))
-
-   end function distance_between_points
-
-   pure function distance_between_fragments(frag1, frag2, use_com) result(distance)
-      !! Calculate distance between two fragments
-      !! If use_com is .true., uses center of mass; otherwise uses centroid
-      !! Distance is in the same units as the fragment coordinates (typically Bohr)
-      type(physical_fragment_t), intent(in) :: frag1, frag2
-      logical, intent(in) :: use_com
-      real(dp) :: distance
-
-      real(dp) :: point1(3), point2(3)
-
-      if (use_com) then
-         point1 = fragment_center_of_mass(frag1)
-         point2 = fragment_center_of_mass(frag2)
-      else
-         point1 = fragment_centroid(frag1)
-         point2 = fragment_centroid(frag2)
-      end if
-
-      distance = distance_between_points(point1, point2)
-
-   end function distance_between_fragments
-
-   pure function minimal_distance_between_fragments(frag1, frag2) result(min_distance)
-      !! Calculate the minimal distance between any two atoms in two fragments
-      !! This iterates over all atom pairs and finds the closest pair
-      !! Distance is in the same units as the fragment coordinates (typically Bohr)
-      type(physical_fragment_t), intent(in) :: frag1, frag2
+   pure function calculate_monomer_distance(sys_geom, monomer_indices) result(min_distance)
+      !! Calculate minimal atomic distance between monomers in a fragment
+      !! For single monomer (size 1), returns 0.0
+      !! For multi-monomer fragments, returns minimal distance between atoms in different monomers
+      !! Result is in Angstrom
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomer_indices(:)
       real(dp) :: min_distance
 
-      real(dp) :: current_distance
-      integer :: i, j
+      integer :: n_monomers, i, j, iatom, jatom
+      integer :: mon_i, mon_j
+      integer :: atom_start_i, atom_end_i, atom_start_j, atom_end_j
+      real(dp) :: dist, dx, dy, dz
+      logical :: is_variable_size
 
-      ! Initialize with a very large value
+      n_monomers = size(monomer_indices)
+
+      ! Monomers have distance 0
+      if (n_monomers == 1) then
+         min_distance = 0.0_dp
+         return
+      end if
+
+      ! Check if we have variable-sized fragments
+      is_variable_size = allocated(sys_geom%fragment_sizes)
+
+      ! Initialize with huge value
       min_distance = huge(1.0_dp)
 
-      do i = 1, frag1%n_atoms
-         do j = 1, frag2%n_atoms
-            current_distance = distance_between_points(frag1%coordinates(:, i), &
-                                                       frag2%coordinates(:, j))
+      ! Loop over all pairs of monomers
+      do i = 1, n_monomers - 1
+         mon_i = monomer_indices(i)
+         do j = i + 1, n_monomers
+            mon_j = monomer_indices(j)
 
-            if (current_distance < min_distance) then
-               min_distance = current_distance
+            if (is_variable_size) then
+               ! Variable-sized fragments
+               do iatom = 1, sys_geom%fragment_sizes(mon_i)
+                  atom_start_i = sys_geom%fragment_atoms(iatom, mon_i) + 1  ! Convert to 1-indexed
+                  do jatom = 1, sys_geom%fragment_sizes(mon_j)
+                     atom_start_j = sys_geom%fragment_atoms(jatom, mon_j) + 1  ! Convert to 1-indexed
+
+                     ! Calculate distance (coordinates in Bohr)
+                     dx = sys_geom%coordinates(1, atom_start_i) - sys_geom%coordinates(1, atom_start_j)
+                     dy = sys_geom%coordinates(2, atom_start_i) - sys_geom%coordinates(2, atom_start_j)
+                     dz = sys_geom%coordinates(3, atom_start_i) - sys_geom%coordinates(3, atom_start_j)
+                     dist = sqrt(dx*dx + dy*dy + dz*dz)
+
+                     if (dist < min_distance) min_distance = dist
+                  end do
+               end do
+            else
+               ! Fixed-sized monomers
+               atom_start_i = (mon_i - 1)*sys_geom%atoms_per_monomer + 1
+               atom_end_i = mon_i*sys_geom%atoms_per_monomer
+
+               atom_start_j = (mon_j - 1)*sys_geom%atoms_per_monomer + 1
+               atom_end_j = mon_j*sys_geom%atoms_per_monomer
+
+               ! Loop over all atom pairs
+               do iatom = atom_start_i, atom_end_i
+                  do jatom = atom_start_j, atom_end_j
+                     ! Calculate distance (coordinates in Bohr)
+                     dx = sys_geom%coordinates(1, iatom) - sys_geom%coordinates(1, jatom)
+                     dy = sys_geom%coordinates(2, iatom) - sys_geom%coordinates(2, jatom)
+                     dz = sys_geom%coordinates(3, iatom) - sys_geom%coordinates(3, jatom)
+                     dist = sqrt(dx*dx + dy*dy + dz*dz)
+
+                     if (dist < min_distance) min_distance = dist
+                  end do
+               end do
             end if
          end do
       end do
 
-   end function minimal_distance_between_fragments
+      ! Convert from Bohr to Angstrom
+      min_distance = to_angstrom(min_distance)
+
+   end function calculate_monomer_distance
 
 end module mqc_physical_fragment

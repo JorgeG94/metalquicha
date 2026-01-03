@@ -16,7 +16,8 @@ module mqc_frag_utils
       get_next_combination, &
       next_combination_init, &
       next_combination, &
-      print_combos
+      print_combos, &
+      calculate_fragment_distances
    use mqc_fragment_lookup, only: fragment_lookup_t
    use mqc_gmbe_utils, only: &
       find_fragment_intersection, &
@@ -37,6 +38,7 @@ module mqc_frag_utils
    public :: next_combination_init
    public :: next_combination
    public :: print_combos
+   public :: calculate_fragment_distances
 
    ! Re-export from mqc_fragment_lookup
    public :: fragment_lookup_t

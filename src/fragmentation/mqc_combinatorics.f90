@@ -15,6 +15,7 @@ module mqc_combinatorics
    public :: next_combination_init  !! Initialize combination to [1,2,...,k]
    public :: next_combination      !! Generate next combination (alternate interface)
    public :: print_combos          !! Debug utility to print combinations
+   public :: calculate_fragment_distances  !! Calculate minimal distances for all fragments
 
 contains
 
@@ -201,5 +202,94 @@ contains
       has_next = .false.
 
    end function next_combination
+
+   subroutine calculate_fragment_distances(polymers, fragment_count, sys_geom, distances)
+      !! Calculate minimal atomic distance for each fragment
+      !! For monomers (1-body), distance is 0.0
+      !! For n-mers (n >= 2), distance is the minimum distance between atoms
+      !! in different constituent monomers
+      use pic_types, only: dp
+      use mqc_physical_fragment, only: system_geometry_t, to_angstrom
+      integer(default_int), intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(out) :: distances(:)
+
+      integer(int64) :: ifrag
+      integer :: fragment_size, i, j, iatom, jatom
+      integer :: mon_i, mon_j
+      integer :: atom_start_i, atom_end_i, atom_start_j, atom_end_j
+      integer :: k
+      real(dp) :: dist, min_dist
+      real(dp) :: dx, dy, dz
+      logical :: is_variable_size
+
+      ! Check if we have variable-sized fragments
+      is_variable_size = allocated(sys_geom%fragment_sizes)
+
+      do ifrag = 1_int64, fragment_count
+         fragment_size = count(polymers(ifrag, :) > 0)
+
+         if (fragment_size == 1) then
+            ! Monomers have distance 0
+            distances(ifrag) = 0.0_dp
+         else
+            ! For n-mers, calculate minimal distance between atoms in different monomers
+            min_dist = huge(1.0_dp)
+
+            ! Loop over all pairs of monomers in this fragment
+            do i = 1, fragment_size - 1
+               mon_i = polymers(ifrag, i)
+               do j = i + 1, fragment_size
+                  mon_j = polymers(ifrag, j)
+
+                  if (is_variable_size) then
+                     ! Variable-sized fragments: use fragment_atoms to get atom indices
+                     ! Count atoms in this fragment
+                     do iatom = 1, sys_geom%fragment_sizes(mon_i)
+                        atom_start_i = sys_geom%fragment_atoms(iatom, mon_i) + 1  ! Convert to 1-indexed
+                        do jatom = 1, sys_geom%fragment_sizes(mon_j)
+                           atom_start_j = sys_geom%fragment_atoms(jatom, mon_j) + 1  ! Convert to 1-indexed
+
+                           ! Calculate distance
+                           dx = sys_geom%coordinates(1, atom_start_i) - sys_geom%coordinates(1, atom_start_j)
+                           dy = sys_geom%coordinates(2, atom_start_i) - sys_geom%coordinates(2, atom_start_j)
+                           dz = sys_geom%coordinates(3, atom_start_i) - sys_geom%coordinates(3, atom_start_j)
+                           dist = sqrt(dx*dx + dy*dy + dz*dz)
+
+                           if (dist < min_dist) min_dist = dist
+                        end do
+                     end do
+                  else
+                     ! Fixed-sized monomers: calculate atom range directly
+                     atom_start_i = (mon_i - 1)*sys_geom%atoms_per_monomer + 1
+                     atom_end_i = mon_i*sys_geom%atoms_per_monomer
+
+                     atom_start_j = (mon_j - 1)*sys_geom%atoms_per_monomer + 1
+                     atom_end_j = mon_j*sys_geom%atoms_per_monomer
+
+                     ! Loop over all atoms in monomer i
+                     do iatom = atom_start_i, atom_end_i
+                        ! Loop over all atoms in monomer j
+                        do jatom = atom_start_j, atom_end_j
+                           ! Calculate distance (coordinates are in Bohr)
+                           dx = sys_geom%coordinates(1, iatom) - sys_geom%coordinates(1, jatom)
+                           dy = sys_geom%coordinates(2, iatom) - sys_geom%coordinates(2, jatom)
+                           dz = sys_geom%coordinates(3, iatom) - sys_geom%coordinates(3, jatom)
+                           dist = sqrt(dx*dx + dy*dy + dz*dz)
+
+                           if (dist < min_dist) min_dist = dist
+                        end do
+                     end do
+                  end if
+               end do
+            end do
+
+            ! Convert from Bohr to Angstrom
+            distances(ifrag) = to_angstrom(min_dist)
+         end if
+      end do
+
+   end subroutine calculate_fragment_distances
 
 end module mqc_combinatorics

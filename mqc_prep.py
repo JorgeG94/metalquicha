@@ -79,8 +79,11 @@ class AIMD:
 
 @dataclass
 class FragCutoffs:
-    dimer: Optional[float] = None
-    trimer: Optional[float] = None
+    """
+    Distance cutoffs for fragment generation.
+    Maps n-mer level (2=dimer, 3=trimer, etc.) to cutoff distance in Angstrom.
+    """
+    cutoffs: Dict[int, float]  # {2: 5.0, 3: 4.0, ...} for dimer, trimer, etc.
 
 @dataclass
 class Fragmentation:
@@ -315,21 +318,40 @@ def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian],
         cutoffs = None
         if "cutoffs" in fd:
             cd = req_type(fd["cutoffs"], dict, "keywords.fragmentation.cutoffs")
-            require_only_keys(cd, {"dimer", "trimer"}, "keywords.fragmentation.cutoffs")
-            dimer = cd.get("dimer")
-            trimer = cd.get("trimer")
 
-            def pos_float(x: Any, ctx: str) -> Optional[float]:
-                if x is None:
-                    return None
-                if not isinstance(x, (int, float)) or float(x) <= 0:
-                    die(f"{ctx} must be a positive number")
-                return float(x)
+            # Parse cutoffs: support both named (dimer, trimer) and numeric (2, 3, 4, ...) keys
+            cutoff_dict: Dict[int, float] = {}
 
-            cutoffs = FragCutoffs(
-                dimer=pos_float(dimer, "keywords.fragmentation.cutoffs.dimer"),
-                trimer=pos_float(trimer, "keywords.fragmentation.cutoffs.trimer"),
-            )
+            # Mapping from names to n-mer levels
+            name_to_level = {
+                "dimer": 2, "trimer": 3, "tetramer": 4, "pentamer": 5,
+                "hexamer": 6, "heptamer": 7, "octamer": 8
+            }
+
+            for key, value in cd.items():
+                # Determine the n-mer level
+                if key in name_to_level:
+                    nmer_level = name_to_level[key]
+                elif isinstance(key, int):
+                    nmer_level = key
+                elif key.isdigit():
+                    nmer_level = int(key)
+                else:
+                    die(f"keywords.fragmentation.cutoffs: unknown key '{key}'. " +
+                        f"Use 'dimer', 'trimer', etc. or numeric keys like '2', '3', ...")
+
+                # Validate nmer_level
+                if nmer_level < 2:
+                    die(f"keywords.fragmentation.cutoffs: n-mer level must be >= 2, got {nmer_level}")
+
+                # Validate cutoff value
+                if not isinstance(value, (int, float)) or float(value) <= 0:
+                    die(f"keywords.fragmentation.cutoffs.{key} must be a positive number")
+
+                cutoff_dict[nmer_level] = float(value)
+
+            if cutoff_dict:
+                cutoffs = FragCutoffs(cutoffs=cutoff_dict)
 
         frag = Fragmentation(
             method=method,
@@ -761,10 +783,11 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
 
         if fk.cutoffs is not None:
             buf.write("\n%cutoffs\n")
-            if fk.cutoffs.dimer is not None:
-                buf.write(f"dimer = {fmt_float(fk.cutoffs.dimer)}\n")
-            if fk.cutoffs.trimer is not None:
-                buf.write(f"trimer = {fmt_float(fk.cutoffs.trimer)}\n")
+            # Write cutoffs sorted by n-mer level for consistency
+            for nmer_level in sorted(fk.cutoffs.cutoffs.keys()):
+                cutoff_value = fk.cutoffs.cutoffs[nmer_level]
+                # Use numeric notation: "2 = 5.0", "3 = 4.0", etc.
+                buf.write(f"{nmer_level} = {fmt_float(cutoff_value)}\n")
             buf.write("end  ! cutoffs\n")
 
         buf.write("end  ! fragmentation\n\n")

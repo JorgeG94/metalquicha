@@ -93,6 +93,9 @@ contains
             call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
             error stop "Invalid calc_type in do_fragment_work"
          end select
+
+         ! Copy fragment distance to result for JSON output
+         result%distance = phys_frag%distance
 #else
          call logger%error("XTB method requested but tblite support not compiled in")
          call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")

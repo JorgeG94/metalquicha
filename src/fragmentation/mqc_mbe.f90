@@ -121,7 +121,7 @@ contains
 
       ! Always write JSON file for machine-readable output
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy)
+                                         sum_by_level, total_energy, results=results)
 
       deallocate (sum_by_level, delta_energies, energies)
 
@@ -457,7 +457,7 @@ contains
 
       ! Always write JSON file for machine-readable output (include gradient)
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy, total_gradient)
+                                         sum_by_level, total_energy, total_gradient, results=results)
 
       deallocate (sum_by_level, delta_energies, energies, delta_gradients)
 
@@ -614,7 +614,7 @@ contains
 
       ! Always write JSON file for machine-readable output (include gradient and Hessian)
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy, total_gradient, total_hessian)
+                                         sum_by_level, total_energy, total_gradient, total_hessian, results)
 
       deallocate (sum_by_level, delta_energies, energies, delta_gradients, delta_hessians, temp_hess)
 
