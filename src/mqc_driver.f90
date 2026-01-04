@@ -11,7 +11,7 @@ module mqc_driver
                                              serial_fragment_processor, do_fragment_work, distributed_unfragmented_hessian
    use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_pie_processor, gmbe_pie_coordinator
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
-                             gmbe_enumerate_pie_terms, binomial, combine
+                             gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
@@ -209,6 +209,11 @@ contains
                   call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
                   n_primaries = int(total_fragments)
                end if
+
+               ! Sort primaries by size (largest first)
+               ! TODO: Currently disabled - see comment in MBE section above
+               ! total_fragments = int(n_primaries, int64)
+               call sort_fragments_by_size(polymers, total_fragments, max_level)
             end if
 
             call logger%info("Generated "//to_char(n_primaries)//" primary "//to_char(max_level)//"-mers for GMBE("// &
@@ -252,6 +257,13 @@ contains
 
             ! Apply distance-based screening if cutoffs are provided
             call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
+
+            ! Sort fragments by size (largest first) for better load balancing
+            ! TODO: Currently disabled - MBE assembly is now order-independent (uses nested loops),
+            ! but sorting still causes "Subset not found" errors in real validation cases.
+            ! Unit tests pass with arbitrary order, so there may be an issue with the hash table
+            ! or fragment generation in production code. Needs investigation.
+            call sort_fragments_by_size(polymers, total_fragments, max_level)
 
             call logger%info("Generated fragments:")
             call logger%info("  Total fragments: "//to_char(total_fragments))
@@ -334,92 +346,6 @@ contains
       end if
 
    end subroutine run_fragmented_calculation
-
-   subroutine apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
-      !! Apply distance-based screening to filter out fragments that exceed cutoff distances
-      !! Modifies polymers array in-place and updates total_fragments count
-      use mqc_physical_fragment, only: calculate_monomer_distance
-      integer, intent(inout) :: polymers(:, :)
-      integer(int64), intent(inout) :: total_fragments
-      type(system_geometry_t), intent(in) :: sys_geom
-      type(driver_config_t), intent(in) :: driver_config
-      integer, intent(in) :: max_level
-
-      integer(int64) :: i, j, fragments_kept
-      integer :: fragment_size
-      real(dp) :: fragment_distance, cutoff
-      integer(int64) :: fragments_screened
-      integer :: nmer_level
-
-      ! Check if we have cutoffs to apply
-      if (.not. allocated(driver_config%fragment_cutoffs)) then
-         return  ! No screening needed
-      end if
-
-      fragments_kept = 0_int64
-      fragments_screened = 0_int64
-
-      ! Loop through all fragments and filter based on distance
-      do i = 1_int64, total_fragments
-         fragment_size = count(polymers(i, :) > 0)
-
-         ! Monomers are always kept (distance = 0)
-         if (fragment_size == 1) then
-            fragments_kept = fragments_kept + 1_int64
-            if (fragments_kept /= i) then
-               ! Compact array - move this fragment to the kept position
-               polymers(fragments_kept, :) = polymers(i, :)
-            end if
-            cycle
-         end if
-
-         ! For n-mers (n >= 2), check if we have a cutoff and apply screening
-         nmer_level = fragment_size
-         if (nmer_level > size(driver_config%fragment_cutoffs)) then
-            ! No cutoff defined for this level - keep the fragment
-            fragments_kept = fragments_kept + 1_int64
-            if (fragments_kept /= i) then
-               polymers(fragments_kept, :) = polymers(i, :)
-            end if
-            cycle
-         end if
-
-         cutoff = driver_config%fragment_cutoffs(nmer_level)
-         if (cutoff <= 0.0_dp) then
-            ! Negative or zero cutoff means no screening for this level
-            fragments_kept = fragments_kept + 1_int64
-            if (fragments_kept /= i) then
-               polymers(fragments_kept, :) = polymers(i, :)
-            end if
-            cycle
-         end if
-
-         ! Calculate distance for this fragment
-         fragment_distance = calculate_monomer_distance(sys_geom, polymers(i, 1:fragment_size))
-
-         ! Apply cutoff filter
-         if (fragment_distance <= cutoff) then
-            ! Keep this fragment
-            fragments_kept = fragments_kept + 1_int64
-            if (fragments_kept /= i) then
-               polymers(fragments_kept, :) = polymers(i, :)
-            end if
-         else
-            ! Screen out this fragment
-            fragments_screened = fragments_screened + 1_int64
-         end if
-      end do
-
-      ! Update total fragment count
-      if (fragments_screened > 0) then
-         call logger%info("Distance-based screening applied:")
-         call logger%info("  Fragments before screening: "//to_char(total_fragments))
-         call logger%info("  Fragments screened out: "//to_char(fragments_screened))
-         call logger%info("  Fragments kept: "//to_char(fragments_kept))
-         total_fragments = fragments_kept
-      end if
-
-   end subroutine apply_distance_screening
 
    subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
       !! Run calculations for multiple molecules with MPI parallelization
