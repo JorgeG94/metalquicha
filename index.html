@@ -112,6 +112,7 @@
 </li>
 </ul>
 </li>
+<li><a href="#running-a-calculation">Running a calculation</a></li>
 </ul>
 </li>
 </ul>
@@ -183,6 +184,51 @@ support. If you decide to not build tblite and just build the framework the code
 <p>Simply then just do: <code>fpm install --prefix . --compiler mpifort --profile release</code></p>
 <h4 id="obtaining-the-fpm">Obtaining the FPM</h4>
 <p>Install the FPM following the <a href="https://fpm.fortran-lang.org/install/index.html#install">instructions</a> and then simply: <code>fpm install</code></p>
+<h2 id="running-a-calculation">Running a calculation</h2>
+<p>To run a calculation you need to process the JSON input into our <code>mqc</code> format. To do this, you can simply do:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>mqc_prep.py<span class="w"> </span>validation/inputs/prism.json
+</code></pre></div>
+
+<p>And this will generate a <code>prism.mqc</code>. Which can be simply run as <code>./build/mqc validation/inputs/prism.mqc</code> to be run
+in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</code>.</p>
+<p>A sample <code>mqc</code> file is shown below:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">%schema</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc</span><span class="o">-</span><span class="n">frag</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span>
+<span class="n">index_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="n">units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">angstrom</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">schema</span>
+
+<span class="nf">%model</span>
+<span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XTB</span><span class="o">-</span><span class="n">GFN1</span>
+<span class="n">basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cc</span><span class="o">-</span><span class="n">pVDZ</span>
+<span class="n">aux_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cc</span><span class="o">-</span><span class="n">pVDZ</span><span class="o">-</span><span class="n">RIFIT</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">model</span>
+
+<span class="nf">%driver</span>
+<span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Energy</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">driver</span>
+
+<span class="nf">%structure</span>
+<span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">structure</span>
+
+<span class="nf">%geometry</span>
+<span class="mi">3</span>
+
+<span class="n">O</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mf">0.119262</span>
+<span class="n">H</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mf">0.763239</span><span class="w"> </span><span class="mf">-0.477047</span>
+<span class="n">H</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mf">-0.763239</span><span class="w"> </span><span class="mf">-0.477047</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">geometry</span>
+
+<span class="nf">%scf</span>
+<span class="n">maxiter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
+<span class="n">tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-06</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">scf</span>
+</code></pre></div>
+
+<p>If you don&rsquo;t want to use the python script, you can modify this file by adding an xyz formatted geometry. Supported calculations are <code>Energy</code>, <code>Gradient</code>, and <code>Hessian</code>.</p>
         </div>
           <div class="col-md-4">
             <div class="card card-body bg-light">
@@ -264,7 +310,7 @@ support. If you decide to not build tblite and just build the framework the code
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-04 01:45 +0000             </p>
+ on 2026-01-04 10:13 +0000             </p>
           </div>
         </div>
         <br>

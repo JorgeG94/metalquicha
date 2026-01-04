@@ -183,22 +183,22 @@ calculations with MPI parallelization and energy/gradient computation.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe.html'>mqc_mbe</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
                   <li class="list-inline-item">pic_blas_interfaces</li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003'>omp_lib</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe.html'>mqc_mbe</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
+                  <li class="list-inline-item">pic_logger</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1317,7 +1317,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
+              <span class="anchor" id="variable-world_comm~12"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1332,7 +1332,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1347,7 +1347,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1362,7 +1362,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~4"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1402,7 +1402,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1417,7 +1417,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result"></span>
+              <span class="anchor" id="variable-result~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1432,7 +1432,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1447,7 +1447,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag"></span>
+              <span class="anchor" id="variable-phys_frag~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1462,7 +1462,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1504,7 +1504,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1519,7 +1519,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm"></span>
+              <span class="anchor" id="variable-node_comm~7"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1534,7 +1534,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1549,7 +1549,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1564,7 +1564,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~3"></span>
+              <span class="anchor" id="variable-max_level~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1579,7 +1579,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
+              <span class="anchor" id="variable-node_leader_ranks~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1594,7 +1594,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes"></span>
+              <span class="anchor" id="variable-num_nodes~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1609,7 +1609,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1624,7 +1624,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1639,7 +1639,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds"></span>
+              <span class="anchor" id="variable-bonds~10"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1680,7 +1680,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~3"></span>
+              <span class="anchor" id="variable-world_comm~10"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1695,7 +1695,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm~9"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1710,7 +1710,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1750,7 +1750,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~11"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1765,7 +1765,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~10"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1780,7 +1780,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~15"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1795,7 +1795,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~2"></span>
+              <span class="anchor" id="variable-method~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1810,7 +1810,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~6"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1825,7 +1825,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~2"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1866,7 +1866,7 @@ This is used when running with only 1 MPI rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1881,7 +1881,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~6"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1896,7 +1896,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~4"></span>
+              <span class="anchor" id="variable-max_level~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1911,7 +1911,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~5"></span>
+              <span class="anchor" id="variable-sys_geom~17"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1926,7 +1926,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1941,7 +1941,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1956,7 +1956,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~4"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1998,7 +1998,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~16"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2013,7 +2013,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2028,7 +2028,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~7"></span>
+              <span class="anchor" id="variable-calc_type~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -2043,7 +2043,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~3"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2058,7 +2058,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_out"></span>
+              <span class="anchor" id="variable-result_out~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2099,7 +2099,7 @@ Distributes displacement work and collects gradient results</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~13"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2114,7 +2114,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~19"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2129,7 +2129,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~6"></span>
+              <span class="anchor" id="variable-method~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2144,7 +2144,7 @@ Distributes displacement work and collects gradient results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-displacement~2"></span>
+              <span class="anchor" id="variable-displacement~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2185,7 +2185,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2200,7 +2200,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~8"></span>
+              <span class="anchor" id="variable-sys_geom~20"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2215,7 +2215,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~7"></span>
+              <span class="anchor" id="variable-method~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2230,7 +2230,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-displacement~3"></span>
+              <span class="anchor" id="variable-displacement~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2271,7 +2271,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~2"></span>
+              <span class="anchor" id="variable-world_comm~9"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2286,7 +2286,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~3"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2301,7 +2301,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2316,7 +2316,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank"></span>
+              <span class="anchor" id="variable-dest_rank~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2357,7 +2357,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~2"></span>
+              <span class="anchor" id="variable-node_comm~8"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -2372,7 +2372,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-fragment_idx~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2387,7 +2387,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2402,7 +2402,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~2"></span>
+              <span class="anchor" id="variable-dest_rank~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2445,7 +2445,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-04 01:45 +0000             </p>
+ on 2026-01-04 10:13 +0000             </p>
           </div>
         </div>
         <br>

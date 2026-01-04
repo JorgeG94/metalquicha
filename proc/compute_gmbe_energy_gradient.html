@@ -137,12 +137,12 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-current_log_level~9">current_log_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-fragment~10">fragment</a>
-            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-i~35">i</a>
-            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-k~6">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-fragment~24">fragment</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-i~70">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-k~13">k</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-level_counts~2">level_counts</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-level_energies~2">level_energies</a>
-            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-max_level~13">max_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-max_level~17">max_level</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-monomer_energy~2">monomer_energy</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-monomer_idx">monomer_idx</a>
             <a class="list-group-item" href="../proc/compute_gmbe_energy_gradient.html#variable-sign_factor~2">sign_factor</a>
@@ -189,10 +189,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -595,7 +595,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -610,7 +610,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~4"></span>
+              <span class="anchor" id="variable-n_monomers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -625,7 +625,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomer_results~2"></span>
+              <span class="anchor" id="variable-monomer_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -640,7 +640,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~3"></span>
+              <span class="anchor" id="variable-n_intersections~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -655,7 +655,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_results~2"></span>
+              <span class="anchor" id="variable-intersection_results~3"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -670,7 +670,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~3"></span>
+              <span class="anchor" id="variable-intersection_sets~7"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -685,7 +685,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~3"></span>
+              <span class="anchor" id="variable-intersection_levels~7"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -700,7 +700,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~24"></span>
+              <span class="anchor" id="variable-sys_geom~35"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -715,7 +715,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~10"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -730,7 +730,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~7"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -745,7 +745,7 @@ Gradient redistribution handles hydrogen caps at broken bonds.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~17"></span>
+              <span class="anchor" id="variable-bonds~24"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1196,7 +1196,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~10"></span>
+              <span class="anchor" id="variable-fragment~24"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1213,7 +1213,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~35"></span>
+              <span class="anchor" id="variable-i~70"></span>
               integer,
             </td>
               <td>private</td>
@@ -1230,7 +1230,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~6"></span>
+              <span class="anchor" id="variable-k~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -1281,7 +1281,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -1543,7 +1543,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-04 01:45 +0000             </p>
+ on 2026-01-04 10:13 +0000             </p>
           </div>
         </div>
         <br>
