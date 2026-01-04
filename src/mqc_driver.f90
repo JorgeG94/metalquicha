@@ -211,9 +211,9 @@ contains
                end if
 
                ! Sort primaries by size (largest first)
-               ! TODO: Re-enable after fixing MBE assembly to handle arbitrary fragment order
+               ! TODO: Currently disabled - see comment in MBE section above
                ! total_fragments = int(n_primaries, int64)
-               ! call sort_fragments_by_size(polymers, total_fragments, max_level)
+               call sort_fragments_by_size(polymers, total_fragments, max_level)
             end if
 
             call logger%info("Generated "//to_char(n_primaries)//" primary "//to_char(max_level)//"-mers for GMBE("// &
@@ -259,8 +259,11 @@ contains
             call apply_distance_screening(polymers, total_fragments, sys_geom, driver_config, max_level)
 
             ! Sort fragments by size (largest first) for better load balancing
-            ! TODO: Re-enable after fixing MBE assembly to handle arbitrary fragment order
-            ! call sort_fragments_by_size(polymers, total_fragments, max_level)
+            ! TODO: Currently disabled - MBE assembly is now order-independent (uses nested loops),
+            ! but sorting still causes "Subset not found" errors in real validation cases.
+            ! Unit tests pass with arbitrary order, so there may be an issue with the hash table
+            ! or fragment generation in production code. Needs investigation.
+            call sort_fragments_by_size(polymers, total_fragments, max_level)
 
             call logger%info("Generated fragments:")
             call logger%info("  Total fragments: "//to_char(total_fragments))
@@ -458,19 +461,32 @@ contains
       do i = 0, total_fragments - 1
          fragment_size = count(polymers(i + 1, :) > 0)
          fragment_sizes(i) = int(fragment_size, int64)
+         ! Debug: show first fragment
+         if (i == 0) then
+            write (*, '(a,10(i0,1x))') "DEBUG SORT: Before sort, polymers[1] = ", polymers(1, :)
+         end if
       end do
 
       ! Get sort permutation in descending order (largest first)
       call sort_index(fragment_sizes, sort_indices, reverse=.true.)
+
+      ! Debug: show first few sort indices
+      write (*, '(a,10(i0,1x))') "DEBUG SORT: sort_indices[0..9] = ", sort_indices(0:min(9_int64, total_fragments - 1))
+     write (*, '(a,10(i0,1x))') "DEBUG SORT: sort_indices[28..35] = ", sort_indices(28:min(35_int64, total_fragments - 1))
 
       ! Reorder polymers array based on sort permutation
       allocate (polymers_copy(size(polymers, 1), size(polymers, 2)))
       polymers_copy = polymers
 
       ! Reorder: new position j gets data from original position sort_indices(j)
+      ! NOTE: sort_indices already contains 1-indexed values, so don't add 1!
       do j = 0, total_fragments - 1
-         sorted_idx = sort_indices(j) + 1  ! Convert to 1-indexed
+         sorted_idx = sort_indices(j)  ! Already 1-indexed!
          polymers(j + 1, :) = polymers_copy(sorted_idx, :)
+         ! Debug: show monomer reordering
+         if (count(polymers_copy(sorted_idx, :) > 0) == 1) then
+   write(*,'(a,i0,a,i0,a,i0)') "DEBUG SORT: pos ", j+1, " <- orig ", sorted_idx, " monomer ", polymers_copy(sorted_idx, 1)
+         end if
       end do
 
       deallocate (polymers_copy)

@@ -67,6 +67,14 @@ contains
       do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
          call lookup%insert(polymers(i, :), fragment_size, i)
+         ! Debug: log all monomer insertions and first few dimers
+         if (fragment_size == 1 .or. i <= 10) then
+            block
+               integer :: j
+              write (*, '(a,i0,a,i0,a,10(i0,1x))') "DEBUG: Hash insert idx=", i, " size=", fragment_size, " fragment: ", &
+                  (polymers(i, j), j=1, min(fragment_size, 10))
+            end block
+         end if
       end do
       call lookup_timer%stop()
       call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
@@ -170,7 +178,19 @@ contains
 
             ! Look up subset index
             subset_idx = lookup%find(subset, subset_size)
-            if (subset_idx < 0) error stop "Subset not found in bottom-up MBE!"
+            if (subset_idx < 0) then
+               block
+                  use pic_io, only: to_char
+                  character(len=512) :: error_msg
+                  integer :: j
+                  write (error_msg, '(a,i0,a,*(i0,1x))') "Subset not found! Fragment idx=", fragment_idx, &
+                     " seeking subset: ", (subset(j), j=1, subset_size)
+                  call logger%error(trim(error_msg))
+                  write (error_msg, '(a,*(i0,1x))') "  Full fragment: ", (fragment(j), j=1, n)
+                  call logger%error(trim(error_msg))
+                  error stop "Subset not found in bottom-up MBE!"
+               end block
+            end if
 
             ! Subtract pre-computed delta energy
             delta_E = delta_E - delta_energies(subset_idx)

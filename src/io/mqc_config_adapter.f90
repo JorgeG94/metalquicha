@@ -8,6 +8,7 @@ module mqc_config_adapter
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
+   use pic_logger, only: logger => global_logger
    implicit none
    private
 
@@ -337,6 +338,7 @@ contains
          level_int = knowledge_level
       case default
          ! Default to info level if unknown
+         call logger%warning("Unknown log level string: "//level_string//". Defaulting to INFO level.")
          level_int = info_level
       end select
    end function get_logger_level
