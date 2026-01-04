@@ -67,14 +67,6 @@ contains
       do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
          call lookup%insert(polymers(i, :), fragment_size, i)
-         ! Debug: log all monomer insertions and first few dimers
-         if (fragment_size == 1 .or. i <= 10) then
-            block
-               integer :: j
-              write (*, '(a,i0,a,i0,a,10(i0,1x))') "DEBUG: Hash insert idx=", i, " size=", fragment_size, " fragment: ", &
-                  (polymers(i, j), j=1, min(fragment_size, 10))
-            end block
-         end if
       end do
       call lookup_timer%stop()
       call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
