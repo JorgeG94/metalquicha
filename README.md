@@ -67,6 +67,7 @@ cd build
 cmake ../
 make -j
 ```
+
 ### Notes on Fortran compiler compatibility
 
 If you enable tblite (enabled by default at the moment) you are going to be blocked by which compilers does tblite
@@ -81,3 +82,55 @@ Simply then just do: `fpm install --prefix . --compiler mpifort --profile releas
 #### Obtaining the FPM
 
 Install the FPM following the [instructions](https://fpm.fortran-lang.org/install/index.html#install) and then simply: `fpm install`
+
+## Running a calculation
+
+To run a calculation you need to process the JSON input into our `mqc` format. To do this, you can simply do:
+
+```bash
+python mqc_prep.py validation/inputs/prism.json
+```
+
+And this will generate a `prism.mqc`. Which can be simply run as `./build/mqc validation/inputs/prism.mqc` to be run
+in serial mode. Or `mpirun -np 4 ./build/mqc validation/inputs/prism.mqc`.
+
+A sample `mqc` file is shown below:
+
+```
+%schema
+name = mqc-frag
+version = 1.0
+index_base = 0
+units = angstrom
+end  ! schema
+
+%model
+method = XTB-GFN1
+basis = cc-pVDZ
+aux_basis = cc-pVDZ-RIFIT
+end  ! model
+
+%driver
+type = Energy
+end  ! driver
+
+%structure
+charge = 0
+multiplicity = 1
+end  ! structure
+
+%geometry
+3
+
+O 0 0 0.119262
+H 0 0.763239 -0.477047
+H 0 -0.763239 -0.477047
+end  ! geometry
+
+%scf
+maxiter = 300
+tolerance = 1e-06
+end  ! scf
+```
+
+If you don't want to use the python script, you can modify this file by adding an xyz formatted geometry. Supported calculations are `Energy`, `Gradient`, and `Hessian`.
