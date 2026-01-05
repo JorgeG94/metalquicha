@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.4% of total for modules and submodules.">409 statements</a>
+                 title=" 5.4% of total for modules and submodules.">419 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -178,18 +178,18 @@ PIE-based MPI coordinator</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
                   <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
-                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1366,7 +1366,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~6"></span>
+              <span class="anchor" id="variable-world_comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1381,7 +1381,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~5"></span>
+              <span class="anchor" id="variable-node_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1396,7 +1396,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~5"></span>
+              <span class="anchor" id="variable-pie_atom_sets~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1411,7 +1411,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~5"></span>
+              <span class="anchor" id="variable-pie_coefficients~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1426,7 +1426,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1471,7 +1471,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~13"></span>
+              <span class="anchor" id="variable-sys_geom~11"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1486,7 +1486,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1501,7 +1501,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1516,7 +1516,7 @@ Distributes PIE terms across MPI ranks and accumulates results</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~6"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1558,7 +1558,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1573,7 +1573,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1588,7 +1588,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1603,7 +1603,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~12"></span>
+              <span class="anchor" id="variable-sys_geom~10"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1618,7 +1618,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~3"></span>
+              <span class="anchor" id="variable-method~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1633,7 +1633,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1648,7 +1648,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~5"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1688,7 +1688,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~7"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1703,7 +1703,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_idx~3"></span>
+              <span class="anchor" id="variable-term_idx~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1718,7 +1718,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1773,7 +1773,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~6"></span>
+              <span class="anchor" id="variable-node_comm~5"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1788,7 +1788,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_idx~4"></span>
+              <span class="anchor" id="variable-term_idx~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1803,7 +1803,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1861,7 +1861,7 @@ Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations<
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-04 10:13 +0000             </p>
+ on 2026-01-05 12:39 +0000             </p>
           </div>
         </div>
         <br>

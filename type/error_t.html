@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 3.7% of total for derived types.</p>Including implementation: 41 statements,  4.8% of total for derived types.">10 statements</a>
+                 title="<p> 5.4% of total for derived types.</p>Including implementation: 104 statements, 11.4% of total for derived types.">15 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,8 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/error_t.html#variable-call_stack">call_stack</a>
             <a class="list-group-item" href="../type/error_t.html#variable-code">code</a>
             <a class="list-group-item" href="../type/error_t.html#variable-message">message</a>
+            <a class="list-group-item" href="../type/error_t.html#variable-stack_depth">stack_depth</a>
         </div>
       </div>
     </div>
@@ -164,10 +166,13 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/error_t.html#boundprocedure-add_context">add_context</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-clear">clear</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_code">get_code</a>
+            <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_full_trace">get_full_trace</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_message">get_message</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-has_error">has_error</a>
+            <a class="list-group-item" href="../type/error_t.html#boundprocedure-print_trace">print_trace</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-set">set</a>
         </div>
       </div>
@@ -207,6 +212,23 @@
     <tbody>
         <tr>
             <td>
+              <span class="anchor" id="variable-call_stack"></span>
+              character(len=MAX_LOCATION_LEN),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>call_stack</strong>(MAX_STACK_DEPTH)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Call locations</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-code"></span>
               integer,
             </td>
@@ -237,6 +259,24 @@
                 <td></td>
             <td>
                 <p>Error message</p>
+<p>Stack trace support</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stack_depth"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stack_depth</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Current stack depth</p>
             </td>
         </tr>
     </tbody>
@@ -249,6 +289,76 @@
 
       <section>
         <h2>Type-Bound Procedures</h2>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-add_context"></span>
+      <h3>
+          procedure, public ::
+  <strong>add_context</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/error_add_context.html'>error_add_context</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private pure subroutine <a href='../proc/error_add_context.html'>error_add_context</a>(this, location)  
+</h3>
+    
+
+  <p>Add a call location to the stack trace
+Typically called when propagating errors upward</p><a href="../proc/error_add_context.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>location</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
@@ -266,7 +376,7 @@
 </h3>
     
 
-  <p>Clear the error state</p>
+  <p>Clear the error state and stack trace</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -365,6 +475,66 @@
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-get_full_trace"></span>
+      <h3>
+          procedure, public ::
+  <strong>get_full_trace</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/error_get_full_trace.html'>error_get_full_trace</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  function <a href='../proc/error_get_full_trace.html'>error_get_full_trace</a>(this) result(trace)  
+</h3>
+    
+
+  <p>Get complete error message with stack trace
+Returns a multi-line string with error and call stack</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='error_t.html'>error_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
       <span class="anchor" id="boundprocedure-get_message"></span>
       <h3>
           procedure, public ::
@@ -379,7 +549,7 @@
 </h3>
     
 
-  <p>Get the error message</p>
+  <p>Get the error message (without stack trace)</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -483,6 +653,76 @@
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
+      <span class="anchor" id="boundprocedure-print_trace"></span>
+      <h3>
+          procedure, public ::
+  <strong>print_trace</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/error_print_trace.html'>error_print_trace</a>
+        
+      </h3>
+    </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+                    <h3>
+    private  subroutine <a href='../proc/error_print_trace.html'>error_print_trace</a>(this, unit)  
+</h3>
+    
+
+  <p>Print error with stack trace to specified unit
+If unit not specified, prints to stdout (unit 6)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              class(<a href='error_t.html'>error_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" ></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>unit</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+      </ul>
+  </div>
+
+          </div>
+          <div class="row">
+              <div class="card mt-3">
+    <div class="card-header codesum">
       <span class="anchor" id="boundprocedure-set"></span>
       <h3>
           procedure, public ::
@@ -497,7 +737,8 @@
 </h3>
     
 
-  <p>Set an error with code and message</p>
+  <p>Set an error with code and message
+Resets the stack trace</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -571,12 +812,19 @@
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error_t</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SUCCESS</span><span class="w">  </span><span class="c">!! Error code (0 = no error)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">message</span><span class="w">  </span><span class="c">!! Error message</span>
+
+<span class="w">      </span><span class="c">!! Stack trace support</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">stack_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="c">!! Current stack depth</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_LOCATION_LEN</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">call_stack</span><span class="p">(</span><span class="n">MAX_STACK_DEPTH</span><span class="p">)</span><span class="w">  </span><span class="c">!! Call locations</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_error</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_has_error</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">set</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_set</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">clear</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_clear</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">get_code</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_get_code</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">get_message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_get_message</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">add_context</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_add_context</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">get_full_trace</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_get_full_trace</span>
+<span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">print_trace</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_print_trace</span>
 <span class="w">   </span><span class="k">end type </span><span class="n">error_t</span>
 </pre></div>
 
@@ -600,7 +848,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-04 10:13 +0000             </p>
+ on 2026-01-05 12:39 +0000             </p>
           </div>
         </div>
         <br>

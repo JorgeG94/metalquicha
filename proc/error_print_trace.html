@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>ends_with &ndash; metalquicha</title>
+    <title>error_print_trace &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,8 +83,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>ends_with
-      <small>Function</small>
+    <h1>error_print_trace
+      <small>Subroutine</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">11 statements</a>
+                 title=" 0.3% of total for procedures.">21 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_io_helpers.f90"> Source File</a>
+              <a href="../src/mqc_error.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_io_helpers.f90.html'>mqc_io_helpers.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></li>
-            <li class="breadcrumb-item active" aria-current="page">ends_with</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_error.f90.html'>mqc_error.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+            <li class="breadcrumb-item active" aria-current="page">error_print_trace</li>
           </ol>
         </nav>
       </div>
@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/ends_with.html#variable-str_len">str_len</a>
-            <a class="list-group-item" href="../proc/ends_with.html#variable-suffix_len">suffix_len</a>
+            <a class="list-group-item" href="../proc/error_print_trace.html#variable-i~48">i</a>
+            <a class="list-group-item" href="../proc/error_print_trace.html#variable-out_unit">out_unit</a>
         </div>
       </div>
     </div>
@@ -163,7 +163,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/ends_with.html#src">ends_with</a>
+        <a class="list-group-item" href="../proc/error_print_trace.html#src">error_print_trace</a>
       </div>
     </div>
 
@@ -173,12 +173,15 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  function ends_with(str, suffix)  
+    <h2>private  subroutine error_print_trace(this, unit)  
 </h2>
     
 
-    <p>Check if string ends with suffix</p>
+    <p>Print error with stack trace to specified unit
+If unit not specified, prints to stdout (unit 6)</p>
 
+    <h3>Type Bound</h3>
+    <p><a href='../type/error_t.html'>error_t</a></p>
 
     <h3>Arguments</h3>
         <table class="table table-striped varlist">
@@ -193,30 +196,30 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-str"></span>
-              character(len=*),
+              <span class="anchor" id="variable-this~39"></span>
+              class(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>str</strong></td>
+            <td><strong>this</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-suffix~2"></span>
-              character(len=*),
+              <span class="anchor" id="variable-unit~28"></span>
+              integer,
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>suffix</strong></td>
+            <td><strong>unit</strong></td>
             <td>
                 
             </td>
@@ -224,17 +227,10 @@
     </tbody>
   </table>
 
-      <h3>Return Value
-        <small>
-          <span class="anchor" id="variable-ends_with"></span>
-          logical
-        </small>
-      </h3>
-      
     <br>
     <div class="card">
       <div class="card-header">
-  <h3 class="card-title">Called by</h3>
+  <h3 class="card-title">Calls</h3>
       </div>
       <div class="card-body">
   <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -242,39 +238,39 @@
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~ends_with~~CalledByGraph Pages: 1 -->
-<svg id="procends_withCalledByGraph" width="163pt" height="32pt"
- viewBox="0.00 0.00 163.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~ends_with~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
-<title>proc~~ends_with~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 159,-28 159,4 -4,4"/>
-<!-- proc~ends_with -->
-<g id="proc~~ends_with~~CalledByGraph_node1" class="node">
-<title>proc~ends_with</title>
-<polygon fill="none" stroke="black" points="155,-24 90,-24 90,0 155,0 155,-24"/>
-<text text-anchor="middle" x="122.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">ends_with</text>
+<!-- Title: proc~~error_print_trace~~CallsGraph Pages: 1 -->
+<svg id="procerror_print_traceCallsGraph" width="330pt" height="32pt"
+ viewBox="0.00 0.00 330.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~error_print_trace~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~error_print_trace~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 326,-28 326,4 -4,4"/>
+<!-- proc~error_print_trace -->
+<g id="proc~~error_print_trace~~CallsGraph_node1" class="node">
+<title>proc~error_print_trace</title>
+<polygon fill="none" stroke="black" points="147,-24 0,-24 0,0 147,0 147,-24"/>
+<text text-anchor="middle" x="73.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">error_t%error_print_trace</text>
 </g>
-<!-- program~main -->
-<g id="proc~~ends_with~~CalledByGraph_node2" class="node">
-<title>program~main</title>
-<g id="a_proc~~ends_with~~CalledByGraph_node2"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
-<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+<!-- proc~error_has_error -->
+<g id="proc~~error_print_trace~~CallsGraph_node2" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~error_print_trace~~CallsGraph_node2"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="322,-24 183,-24 183,0 322,0 322,-24"/>
+<text text-anchor="middle" x="252.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
-<!-- program~main&#45;&gt;proc~ends_with -->
-<g id="proc~~ends_with~~CalledByGraph_edge1" class="edge">
-<title>program~main&#45;&gt;proc~ends_with</title>
-<path fill="none" stroke="#ff0000" d="M54.04,-12C62.05,-12 71.06,-12 79.83,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="79.95,-15.5 89.94,-12 79.94,-8.5 79.95,-15.5"/>
+<!-- proc~error_print_trace&#45;&gt;proc~error_has_error -->
+<g id="proc~~error_print_trace~~CallsGraph_edge1" class="edge">
+<title>proc~error_print_trace&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M147,-12C155.51,-12 164.23,-12 172.81,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.82,-15.5 182.82,-12 172.82,-8.5 172.82,-15.5"/>
 </g>
 </g>
 </svg>
 </div>          <div>
-            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
           </div>
-          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
@@ -369,7 +365,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-str_len"></span>
+              <span class="anchor" id="variable-i~48"></span>
               integer,
             </td>
               <td>private</td>
@@ -377,7 +373,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>str_len</strong></td>
+            <td><strong>i</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -386,7 +382,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-suffix_len"></span>
+              <span class="anchor" id="variable-out_unit"></span>
               integer,
             </td>
               <td>private</td>
@@ -394,7 +390,7 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>suffix_len</strong></td>
+            <td><strong>out_unit</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -417,21 +413,35 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="kt">logical </span><span class="k">function </span><span class="n">ends_with</span><span class="p">(</span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">suffix</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Check if string ends with suffix</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">suffix</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">str_len</span><span class="p">,</span><span class="w"> </span><span class="n">suffix_len</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">error_print_trace</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Print error with stack trace to specified unit</span>
+<span class="w">      </span><span class="c">!! If unit not specified, prints to stdout (unit 6)</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unit</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 
-<span class="w">      </span><span class="n">str_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">str</span><span class="p">)</span>
-<span class="w">      </span><span class="n">suffix_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+<span class="w">      </span><span class="n">out_unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span><span class="w">  </span><span class="c">! stdout</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span><span class="w"> </span><span class="n">out_unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unit</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">suffix_len</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">str_len</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">ends_with</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">         </span><span class="k">return</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="w">      </span><span class="c">! Print error message</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A,I0,A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">advance</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Error &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">code</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;: &quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">message</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">message</span><span class="p">)</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;(no message)&quot;</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Print stack trace if available</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">stack_depth</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Call stack (most recent first):&quot;</span>
+<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">stack_depth</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A,I0,A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">advance</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  [&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;] &quot;</span>
+<span class="w">            </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">out_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">call_stack</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end do</span>
 <span class="k">      end if</span>
-
-<span class="k">      </span><span class="n">ends_with</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">str</span><span class="p">(</span><span class="n">str_len</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">suffix_len</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">str_len</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">suffix</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end function </span><span class="n">ends_with</span>
+<span class="k">   end subroutine </span><span class="n">error_print_trace</span>
 </pre></div>
 
     </section>

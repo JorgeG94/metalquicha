@@ -206,6 +206,7 @@ contains
       !! If bonds are not present, uses the old simple mapping (no caps possible).
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients
       use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
       use pic_logger, only: verbose_level
       real(dp), intent(in) :: frag_grad(:, :)  !! (3, natoms_frag)
       integer, intent(in) :: monomers(:)  !! Monomer indices in fragment
@@ -214,6 +215,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
 
       type(physical_fragment_t) :: fragment
+      type(error_t) :: error
       integer :: i_mon, i_atom, frag_atom_idx, sys_atom_idx
       integer :: current_log_level
 
@@ -234,7 +236,11 @@ contains
 
       if (present(bonds)) then
          ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, bonds)
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
+         if (error%has_error()) then
+            call logger%error(error%get_full_trace())
+            error stop "Failed to build fragment in gradient mapping"
+         end if
 
          ! Use new gradient redistribution with cap handling
          call redistribute_cap_gradients(fragment, frag_grad, sys_grad)
@@ -657,6 +663,7 @@ contains
       !! Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_hessian
       use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
       real(dp), intent(in) :: frag_hess(:, :)  !! (3*natoms_frag, 3*natoms_frag)
       integer, intent(in) :: monomers(:)
       type(system_geometry_t), intent(in) :: sys_geom
@@ -664,13 +671,14 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)
 
       type(physical_fragment_t) :: fragment
+      type(error_t) :: error
 
       ! Zero out
       sys_hess = 0.0_dp
 
       if (present(bonds)) then
          ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, bonds)
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
          call redistribute_cap_hessian(fragment, frag_hess, sys_hess)
          call fragment%destroy()
       else
@@ -719,6 +727,7 @@ contains
       !! Mirrors MBE gradient logic but for second derivatives
       use mqc_result_types, only: calculation_result_t
       use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: fragment(:), n
       type(fragment_lookup_t), intent(in) :: lookup
@@ -917,6 +926,7 @@ contains
       use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
                                        redistribute_cap_gradients
       use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
       use pic_logger, only: info_level
 
       integer, intent(in) :: monomers(:)              !! Monomer indices (1-based)
@@ -937,6 +947,7 @@ contains
       integer, allocatable :: level_counts(:)
       real(dp) :: sign_factor
       type(physical_fragment_t) :: fragment
+      type(error_t) :: error
       integer, allocatable :: monomer_idx(:)
 
       ! Zero out total gradient
@@ -952,7 +963,11 @@ contains
             ! Rebuild fragment to get local→global mapping
             allocate (monomer_idx(1))
             monomer_idx(1) = monomers(i)
-            call build_fragment_from_indices(sys_geom, monomer_idx, fragment, bonds)
+            call build_fragment_from_indices(sys_geom, monomer_idx, fragment, error, bonds)
+            if (error%has_error()) then
+               call logger%error(error%get_full_trace())
+               error stop "Failed to build monomer fragment in GMBE gradient"
+            end if
             call redistribute_cap_gradients(fragment, monomer_results(i)%gradient, total_gradient)
             call fragment%destroy()
             deallocate (monomer_idx)
@@ -1069,6 +1084,7 @@ contains
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
                                        redistribute_cap_hessian
       use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
       use pic_logger, only: info_level
 
       integer, intent(in) :: monomers(:)
@@ -1090,6 +1106,7 @@ contains
       integer, allocatable :: level_counts(:)
       real(dp) :: sign_factor
       type(physical_fragment_t) :: fragment
+      type(error_t) :: error
       integer, allocatable :: monomer_idx(:)
 
       ! Zero out outputs
@@ -1106,7 +1123,11 @@ contains
          if (monomer_results(i)%has_gradient) then
             allocate (monomer_idx(1))
             monomer_idx(1) = monomers(i)
-            call build_fragment_from_indices(sys_geom, monomer_idx, fragment, bonds)
+            call build_fragment_from_indices(sys_geom, monomer_idx, fragment, error, bonds)
+            if (error%has_error()) then
+               call logger%error(error%get_full_trace())
+               error stop "Failed to build monomer fragment in GMBE gradient+Hessian"
+            end if
             call redistribute_cap_gradients(fragment, monomer_results(i)%gradient, total_gradient)
             if (monomer_results(i)%has_hessian) then
                call redistribute_cap_hessian(fragment, monomer_results(i)%hessian, total_hessian)

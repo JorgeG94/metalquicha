@@ -141,7 +141,10 @@ contains
          else
             ! Fragmented calculation with explicit fragments
             call geometry_to_system_fragmented(mqc_config, sys_geom, use_angstrom, error)
-            if (error%has_error()) return
+            if (error%has_error()) then
+               call error%add_context("mqc_config_adapter:config_to_system_geometry")
+               return
+            end if
          end if
       end if
 
@@ -239,7 +242,10 @@ contains
       ! Check for overlapping fragments if not allowed
       if (.not. allow_overlapping) then
          call check_fragment_overlap(fragments, nfrag, error)
-         if (error%has_error()) return
+         if (error%has_error()) then
+            call error%add_context("mqc_config_adapter:geometry_to_system_fragmented")
+            return
+         end if
       end if
 
       ! Set atoms_per_monomer: use common size if identical, else 0
