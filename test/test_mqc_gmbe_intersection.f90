@@ -329,29 +329,28 @@ contains
       ! Should have 1 intersection
       call check(error, n_intersections, 1, &
                  "Two overlapping fragments should produce 1 intersection")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check intersection level (should be 2 for pairwise)
       call check(error, intersection_levels(1), 2, &
                  "Intersection level should be 2 for pairwise")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check intersection sets
       call check(error, intersection_sets(1, 1), 1, &
                  "First fragment in set should be 1")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, intersection_sets(2, 1), 2, &
                  "Second fragment in set should be 2")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check intersection atoms (should be 3, 4, 5)
       ! Order doesn't matter, just check count
       call check(error, size(intersections, 1) >= 3, .true., &
                  "Intersection should have space for at least 3 atoms")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       ! Clean up
       deallocate (monomers, polymers)
       if (allocated(intersections)) deallocate (intersections)
@@ -402,9 +401,8 @@ contains
       ! Note: (1,3) should have no intersection
       call check(error, n_intersections, 2, &
                  "Three fragments in chain should produce 2 intersections")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
-200   continue
       ! Clean up
       deallocate (monomers, polymers)
       if (allocated(intersections)) deallocate (intersections)
@@ -445,15 +443,14 @@ contains
       ! Should have 8 atoms (union of both fragments)
       call check(error, n_atoms, 8, &
                  "Dimer of non-overlapping fragments should have 8 atoms")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check all atoms are present
       call check(error, any(atom_list == 0), .true., "Should contain atom 0")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
       call check(error, any(atom_list == 7), .true., "Should contain atom 7")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       if (allocated(atom_list)) deallocate (atom_list)
       call sys_geom%destroy()
 
@@ -490,15 +487,14 @@ contains
       ! Should have 9 unique atoms (6 + 6 - 3 overlap = 9)
       call check(error, n_atoms, 9, &
                  "Dimer of overlapping fragments should have 9 unique atoms")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Verify boundary atoms
       call check(error, any(atom_list == 0), .true., "Should contain atom 0")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
       call check(error, any(atom_list == 8), .true., "Should contain atom 8")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       if (allocated(atom_list)) deallocate (atom_list)
       call sys_geom%destroy()
 
@@ -551,9 +547,8 @@ contains
 
       call check(error, n_intersections >= 3, .true., &
                  "Should have at least 3 intersections between 3 dimers")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       deallocate (polymers)
       if (allocated(intersections)) deallocate (intersections)
       if (allocated(intersection_sets)) deallocate (intersection_sets)

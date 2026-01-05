@@ -164,7 +164,10 @@ contains
 
       ! Pass 1: Find the element and count its shells
       call count_shells_for_element(basis_string, element_name, nshells, error)
-      if (error%has_error()) return
+      if (error%has_error()) then
+         call error%add_context("mqc_basis_reader:parse_element_basis")
+         return
+      end if
 
       if (nshells == 0) then
          call error%set(ERROR_PARSE, "Element "//trim(element_name)//" not found in basis file")
@@ -532,6 +535,7 @@ contains
                                   unique_bases(iunique), error)
          if (error%has_error()) then
             ! Prepend context to error message
+            call error%add_context("mqc_basis_reader:read_basis_from_string")
             call error%set(ERROR_PARSE, "Failed to parse basis for element "// &
                            trim(unique_elements(iunique))//": "//error%get_message())
             return

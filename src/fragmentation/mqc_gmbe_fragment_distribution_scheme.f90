@@ -19,6 +19,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
    use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json
    implicit none
+   ! Error handling imported where needed
    private
 
    ! Public interface
@@ -33,6 +34,7 @@ contains
       !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
+      use mqc_error, only: error_t
       use pic_logger, only: info_level
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
@@ -43,6 +45,7 @@ contains
 
       type(physical_fragment_t) :: phys_frag
       type(calculation_result_t), allocatable :: results(:)
+      type(error_t) :: error
       integer :: i, n_atoms, max_atoms, iatom, current_log_level, hess_dim
       integer, allocatable :: atom_list(:)
       real(dp) :: total_energy, term_energy
@@ -99,7 +102,11 @@ contains
          atom_list = pie_atom_sets(1:n_atoms, i)
 
          ! Build fragment from atom list
-         call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, bonds)
+         call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
+         if (error%has_error()) then
+            call logger%error(error%get_full_trace())
+            error stop "Failed to build intersection fragment"
+         end if
 
          ! Compute energy (and gradient if requested)
          call do_fragment_work(i, results(i), method, phys_frag, calc_type)
@@ -347,8 +354,10 @@ contains
             if (results(term_idx)%has_gradient) then
                ! Map fragment gradient to system coordinates
                block
+                  use mqc_error, only: error_t
                   real(dp), allocatable :: term_gradient(:, :)
                   type(physical_fragment_t) :: phys_frag
+                  type(error_t) :: error
                   integer :: n_atoms, max_atoms
                   integer, allocatable :: atom_list(:)
 
@@ -367,7 +376,7 @@ contains
                      atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
                      ! Build fragment to get proper mapping
-                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, bonds)
+                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
                      call redistribute_cap_gradients(phys_frag, results(term_idx)%gradient, term_gradient)
                      call phys_frag%destroy()
                      deallocate (atom_list)
@@ -422,8 +431,10 @@ contains
          do term_idx = 1, n_pie_terms
             if (results(term_idx)%has_hessian .or. results(term_idx)%has_gradient) then
                block
+                  use mqc_error, only: error_t
                   real(dp), allocatable :: term_gradient(:, :), term_hessian(:, :)
                   type(physical_fragment_t) :: phys_frag
+                  type(error_t) :: error
                   integer :: n_atoms, max_atoms
                   integer, allocatable :: atom_list(:)
 
@@ -439,7 +450,7 @@ contains
                      atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
                      ! Build fragment to get proper mapping
-                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, bonds)
+                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
 
                      ! Redistribute gradient if present
                      if (results(term_idx)%has_gradient) then

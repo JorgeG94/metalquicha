@@ -56,9 +56,8 @@ contains
       ! Total should be -10 + (-15) = -25
       call check(error, total_energy, -25.0_dp, thr=1.0e-10_dp, &
                  message="GMBE with no intersections should equal sum of monomers")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)
@@ -109,9 +108,8 @@ contains
       ! Total = -100 + (-95) - (-8) = -100 - 95 + 8 = -187
       call check(error, total_energy, -187.0_dp, thr=1.0e-10_dp, &
                  message="GMBE with one intersection should be sum(monomers) - sum(intersections)")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
-200   continue
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)
@@ -170,9 +168,8 @@ contains
       !       = -277.5
       call check(error, total_energy, -277.5_dp, thr=1.0e-10_dp, &
                  message="GMBE with multiple intersections in chain")
-      if (allocated(error)) goto 300
+      if (allocated(error)) return
 
-300   continue
       if (allocated(monomer_results)) deallocate (monomer_results)
       if (allocated(intersection_results)) deallocate (intersection_results)
       if (allocated(monomers)) deallocate (monomers)

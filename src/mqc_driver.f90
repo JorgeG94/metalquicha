@@ -435,8 +435,9 @@ contains
             ! Convert geometry for this molecule
             call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
             if (error%has_error()) then
+               call error%add_context("mqc_driver:run_multi_molecule_calculation")
                if (my_rank == 0) then
-                  call logger%error("Error converting geometry for "//mol_name//": "//error%get_message())
+                  call logger%error("Error converting geometry for "//mol_name//": "//error%get_full_trace())
                end if
                call abort_comm(world_comm, 1)
             end if
@@ -459,57 +460,80 @@ contains
             molecules_processed = molecules_processed + 1
          end do
       else
-         ! Multiple ranks: distribute molecules across ranks (one per rank)
-         if (my_rank < mqc_config%nmol) then
-            imol = my_rank + 1
-            ! This rank has a molecule to process
-            ! Determine molecule name for logging
-            if (allocated(mqc_config%molecules(imol)%name)) then
-               mol_name = mqc_config%molecules(imol)%name
-            else
-               mol_name = "molecule_"//to_char(imol)
+         ! Multiple ranks: distribute molecules across ranks in round-robin fashion
+         molecules_processed = 0
+         do imol = 1, mqc_config%nmol
+            ! This rank processes molecules where (imol - 1) mod num_ranks == my_rank
+            if (mod(imol - 1, num_ranks) == my_rank) then
+               ! Determine molecule name for logging
+               if (allocated(mqc_config%molecules(imol)%name)) then
+                  mol_name = mqc_config%molecules(imol)%name
+               else
+                  mol_name = "molecule_"//to_char(imol)
+               end if
+
+               call logger%info(" ")
+               call logger%info("--------------------------------------------")
+               call logger%info("Rank "//to_char(my_rank)//": Processing molecule "//to_char(imol)// &
+                                "/"//to_char(mqc_config%nmol)//": "//mol_name)
+               call logger%info("--------------------------------------------")
+
+               ! Convert to driver configuration for this molecule
+               call config_to_driver(mqc_config, config, molecule_index=imol)
+
+               ! Convert geometry for this molecule
+               call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
+               if (error%has_error()) then
+                  call error%add_context("mqc_driver:run_multi_molecule_calculation")
+  call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//error%get_full_trace())
+                  call abort_comm(world_comm, 1)
+               end if
+
+               ! Set output filename suffix for this molecule
+               call set_molecule_suffix("_"//trim(mol_name))
+
+               ! Run calculation for this molecule
+               call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+
+               ! Track the JSON filename for later merging
+               individual_json_files(imol) = get_output_json_filename()
+
+               ! Clean up for this molecule
+               call sys_geom%destroy()
+
+               call logger%info("Rank "//to_char(my_rank)//": Completed molecule "//to_char(imol)// &
+                                "/"//to_char(mqc_config%nmol)//": "//mol_name)
+
+               molecules_processed = molecules_processed + 1
             end if
+         end do
 
-            call logger%info(" ")
-            call logger%info("--------------------------------------------")
-            call logger%info("Rank "//to_char(my_rank)//": Processing molecule "//to_char(imol)// &
-                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
-            call logger%info("--------------------------------------------")
-
-            ! Convert to driver configuration for this molecule
-            call config_to_driver(mqc_config, config, molecule_index=imol)
-
-            ! Convert geometry for this molecule
-            call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
-            if (error%has_error()) then
-     call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//error%get_message())
-               call abort_comm(world_comm, 1)
-            end if
-
-            ! Set output filename suffix for this molecule
-            call set_molecule_suffix("_"//trim(mol_name))
-
-            ! Run calculation for this molecule
-            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
-
-            ! Track the JSON filename for later merging
-            individual_json_files(imol) = get_output_json_filename()
-
-            ! Clean up for this molecule
-            call sys_geom%destroy()
-
-            call logger%info("Rank "//to_char(my_rank)//": Completed molecule "//to_char(imol)// &
-                             "/"//to_char(mqc_config%nmol)//": "//mol_name)
-
-            molecules_processed = 1
-         else
-            ! Idle rank - no molecule assigned
-            call logger%verbose("Rank "//to_char(my_rank)//": No molecule assigned (idle)")
+         if (molecules_processed == 0) then
+            ! Idle rank - no molecules assigned
+            call logger%verbose("Rank "//to_char(my_rank)//": No molecules assigned (idle)")
          end if
       end if
 
       ! Synchronize all ranks
       call world_comm%barrier()
+
+      ! In parallel execution, rank 0 needs to reconstruct all JSON filenames for merging
+      ! since each rank only populated its own entry
+      if (my_rank == 0 .and. num_ranks > 1 .and. .not. has_fragmented_molecules) then
+         ! Rank 0 constructs filenames for all molecules
+         do imol = 1, mqc_config%nmol
+            ! Get molecule name
+            if (allocated(mqc_config%molecules(imol)%name)) then
+               mol_name = mqc_config%molecules(imol)%name
+            else
+               mol_name = "molecule_"//to_char(imol)
+            end if
+            ! Construct JSON filename pattern: output_<basename>_<molname>.json
+            ! This mirrors what get_output_json_filename() returns after set_molecule_suffix()
+            call set_molecule_suffix("_"//trim(mol_name))
+            individual_json_files(imol) = get_output_json_filename()
+         end do
+      end if
 
       ! Merge individual JSON files into one combined file (rank 0 only)
       if (my_rank == 0) then

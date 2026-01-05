@@ -57,9 +57,8 @@ contains
       ! Total should be -10 + (-15) + (-20) = -45
       call check(error, total_energy, -45.0_dp, thr=1.0e-10_dp, &
                  message="MBE monomers only should equal sum of monomer energies")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       if (allocated(results)) deallocate (results)
       if (allocated(polymers)) deallocate (polymers)
 
@@ -106,9 +105,8 @@ contains
       ! Total = E(1) + E(2) + deltaE(1,2) = -10 + (-15) + (-1) = -26
       call check(error, total_energy, -26.0_dp, thr=1.0e-10_dp, &
                  message="MBE with simple dimer")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
-200   continue
       if (allocated(results)) deallocate (results)
       if (allocated(polymers)) deallocate (polymers)
 
@@ -163,9 +161,8 @@ contains
       ! Total = -33 + (-1.2) + 0.7 = -33.5
       call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in sorted order")
-      if (allocated(error)) goto 300
+      if (allocated(error)) return
 
-300   continue
       if (allocated(results)) deallocate (results)
       if (allocated(polymers)) deallocate (polymers)
 
@@ -215,9 +212,8 @@ contains
       ! Should get same answer as sorted order test
       call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in reverse order (tests internal sorting)")
-      if (allocated(error)) goto 400
+      if (allocated(error)) return
 
-400   continue
       if (allocated(results)) deallocate (results)
       if (allocated(polymers)) deallocate (polymers)
 
@@ -280,9 +276,8 @@ contains
       ! Should get same answer regardless of input order
       call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in random/mixed order")
-      if (allocated(error)) goto 500
+      if (allocated(error)) return
 
-500   continue
       if (allocated(results)) deallocate (results)
       if (allocated(polymers)) deallocate (polymers)
 

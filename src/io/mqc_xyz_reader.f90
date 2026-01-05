@@ -62,6 +62,10 @@ contains
 
       ! Parse the contents
       call read_xyz_string(file_contents, geom, error)
+      if (error%has_error()) then
+         call error%add_context("mqc_xyz_reader:read_xyz_file")
+         return
+      end if
 
    end subroutine read_xyz_file
 

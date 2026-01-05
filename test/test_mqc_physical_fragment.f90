@@ -162,7 +162,7 @@ contains
       end if
 
       ! Build fragment from first monomer only
-      call build_fragment_from_indices(sys_geom, [1], fragment)
+      call build_fragment_from_indices(sys_geom, [1], fragment, parse_error)
 
       call check(error, fragment%n_atoms, 3, "Fragment should have 3 atoms")
       if (allocated(error)) then
@@ -201,7 +201,7 @@ contains
       end if
 
       ! Build fragment from monomers 1 and 3
-      call build_fragment_from_indices(sys_geom, [1, 3], fragment)
+      call build_fragment_from_indices(sys_geom, [1, 3], fragment, parse_error)
 
       call check(error, fragment%n_atoms, 6, "Fragment should have 6 atoms (2 waters)")
       if (allocated(error)) then
@@ -317,32 +317,32 @@ contains
       bonds(1)%is_broken = .true.
 
       ! Build fragment from monomer 1 only
-      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+      call build_fragment_from_indices(sys_geom, [1], fragment, parse_error, bonds)
 
       ! Should have 3 real atoms + 1 H-cap = 4 total
       call check(error, fragment%n_atoms, 4, &
                  "Fragment with 1 broken bond should have 4 atoms (3 real + 1 cap)")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check n_caps field
       call check(error, fragment%n_caps, 1, &
                  "Should have exactly 1 H-cap")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check that last atom is hydrogen (element 1)
       call check(error, fragment%element_numbers(4), 1, &
                  "Last atom should be hydrogen (H-cap)")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check cap_replaces_atom is set correctly (should be atom 3, 0-indexed)
       call check(error, allocated(fragment%cap_replaces_atom), &
                  "cap_replaces_atom should be allocated")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, fragment%cap_replaces_atom(1), 3, &
                  "H-cap should replace atom 3")
 
-100   call fragment%destroy()
+      call fragment%destroy()
       call sys_geom%destroy()
       call cleanup_test_files()
       if (allocated(bonds)) deallocate (bonds)
@@ -376,18 +376,18 @@ contains
       bonds(1)%is_broken = .false.  ! Not broken!
 
       ! Build fragment from monomer 1 only
-      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+      call build_fragment_from_indices(sys_geom, [1], fragment, parse_error, bonds)
 
       ! Should have only 3 atoms (no caps)
       call check(error, fragment%n_atoms, 3, &
                  "Fragment with no broken bonds should have 3 atoms (no caps)")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       ! Check n_caps field
       call check(error, fragment%n_caps, 0, &
                  "Should have 0 H-caps")
 
-200   call fragment%destroy()
+      call fragment%destroy()
       call sys_geom%destroy()
       call cleanup_test_files()
       if (allocated(bonds)) deallocate (bonds)
@@ -422,17 +422,17 @@ contains
       bonds(1)%is_broken = .true.
 
       ! Build fragment from monomers 1 AND 2 (dimer)
-      call build_fragment_from_indices(sys_geom, [1, 2], fragment, bonds)
+      call build_fragment_from_indices(sys_geom, [1, 2], fragment, parse_error, bonds)
 
       ! Should have 6 atoms (2 waters) and NO caps (bond is internal to fragment)
       call check(error, fragment%n_atoms, 6, &
                  "Dimer with internal bond should have 6 atoms (no caps)")
-      if (allocated(error)) goto 300
+      if (allocated(error)) return
 
       call check(error, fragment%n_caps, 0, &
                  "Dimer with intact internal bond should have 0 caps")
 
-300   call fragment%destroy()
+      call fragment%destroy()
       call sys_geom%destroy()
       call cleanup_test_files()
       if (allocated(bonds)) deallocate (bonds)
@@ -471,7 +471,7 @@ contains
       replaced_atom_coords = sys_geom%coordinates(:, 4)
 
       ! Build fragment from monomer 1 only
-      call build_fragment_from_indices(sys_geom, [1], fragment, bonds)
+      call build_fragment_from_indices(sys_geom, [1], fragment, parse_error, bonds)
 
       ! H-cap should be at position 4 (last atom)
       cap_coords = fragment%coordinates(:, 4)
@@ -480,14 +480,14 @@ contains
       do i = 1, 3
          call check(error, abs(cap_coords(i) - replaced_atom_coords(i)) < tol, &
                     "H-cap coordinate should match replaced atom")
-         if (allocated(error)) goto 400
+         if (allocated(error)) return
       end do
 
       ! Also verify element number is hydrogen
       call check(error, fragment%element_numbers(4), 1, &
                  "H-cap element should be hydrogen (1)")
 
-400   call fragment%destroy()
+      call fragment%destroy()
       call sys_geom%destroy()
       call cleanup_test_files()
       if (allocated(bonds)) deallocate (bonds)

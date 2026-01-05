@@ -503,6 +503,7 @@ contains
 
    subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       !! Node worker for processing fragments assigned by node coordinator
+      use mqc_error, only: error_t
       class(comm_t), intent(in) :: world_comm, node_comm
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
@@ -515,6 +516,7 @@ contains
       type(calculation_result_t) :: result
       type(MPI_Status) :: status
       type(physical_fragment_t) :: phys_frag
+      type(error_t) :: error
 
       ! MPI request handles for non-blocking operations
       type(request_t) :: req
@@ -542,10 +544,15 @@ contains
             if (present(sys_geom)) then
                if (fragment_type == 0) then
                   ! Monomer: fragment_indices are monomer indices
-                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
+                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, bonds)
                else
                   ! Intersection: fragment_indices are atom indices
-                  call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, bonds)
+                  call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, error, bonds)
+               end if
+
+               if (error%has_error()) then
+                  call logger%error(error%get_full_trace())
+                  error stop "Failed to build fragment in node worker"
                end if
 
                ! Process the chemistry fragment with physical geometry
@@ -579,6 +586,7 @@ contains
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
+      use mqc_error, only: error_t
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in), optional :: calc_type
@@ -588,6 +596,7 @@ contains
       type(calculation_result_t) :: result
       integer :: total_atoms
       type(physical_fragment_t) :: full_system
+      type(error_t) :: error
       integer :: i
 
       if (.not. present(sys_geom)) then
@@ -619,7 +628,11 @@ contains
       call full_system%compute_nelec()
 
       ! Validate geometry (check for spatially overlapping atoms)
-      call check_duplicate_atoms(full_system)
+      call check_duplicate_atoms(full_system, error)
+      if (error%has_error()) then
+         call logger%error(error%get_full_trace())
+         error stop "Overlapping atoms in unfragmented system"
+      end if
 
       ! Process the full system
       call do_fragment_work(0_int32, result, method, phys_frag=full_system, calc_type=calc_type)
@@ -688,6 +701,7 @@ contains
    subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
+      use mqc_error, only: error_t
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
@@ -705,6 +719,7 @@ contains
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
+      type(error_t) :: error
 
       ! Set default calc_type if not provided
       if (present(calc_type)) then
@@ -725,7 +740,11 @@ contains
          allocate (fragment_indices(fragment_size))
          fragment_indices = polymers(frag_idx, 1:fragment_size)
 
-         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, bonds)
+         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, bonds)
+         if (error%has_error()) then
+            call logger%error(error%get_full_trace())
+            error stop "Failed to build fragment in serial processing"
+         end if
 
          call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag, calc_type=calc_type_local)
 

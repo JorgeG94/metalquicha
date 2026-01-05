@@ -21,7 +21,8 @@ class Colors:
     BOLD = '\033[1m'
 
 
-def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: bool = False) -> bool:
+def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: bool = False,
+                   use_mpi: bool = False, nprocs: int = 4, test_type: str = "unfragmented") -> bool:
     """Run a metalquicha calculation and cache stdout/stderr"""
     import os
 
@@ -36,9 +37,17 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: boo
     # Create logs directory if needed
     Path("validation_logs").mkdir(exist_ok=True)
 
+    # Build command based on MPI settings
+    if use_mpi:
+        # Use 1 process for unfragmented, nprocs for fragmented
+        np = 1 if test_type == "unfragmented" else nprocs
+        cmd = ["mpirun", "-np", str(np), exe_path, input_file]
+    else:
+        cmd = [exe_path, input_file]
+
     try:
         result = subprocess.run(
-            [exe_path, input_file],
+            cmd,
             capture_output=True,
             text=True,
             timeout=300,  # 5 minute timeout
@@ -49,7 +58,7 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: boo
         with open(log_file, 'w') as f:
             f.write("=" * 80 + "\n")
             f.write(f"Calculation: {input_file}\n")
-            f.write(f"Executable: {exe_path}\n")
+            f.write(f"Command: {' '.join(cmd)}\n")
             f.write("=" * 80 + "\n\n")
             f.write("STDOUT:\n")
             f.write("-" * 80 + "\n")
@@ -199,7 +208,9 @@ def prepare_mqc_files(validation_dir: str = "validation", prep_script: str = "mq
 
 def run_validation_tests(manifest_file: str = "validation_tests.json",
                         exe_path: str = "./build/mqc",
-                        verbose: bool = False) -> tuple:
+                        verbose: bool = False,
+                        use_mpi: bool = False,
+                        nprocs: int = 4) -> tuple:
     """Run all validation tests and return (passed, failed) counts"""
 
     # Load validation manifest
@@ -214,20 +225,28 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     errors = []
 
     print(f"\n{Colors.BOLD}Running {len(tests)} validation tests...{Colors.RESET}")
-    print(f"Tolerance: {tolerance}\n")
+    print(f"Tolerance: {tolerance}")
+    if use_mpi:
+        print(f"MPI mode: enabled (nprocs={nprocs} for fragmented, np=1 for unfragmented)")
+    print()
 
     for i, test in enumerate(tests, 1):
         test_name = test["name"]
         input_file = test["input"]
         test_type = test.get("type", "unfragmented")
 
-        print(f"{i}/{len(tests)}: {Colors.BLUE}{test_name}{Colors.RESET}")
+        print(f"{i}/{len(tests)}: {Colors.BLUE}{test_name}{Colors.RESET} [{test_type}]")
 
         # Run calculation
         if verbose:
-            print(f"  Running: {exe_path} {input_file}")
+            if use_mpi:
+                np = 1 if test_type == "unfragmented" else nprocs
+                print(f"  Running: mpirun -np {np} {exe_path} {input_file}")
+            else:
+                print(f"  Running: {exe_path} {input_file}")
 
-        if not run_calculation(input_file, exe_path, verbose=verbose):
+        if not run_calculation(input_file, exe_path, verbose=verbose,
+                             use_mpi=use_mpi, nprocs=nprocs, test_type=test_type):
             print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Calculation error")
             print(f"  See validation_logs/{Path(input_file).stem}.log for details\n")
             failed += 1
@@ -379,6 +398,10 @@ def main():
                        help="Path to validation directory containing inputs/")
     parser.add_argument("--skip-prep", action="store_true",
                        help="Skip .mqc file preparation step")
+    parser.add_argument("--mpi", action="store_true",
+                       help="Run tests using mpirun (fragmented: -np N, unfragmented: -np 1)")
+    parser.add_argument("--np", type=int, default=4,
+                       help="Number of MPI processes for fragmented calculations (default: 4)")
     parser.add_argument("-v", "--verbose", action="store_true",
                        help="Verbose output")
 
@@ -396,7 +419,9 @@ def main():
     passed, failed, errors = run_validation_tests(
         manifest_file=args.manifest,
         exe_path=args.exe,
-        verbose=args.verbose
+        verbose=args.verbose,
+        use_mpi=args.mpi,
+        nprocs=args.np
     )
 
     # Summary

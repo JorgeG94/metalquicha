@@ -218,6 +218,7 @@ contains
 
             if (parse_error%has_error()) then
                error = parse_error
+               call error%add_context("mqc_config_parser:read_mqc_file")
                close (unit)
                return
             end if
@@ -442,7 +443,10 @@ contains
          if (in_indices) then
             ! Read indices
             call parse_indices_line(line, fragment, error)
-            if (error%has_error()) return
+            if (error%has_error()) then
+               call error%add_context("mqc_config_parser:parse_single_fragment_section")
+               return
+            end if
          else
             eq_pos = index(line, '=')
             if (eq_pos > 0) then
@@ -664,7 +668,10 @@ contains
             if (in_cutoffs) then
                ! Validate cutoffs before leaving the cutoffs section
                call validate_cutoffs(config, error)
-               if (error%has_error()) return
+               if (error%has_error()) then
+                  call error%add_context("mqc_config_parser:parse_fragmentation_section")
+                  return
+               end if
                in_cutoffs = .false.
                cycle
             else
@@ -855,7 +862,10 @@ contains
                return
             end if
             call parse_single_molecule(unit, config%molecules(imol), error)
-            if (error%has_error()) return
+            if (error%has_error()) then
+               call error%add_context("mqc_config_parser:parse_molecules_section")
+               return
+            end if
          end if
       end do
 
@@ -915,7 +925,10 @@ contains
                call skip_to_end(unit, error)
             end select
 
-            if (error%has_error()) return
+            if (error%has_error()) then
+               call error%add_context("mqc_config_parser:parse_single_molecule")
+               return
+            end if
          end if
       end do
 
@@ -1270,7 +1283,10 @@ contains
                return
             end if
             call parse_fragment(unit, fragments(ifrag), error)
-            if (error%has_error()) return
+            if (error%has_error()) then
+               call error%add_context("mqc_config_parser:parse_molecule_fragments")
+               return
+            end if
          end if
       end do
 

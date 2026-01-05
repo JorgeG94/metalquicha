@@ -112,12 +112,16 @@ contains
       integer :: i
 
       call read_xyz_file(full_geom_file, full_geom, error)
-      if (error%has_error()) return
+      if (error%has_error()) then
+         call error%add_context("mqc_physical_fragment:initialize_system_geometry")
+         return
+      end if
 
       ! Read monomer template
       ! this will be changed once we have a proper input file parsing
       call read_xyz_file(monomer_file, monomer_geom, error)
       if (error%has_error()) then
+         call error%add_context("mqc_physical_fragment:initialize_system_geometry")
          call full_geom%destroy()
          return
       end if
@@ -224,7 +228,7 @@ contains
 
    end subroutine add_hydrogen_caps
 
-   subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, bonds)
+   subroutine build_fragment_from_indices(sys_geom, monomer_indices, fragment, error, bonds)
       !! Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds
       !!
       !! Extracts atoms from specified monomers and adds hydrogen caps where bonds are broken.
@@ -236,6 +240,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       integer, intent(in) :: monomer_indices(:)
       type(physical_fragment_t), intent(out) :: fragment
+      type(error_t), intent(out) :: error
       type(bond_t), intent(in), optional :: bonds(:)  !! Connectivity information for capping
 
       integer :: n_monomers_in_frag, atoms_per_monomer, n_atoms_no_caps
@@ -362,7 +367,11 @@ contains
       call fragment%compute_nelec()
 
       ! Validate: check for spatially overlapping atoms
-      call check_duplicate_atoms(fragment)
+      call check_duplicate_atoms(fragment, error)
+      if (error%has_error()) then
+         call error%add_context("mqc_physical_fragment:build_fragment_from_indices")
+         return
+      end if
 
       ! Calculate minimal distance between monomers in this fragment
       fragment%distance = calculate_monomer_distance(sys_geom, monomer_indices)
@@ -371,7 +380,7 @@ contains
 
    end subroutine build_fragment_from_indices
 
-   subroutine build_fragment_from_atom_list(sys_geom, atom_indices, n_atoms, fragment, bonds)
+   subroutine build_fragment_from_atom_list(sys_geom, atom_indices, n_atoms, fragment, error, bonds)
       !! Build a fragment from explicit atom list (for GMBE intersection fragments)
       !!
       !! Similar to build_fragment_from_indices but takes atom indices directly instead of
@@ -383,6 +392,7 @@ contains
       integer, intent(in) :: atom_indices(:)  !! 0-indexed atom indices
       integer, intent(in) :: n_atoms          !! Number of atoms in list
       type(physical_fragment_t), intent(out) :: fragment
+      type(error_t), intent(out) :: error
       type(bond_t), intent(in), optional :: bonds(:)  !! Connectivity for capping
 
       integer :: i, frag_atom_idx, atom_global_idx
@@ -420,7 +430,11 @@ contains
       call fragment%compute_nelec()
 
       ! Validate: check for spatially overlapping atoms
-      call check_duplicate_atoms(fragment)
+      call check_duplicate_atoms(fragment, error)
+      if (error%has_error()) then
+         call error%add_context("mqc_physical_fragment:build_fragment_from_atom_list")
+         return
+      end if
 
    end subroutine build_fragment_from_atom_list
 
@@ -567,7 +581,7 @@ contains
 
    end subroutine redistribute_cap_hessian
 
-   subroutine check_duplicate_atoms(fragment)
+   subroutine check_duplicate_atoms(fragment, error)
       !! Validate that fragment has no spatially overlapping atoms
       !! Checks if any two atoms are too close together (< 0.01 Bohr)
       !! This catches bugs in geometry construction or fragment building
@@ -575,6 +589,7 @@ contains
       use pic_io, only: to_char
 
       type(physical_fragment_t), intent(in) :: fragment
+      type(error_t), intent(out) :: error
 
       integer :: i, j, n_atoms
       real(dp) :: distance, dx, dy, dz
@@ -593,6 +608,13 @@ contains
             distance = sqrt(dx*dx + dy*dy + dz*dz)
 
             if (distance < MIN_ATOM_DISTANCE) then
+               ! Build detailed error message
+               call error%set(ERROR_VALIDATION, &
+                              "Fragment contains overlapping atoms "//to_char(i)//" and "//to_char(j)// &
+                              " (distance: "//to_char(distance)//" Bohr). "// &
+                              "This indicates bad input geometry or a bug in fragment construction.")
+
+               ! Log detailed information for debugging
                call logger%error("ERROR: Fragment contains overlapping atoms!")
                call logger%error("  Atoms "//to_char(i)//" and "//to_char(j)//" are too close together")
                call logger%error("  Distance: "//to_char(distance)//" Bohr ("// &
@@ -607,11 +629,7 @@ contains
                                  " at ("//to_char(fragment%coordinates(1, j))//", "// &
                                  to_char(fragment%coordinates(2, j))//", "// &
                                  to_char(fragment%coordinates(3, j))//") Bohr")
-               call logger%error(" ")
-               call logger%error("This indicates either:")
-               call logger%error("  1. Bad input geometry (atoms on top of each other)")
-               call logger%error("  2. Bug in fragment construction (duplicate atoms)")
-               error stop "Overlapping atoms in fragment"
+               return
             end if
          end do
       end do

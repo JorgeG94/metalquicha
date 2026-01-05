@@ -3,6 +3,7 @@ module test_mqc_fragment_from_atoms
    use mqc_physical_fragment, only: physical_fragment_t, system_geometry_t, build_fragment_from_atom_list
    use mqc_config_parser, only: bond_t
    use pic_types, only: dp
+   use mqc_error, only: error_t
    implicit none
    private
    public :: collect_mqc_fragment_from_atoms_tests
@@ -24,6 +25,7 @@ contains
    subroutine test_simple_intersection_no_caps(error)
       !! Test building intersection fragment without broken bonds
       type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: my_error
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       integer :: atom_indices(3)
@@ -47,36 +49,34 @@ contains
 
       ! Build intersection fragment from atoms [1, 2, 3] (C-N-C)
       atom_indices = [1, 2, 3]
-      call build_fragment_from_atom_list(sys_geom, atom_indices, 3, fragment)
+      call build_fragment_from_atom_list(sys_geom, atom_indices, 3, fragment, my_error)
 
       ! Check basic properties
       call check(error, fragment%n_atoms, 3, "Fragment should have 3 atoms")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, fragment%n_caps, 0, "Fragment should have 0 caps (no bonds provided)")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, fragment%element_numbers(1), 6, "First atom should be C")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, fragment%element_numbers(2), 7, "Second atom should be N")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       call check(error, fragment%element_numbers(3), 6, "Third atom should be C")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check intersection is NEUTRAL
       call check(error, fragment%charge, 0, "Intersection fragment should have charge=0")
-      if (allocated(error)) goto 100
-
+      if (allocated(error)) return
       call check(error, fragment%multiplicity, 1, "Intersection fragment should have multiplicity=1")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
       ! Check electron count (C=6, N=7, C=6, total=19 electrons for neutral)
       call check(error, fragment%nelec, 19, "Neutral C-N-C should have 19 electrons")
-      if (allocated(error)) goto 100
+      if (allocated(error)) return
 
-100   continue
       call fragment%destroy()
       call sys_geom%destroy()
 
@@ -85,6 +85,7 @@ contains
    subroutine test_intersection_with_broken_bonds(error)
       !! Test building intersection fragment with hydrogen caps for broken bonds
       type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: my_error
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       type(bond_t), allocatable :: bonds(:)
@@ -117,42 +118,40 @@ contains
 
       ! Build intersection fragment from atoms [1, 2, 3] (C-N-C)
       atom_indices = [1, 2, 3]
-      call build_fragment_from_atom_list(sys_geom, atom_indices, 3, fragment, bonds)
+      call build_fragment_from_atom_list(sys_geom, atom_indices, 3, fragment, my_error, bonds)
 
       ! Check we added 2 caps (for bonds 0-1 and 3-4)
       call check(error, fragment%n_caps, 2, "Should have 2 hydrogen caps")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       call check(error, fragment%n_atoms, 5, "Fragment should have 3 + 2 = 5 atoms")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       ! First 3 atoms should be C, N, C
       call check(error, fragment%element_numbers(1), 6, "Atom 1 should be C")
-      if (allocated(error)) goto 200
-
+      if (allocated(error)) return
       call check(error, fragment%element_numbers(2), 7, "Atom 2 should be N")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       call check(error, fragment%element_numbers(3), 6, "Atom 3 should be C")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       ! Last 2 atoms should be H (caps)
       call check(error, fragment%element_numbers(4), 1, "Cap 1 should be H")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       call check(error, fragment%element_numbers(5), 1, "Cap 2 should be H")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       ! Check cap_replaces_atom
       call check(error, allocated(fragment%cap_replaces_atom), .true., &
                  "cap_replaces_atom should be allocated")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
       ! Electron count: C(6) + N(7) + C(6) + H(1) + H(1) = 21 electrons
       call check(error, fragment%nelec, 21, "C-N-C with 2 H-caps should have 21 electrons")
-      if (allocated(error)) goto 200
+      if (allocated(error)) return
 
-200   continue
       call fragment%destroy()
       call sys_geom%destroy()
       deallocate (bonds)
@@ -162,6 +161,7 @@ contains
    subroutine test_intersection_charge_neutral(error)
       !! Test that intersection fragments are always neutral, even if parent fragments are charged
       type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: my_error
       type(system_geometry_t) :: sys_geom
       type(physical_fragment_t) :: fragment
       integer :: atom_indices(2)
@@ -190,22 +190,20 @@ contains
 
       ! Build intersection from atoms [1, 2] (two hydrogens)
       atom_indices = [1, 2]
-      call build_fragment_from_atom_list(sys_geom, atom_indices, 2, fragment)
+      call build_fragment_from_atom_list(sys_geom, atom_indices, 2, fragment, my_error)
 
       ! Intersection should ALWAYS be neutral
       call check(error, fragment%charge, 0, &
                  "Intersection should be neutral even if parent fragments are charged")
-      if (allocated(error)) goto 300
+      if (allocated(error)) return
 
       call check(error, fragment%multiplicity, 1, &
                  "Intersection should have multiplicity=1")
-      if (allocated(error)) goto 300
-
+      if (allocated(error)) return
       ! H + H = 2 electrons (neutral)
       call check(error, fragment%nelec, 2, "Two neutral H atoms should have 2 electrons")
-      if (allocated(error)) goto 300
+      if (allocated(error)) return
 
-300   continue
       call fragment%destroy()
       call sys_geom%destroy()
 
