@@ -48,7 +48,7 @@ contains
 
    subroutine print_fragment_xyz(fragment_idx, phys_frag)
       !! Print fragment geometry in XYZ format
-      integer, intent(in) :: fragment_idx
+      integer(int64), intent(in) :: fragment_idx
       type(physical_fragment_t), intent(in) :: phys_frag
       integer :: i
       character(len=2) :: symbol

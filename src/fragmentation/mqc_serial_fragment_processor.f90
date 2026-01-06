@@ -51,7 +51,7 @@ contains
             error stop "Failed to build fragment in serial processing"
          end if
 
-         call do_fragment_work(int(frag_idx), results(frag_idx), method, phys_frag, calc_type=calc_type_local)
+         call do_fragment_work(frag_idx, results(frag_idx), method, phys_frag, calc_type=calc_type_local)
 
          ! Debug output for gradients
          if (calc_type_local == CALC_TYPE_GRADIENT .and. results(frag_idx)%has_gradient) then

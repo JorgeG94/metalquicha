@@ -39,7 +39,7 @@ module mqc_mbe_fragment_distribution_scheme
    interface
       module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
          implicit none
-         integer, intent(in) :: fragment_idx
+         integer(int64), intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
          integer(int32), intent(in) :: method
          type(physical_fragment_t), intent(in), optional :: phys_frag

@@ -54,7 +54,7 @@ contains
       end if
 
       ! Process the full system
-      call do_fragment_work(0_int32, result, method, phys_frag=full_system, calc_type=calc_type)
+      call do_fragment_work(0_int64, result, method, phys_frag=full_system, calc_type=calc_type)
 
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")

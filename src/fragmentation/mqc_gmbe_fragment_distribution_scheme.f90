@@ -109,7 +109,7 @@ contains
          end if
 
          ! Compute energy (and gradient if requested)
-         call do_fragment_work(i, results(i), method, phys_frag, calc_type)
+         call do_fragment_work(int(i, int64), results(i), method, phys_frag, calc_type)
          term_energy = results(i)%energy%total()
 
          ! Store energy for JSON output

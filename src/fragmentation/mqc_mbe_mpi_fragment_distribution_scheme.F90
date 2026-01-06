@@ -12,7 +12,7 @@ contains
 
       use pic_logger, only: verbose_level
 
-      integer, intent(in) :: fragment_idx        !! Fragment index for identification
+      integer(int64), intent(in) :: fragment_idx        !! Fragment index for identification
       type(calculation_result_t), intent(out) :: result  !! Computation results
       integer(int32), intent(in) :: method       !! QC method
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
@@ -90,7 +90,8 @@ contains
       type(timer_type) :: coord_timer
       integer(int64) :: current_fragment, results_received
       integer :: finished_nodes
-      integer :: request_source, dummy_msg, fragment_idx
+      integer :: request_source, dummy_msg
+      integer(int64) :: fragment_idx
       type(MPI_Status) :: status, local_status
       logical :: handling_local_workers
       logical :: has_pending
@@ -297,7 +298,7 @@ contains
       integer(int32) :: fragment_type
       integer, allocatable :: fragment_indices(:)
       type(request_t) :: req(4)
-      integer(int32) :: fragment_idx_int32
+      integer(int64) :: fragment_idx_int64
 
       fragment_size = count(polymers(fragment_idx, :) > 0)
       allocate (fragment_indices(fragment_size))
@@ -307,8 +308,8 @@ contains
       fragment_type = 0
 
       ! TODO: serialize the data for better performance
-      fragment_idx_int32 = int(fragment_idx, kind=int32)
-      call isend(world_comm, fragment_idx_int32, dest_rank, TAG_NODE_FRAGMENT, req(1))
+      fragment_idx_int64 = int(fragment_idx, kind=int64)
+      call isend(world_comm, fragment_idx_int64, dest_rank, TAG_NODE_FRAGMENT, req(1))
       call isend(world_comm, fragment_type, dest_rank, TAG_NODE_FRAGMENT, req(2))
       call isend(world_comm, fragment_size, dest_rank, TAG_NODE_FRAGMENT, req(3))
       call isend(world_comm, fragment_indices, dest_rank, TAG_NODE_FRAGMENT, req(4))
@@ -333,7 +334,7 @@ contains
       integer(int32) :: fragment_type
       integer, allocatable :: fragment_indices(:)
       type(request_t) :: req(4)
-      integer(int32) :: fragment_idx_int32
+      integer(int64) :: fragment_idx_int64
 
       fragment_size = count(polymers(fragment_idx, :) > 0)
       allocate (fragment_indices(fragment_size))
@@ -343,8 +344,8 @@ contains
       fragment_type = 0
 
       ! TODO: serialize the data for better performance
-      fragment_idx_int32 = int(fragment_idx, kind=int32)
-      call isend(node_comm, fragment_idx_int32, dest_rank, TAG_WORKER_FRAGMENT, req(1))
+      fragment_idx_int64 = int(fragment_idx, kind=int64)
+      call isend(node_comm, fragment_idx_int64, dest_rank, TAG_WORKER_FRAGMENT, req(1))
       call isend(node_comm, fragment_type, dest_rank, TAG_WORKER_FRAGMENT, req(2))
       call isend(node_comm, fragment_size, dest_rank, TAG_WORKER_FRAGMENT, req(3))
       call isend(node_comm, fragment_indices, dest_rank, TAG_WORKER_FRAGMENT, req(4))
@@ -364,7 +365,8 @@ contains
       class(comm_t), intent(in) :: world_comm, node_comm
       integer(int32), intent(in), optional :: calc_type
 
-      integer(int32) :: fragment_idx, fragment_size, fragment_type, dummy_msg
+      integer(int64) :: fragment_idx
+      integer(int32) :: fragment_size, fragment_type, dummy_msg
       integer(int32) :: finished_workers
       integer(int32), allocatable :: fragment_indices(:)
       type(MPI_Status) :: status, global_status
@@ -372,7 +374,7 @@ contains
       integer(int32) :: local_dummy
 
       ! For tracking worker-fragment mapping and collecting results
-      integer(int32) :: worker_fragment_map(node_comm%size())
+      integer(int64) :: worker_fragment_map(node_comm%size())
       integer(int32) :: worker_source
       type(calculation_result_t) :: worker_result
 
@@ -476,7 +478,8 @@ contains
       integer(int32), intent(in), optional :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
-      integer(int32) :: fragment_idx, fragment_size, dummy_msg
+      integer(int64) :: fragment_idx
+      integer(int32) :: fragment_size, dummy_msg
       integer(int32) :: fragment_type  !! 0 = monomer (indices), 1 = intersection (atom list)
       integer(int32), allocatable :: fragment_indices(:)
       type(calculation_result_t) :: result
