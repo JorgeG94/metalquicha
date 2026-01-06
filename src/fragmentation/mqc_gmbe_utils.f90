@@ -6,7 +6,7 @@ module mqc_gmbe_utils
    use pic_types, only: default_int, int32, int64, dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
-   use mqc_combinatorics, only: next_combination, next_combination_init 
+   use mqc_combinatorics, only: next_combination, next_combination_init
    implicit none
    private
 

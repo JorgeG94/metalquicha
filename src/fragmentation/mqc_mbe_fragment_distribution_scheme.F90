@@ -36,8 +36,9 @@ module mqc_mbe_fragment_distribution_scheme
    public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
 
-   interface 
+   interface
       module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+         implicit none
          integer, intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
          integer(int32), intent(in) :: method
@@ -46,7 +47,8 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+                                           node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+         implicit none
          type(comm_t), intent(in) :: world_comm, node_comm
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) :: max_level, num_nodes
@@ -57,21 +59,23 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine global_coordinator
 
       module subroutine node_coordinator(world_comm, node_comm, calc_type)
+         implicit none
          class(comm_t), intent(in) :: world_comm, node_comm
          integer(int32), intent(in), optional :: calc_type
       end subroutine node_coordinator
 
-
-   module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
-      integer(int64), intent(in) :: total_fragments
-      integer, intent(in) :: polymers(:, :), max_level
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
-      integer(int32), intent(in), optional :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
+     module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
+         implicit none
+         integer(int64), intent(in) :: total_fragments
+         integer, intent(in) :: polymers(:, :), max_level
+         type(system_geometry_t), intent(in) :: sys_geom
+         integer(int32), intent(in) :: method
+         integer(int32), intent(in), optional :: calc_type
+         type(bond_t), intent(in), optional :: bonds(:)
       end subroutine serial_fragment_processor
-      
+
       module subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+         implicit none
          class(comm_t), intent(in) :: world_comm, node_comm
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
@@ -80,6 +84,7 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine node_worker
 
       module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+         implicit none
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
          integer(int32), intent(in), optional :: calc_type
@@ -87,28 +92,30 @@ module mqc_mbe_fragment_distribution_scheme
          type(calculation_result_t), intent(out), optional :: result_out
       end subroutine unfragmented_calculation
 
-         module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
-      type(comm_t), intent(in) :: world_comm
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
-      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
+      module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
+         implicit none
+         type(comm_t), intent(in) :: world_comm
+         type(system_geometry_t), intent(in) :: sys_geom
+         integer(int32), intent(in) :: method
+         type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
       end subroutine distributed_unfragmented_hessian
 
-  module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
-      type(comm_t), intent(in) :: world_comm
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
-      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+      module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
+         implicit none
+         type(comm_t), intent(in) :: world_comm
+         type(system_geometry_t), intent(in) :: sys_geom
+         integer(int32), intent(in) :: method
+         real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
       end subroutine hessian_coordinator
 
-   module subroutine hessian_worker(world_comm, sys_geom, method, displacement)
-      type(comm_t), intent(in) :: world_comm
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
-      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+      module subroutine hessian_worker(world_comm, sys_geom, method, displacement)
+         implicit none
+         type(comm_t), intent(in) :: world_comm
+         type(system_geometry_t), intent(in) :: sys_geom
+         integer(int32), intent(in) :: method
+         real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
       end subroutine hessian_worker
 
-      end interface
-
+   end interface
 
 end module mqc_mbe_fragment_distribution_scheme

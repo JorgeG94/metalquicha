@@ -1,7 +1,7 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_serial_fragment_processor
-implicit none 
+   implicit none
 
-contains 
+contains
 
    module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
       !! Process all fragments serially in single-rank mode
@@ -120,6 +120,5 @@ contains
       deallocate (results)
 
    end subroutine serial_fragment_processor
-
 
 end submodule mqc_serial_fragment_processor

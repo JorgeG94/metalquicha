@@ -1,7 +1,7 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_hessian_distribution_scheme
-    implicit none
+   implicit none
 
-    contains 
+contains
 
    module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
       !! Compute Hessian for unfragmented system using MPI distribution
@@ -47,7 +47,6 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_hessian_distribution_scheme
       call world_comm%barrier()
 
    end subroutine distributed_unfragmented_hessian
-
 
    module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
       !! Coordinator for distributed Hessian calculation

@@ -1,7 +1,7 @@
-submodule (mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
-implicit none
+submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
+   implicit none
 
-contains 
+contains
 
    subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
       !! Process a single fragment for quantum chemistry calculation
@@ -547,6 +547,5 @@ contains
          end select
       end do
    end subroutine node_worker
-
 
 end submodule mqc_mbe_fragment_distribution_scheme

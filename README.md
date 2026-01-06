@@ -75,7 +75,7 @@ support. If you decide to not build tblite and just build the framework the code
 
 Supported compilers:
 
-Using TBlite: gcc, ifx, ifort 
+Using TBlite: gcc, ifx, ifort
 
 Without tblite, i.e. no quantum chemistry: gcc, nvfortran, flang(new), ifx, ifort
 
