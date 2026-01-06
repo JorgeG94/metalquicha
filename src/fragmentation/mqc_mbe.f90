@@ -498,8 +498,8 @@ contains
       !! Most efficient for simultaneous energy+gradient+Hessian calculations
       use mqc_result_types, only: calculation_result_t
       use mqc_config_parser, only: bond_t
-      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
-                                       redistribute_cap_hessian
+      use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
+                                       redistribute_cap_gradients, redistribute_cap_hessian
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: polymers(:, :), max_level
       type(calculation_result_t), intent(in) :: results(:)
@@ -925,6 +925,7 @@ contains
       use mqc_result_types, only: calculation_result_t
       use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
                                        redistribute_cap_gradients
+      use mqc_gmbe_utils, only: find_fragment_intersection
       use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       use pic_logger, only: info_level
@@ -997,14 +998,58 @@ contains
 
             ! Accumulate intersection gradients with sign
             if (intersection_results(i)%has_gradient) then
-               ! Intersection gradients are accumulated with the same sign as energy
-               ! Note: We don't need to rebuild intersection fragments here because
-               ! the gradient redistribution was already done during fragment calculation
-               ! via build_fragment_from_atom_list
-               ! TODO: This needs to be implemented properly - we need the fragment geometry
-               ! to get the local→global mapping. For now, log a warning.
-               call logger%warning("GMBE gradient with intersections not fully implemented yet!")
-               call logger%warning("Intersection gradient redistribution requires storing fragment geometry")
+               block
+                  integer :: j, current_n, next_n, n_intersect
+                  integer, allocatable :: current_atoms(:), next_atoms(:), intersect_atoms(:)
+                  real(dp), allocatable :: term_gradient(:, :)
+                  logical :: has_intersection
+                  type(physical_fragment_t) :: inter_fragment
+                  type(error_t) :: inter_error
+
+                  ! Start with the atom list for the first monomer in this intersection set
+                  call get_monomer_atom_list(sys_geom, intersection_sets(1, i), current_atoms, current_n)
+
+                  if (current_n > 0) then
+                     ! Intersect with the remaining monomers in the set
+                     do j = 2, k
+                        call get_monomer_atom_list(sys_geom, intersection_sets(j, i), next_atoms, next_n)
+                        has_intersection = find_fragment_intersection(current_atoms, current_n, &
+                                                                      next_atoms, next_n, &
+                                                                      intersect_atoms, n_intersect)
+                        deallocate (current_atoms, next_atoms)
+
+                        if (.not. has_intersection) then
+                           current_n = 0
+                           exit
+                        end if
+
+                        current_n = n_intersect
+                        allocate (current_atoms(current_n))
+                        current_atoms = intersect_atoms
+                        deallocate (intersect_atoms)
+                     end do
+                  end if
+
+                  if (current_n > 0) then
+                     call build_fragment_from_atom_list(sys_geom, current_atoms, current_n, &
+                                                        inter_fragment, inter_error, bonds)
+                     if (inter_error%has_error()) then
+                        call logger%error(inter_error%get_full_trace())
+                        error stop "Failed to build intersection fragment in GMBE gradient"
+                     end if
+
+                     allocate (term_gradient(3, sys_geom%total_atoms))
+                     term_gradient = 0.0_dp
+                     call redistribute_cap_gradients(inter_fragment, intersection_results(i)%gradient, term_gradient)
+                     total_gradient = total_gradient + sign_factor*term_gradient
+                     call inter_fragment%destroy()
+                     deallocate (term_gradient)
+                  else
+                     call logger%warning("GMBE intersection has no atoms; skipping gradient")
+                  end if
+
+                  if (allocated(current_atoms)) deallocate (current_atoms)
+               end block
             end if
          end do
 
@@ -1082,7 +1127,8 @@ contains
       !! TODO: Full implementation with intersection Hessians pending
       use mqc_result_types, only: calculation_result_t
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
-                                       redistribute_cap_hessian
+                                       redistribute_cap_hessian, build_fragment_from_atom_list
+      use mqc_gmbe_utils, only: find_fragment_intersection
       use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       use pic_logger, only: info_level
@@ -1139,21 +1185,161 @@ contains
 
       total_energy = monomer_energy
 
-      ! Intersection Hessians not yet implemented
-      if (n_intersections > 0 .and. present(intersection_results)) then
-         call logger%warning("GMBE Hessian with intersections not yet fully implemented!")
-         call logger%warning("Only monomer Hessians will be included")
+      if (n_intersections > 0 .and. present(intersection_results) .and. &
+          present(intersection_sets) .and. present(intersection_levels)) then
+         max_level = maxval(intersection_levels)
+
+         allocate (level_energies(2:max_level))
+         allocate (level_counts(2:max_level))
+         level_energies = 0.0_dp
+         level_counts = 0
+
+         do i = 1, n_intersections
+            k = intersection_levels(i)
+            sign_factor = real((-1)**(k + 1), dp)
+            level_energies(k) = level_energies(k) + intersection_results(i)%energy%total()
+            level_counts(k) = level_counts(k) + 1
+
+            if (intersection_results(i)%has_gradient .or. intersection_results(i)%has_hessian) then
+               block
+                  integer :: j, current_n, next_n, n_intersect
+                  integer, allocatable :: current_atoms(:), next_atoms(:), intersect_atoms(:)
+                  real(dp), allocatable :: term_gradient(:, :), term_hessian(:, :)
+                  logical :: has_intersection
+                  type(physical_fragment_t) :: inter_fragment
+                  type(error_t) :: inter_error
+
+                  call get_monomer_atom_list(sys_geom, intersection_sets(1, i), current_atoms, current_n)
+
+                  if (current_n > 0) then
+                     do j = 2, k
+                        call get_monomer_atom_list(sys_geom, intersection_sets(j, i), next_atoms, next_n)
+                        has_intersection = find_fragment_intersection(current_atoms, current_n, &
+                                                                      next_atoms, next_n, &
+                                                                      intersect_atoms, n_intersect)
+                        deallocate (current_atoms, next_atoms)
+
+                        if (.not. has_intersection) then
+                           current_n = 0
+                           exit
+                        end if
+
+                        current_n = n_intersect
+                        allocate (current_atoms(current_n))
+                        current_atoms = intersect_atoms
+                        deallocate (intersect_atoms)
+                     end do
+                  end if
+
+                  if (current_n > 0) then
+                     call build_fragment_from_atom_list(sys_geom, current_atoms, current_n, &
+                                                        inter_fragment, inter_error, bonds)
+                     if (inter_error%has_error()) then
+                        call logger%error(inter_error%get_full_trace())
+                        error stop "Failed to build intersection fragment in GMBE gradient+Hessian"
+                     end if
+
+                     if (intersection_results(i)%has_gradient) then
+                        allocate (term_gradient(3, sys_geom%total_atoms))
+                        term_gradient = 0.0_dp
+                        call redistribute_cap_gradients(inter_fragment, intersection_results(i)%gradient, &
+                                                        term_gradient)
+                        total_gradient = total_gradient + sign_factor*term_gradient
+                        deallocate (term_gradient)
+                     end if
+
+                     if (intersection_results(i)%has_hessian) then
+                        allocate (term_hessian(hess_dim, hess_dim))
+                        term_hessian = 0.0_dp
+                        call redistribute_cap_hessian(inter_fragment, intersection_results(i)%hessian, &
+                                                      term_hessian)
+                        total_hessian = total_hessian + sign_factor*term_hessian
+                        deallocate (term_hessian)
+                     end if
+
+                     call inter_fragment%destroy()
+                  else
+                     call logger%warning("GMBE intersection has no atoms; skipping derivatives")
+                  end if
+
+                  if (allocated(current_atoms)) deallocate (current_atoms)
+               end block
+            end if
+         end do
+
+         do k = 2, max_level
+            if (level_counts(k) > 0) then
+               sign_factor = real((-1)**(k + 1), dp)
+               total_energy = total_energy + sign_factor*level_energies(k)
+            end if
+         end do
+
+         call logger%info("GMBE Energy breakdown (Inclusion-Exclusion Principle):")
+         block
+            character(len=256) :: line
+            write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "):  ", monomer_energy
+            call logger%info(trim(line))
+
+            do k = 2, max_level
+               if (level_counts(k) > 0) then
+                  sign_factor = real((-1)**(k + 1), dp)
+                  if (sign_factor > 0.0_dp) then
+                     write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  +", level_energies(k)
+                  else
+                     write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  ", level_energies(k)
+                  end if
+                  call logger%info(trim(line))
+               end if
+            end do
+
+            write (line, '(a,f20.10)') "  Total GMBE:      ", total_energy
+            call logger%info(trim(line))
+         end block
+
+         deallocate (level_energies, level_counts)
+      else
+         call logger%info("GMBE Energy breakdown:")
+         call logger%info("  Monomers ("//to_char(n_monomers)//"): "//to_char(monomer_energy))
+         call logger%info("  Total GMBE:  "//to_char(total_energy))
       end if
 
       ! Print info
-      call logger%info("GMBE Energy breakdown:")
-      call logger%info("  Monomers ("//to_char(n_monomers)//"): "//to_char(monomer_energy))
-      call logger%info("  Total GMBE:  "//to_char(total_energy))
       call logger%info("GMBE gradient computation completed")
       call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
       call logger%info("GMBE Hessian computation completed")
       call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
 
    end subroutine compute_gmbe_energy_gradient_hessian
+
+   subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)
+      !! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomer_idx
+      integer, allocatable, intent(out) :: atom_list(:)
+      integer, intent(out) :: n_atoms
+
+      integer :: i, base_idx
+
+      if (allocated(sys_geom%fragment_atoms)) then
+         n_atoms = sys_geom%fragment_sizes(monomer_idx)
+         if (n_atoms > 0) then
+            allocate (atom_list(n_atoms))
+            atom_list = sys_geom%fragment_atoms(1:n_atoms, monomer_idx)
+         else
+            allocate (atom_list(0))
+         end if
+      else
+         n_atoms = sys_geom%atoms_per_monomer
+         if (n_atoms > 0) then
+            allocate (atom_list(n_atoms))
+            base_idx = (monomer_idx - 1)*sys_geom%atoms_per_monomer
+            do i = 1, n_atoms
+               atom_list(i) = base_idx + (i - 1)
+            end do
+         else
+            allocate (atom_list(0))
+         end if
+      end if
+   end subroutine get_monomer_atom_list
 
 end module mqc_mbe
