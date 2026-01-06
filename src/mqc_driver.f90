@@ -171,7 +171,7 @@ contains
       integer(int64) :: n_primaries_i64  !! For binomial calculation
       integer, allocatable :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
-      integer :: n_pie_terms  !! Number of unique PIE terms
+      integer(int64) :: n_pie_terms  !! Number of unique PIE terms
 
       ! Generate fragments
       if (world_comm%rank() == 0) then
@@ -226,7 +226,7 @@ contains
             call logger%info("GMBE PIE enumeration complete: "//to_char(n_pie_terms)//" unique subsystems to evaluate")
 
             ! For now: total_fragments = n_pie_terms (each PIE term is a subsystem to evaluate)
-            total_fragments = int(n_pie_terms, int64)
+            total_fragments = n_pie_terms
          else
             ! Standard MBE mode
             ! Calculate expected number of fragments
