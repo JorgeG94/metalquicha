@@ -38,7 +38,7 @@ contains
       use pic_logger, only: info_level
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
-      integer, intent(in) :: n_pie_terms
+      integer(int64), intent(in) :: n_pie_terms
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method, calc_type
       type(bond_t), intent(in), optional :: bonds(:)
@@ -46,7 +46,8 @@ contains
       type(physical_fragment_t) :: phys_frag
       type(calculation_result_t), allocatable :: results(:)
       type(error_t) :: error
-      integer :: i, n_atoms, max_atoms, iatom, current_log_level, hess_dim
+      integer :: n_atoms, max_atoms, iatom, current_log_level, hess_dim
+      integer(int64) :: term_idx
       integer, allocatable :: atom_list(:)
       real(dp) :: total_energy, term_energy
       real(dp), allocatable :: pie_energies(:)  !! Store individual energies for JSON output
@@ -55,6 +56,12 @@ contains
       real(dp), allocatable :: total_hessian(:, :)  !! Total Hessian (3*total_atoms, 3*total_atoms)
       real(dp), allocatable :: term_hessian(:, :)  !! Temporary Hessian for each term
       integer :: coeff
+
+      if (int(size(pie_atom_sets, 2), int64) < n_pie_terms .or. &
+          int(size(pie_coefficients), int64) < n_pie_terms) then
+         call logger%error("PIE term arrays are smaller than n_pie_terms")
+         error stop "Invalid PIE term array sizes"
+      end if
 
       call logger%info("Processing "//to_char(n_pie_terms)//" unique PIE terms...")
       call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
@@ -78,28 +85,28 @@ contains
          total_hessian = 0.0_dp
       end if
 
-      do i = 1, n_pie_terms
-         coeff = pie_coefficients(i)
+      do term_idx = 1_int64, n_pie_terms
+         coeff = pie_coefficients(term_idx)
 
          ! Skip terms with zero coefficient (shouldn't happen, but safety check)
          if (coeff == 0) then
-            pie_energies(i) = 0.0_dp  ! Mark as skipped
+            pie_energies(term_idx) = 0.0_dp  ! Mark as skipped
             cycle
          end if
 
          ! Extract atom list for this term
          n_atoms = 0
-         do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, i) >= 0)
+         do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, term_idx) >= 0)
             n_atoms = n_atoms + 1
          end do
 
          if (n_atoms == 0) then
-            pie_energies(i) = 0.0_dp  ! Mark as skipped
+            pie_energies(term_idx) = 0.0_dp  ! Mark as skipped
             cycle
          end if
 
          allocate (atom_list(n_atoms))
-         atom_list = pie_atom_sets(1:n_atoms, i)
+         atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
          ! Build fragment from atom list
          call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
@@ -109,36 +116,37 @@ contains
          end if
 
          ! Compute energy (and gradient if requested)
-         call do_fragment_work(int(i, int64), results(i), method, phys_frag, calc_type)
-         term_energy = results(i)%energy%total()
+         call do_fragment_work(term_idx, results(term_idx), method, phys_frag, calc_type)
+         term_energy = results(term_idx)%energy%total()
 
          ! Store energy for JSON output
-         pie_energies(i) = term_energy
+         pie_energies(term_idx) = term_energy
 
          ! Accumulate with PIE coefficient
          total_energy = total_energy + real(coeff, dp)*term_energy
 
          ! Accumulate gradient if present
-         if ((calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) .and. results(i)%has_gradient) then
+         if ((calc_type == CALC_TYPE_GRADIENT .or. calc_type == CALC_TYPE_HESSIAN) .and. &
+             results(term_idx)%has_gradient) then
             ! Map fragment gradient to system coordinates with proper cap handling
             term_gradient = 0.0_dp
-            call redistribute_cap_gradients(phys_frag, results(i)%gradient, term_gradient)
+            call redistribute_cap_gradients(phys_frag, results(term_idx)%gradient, term_gradient)
 
             ! Accumulate with PIE coefficient
             total_gradient = total_gradient + real(coeff, dp)*term_gradient
          end if
 
          ! Accumulate Hessian if present
-         if (calc_type == CALC_TYPE_HESSIAN .and. results(i)%has_hessian) then
+         if (calc_type == CALC_TYPE_HESSIAN .and. results(term_idx)%has_hessian) then
             ! Map fragment Hessian to system coordinates with proper cap handling
             term_hessian = 0.0_dp
-            call redistribute_cap_hessian(phys_frag, results(i)%hessian, term_hessian)
+            call redistribute_cap_hessian(phys_frag, results(term_idx)%hessian, term_hessian)
 
             ! Accumulate with PIE coefficient
             total_hessian = total_hessian + real(coeff, dp)*term_hessian
          end if
 
-         call logger%verbose("PIE term "//to_char(i)//"/"//to_char(n_pie_terms)// &
+         call logger%verbose("PIE term "//to_char(term_idx)//"/"//to_char(n_pie_terms)// &
                              ": "//to_char(n_atoms)//" atoms, coeff="//to_char(coeff)// &
                              ", E="//to_char(term_energy))
 
@@ -202,22 +210,23 @@ contains
       type(comm_t), intent(in) :: world_comm, node_comm
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
-      integer, intent(in) :: n_pie_terms
+      integer(int64), intent(in) :: n_pie_terms
       integer, intent(in) :: node_leader_ranks(:), num_nodes
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method, calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
       type(timer_type) :: coord_timer
-      integer :: current_term_idx, results_received, finished_nodes
-      integer :: request_source, dummy_msg, term_idx
+      integer(int64) :: current_term_idx, results_received, term_idx
+      integer :: finished_nodes
+      integer :: request_source, dummy_msg
       type(MPI_Status) :: status, local_status
       logical :: handling_local_workers, has_pending
       integer :: local_finished_workers, local_dummy
 
       ! Storage for results
       type(calculation_result_t), allocatable :: results(:)
-      integer :: worker_term_map(node_comm%size())
+      integer(int64) :: worker_term_map(node_comm%size())
       integer :: worker_source
       real(dp) :: total_energy
       real(dp), allocatable :: total_gradient(:, :)
@@ -227,11 +236,17 @@ contains
       ! MPI request handles
       type(request_t) :: req
 
+      if (int(size(pie_atom_sets, 2), int64) < n_pie_terms .or. &
+          int(size(pie_coefficients), int64) < n_pie_terms) then
+         call logger%error("PIE term arrays are smaller than n_pie_terms")
+         error stop "Invalid PIE term array sizes"
+      end if
+
       current_term_idx = n_pie_terms
       finished_nodes = 0
       local_finished_workers = 0
       handling_local_workers = (node_comm%size() > 1)
-      results_received = 0
+      results_received = 0_int64
       worker_term_map = 0
 
       allocate (results(n_pie_terms))
@@ -260,7 +275,8 @@ contains
                call wait(req)
                worker_term_map(worker_source) = 0
                results_received = results_received + 1
-               if (mod(results_received, max(1, n_pie_terms/10)) == 0 .or. results_received == n_pie_terms) then
+               if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
+                   results_received == n_pie_terms) then
                   call logger%info("  Processed "//to_char(results_received)//"/"// &
                                    to_char(n_pie_terms)//" PIE terms ["// &
                                    to_char(coord_timer%get_elapsed_time())//" s]")
@@ -278,7 +294,8 @@ contains
             call result_irecv(results(term_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
             results_received = results_received + 1
-            if (mod(results_received, max(1, n_pie_terms/10)) == 0 .or. results_received == n_pie_terms) then
+            if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
+                results_received == n_pie_terms) then
                call logger%info("  Processed "//to_char(results_received)//"/"// &
                                 to_char(n_pie_terms)//" PIE terms ["// &
                                 to_char(coord_timer%get_elapsed_time())//" s]")
@@ -341,7 +358,7 @@ contains
       call coord_timer%start()
 
       total_energy = 0.0_dp
-      do term_idx = 1, n_pie_terms
+      do term_idx = 1_int64, n_pie_terms
          total_energy = total_energy + real(pie_coefficients(term_idx), dp)*results(term_idx)%energy%total()
       end do
 
@@ -350,7 +367,7 @@ contains
          allocate (total_gradient(3, sys_geom%total_atoms))
          total_gradient = 0.0_dp
 
-         do term_idx = 1, n_pie_terms
+         do term_idx = 1_int64, n_pie_terms
             if (results(term_idx)%has_gradient) then
                ! Map fragment gradient to system coordinates
                block
@@ -428,7 +445,7 @@ contains
             total_gradient = 0.0_dp
          end if
 
-         do term_idx = 1, n_pie_terms
+         do term_idx = 1_int64, n_pie_terms
             if (results(term_idx)%has_hessian .or. results(term_idx)%has_gradient) then
                block
                   use mqc_error, only: error_t
@@ -497,7 +514,7 @@ contains
       block
          real(dp), allocatable :: pie_energies(:)
          allocate (pie_energies(n_pie_terms))
-         do term_idx = 1, n_pie_terms
+         do term_idx = 1_int64, n_pie_terms
             pie_energies(term_idx) = results(term_idx)%energy%total()
          end do
          call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
@@ -514,7 +531,7 @@ contains
    subroutine send_pie_term_to_node(world_comm, term_idx, pie_atom_sets, dest_rank)
       !! Send PIE term (atom list) to remote node coordinator
       type(comm_t), intent(in) :: world_comm
-      integer, intent(in) :: term_idx
+      integer(int64), intent(in) :: term_idx
       integer, intent(in) :: pie_atom_sets(:, :)
       integer, intent(in) :: dest_rank
 
@@ -552,7 +569,7 @@ contains
    subroutine send_pie_term_to_worker(node_comm, term_idx, pie_atom_sets, dest_rank)
       !! Send PIE term (atom list) to local worker
       type(comm_t), intent(in) :: node_comm
-      integer, intent(in) :: term_idx
+      integer(int64), intent(in) :: term_idx
       integer, intent(in) :: pie_atom_sets(:, :)
       integer, intent(in) :: dest_rank
 

@@ -529,14 +529,14 @@ contains
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       real(dp), intent(in) :: pie_energies(:)  !! Raw energy for each term
-      integer, intent(in) :: n_pie_terms
+      integer(int64), intent(in) :: n_pie_terms
       real(dp), intent(in) :: total_energy
       real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
       real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
 
-      integer :: i, j, max_atoms, n_atoms
+      integer :: j, max_atoms, n_atoms
+      integer(int64) :: i, n_nonzero_terms
       integer :: unit, io_stat
-      integer :: n_nonzero_terms
       logical :: first_term
       character(len=512) :: json_line
       character(len=256) :: output_file, basename
@@ -573,8 +573,8 @@ contains
 
       ! PIE terms section
       ! First count non-zero coefficient terms
-      n_nonzero_terms = 0
-      do i = 1, n_pie_terms
+      n_nonzero_terms = 0_int64
+      do i = 1_int64, n_pie_terms
          if (pie_coefficients(i) /= 0) n_nonzero_terms = n_nonzero_terms + 1
       end do
 
@@ -586,7 +586,7 @@ contains
       max_atoms = size(pie_atom_sets, 1)
       first_term = .true.
 
-      do i = 1, n_pie_terms
+      do i = 1_int64, n_pie_terms
          ! Skip terms with zero coefficient
          if (pie_coefficients(i) == 0) cycle
 
