@@ -6,6 +6,7 @@ module mqc_gmbe_utils
    use pic_types, only: default_int, int32, int64, dp
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use mqc_combinatorics, only: next_combination, next_combination_init
    implicit none
    private
 
@@ -252,47 +253,7 @@ contains
 
    end subroutine generate_k_way_intersections_for_level
 
-   subroutine next_combination_init(combination, k)
-      !! Initialize combination to [1, 2, ..., k]
-      integer, intent(inout) :: combination(:)
-      integer, intent(in) :: k
-      integer :: i
-      do i = 1, k
-         combination(i) = i
-      end do
-   end subroutine next_combination_init
-
-   function next_combination(combination, k, n) result(has_next)
-      !! Generate next combination in lexicographic order
-      !! Returns .true. if there's a next combination, .false. if we've exhausted all
-      integer, intent(inout) :: combination(:)
-      integer, intent(in) :: k, n
-      logical :: has_next
-      integer :: i
-
-      has_next = .true.
-
-      ! Find the rightmost element that can be incremented
-      i = k
-      do while (i >= 1)
-         if (combination(i) < n - k + i) then
-            combination(i) = combination(i) + 1
-            ! Reset all elements to the right
-            do while (i < k)
-               i = i + 1
-               combination(i) = combination(i - 1) + 1
-            end do
-            return
-         end if
-         i = i - 1
-      end do
-
-      ! No more combinations
-      has_next = .false.
-
-   end function next_combination
-
-   subroutine compute_polymer_atoms(sys_geom, polymer, polymer_size, atom_list, n_atoms)
+   pure subroutine compute_polymer_atoms(sys_geom, polymer, polymer_size, atom_list, n_atoms)
       !! Compute the atom list for a polymer (union of atoms from base fragments)
       !! polymer(:) contains base fragment indices (1-based)
       use mqc_physical_fragment, only: system_geometry_t
@@ -771,7 +732,7 @@ contains
 
    end subroutine dfs_pie_accumulate
 
-   function atom_sets_equal(set1, set2, n_atoms) result(equal)
+   pure function atom_sets_equal(set1, set2, n_atoms) result(equal)
       !! Check if two atom sets are equal (assuming sorted)
       integer, intent(in) :: set1(:), set2(:)
       integer, intent(in) :: n_atoms
@@ -787,7 +748,7 @@ contains
       end do
    end function atom_sets_equal
 
-   subroutine intersect_atom_lists(atoms1, n1, atoms2, n2, intersection, n_intersect)
+   pure subroutine intersect_atom_lists(atoms1, n1, atoms2, n2, intersection, n_intersect)
       !! Compute intersection of two atom lists
       integer, intent(in) :: atoms1(:), n1, atoms2(:), n2
       integer, intent(out) :: intersection(:)

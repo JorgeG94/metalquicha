@@ -40,7 +40,7 @@ contains
       real(dp), intent(out) :: total_energy
 
       integer(int64) :: i
-      integer :: fragment_size, body_level, current_log_level
+      integer :: fragment_size, nlevel, current_log_level
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp) :: delta_E
       logical :: do_detailed_print
@@ -76,12 +76,12 @@ contains
       ! Bottom-up computation: process fragments by size (1-body, then 2-body, then 3-body, etc.)
       ! This makes the algorithm independent of input fragment order
       ! We process by n-mer level to ensure all subsets are computed before they're needed
-      do body_level = 1, max_level
+      do nlevel = 1, max_level
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
 
-            ! Only process fragments of the current body_level
-            if (fragment_size /= body_level) cycle
+            ! Only process fragments of the current nlevel
+            if (fragment_size /= nlevel) cycle
 
             if (fragment_size == 1) then
                ! 1-body: deltaE = E (no subsets to subtract)
@@ -89,7 +89,7 @@ contains
                sum_by_level(1) = sum_by_level(1) + delta_energies(i)
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
                ! n-body: deltaE = E - sum(all subset deltaEs)
-               ! All subsets have already been computed in previous body_level iterations
+               ! All subsets have already been computed in previous nlevel iterations
                delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
                                      energies, delta_energies, fragment_size)
                delta_energies(i) = delta_E
@@ -105,11 +105,11 @@ contains
 
       ! Print text summary to console
       call logger%info("MBE Energy breakdown:")
-      do body_level = 1, max_level
-         if (abs(sum_by_level(body_level)) > 1e-15_dp) then
+      do nlevel = 1, max_level
+         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
             block
                character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", body_level, "-body:  ", sum_by_level(body_level)
+               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
                call logger%info(trim(energy_line))
             end block
          end if
@@ -348,7 +348,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
 
       integer(int64) :: i
-      integer :: fragment_size, body_level, current_log_level, iatom
+      integer :: fragment_size, nlevel, current_log_level, iatom
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
       real(dp) :: delta_E
@@ -398,12 +398,12 @@ contains
 
       ! Bottom-up computation: process fragments by size (1-body, 2-body, 3-body, etc.)
       ! Process by n-mer level to ensure all subsets are computed before they're needed
-      do body_level = 1, max_level
+      do nlevel = 1, max_level
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
 
-            ! Only process fragments of the current body_level
-            if (fragment_size /= body_level) cycle
+            ! Only process fragments of the current nlevel
+            if (fragment_size /= nlevel) cycle
 
             if (fragment_size == 1) then
                ! 1-body: deltaE = E, deltaG = G (no subsets to subtract)
@@ -445,11 +445,11 @@ contains
 
       ! Print energy breakdown
       call logger%info("MBE Energy breakdown:")
-      do body_level = 1, max_level
-         if (abs(sum_by_level(body_level)) > 1e-15_dp) then
+      do nlevel = 1, max_level
+         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
             block
                character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", body_level, "-body:  ", sum_by_level(body_level)
+               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
                call logger%info(trim(energy_line))
             end block
          end if
@@ -510,7 +510,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int64) :: i
-      integer :: fragment_size, body_level, current_log_level, iatom
+      integer :: fragment_size, nlevel, current_log_level, iatom
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
       type(fragment_lookup_t) :: lookup
@@ -564,12 +564,12 @@ contains
 
       ! Compute delta energies, gradients, and Hessians for each fragment
       ! Process by n-mer level to ensure all subsets are computed before they're needed
-      do body_level = 1, max_level
+      do nlevel = 1, max_level
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
 
-            ! Only process fragments of the current body_level
-            if (fragment_size /= body_level) cycle
+            ! Only process fragments of the current nlevel
+            if (fragment_size /= nlevel) cycle
 
             if (fragment_size == 1) then
                ! 1-body: delta = value (no subsets)
@@ -615,11 +615,11 @@ contains
 
       ! Print energy breakdown
       call logger%info("MBE Energy breakdown:")
-      do body_level = 1, max_level
-         if (abs(sum_by_level(body_level)) > 1e-15_dp) then
+      do nlevel = 1, max_level
+         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
             block
                character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", body_level, "-body:  ", sum_by_level(body_level)
+               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
                call logger%info(trim(energy_line))
             end block
          end if

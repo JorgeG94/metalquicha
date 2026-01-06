@@ -155,7 +155,7 @@ contains
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
                                       sys_geom, parse_error)
 
-      if (stat /= 0) then
+      if (parse_error%has_error()) then
          call check(error, .false., "Failed to initialize system")
          call cleanup_test_files()
          return
@@ -194,7 +194,7 @@ contains
       call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
                                       sys_geom, parse_error)
 
-      if (stat /= 0) then
+      if (parse_error%has_error()) then
          call check(error, .false., "Failed to initialize system")
          call cleanup_test_files()
          return

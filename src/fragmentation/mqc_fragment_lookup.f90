@@ -31,7 +31,7 @@ module mqc_fragment_lookup
 
 contains
 
-   subroutine fragment_lookup_init(this, estimated_entries)
+   pure subroutine fragment_lookup_init(this, estimated_entries)
       !! Initialize hash table with estimated size
       class(fragment_lookup_t), intent(inout) :: this
       integer(int64), intent(in) :: estimated_entries
@@ -132,7 +132,7 @@ contains
       idx = -1
    end function fragment_lookup_find
 
-   subroutine fragment_lookup_destroy(this)
+   pure subroutine fragment_lookup_destroy(this)
       !! Clean up hash table and all chains
       class(fragment_lookup_t), intent(inout) :: this
       integer :: i

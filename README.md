@@ -73,6 +73,12 @@ make -j
 If you enable tblite (enabled by default at the moment) you are going to be blocked by which compilers does tblite
 support. If you decide to not build tblite and just build the framework the code will work with most modern compilers.
 
+Supported compilers:
+
+Using TBlite: gcc, ifx, ifort
+
+Without tblite, i.e. no quantum chemistry: gcc, nvfortran, flang(new), ifx, ifort
+
 ### Building with the Fortran Package Manager (FPM)
 
 *FPM will only work if you are building with openblas, since the linking step is hardcoded.*
