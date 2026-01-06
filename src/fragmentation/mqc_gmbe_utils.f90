@@ -541,10 +541,10 @@ contains
       integer, intent(in) :: max_k_level       !! Maximum clique size (intersection depth limit)
       integer, allocatable, intent(out) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_terms)
       integer, allocatable, intent(out) :: pie_coefficients(:)  !! PIE coefficient for each term
-      integer, intent(out) :: n_pie_terms      !! Number of unique PIE terms
+      integer(int64), intent(out) :: n_pie_terms      !! Number of unique PIE terms
 
       ! Temporary storage for PIE terms (allocate generously)
-      integer, parameter :: MAX_PIE_TERMS = 100000  ! Adjust if needed
+      integer(int64), parameter :: MAX_PIE_TERMS = 100000_int64  ! Adjust if needed
       integer, allocatable :: temp_atom_sets(:, :)
       integer, allocatable :: temp_coefficients(:)
       integer, allocatable :: primary_atoms(:, :)    !! Precomputed atom lists for each primary
@@ -564,7 +564,7 @@ contains
       allocate (temp_coefficients(MAX_PIE_TERMS))
       temp_atom_sets = -1
       temp_coefficients = 0
-      n_pie_terms = 0
+      n_pie_terms = 0_int64
 
       ! Precompute atom lists for all primaries
       allocate (primary_atoms(max_atoms, n_primaries))
@@ -607,7 +607,7 @@ contains
       end do
 
       ! Copy to output arrays
-      if (n_pie_terms > 0) then
+      if (n_pie_terms > 0_int64) then
          allocate (pie_atom_sets(max_atoms, n_pie_terms))
          allocate (pie_coefficients(n_pie_terms))
          pie_atom_sets = temp_atom_sets(:, 1:n_pie_terms)
@@ -639,10 +639,11 @@ contains
       integer, intent(in) :: max_k_level
       integer, intent(inout) :: atom_sets(:, :)
       integer, intent(inout) :: coefficients(:)
-      integer, intent(inout) :: n_terms
-      integer, intent(in) :: max_terms
+      integer(int64), intent(inout) :: n_terms
+      integer(int64), intent(in) :: max_terms
 
-      integer :: sign, term_idx, i, candidate_idx
+      integer :: sign, i, candidate_idx, candidate_pos
+      integer(int64) :: term_idx
       integer, allocatable :: new_atoms(:), new_candidates(:)
       integer :: n_new_atoms, n_new_candidates
       logical :: found
@@ -655,9 +656,9 @@ contains
 
       ! Find or create entry for this atom set
       found = .false.
-      do i = 1, n_terms
-         if (atom_sets_equal(atom_sets(:, i), current_atoms, n_current_atoms)) then
-            coefficients(i) = coefficients(i) + sign
+      do term_idx = 1_int64, n_terms
+         if (atom_sets_equal(atom_sets(:, term_idx), current_atoms, n_current_atoms)) then
+            coefficients(term_idx) = coefficients(term_idx) + sign
             found = .true.
             exit
          end if
@@ -669,7 +670,7 @@ contains
             call logger%error("Exceeded maximum PIE terms ("//to_char(max_terms)//")")
             return
          end if
-         n_terms = n_terms + 1
+         n_terms = n_terms + 1_int64
          atom_sets(1:n_current_atoms, n_terms) = current_atoms(1:n_current_atoms)
          atom_sets(n_current_atoms + 1:, n_terms) = -1
          coefficients(n_terms) = sign
@@ -696,11 +697,11 @@ contains
 
          ! New candidates: must come after this one and overlap with new_atoms
          n_new_candidates = 0
-         do term_idx = i + 1, n_candidates
+         do candidate_pos = i + 1, n_candidates
             block
                integer :: test_candidate, test_n_intersect
                integer, allocatable :: test_intersect(:)
-               test_candidate = candidates(term_idx)
+               test_candidate = candidates(candidate_pos)
 
                allocate (test_intersect(max_atoms))
                call intersect_atom_lists(new_atoms, n_new_atoms, &
