@@ -137,15 +137,15 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/node_worker.html#variable-dummy_msg~3">dummy_msg</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-error">error</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_idx~6">fragment_idx</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-error~2">error</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_idx~8">fragment_idx</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_indices~4">fragment_indices</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_size~4">fragment_size</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_size~8">fragment_size</a>
             <a class="list-group-item" href="../proc/node_worker.html#variable-fragment_type~4">fragment_type</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-phys_frag~2">phys_frag</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-req~5">req</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-result~2">result</a>
-            <a class="list-group-item" href="../proc/node_worker.html#variable-status~3">status</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-phys_frag~3">phys_frag</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-req~7">req</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-result~7">result</a>
+            <a class="list-group-item" href="../proc/node_worker.html#variable-status~5">status</a>
         </div>
       </div>
     </div>
@@ -321,7 +321,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~8"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -336,7 +336,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~4"></span>
+              <span class="anchor" id="variable-node_comm~7"></span>
               class(comm_t),
             </td>
 <td>intent(in)</td>
@@ -351,7 +351,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~2"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -366,7 +366,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~2"></span>
+              <span class="anchor" id="variable-method~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -381,11 +381,11 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
+              <span class="anchor" id="variable-calc_type~6"></span>
               integer(kind=int32),
             </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
+<td>intent(in)</td>
+              <td></td>            <td>
               
             </td>
             <td>::</td>
@@ -396,7 +396,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~2"></span>
+              <span class="anchor" id="variable-bonds~5"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -979,7 +979,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -996,7 +996,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~6"></span>
+              <span class="anchor" id="variable-fragment_idx~8"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1030,7 +1030,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~4"></span>
+              <span class="anchor" id="variable-fragment_size~8"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -1064,7 +1064,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~2"></span>
+              <span class="anchor" id="variable-phys_frag~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1081,7 +1081,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~5"></span>
+              <span class="anchor" id="variable-req~7"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1098,7 +1098,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~2"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -1115,7 +1115,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~3"></span>
+              <span class="anchor" id="variable-status~5"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1152,7 +1152,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">node_comm</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
@@ -1250,7 +1250,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 10:34 +0000             </p>
+ on 2026-01-06 10:40 +0000             </p>
           </div>
         </div>
         <br>

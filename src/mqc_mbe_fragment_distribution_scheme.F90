@@ -43,7 +43,7 @@ module mqc_mbe_fragment_distribution_scheme
          type(calculation_result_t), intent(out) :: result
          integer(int32), intent(in) :: method
          type(physical_fragment_t), intent(in), optional :: phys_frag
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
@@ -54,14 +54,14 @@ module mqc_mbe_fragment_distribution_scheme
          integer, intent(in) :: max_level, num_nodes
          integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
          type(system_geometry_t), intent(in), optional :: sys_geom
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine global_coordinator
 
       module subroutine node_coordinator(world_comm, node_comm, calc_type)
          implicit none
          class(comm_t), intent(in) :: world_comm, node_comm
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
       end subroutine node_coordinator
 
      module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
@@ -70,7 +70,7 @@ module mqc_mbe_fragment_distribution_scheme
          integer, intent(in) :: polymers(:, :), max_level
          type(system_geometry_t), intent(in) :: sys_geom
          integer(int32), intent(in) :: method
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine serial_fragment_processor
 
@@ -79,7 +79,7 @@ module mqc_mbe_fragment_distribution_scheme
          class(comm_t), intent(in) :: world_comm, node_comm
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine node_worker
 
@@ -87,7 +87,7 @@ module mqc_mbe_fragment_distribution_scheme
          implicit none
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
-         integer(int32), intent(in), optional :: calc_type
+         integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
          type(calculation_result_t), intent(out), optional :: result_out
       end subroutine unfragmented_calculation

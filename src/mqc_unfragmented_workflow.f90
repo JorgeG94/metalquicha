@@ -8,7 +8,7 @@ contains
       use mqc_error, only: error_t
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
-      integer(int32), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(calculation_result_t), intent(out), optional :: result_out
 

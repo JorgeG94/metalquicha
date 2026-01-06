@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for procedures.">41 statements</a>
+                 title=" 0.5% of total for procedures.">37 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -315,7 +315,7 @@ Verbosity is controlled by the global logger level.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -330,7 +330,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result"></span>
+              <span class="anchor" id="variable-result~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -345,7 +345,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -360,7 +360,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag"></span>
+              <span class="anchor" id="variable-phys_frag~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -375,11 +375,11 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type"></span>
+              <span class="anchor" id="variable-calc_type~3"></span>
               integer(kind=int32),
             </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
+<td>intent(in)</td>
+              <td></td>            <td>
               
             </td>
             <td>::</td>
@@ -959,7 +959,7 @@ large graphs.</div>
                 <td></td>
                 <td></td>
             <td>
-                <p>Local copy of calc_type with default</p>
+                <p>Local copy of calc_type</p>
             </td>
         </tr>
         <tr>
@@ -1042,21 +1042,16 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span><span class="w">  </span><span class="c">!! Computation results</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="w">       </span><span class="c">!! QC method</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">phys_frag</span><span class="w">  </span><span class="c">!! Fragment geometry</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span><span class="w">  </span><span class="c">!! Calculation type</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span><span class="w">  </span><span class="c">!! Calculation type</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">current_log_level</span><span class="w">  </span><span class="c">!! Current logger verbosity level</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_verbose</span><span class="w">  </span><span class="c">!! Whether verbose output is enabled</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type_local</span><span class="w">  </span><span class="c">!! Local copy of calc_type with default</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type_local</span><span class="w">  </span><span class="c">!! Local copy of calc_type</span>
 <span class="cp">#ifndef MQC_WITHOUT_TBLITE</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">xtb_method_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">xtb_calc</span><span class="w">  </span><span class="c">!! XTB calculator instance</span>
 <span class="cp">#endif</span>
 
-<span class="w">      </span><span class="c">! Set default calc_type if not provided</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">calc_type</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         </span><span class="n">calc_type_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calc_type</span>
-<span class="w">      </span><span class="k">else</span>
-<span class="k">         </span><span class="n">calc_type_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CALC_TYPE_ENERGY</span><span class="w">  </span><span class="c">! Default to energy-only calculation</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="w">      </span><span class="n">calc_type_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calc_type</span>
 
 <span class="w">      </span><span class="c">! Query logger to determine verbosity</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">configuration</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">current_log_level</span><span class="p">)</span>
@@ -1122,7 +1117,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 10:34 +0000             </p>
+ on 2026-01-06 10:40 +0000             </p>
           </div>
         </div>
         <br>

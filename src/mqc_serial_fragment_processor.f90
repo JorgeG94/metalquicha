@@ -11,7 +11,7 @@ contains
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
-      integer(int32), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int64) :: frag_idx
@@ -26,12 +26,7 @@ contains
       integer(int32) :: calc_type_local
       type(error_t) :: error
 
-      ! Set default calc_type if not provided
-      if (present(calc_type)) then
-         calc_type_local = calc_type
-      else
-         calc_type_local = CALC_TYPE_ENERGY
-      end if
+      calc_type_local = calc_type
 
       call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
       call logger%info("  Calculation type: "//calc_type_to_string(calc_type_local))

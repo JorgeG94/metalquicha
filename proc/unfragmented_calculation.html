@@ -138,8 +138,8 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-error~56">error</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-full_system~3">full_system</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~75">i</a>
-            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~20">result</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-i~74">i</a>
+            <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-result~16">result</a>
             <a class="list-group-item" href="../proc/unfragmented_calculation.html#variable-total_atoms~4">total_atoms</a>
         </div>
       </div>
@@ -318,7 +318,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~48"></span>
+              <span class="anchor" id="variable-sys_geom~46"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -351,8 +351,8 @@ If result_out is present, returns result instead of writing JSON and destroying 
               <span class="anchor" id="variable-calc_type~20"></span>
               integer(kind=int32),
             </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
+<td>intent(in)</td>
+              <td></td>            <td>
               
             </td>
             <td>::</td>
@@ -363,7 +363,7 @@ If result_out is present, returns result instead of writing JSON and destroying 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~29"></span>
+              <span class="anchor" id="variable-bonds~28"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -879,7 +879,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~75"></span>
+              <span class="anchor" id="variable-i~74"></span>
               integer,
             </td>
               <td>private</td>
@@ -896,7 +896,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~20"></span>
+              <span class="anchor" id="variable-result~16"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -951,7 +951,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">result_out</span>
 
@@ -1082,7 +1082,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 10:34 +0000             </p>
+ on 2026-01-06 10:40 +0000             </p>
           </div>
         </div>
         <br>
