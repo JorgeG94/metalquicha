@@ -1,0 +1,1001 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>hessian_coordinator &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>hessian_coordinator
+      <small>Interface</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.0% of total for procedures.">71 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe_fragment_distribution_scheme.F90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_fragment_distribution_scheme.f90.html'>mqc_mbe_fragment_distribution_scheme.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe_fragment_distribution_scheme~2.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">hessian_coordinator</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+    <em>None</em>
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2>interface</h2>
+      
+      <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: interface~~hessian_coordinator~~CallsGraph Pages: 1 -->
+<svg id="interfacehessian_coordinatorCallsGraph" width="641pt" height="357pt"
+ viewBox="0.00 0.00 641.00 356.71" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="interface~~hessian_coordinator~~CallsGraph" class="graph" transform="scale(0.54 0.54) rotate(0) translate(4 656)">
+<title>interface~~hessian_coordinator~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-656 1182,-656 1182,4 -4,4"/>
+<!-- interface~hessian_coordinator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node1" class="node">
+<title>interface~hessian_coordinator</title>
+<polygon fill="none" stroke="black" points="121,-339 0,-339 0,-315 121,-315 121,-339"/>
+<text text-anchor="middle" x="60.5" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50">hessian_coordinator</text>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node2" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node2"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="278,-339 157,-339 157,-315 278,-315 278,-339"/>
+<text text-anchor="middle" x="217.5" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge1" class="edge">
+<title>interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M121.43,-327C129.72,-327 138.31,-327 146.76,-327"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="146.99,-330.5 156.99,-327 146.99,-323.5 146.99,-330.5"/>
+</g>
+<!-- configuration -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node3" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="489,-647 405,-647 405,-623 489,-623 489,-647"/>
+<text text-anchor="middle" x="447" y="-632.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;configuration -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge2" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;configuration</title>
+<path fill="none" stroke="#ff0000" d="M218.42,-339.2C218.83,-383.89 226.71,-539.93 314,-614 336.04,-632.71 367.89,-638.18 394.78,-638.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="394.8,-642.37 404.82,-638.92 394.83,-635.37 394.8,-642.37"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node4" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="500,-605 394,-605 394,-581 500,-581 500,-605"/>
+<text text-anchor="middle" x="447" y="-590.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;get_elapsed_time -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge3" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#ff0000" d="M219.38,-339.03C222.97,-378.57 240.01,-505.53 314,-567 333.26,-583 359.53,-590.16 383.57,-593.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="383.41,-596.58 393.7,-594.08 384.1,-589.61 383.41,-596.58"/>
+</g>
+<!-- info -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node5" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="735.5,-652 681.5,-652 681.5,-628 735.5,-628 735.5,-652"/>
+<text text-anchor="middle" x="708.5" y="-637.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;info -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge4" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M220.07,-339.06C225.48,-375.33 246.87,-484 314,-534 409.77,-605.34 476.93,-511.68 580,-572 602.71,-585.29 593.87,-604.77 616,-619 632.39,-629.54 653.42,-634.81 671.19,-637.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="670.86,-640.93 681.21,-638.7 671.73,-633.98 670.86,-640.93"/>
+</g>
+<!-- iprobe -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node6" class="node">
+<title>iprobe</title>
+<polygon fill="#777777" stroke="#777777" points="474,-402 420,-402 420,-378 474,-378 474,-402"/>
+<text text-anchor="middle" x="447" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;iprobe -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge5" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;iprobe</title>
+<path fill="none" stroke="#ff0000" d="M241.42,-339.08C260.38,-348.58 288.28,-361.44 314,-369 345.64,-378.31 382.84,-383.75 409.67,-386.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.45,-390.25 419.77,-387.83 410.19,-383.29 409.45,-390.25"/>
+</g>
+<!-- irecv -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node7" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="474,-360 420,-360 420,-336 474,-336 474,-360"/>
+<text text-anchor="middle" x="447" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;irecv -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge6" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;irecv</title>
+<path fill="none" stroke="#ff0000" d="M278.27,-332.52C319.91,-336.36 374.11,-341.36 409.46,-344.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.52,-348.15 419.8,-345.58 410.16,-341.18 409.52,-348.15"/>
+</g>
+<!-- isend -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node8" class="node">
+<title>isend</title>
+<polygon fill="#777777" stroke="#777777" points="474,-318 420,-318 420,-294 474,-294 474,-318"/>
+<text text-anchor="middle" x="447" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;isend -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge7" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;isend</title>
+<path fill="none" stroke="#ff0000" d="M278.27,-321.48C319.91,-317.64 374.11,-312.64 409.46,-309.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="410.16,-312.82 419.8,-308.42 409.52,-305.85 410.16,-312.82"/>
+</g>
+<!-- proc~energy_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node9" class="node">
+<title>proc~energy_total</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node9"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="776.5,-484 640.5,-484 640.5,-460 776.5,-460 776.5,-484"/>
+<text text-anchor="middle" x="708.5" y="-469.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~energy_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge8" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0000" d="M223.41,-339.17C234.78,-365.52 265.68,-427.52 314,-453 366.95,-480.92 531.49,-479.54 630.24,-475.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="630.61,-479.37 640.47,-475.48 630.34,-472.37 630.61,-479.37"/>
+</g>
+<!-- proc~finite_diff_hessian_from_gradients -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node10" class="node">
+<title>proc~finite_diff_hessian_from_gradients</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node10"><a xlink:href="../proc/finite_diff_hessian_from_gradients.html" xlink:title="finite_diff_hessian_from_gradients">
+<polygon fill="#d9534f" stroke="#d9534f" points="543.5,-276 350.5,-276 350.5,-252 543.5,-252 543.5,-276"/>
+<text text-anchor="middle" x="447" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finite_diff_hessian_from_gradients</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~finite_diff_hessian_from_gradients -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge9" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~finite_diff_hessian_from_gradients</title>
+<path fill="none" stroke="#ff0000" d="M241.42,-314.92C260.38,-305.42 288.28,-292.56 314,-285 322.75,-282.43 331.92,-280.15 341.18,-278.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.16,-281.51 351.24,-276.06 340.74,-274.65 342.16,-281.51"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node11" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node11"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="580,-234 314,-234 314,-210 580,-210 580,-234"/>
+<text text-anchor="middle" x="447" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~fragment_compute_nelec -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge10" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#ff0000" d="M228.19,-314.91C243.98,-296.12 277.23,-260.29 314,-243 318.43,-240.92 323.02,-239.04 327.72,-237.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="329.11,-240.56 337.5,-234.1 326.91,-233.92 329.11,-240.56"/>
+</g>
+<!-- proc~method_type_to_string -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node12" class="node">
+<title>proc~method_type_to_string</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node12"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="513.5,-192 380.5,-192 380.5,-168 513.5,-168 513.5,-192"/>
+<text text-anchor="middle" x="447" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~method_type_to_string -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge11" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~method_type_to_string</title>
+<path fill="none" stroke="#ff0000" d="M223.81,-314.83C235.75,-289.04 267.39,-228.94 314,-201 330.78,-190.94 350.82,-185.23 370.16,-182.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="370.77,-185.54 380.19,-180.68 369.8,-178.61 370.77,-185.54"/>
+</g>
+<!-- proc~print_unfragmented_json -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node13" class="node">
+<title>proc~print_unfragmented_json</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node13"><a xlink:href="../proc/print_unfragmented_json.html" xlink:title="print_unfragmented_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="520,-525 374,-525 374,-501 520,-501 520,-525"/>
+<text text-anchor="middle" x="447" y="-510.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_unfragmented_json</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~print_unfragmented_json -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge12" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~print_unfragmented_json</title>
+<path fill="none" stroke="#ff0000" d="M222.08,-339.32C231.57,-369.62 260.38,-448.06 314,-486 328.52,-496.28 346.07,-502.83 363.56,-506.97"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="363.33,-510.49 373.83,-509.13 364.77,-503.65 363.33,-510.49"/>
+</g>
+<!-- proc~result_destroy -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node14" class="node">
+<title>proc~result_destroy</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node14"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="546,-150 348,-150 348,-126 546,-126 546,-150"/>
+<text text-anchor="middle" x="447" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~result_destroy -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge13" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#ff0000" d="M221.5,-314.78C229.97,-283.16 257.19,-198.36 314,-159 321.35,-153.91 329.47,-149.88 337.97,-146.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="339.32,-149.94 347.7,-143.46 337.11,-143.3 339.32,-149.94"/>
+</g>
+<!-- proc~xtb_calc_gradient -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node15" class="node">
+<title>proc~xtb_calc_gradient</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node15"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="541,-444 353,-444 353,-420 541,-420 541,-444"/>
+<text text-anchor="middle" x="447" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~xtb_calc_gradient -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge14" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#ff0000" d="M228.19,-339.09C243.98,-357.88 277.23,-393.71 314,-411 323.06,-415.26 332.81,-418.68 342.76,-421.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.21,-424.89 352.76,-423.94 343.92,-418.11 342.21,-424.89"/>
+</g>
+<!-- recv -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node16" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="474,-108 420,-108 420,-84 474,-84 474,-108"/>
+<text text-anchor="middle" x="447" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;recv -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge15" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;recv</title>
+<path fill="none" stroke="#ff0000" d="M220.04,-314.82C225.39,-278.18 246.61,-168.32 314,-117 341.29,-96.21 381.09,-92.43 409.84,-92.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.77,-96.45 419.89,-93.31 410.02,-89.45 409.77,-96.45"/>
+</g>
+<!-- start -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node17" class="node">
+<title>start</title>
+<polygon fill="#777777" stroke="#777777" points="474,-66 420,-66 420,-42 474,-42 474,-66"/>
+<text text-anchor="middle" x="447" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;start -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge16" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;start</title>
+<path fill="none" stroke="#ff0000" d="M219.04,-314.85C221.58,-273.71 235.8,-138.65 314,-75 340.69,-53.28 380.75,-49.68 409.73,-50.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.71,-53.99 419.87,-50.96 410.04,-47 409.71,-53.99"/>
+</g>
+<!-- to_char -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node18" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="474,-24 420,-24 420,0 474,0 474,-24"/>
+<text text-anchor="middle" x="447" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;to_char -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge17" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M218.31,-314.83C218.31,-269.5 224.86,-109.19 314,-33 340.24,-10.58 380.54,-7.12 409.71,-8.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="409.73,-11.67 419.91,-8.72 410.12,-4.68 409.73,-11.67"/>
+</g>
+<!-- proc~mp2_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node26" class="node">
+<title>proc~mp2_total</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node26"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="988,-484 837,-484 837,-460 988,-460 988,-484"/>
+<text text-anchor="middle" x="912.5" y="-469.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_total&#45;&gt;proc~mp2_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge18" class="edge">
+<title>proc~energy_total&#45;&gt;proc~mp2_total</title>
+<path fill="none" stroke="#00ff3f" d="M776.76,-472C792.73,-472 809.97,-472 826.61,-472"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="826.87,-475.5 836.87,-472 826.87,-468.5 826.87,-475.5"/>
+</g>
+<!-- proc~print_unfragmented_json&#45;&gt;info -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge20" class="edge">
+<title>proc~print_unfragmented_json&#45;&gt;info</title>
+<path fill="none" stroke="#003fff" d="M520.05,-514.83C541.16,-518.44 563.08,-525.56 580,-539 610.53,-563.25 585.85,-594.28 616,-619 631.35,-631.58 652.8,-636.95 671.07,-639.11"/>
+<polygon fill="#003fff" stroke="#003fff" points="670.84,-642.61 681.12,-640.03 671.48,-635.64 670.84,-642.61"/>
+</g>
+<!-- proc~print_unfragmented_json&#45;&gt;proc~energy_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge21" class="edge">
+<title>proc~print_unfragmented_json&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#003fff" d="M520.29,-501.58C554.55,-496.17 595.5,-489.69 630.36,-484.19"/>
+<polygon fill="#003fff" stroke="#003fff" points="631.16,-487.6 640.5,-482.59 630.07,-480.69 631.16,-487.6"/>
+</g>
+<!-- error -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node19" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="735.5,-610 681.5,-610 681.5,-586 735.5,-586 735.5,-610"/>
+<text text-anchor="middle" x="708.5" y="-595.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~print_unfragmented_json&#45;&gt;error -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge19" class="edge">
+<title>proc~print_unfragmented_json&#45;&gt;error</title>
+<path fill="none" stroke="#003fff" d="M520.33,-519.02C540.53,-522.84 561.89,-529.03 580,-539 600.38,-550.22 595.8,-565.46 616,-577 632.8,-586.6 653.69,-591.81 671.27,-594.64"/>
+<polygon fill="#003fff" stroke="#003fff" points="670.79,-598.11 681.18,-596.05 671.77,-591.17 670.79,-598.11"/>
+</g>
+<!-- proc~get_basename -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node24" class="node">
+<title>proc~get_basename</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node24"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="754,-568 663,-568 663,-544 754,-544 754,-568"/>
+<text text-anchor="middle" x="708.5" y="-553.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_unfragmented_json&#45;&gt;proc~get_basename -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge22" class="edge">
+<title>proc~print_unfragmented_json&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#003fff" d="M520.29,-524.98C562.27,-531.94 614.32,-540.56 652.87,-546.95"/>
+<polygon fill="#003fff" stroke="#003fff" points="652.43,-550.42 662.87,-548.6 653.58,-543.52 652.43,-550.42"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node25" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node25"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="783,-526 634,-526 634,-502 783,-502 783,-526"/>
+<text text-anchor="middle" x="708.5" y="-511.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~print_unfragmented_json&#45;&gt;proc~get_output_json_filename -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge23" class="edge">
+<title>proc~print_unfragmented_json&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#003fff" d="M520.29,-513.28C552.36,-513.4 590.31,-513.55 623.62,-513.68"/>
+<polygon fill="#003fff" stroke="#003fff" points="623.79,-517.18 633.8,-513.72 623.81,-510.18 623.79,-517.18"/>
+</g>
+<!-- proc~result_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node27" class="node">
+<title>proc~result_reset</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node27"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="801,-150 616,-150 616,-126 801,-126 801,-150"/>
+<text text-anchor="middle" x="708.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~result_destroy&#45;&gt;proc~result_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge24" class="edge">
+<title>proc~result_destroy&#45;&gt;proc~result_reset</title>
+<path fill="none" stroke="#1f00ff" d="M546.11,-138C565.54,-138 585.98,-138 605.54,-138"/>
+<polygon fill="#1f00ff" stroke="#1f00ff" points="605.68,-141.5 615.68,-138 605.68,-134.5 605.68,-141.5"/>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;proc~energy_total -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge29" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#7f00ff" d="M525.86,-444C558.87,-449.09 597.25,-455.01 630.2,-460.08"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="629.82,-463.57 640.24,-461.63 630.89,-456.65 629.82,-463.57"/>
+</g>
+<!-- new -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node20" class="node">
+<title>new</title>
+<polygon fill="#777777" stroke="#777777" points="735.5,-400 681.5,-400 681.5,-376 735.5,-376 735.5,-400"/>
+<text text-anchor="middle" x="708.5" y="-385.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge25" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new</title>
+<path fill="none" stroke="#7f00ff" d="M525.17,-420C543.18,-417.12 562.27,-414.01 580,-411 610.79,-405.77 645.7,-399.45 671.19,-394.76"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="671.96,-398.17 681.16,-392.92 670.69,-391.29 671.96,-398.17"/>
+</g>
+<!-- new_gfn1_calculator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node21" class="node">
+<title>new_gfn1_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="769.5,-358 647.5,-358 647.5,-334 769.5,-334 769.5,-358"/>
+<text text-anchor="middle" x="708.5" y="-343.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge26" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#7f00ff" d="M541.11,-425.95C554.72,-422.61 568.13,-417.82 580,-411 601.91,-398.41 594.53,-380.32 616,-367 622.62,-362.89 629.96,-359.59 637.52,-356.92"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="638.69,-360.23 647.17,-353.89 636.59,-353.55 638.69,-360.23"/>
+</g>
+<!-- new_gfn2_calculator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node22" class="node">
+<title>new_gfn2_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="769.5,-316 647.5,-316 647.5,-292 769.5,-292 769.5,-316"/>
+<text text-anchor="middle" x="708.5" y="-301.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge27" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator</title>
+<path fill="none" stroke="#7f00ff" d="M541.03,-429.41C555.11,-425.71 568.69,-419.89 580,-411 612.58,-385.4 584.31,-351.69 616,-325 622.29,-319.7 629.66,-315.67 637.44,-312.63"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="638.72,-315.89 647.08,-309.37 636.48,-309.25 638.72,-315.89"/>
+</g>
+<!-- new_wavefunction -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node23" class="node">
+<title>new_wavefunction</title>
+<polygon fill="#777777" stroke="#777777" points="764,-274 653,-274 653,-250 764,-250 764,-274"/>
+<text text-anchor="middle" x="708.5" y="-259.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_wavefunction -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge28" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_wavefunction</title>
+<path fill="none" stroke="#7f00ff" d="M541.33,-430.76C555.54,-426.93 569.08,-420.72 580,-411 624.15,-371.71 573.21,-323.76 616,-283 623.6,-275.76 633.17,-270.83 643.24,-267.51"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="644.29,-270.85 652.99,-264.8 642.42,-264.11 644.29,-270.85"/>
+</g>
+<!-- xtb_singlepoint -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node28" class="node">
+<title>xtb_singlepoint</title>
+<polygon fill="#777777" stroke="#777777" points="755,-442 662,-442 662,-418 755,-418 755,-442"/>
+<text text-anchor="middle" x="708.5" y="-427.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge30" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint</title>
+<path fill="none" stroke="#7f00ff" d="M541.32,-431.28C578.29,-431 619.56,-430.68 651.73,-430.43"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="651.86,-433.93 661.83,-430.35 651.8,-426.93 651.86,-433.93"/>
+</g>
+<!-- proc~energy_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node29" class="node">
+<title>proc~energy_reset</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node29"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="981.5,-150 843.5,-150 843.5,-126 981.5,-126 981.5,-150"/>
+<text text-anchor="middle" x="912.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~result_reset&#45;&gt;proc~energy_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge31" class="edge">
+<title>proc~result_reset&#45;&gt;proc~energy_reset</title>
+<path fill="none" stroke="#cc00ff" d="M801.04,-138C811.69,-138 822.48,-138 832.93,-138"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="833.25,-141.5 843.25,-138 833.25,-134.5 833.25,-141.5"/>
+</g>
+<!-- proc~mp2_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_node30" class="node">
+<title>proc~mp2_reset</title>
+<g id="a_interface~~hessian_coordinator~~CallsGraph_node30"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1178,-150 1024,-150 1024,-126 1178,-126 1178,-150"/>
+<text text-anchor="middle" x="1101" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
+<g id="interface~~hessian_coordinator~~CallsGraph_edge32" class="edge">
+<title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
+<path fill="none" stroke="#ff0000" d="M981.62,-138C992.03,-138 1002.89,-138 1013.63,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1013.87,-141.5 1023.87,-138 1013.87,-134.5 1013.87,-141.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var paninterfacehessian_coordinatorCallsGraph = svgPanZoom('#interfacehessian_coordinatorCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: interface~~hessian_coordinator~~CalledByGraph Pages: 1 -->
+<svg id="interfacehessian_coordinatorCalledByGraph" width="641pt" height="64pt"
+ viewBox="0.00 0.00 641.00 64.10" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="interface~~hessian_coordinator~~CalledByGraph" class="graph" transform="scale(0.55 0.55) rotate(0) translate(4 112)">
+<title>interface~~hessian_coordinator~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 1156,-112 1156,4 -4,4"/>
+<!-- interface~hessian_coordinator -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node1" class="node">
+<title>interface~hessian_coordinator</title>
+<polygon fill="none" stroke="black" points="1152,-66 1031,-66 1031,-42 1152,-42 1152,-66"/>
+<text text-anchor="middle" x="1091.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">hessian_coordinator</text>
+</g>
+<!-- proc~distributed_unfragmented_hessian -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node2" class="node">
+<title>proc~distributed_unfragmented_hessian</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node2"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="995,-66 798,-66 798,-42 995,-42 995,-66"/>
+<text text-anchor="middle" x="896.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge1" class="edge">
+<title>proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M995.13,-54C1003.77,-54 1012.4,-54 1020.74,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1020.75,-57.5 1030.75,-54 1020.75,-50.5 1020.75,-57.5"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node3" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node3"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="762,-66 565,-66 565,-42 762,-42 762,-66"/>
+<text text-anchor="middle" x="663.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge2" class="edge">
+<title>interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M762.13,-54C770.63,-54 779.25,-54 787.83,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="787.85,-57.5 797.85,-54 787.85,-50.5 787.85,-57.5"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node4" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node4"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="529,-66 353,-66 353,-42 529,-42 529,-66"/>
+<text text-anchor="middle" x="441" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge3" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#ff0000" d="M529.15,-54C537.54,-54 546.12,-54 554.68,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="554.71,-57.5 564.71,-54 554.71,-50.5 554.71,-57.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node5" class="node">
+<title>proc~run_calculation</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node5"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-66 223,-66 223,-42 317,-42 317,-66"/>
+<text text-anchor="middle" x="270" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge4" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#ff0000" d="M317.18,-54C325.27,-54 333.96,-54 342.85,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="342.93,-57.5 352.93,-54 342.93,-50.5 342.93,-57.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node6" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node6"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-108 10.5,-108 10.5,-84 176.5,-84 176.5,-108"/>
+<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge5" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M148.85,-83.92C161.39,-81.06 174.67,-77.98 187,-75 195.32,-72.99 204.09,-70.81 212.69,-68.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-71.96 222.65,-66.11 212.1,-65.18 213.82,-71.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node7" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node7"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
+<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge6" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M187.11,-54C195.83,-54 204.48,-54 212.7,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-57.5 222.87,-54 212.87,-50.5 212.87,-57.5"/>
+</g>
+<!-- program~main -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_node8" class="node">
+<title>program~main</title>
+<g id="a_interface~~hessian_coordinator~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
+<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="interface~~hessian_coordinator~~CalledByGraph_edge7" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M120.86,-17.78C139.39,-21.9 164.75,-27.63 187,-33 195.32,-35.01 204.09,-37.19 212.69,-39.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-42.82 222.65,-41.89 213.82,-36.04 212.1,-42.82"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var paninterfacehessian_coordinatorCalledByGraph = svgPanZoom('#interfacehessian_coordinatorCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+      <h2>private module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)  
+    <a href="../proc/hessian_coordinator.html"><button type="button" class="btn btn-info depwarn">Implementation &rarr;</button></a>
+</h2>
+
+    
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~14"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~30"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~12"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+                <p>Finite difference displacement (Bohr)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+
+ </div>
+</div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-06 10:20 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

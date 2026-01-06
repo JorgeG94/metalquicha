@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/result_irecv.html#variable-status~8">status</a>
+            <a class="list-group-item" href="../proc/result_irecv.html#variable-status~7">status</a>
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~15"></span>
+              <span class="anchor" id="variable-result~19"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -253,7 +253,7 @@ Receives SCF energy (non-blocking) and other components (blocking)</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~12"></span>
+              <span class="anchor" id="variable-req~9"></span>
               type(request_t),
             </td>
 <td>intent(out)</td>
@@ -475,23 +475,11 @@ large graphs.</div>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator -->
-<g id="proc~~result_irecv~~CalledByGraph_edge4" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ff0000" d="M577.65,-66.04C598.79,-70.91 623.36,-76.58 645.41,-81.67"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="644.81,-85.12 655.34,-83.96 646.38,-78.3 644.81,-85.12"/>
-</g>
 <!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator -->
-<g id="proc~~result_irecv~~CalledByGraph_edge5" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge4" class="edge">
 <title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator</title>
 <path fill="none" stroke="#00ff00" d="M606.12,-54C614.64,-54 623.28,-54 631.74,-54"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="631.95,-57.5 641.95,-54 631.95,-50.5 631.95,-57.5"/>
-</g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~node_coordinator -->
-<g id="proc~~result_irecv~~CalledByGraph_edge6" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~node_coordinator</title>
-<path fill="none" stroke="#0000ff" d="M577.65,-41.96C598.79,-37.09 623.36,-31.42 645.41,-26.33"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="646.38,-29.7 655.34,-24.04 644.81,-22.88 646.38,-29.7"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~result_irecv~~CalledByGraph_node6" class="node">
@@ -503,7 +491,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~result_irecv~~CalledByGraph_edge7" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge5" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
 <path fill="none" stroke="#ff0000" d="M407.13,-54C415.24,-54 423.94,-54 432.78,-54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="432.8,-57.5 442.8,-54 432.8,-50.5 432.8,-57.5"/>
@@ -518,7 +506,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
-<g id="proc~~result_irecv~~CalledByGraph_edge8" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge6" class="edge">
 <title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M236.86,-82C257.74,-77.21 281.82,-71.69 303.05,-66.82"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="303.94,-70.21 312.9,-64.57 302.37,-63.39 303.94,-70.21"/>
@@ -533,7 +521,7 @@ large graphs.</div>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~result_irecv~~CalledByGraph_edge9" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge7" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M236.86,-26C257.74,-30.79 281.82,-36.31 303.05,-41.18"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.37,-44.61 312.9,-43.43 303.94,-37.79 302.37,-44.61"/>
@@ -548,13 +536,13 @@ large graphs.</div>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~result_irecv~~CalledByGraph_edge10" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge8" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M54.25,-35.59C107.66,-38.81 230.05,-46.21 302.43,-50.58"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.54,-54.09 312.73,-51.2 302.96,-47.11 302.54,-54.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~result_irecv~~CalledByGraph_edge11" class="edge">
+<g id="proc~~result_irecv~~CalledByGraph_edge9" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
 <path fill="none" stroke="#00ff00" d="M54.21,-30.61C61.81,-29.62 70.61,-28.48 79.96,-27.27"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="80.42,-30.74 89.89,-25.99 79.52,-23.8 80.42,-30.74"/>
@@ -663,7 +651,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~8"></span>
+              <span class="anchor" id="variable-status~7"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -754,7 +742,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 10:13 +0000             </p>
+ on 2026-01-06 10:20 +0000             </p>
           </div>
         </div>
         <br>

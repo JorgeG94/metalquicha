@@ -1,0 +1,1490 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_hessian_distribution_scheme &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_hessian_distribution_scheme
+      <small>Submodule</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 2.9% of total for modules and submodules.">224 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe_fragment_distribution_scheme_hessian.F90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_fragment_distribution_scheme_hessian.f90.html'>mqc_mbe_fragment_distribution_scheme_hessian.F90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_hessian_distribution_scheme</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#modsubs-0"
+         aria-expanded="false" aria-controls="modsubs-0">
+         <h4 class="card-header bg-primary text-white">Module Subroutines</h4>
+      </a>
+      <div id="modsubs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_hessian_distribution_scheme.html#proc-distributed_unfragmented_hessian">distributed_unfragmented_hessian</a>
+            <a class="list-group-item" href="../module/mqc_hessian_distribution_scheme.html#proc-hessian_coordinator">hessian_coordinator</a>
+            <a class="list-group-item" href="../module/mqc_hessian_distribution_scheme.html#proc-hessian_worker">hessian_worker</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                <li><h5>Ancestors:</h5></li>
+                  <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme~2.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_hessian_distribution_scheme~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_hessian_distribution_schemeUsesGraph" width="641pt" height="608pt"
+ viewBox="0.00 0.00 641.00 608.22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph" class="graph" transform="scale(0.46 0.46) rotate(0) translate(4 1322.51)">
+<title>module~~mqc_hessian_distribution_scheme~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1322.51 1394,-1322.51 1394,4 -4,4"/>
+<!-- module~mqc_hessian_distribution_scheme -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node1" class="node">
+<title>module~mqc_hessian_distribution_scheme</title>
+<polygon fill="none" stroke="black" points="1390,-398 1196,-398 1196,-374 1390,-374 1390,-398"/>
+<text text-anchor="middle" x="1293" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_hessian_distribution_scheme</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node2" class="node">
+<title>module~mqc_mbe_fragment_distribution_scheme~2</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node2"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme~2.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="1160,-398 928,-398 928,-374 1160,-374 1160,-398"/>
+<text text-anchor="middle" x="1044" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme~2 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge1" class="edge">
+<title>module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme~2</title>
+<path fill="none" stroke="#ff0000" d="M1195.8,-386C1187.42,-386 1178.87,-386 1170.31,-386"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1170.27,-382.5 1160.27,-386 1170.27,-389.5 1170.27,-382.5"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node3" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node3"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="224,-1244 127,-1244 127,-1220 224,-1220 224,-1244"/>
+<text text-anchor="middle" x="175.5" y="-1229.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_calc_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge2" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M510.5,-1291C438.52,-1284.97 420.59,-1308.59 348.5,-1304"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M346.5,-1304C292.06,-1300.53 234.86,-1269.85 202.64,-1249.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="204.16,-1246.49 193.86,-1244.04 200.39,-1252.39 204.16,-1246.49"/>
+</g>
+<!-- module~mqc_config_adapter -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node4" class="node">
+<title>module~mqc_config_adapter</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node4"><a xlink:href="../module/mqc_config_adapter.html" xlink:title="mqc_config_adapter">
+<polygon fill="#337ab7" stroke="#337ab7" points="740,-1185 619,-1185 619,-1161 740,-1161 740,-1185"/>
+<text text-anchor="middle" x="679.5" y="-1170.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_adapter</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_config_adapter -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge3" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_config_adapter</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C809.56,-1150.26 778.21,-1160.07 750.22,-1165.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="749.28,-1162.27 740.08,-1167.52 750.55,-1169.15 749.28,-1162.27"/>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node5" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node5"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="404.5,-1162 290.5,-1162 290.5,-1138 404.5,-1138 404.5,-1162"/>
+<text text-anchor="middle" x="347.5" y="-1147.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_config_parser -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge4" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C784.18,-1168.85 794.69,-1204.52 742,-1236 651.95,-1289.79 617.06,-1299.34 512.5,-1291"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M510.5,-1291C474.46,-1287.4 399.8,-1208.03 365.91,-1169.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="368.2,-1167.3 358.96,-1162.12 362.95,-1171.93 368.2,-1167.3"/>
+</g>
+<!-- module~mqc_mbe -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node6" class="node">
+<title>module~mqc_mbe</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node6"><a xlink:href="../module/mqc_mbe.html" xlink:title="mqc_mbe">
+<polygon fill="#337ab7" stroke="#337ab7" points="867.5,-820 802.5,-820 802.5,-796 867.5,-796 867.5,-820"/>
+<text text-anchor="middle" x="835" y="-805.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mbe -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge5" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mbe</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1038.3,-398.23C1021.05,-442.74 958.66,-599.91 892,-722 879.39,-745.09 862.7,-770.15 850.83,-787.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="847.67,-785.64 844.78,-795.84 853.4,-789.67 847.67,-785.64"/>
+</g>
+<!-- module~mqc_mbe_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node7" class="node">
+<title>module~mqc_mbe_io</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node7"><a xlink:href="../module/mqc_mbe_io.html" xlink:title="mqc_mbe_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="719.5,-1016 639.5,-1016 639.5,-992 719.5,-992 719.5,-1016"/>
+<text text-anchor="middle" x="679.5" y="-1001.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_io</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mbe_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge6" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mbe_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C777.04,-1173.21 715.24,-1071.52 691.05,-1025.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="694.02,-1023.49 686.35,-1016.19 687.79,-1026.68 694.02,-1023.49"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node8" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node8"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="233.5,-1202 117.5,-1202 117.5,-1178 233.5,-1178 233.5,-1202"/>
+<text text-anchor="middle" x="175.5" y="-1187.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge7" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M510.5,-1291C391.25,-1279.07 368.02,-1244.64 253,-1211 246,-1208.95 238.63,-1206.85 231.33,-1204.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="232.04,-1201.38 221.47,-1202.08 230.17,-1208.12 232.04,-1201.38"/>
+</g>
+<!-- module~mqc_method_xtb -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node9" class="node">
+<title>module~mqc_method_xtb</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node9"><a xlink:href="../module/mqc_method_xtb.html" xlink:title="mqc_method_xtb">
+<polygon fill="#337ab7" stroke="#337ab7" points="887,-398 783,-398 783,-374 887,-374 887,-398"/>
+<text text-anchor="middle" x="835" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_xtb</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_method_xtb -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge8" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_method_xtb</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M928,-386C917.36,-386 906.89,-386 897.04,-386"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="897.02,-382.5 887.02,-386 897.02,-389.5 897.02,-382.5"/>
+</g>
+<!-- module~mqc_mpi_tags -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node10" class="node">
+<title>module~mqc_mpi_tags</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node10"><a xlink:href="../module/mqc_mpi_tags.html" xlink:title="mqc_mpi_tags">
+<polygon fill="#337ab7" stroke="#337ab7" points="724,-1227 635,-1227 635,-1203 724,-1203 724,-1227"/>
+<text text-anchor="middle" x="679.5" y="-1212.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_tags</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mpi_tags -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge9" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_mpi_tags</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C793.92,-1161.3 786.02,-1172.34 742,-1194 738.24,-1195.85 734.28,-1197.6 730.25,-1199.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="728.87,-1196.03 720.8,-1202.9 731.39,-1202.56 728.87,-1196.03"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node11" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node11"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="581,-841 442,-841 442,-817 581,-817 581,-841"/>
+<text text-anchor="middle" x="511.5" y="-826.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge10" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-708C770.36,-732.58 732.08,-663.35 680.5,-708"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node12" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node12"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="563.5,-146 459.5,-146 459.5,-122 563.5,-122 563.5,-146"/>
+<text text-anchor="middle" x="511.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge11" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M678.5,-94C636.4,-96.5 589.82,-108.57 556.74,-118.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="555.41,-115.56 546.93,-121.92 557.52,-122.24 555.41,-115.56"/>
+</g>
+<!-- omp_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node13" class="node">
+<title>omp_lib</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node13"><a xlink:href="https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003" xlink:title="omp_lib">
+<polygon fill="#337ab7" stroke="#337ab7" points="862.5,-66 807.5,-66 807.5,-42 862.5,-42 862.5,-66"/>
+<text text-anchor="middle" x="835" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_lib</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;omp_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge12" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;omp_lib</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1040.11,-373.74C1028.93,-328.69 984.4,-170.23 892,-80 886.28,-74.42 879.15,-69.88 871.91,-66.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="873.33,-63.06 862.78,-62.14 870.45,-69.44 873.33,-63.06"/>
+</g>
+<!-- pic_blas_interfaces -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node14" class="node">
+<title>pic_blas_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="892,-24 778,-24 778,0 892,0 892,-24"/>
+<text text-anchor="middle" x="835" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_blas_interfaces</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_blas_interfaces -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge13" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_blas_interfaces</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1041.28,-373.72C1033.66,-323.9 998.5,-134.77 892,-33 890.74,-31.79 889.4,-30.65 887.99,-29.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="889.73,-26.53 879.42,-24.09 885.96,-32.43 889.73,-26.53"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node15" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="374.5,-958 320.5,-958 320.5,-934 374.5,-934 374.5,-958"/>
+<text text-anchor="middle" x="347.5" y="-943.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge14" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1041.69,-398.13C1031.77,-487.39 965.31,-1041.7 836,-1133"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C770.11,-1178.11 808.38,-1024.36 742,-983 628.21,-912.1 458.89,-927.88 385.09,-939.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="384.23,-935.91 374.91,-940.96 385.34,-942.82 384.23,-935.91"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node16" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="381.5,-1080 313.5,-1080 313.5,-1056 381.5,-1056 381.5,-1080"/>
+<text text-anchor="middle" x="347.5" y="-1065.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge15" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-1133C763.27,-1183.33 496.56,-1112.04 391.46,-1081.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="392.38,-1077.73 381.8,-1078.24 390.39,-1084.44 392.38,-1077.73"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node17" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="383.5,-126 311.5,-126 311.5,-102 383.5,-102 383.5,-126"/>
+<text text-anchor="middle" x="347.5" y="-111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge16" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1036.33,-373.72C1004.48,-316.96 862.01,-83.23 680.5,-94"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M678.5,-94C605.17,-85.85 581.26,-120.75 512.5,-94"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M510.5,-94C470.77,-78.54 421.79,-88.16 388.15,-98.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="386.63,-95.53 378.23,-102 388.83,-102.18 386.63,-95.53"/>
+</g>
+<!-- pic_timer -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node18" class="node">
+<title>pic_timer</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="710.5,-638 648.5,-638 648.5,-614 710.5,-614 710.5,-638"/>
+<text text-anchor="middle" x="679.5" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_timer</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_timer -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge17" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_timer</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1040.46,-398.01C1028.71,-449.9 974.24,-654.6 836,-708"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M834,-708C788.24,-725.68 786.02,-668.66 742,-647 735.18,-643.64 727.69,-640.6 720.35,-637.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="721.12,-634.5 710.53,-634.55 718.84,-641.12 721.12,-634.5"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node19" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-1060 0,-1060 0,-1036 62,-1036 62,-1060"/>
+<text text-anchor="middle" x="31" y="-1045.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge18" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme~2&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M346.5,-1304C271.1,-1299.2 243.71,-1338.51 176.5,-1304"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge19" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M126.62,-1226.02C116.26,-1222.88 106.03,-1218.14 98,-1211 56.01,-1173.65 40.28,-1105.73 34.76,-1070.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="38.18,-1069.73 33.3,-1060.32 31.25,-1070.71 38.18,-1069.73"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_config_parser -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge21" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M510.5,-1177C479.15,-1171.17 444.29,-1165.29 414.95,-1160.5"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="415.25,-1157.01 404.82,-1158.86 414.13,-1163.92 415.25,-1157.01"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge24" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M672.43,-1160.62C660.36,-1135.56 633.1,-1076.81 617,-1025 594.08,-951.25 631.25,-913.65 581,-855 578.16,-851.69 574.85,-848.79 571.25,-846.27"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="572.79,-843.11 562.4,-841.02 569.21,-849.13 572.79,-843.11"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge25" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M618.87,-1180.36C587.04,-1182.81 547.36,-1183.48 512.5,-1177"/>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M510.5,-1177C478.78,-1171.11 467.24,-1173.09 442,-1153 418.56,-1134.34 428.32,-1115.99 406,-1096 401.28,-1091.77 395.8,-1088.04 390.14,-1084.78"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="391.66,-1081.63 381.18,-1080.07 388.4,-1087.82 391.66,-1081.63"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge26" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M642.27,-1185.12C534.49,-1220.81 220.63,-1321.9 176.5,-1304"/>
+</g>
+<!-- module~mqc_calculation_keywords -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node22" class="node">
+<title>module~mqc_calculation_keywords</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node22"><a xlink:href="../module/mqc_calculation_keywords.html" xlink:title="mqc_calculation_keywords">
+<polygon fill="#337ab7" stroke="#337ab7" points="253,-1122 98,-1122 98,-1098 253,-1098 253,-1122"/>
+<text text-anchor="middle" x="175.5" y="-1107.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_keywords</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_calculation_keywords -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge20" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_calculation_keywords</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M346.5,-1110C320.03,-1103.11 290.45,-1101.21 263.48,-1101.59"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="263.2,-1098.09 253.29,-1101.84 263.37,-1105.09 263.2,-1098.09"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node24" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node24"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="393,-1038 302,-1038 302,-1014 393,-1014 393,-1038"/>
+<text text-anchor="middle" x="347.5" y="-1023.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge22" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M654.01,-1160.84C606.64,-1137.51 498.98,-1085.4 406,-1047 401.63,-1045.19 397.03,-1043.38 392.43,-1041.62"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="393.63,-1038.33 383.04,-1038.09 391.17,-1044.88 393.63,-1038.33"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node25" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node25"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="209,-1080 142,-1080 142,-1056 209,-1056 209,-1080"/>
+<text text-anchor="middle" x="175.5" y="-1065.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge23" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M510.5,-1177C478.78,-1171.11 470.87,-1167.39 442,-1153 424.79,-1144.42 423.29,-1137.43 406,-1129 381.81,-1117.21 374.55,-1116.78 348.5,-1110"/>
+<path fill="none" stroke="#ff5900" stroke-dasharray="5,2" d="M346.5,-1110C303.12,-1098.71 253.32,-1086.49 218.88,-1078.16"/>
+<polygon fill="#ff5900" stroke="#ff5900" points="219.69,-1074.76 209.15,-1075.81 218.05,-1081.56 219.69,-1074.76"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge27" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M314.71,-1162.02C306.04,-1165.91 296.88,-1170.63 289,-1176 270.56,-1188.56 272.37,-1199.92 253,-1211 247.06,-1214.4 240.54,-1217.27 233.89,-1219.69"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="232.5,-1216.46 224.11,-1222.92 234.7,-1223.11 232.5,-1216.46"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge30" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M295.49,-1162C277.26,-1166.29 256.52,-1171.17 237.52,-1175.64"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="236.7,-1172.24 227.76,-1177.94 238.3,-1179.05 236.7,-1172.24"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge31" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M290.43,-1157.98C237.63,-1162.76 157.92,-1162.78 98,-1131 72.28,-1117.36 53.15,-1088.9 42.29,-1069.14"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="45.36,-1067.47 37.62,-1060.24 39.16,-1070.72 45.36,-1067.47"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge28" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M314.71,-1137.98C306.04,-1134.09 296.88,-1129.37 289,-1124 270.56,-1111.44 272.37,-1100.08 253,-1089 242.64,-1083.08 230.54,-1078.76 219.05,-1075.63"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="219.72,-1072.2 209.18,-1073.19 218.04,-1078.99 219.72,-1072.2"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node27" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node27"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="222,-939 129,-939 129,-915 222,-915 222,-939"/>
+<text text-anchor="middle" x="175.5" y="-924.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge29" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M306.98,-1137.99C300.2,-1134.41 293.81,-1129.83 289,-1124 244.84,-1070.43 294.23,-1027.86 253,-972 244.16,-960.03 231.11,-950.69 218.28,-943.69"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="219.54,-940.41 209.03,-939.01 216.37,-946.65 219.54,-940.41"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_mbe_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge33" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_mbe_io</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M824.4,-820.26C798.72,-853.05 728.24,-943.04 696.44,-983.64"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="693.51,-981.71 690.1,-991.74 699.02,-986.03 693.51,-981.71"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_mpi_tags -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge34" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_mpi_tags</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M832.66,-820.29C825.97,-879.67 794.37,-1136.4 742,-1194 739.42,-1196.84 736.44,-1199.29 733.21,-1201.42"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="731.32,-1198.46 724.19,-1206.3 734.65,-1204.62 731.32,-1198.46"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge35" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M813.06,-820.27C784.34,-836.15 730.56,-862.57 680.5,-869"/>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M678.5,-869C655.68,-871.93 599.52,-856.6 558.83,-844.08"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="559.69,-840.69 549.1,-841.05 557.61,-847.37 559.69,-840.69"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge36" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_io</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M510.5,-869C479.86,-874.17 469.26,-868.09 442,-883 421.87,-894.01 424.78,-906.82 406,-920 399.18,-924.79 391.33,-929.03 383.68,-932.62"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="382.24,-929.43 374.51,-936.67 385.07,-935.83 382.24,-929.43"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge37" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M832.85,-820.01C828.61,-857.2 810.32,-971.21 742,-1025 660.77,-1088.96 615.35,-1052.46 512.5,-1063"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge38" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M823.75,-795.77C810.97,-779.84 789.4,-750.64 778,-722 745.07,-639.31 792.45,-598.33 742,-525 705.15,-471.43 651.85,-503.89 617,-449 536.51,-322.2 678.15,-227.53 581,-113 560.56,-88.91 542.08,-105.09 512.5,-94"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_timer -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge39" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_timer</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M825.32,-795.78C813.84,-779.39 793.29,-749.18 778,-722 759.87,-689.77 769.65,-671.55 742,-647 735.76,-641.46 728,-637.37 720.11,-634.35"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="721.11,-631 710.52,-631.18 718.91,-637.64 721.11,-631"/>
+</g>
+<!-- module~mqc_mbe&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge40" class="edge">
+<title>module~mqc_mbe&#45;&gt;pic_types</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M678.5,-869C605.32,-878.39 585.25,-856.72 512.5,-869"/>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M510.5,-869C410.37,-885.9 381.79,-883.76 289,-925 271.65,-932.71 269.53,-938.65 253,-948 219.96,-966.69 213.23,-976.4 176.5,-986"/>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M174.5,-986C140.61,-994.86 130.12,-991.02 98,-1005 83.07,-1011.5 67.74,-1021.26 55.63,-1029.84"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="53.44,-1027.09 47.42,-1035.81 57.56,-1032.75 53.44,-1027.09"/>
+</g>
+<!-- module~mqc_frag_utils -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node26" class="node">
+<title>module~mqc_frag_utils</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node26"><a xlink:href="../module/mqc_frag_utils.html" xlink:title="mqc_frag_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="724.5,-680 634.5,-680 634.5,-656 724.5,-656 724.5,-680"/>
+<text text-anchor="middle" x="679.5" y="-665.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_frag_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe&#45;&gt;module~mqc_frag_utils -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge32" class="edge">
+<title>module~mqc_mbe&#45;&gt;module~mqc_frag_utils</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M826.94,-795.7C813.25,-772.82 780.99,-723.39 742,-694 737.26,-690.42 731.95,-687.24 726.49,-684.43"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="727.77,-681.16 717.24,-680.05 724.78,-687.49 727.77,-681.16"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge43" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M673.64,-991.71C661.92,-963.58 629.43,-893.93 581,-855 576.43,-851.32 571.28,-848.13 565.91,-845.36"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="567.27,-842.13 556.73,-841.09 564.32,-848.48 567.27,-842.13"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge44" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M670.49,-991.9C656.96,-970.79 629.78,-925.42 617,-883 576.85,-749.77 599.75,-709.88 581,-572 559.28,-412.28 527.25,-220.76 516.32,-156.36"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="519.71,-155.44 514.59,-146.17 512.81,-156.61 519.71,-155.44"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge45" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_io</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M639.4,-997.42C605.86,-992.17 556.16,-985.32 512.5,-983"/>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M510.5,-983C466.44,-980.66 417.2,-967.91 384.7,-958.02"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="385.35,-954.56 374.76,-954.93 383.27,-961.24 385.35,-954.56"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge46" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M655.69,-1016.08C624.43,-1031.68 566.05,-1057.51 512.5,-1063"/>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M510.5,-1063C470.47,-1067.1 424.6,-1068.18 391.91,-1068.34"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="391.78,-1064.84 381.79,-1068.36 391.8,-1071.84 391.78,-1064.84"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge47" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;pic_types</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M510.5,-983C362.26,-975.13 320.65,-950.52 176.5,-986"/>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge41" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M510.5,-983C465.6,-980.62 415.88,-996.78 383.52,-1009.96"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="381.93,-1006.84 374.06,-1013.93 384.64,-1013.29 381.93,-1006.84"/>
+</g>
+<!-- module~mqc_io_helpers -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node28" class="node">
+<title>module~mqc_io_helpers</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node28"><a xlink:href="../module/mqc_io_helpers.html" xlink:title="mqc_io_helpers">
+<polygon fill="#337ab7" stroke="#337ab7" points="559.5,-1035 463.5,-1035 463.5,-1011 559.5,-1011 559.5,-1035"/>
+<text text-anchor="middle" x="511.5" y="-1020.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_io_helpers</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge42" class="edge">
+<title>module~mqc_mbe_io&#45;&gt;module~mqc_io_helpers</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M639.16,-1008.5C618.36,-1010.88 592.46,-1013.85 569.5,-1016.48"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="569.07,-1013 559.53,-1017.62 569.86,-1019.96 569.07,-1013"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge48" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#3cff00" stroke-dasharray="5,2" d="M122.03,-1177.88C113.42,-1174.34 105.03,-1169.81 98,-1164 67.54,-1138.83 48.38,-1095.73 38.98,-1069.75"/>
+<polygon fill="#3cff00" stroke="#3cff00" points="42.21,-1068.39 35.64,-1060.08 35.59,-1070.67 42.21,-1068.39"/>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge52" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M834.11,-398.12C833.84,-443.32 826.73,-603.86 742,-689 721.82,-709.28 702.13,-689.28 680.5,-708"/>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M678.5,-708C632.75,-747.6 632.02,-770.47 581,-803 575.16,-806.72 568.71,-810.04 562.17,-812.95"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="560.48,-809.86 552.59,-816.93 563.16,-816.33 560.48,-809.86"/>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge53" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M821.63,-398.18C805.11,-413.51 774.18,-439.04 742,-449 688.93,-465.43 662.05,-481.52 617,-449 520.22,-379.14 511.64,-216.09 511.89,-156.4"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="515.39,-156.25 512.03,-146.2 508.39,-156.15 515.39,-156.25"/>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;pic_timer -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge54" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;pic_timer</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M832.04,-398.19C825.66,-433.98 802.38,-539.99 742,-600 735.85,-606.11 728.05,-610.87 720.09,-614.54"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="718.68,-611.34 710.75,-618.38 721.33,-617.81 718.68,-611.34"/>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge55" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M831.93,-398.39C825.56,-432.18 802.86,-526.11 742,-567 657.04,-624.08 614.76,-590.25 512.5,-586"/>
+</g>
+<!-- mctc_env -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node20" class="node">
+<title>mctc_env</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="711.5,-314 647.5,-314 647.5,-290 711.5,-290 711.5,-314"/>
+<text text-anchor="middle" x="679.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mctc_env</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;mctc_env -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge49" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;mctc_env</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M819.17,-373.95C801.61,-360.15 771.07,-337.58 742,-323 735.41,-319.7 728.18,-316.71 721.07,-314.1"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="722.1,-310.75 711.51,-310.77 719.8,-317.36 722.1,-310.75"/>
+</g>
+<!-- mctc_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node21" class="node">
+<title>mctc_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="706.5,-272 652.5,-272 652.5,-248 706.5,-248 706.5,-272"/>
+<text text-anchor="middle" x="679.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mctc_io</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;mctc_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge50" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;mctc_io</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M826.44,-373.77C812.41,-352.05 780.26,-306.63 742,-281 734.3,-275.85 725.22,-271.84 716.43,-268.77"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="717.31,-265.38 706.72,-265.7 715.19,-272.05 717.31,-265.38"/>
+</g>
+<!-- module~mqc_method_base -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node29" class="node">
+<title>module~mqc_method_base</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node29"><a xlink:href="../module/mqc_method_base.html" xlink:title="mqc_method_base">
+<polygon fill="#337ab7" stroke="#337ab7" points="736,-558 623,-558 623,-534 736,-534 736,-558"/>
+<text text-anchor="middle" x="679.5" y="-543.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_base</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;module~mqc_method_base -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge51" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;module~mqc_method_base</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M828.64,-398.08C816.65,-423.83 785.29,-484.67 742,-520 737.68,-523.53 732.81,-526.65 727.75,-529.39"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="725.95,-526.37 718.51,-533.92 729.03,-532.66 725.95,-526.37"/>
+</g>
+<!-- tblite_context_type -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node31" class="node">
+<title>tblite_context_type</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="735.5,-230 623.5,-230 623.5,-206 735.5,-206 735.5,-230"/>
+<text text-anchor="middle" x="679.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_context_type</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_context_type -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge56" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_context_type</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M829.65,-373.77C819.09,-345.77 789.42,-276.59 742,-239 740.2,-237.58 738.31,-236.25 736.33,-235"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="737.75,-231.79 727.29,-230.1 734.41,-237.94 737.75,-231.79"/>
+</g>
+<!-- tblite_wavefunction -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node32" class="node">
+<title>tblite_wavefunction</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="737.5,-188 621.5,-188 621.5,-164 737.5,-164 737.5,-188"/>
+<text text-anchor="middle" x="679.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_wavefunction</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_wavefunction -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge57" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_wavefunction</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M831.51,-373.86C824.07,-340.61 798.9,-247.25 742,-197 740.51,-195.68 738.93,-194.45 737.29,-193.29"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="738.98,-190.22 728.59,-188.12 735.4,-196.24 738.98,-190.22"/>
+</g>
+<!-- tblite_xtb_calculator -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node33" class="node">
+<title>tblite_xtb_calculator</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="739.5,-146 619.5,-146 619.5,-122 739.5,-122 739.5,-146"/>
+<text text-anchor="middle" x="679.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_xtb_calculator</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_xtb_calculator -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge58" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_xtb_calculator</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M832.69,-373.73C827.98,-335.65 808.46,-218.22 742,-155 740.74,-153.8 739.4,-152.66 738,-151.59"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="739.78,-148.58 729.47,-146.15 736.02,-154.48 739.78,-148.58"/>
+</g>
+<!-- tblite_xtb_gfn1 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node34" class="node">
+<title>tblite_xtb_gfn1</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="725,-440 634,-440 634,-416 725,-416 725,-440"/>
+<text text-anchor="middle" x="679.5" y="-425.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_xtb_gfn1</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_xtb_gfn1 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge59" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_xtb_gfn1</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M790.01,-398.04C772.67,-402.78 752.58,-408.28 734.38,-413.26"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="733.22,-409.95 724.49,-415.96 735.06,-416.7 733.22,-409.95"/>
+</g>
+<!-- tblite_xtb_gfn2 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node35" class="node">
+<title>tblite_xtb_gfn2</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="725,-398 634,-398 634,-374 725,-374 725,-398"/>
+<text text-anchor="middle" x="679.5" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_xtb_gfn2</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_xtb_gfn2 -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge60" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_xtb_gfn2</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M782.89,-386C767.72,-386 751.05,-386 735.64,-386"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="735.21,-382.5 725.21,-386 735.21,-389.5 735.21,-382.5"/>
+</g>
+<!-- tblite_xtb_singlepoint -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node36" class="node">
+<title>tblite_xtb_singlepoint</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="742,-356 617,-356 617,-332 742,-332 742,-356"/>
+<text text-anchor="middle" x="679.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">tblite_xtb_singlepoint</text>
+</g>
+<!-- module~mqc_method_xtb&#45;&gt;tblite_xtb_singlepoint -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge61" class="edge">
+<title>module~mqc_method_xtb&#45;&gt;tblite_xtb_singlepoint</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M790.01,-373.96C772.67,-369.22 752.58,-363.72 734.38,-358.74"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="735.06,-355.3 724.49,-356.04 733.22,-362.05 735.06,-355.3"/>
+</g>
+<!-- module~mqc_mpi_tags&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge62" class="edge">
+<title>module~mqc_mpi_tags&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M634.6,-1223.43C514.23,-1246.46 187.17,-1308.43 176.5,-1304"/>
+<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M174.5,-1304C138.15,-1285.33 122.64,-1285.6 98,-1253 55.14,-1196.29 39.54,-1110.74 34.35,-1070.47"/>
+<polygon fill="#00ff78" stroke="#00ff78" points="37.8,-1069.89 33.15,-1060.37 30.85,-1070.72 37.8,-1069.89"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge64" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M459.52,-841.05C452.82,-844.57 446.66,-849.12 442,-855 367.05,-949.51 477.99,-1027.22 406,-1124 403.71,-1127.08 400.96,-1129.81 397.94,-1132.22"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="395.78,-1129.44 389.37,-1137.88 399.64,-1135.28 395.78,-1129.44"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge69" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M469.91,-816.97C437.36,-807.74 390.36,-795.38 348.5,-788"/>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M346.5,-788C270.26,-774.55 236.8,-701.44 176.5,-750"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node23" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node23"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="207.5,-802 143.5,-802 143.5,-778 207.5,-778 207.5,-802"/>
+<text text-anchor="middle" x="175.5" y="-787.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge63" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M346.5,-788C303.17,-780.36 252.65,-782.29 218.02,-785.24"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="217.44,-781.78 207.8,-786.18 218.08,-788.75 217.44,-781.78"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge65" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M461.81,-841.14C454.47,-844.66 447.52,-849.19 442,-855 406,-892.92 432.96,-922.2 406,-967 396.89,-982.13 383.19,-996.4 371.45,-1007.11"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="368.9,-1004.69 363.71,-1013.92 373.53,-1009.94 368.9,-1004.69"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge66" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M346.5,-868C313.93,-883.31 307.45,-894.11 289,-925 260.01,-973.54 293.35,-1007.41 253,-1047 243.94,-1055.89 231.48,-1061.1 219.25,-1064.13"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="218.21,-1060.77 209.11,-1066.19 219.61,-1067.63 218.21,-1060.77"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge67" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M449.24,-841.07C411.24,-849.07 366.37,-859.6 348.5,-868"/>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M346.5,-868C308.29,-885.96 263.04,-901.4 228.83,-911.98"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="227.59,-908.7 219.04,-914.97 229.63,-915.4 227.59,-908.7"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node30" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node30"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="397,-840 298,-840 298,-816 397,-816 397,-840"/>
+<text text-anchor="middle" x="347.5" y="-825.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge68" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffd1" stroke-dasharray="5,2" d="M441.8,-828.58C430.31,-828.5 418.48,-828.43 407.27,-828.36"/>
+<polygon fill="#00ffd1" stroke="#00ffd1" points="407.2,-824.86 397.18,-828.3 407.16,-831.86 407.2,-824.86"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge70" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M459.24,-127.67C438.15,-125.07 413.93,-122.08 393.53,-119.56"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="393.91,-116.08 383.55,-118.33 393.05,-123.03 393.91,-116.08"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge71" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M510.12,-146.38C507.59,-205.44 488.66,-460.73 348.5,-586"/>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M346.5,-586C326.43,-603.94 310.98,-589.47 289,-605 222.38,-652.06 239.74,-698.49 176.5,-750"/>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M174.5,-750C147.34,-772.12 122.63,-744.09 98,-769 61.67,-805.74 40.86,-966.4 34.29,-1025.81"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="30.78,-1025.66 33.2,-1035.97 37.74,-1026.41 30.78,-1025.66"/>
+</g>
+<!-- module~mqc_calculation_keywords&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge72" class="edge">
+<title>module~mqc_calculation_keywords&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffb300" stroke-dasharray="5,2" d="M122.77,-1097.99C114.35,-1095.41 105.82,-1092.42 98,-1089 83.72,-1082.76 68.88,-1073.8 56.9,-1065.85"/>
+<polygon fill="#ffb300" stroke="#ffb300" points="58.59,-1062.76 48.36,-1060.02 54.65,-1068.55 58.59,-1062.76"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge73" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#f0ff00" stroke-dasharray="5,2" d="M154.59,-802.13C137.38,-813.56 112.98,-832.15 98,-854 60.28,-909.01 42.41,-987.51 35.55,-1025.58"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="32.07,-1025.16 33.83,-1035.61 38.97,-1026.34 32.07,-1025.16"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge75" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M311.78,-1013.89C269.86,-999.97 201.82,-979.77 176.5,-986"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node40" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="204.5,-1038 146.5,-1038 146.5,-1014 204.5,-1014 204.5,-1038"/>
+<text text-anchor="middle" x="175.5" y="-1023.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge74" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#96ff00" stroke-dasharray="5,2" d="M301.83,-1026C274.77,-1026 240.61,-1026 214.79,-1026"/>
+<polygon fill="#96ff00" stroke="#96ff00" points="214.63,-1022.5 204.63,-1026 214.63,-1029.5 214.63,-1022.5"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge79" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M636.36,-680.1C629.19,-683.65 622.34,-688.21 617,-694 582.41,-731.51 616.28,-766.14 581,-803 577.66,-806.49 573.8,-809.52 569.65,-812.15"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="567.89,-809.12 560.8,-816.99 571.25,-815.26 567.89,-809.12"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge80" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_io</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M638.2,-680.04C630.53,-683.64 623.03,-688.22 617,-694 590.02,-719.86 609.64,-745.99 581,-770 531.92,-811.14 491.29,-767.11 442,-808 413.85,-831.35 426.42,-851.66 406,-882 395.19,-898.06 380.59,-914.26 368.8,-926.35"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="366.11,-924.09 361.53,-933.65 371.07,-929.03 366.11,-924.09"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge81" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M675.69,-680.07C667.03,-715.1 637.83,-818.36 581,-883 533.03,-937.56 490.15,-914.6 442,-969 416.69,-997.59 434.08,-1021.13 406,-1047 401.64,-1051.01 396.46,-1054.27 391.01,-1056.92"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="389.57,-1053.73 381.7,-1060.82 392.28,-1060.18 389.57,-1053.73"/>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge82" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M634.44,-656.2C628.33,-653.65 622.32,-650.61 617,-647 596.65,-633.21 601.75,-618.19 581,-605 554.34,-588.05 544.07,-587.31 512.5,-586"/>
+</g>
+<!-- module~mqc_combinatorics -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node37" class="node">
+<title>module~mqc_combinatorics</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node37"><a xlink:href="../module/mqc_combinatorics.html" xlink:title="mqc_combinatorics">
+<polygon fill="#337ab7" stroke="#337ab7" points="406,-722 289,-722 289,-698 406,-698 406,-722"/>
+<text text-anchor="middle" x="347.5" y="-707.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;module~mqc_combinatorics -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge76" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M634.34,-673.62C578.49,-680.73 481.76,-693.04 416.47,-701.35"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="415.75,-697.91 406.27,-702.65 416.63,-704.86 415.75,-697.91"/>
+</g>
+<!-- module~mqc_fragment_lookup -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node38" class="node">
+<title>module~mqc_fragment_lookup</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node38"><a xlink:href="../module/mqc_fragment_lookup.html" xlink:title="mqc_fragment_lookup">
+<polygon fill="#337ab7" stroke="#337ab7" points="577.5,-638 445.5,-638 445.5,-614 577.5,-614 577.5,-638"/>
+<text text-anchor="middle" x="511.5" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fragment_lookup</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;module~mqc_fragment_lookup -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge77" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;module~mqc_fragment_lookup</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M634.45,-656.86C614.63,-651.84 590.98,-645.86 569.81,-640.5"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="570.51,-637.07 559.96,-638.01 568.8,-643.85 570.51,-637.07"/>
+</g>
+<!-- module~mqc_gmbe_utils -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node39" class="node">
+<title>module~mqc_gmbe_utils</title>
+<g id="a_module~~mqc_hessian_distribution_scheme~~UsesGraph_node39"><a xlink:href="../module/mqc_gmbe_utils.html" xlink:title="mqc_gmbe_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="561,-761 462,-761 462,-737 561,-737 561,-761"/>
+<text text-anchor="middle" x="511.5" y="-746.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_utils</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge78" class="edge">
+<title>module~mqc_frag_utils&#45;&gt;module~mqc_gmbe_utils</title>
+<path fill="none" stroke="#00ff1e" stroke-dasharray="5,2" d="M648.56,-680.06C638.45,-684.29 627.16,-689.19 617,-694 591.77,-705.95 563.82,-720.74 543.18,-731.98"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="541.34,-729 534.25,-736.87 544.7,-735.14 541.34,-729"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge83" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff78" stroke-dasharray="5,2" d="M149.4,-939.11C133.79,-947.26 113.76,-958.9 98,-972 78.16,-988.5 59.25,-1011.25 46.8,-1027.55"/>
+<polygon fill="#00ff78" stroke="#00ff78" points="43.77,-1025.76 40.58,-1035.86 49.37,-1029.95 43.77,-1025.76"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge84" class="edge">
+<title>module~mqc_method_base&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M661.18,-558.01C647.09,-568.71 627.84,-585.64 617,-605 580.33,-670.49 619.42,-705.52 581,-770 571.22,-786.41 555.25,-800.56 541.19,-810.88"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="538.93,-808.19 532.76,-816.8 542.95,-813.92 538.93,-808.19"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge85" class="edge">
+<title>module~mqc_method_base&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M635.78,-533.98C628.75,-530.42 622.11,-525.85 617,-520 521.17,-410.21 512.24,-220.97 512.12,-156.37"/>
+<polygon fill="#00d1ff" stroke="#00d1ff" points="515.62,-156.14 512.18,-146.12 508.62,-156.1 515.62,-156.14"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge86" class="edge">
+<title>module~mqc_method_base&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M649.9,-558C617.2,-570.51 561.82,-588.05 512.5,-586"/>
+<path fill="none" stroke="#00d1ff" stroke-dasharray="5,2" d="M510.5,-586C438.56,-583.01 402.18,-538.02 348.5,-586"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge89" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M297.87,-831.67C243.23,-838.19 154.78,-856.21 98,-906 61.43,-938.07 43.74,-994.67 36.4,-1025.85"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="32.96,-1025.22 34.22,-1035.73 39.79,-1026.72 32.96,-1025.22"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge87" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M306.16,-840.15C299.63,-843.69 293.53,-848.22 289,-854 235.14,-922.65 312.07,-982.78 253,-1047 244.25,-1056.52 231.62,-1061.88 219.14,-1064.85"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="218.4,-1061.43 209.24,-1066.76 219.73,-1068.3 218.4,-1061.43"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge88" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#0078ff" stroke-dasharray="5,2" d="M316.27,-840.06C307.27,-844.08 297.54,-848.85 289,-854 271.64,-864.47 269.77,-870.62 253,-882 238.46,-891.87 221.7,-901.87 207.58,-909.93"/>
+<polygon fill="#0078ff" stroke="#0078ff" points="205.71,-906.97 198.73,-914.93 209.16,-913.06 205.71,-906.97"/>
+</g>
+<!-- module~mqc_combinatorics&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge90" class="edge">
+<title>module~mqc_combinatorics&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M288.63,-711.27C252.9,-714.82 208.02,-724.61 176.5,-750"/>
+</g>
+<!-- module~mqc_fragment_lookup&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge93" class="edge">
+<title>module~mqc_fragment_lookup&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M474.95,-613.98C430.18,-599.35 357.95,-577.55 348.5,-586"/>
+</g>
+<!-- pic_hash_32bit -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node41" class="node">
+<title>pic_hash_32bit</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="393,-680 302,-680 302,-656 393,-656 393,-680"/>
+<text text-anchor="middle" x="347.5" y="-665.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_hash_32bit</text>
+</g>
+<!-- module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge91" class="edge">
+<title>module~mqc_fragment_lookup&#45;&gt;pic_hash_32bit</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M464.08,-638.04C445.04,-642.97 422.87,-648.72 403.06,-653.85"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="402.06,-650.5 393.25,-656.4 403.81,-657.28 402.06,-650.5"/>
+</g>
+<!-- pic_sorting -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_node42" class="node">
+<title>pic_sorting</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="382.5,-638 312.5,-638 312.5,-614 382.5,-614 382.5,-638"/>
+<text text-anchor="middle" x="347.5" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_sorting</text>
+</g>
+<!-- module~mqc_fragment_lookup&#45;&gt;pic_sorting -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge92" class="edge">
+<title>module~mqc_fragment_lookup&#45;&gt;pic_sorting</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M445.08,-626C427.5,-626 408.91,-626 392.78,-626"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="392.57,-622.5 382.57,-626 392.57,-629.5 392.57,-622.5"/>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_io -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge95" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_io</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M462.23,-761.04C454.75,-764.58 447.65,-769.13 442,-775 407.21,-811.15 431.29,-838.66 406,-882 396.37,-898.51 382,-914.51 370.03,-926.38"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="367.36,-924.09 362.59,-933.55 372.22,-929.13 367.36,-924.09"/>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_logger -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge96" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M489.56,-761.21C473.8,-771.57 453.08,-787.94 442,-808 390.06,-902.03 473.97,-963.82 406,-1047 401.98,-1051.91 396.71,-1055.68 390.99,-1058.56"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="389.63,-1055.34 381.74,-1062.41 392.32,-1061.8 389.63,-1055.34"/>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;pic_types -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge97" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M461.69,-745.84C374.29,-740.67 198.12,-732.59 176.5,-750"/>
+</g>
+<!-- module~mqc_gmbe_utils&#45;&gt;module~mqc_combinatorics -->
+<g id="module~~mqc_hessian_distribution_scheme~~UsesGraph_edge94" class="edge">
+<title>module~mqc_gmbe_utils&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M461.89,-737.3C445.14,-733.27 426.18,-728.7 408.62,-724.47"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="409.02,-720.97 398.47,-722.03 407.38,-727.77 409.02,-720.97"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_hessian_distribution_schemeUsesGraph = svgPanZoom('#modulemqc_hessian_distribution_schemeUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+
+
+
+
+
+
+
+
+        <section>
+          <h2>Module Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-distributed_unfragmented_hessian"></span> <h3>module subroutine <a href='../proc/distributed_unfragmented_hessian.html'>distributed_unfragmented_hessian</a>(world_comm, sys_geom, method, driver_config)  
+    <a href="../interface/distributed_unfragmented_hessian.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute Hessian for unfragmented system using MPI distribution</p><a href="../proc/distributed_unfragmented_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~17"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~43"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~15"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-driver_config~7"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>driver_config</strong></td>
+            <td>
+<p>Driver configuration</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hessian_coordinator"></span> <h3>module subroutine <a href='../proc/hessian_coordinator.html'>hessian_coordinator</a>(world_comm, sys_geom, method, displacement)  
+    <a href="../interface/hessian_coordinator.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
+</h3></div>
+    <div class="card-body">
+          
+  <p>Coordinator for distributed Hessian calculation
+Distributes displacement work and collects gradient results</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~18"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~44"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~16"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~10"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+<p>Finite difference displacement (Bohr)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hessian_worker"></span> <h3>module subroutine <a href='../proc/hessian_worker.html'>hessian_worker</a>(world_comm, sys_geom, method, displacement)  
+    <a href="../interface/hessian_worker.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
+</h3></div>
+    <div class="card-body">
+          
+  <p>Worker for distributed Hessian calculation
+Requests displacement indices, computes gradients, and sends results back</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~19"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~45"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~17"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~11"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+<p>Finite difference displacement (Bohr)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-06 10:20 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -84,7 +84,7 @@
     <div class="container">
   <div class="row">
     <h1>serial_fragment_processor
-      <small>Subroutine</small>
+      <small>Module Subroutine</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,20 +94,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.3% of total for procedures.">90 statements</a>
+                 title=" 1.2% of total for procedures.">90 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_mbe_fragment_distribution_scheme.F90"> Source File</a>
+              <a href="../src/mqc_serial_fragment_processor.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_fragment_distribution_scheme.f90.html'>mqc_mbe_fragment_distribution_scheme.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_serial_fragment_processor.f90.html'>mqc_serial_fragment_processor.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_serial_fragment_processor.html'>mqc_serial_fragment_processor</a></li>
             <li class="breadcrumb-item active" aria-current="page">serial_fragment_processor</li>
           </ol>
         </nav>
@@ -137,18 +137,18 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-calc_type_local~3">calc_type_local</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~2">coord_timer</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~8">current_log_level</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~15">error</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx">frag_idx</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~4">coord_timer</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~10">current_log_level</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~56">error</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx~2">frag_idx</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_indices~5">fragment_indices</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~9">fragment_size</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~8">iatom</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~11">fragment_size</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~12">iatom</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-mbe_total_energy">mbe_total_energy</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-mbe_total_gradient">mbe_total_gradient</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-mbe_total_hessian">mbe_total_hessian</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-phys_frag~3">phys_frag</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-results~7">results</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-phys_frag~5">phys_frag</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-results~9">results</a>
         </div>
       </div>
     </div>
@@ -184,7 +184,8 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)  
+    <h2>module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)  
+    <a href="../interface/serial_fragment_processor.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -325,7 +326,7 @@ This is used when running with only 1 MPI rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments~7"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -340,7 +341,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -355,7 +356,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~10"></span>
+              <span class="anchor" id="variable-max_level~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -370,7 +371,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~18"></span>
+              <span class="anchor" id="variable-sys_geom~48"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -385,7 +386,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~5"></span>
+              <span class="anchor" id="variable-method~20"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -400,7 +401,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~7"></span>
+              <span class="anchor" id="variable-calc_type~20"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -415,7 +416,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~29"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -443,1534 +444,1180 @@ This is used when running with only 1 MPI rank</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~serial_fragment_processor~~CallsGraph Pages: 1 -->
-<svg id="procserial_fragment_processorCallsGraph" width="641pt" height="706pt"
- viewBox="0.00 0.00 641.00 705.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~serial_fragment_processor~~CallsGraph" class="graph" transform="scale(0.32 0.32) rotate(0) translate(4 2199.84)">
+<svg id="procserial_fragment_processorCallsGraph" width="641pt" height="478pt"
+ viewBox="0.00 0.00 641.00 477.95" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_fragment_processor~~CallsGraph" class="graph" transform="scale(0.32 0.32) rotate(0) translate(4 1488)">
 <title>proc~~serial_fragment_processor~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-2199.84 1997,-2199.84 1997,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1488 1997,-1488 1997,4 -4,4"/>
 <!-- proc~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node1" class="node">
 <title>proc~serial_fragment_processor</title>
-<polygon fill="none" stroke="black" points="154,-980 0,-980 0,-956 154,-956 154,-980"/>
-<text text-anchor="middle" x="77" y="-965.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+<polygon fill="none" stroke="black" points="154,-955 0,-955 0,-931 154,-931 154,-955"/>
+<text text-anchor="middle" x="77" y="-940.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
 </g>
 <!-- configuration -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node2" class="node">
 <title>configuration</title>
-<polygon fill="#777777" stroke="#777777" points="1174.5,-1467 1090.5,-1467 1090.5,-1443 1174.5,-1443 1174.5,-1467"/>
-<text text-anchor="middle" x="1132.5" y="-1452.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+<polygon fill="#777777" stroke="#777777" points="1174.5,-534 1090.5,-534 1090.5,-510 1174.5,-510 1174.5,-534"/>
+<text text-anchor="middle" x="1132.5" y="-519.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;configuration -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge1" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;configuration</title>
-<path fill="none" stroke="#ff0000" d="M78.92,-980.05C83.11,-1027.39 104.04,-1203.28 190,-1311 275.29,-1417.88 322.45,-1431.67 454,-1469 680.04,-1533.14 965.75,-1488.68 1080.44,-1466.03"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1081.24,-1469.44 1090.35,-1464.04 1079.86,-1462.58 1081.24,-1469.44"/>
+<path fill="none" stroke="#ff0000" d="M78.39,-930.83C80.61,-881.41 95.21,-693.3 190,-585 275.26,-487.6 327.62,-490 454,-462 684.41,-410.96 755.92,-405.26 985,-462 1002.56,-466.35 1004.48,-473.62 1021,-481 1041.95,-490.37 1065.75,-499.4 1085.88,-506.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1084.85,-509.93 1095.44,-509.96 1087.18,-503.33 1084.85,-509.93"/>
 </g>
 <!-- error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node3" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="1725.5,-1632 1671.5,-1632 1671.5,-1608 1725.5,-1608 1725.5,-1632"/>
-<text text-anchor="middle" x="1698.5" y="-1617.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="1725.5,-658 1671.5,-658 1671.5,-634 1725.5,-634 1725.5,-658"/>
+<text text-anchor="middle" x="1698.5" y="-643.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge2" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M78.43,-980.24C82.53,-1094.3 116.28,-1968.74 190,-2055 306.6,-2191.44 402.02,-2154 581.5,-2154 581.5,-2154 581.5,-2154 1133.5,-2154 1317.03,-2154 1411.3,-2259.65 1546,-2135 1593.66,-2090.89 1562.88,-1907.06 1582,-1845 1606.67,-1764.92 1658.74,-1679.21 1683.65,-1640.75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1686.82,-1642.31 1689.37,-1632.03 1680.96,-1638.47 1686.82,-1642.31"/>
+<path fill="none" stroke="#ff0000" d="M77.99,-955.33C78.62,-1007.11 87.77,-1209.59 190,-1323 315.97,-1462.74 393.36,-1484 581.5,-1484 581.5,-1484 581.5,-1484 1133.5,-1484 1538.63,-1484 1671.86,-801.58 1694.01,-668.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1697.52,-668.6 1695.67,-658.17 1690.61,-667.48 1697.52,-668.6"/>
 </g>
 <!-- get_elapsed_time -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node4" class="node">
 <title>get_elapsed_time</title>
-<polygon fill="#777777" stroke="#777777" points="635.5,-980 529.5,-980 529.5,-956 635.5,-956 635.5,-980"/>
-<text text-anchor="middle" x="582.5" y="-965.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+<polygon fill="#777777" stroke="#777777" points="635.5,-1296 529.5,-1296 529.5,-1272 635.5,-1272 635.5,-1296"/>
+<text text-anchor="middle" x="582.5" y="-1281.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;get_elapsed_time -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge3" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#ff0000" d="M154.2,-968C253.96,-968 426.97,-968 519.27,-968"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="519.31,-971.5 529.31,-968 519.31,-964.5 519.31,-971.5"/>
+<path fill="none" stroke="#ff0000" d="M78.86,-955.13C82.65,-998.86 101.87,-1149.56 190,-1220 284.9,-1295.85 434.89,-1297.56 519,-1291.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="519.49,-1294.76 529.17,-1290.46 518.92,-1287.78 519.49,-1294.76"/>
 </g>
 <!-- info -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node5" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="893,-824 839,-824 839,-800 893,-800 893,-824"/>
-<text text-anchor="middle" x="866" y="-809.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="893,-778 839,-778 839,-754 893,-754 893,-778"/>
+<text text-anchor="middle" x="866" y="-763.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;info -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge4" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M85.42,-955.87C101.16,-931.41 140.53,-876.58 190,-854 414.09,-751.72 724.22,-788.87 828.87,-805.61"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="828.48,-809.1 838.91,-807.26 829.61,-802.19 828.48,-809.1"/>
+<path fill="none" stroke="#ff0000" d="M93.68,-930.97C143.13,-893.9 301.59,-781.71 454,-745 589.06,-712.47 756.05,-741.47 828.56,-757.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="828.03,-760.77 838.56,-759.53 829.56,-753.93 828.03,-760.77"/>
+</g>
+<!-- interface~do_fragment_work -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_node6" class="node">
+<title>interface~do_fragment_work</title>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node6"><a xlink:href="../interface/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#a7506f" stroke="#a7506f" points="360,-1161 248,-1161 248,-1137 360,-1137 360,-1161"/>
+<text text-anchor="middle" x="304" y="-1146.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge5" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M81.56,-955.39C91.98,-989.21 125.77,-1083.58 190,-1128 203.93,-1137.63 221.05,-1143.19 237.7,-1146.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="237.56,-1149.83 247.98,-1147.95 238.66,-1142.92 237.56,-1149.83"/>
 </g>
 <!-- omp_get_max_threads -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node6" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node7" class="node">
 <title>omp_get_max_threads</title>
-<polygon fill="#777777" stroke="#777777" points="370.5,-66 237.5,-66 237.5,-42 370.5,-42 370.5,-66"/>
-<text text-anchor="middle" x="304" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_get_max_threads</text>
+<polygon fill="#777777" stroke="#777777" points="370.5,-1119 237.5,-1119 237.5,-1095 370.5,-1095 370.5,-1119"/>
+<text text-anchor="middle" x="304" y="-1104.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_get_max_threads</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;omp_get_max_threads -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge5" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge6" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;omp_get_max_threads</title>
-<path fill="none" stroke="#ff0000" d="M78.7,-955.83C84.66,-854.19 128.13,-148.44 190,-80 199.87,-69.08 213.32,-62.28 227.51,-58.13"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="228.55,-61.48 237.41,-55.67 226.86,-54.69 228.55,-61.48"/>
+<path fill="none" stroke="#ff0000" d="M83.78,-955.41C97.67,-983.72 135.8,-1053.14 190,-1086 201.29,-1092.84 214.28,-1097.55 227.35,-1100.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="226.82,-1104.24 237.34,-1102.96 228.31,-1097.4 226.82,-1104.24"/>
 </g>
 <!-- omp_set_num_threads -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node7" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node8" class="node">
 <title>omp_set_num_threads</title>
-<polygon fill="#777777" stroke="#777777" points="370,-24 238,-24 238,0 370,0 370,-24"/>
-<text text-anchor="middle" x="304" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_set_num_threads</text>
+<polygon fill="#777777" stroke="#777777" points="370,-1077 238,-1077 238,-1053 370,-1053 370,-1077"/>
+<text text-anchor="middle" x="304" y="-1062.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">omp_set_num_threads</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;omp_set_num_threads -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge6" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge7" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;omp_set_num_threads</title>
-<path fill="none" stroke="#ff0000" d="M78.6,-955.84C83.84,-851.12 123.47,-103.97 190,-33 200.03,-22.3 213.63,-16.01 227.91,-12.48"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="228.76,-15.88 237.87,-10.46 227.37,-9.02 228.76,-15.88"/>
+<path fill="none" stroke="#ff0000" d="M88.41,-955.13C106.76,-975.7 147.02,-1017.31 190,-1039 201.74,-1044.93 214.85,-1049.52 227.87,-1053.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="227.22,-1056.53 237.78,-1055.6 228.95,-1049.74 227.22,-1056.53"/>
 </g>
 <!-- proc~build_fragment_from_indices -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node8" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node9" class="node">
 <title>proc~build_fragment_from_indices</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node8"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
-<polygon fill="#d9534f" stroke="#d9534f" points="1215.5,-1954 1049.5,-1954 1049.5,-1930 1215.5,-1930 1215.5,-1954"/>
-<text text-anchor="middle" x="1132.5" y="-1939.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node9"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="1215.5,-344 1049.5,-344 1049.5,-320 1215.5,-320 1215.5,-344"/>
+<text text-anchor="middle" x="1132.5" y="-329.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge7" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge8" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~build_fragment_from_indices</title>
-<path fill="none" stroke="#ff0000" d="M78.16,-980.28C79.58,-1071.94 92.33,-1649.85 190,-1788 341.08,-2001.69 486.42,-1954.75 747,-1979 852.32,-1988.8 881.53,-2000.96 985,-1979 1002.13,-1975.37 1004.29,-1968.22 1021,-1963 1028.9,-1960.53 1037.22,-1958.3 1045.6,-1956.3"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1046.46,-1959.69 1055.44,-1954.06 1044.91,-1952.87 1046.46,-1959.69"/>
+<path fill="none" stroke="#ff0000" d="M77.51,-930.87C75.81,-872.89 75.49,-620.42 190,-467 404.92,-179.04 626.09,-302.7 985,-320 1002.55,-320.85 1021.27,-322.11 1039.24,-323.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1039.19,-327 1049.43,-324.3 1039.74,-320.02 1039.19,-327"/>
 </g>
 <!-- proc~calc_type_to_string -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node9" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node10" class="node">
 <title>proc~calc_type_to_string</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node9"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="639.5,-146 525.5,-146 525.5,-122 639.5,-122 639.5,-146"/>
-<text text-anchor="middle" x="582.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node10"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="361,-997 247,-997 247,-973 361,-973 361,-997"/>
+<text text-anchor="middle" x="304" y="-982.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~calc_type_to_string -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge8" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge9" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~calc_type_to_string</title>
-<path fill="none" stroke="#ff0000" d="M77.91,-955.9C77.96,-894.46 84.17,-612.24 190,-418 268.49,-273.94 309.05,-236.85 454,-160 472.78,-150.04 494.98,-143.89 515.55,-140.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="516.22,-143.53 525.5,-138.41 515.05,-136.63 516.22,-143.53"/>
+<path fill="none" stroke="#ff0000" d="M141.96,-955.01C157.67,-957.96 174.44,-961.1 190,-964 205.21,-966.84 221.56,-969.88 236.98,-972.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="236.49,-976.22 246.96,-974.6 237.77,-969.34 236.49,-976.22"/>
 </g>
 <!-- proc~compute_mbe_energy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node10" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node11" class="node">
 <title>proc~compute_mbe_energy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node10"><a xlink:href="../proc/compute_mbe_energy.html" xlink:title="compute_mbe_energy">
-<polygon fill="#d9534f" stroke="#d9534f" points="370,-1039 238,-1039 238,-1015 370,-1015 370,-1039"/>
-<text text-anchor="middle" x="304" y="-1024.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node11"><a xlink:href="../proc/compute_mbe_energy.html" xlink:title="compute_mbe_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="370,-955 238,-955 238,-931 370,-931 370,-955"/>
+<text text-anchor="middle" x="304" y="-940.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge9" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge10" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy</title>
-<path fill="none" stroke="#ff0000" d="M123.8,-980.01C159.42,-989.35 209.01,-1002.35 246.99,-1012.31"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="246.31,-1015.75 256.88,-1014.91 248.09,-1008.98 246.31,-1015.75"/>
+<path fill="none" stroke="#ff0000" d="M154.17,-943C177.83,-943 203.88,-943 227.49,-943"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="227.8,-946.5 237.8,-943 227.8,-939.5 227.8,-946.5"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node11" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node12" class="node">
 <title>proc~compute_mbe_energy_gradient</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node11"><a xlink:href="../proc/compute_mbe_energy_gradient.html" xlink:title="compute_mbe_energy_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="395,-1302 213,-1302 213,-1278 395,-1278 395,-1302"/>
-<text text-anchor="middle" x="304" y="-1287.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node12"><a xlink:href="../proc/compute_mbe_energy_gradient.html" xlink:title="compute_mbe_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="395,-913 213,-913 213,-889 395,-889 395,-913"/>
+<text text-anchor="middle" x="304" y="-898.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge10" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge11" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient</title>
-<path fill="none" stroke="#ff0000" d="M86.55,-980.23C120.45,-1028.74 245.69,-1207.98 288.52,-1269.28"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="285.85,-1271.57 294.45,-1277.76 291.59,-1267.56 285.85,-1271.57"/>
+<path fill="none" stroke="#ff0000" d="M141.96,-930.99C157.67,-928.04 174.44,-924.9 190,-922 202.3,-919.7 215.36,-917.27 228.07,-914.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="228.97,-918.3 238.16,-913.03 227.69,-911.42 228.97,-918.3"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node12" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node13" class="node">
 <title>proc~compute_mbe_energy_gradient_hessian</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node12"><a xlink:href="../proc/compute_mbe_energy_gradient_hessian.html" xlink:title="compute_mbe_energy_gradient_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="418,-1656 190,-1656 190,-1632 418,-1632 418,-1656"/>
-<text text-anchor="middle" x="304" y="-1641.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient_hessian</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node13"><a xlink:href="../proc/compute_mbe_energy_gradient_hessian.html" xlink:title="compute_mbe_energy_gradient_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="418,-618 190,-618 190,-594 418,-594 418,-618"/>
+<text text-anchor="middle" x="304" y="-603.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_energy_gradient_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge11" class="edge">
-<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
-<path fill="none" stroke="#ff0000" d="M78.5,-980.3C81.37,-1040.42 98.92,-1308.26 190,-1502 213.2,-1551.35 256.69,-1598.89 282.42,-1624.5"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="280.2,-1627.22 289.8,-1631.72 285.1,-1622.22 280.2,-1627.22"/>
-</g>
-<!-- proc~do_fragment_work -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node13" class="node">
-<title>proc~do_fragment_work</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node13"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
-<polygon fill="#d9534f" stroke="#d9534f" points="360,-451 248,-451 248,-427 360,-427 360,-451"/>
-<text text-anchor="middle" x="304" y="-436.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
-</a>
-</g>
-</g>
-<!-- proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge12" class="edge">
-<title>proc~serial_fragment_processor&#45;&gt;proc~do_fragment_work</title>
-<path fill="none" stroke="#ff0000" d="M81.35,-955.95C93.54,-912.76 137.54,-762.01 190,-644 221.07,-574.12 267.52,-496.2 289.95,-459.82"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="293.06,-461.45 295.36,-451.1 287.12,-457.76 293.06,-461.45"/>
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe_energy_gradient_hessian</title>
+<path fill="none" stroke="#ff0000" d="M82.09,-930.86C94.51,-895.04 134.39,-787.56 190,-712 215.67,-677.12 253.75,-644.18 278.48,-624.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="280.9,-627.09 286.62,-618.17 276.59,-621.57 280.9,-627.09"/>
 </g>
 <!-- proc~energy_total -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node14" class="node">
 <title>proc~energy_total</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node14"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1200.5,-706 1064.5,-706 1064.5,-682 1200.5,-682 1200.5,-706"/>
-<text text-anchor="middle" x="1132.5" y="-691.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="650.5,-1174 514.5,-1174 514.5,-1150 650.5,-1150 650.5,-1174"/>
+<text text-anchor="middle" x="582.5" y="-1159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~energy_total -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge13" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff0000" d="M82.45,-955.64C94.61,-923.54 131.45,-836.69 190,-789 287.04,-709.96 331.55,-716.89 454,-691 685.03,-642.14 749.46,-656.2 985,-673 1007.56,-674.61 1031.92,-677.59 1054.19,-680.82"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1053.85,-684.31 1064.25,-682.31 1054.87,-677.38 1053.85,-684.31"/>
+<path fill="none" stroke="#ff0000" d="M94.94,-955.03C116.13,-969.47 154.02,-993.32 190,-1006 286.89,-1040.14 338.79,-978.59 418,-1044 453.46,-1073.28 418.52,-1111.75 454,-1141 468.17,-1152.68 486.31,-1159.03 504.43,-1162.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="504.07,-1165.76 514.48,-1163.78 505.1,-1158.84 504.07,-1165.76"/>
 </g>
 <!-- proc~error_get_full_trace -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node15" class="node">
 <title>proc~error_get_full_trace</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node15"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1213,-1912 1052,-1912 1052,-1888 1213,-1888 1213,-1912"/>
-<text text-anchor="middle" x="1132.5" y="-1897.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1213,-264 1052,-264 1052,-240 1213,-240 1213,-264"/>
+<text text-anchor="middle" x="1132.5" y="-249.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~error_get_full_trace -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge14" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~error_get_full_trace</title>
-<path fill="none" stroke="#ff0000" d="M78.82,-980.04C84.61,-1062.08 120.89,-1539.54 190,-1665 265.51,-1802.07 307.7,-1842.43 454,-1898 558.7,-1937.77 882.56,-1919.48 1041.57,-1907.5"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1042.09,-1910.97 1051.8,-1906.72 1041.56,-1903.99 1042.09,-1910.97"/>
+<path fill="none" stroke="#ff0000" d="M78.19,-930.96C79.7,-849.97 92.57,-385.26 190,-294 448.58,-51.79 631.29,-214.55 985,-235 1003.42,-236.07 1023.07,-237.88 1041.81,-239.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1041.48,-243.42 1051.81,-241.06 1042.27,-236.46 1041.48,-243.42"/>
 </g>
 <!-- proc~error_has_error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node16" class="node">
 <title>proc~error_has_error</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node16"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1482.5,-1794 1343.5,-1794 1343.5,-1770 1482.5,-1770 1482.5,-1794"/>
-<text text-anchor="middle" x="1413" y="-1779.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1482.5,-164 1343.5,-164 1343.5,-140 1482.5,-140 1482.5,-164"/>
+<text text-anchor="middle" x="1413" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~error_has_error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge15" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff0000" d="M78.58,-980.34C83.84,-1089.88 124.51,-1893.94 190,-1976 304.9,-2119.97 397.3,-2112 581.5,-2112 581.5,-2112 581.5,-2112 867,-2112 1037.03,-2112 1125.24,-2168.68 1244,-2047 1320.57,-1968.55 1202.93,-1880.95 1280,-1803 1294.03,-1788.81 1313.52,-1781.79 1333.23,-1778.71"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1333.71,-1782.18 1343.21,-1777.48 1332.85,-1775.23 1333.71,-1782.18"/>
+<path fill="none" stroke="#ff0000" d="M78.72,-930.78C84.61,-833.13 126.14,-181.7 190,-126 275.81,-51.15 1076.71,-120.09 1333.31,-144.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1333.01,-147.81 1343.3,-145.27 1333.67,-140.84 1333.01,-147.81"/>
 </g>
 <!-- proc~fragment_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node17" class="node">
 <title>proc~fragment_destroy</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node17"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1244,-1996 1021,-1996 1021,-1972 1244,-1972 1244,-1996"/>
-<text text-anchor="middle" x="1132.5" y="-1981.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1244,-222 1021,-222 1021,-198 1244,-198 1244,-222"/>
+<text text-anchor="middle" x="1132.5" y="-207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge16" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;proc~fragment_destroy</title>
-<path fill="none" stroke="#ff0000" d="M77.81,-980.22C76.55,-1078.08 72.57,-1734.34 190,-1883 411.34,-2163.2 628.39,-2017.21 985,-1999 995.26,-1998.48 1005.9,-1997.75 1016.56,-1996.89"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1017.09,-2000.36 1026.77,-1996.03 1016.51,-1993.38 1017.09,-2000.36"/>
+<path fill="none" stroke="#ff0000" d="M77.73,-930.9C76.02,-840.62 70.1,-272.67 190,-166 277.69,-87.98 336.64,-160.56 454,-159 568.21,-157.49 596.99,-152.11 711,-159 827.21,-166.02 960.5,-183.86 1045.31,-196.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1045,-199.95 1055.4,-197.97 1046.03,-193.03 1045,-199.95"/>
 </g>
 <!-- start -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node18" class="node">
 <title>start</title>
-<polygon fill="#777777" stroke="#777777" points="609.5,-900 555.5,-900 555.5,-876 609.5,-876 609.5,-900"/>
-<text text-anchor="middle" x="582.5" y="-885.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+<polygon fill="#777777" stroke="#777777" points="609.5,-1254 555.5,-1254 555.5,-1230 609.5,-1230 609.5,-1254"/>
+<text text-anchor="middle" x="582.5" y="-1239.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;start -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge17" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;start</title>
-<path fill="none" stroke="#ff0000" d="M153.65,-955.98C263.61,-938.51 463.35,-906.77 545.12,-893.78"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="546.07,-897.17 555.4,-892.15 544.98,-890.26 546.07,-897.17"/>
+<path fill="none" stroke="#ff0000" d="M80.05,-955.01C87.25,-993.33 115.15,-1113.43 190,-1170 297.99,-1251.61 469.91,-1250.49 544.72,-1245.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="545.32,-1248.92 555.03,-1244.7 544.8,-1241.94 545.32,-1248.92"/>
 </g>
 <!-- to_char -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node19" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="1725.5,-746 1671.5,-746 1671.5,-722 1725.5,-722 1725.5,-746"/>
-<text text-anchor="middle" x="1698.5" y="-731.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="1725.5,-227 1671.5,-227 1671.5,-203 1725.5,-203 1725.5,-227"/>
+<text text-anchor="middle" x="1698.5" y="-212.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;to_char -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge18" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M77.94,-955.96C77.75,-866.08 80.95,-300.02 190,-179 309.19,-46.72 403.45,-94 581.5,-94 581.5,-94 581.5,-94 1133.5,-94 1317.61,-94 1406.15,-12.26 1546,-132 1637.64,-210.46 1684.86,-612.07 1695.27,-711.64"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1691.81,-712.18 1696.31,-721.77 1698.77,-711.47 1691.81,-712.18"/>
+<path fill="none" stroke="#ff0000" d="M78.69,-930.92C84.45,-831.5 126.16,-150.57 190,-89 315.8,32.33 406.72,-52 581.5,-52 581.5,-52 581.5,-52 1133.5,-52 1318.07,-52 1400.24,13.23 1546,-100 1581.33,-127.44 1547.57,-165.44 1582,-194 1603.82,-212.1 1636.04,-216.73 1660.91,-217.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1661.07,-220.68 1671.06,-217.15 1661.05,-213.68 1661.07,-220.68"/>
 </g>
 <!-- verbose -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node20" class="node">
 <title>verbose</title>
-<polygon fill="#777777" stroke="#777777" points="893.5,-904 838.5,-904 838.5,-880 893.5,-880 893.5,-904"/>
-<text text-anchor="middle" x="866" y="-889.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+<polygon fill="#777777" stroke="#777777" points="893.5,-1300 838.5,-1300 838.5,-1276 893.5,-1276 893.5,-1300"/>
+<text text-anchor="middle" x="866" y="-1285.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
 </g>
 <!-- proc~serial_fragment_processor&#45;&gt;verbose -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge19" class="edge">
 <title>proc~serial_fragment_processor&#45;&gt;verbose</title>
-<path fill="none" stroke="#ff0000" d="M97.87,-955.8C119.68,-942.95 156.12,-923.09 190,-912 410.89,-839.72 479.33,-848.32 711,-867 751.51,-870.27 797.43,-878.29 828.51,-884.38"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="827.96,-887.83 838.45,-886.35 829.33,-880.97 827.96,-887.83"/>
+<path fill="none" stroke="#ff0000" d="M77.96,-955.28C78.52,-1004.15 87.64,-1186.15 190,-1270 369.53,-1417.06 479.27,-1317.75 711,-1305 751.3,-1302.78 797.26,-1297.32 828.4,-1293.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="828.92,-1296.65 838.37,-1291.84 827.99,-1289.71 828.92,-1296.65"/>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~error_has_error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge25" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#1aff00" d="M1215.55,-1936.95C1225.99,-1933.42 1235.86,-1928.3 1244,-1921 1284.81,-1884.38 1238.64,-1839 1280,-1803 1294.68,-1790.22 1313.91,-1783.56 1333.14,-1780.38"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1333.73,-1783.84 1343.17,-1779.03 1332.79,-1776.9 1333.73,-1783.84"/>
+<path fill="none" stroke="#00ff35" d="M1215.65,-323.34C1226.14,-319.33 1236,-313.74 1244,-306 1288.02,-263.42 1234.45,-213.93 1280,-173 1294.55,-159.92 1313.83,-153.18 1333.15,-150.02"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1333.78,-153.47 1343.23,-148.68 1332.86,-146.53 1333.78,-153.47"/>
 </g>
 <!-- proc~add_hydrogen_caps -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node22" class="node">
 <title>proc~add_hydrogen_caps</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node22"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="1472,-2004 1354,-2004 1354,-1980 1472,-1980 1472,-2004"/>
-<text text-anchor="middle" x="1413" y="-1989.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1472,-374 1354,-374 1354,-350 1472,-350 1472,-374"/>
+<text text-anchor="middle" x="1413" y="-359.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge20" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
-<path fill="none" stroke="#1aff00" d="M1198.72,-1954.05C1213.61,-1956.9 1229.37,-1959.98 1244,-1963 1260.05,-1966.31 1263.9,-1967.93 1280,-1971 1300.67,-1974.94 1323.25,-1978.72 1343.8,-1981.96"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1343.29,-1985.42 1353.71,-1983.51 1344.37,-1978.51 1343.29,-1985.42"/>
+<path fill="none" stroke="#00ff35" d="M1215.55,-340.84C1256.35,-345.23 1305.08,-350.48 1343.8,-354.65"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1343.61,-358.15 1353.92,-355.74 1344.36,-351.19 1343.61,-358.15"/>
 </g>
 <!-- proc~calculate_monomer_distance -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node24" class="node">
 <title>proc~calculate_monomer_distance</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node24"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1497.5,-1836 1328.5,-1836 1328.5,-1812 1497.5,-1812 1497.5,-1836"/>
-<text text-anchor="middle" x="1413" y="-1821.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1497.5,-206 1328.5,-206 1328.5,-182 1497.5,-182 1497.5,-206"/>
+<text text-anchor="middle" x="1413" y="-191.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge21" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance</title>
-<path fill="none" stroke="#1aff00" d="M1215.74,-1935.46C1225.92,-1932.11 1235.66,-1927.45 1244,-1921 1273.57,-1898.14 1250.09,-1867.41 1280,-1845 1291.21,-1836.6 1304.47,-1831 1318.19,-1827.33"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1319.29,-1830.67 1328.24,-1825 1317.7,-1823.85 1319.29,-1830.67"/>
+<path fill="none" stroke="#00ff35" d="M1215.72,-322.19C1226.02,-318.33 1235.8,-313.09 1244,-306 1276.91,-277.56 1246.07,-242.21 1280,-215 1291.18,-206.04 1304.64,-200.17 1318.64,-196.44"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1319.45,-199.85 1328.4,-194.18 1317.87,-193.03 1319.45,-199.85"/>
 </g>
 <!-- proc~check_duplicate_atoms -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node25" class="node">
 <title>proc~check_duplicate_atoms</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node25"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="1481.5,-1878 1344.5,-1878 1344.5,-1854 1481.5,-1854 1481.5,-1878"/>
-<text text-anchor="middle" x="1413" y="-1863.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1481.5,-248 1344.5,-248 1344.5,-224 1481.5,-224 1481.5,-248"/>
+<text text-anchor="middle" x="1413" y="-233.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge22" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
-<path fill="none" stroke="#1aff00" d="M1215.53,-1931.88C1225.41,-1929.09 1235.13,-1925.53 1244,-1921 1263.6,-1910.99 1260.25,-1896.72 1280,-1887 1296.6,-1878.83 1315.67,-1873.71 1334.05,-1870.54"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1334.83,-1873.96 1344.17,-1868.97 1333.75,-1867.04 1334.83,-1873.96"/>
+<path fill="none" stroke="#00ff35" d="M1214.74,-319.94C1225.07,-316.42 1235.12,-311.87 1244,-306 1266.54,-291.1 1256.93,-271.07 1280,-257 1296.21,-247.12 1315.53,-241.41 1334.33,-238.21"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1335.02,-241.65 1344.39,-236.72 1333.99,-234.73 1335.02,-241.65"/>
 </g>
 <!-- proc~count_hydrogen_caps -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node29" class="node">
 <title>proc~count_hydrogen_caps</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node29"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="1477,-1962 1349,-1962 1349,-1938 1477,-1938 1477,-1962"/>
-<text text-anchor="middle" x="1413" y="-1947.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1477,-332 1349,-332 1349,-308 1477,-308 1477,-332"/>
+<text text-anchor="middle" x="1413" y="-317.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge23" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
-<path fill="none" stroke="#1aff00" d="M1215.55,-1944.36C1254.42,-1945.47 1300.48,-1946.8 1338.23,-1947.88"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1338.54,-1951.39 1348.64,-1948.18 1338.75,-1944.39 1338.54,-1951.39"/>
+<path fill="none" stroke="#00ff35" d="M1215.55,-328.46C1254.42,-326.79 1300.48,-324.81 1338.23,-323.18"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1338.8,-326.66 1348.64,-322.73 1338.5,-319.66 1338.8,-326.66"/>
 </g>
 <!-- proc~error_add_context -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node31" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node30" class="node">
 <title>proc~error_add_context</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node31"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
-<polygon fill="#d9534f" stroke="#d9534f" points="1490,-1920 1336,-1920 1336,-1896 1490,-1896 1490,-1920"/>
-<text text-anchor="middle" x="1413" y="-1905.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node30"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="1490,-290 1336,-290 1336,-266 1490,-266 1490,-290"/>
+<text text-anchor="middle" x="1413" y="-275.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~error_add_context -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge24" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~error_add_context</title>
-<path fill="none" stroke="#1aff00" d="M1215.55,-1931.98C1250.16,-1927.76 1290.48,-1922.84 1325.55,-1918.55"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1326.27,-1921.99 1335.77,-1917.31 1325.42,-1915.04 1326.27,-1921.99"/>
+<path fill="none" stroke="#00ff35" d="M1183.17,-319.98C1211.46,-313.35 1247.61,-305.22 1280,-299 1294.77,-296.16 1310.52,-293.42 1325.81,-290.9"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1326.46,-294.34 1335.77,-289.28 1325.34,-287.43 1326.46,-294.34"/>
 </g>
 <!-- proc~fragment_compute_nelec -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node32" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node31" class="node">
 <title>proc~fragment_compute_nelec</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node32"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
-<polygon fill="#d9534f" stroke="#d9534f" points="1546,-2046 1280,-2046 1280,-2022 1546,-2022 1546,-2046"/>
-<text text-anchor="middle" x="1413" y="-2031.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node31"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="1546,-416 1280,-416 1280,-392 1546,-392 1546,-416"/>
+<text text-anchor="middle" x="1413" y="-401.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge26" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
-<path fill="none" stroke="#1aff00" d="M1215.57,-1950.27C1225.61,-1953.36 1235.35,-1957.49 1244,-1963 1267.09,-1977.71 1256.69,-1998.63 1280,-2013 1282.82,-2014.73 1285.73,-2016.34 1288.71,-2017.83"/>
-<polygon fill="#1aff00" stroke="#1aff00" points="1287.33,-2021.04 1297.88,-2021.94 1290.19,-2014.66 1287.33,-2021.04"/>
+<path fill="none" stroke="#00ff35" d="M1202.61,-344.04C1216.63,-347.64 1231.04,-352.23 1244,-358 1261.79,-365.93 1261.93,-375.73 1280,-383 1285.79,-385.33 1291.83,-387.4 1297.98,-389.24"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="1297.18,-392.65 1307.75,-391.96 1299.05,-385.91 1297.18,-392.65"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;configuration -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge27" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;configuration</title>
-<path fill="none" stroke="#00ff86" d="M344.2,-1039.08C421.22,-1060.31 594.88,-1095.56 711,-1023 741.34,-1004.04 716.57,-969.81 747,-951 791.99,-923.19 946.13,-915.14 985,-951 1058.08,-1018.42 966.18,-1314.05 1021,-1397 1034.84,-1417.94 1058.78,-1431.81 1080.85,-1440.71"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="1079.9,-1444.09 1090.49,-1444.35 1082.37,-1437.54 1079.9,-1444.09"/>
+<path fill="none" stroke="#00ffd6" d="M370.07,-941.85C387.74,-944.77 405.43,-951.17 418,-964 487.02,-1034.47 383.69,-1113.82 454,-1183 536.3,-1263.98 624.48,-1144.54 711,-1221 755.93,-1260.7 699.28,-1314.7 747,-1351 789.09,-1383.02 946.78,-1387.56 985,-1351 1049.94,-1288.88 962.17,-610.93 1021,-543 1035.51,-526.24 1058.88,-520.22 1080.4,-518.7"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="1080.59,-522.2 1090.44,-518.3 1080.31,-515.2 1080.59,-522.2"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;get_elapsed_time -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge29" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#00ff86" d="M358.4,-1014.95C386.77,-1008.6 422.25,-1000.75 454,-994 475.27,-989.48 498.57,-984.68 519.36,-980.45"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="520.25,-983.85 529.35,-978.43 518.85,-976.99 520.25,-983.85"/>
+<path fill="none" stroke="#00ffd6" d="M370.13,-941.47C387.9,-944.35 405.65,-950.83 418,-964 509.57,-1061.62 361.43,-1166.32 454,-1263 470.62,-1280.36 495.67,-1286.87 519.17,-1288.57"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="519.32,-1292.08 529.47,-1289.02 519.63,-1285.08 519.32,-1292.08"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;info -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge30" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;info</title>
-<path fill="none" stroke="#00ff86" d="M322.88,-1014.73C349.96,-996.78 403.55,-963.71 454,-947 563.61,-910.7 617.31,-976.48 711,-909 739.71,-888.32 719.03,-859.67 747,-838 770.22,-820.01 803.33,-813.92 828.57,-812.1"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="829.06,-815.58 838.86,-811.55 828.69,-808.59 829.06,-815.58"/>
+<path fill="none" stroke="#00ffd6" d="M370.36,-949.16C453.3,-954.29 599.02,-954.17 711,-905 771.89,-878.26 825.06,-817.78 849.97,-786.15"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="852.88,-788.09 856.23,-778.04 847.34,-783.82 852.88,-788.09"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~energy_total -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge32" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#00ff86" d="M309.13,-1014.95C322.95,-976.49 371.42,-855.69 454,-796 636.27,-664.26 918.87,-671.48 1054.17,-684.26"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="1054.15,-687.77 1064.44,-685.26 1054.83,-680.8 1054.15,-687.77"/>
+<path fill="none" stroke="#00ffd6" d="M370.06,-942.21C387.62,-945.15 405.27,-951.48 418,-964 475.24,-1020.28 396.18,-1085.31 454,-1141 467.49,-1153.99 485.74,-1160.75 504.22,-1163.95"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="503.78,-1167.42 514.17,-1165.34 504.76,-1160.49 503.78,-1167.42"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;start -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge38" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;start</title>
-<path fill="none" stroke="#00ff86" d="M316.89,-1014.9C340.64,-991.47 396.62,-939.97 454,-914 482.94,-900.9 518.56,-894.35 544.79,-891.1"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="545.51,-894.54 555.05,-889.94 544.72,-887.59 545.51,-894.54"/>
+<path fill="none" stroke="#00ffd6" d="M370.24,-941.69C387.91,-944.6 405.57,-951.04 418,-964 496.31,-1045.66 376.41,-1133.66 454,-1216 477.04,-1240.45 516.35,-1245.27 545.24,-1245.01"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="545.47,-1248.51 555.37,-1244.71 545.27,-1241.51 545.47,-1248.51"/>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;to_char -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge39" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff86" d="M312.71,-1014.78C332.36,-984.7 387.48,-906.64 454,-867 569.57,-798.13 614.12,-812.01 747,-791 1099.62,-735.24 1533.71,-732.99 1660.89,-733.65"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="1661.2,-737.16 1671.22,-733.72 1661.24,-730.16 1661.2,-737.16"/>
+<path fill="none" stroke="#00ffd6" d="M370.09,-941.18C387.97,-944.03 405.78,-950.57 418,-964 478.64,-1030.68 392.32,-1302.27 454,-1368 535.04,-1454.35 880.02,-1467.8 985,-1413 1371.59,-1211.21 1395.42,-1017.26 1546,-608 1574.68,-530.06 1525.77,-297.12 1582,-236 1601.65,-214.64 1635.17,-210.55 1661.05,-211.12"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="1661.11,-214.62 1671.26,-211.59 1661.43,-207.63 1661.11,-214.62"/>
 </g>
 <!-- debug -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node21" class="node">
 <title>debug</title>
-<polygon fill="#777777" stroke="#777777" points="1159.5,-1388 1105.5,-1388 1105.5,-1364 1159.5,-1364 1159.5,-1388"/>
-<text text-anchor="middle" x="1132.5" y="-1373.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
+<polygon fill="#777777" stroke="#777777" points="1159.5,-934 1105.5,-934 1105.5,-910 1159.5,-910 1159.5,-934"/>
+<text text-anchor="middle" x="1132.5" y="-919.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;debug -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge28" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;debug</title>
-<path fill="none" stroke="#00ff86" d="M370.06,-1029.41C471.33,-1031.79 660.31,-1030.32 711,-989 753.5,-954.35 702.93,-903.63 747,-871 789.51,-839.53 942.71,-839.24 985,-871 1065.67,-931.6 1116.25,-1264.06 1128.56,-1353.72"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="1125.13,-1354.41 1129.93,-1363.85 1132.06,-1353.47 1125.13,-1354.41"/>
+<path fill="none" stroke="#00ffd6" d="M370.25,-941.36C388.03,-944.23 405.74,-950.74 418,-964 521.45,-1075.91 355.09,-1189.06 454,-1305 531.43,-1395.76 888.73,-1454.46 985,-1384 994.42,-1377.1 1097.65,-1034.81 1124.92,-943.95"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="1128.34,-944.74 1127.86,-934.15 1121.64,-942.72 1128.34,-944.74"/>
 </g>
 <!-- proc~compute_mbe -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node26" class="node">
 <title>proc~compute_mbe</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node26"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="627,-1696 538,-1696 538,-1672 627,-1672 627,-1696"/>
-<text text-anchor="middle" x="582.5" y="-1681.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="627,-618 538,-618 538,-594 627,-594 627,-618"/>
+<text text-anchor="middle" x="582.5" y="-603.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~compute_mbe -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge31" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~compute_mbe</title>
-<path fill="none" stroke="#00ff86" d="M312.3,-1039.06C332.77,-1073.53 391,-1175.93 418,-1269 452.96,-1389.5 400.29,-1435.61 454,-1549 477.49,-1598.59 526.1,-1641.91 556.05,-1665.38"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="554.27,-1668.43 564.33,-1671.74 558.53,-1662.87 554.27,-1668.43"/>
+<path fill="none" stroke="#00ffd6" d="M370.26,-944.33C387.94,-941.43 405.59,-934.98 418,-922 497.72,-838.65 385.28,-757.63 454,-665 471.78,-641.03 501.7,-626.49 528.08,-617.85"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="529.45,-621.09 537.99,-614.82 527.4,-614.4 529.45,-621.09"/>
 </g>
 <!-- proc~fragment_lookup_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node33" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node32" class="node">
 <title>proc~fragment_lookup_destroy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node33"><a xlink:href="../proc/fragment_lookup_destroy.html" xlink:title="fragment_lookup_t%fragment_lookup_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="711,-1418 454,-1418 454,-1394 711,-1394 711,-1418"/>
-<text text-anchor="middle" x="582.5" y="-1403.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_destroy</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node32"><a xlink:href="../proc/fragment_lookup_destroy.html" xlink:title="fragment_lookup_t%fragment_lookup_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="711,-778 454,-778 454,-754 711,-754 711,-778"/>
+<text text-anchor="middle" x="582.5" y="-763.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge33" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_destroy</title>
-<path fill="none" stroke="#00ff86" d="M313.89,-1039.18C353.7,-1093.75 515.88,-1316.05 566.4,-1385.3"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="563.79,-1387.66 572.51,-1393.67 569.44,-1383.53 563.79,-1387.66"/>
+<path fill="none" stroke="#00ffd6" d="M370.21,-940.29C386.88,-937.17 404.03,-931.62 418,-922 443.29,-904.57 433.42,-885.81 454,-863 483.3,-830.53 524.7,-801.36 552.29,-783.68"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="554.49,-786.43 561.08,-778.13 550.75,-780.51 554.49,-786.43"/>
 </g>
 <!-- proc~fragment_lookup_init -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node34" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node33" class="node">
 <title>proc~fragment_lookup_init</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node34"><a xlink:href="../proc/fragment_lookup_init.html" xlink:title="fragment_lookup_t%fragment_lookup_init">
-<polygon fill="#d9534f" stroke="#d9534f" points="700,-1460 465,-1460 465,-1436 700,-1436 700,-1460"/>
-<text text-anchor="middle" x="582.5" y="-1445.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_init</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node33"><a xlink:href="../proc/fragment_lookup_init.html" xlink:title="fragment_lookup_t%fragment_lookup_init">
+<polygon fill="#d9534f" stroke="#d9534f" points="700,-698 465,-698 465,-674 700,-674 700,-698"/>
+<text text-anchor="middle" x="582.5" y="-683.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_init</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_init -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge34" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_init</title>
-<path fill="none" stroke="#00ff86" d="M311.85,-1039.21C331.14,-1074.04 386.56,-1177.33 418,-1269 441.37,-1337.13 401.55,-1377.64 454,-1427 455.12,-1428.06 456.28,-1429.07 457.46,-1430.05"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="455.5,-1432.95 465.67,-1435.92 459.57,-1427.25 455.5,-1432.95"/>
+<path fill="none" stroke="#00ffd6" d="M370.06,-943.79C387.62,-940.85 405.27,-934.52 418,-922 475.24,-865.72 404.21,-807.97 454,-745 470.42,-724.23 495.84,-710.47 519.67,-701.5"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="521.14,-704.7 529.4,-698.07 518.81,-698.1 521.14,-704.7"/>
 </g>
 <!-- proc~fragment_lookup_insert -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node35" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node34" class="node">
 <title>proc~fragment_lookup_insert</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node35"><a xlink:href="../proc/fragment_lookup_insert.html" xlink:title="fragment_lookup_t%fragment_lookup_insert">
-<polygon fill="#d9534f" stroke="#d9534f" points="706.5,-1540 458.5,-1540 458.5,-1516 706.5,-1516 706.5,-1540"/>
-<text text-anchor="middle" x="582.5" y="-1525.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_insert</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node34"><a xlink:href="../proc/fragment_lookup_insert.html" xlink:title="fragment_lookup_t%fragment_lookup_insert">
+<polygon fill="#d9534f" stroke="#d9534f" points="706.5,-896 458.5,-896 458.5,-872 706.5,-872 706.5,-896"/>
+<text text-anchor="middle" x="582.5" y="-881.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_insert</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_insert -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge35" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~fragment_lookup_insert</title>
-<path fill="none" stroke="#00ff86" d="M312.06,-1039.14C331.91,-1073.79 388.67,-1176.63 418,-1269 445.33,-1355.08 398.79,-1397.53 454,-1469 470.12,-1489.87 495.36,-1503.63 519.15,-1512.57"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="518.27,-1515.97 528.87,-1516 520.6,-1509.37 518.27,-1515.97"/>
+<path fill="none" stroke="#00ffd6" d="M370.17,-932.47C385.92,-929.5 402.64,-925.97 418,-922 434.33,-917.78 437.71,-914.36 454,-910 470.33,-905.63 488,-901.6 504.84,-898.07"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="505.55,-901.5 514.64,-896.06 504.14,-894.64 505.55,-901.5"/>
 </g>
 <!-- proc~print_detailed_breakdown -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node40" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node38" class="node">
 <title>proc~print_detailed_breakdown</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node40"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
-<polygon fill="#d9534f" stroke="#d9534f" points="657.5,-1136 507.5,-1136 507.5,-1112 657.5,-1112 657.5,-1136"/>
-<text text-anchor="middle" x="582.5" y="-1121.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node38"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
+<polygon fill="#d9534f" stroke="#d9534f" points="657.5,-1132 507.5,-1132 507.5,-1108 657.5,-1108 657.5,-1132"/>
+<text text-anchor="middle" x="582.5" y="-1117.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge36" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown</title>
-<path fill="none" stroke="#00ff86" d="M339.46,-1039.09C389.58,-1056.67 482.59,-1089.3 537.57,-1108.59"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="536.45,-1111.9 547.04,-1111.91 538.76,-1105.3 536.45,-1111.9"/>
+<path fill="none" stroke="#00ffd6" d="M370.11,-942.88C387.46,-945.87 404.99,-952.06 418,-964 462.18,-1004.52 410.17,-1053.09 454,-1094 465.97,-1105.17 481.38,-1112.1 497.32,-1116.29"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="496.76,-1119.76 507.29,-1118.57 498.31,-1112.93 496.76,-1119.76"/>
 </g>
 <!-- proc~print_detailed_breakdown_json -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node41" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node39" class="node">
 <title>proc~print_detailed_breakdown_json</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node41"><a xlink:href="../proc/print_detailed_breakdown_json.html" xlink:title="print_detailed_breakdown_json">
-<polygon fill="#d9534f" stroke="#d9534f" points="671,-1178 494,-1178 494,-1154 671,-1154 671,-1178"/>
-<text text-anchor="middle" x="582.5" y="-1163.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown_json</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node39"><a xlink:href="../proc/print_detailed_breakdown_json.html" xlink:title="print_detailed_breakdown_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="671,-1052 494,-1052 494,-1028 671,-1028 671,-1052"/>
+<text text-anchor="middle" x="582.5" y="-1037.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown_json</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge37" class="edge">
 <title>proc~compute_mbe_energy&#45;&gt;proc~print_detailed_breakdown_json</title>
-<path fill="none" stroke="#00ff86" d="M315.97,-1039.1C338.93,-1063.56 394.85,-1118.83 454,-1145 463.41,-1149.16 473.53,-1152.51 483.82,-1155.19"/>
-<polygon fill="#00ff86" stroke="#00ff86" points="483.17,-1158.64 493.71,-1157.57 484.81,-1151.83 483.17,-1158.64"/>
+<path fill="none" stroke="#00ffd6" d="M370.02,-946.49C386.61,-949.61 403.76,-954.97 418,-964 441.12,-978.67 431.01,-999.13 454,-1014 463.15,-1019.92 473.38,-1024.53 483.95,-1028.11"/>
+<polygon fill="#00ffd6" stroke="#00ffd6" points="483.16,-1031.53 493.74,-1031.13 485.22,-1024.84 483.16,-1031.53"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;configuration -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge40" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;configuration</title>
-<path fill="none" stroke="#00ffd6" d="M333.92,-1302.04C363.59,-1313.97 411.32,-1332.02 454,-1343 566.09,-1371.84 596.81,-1366.16 711,-1385 844.13,-1406.96 1000.91,-1433.14 1080.13,-1446.4"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="1079.88,-1449.91 1090.32,-1448.1 1081.04,-1443 1079.88,-1449.91"/>
+<path fill="none" stroke="#00d6ff" d="M322.37,-888.74C349.21,-870.47 403.01,-836.49 454,-820 563.57,-784.56 609.66,-841.7 711,-787 732.64,-775.32 725.55,-757.01 747,-745 840.47,-692.68 907.1,-780.52 985,-707 1039.27,-655.78 967.49,-595.02 1021,-543 1036.52,-527.91 1059.32,-521.95 1080.19,-520.05"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="1080.47,-523.53 1090.23,-519.41 1080.03,-516.55 1080.47,-523.53"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge42" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;error</title>
-<path fill="none" stroke="#00ffd6" d="M395.36,-1293.21C477.67,-1296.38 602.57,-1301.79 711,-1309 714.71,-1309.25 1240.53,-1353.67 1244,-1355 1262.68,-1362.14 1263.28,-1371.03 1280,-1382 1418.52,-1472.91 1593.36,-1565.99 1664.82,-1603.17"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="1663.32,-1606.34 1673.81,-1607.84 1666.54,-1600.12 1663.32,-1606.34"/>
+<path fill="none" stroke="#00d6ff" d="M395.09,-907.69C403.51,-911.15 411.36,-915.81 418,-922 464.67,-965.53 403.87,-1021.51 454,-1061 522.95,-1115.32 1157.31,-1069.81 1244,-1056 1381.82,-1034.04 1439.75,-1060.48 1546,-970 1643.71,-886.79 1682.4,-726.75 1693.68,-668.18"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="1697.15,-668.63 1695.53,-658.17 1690.27,-667.36 1697.15,-668.63"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;get_elapsed_time -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge43" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#00ffd6" d="M311.61,-1277.64C330.67,-1242.64 388.59,-1140.83 454,-1070 485.06,-1036.36 527.68,-1004.57 554.91,-985.68"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="556.91,-988.56 563.18,-980.02 552.95,-982.78 556.91,-988.56"/>
+<path fill="none" stroke="#00d6ff" d="M395.24,-906.37C403.8,-910.05 411.63,-915.11 418,-922 521.45,-1033.91 349.41,-1152.16 454,-1263 470.57,-1280.56 495.74,-1287.07 519.36,-1288.71"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="519.21,-1292.21 529.35,-1289.14 519.51,-1285.21 519.21,-1292.21"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;info -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge44" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;info</title>
-<path fill="none" stroke="#00ffd6" d="M311.81,-1277.84C330.55,-1245.37 386,-1155.53 454,-1103 552.89,-1026.61 628.17,-1082.55 711,-989 747.35,-947.95 711.61,-912.88 747,-871 768.24,-845.87 802.79,-830.37 829.04,-821.6"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="830.16,-824.91 838.64,-818.56 828.05,-818.24 830.16,-824.91"/>
+<path fill="none" stroke="#00d6ff" d="M348.13,-888.98C377.76,-880.97 418.08,-870.57 454,-863 567.32,-839.11 604.95,-866.52 711,-820 729.56,-811.86 728.65,-800.61 747,-792 772.8,-779.88 804.46,-773.31 828.49,-769.8"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="829.17,-773.24 838.61,-768.44 828.23,-766.3 829.17,-773.24"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~energy_total -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge47" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#00ffd6" d="M330.94,-1277.94C360.12,-1265.09 409.29,-1245.58 454,-1238 566.62,-1218.91 596.88,-1233.25 711,-1238 727.04,-1238.67 730.96,-1240.33 747,-1241 852.69,-1245.4 901.08,-1305.4 985,-1241 1071.75,-1174.43 1118.36,-810.51 1129.08,-716.28"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="1132.58,-716.49 1130.21,-706.17 1125.62,-715.72 1132.58,-716.49"/>
+<path fill="none" stroke="#00d6ff" d="M395.13,-906.85C403.65,-910.46 411.51,-915.37 418,-922 487.02,-992.47 384.26,-1071.24 454,-1141 467.31,-1154.31 485.59,-1161.16 504.16,-1164.34"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="503.79,-1167.82 514.17,-1165.72 504.74,-1160.88 503.79,-1167.82"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;start -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge54" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;start</title>
-<path fill="none" stroke="#00ffd6" d="M311.18,-1277.84C328.92,-1242.72 381.1,-1137.86 418,-1048 436.1,-1003.92 421.87,-982.2 454,-947 478.31,-920.37 517.07,-904.82 545.47,-896.43"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="546.73,-899.72 555.43,-893.66 544.85,-892.97 546.73,-899.72"/>
+<path fill="none" stroke="#00d6ff" d="M395.03,-906.57C403.62,-910.21 411.53,-915.22 418,-922 498.85,-1006.71 384.33,-1088.88 454,-1183 475.81,-1212.46 515.95,-1227.66 545.39,-1235.2"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="544.76,-1238.65 555.3,-1237.55 546.38,-1231.84 544.76,-1238.65"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;to_char -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge55" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ffd6" d="M395.16,-1290.24C567.37,-1290.25 930.88,-1287.99 985,-1269 1308.86,-1155.36 1606.56,-836.82 1680.16,-753.92"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="1682.95,-756.05 1686.94,-746.23 1677.7,-751.42 1682.95,-756.05"/>
+<path fill="none" stroke="#00d6ff" d="M395.21,-903.81C414.6,-904.31 434.98,-904.74 454,-905 568.21,-906.53 597.3,-915.95 711,-905 727.22,-903.44 730.97,-900.97 747,-898 969.73,-856.7 1053.31,-907.27 1244,-785 1419.81,-672.27 1456.46,-613.67 1546,-425 1582.66,-347.75 1521.28,-296.21 1582,-236 1602.48,-215.69 1635.61,-211.42 1661.14,-211.66"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="1661.11,-215.16 1671.21,-211.98 1661.33,-208.16 1661.11,-215.16"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;debug -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge41" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;debug</title>
-<path fill="none" stroke="#00ffd6" d="M381.86,-1302.04C469.89,-1315.45 618.53,-1336.95 747,-1350 874.63,-1362.96 1026.77,-1371.09 1095.11,-1374.36"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="1095.19,-1377.87 1105.34,-1374.84 1095.52,-1370.87 1095.19,-1377.87"/>
+<path fill="none" stroke="#00d6ff" d="M395.21,-910.81C403.26,-913.72 411,-917.38 418,-922 442.08,-937.89 428.57,-962.39 454,-976 554.71,-1029.9 605.77,-1020.43 711,-976 732.14,-967.07 726.07,-948.39 747,-939 865.01,-886.07 1024.38,-903.46 1095.1,-915.09"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="1094.83,-918.6 1105.27,-916.83 1096,-911.7 1094.83,-918.6"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge45" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe</title>
-<path fill="none" stroke="#00ffd6" d="M310.75,-1302.23C328.98,-1340.48 388.22,-1460.54 454,-1549 487.3,-1593.78 533.86,-1639.72 560.52,-1664.78"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="558.42,-1667.61 568.12,-1671.87 563.19,-1662.49 558.42,-1667.61"/>
+<path fill="none" stroke="#00d6ff" d="M309.74,-888.76C325.04,-850.7 376.62,-732.93 454,-665 476.27,-645.45 506.11,-631.17 531.33,-621.56"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="532.56,-624.83 540.74,-618.1 530.15,-618.26 532.56,-624.83"/>
 </g>
 <!-- proc~compute_mbe_gradient -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node27" class="node">
 <title>proc~compute_mbe_gradient</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node27"><a xlink:href="../proc/compute_mbe_gradient.html" xlink:title="compute_mbe_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="652,-1738 513,-1738 513,-1714 652,-1714 652,-1738"/>
-<text text-anchor="middle" x="582.5" y="-1723.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_gradient</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="652,-576 513,-576 513,-552 652,-552 652,-576"/>
+<text text-anchor="middle" x="582.5" y="-561.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_gradient</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe_gradient -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge46" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~compute_mbe_gradient</title>
-<path fill="none" stroke="#00ffd6" d="M309.06,-1302.41C331.22,-1369.96 437.17,-1690.97 454,-1705 467.61,-1716.34 484.97,-1722.69 502.46,-1726.03"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="502.31,-1729.56 512.74,-1727.67 503.42,-1722.64 502.31,-1729.56"/>
+<path fill="none" stroke="#00d6ff" d="M308.98,-888.99C326.7,-836.23 399.91,-625.84 454,-585 467.99,-574.43 485.33,-568.36 502.66,-565.03"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="503.53,-568.43 512.84,-563.36 502.4,-561.52 503.53,-568.43"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge48" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_destroy</title>
-<path fill="none" stroke="#00ffd6" d="M321.01,-1302.24C347.3,-1321.72 401.92,-1359.66 454,-1380 465.71,-1384.57 478.35,-1388.38 490.96,-1391.55"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="490.51,-1395.04 501.05,-1393.95 492.14,-1388.23 490.51,-1395.04"/>
+<path fill="none" stroke="#00d6ff" d="M317.35,-888.99C341.47,-866.27 397.43,-817.02 454,-792 464.23,-787.48 475.27,-783.73 486.42,-780.63"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="487.44,-783.98 496.24,-778.07 485.68,-777.21 487.44,-783.98"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_init -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge49" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_init</title>
-<path fill="none" stroke="#00ffd6" d="M314.2,-1302.38C335.42,-1329.91 390.82,-1396.22 454,-1427 458.31,-1429.1 462.79,-1431 467.38,-1432.71"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="466.35,-1436.05 476.94,-1435.97 468.6,-1429.43 466.35,-1436.05"/>
+<path fill="none" stroke="#00d6ff" d="M313.88,-888.98C335.27,-860.7 392.47,-789.01 454,-745 479.51,-726.76 511.55,-711.96 537.14,-701.74"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="538.55,-704.95 546.6,-698.05 536.01,-698.42 538.55,-704.95"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_insert -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge50" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~fragment_lookup_insert</title>
-<path fill="none" stroke="#00ffd6" d="M312.27,-1302.01C331.72,-1333.27 387.94,-1418.26 454,-1469 478.44,-1487.77 509.82,-1502.39 535.33,-1512.38"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="534.2,-1515.69 544.79,-1515.98 536.69,-1509.15 534.2,-1515.69"/>
+<path fill="none" stroke="#00d6ff" d="M395.15,-895.46C412.17,-894.41 430.31,-893.3 448.32,-892.19"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="448.54,-895.68 458.31,-891.57 448.11,-888.69 448.54,-895.68"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node36" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node35" class="node">
 <title>proc~map_fragment_to_system_gradient</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node36"><a xlink:href="../proc/map_fragment_to_system_gradient.html" xlink:title="map_fragment_to_system_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="966,-1820 766,-1820 766,-1796 966,-1796 966,-1820"/>
-<text text-anchor="middle" x="866" y="-1805.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_gradient</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node35"><a xlink:href="../proc/map_fragment_to_system_gradient.html" xlink:title="map_fragment_to_system_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="966,-386 766,-386 766,-362 966,-362 966,-386"/>
+<text text-anchor="middle" x="866" y="-371.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_gradient</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~map_fragment_to_system_gradient -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge51" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~map_fragment_to_system_gradient</title>
-<path fill="none" stroke="#00ffd6" d="M309.72,-1302.24C326.29,-1345.53 382.7,-1495.63 418,-1623 438.16,-1695.75 396.34,-1740.27 454,-1789 497.93,-1826.13 649.26,-1824.06 755.46,-1817.42"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="755.84,-1820.9 765.59,-1816.76 755.39,-1813.92 755.84,-1820.9"/>
+<path fill="none" stroke="#00d6ff" d="M310.57,-888.9C327.93,-850.89 382.08,-730.28 418,-627 437.13,-571.99 413.26,-542.62 454,-501 466.9,-487.82 704.71,-419.33 812.58,-388.76"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="813.62,-392.1 822.29,-386.01 811.71,-385.37 813.62,-392.1"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge52" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown</title>
-<path fill="none" stroke="#00ffd6" d="M313.4,-1277.75C333.77,-1249.14 388.91,-1177.86 454,-1145 467.26,-1138.31 482.19,-1133.67 497.04,-1130.47"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="498.14,-1133.83 507.29,-1128.48 496.81,-1126.95 498.14,-1133.83"/>
+<path fill="none" stroke="#00d6ff" d="M395.12,-907.26C403.58,-910.79 411.44,-915.58 418,-922 473.85,-976.6 398.63,-1038.92 454,-1094 465.74,-1105.68 481.2,-1112.8 497.3,-1117.02"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="496.86,-1120.5 507.38,-1119.28 498.39,-1113.67 496.86,-1120.5"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge53" class="edge">
 <title>proc~compute_mbe_energy_gradient&#45;&gt;proc~print_detailed_breakdown_json</title>
-<path fill="none" stroke="#00ffd6" d="M321.58,-1277.81C348.24,-1258.73 402.83,-1221.76 454,-1200 472.58,-1192.1 493.47,-1185.61 512.88,-1180.5"/>
-<polygon fill="#00ffd6" stroke="#00ffd6" points="513.76,-1183.89 522.58,-1178.02 512.03,-1177.11 513.76,-1183.89"/>
+<path fill="none" stroke="#00d6ff" d="M395.21,-908.84C403.45,-912.11 411.23,-916.41 418,-922 451.84,-949.98 420.4,-985.73 454,-1014 462.82,-1021.42 473.2,-1026.92 484.15,-1030.97"/>
+<polygon fill="#00d6ff" stroke="#00d6ff" points="483.31,-1034.37 493.91,-1034.16 485.49,-1027.72 483.31,-1034.37"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;configuration -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge56" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;configuration</title>
-<path fill="none" stroke="#00d6ff" d="M418.12,-1646.58C599.5,-1649.74 939.69,-1651.32 985,-1620 1019.09,-1596.44 995.16,-1566.39 1021,-1534 1042.12,-1507.52 1074.33,-1485.88 1098.54,-1471.99"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="1100.36,-1474.98 1107.38,-1467.05 1096.94,-1468.87 1100.36,-1474.98"/>
+<path fill="none" stroke="#0086ff" d="M316.69,-593.77C340.08,-570.28 395.48,-519.55 454,-501 678.04,-429.99 964.87,-482.56 1080.15,-509.11"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="1079.58,-512.57 1090.12,-511.43 1081.17,-505.75 1079.58,-512.57"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;error -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge57" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;error</title>
-<path fill="none" stroke="#00d6ff" d="M307.4,-1656.2C317,-1701.68 356.89,-1863 454,-1946 599.44,-2070.3 673.68,-2074 865,-2074 865,-2074 865,-2074 1133.5,-2074 1225.26,-2074 1477.23,-2115.75 1546,-2055 1616.97,-1992.31 1552.03,-1934.83 1582,-1845 1608.52,-1765.52 1659.68,-1679.51 1684.01,-1640.87"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="1687.18,-1642.41 1689.59,-1632.1 1681.27,-1638.66 1687.18,-1642.41"/>
+<path fill="none" stroke="#0086ff" d="M310.68,-593.8C331.91,-548.77 407.76,-393.08 454,-366 555.86,-306.35 867.28,-344.41 985,-353 1101.03,-361.47 1139.3,-340.26 1244,-391 1263.8,-400.6 1261.06,-413.78 1280,-425 1386.9,-488.32 1438.19,-449.23 1546,-511 1601.32,-542.7 1654.14,-597.05 1680.35,-626.18"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="1677.76,-628.54 1687.01,-633.69 1682.99,-623.89 1677.76,-628.54"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;info -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge58" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;info</title>
-<path fill="none" stroke="#00d6ff" d="M334.79,-1631.92C364.54,-1620.25 411.8,-1602.81 454,-1592 510.09,-1577.63 672.43,-1592.19 711,-1549 761.25,-1492.74 705.65,-934.1 747,-871 765.5,-842.76 801.82,-827.48 829.3,-819.6"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="830.21,-822.98 838.98,-817.02 828.41,-816.21 830.21,-822.98"/>
+<path fill="none" stroke="#0086ff" d="M390.17,-618C508.2,-634.68 707.49,-663.07 711,-665 732.54,-676.86 727.62,-691.87 747,-707 772.18,-726.66 804.95,-742.41 829.57,-752.68"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="828.32,-755.95 838.9,-756.47 830.96,-749.46 828.32,-755.95"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~energy_total -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge62" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#00d6ff" d="M418.06,-1634.58C500.34,-1625.97 613.89,-1610.44 711,-1584 837.78,-1549.48 901.78,-1574.68 985,-1473 1010.01,-1442.44 1107.99,-840.17 1127.94,-716.2"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="1131.45,-716.45 1129.58,-706.02 1124.53,-715.34 1131.45,-716.45"/>
+<path fill="none" stroke="#0086ff" d="M311.34,-618.17C330.72,-655.89 389.52,-774.7 418,-880 433.28,-936.52 413.14,-1099.06 454,-1141 467.2,-1154.55 485.55,-1161.46 504.21,-1164.62"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="503.89,-1168.11 514.27,-1165.98 504.83,-1161.17 503.89,-1168.11"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;to_char -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge69" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;to_char</title>
-<path fill="none" stroke="#00d6ff" d="M412.13,-1656.04C414.18,-1657.56 416.14,-1659.21 418,-1661 479.92,-1720.61 387.81,-1796.17 454,-1851 521.72,-1907.1 1173.88,-1856.06 1244,-1803 1325.71,-1741.17 1538.54,-1037.79 1582,-945 1615.5,-873.49 1662.53,-792.49 1684.82,-755.05"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="1688.05,-756.47 1690.18,-746.09 1682.04,-752.87 1688.05,-756.47"/>
+<path fill="none" stroke="#0086ff" d="M306.43,-593.79C312.9,-544.35 344.06,-357.44 454,-268 742.67,-33.16 908.05,-142.48 1280,-131 1398.17,-127.35 1443.75,-71.66 1546,-131 1573.89,-147.19 1555.67,-175.37 1582,-194 1604.9,-210.2 1636.56,-215.05 1660.94,-216.07"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="1661.16,-219.58 1671.24,-216.3 1661.32,-212.58 1661.16,-219.58"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge59" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe</title>
-<path fill="none" stroke="#00d6ff" d="M387.96,-1656C433.32,-1662.56 488.19,-1670.5 527.91,-1676.25"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="527.52,-1679.73 537.92,-1677.7 528.53,-1672.8 527.52,-1679.73"/>
+<path fill="none" stroke="#0086ff" d="M418.26,-606C456.05,-606 496.41,-606 527.54,-606"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="527.73,-609.5 537.73,-606 527.73,-602.5 527.73,-609.5"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_gradient -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge60" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_gradient</title>
-<path fill="none" stroke="#00d6ff" d="M329.44,-1656.01C358.47,-1669.8 408.68,-1692.17 454,-1705 469.55,-1709.4 486.45,-1712.99 502.7,-1715.87"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="502.27,-1719.35 512.72,-1717.58 503.45,-1712.45 502.27,-1719.35"/>
+<path fill="none" stroke="#0086ff" d="M384.23,-593.96C421.28,-588.34 465.3,-581.65 502.34,-576.02"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="503.23,-579.43 512.59,-574.47 502.18,-572.51 503.23,-579.43"/>
 </g>
 <!-- proc~compute_mbe_hessian -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node28" class="node">
 <title>proc~compute_mbe_hessian</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node28"><a xlink:href="../proc/compute_mbe_hessian.html" xlink:title="compute_mbe_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="650,-1780 515,-1780 515,-1756 650,-1756 650,-1780"/>
-<text text-anchor="middle" x="582.5" y="-1765.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_hessian</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="650,-534 515,-534 515,-510 650,-510 650,-534"/>
+<text text-anchor="middle" x="582.5" y="-519.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge61" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~compute_mbe_hessian</title>
-<path fill="none" stroke="#00d6ff" d="M318.17,-1656.2C342.78,-1678.24 398.31,-1724.5 454,-1747 469.91,-1753.43 487.69,-1757.89 504.81,-1760.99"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="504.36,-1764.46 514.8,-1762.66 505.51,-1757.56 504.36,-1764.46"/>
+<path fill="none" stroke="#0086ff" d="M328.62,-593.94C357.48,-579.7 408.14,-556.27 454,-543 470.3,-538.28 488.1,-534.52 505.1,-531.56"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="505.7,-535.01 514.99,-529.91 504.55,-528.1 505.7,-535.01"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge63" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_destroy</title>
-<path fill="none" stroke="#00d6ff" d="M309.35,-1631.84C323.48,-1594.22 372.04,-1479.09 454,-1427 456.66,-1425.31 459.41,-1423.74 462.24,-1422.29"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="463.87,-1425.39 471.49,-1418.02 460.94,-1419.03 463.87,-1425.39"/>
+<path fill="none" stroke="#0086ff" d="M320.98,-618.11C347.67,-638.04 403.4,-678.39 454,-707 482.81,-723.29 516.89,-738.88 542.56,-749.94"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="541.39,-753.25 551.97,-753.95 544.14,-746.81 541.39,-753.25"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_init -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge64" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_init</title>
-<path fill="none" stroke="#00d6ff" d="M315.92,-1631.65C339.22,-1605.84 396.42,-1545.43 454,-1507 480.54,-1489.29 513.24,-1474.28 538.88,-1463.83"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="540.34,-1467.01 548.33,-1460.05 537.75,-1460.51 540.34,-1467.01"/>
+<path fill="none" stroke="#0086ff" d="M334.27,-618.05C364.01,-629.96 411.62,-648.07 454,-660 469.76,-664.44 486.81,-668.44 503.16,-671.91"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="502.73,-675.4 513.23,-674 504.15,-668.54 502.73,-675.4"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_insert -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge65" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~fragment_lookup_insert</title>
-<path fill="none" stroke="#00d6ff" d="M321.01,-1631.76C347.3,-1612.28 401.92,-1574.34 454,-1554 465.71,-1549.43 478.35,-1545.62 490.96,-1542.45"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="492.14,-1545.77 501.05,-1540.05 490.51,-1538.96 492.14,-1545.77"/>
+<path fill="none" stroke="#0086ff" d="M313.54,-618.24C335.08,-648.67 394.17,-729.43 454,-787 485.87,-817.67 527.34,-847.67 554.19,-865.99"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="552.46,-869.04 562.7,-871.74 556.38,-863.24 552.46,-869.04"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_gradient -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge66" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_gradient</title>
-<path fill="none" stroke="#00d6ff" d="M310.51,-1656.19C326.67,-1690.27 377.68,-1786.36 454,-1822 574.97,-1878.5 738.52,-1844.98 817.89,-1822.81"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="818.95,-1826.15 827.6,-1820.04 817.02,-1819.42 818.95,-1826.15"/>
+<path fill="none" stroke="#0086ff" d="M311.05,-593.98C328.26,-561.21 381,-470.06 454,-430 546.92,-379.02 668.83,-368.14 755.7,-368.12"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="755.83,-371.62 765.85,-368.16 755.87,-364.62 755.83,-371.62"/>
 </g>
 <!-- proc~map_fragment_to_system_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node37" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node36" class="node">
 <title>proc~map_fragment_to_system_hessian</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node37"><a xlink:href="../proc/map_fragment_to_system_hessian.html" xlink:title="map_fragment_to_system_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="964,-1970 768,-1970 768,-1946 964,-1946 964,-1970"/>
-<text text-anchor="middle" x="866" y="-1955.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_hessian</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node36"><a xlink:href="../proc/map_fragment_to_system_hessian.html" xlink:title="map_fragment_to_system_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="964,-268 768,-268 768,-244 964,-244 964,-268"/>
+<text text-anchor="middle" x="866" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">map_fragment_to_system_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_hessian -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge67" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~map_fragment_to_system_hessian</title>
-<path fill="none" stroke="#00d6ff" d="M308.07,-1656.15C319.3,-1697.9 362.4,-1836.32 454,-1898 543.56,-1958.31 668.95,-1968.59 757.63,-1966.74"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="757.81,-1970.24 767.71,-1966.48 757.62,-1963.24 757.81,-1970.24"/>
+<path fill="none" stroke="#0086ff" d="M307.18,-593.78C315.98,-548.33 353.38,-387.92 454,-316 478.38,-298.57 644.4,-278.48 757.83,-266.53"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="758.37,-269.99 767.95,-265.47 757.64,-263.03 758.37,-269.99"/>
 </g>
 <!-- proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~print_detailed_breakdown_json -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_edge68" class="edge">
 <title>proc~compute_mbe_energy_gradient_hessian&#45;&gt;proc~print_detailed_breakdown_json</title>
-<path fill="none" stroke="#00d6ff" d="M311.96,-1631.85C333.19,-1594.8 399.04,-1479.96 454,-1385 496.05,-1312.34 546.26,-1226.31 569.09,-1187.23"/>
-<polygon fill="#00d6ff" stroke="#00d6ff" points="572.27,-1188.74 574.29,-1178.34 566.22,-1185.2 572.27,-1188.74"/>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;configuration -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge70" class="edge">
-<title>proc~do_fragment_work&#45;&gt;configuration</title>
-<path fill="none" stroke="#0086ff" d="M310.81,-451.2C327.76,-485.49 380.65,-583.51 454,-634 656.71,-773.55 831.92,-598.3 985,-791 1068.91,-896.63 947.82,-1283.67 1021,-1397 1034.62,-1418.09 1058.54,-1431.97 1080.65,-1440.84"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="1079.72,-1444.23 1090.31,-1444.46 1082.18,-1437.68 1079.72,-1444.23"/>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge71" class="edge">
-<title>proc~do_fragment_work&#45;&gt;error</title>
-<path fill="none" stroke="#0086ff" d="M314.64,-451.05C336.32,-477.16 391.91,-538.73 454,-565 482.07,-576.88 1524.99,-650.92 1546,-673 1602.44,-732.32 1559.78,-1330.2 1582,-1409 1603.32,-1484.59 1655.64,-1562.99 1681.92,-1599.28"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="1679.26,-1601.58 1688,-1607.57 1684.91,-1597.44 1679.26,-1601.58"/>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~calc_type_to_string -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge72" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~calc_type_to_string</title>
-<path fill="none" stroke="#0086ff" d="M316.76,-426.95C339.58,-402.91 390.07,-346.45 418,-290 444.59,-236.27 410.17,-200.91 454,-160 470.47,-144.63 493.46,-137.29 515.38,-134.05"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="515.85,-137.52 525.36,-132.84 515.01,-130.57 515.85,-137.52"/>
-</g>
-<!-- proc~energy_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node30" class="node">
-<title>proc~energy_reset</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node30"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="1482,-165 1344,-165 1344,-141 1482,-141 1482,-165"/>
-<text text-anchor="middle" x="1413" y="-150.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~energy_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge73" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~energy_reset</title>
-<path fill="none" stroke="#0086ff" d="M315.13,-426.78C337.8,-400.02 395.25,-335.32 454,-294 572.53,-210.64 605.81,-183.61 747,-151 954.55,-103.06 1208.35,-125.26 1333.93,-141.4"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="1333.48,-144.87 1343.85,-142.7 1334.38,-137.93 1333.48,-144.87"/>
-</g>
-<!-- proc~method_type_to_string -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node38" class="node">
-<title>proc~method_type_to_string</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node38"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="649,-392 516,-392 516,-368 649,-368 649,-392"/>
-<text text-anchor="middle" x="582.5" y="-377.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~method_type_to_string -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge74" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~method_type_to_string</title>
-<path fill="none" stroke="#0086ff" d="M358.4,-426.95C386.77,-420.6 422.25,-412.75 454,-406 472.64,-402.04 492.83,-397.86 511.54,-394.05"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="512.36,-397.45 521.46,-392.03 510.96,-390.59 512.36,-397.45"/>
-</g>
-<!-- proc~print_fragment_xyz -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node42" class="node">
-<title>proc~print_fragment_xyz</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node42"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
-<polygon fill="#d9534f" stroke="#d9534f" points="640,-556 525,-556 525,-532 640,-532 640,-556"/>
-<text text-anchor="middle" x="582.5" y="-541.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge75" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
-<path fill="none" stroke="#0086ff" d="M336.72,-451.04C386.9,-470.1 484.59,-507.2 540.19,-528.31"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="539.14,-531.66 549.73,-531.93 541.62,-525.11 539.14,-531.66"/>
-</g>
-<!-- proc~xtb_calc_energy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node43" class="node">
-<title>proc~xtb_calc_energy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node43"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
-<polygon fill="#d9534f" stroke="#d9534f" points="956.5,-470 775.5,-470 775.5,-446 956.5,-446 956.5,-470"/>
-<text text-anchor="middle" x="866" y="-455.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge76" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
-<path fill="none" stroke="#0086ff" d="M360.23,-440.87C454.34,-444.07 647.05,-450.61 765.24,-454.62"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="765.27,-458.12 775.38,-454.96 765.51,-451.12 765.27,-458.12"/>
-</g>
-<!-- proc~xtb_calc_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node44" class="node">
-<title>proc~xtb_calc_gradient</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node44"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
-<polygon fill="#d9534f" stroke="#d9534f" points="960,-428 772,-428 772,-404 960,-404 960,-428"/>
-<text text-anchor="middle" x="866" y="-413.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge77" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient</title>
-<path fill="none" stroke="#0086ff" d="M360.23,-436.73C453.4,-432.91 643.22,-425.11 761.69,-420.24"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="762.01,-423.73 771.86,-419.83 761.72,-416.74 762.01,-423.73"/>
-</g>
-<!-- proc~xtb_calc_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node45" class="node">
-<title>proc~xtb_calc_hessian</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node45"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="674.5,-327 490.5,-327 490.5,-303 674.5,-303 674.5,-327"/>
-<text text-anchor="middle" x="582.5" y="-312.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
-</a>
-</g>
-</g>
-<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge78" class="edge">
-<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian</title>
-<path fill="none" stroke="#0086ff" d="M325.21,-426.8C353.39,-410.1 406.39,-379.84 454,-359 479.08,-348.03 507.84,-337.9 531.69,-330.14"/>
-<polygon fill="#0086ff" stroke="#0086ff" points="532.79,-333.46 541.24,-327.06 530.65,-326.79 532.79,-333.46"/>
+<path fill="none" stroke="#0086ff" d="M309.52,-618.1C325.51,-660.04 382.28,-802.29 454,-905 485.78,-950.51 532.49,-995.87 559.67,-1020.7"/>
+<polygon fill="#0086ff" stroke="#0086ff" points="557.67,-1023.61 567.44,-1027.72 562.37,-1018.42 557.67,-1023.61"/>
 </g>
 <!-- proc~mp2_total -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node39" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node37" class="node">
 <title>proc~mp2_total</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node39"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1488.5,-706 1337.5,-706 1337.5,-682 1488.5,-682 1488.5,-706"/>
-<text text-anchor="middle" x="1413" y="-691.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node37"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="941.5,-1342 790.5,-1342 790.5,-1318 941.5,-1318 941.5,-1342"/>
+<text text-anchor="middle" x="866" y="-1327.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_total&#45;&gt;proc~mp2_total -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge79" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge70" class="edge">
 <title>proc~energy_total&#45;&gt;proc~mp2_total</title>
-<path fill="none" stroke="#0035ff" d="M1200.56,-694C1238.55,-694 1286.44,-694 1327.03,-694"/>
-<polygon fill="#0035ff" stroke="#0035ff" points="1327.18,-697.5 1337.18,-694 1327.18,-690.5 1327.18,-697.5"/>
+<path fill="none" stroke="#0035ff" d="M650.59,-1162.4C672.16,-1165.73 694.67,-1173.05 711,-1188 752.38,-1225.89 705.15,-1271.63 747,-1309 756.49,-1317.47 768.18,-1323.1 780.48,-1326.75"/>
+<polygon fill="#0035ff" stroke="#0035ff" points="779.89,-1330.21 790.44,-1329.27 781.61,-1323.43 779.89,-1330.21"/>
 </g>
 <!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge80" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge71" class="edge">
 <title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#1a00ff" d="M1213.14,-1890.18C1224.25,-1886.35 1234.94,-1881.13 1244,-1874 1271.81,-1852.13 1251.4,-1823.83 1280,-1803 1295.34,-1791.82 1314.36,-1785.64 1333.13,-1782.41"/>
-<polygon fill="#1a00ff" stroke="#1a00ff" points="1333.82,-1785.85 1343.21,-1780.94 1332.8,-1778.92 1333.82,-1785.85"/>
+<path fill="none" stroke="#1a00ff" d="M1213.08,-245.16C1224.07,-241.91 1234.74,-237.35 1244,-231 1269.01,-213.83 1254.73,-189.79 1280,-173 1295.65,-162.6 1314.59,-156.68 1333.19,-153.44"/>
+<polygon fill="#1a00ff" stroke="#1a00ff" points="1333.8,-156.89 1343.17,-151.95 1332.76,-149.97 1333.8,-156.89"/>
 </g>
 <!-- proc~basis_set_destroy -->
 <g id="proc~~serial_fragment_processor~~CallsGraph_node23" class="node">
 <title>proc~basis_set_destroy</title>
 <g id="a_proc~~serial_fragment_processor~~CallsGraph_node23"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1527.5,-2126 1298.5,-2126 1298.5,-2102 1527.5,-2102 1527.5,-2126"/>
-<text text-anchor="middle" x="1413" y="-2111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="1527.5,-24 1298.5,-24 1298.5,0 1527.5,0 1527.5,-24"/>
+<text text-anchor="middle" x="1413" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge81" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge72" class="edge">
 <title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
-<path fill="none" stroke="#bb00ff" d="M1226.32,-1996.05C1232.52,-1998.53 1238.48,-2001.48 1244,-2005 1267.09,-2019.71 1258.77,-2037.71 1280,-2055 1303.9,-2074.47 1335.25,-2088.84 1361.4,-2098.52"/>
-<polygon fill="#bb00ff" stroke="#bb00ff" points="1360.54,-2101.93 1371.14,-2102 1362.9,-2095.34 1360.54,-2101.93"/>
+<path fill="none" stroke="#bb00ff" d="M1227.69,-197.91C1233.43,-195.42 1238.93,-192.48 1244,-189 1269.01,-171.83 1260.54,-154.28 1280,-131 1313.18,-91.31 1359.52,-52.57 1387.54,-30.55"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="1389.87,-33.18 1395.62,-24.28 1385.58,-27.65 1389.87,-33.18"/>
 </g>
 <!-- proc~atomic_basis_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node53" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node43" class="node">
 <title>proc~atomic_basis_destroy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node53"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1815,-2126 1582,-2126 1582,-2102 1815,-2102 1815,-2126"/>
-<text text-anchor="middle" x="1698.5" y="-2111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node43"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1815,-24 1582,-24 1582,0 1815,0 1815,-24"/>
+<text text-anchor="middle" x="1698.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge82" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge73" class="edge">
 <title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
-<path fill="none" stroke="#ff7a00" d="M1527.68,-2114C1542.2,-2114 1557.12,-2114 1571.82,-2114"/>
-<polygon fill="#ff7a00" stroke="#ff7a00" points="1571.95,-2117.5 1581.95,-2114 1571.95,-2110.5 1571.95,-2117.5"/>
+<path fill="none" stroke="#ffa100" d="M1527.68,-12C1542.2,-12 1557.12,-12 1571.82,-12"/>
+<polygon fill="#ffa100" stroke="#ffa100" points="1571.95,-15.5 1581.95,-12 1571.95,-8.5 1571.95,-15.5"/>
 </g>
 <!-- proc~to_angstrom -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node68" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node54" class="node">
 <title>proc~to_angstrom</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node68"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1738,-978 1659,-978 1659,-954 1738,-954 1738,-978"/>
-<text text-anchor="middle" x="1698.5" y="-963.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node54"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1738,-185 1659,-185 1659,-161 1738,-161 1738,-185"/>
+<text text-anchor="middle" x="1698.5" y="-170.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
 </a>
 </g>
 </g>
 <!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge83" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge74" class="edge">
 <title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
-<path fill="none" stroke="#ffb700" d="M1497.83,-1827.11C1515.97,-1823.68 1533.46,-1816.53 1546,-1803 1579.05,-1767.36 1573.23,-1414.81 1582,-1367 1609.13,-1219.11 1668.18,-1047.46 1689.57,-987.77"/>
-<polygon fill="#ffb700" stroke="#ffb700" points="1692.9,-988.85 1693,-978.26 1686.31,-986.48 1692.9,-988.85"/>
+<path fill="none" stroke="#fff100" d="M1497.53,-187.81C1546.76,-184.17 1607.34,-179.68 1648.84,-176.6"/>
+<polygon fill="#fff100" stroke="#fff100" points="1649.25,-180.08 1658.96,-175.85 1648.73,-173.1 1649.25,-180.08"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge84" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge75" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#fff400" d="M1481.55,-1865.77C1503.48,-1863.06 1527.03,-1857.11 1546,-1845 1624.63,-1794.82 1672.28,-1687.6 1689.82,-1641.64"/>
-<polygon fill="#fff400" stroke="#fff400" points="1693.17,-1642.67 1693.37,-1632.07 1686.61,-1640.23 1693.17,-1642.67"/>
+<path fill="none" stroke="#bbff00" d="M1481.53,-233.7C1504.08,-236.11 1528.03,-242.51 1546,-257 1576.71,-281.77 1664.79,-545.86 1690.42,-624.21"/>
+<polygon fill="#bbff00" stroke="#bbff00" points="1687.18,-625.57 1693.61,-633.99 1693.84,-623.4 1687.18,-625.57"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge87" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge78" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#fff400" d="M1481.73,-1871.63C1505.42,-1869.82 1530.05,-1862.95 1546,-1845 1612.48,-1770.19 1555.27,-1041.44 1582,-945 1602.98,-869.32 1655.47,-790.96 1681.85,-754.7"/>
-<polygon fill="#fff400" stroke="#fff400" points="1684.84,-756.54 1687.96,-746.42 1679.2,-752.39 1684.84,-756.54"/>
+<path fill="none" stroke="#bbff00" d="M1481.55,-231C1537.8,-226.83 1615.76,-221.05 1660.99,-217.7"/>
+<polygon fill="#bbff00" stroke="#bbff00" points="1661.5,-221.18 1671.21,-216.95 1660.98,-214.2 1661.5,-221.18"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node54" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node44" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node54"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1780,-1400 1617,-1400 1617,-1376 1780,-1376 1780,-1400"/>
-<text text-anchor="middle" x="1698.5" y="-1385.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node44"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1780,-269 1617,-269 1617,-245 1780,-245 1780,-269"/>
+<text text-anchor="middle" x="1698.5" y="-254.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge85" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge76" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#fff400" d="M1481.78,-1870.63C1505.03,-1868.59 1529.37,-1861.84 1546,-1845 1584.82,-1805.69 1564.46,-1651.39 1582,-1599 1607.06,-1524.16 1658.06,-1444.83 1683.05,-1408.42"/>
-<polygon fill="#fff400" stroke="#fff400" points="1685.99,-1410.33 1688.81,-1400.12 1680.23,-1406.34 1685.99,-1410.33"/>
+<path fill="none" stroke="#bbff00" d="M1481.55,-241C1518.99,-243.78 1566.05,-247.26 1606.68,-250.27"/>
+<polygon fill="#bbff00" stroke="#bbff00" points="1606.63,-253.78 1616.86,-251.03 1607.14,-246.8 1606.63,-253.78"/>
 </g>
 <!-- proc~error_set -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node55" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node45" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node55"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="1751,-1878 1646,-1878 1646,-1854 1751,-1854 1751,-1878"/>
-<text text-anchor="middle" x="1698.5" y="-1863.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node45"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="1751,-311 1646,-311 1646,-287 1751,-287 1751,-311"/>
+<text text-anchor="middle" x="1698.5" y="-296.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge86" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge77" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#fff400" d="M1481.55,-1866C1528.44,-1866 1590.43,-1866 1635.96,-1866"/>
-<polygon fill="#fff400" stroke="#fff400" points="1635.99,-1869.5 1645.99,-1866 1635.99,-1862.5 1635.99,-1869.5"/>
+<path fill="none" stroke="#bbff00" d="M1481.68,-241.87C1502.7,-244.99 1525.68,-249.74 1546,-257 1563.44,-263.23 1564.63,-271.58 1582,-278 1598.94,-284.26 1617.99,-288.7 1635.66,-291.84"/>
+<polygon fill="#bbff00" stroke="#bbff00" points="1635.44,-295.35 1645.88,-293.53 1636.59,-288.44 1635.44,-295.35"/>
 </g>
 <!-- proc~compute_mbe&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge88" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge79" class="edge">
 <title>proc~compute_mbe&#45;&gt;error</title>
-<path fill="none" stroke="#cbff00" d="M627.09,-1681.8C701.05,-1677.66 855.67,-1667.24 985,-1647 1001.19,-1644.47 1004.73,-1641.02 1021,-1639 1263.97,-1608.87 1559.61,-1615.2 1661.2,-1618.6"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="1661.13,-1622.1 1671.25,-1618.95 1661.37,-1615.1 1661.13,-1622.1"/>
+<path fill="none" stroke="#6bff00" d="M627.14,-611.85C671.49,-617.76 735.3,-626.13 747,-627 1102.46,-653.3 1534.6,-648.75 1661.1,-646.68"/>
+<polygon fill="#6bff00" stroke="#6bff00" points="1661.43,-650.18 1671.37,-646.51 1661.31,-643.18 1661.43,-650.18"/>
 </g>
 <!-- proc~fragment_lookup_find -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node57" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node46" class="node">
 <title>proc~fragment_lookup_find</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node57"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="985,-1776 747,-1776 747,-1752 985,-1752 985,-1776"/>
-<text text-anchor="middle" x="866" y="-1761.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node46"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="985,-618 747,-618 747,-594 985,-594 985,-618"/>
+<text text-anchor="middle" x="866" y="-603.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge89" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge80" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#cbff00" d="M627.03,-1684.32C652.76,-1686.13 685.24,-1691.33 711,-1705 731.55,-1715.9 726.52,-1731.96 747,-1743 750.56,-1744.92 754.25,-1746.66 758.04,-1748.25"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="757.06,-1751.62 767.65,-1751.9 759.54,-1745.08 757.06,-1751.62"/>
+<path fill="none" stroke="#6bff00" d="M627.18,-606C656.65,-606 697.21,-606 736.48,-606"/>
+<polygon fill="#6bff00" stroke="#6bff00" points="736.7,-609.5 746.7,-606 736.7,-602.5 736.7,-609.5"/>
 </g>
 <!-- proc~get_next_combination -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node61" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node49" class="node">
 <title>proc~get_next_combination</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node61"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
-<polygon fill="#d9534f" stroke="#d9534f" points="931,-1734 801,-1734 801,-1710 931,-1710 931,-1734"/>
-<text text-anchor="middle" x="866" y="-1719.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node49"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="931,-576 801,-576 801,-552 931,-552 931,-576"/>
+<text text-anchor="middle" x="866" y="-561.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~get_next_combination -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge90" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge81" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#cbff00" d="M627.18,-1689.9C670.75,-1695.78 738.54,-1704.93 790.61,-1711.96"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="790.42,-1715.46 800.8,-1713.33 791.36,-1708.53 790.42,-1715.46"/>
+<path fill="none" stroke="#6bff00" d="M627.18,-599.48C670.75,-592.98 738.54,-582.87 790.61,-575.1"/>
+<polygon fill="#6bff00" stroke="#6bff00" points="791.43,-578.52 800.8,-573.58 790.4,-571.59 791.43,-578.52"/>
 </g>
 <!-- proc~compute_mbe_gradient&#45;&gt;proc~map_fragment_to_system_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge93" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge84" class="edge">
 <title>proc~compute_mbe_gradient&#45;&gt;proc~map_fragment_to_system_gradient</title>
-<path fill="none" stroke="#8eff00" d="M652.31,-1729.1C672.11,-1732.13 693.16,-1737.54 711,-1747 731.55,-1757.9 726.61,-1773.8 747,-1785 752.16,-1787.83 757.61,-1790.32 763.23,-1792.51"/>
-<polygon fill="#8eff00" stroke="#8eff00" points="762.22,-1795.86 772.82,-1795.9 764.56,-1789.27 762.22,-1795.86"/>
+<path fill="none" stroke="#1aff00" d="M652.09,-561.17C672,-558.15 693.16,-552.69 711,-543 776.96,-507.18 829.5,-432.06 852.46,-395.25"/>
+<polygon fill="#1aff00" stroke="#1aff00" points="855.67,-396.71 857.89,-386.36 849.69,-393.07 855.67,-396.71"/>
 </g>
 <!-- proc~compute_mbe_gradient&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge91" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge82" class="edge">
 <title>proc~compute_mbe_gradient&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#8eff00" d="M652,-1735.25C686.21,-1739.87 728.24,-1745.54 765.89,-1750.62"/>
-<polygon fill="#8eff00" stroke="#8eff00" points="765.5,-1754.1 775.87,-1751.97 766.43,-1747.16 765.5,-1754.1"/>
+<path fill="none" stroke="#1aff00" d="M652,-574.22C688.83,-579.72 734.72,-586.56 774.46,-592.49"/>
+<polygon fill="#1aff00" stroke="#1aff00" points="774.02,-595.96 784.43,-593.98 775.05,-589.04 774.02,-595.96"/>
 </g>
 <!-- proc~compute_mbe_gradient&#45;&gt;proc~get_next_combination -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge92" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge83" class="edge">
 <title>proc~compute_mbe_gradient&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#8eff00" d="M652,-1725.03C693.89,-1724.43 747.48,-1723.67 790.43,-1723.06"/>
-<polygon fill="#8eff00" stroke="#8eff00" points="790.6,-1726.56 800.55,-1722.92 790.5,-1719.56 790.6,-1726.56"/>
+<path fill="none" stroke="#1aff00" d="M652,-564C693.89,-564 747.48,-564 790.43,-564"/>
+<polygon fill="#1aff00" stroke="#1aff00" points="790.55,-567.5 800.55,-564 790.55,-560.5 790.55,-567.5"/>
 </g>
 <!-- proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge96" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge87" class="edge">
 <title>proc~compute_mbe_hessian&#45;&gt;proc~map_fragment_to_system_hessian</title>
-<path fill="none" stroke="#51ff00" d="M601.54,-1780.17C649.8,-1812.75 782.06,-1902.02 838.7,-1940.25"/>
-<polygon fill="#51ff00" stroke="#51ff00" points="836.87,-1943.23 847.11,-1945.93 840.78,-1937.43 836.87,-1943.23"/>
+<path fill="none" stroke="#00ff35" d="M594.55,-509.65C620.29,-481.09 686.68,-408.63 747,-353 778.39,-324.05 816.97,-293.14 841.28,-274.2"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="843.5,-276.91 849.25,-268.01 839.21,-271.38 843.5,-276.91"/>
 </g>
 <!-- proc~compute_mbe_hessian&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge94" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge85" class="edge">
 <title>proc~compute_mbe_hessian&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#51ff00" d="M650.21,-1767.05C676.21,-1766.68 706.93,-1766.25 736.87,-1765.82"/>
-<polygon fill="#51ff00" stroke="#51ff00" points="737.04,-1769.32 746.99,-1765.68 736.94,-1762.32 737.04,-1769.32"/>
+<path fill="none" stroke="#00ff35" d="M650.31,-524.2C670.79,-527.14 692.72,-532.71 711,-543 732.42,-555.06 725.65,-572.8 747,-585 750.26,-586.86 753.65,-588.57 757.14,-590.13"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="755.97,-593.43 766.55,-593.93 758.59,-586.94 755.97,-593.43"/>
 </g>
 <!-- proc~compute_mbe_hessian&#45;&gt;proc~get_next_combination -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge95" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge86" class="edge">
 <title>proc~compute_mbe_hessian&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#51ff00" d="M650.21,-1757.1C692.45,-1750.2 747.11,-1741.26 790.73,-1734.14"/>
-<polygon fill="#51ff00" stroke="#51ff00" points="791.4,-1737.57 800.7,-1732.51 790.27,-1730.67 791.4,-1737.57"/>
-</g>
-<!-- proc~mp2_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node63" class="node">
-<title>proc~mp2_reset</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node63"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="1775.5,-165 1621.5,-165 1621.5,-141 1775.5,-141 1775.5,-165"/>
-<text text-anchor="middle" x="1698.5" y="-150.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
-</a>
-</g>
-</g>
-<!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge97" class="edge">
-<title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
-<path fill="none" stroke="#00ff28" d="M1482.27,-153C1521.01,-153 1569.89,-153 1611.27,-153"/>
-<polygon fill="#00ff28" stroke="#00ff28" points="1611.34,-156.5 1621.34,-153 1611.34,-149.5 1611.34,-156.5"/>
+<path fill="none" stroke="#00ff35" d="M650.21,-531.95C692.45,-538.25 747.11,-546.41 790.73,-552.92"/>
+<polygon fill="#00ff35" stroke="#00ff35" points="790.3,-556.39 800.7,-554.41 791.33,-549.47 790.3,-556.39"/>
 </g>
 <!-- proc~next_prime_internal -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node64" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node51" class="node">
 <title>proc~next_prime_internal</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node64"><a xlink:href="../proc/next_prime_internal.html" xlink:title="next_prime_internal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="925,-1464 807,-1464 807,-1440 925,-1440 925,-1464"/>
-<text text-anchor="middle" x="866" y="-1449.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_prime_internal</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node51"><a xlink:href="../proc/next_prime_internal.html" xlink:title="next_prime_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="925,-698 807,-698 807,-674 925,-674 925,-698"/>
+<text text-anchor="middle" x="866" y="-683.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_prime_internal</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_init&#45;&gt;proc~next_prime_internal -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge98" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge88" class="edge">
 <title>proc~fragment_lookup_init&#45;&gt;proc~next_prime_internal</title>
-<path fill="none" stroke="#00e0ff" d="M700.03,-1449.66C732.91,-1450.12 767.6,-1450.62 796.65,-1451.03"/>
-<polygon fill="#00e0ff" stroke="#00e0ff" points="796.62,-1454.53 806.67,-1451.17 796.72,-1447.53 796.62,-1454.53"/>
+<path fill="none" stroke="#0035ff" d="M700.03,-686C732.91,-686 767.6,-686 796.65,-686"/>
+<polygon fill="#0035ff" stroke="#0035ff" points="796.67,-689.5 806.67,-686 796.67,-682.5 796.67,-689.5"/>
 </g>
 <!-- fnv_1a_hash -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node46" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node40" class="node">
 <title>fnv_1a_hash</title>
-<polygon fill="#777777" stroke="#777777" points="1172,-1567 1093,-1567 1093,-1543 1172,-1543 1172,-1567"/>
-<text text-anchor="middle" x="1132.5" y="-1552.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
+<polygon fill="#777777" stroke="#777777" points="1172,-618 1093,-618 1093,-594 1172,-594 1172,-618"/>
+<text text-anchor="middle" x="1132.5" y="-603.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
 </g>
 <!-- proc~fragment_lookup_insert&#45;&gt;fnv_1a_hash -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge99" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge89" class="edge">
 <title>proc~fragment_lookup_insert&#45;&gt;fnv_1a_hash</title>
-<path fill="none" stroke="#00a3ff" d="M706.82,-1534.08C825.59,-1539.93 999.18,-1548.48 1082.85,-1552.6"/>
-<polygon fill="#00a3ff" stroke="#00a3ff" points="1082.68,-1556.1 1092.84,-1553.1 1083.02,-1549.11 1082.68,-1556.1"/>
+<path fill="none" stroke="#1a00ff" d="M666.84,-871.97C682.08,-867.87 697.43,-862.37 711,-855 730.61,-844.35 726.95,-829.8 747,-820 842.95,-773.11 892.01,-839.51 985,-787 986.12,-786.37 1077.47,-673.07 1115.33,-626.07"/>
+<polygon fill="#1a00ff" stroke="#1a00ff" points="1118.2,-628.09 1121.75,-618.11 1112.75,-623.7 1118.2,-628.09"/>
 </g>
 <!-- sort -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node69" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node55" class="node">
 <title>sort</title>
-<polygon fill="#777777" stroke="#777777" points="1159.5,-1672 1105.5,-1672 1105.5,-1648 1159.5,-1648 1159.5,-1672"/>
-<text text-anchor="middle" x="1132.5" y="-1657.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
+<polygon fill="#777777" stroke="#777777" points="1159.5,-776 1105.5,-776 1105.5,-752 1159.5,-752 1159.5,-776"/>
+<text text-anchor="middle" x="1132.5" y="-761.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
 </g>
 <!-- proc~fragment_lookup_insert&#45;&gt;sort -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge100" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge90" class="edge">
 <title>proc~fragment_lookup_insert&#45;&gt;sort</title>
-<path fill="none" stroke="#00a3ff" d="M633.58,-1540.06C742.84,-1566.38 1000.38,-1628.42 1095.44,-1651.31"/>
-<polygon fill="#00a3ff" stroke="#00a3ff" points="1094.88,-1654.78 1105.42,-1653.72 1096.52,-1647.97 1094.88,-1654.78"/>
+<path fill="none" stroke="#1a00ff" d="M699.48,-871.96C780.4,-862 890.4,-845.33 985,-820 1023.87,-809.59 1066.69,-792.54 1095.94,-779.98"/>
+<polygon fill="#1a00ff" stroke="#1a00ff" points="1097.54,-783.1 1105.31,-775.91 1094.75,-776.68 1097.54,-783.1"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;configuration -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge101" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge91" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;configuration</title>
-<path fill="none" stroke="#0066ff" d="M966.08,-1798.87C973.09,-1795.29 979.53,-1790.75 985,-1785 1062.67,-1703.34 962.45,-1630.3 1021,-1534 1038.06,-1505.95 1069.24,-1485.04 1094.14,-1471.81"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1096.02,-1474.78 1103.33,-1467.11 1092.84,-1468.54 1096.02,-1474.78"/>
+<path fill="none" stroke="#6b00ff" d="M962.56,-386.03C970.7,-389.65 978.34,-394.23 985,-400 1019.42,-429.86 986.79,-465.9 1021,-496 1037.2,-510.25 1059.76,-517.07 1080.27,-520.21"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1080.09,-523.71 1090.45,-521.5 1080.97,-516.77 1080.09,-523.71"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge103" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge93" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;error</title>
-<path fill="none" stroke="#0066ff" d="M950.74,-1795.96C962.46,-1793.05 974.19,-1789.45 985,-1785 1002.78,-1777.68 1003.13,-1768.1 1021,-1761 1114.43,-1723.86 1145.39,-1742.59 1244,-1723 1399.99,-1692.02 1584.43,-1647.73 1661.18,-1628.96"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1662.4,-1632.26 1671.28,-1626.48 1660.74,-1625.46 1662.4,-1632.26"/>
+<path fill="none" stroke="#6b00ff" d="M948.33,-386C961,-389.53 973.65,-394.1 985,-400 1004.26,-410.01 1002.15,-422.23 1021,-433 1110.97,-484.39 1145.09,-470.11 1244,-501 1399.93,-549.7 1585.37,-609.62 1661.84,-634.42"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1660.87,-637.78 1671.47,-637.54 1663.03,-631.13 1660.87,-637.78"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;proc~build_fragment_from_indices -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge104" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge94" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;proc~build_fragment_from_indices</title>
-<path fill="none" stroke="#0066ff" d="M879.34,-1820.16C903.99,-1843.67 962.01,-1895.33 1021,-1921 1026.88,-1923.56 1033.06,-1925.8 1039.38,-1927.78"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1038.81,-1931.26 1049.39,-1930.66 1040.75,-1924.53 1038.81,-1931.26"/>
+<path fill="none" stroke="#6b00ff" d="M942.8,-361.96C974.89,-356.87 1012.45,-350.9 1045.57,-345.65"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1046.37,-349.06 1055.69,-344.04 1045.27,-342.15 1046.37,-349.06"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;proc~error_get_full_trace -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge105" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge95" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;proc~error_get_full_trace</title>
-<path fill="none" stroke="#0066ff" d="M901.58,-1820.03C949.2,-1836.59 1035,-1866.43 1087.25,-1884.61"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1086.32,-1887.99 1096.91,-1887.97 1088.62,-1881.38 1086.32,-1887.99"/>
+<path fill="none" stroke="#6b00ff" d="M882.68,-361.77C909.51,-341.42 966.6,-300.63 1021,-278 1031.73,-273.53 1043.39,-269.75 1054.97,-266.56"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1055.87,-269.94 1064.65,-264.03 1054.09,-263.17 1055.87,-269.94"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;proc~error_has_error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge106" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge96" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#0066ff" d="M966.34,-1809.69C1042.43,-1810.25 1149.96,-1809.48 1244,-1803 1273.12,-1800.99 1304.93,-1797.38 1332.96,-1793.72"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1333.65,-1797.15 1343.1,-1792.37 1332.73,-1790.22 1333.65,-1797.15"/>
+<path fill="none" stroke="#6b00ff" d="M891.74,-361.89C921.68,-347.72 973.92,-324.46 1021,-311 1117.66,-283.36 1166.91,-337.54 1244,-273 1280.22,-242.68 1243.61,-203.12 1280,-173 1294.92,-160.65 1314.14,-154.12 1333.27,-150.93"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1333.81,-154.39 1343.24,-149.55 1332.85,-147.45 1333.81,-154.39"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;proc~fragment_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge107" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge97" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;proc~fragment_destroy</title>
-<path fill="none" stroke="#0066ff" d="M877.54,-1820.35C906.27,-1853.74 986.16,-1944.5 1021,-1963 1024.73,-1964.98 1028.63,-1966.78 1032.63,-1968.41"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1031.53,-1971.74 1042.12,-1971.92 1033.96,-1965.17 1031.53,-1971.74"/>
+<path fill="none" stroke="#6b00ff" d="M884,-361.88C907.86,-344.48 952.02,-310.78 985,-277 1003.14,-258.42 998.83,-244.51 1021,-231 1023.88,-229.25 1026.87,-227.64 1029.94,-226.15"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1031.6,-229.25 1039.4,-222.09 1028.83,-222.82 1031.6,-229.25"/>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;debug -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge102" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge92" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;debug</title>
-<path fill="none" stroke="#0066ff" d="M966.06,-1799.25C973.12,-1795.6 979.58,-1790.93 985,-1785 1037.88,-1727.11 977.06,-1498.94 1021,-1434 1038.26,-1408.49 1070.41,-1393.43 1095.61,-1385.08"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1096.7,-1388.4 1105.22,-1382.1 1094.63,-1381.72 1096.7,-1388.4"/>
+<path fill="none" stroke="#6b00ff" d="M878.76,-386.35C903.11,-412.73 958.94,-477.5 985,-543 1025.19,-644.04 977.34,-685.41 1021,-785 1042.13,-833.19 1084.82,-878.53 1110.52,-903.06"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1108.21,-905.69 1117.9,-909.98 1113,-900.59 1108.21,-905.69"/>
 </g>
 <!-- proc~redistribute_cap_gradients -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node65" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node52" class="node">
 <title>proc~redistribute_cap_gradients</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node65"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
-<polygon fill="#d9534f" stroke="#d9534f" points="1209.5,-1794 1055.5,-1794 1055.5,-1770 1209.5,-1770 1209.5,-1794"/>
-<text text-anchor="middle" x="1132.5" y="-1779.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node52"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
+<polygon fill="#d9534f" stroke="#d9534f" points="1209.5,-424 1055.5,-424 1055.5,-400 1209.5,-400 1209.5,-424"/>
+<text text-anchor="middle" x="1132.5" y="-409.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
 </a>
 </g>
 </g>
 <!-- proc~map_fragment_to_system_gradient&#45;&gt;proc~redistribute_cap_gradients -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge108" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge98" class="edge">
 <title>proc~map_fragment_to_system_gradient&#45;&gt;proc~redistribute_cap_gradients</title>
-<path fill="none" stroke="#0066ff" d="M966.24,-1798.24C992.14,-1795.7 1019.84,-1792.98 1045.01,-1790.5"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1045.66,-1793.96 1055.27,-1789.49 1044.97,-1786.99 1045.66,-1793.96"/>
+<path fill="none" stroke="#6b00ff" d="M950.69,-386.02C980.74,-390.34 1014.68,-395.22 1044.96,-399.57"/>
+<polygon fill="#6b00ff" stroke="#6b00ff" points="1044.69,-403.06 1055.08,-401.02 1045.68,-396.13 1044.69,-403.06"/>
 </g>
 <!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge109" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge99" class="edge">
 <title>proc~map_fragment_to_system_hessian&#45;&gt;proc~build_fragment_from_indices</title>
-<path fill="none" stroke="#0028ff" d="M964.36,-1952.11C988.72,-1950.64 1014.78,-1949.06 1038.9,-1947.6"/>
-<polygon fill="#0028ff" stroke="#0028ff" points="1039.34,-1951.08 1049.11,-1946.98 1038.92,-1944.09 1039.34,-1951.08"/>
+<path fill="none" stroke="#bb00ff" d="M927.66,-268C946.17,-272.03 966.52,-276.83 985,-282 1020.92,-292.05 1060.96,-305.91 1090.09,-316.48"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="1088.94,-319.78 1099.53,-319.93 1091.34,-313.21 1088.94,-319.78"/>
 </g>
 <!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge110" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge100" class="edge">
 <title>proc~map_fragment_to_system_hessian&#45;&gt;proc~fragment_destroy</title>
-<path fill="none" stroke="#0028ff" d="M964.36,-1967.57C979.47,-1969.06 995.23,-1970.6 1010.77,-1972.13"/>
-<polygon fill="#0028ff" stroke="#0028ff" points="1010.65,-1975.64 1020.94,-1973.13 1011.33,-1968.67 1010.65,-1975.64"/>
+<path fill="none" stroke="#bb00ff" d="M936.15,-243.97C971.69,-237.79 1015.16,-230.23 1052.07,-223.81"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="1053.04,-227.2 1062.3,-222.04 1051.84,-220.3 1053.04,-227.2"/>
 </g>
 <!-- proc~redistribute_cap_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node66" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node53" class="node">
 <title>proc~redistribute_cap_hessian</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node66"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="1204.5,-2038 1060.5,-2038 1060.5,-2014 1204.5,-2014 1204.5,-2038"/>
-<text text-anchor="middle" x="1132.5" y="-2023.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node53"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1204.5,-180 1060.5,-180 1060.5,-156 1204.5,-156 1204.5,-180"/>
+<text text-anchor="middle" x="1132.5" y="-165.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge111" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge101" class="edge">
 <title>proc~map_fragment_to_system_hessian&#45;&gt;proc~redistribute_cap_hessian</title>
-<path fill="none" stroke="#0028ff" d="M902.48,-1970.03C933.5,-1980.25 979.88,-1994.85 1021,-2005 1030.98,-2007.46 1041.54,-2009.8 1052,-2011.97"/>
-<polygon fill="#0028ff" stroke="#0028ff" points="1051.49,-2015.43 1061.99,-2013.98 1052.88,-2008.57 1051.49,-2015.43"/>
+<path fill="none" stroke="#bb00ff" d="M952.63,-243.94C963.95,-240.41 975.07,-235.87 985,-230 1005.88,-217.67 999.94,-201.03 1021,-189 1030.06,-183.83 1040.15,-179.9 1050.45,-176.92"/>
+<polygon fill="#bb00ff" stroke="#bb00ff" points="1051.56,-180.24 1060.35,-174.34 1049.8,-173.47 1051.56,-180.24"/>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;verbose -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge115" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge105" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;verbose</title>
-<path fill="none" stroke="#8e00ff" d="M657.65,-1122.91C677.13,-1119.16 696.67,-1111.78 711,-1098 759.48,-1051.37 705.04,-1003.57 747,-951 767.53,-925.29 802.17,-909.85 828.63,-901.26"/>
-<polygon fill="#8e00ff" stroke="#8e00ff" points="829.78,-904.57 838.32,-898.29 827.73,-897.87 829.78,-904.57"/>
+<path fill="none" stroke="#ff00a1" d="M657.78,-1118.4C677.04,-1121.43 696.43,-1128.02 711,-1141 754.48,-1179.75 703.77,-1227.97 747,-1267 768.72,-1286.61 802.18,-1291.01 827.94,-1291"/>
+<polygon fill="#ff00a1" stroke="#ff00a1" points="828.17,-1294.49 838.09,-1290.77 828.01,-1287.49 828.17,-1294.49"/>
 </g>
 <!-- header -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node47" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node41" class="node">
 <title>header</title>
-<polygon fill="#777777" stroke="#777777" points="893,-984 839,-984 839,-960 893,-960 893,-984"/>
-<text text-anchor="middle" x="866" y="-969.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">header</text>
+<polygon fill="#777777" stroke="#777777" points="893,-1258 839,-1258 839,-1234 893,-1234 893,-1258"/>
+<text text-anchor="middle" x="866" y="-1243.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">header</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;header -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge112" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge102" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;header</title>
-<path fill="none" stroke="#8e00ff" d="M657.53,-1121.93C676.78,-1118.13 696.23,-1110.97 711,-1098 748.06,-1065.44 709.53,-1025.09 747,-993 769.36,-973.85 803.06,-969.45 828.72,-969.35"/>
-<polygon fill="#8e00ff" stroke="#8e00ff" points="828.76,-972.85 838.82,-969.53 828.88,-965.85 828.76,-972.85"/>
+<path fill="none" stroke="#ff00a1" d="M657.74,-1119.8C676.67,-1122.9 695.9,-1129.17 711,-1141 742.97,-1166.05 715.19,-1199.74 747,-1225 769.82,-1243.11 802.97,-1247.7 828.33,-1248.13"/>
+<polygon fill="#ff00a1" stroke="#ff00a1" points="828.68,-1251.63 838.66,-1248.09 828.65,-1244.63 828.68,-1251.63"/>
 </g>
 <!-- level_name -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node48" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node42" class="node">
 <title>level_name</title>
-<polygon fill="#777777" stroke="#777777" points="903,-1026 829,-1026 829,-1002 903,-1002 903,-1026"/>
-<text text-anchor="middle" x="866" y="-1011.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">level_name</text>
+<polygon fill="#777777" stroke="#777777" points="903,-1216 829,-1216 829,-1192 903,-1192 903,-1216"/>
+<text text-anchor="middle" x="866" y="-1201.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">level_name</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;level_name -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge113" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge103" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;level_name</title>
-<path fill="none" stroke="#8e00ff" d="M657.67,-1119.7C676.39,-1115.83 695.53,-1109.19 711,-1098 737.13,-1079.09 720.64,-1053.58 747,-1035 767.74,-1020.38 795.5,-1014.93 818.88,-1013.22"/>
-<polygon fill="#8e00ff" stroke="#8e00ff" points="819.14,-1016.71 828.94,-1012.69 818.77,-1009.72 819.14,-1016.71"/>
+<path fill="none" stroke="#ff00a1" d="M657.59,-1123.35C675.9,-1126.51 694.87,-1131.92 711,-1141 732.42,-1153.06 725.65,-1170.8 747,-1183 768.62,-1195.35 795.81,-1200.75 818.64,-1202.99"/>
+<polygon fill="#ff00a1" stroke="#ff00a1" points="818.54,-1206.49 828.79,-1203.81 819.11,-1199.51 818.54,-1206.49"/>
 </g>
 <!-- proc~get_frag_level_name -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node60" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node48" class="node">
 <title>proc~get_frag_level_name</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node60"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="928,-1068 804,-1068 804,-1044 928,-1044 928,-1068"/>
-<text text-anchor="middle" x="866" y="-1053.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node48"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="928,-1174 804,-1174 804,-1150 928,-1150 928,-1174"/>
+<text text-anchor="middle" x="866" y="-1159.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
 </a>
 </g>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;proc~get_frag_level_name -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge114" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge104" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;proc~get_frag_level_name</title>
-<path fill="none" stroke="#8e00ff" d="M657.82,-1113.1C675.57,-1109.34 694.22,-1104.4 711,-1098 728.31,-1091.39 729.61,-1083.39 747,-1077 761.74,-1071.58 778.04,-1067.54 793.71,-1064.52"/>
-<polygon fill="#8e00ff" stroke="#8e00ff" points="794.67,-1067.9 803.89,-1062.68 793.43,-1061.02 794.67,-1067.9"/>
+<path fill="none" stroke="#ff00a1" d="M657.83,-1131.09C699.81,-1137.35 752.03,-1145.14 793.54,-1151.34"/>
+<polygon fill="#ff00a1" stroke="#ff00a1" points="793.17,-1154.82 803.57,-1152.83 794.2,-1147.9 793.17,-1154.82"/>
 </g>
 <!-- warning -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node70" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node56" class="node">
 <title>warning</title>
-<polygon fill="#777777" stroke="#777777" points="893.5,-1110 838.5,-1110 838.5,-1086 893.5,-1086 893.5,-1110"/>
-<text text-anchor="middle" x="866" y="-1095.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+<polygon fill="#777777" stroke="#777777" points="893.5,-1132 838.5,-1132 838.5,-1108 893.5,-1108 893.5,-1132"/>
+<text text-anchor="middle" x="866" y="-1117.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;warning -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge116" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge106" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;warning</title>
-<path fill="none" stroke="#8e00ff" d="M657.83,-1117.13C712.76,-1112.06 785.19,-1105.37 828.25,-1101.39"/>
-<polygon fill="#8e00ff" stroke="#8e00ff" points="828.64,-1104.87 838.28,-1100.47 828,-1097.9 828.64,-1104.87"/>
+<path fill="none" stroke="#ff00a1" d="M657.83,-1120C712.76,-1120 785.19,-1120 828.25,-1120"/>
+<polygon fill="#ff00a1" stroke="#ff00a1" points="828.28,-1123.5 838.28,-1120 828.28,-1116.5 828.28,-1123.5"/>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge117" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge107" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;error</title>
-<path fill="none" stroke="#cc00ff" d="M648.34,-1153.97C728.74,-1141.44 869.32,-1127.42 985,-1157 1260.36,-1227.42 1319.8,-1291.91 1546,-1464 1601.2,-1506 1655.2,-1568.06 1681.29,-1599.76"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="1678.86,-1602.31 1687.89,-1607.85 1684.28,-1597.89 1678.86,-1602.31"/>
+<path fill="none" stroke="#ff0050" d="M671.31,-1051.69C853.16,-1071.03 1276.45,-1090.19 1546,-896 1628.48,-836.58 1674.64,-717.09 1690.82,-667.91"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="1694.19,-668.87 1693.9,-658.28 1687.52,-666.74 1694.19,-668.87"/>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;info -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge118" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge108" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;info</title>
-<path fill="none" stroke="#cc00ff" d="M671.3,-1166.48C686.22,-1162.68 700.31,-1156.04 711,-1145 796.42,-1056.75 675.75,-971.04 747,-871 766.32,-843.87 801.77,-828.52 828.79,-820.33"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="830.01,-823.62 838.68,-817.53 828.1,-816.89 830.01,-823.62"/>
+<path fill="none" stroke="#ff0050" d="M600.32,-1027.94C625.42,-1009.65 673.73,-973.26 711,-938 764.99,-886.92 821.57,-819.6 848.65,-786.36"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="851.61,-788.28 855.19,-778.3 846.17,-783.87 851.61,-788.28"/>
 </g>
 <!-- proc~get_basename -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node59" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node47" class="node">
 <title>proc~get_basename</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node59"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="911.5,-1190 820.5,-1190 820.5,-1166 911.5,-1166 911.5,-1190"/>
-<text text-anchor="middle" x="866" y="-1175.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node47"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="911.5,-972 820.5,-972 820.5,-948 911.5,-948 911.5,-972"/>
+<text text-anchor="middle" x="866" y="-957.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;proc~get_basename -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge119" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge109" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;proc~get_basename</title>
-<path fill="none" stroke="#cc00ff" d="M671.03,-1169.73C716.51,-1171.67 770.69,-1173.98 810.21,-1175.66"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="810.3,-1179.17 820.44,-1176.1 810.6,-1172.18 810.3,-1179.17"/>
+<path fill="none" stroke="#ff0050" d="M671.03,-1028.71C684.83,-1025.09 698.62,-1020.31 711,-1014 730.34,-1004.14 727.54,-990.62 747,-981 766.39,-971.42 789.49,-966.15 810.08,-963.28"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="810.78,-966.72 820.28,-962.02 809.92,-959.78 810.78,-966.72"/>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;proc~get_frag_level_name -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge120" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge110" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;proc~get_frag_level_name</title>
-<path fill="none" stroke="#cc00ff" d="M671.08,-1162.51C685.33,-1158.97 699.25,-1153.45 711,-1145 738.76,-1125.03 719.37,-1097.15 747,-1077 760.51,-1067.15 777.15,-1061.42 793.64,-1058.18"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="794.57,-1061.58 803.86,-1056.48 793.42,-1054.67 794.57,-1061.58"/>
+<path fill="none" stroke="#ff0050" d="M619.84,-1052.04C646.66,-1062.01 683.19,-1077.95 711,-1099 730.6,-1113.84 725.65,-1128.8 747,-1141 761.14,-1149.08 777.66,-1154.18 793.79,-1157.37"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="793.3,-1160.84 803.75,-1159.12 794.51,-1153.94 793.3,-1160.84"/>
 </g>
 <!-- proc~get_output_json_filename -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node62" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node50" class="node">
 <title>proc~get_output_json_filename</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node62"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="940.5,-1232 791.5,-1232 791.5,-1208 940.5,-1208 940.5,-1232"/>
-<text text-anchor="middle" x="866" y="-1217.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node50"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="940.5,-1014 791.5,-1014 791.5,-990 940.5,-990 940.5,-1014"/>
+<text text-anchor="middle" x="866" y="-999.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;proc~get_output_json_filename -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge121" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge111" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;proc~get_output_json_filename</title>
-<path fill="none" stroke="#cc00ff" d="M641.32,-1178.01C672.58,-1184.41 711.86,-1192.33 747,-1199 759.63,-1201.4 773.03,-1203.86 786.09,-1206.22"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="785.54,-1209.67 796,-1208 786.78,-1202.78 785.54,-1209.67"/>
+<path fill="none" stroke="#ff0050" d="M671.03,-1028.18C706.13,-1023.45 746.42,-1018.01 781.15,-1013.32"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="781.82,-1016.76 791.27,-1011.95 780.89,-1009.82 781.82,-1016.76"/>
 </g>
 <!-- proc~print_detailed_breakdown_json&#45;&gt;warning -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge122" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge112" class="edge">
 <title>proc~print_detailed_breakdown_json&#45;&gt;warning</title>
-<path fill="none" stroke="#cc00ff" d="M671,-1155.94C684.6,-1153.14 698.34,-1149.56 711,-1145 728.43,-1138.72 729.75,-1130.74 747,-1124 773.21,-1113.76 804.35,-1107.11 828.06,-1103.1"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="828.74,-1106.54 838.06,-1101.49 827.63,-1099.63 828.74,-1106.54"/>
-</g>
-<!-- proc~print_fragment_xyz&#45;&gt;info -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge123" class="edge">
-<title>proc~print_fragment_xyz&#45;&gt;info</title>
-<path fill="none" stroke="#ff00f4" d="M596.33,-556.21C641.02,-598.77 790.16,-740.75 844.75,-792.72"/>
-<polygon fill="#ff00f4" stroke="#ff00f4" points="842.44,-795.36 852.1,-799.72 847.27,-790.29 842.44,-795.36"/>
-</g>
-<!-- proc~print_fragment_xyz&#45;&gt;to_char -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge126" class="edge">
-<title>proc~print_fragment_xyz&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff00f4" d="M640.17,-537.95C671.61,-534.89 711.42,-531.52 747,-530 835.78,-526.21 1466.05,-525.21 1546,-564 1613.59,-596.79 1664.31,-674.56 1685.97,-712.48"/>
-<polygon fill="#ff00f4" stroke="#ff00f4" points="1683.14,-714.6 1691.07,-721.63 1689.25,-711.19 1683.14,-714.6"/>
-</g>
-<!-- proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge124" class="edge">
-<title>proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#ff00f4" d="M640.16,-552.66C671.59,-557.29 711.41,-562.87 747,-567 791.28,-572.13 1514.29,-608.68 1546,-640 1601.15,-694.48 1567.21,-910.9 1582,-987 1610.68,-1134.6 1668.77,-1306.43 1689.73,-1366.2"/>
-<polygon fill="#ff00f4" stroke="#ff00f4" points="1686.47,-1367.46 1693.09,-1375.72 1693.07,-1365.13 1686.47,-1367.46"/>
-</g>
-<!-- proc~print_fragment_xyz&#45;&gt;proc~to_angstrom -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge125" class="edge">
-<title>proc~print_fragment_xyz&#45;&gt;proc~to_angstrom</title>
-<path fill="none" stroke="#ff00f4" d="M640.24,-545.56C841.53,-551.34 1511.21,-572.69 1546,-602 1599.42,-647.01 1557,-689.77 1582,-755 1610.24,-828.7 1659.73,-908.57 1683.71,-945.34"/>
-<polygon fill="#ff00f4" stroke="#ff00f4" points="1680.8,-947.3 1689.22,-953.73 1686.65,-943.45 1680.8,-947.3"/>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;proc~energy_total -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge131" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff00b7" d="M880.48,-470.03C923.55,-508.46 1058.06,-628.47 1110.38,-675.16"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1108.26,-677.95 1118.05,-682 1112.92,-672.73 1108.26,-677.95"/>
-</g>
-<!-- new -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node49" class="node">
-<title>new</title>
-<polygon fill="#777777" stroke="#777777" points="1159.5,-512 1105.5,-512 1105.5,-488 1159.5,-488 1159.5,-512"/>
-<text text-anchor="middle" x="1132.5" y="-497.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;new -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge127" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;new</title>
-<path fill="none" stroke="#ff00b7" d="M942.8,-470.04C992.75,-477.97 1055.93,-488 1095.03,-494.21"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1094.96,-497.74 1105.39,-495.85 1096.06,-490.83 1094.96,-497.74"/>
-</g>
-<!-- new_gfn1_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node50" class="node">
-<title>new_gfn1_calculator</title>
-<polygon fill="#777777" stroke="#777777" points="1193.5,-470 1071.5,-470 1071.5,-446 1193.5,-446 1193.5,-470"/>
-<text text-anchor="middle" x="1132.5" y="-455.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge128" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;new_gfn1_calculator</title>
-<path fill="none" stroke="#ff00b7" d="M956.55,-458C990.63,-458 1028.94,-458 1061.01,-458"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1061.19,-461.5 1071.19,-458 1061.19,-454.5 1061.19,-461.5"/>
-</g>
-<!-- new_gfn2_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node51" class="node">
-<title>new_gfn2_calculator</title>
-<polygon fill="#777777" stroke="#777777" points="1193.5,-428 1071.5,-428 1071.5,-404 1193.5,-404 1193.5,-428"/>
-<text text-anchor="middle" x="1132.5" y="-413.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge129" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;new_gfn2_calculator</title>
-<path fill="none" stroke="#ff00b7" d="M942.8,-445.96C980.05,-440.05 1024.67,-432.96 1061.16,-427.17"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1061.9,-430.6 1071.22,-425.57 1060.8,-423.68 1061.9,-430.6"/>
-</g>
-<!-- new_wavefunction -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node52" class="node">
-<title>new_wavefunction</title>
-<polygon fill="#777777" stroke="#777777" points="1188,-344 1077,-344 1077,-320 1188,-320 1188,-344"/>
-<text text-anchor="middle" x="1132.5" y="-329.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;new_wavefunction -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge130" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;new_wavefunction</title>
-<path fill="none" stroke="#ff00b7" d="M956.53,-451.96C966.82,-448.5 976.61,-443.66 985,-437 1016.81,-411.74 989.34,-378.44 1021,-353 1033.92,-342.62 1050.42,-336.81 1066.71,-333.69"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1067.47,-337.11 1076.79,-332.07 1066.36,-330.2 1067.47,-337.11"/>
-</g>
-<!-- xtb_singlepoint -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node71" class="node">
-<title>xtb_singlepoint</title>
-<polygon fill="#777777" stroke="#777777" points="1179,-386 1086,-386 1086,-362 1179,-362 1179,-386"/>
-<text text-anchor="middle" x="1132.5" y="-371.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_singlepoint</text>
-</g>
-<!-- proc~xtb_calc_energy&#45;&gt;xtb_singlepoint -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge132" class="edge">
-<title>proc~xtb_calc_energy&#45;&gt;xtb_singlepoint</title>
-<path fill="none" stroke="#ff00b7" d="M956.63,-448.84C966.56,-445.87 976.24,-442.01 985,-437 1006.35,-424.8 999.73,-407.32 1021,-395 1037.47,-385.46 1057.41,-380.14 1075.8,-377.21"/>
-<polygon fill="#ff00b7" stroke="#ff00b7" points="1076.4,-380.66 1085.82,-375.82 1075.43,-373.73 1076.4,-380.66"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;proc~energy_total -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge137" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff007a" d="M960.1,-423.31C969.08,-426.66 977.59,-431.11 985,-437 1016.81,-462.26 1002,-485.1 1021,-521 1051.34,-578.34 1094.4,-641.61 1116.75,-673.38"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1114.1,-675.69 1122.74,-681.83 1119.82,-671.65 1114.1,-675.69"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge133" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new</title>
-<path fill="none" stroke="#ff007a" d="M960.3,-426.3C968.94,-429.1 977.32,-432.61 985,-437 1006.35,-449.2 999.73,-466.68 1021,-479 1043.46,-492.01 1072.4,-497.17 1095.02,-499.13"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1095.03,-502.64 1105.25,-499.83 1095.51,-495.65 1095.03,-502.64"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge134" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator</title>
-<path fill="none" stroke="#ff007a" d="M942.8,-428.04C980.05,-433.95 1024.67,-441.04 1061.16,-446.83"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1060.8,-450.32 1071.22,-448.43 1061.9,-443.4 1060.8,-450.32"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge135" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator</title>
-<path fill="none" stroke="#ff007a" d="M960.25,-416C993.39,-416 1030.12,-416 1061.04,-416"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1061.28,-419.5 1071.28,-416 1061.28,-412.5 1061.28,-419.5"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new_wavefunction -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge136" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new_wavefunction</title>
-<path fill="none" stroke="#ff007a" d="M892.05,-403.92C922.07,-389.88 974.19,-366.87 1021,-353 1035.67,-348.65 1051.71,-345 1066.9,-342.02"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1067.57,-345.46 1076.74,-340.17 1066.27,-338.58 1067.57,-345.46"/>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge138" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;xtb_singlepoint</title>
-<path fill="none" stroke="#ff007a" d="M942.8,-403.96C985.26,-397.22 1037.27,-388.96 1075.93,-382.82"/>
-<polygon fill="#ff007a" stroke="#ff007a" points="1076.63,-386.26 1085.96,-381.23 1075.54,-379.34 1076.63,-386.26"/>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;error -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge139" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;error</title>
-<path fill="none" stroke="#ff003d" d="M674.79,-312.49C849.99,-307.93 1218.46,-299.78 1244,-311 1425.71,-390.86 1469.67,-456.78 1546,-640 1611.79,-797.92 1535.74,-1244.3 1582,-1409 1603.24,-1484.61 1655.6,-1563 1681.9,-1599.28"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="1679.25,-1601.58 1687.99,-1607.57 1684.89,-1597.44 1679.25,-1601.58"/>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;info -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge140" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;info</title>
-<path fill="none" stroke="#ff003d" d="M655.4,-327.01C675.64,-333.51 696.16,-343.54 711,-359 749.56,-399.17 729.7,-426.08 747,-479 785.7,-597.35 837.23,-737.41 856.9,-790.32"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="853.73,-791.83 860.5,-799.98 860.29,-789.38 853.73,-791.83"/>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;to_char -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge145" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff003d" d="M674.69,-305.03C763.1,-295.9 901.05,-283.06 1021,-278 1254.13,-268.16 1356.78,-141.47 1546,-278 1691.75,-383.16 1699.48,-634.27 1698.27,-711.21"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="1694.76,-711.56 1698.03,-721.63 1701.76,-711.72 1694.76,-711.56"/>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge144" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient</title>
-<path fill="none" stroke="#ff003d" d="M619.02,-327.02C644.64,-335.75 680.02,-347.92 711,-359 749.15,-372.64 792.4,-388.7 823.34,-400.29"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="822.33,-403.66 832.93,-403.89 824.79,-397.1 822.33,-403.66"/>
-</g>
-<!-- proc~finite_diff_hessian_from_gradients -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node56" class="node">
-<title>proc~finite_diff_hessian_from_gradients</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node56"><a xlink:href="../proc/finite_diff_hessian_from_gradients.html" xlink:title="finite_diff_hessian_from_gradients">
-<polygon fill="#d9534f" stroke="#d9534f" points="962.5,-226 769.5,-226 769.5,-202 962.5,-202 962.5,-226"/>
-<text text-anchor="middle" x="866" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finite_diff_hessian_from_gradients</text>
-</a>
-</g>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;proc~finite_diff_hessian_from_gradients -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge141" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;proc~finite_diff_hessian_from_gradients</title>
-<path fill="none" stroke="#ff003d" d="M603.38,-303C633.41,-285.39 692.63,-252.75 747,-235 754.66,-232.5 762.71,-230.27 770.85,-228.3"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="771.84,-231.66 780.8,-226.01 770.27,-224.84 771.84,-231.66"/>
-</g>
-<!-- proc~generate_perturbed_geometries -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node58" class="node">
-<title>proc~generate_perturbed_geometries</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node58"><a xlink:href="../proc/generate_perturbed_geometries.html" xlink:title="generate_perturbed_geometries">
-<polygon fill="#d9534f" stroke="#d9534f" points="959,-268 773,-268 773,-244 959,-244 959,-268"/>
-<text text-anchor="middle" x="866" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">generate_perturbed_geometries</text>
-</a>
-</g>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;proc~generate_perturbed_geometries -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge142" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;proc~generate_perturbed_geometries</title>
-<path fill="none" stroke="#ff003d" d="M640.81,-302.99C686.13,-293.49 749.52,-280.2 797.34,-270.18"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="798.22,-273.57 807.29,-268.09 796.79,-266.72 798.22,-273.57"/>
-</g>
-<!-- proc~result_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node67" class="node">
-<title>proc~result_destroy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node67"><a xlink:href="../proc/result_destroy.html" xlink:title="calculation_result_t%result_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="965,-184 767,-184 767,-160 965,-160 965,-184"/>
-<text text-anchor="middle" x="866" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_destroy</text>
-</a>
-</g>
-</g>
-<!-- proc~xtb_calc_hessian&#45;&gt;proc~result_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge143" class="edge">
-<title>proc~xtb_calc_hessian&#45;&gt;proc~result_destroy</title>
-<path fill="none" stroke="#ff003d" d="M595.35,-302.96C620.67,-278.02 682.97,-220.72 747,-193 752.13,-190.78 757.49,-188.79 762.96,-187.01"/>
-<polygon fill="#ff003d" stroke="#ff003d" points="764.34,-190.26 772.92,-184.04 762.34,-183.55 764.34,-190.26"/>
+<path fill="none" stroke="#ff0050" d="M625.95,-1052.06C681.1,-1067.74 776.46,-1094.84 828.52,-1109.63"/>
+<polygon fill="#ff0050" stroke="#ff0050" points="827.75,-1113.05 838.32,-1112.42 829.66,-1106.32 827.75,-1113.05"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node73" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node58" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node73"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1993,-2126 1851,-2126 1851,-2102 1993,-2102 1993,-2126"/>
-<text text-anchor="middle" x="1922" y="-2111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node58"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1993,-24 1851,-24 1851,0 1993,0 1993,-24"/>
+<text text-anchor="middle" x="1922" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge146" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge113" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
-<path fill="none" stroke="#62ff00" d="M1815.12,-2114C1823.77,-2114 1832.38,-2114 1840.74,-2114"/>
-<polygon fill="#62ff00" stroke="#62ff00" points="1840.79,-2117.5 1850.79,-2114 1840.79,-2110.5 1840.79,-2117.5"/>
+<path fill="none" stroke="#f0ff00" d="M1815.12,-12C1823.77,-12 1832.38,-12 1840.74,-12"/>
+<polygon fill="#f0ff00" stroke="#f0ff00" points="1840.79,-15.5 1850.79,-12 1840.79,-8.5 1840.79,-15.5"/>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;fnv_1a_hash -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge147" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge114" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;fnv_1a_hash</title>
-<path fill="none" stroke="#00ff89" d="M971.91,-1751.96C976.56,-1749.41 980.97,-1746.45 985,-1743 1022.19,-1711.23 992.3,-1678.61 1021,-1639 1041.78,-1610.32 1075.11,-1586.89 1099.74,-1572.13"/>
-<polygon fill="#00ff89" stroke="#00ff89" points="1101.51,-1575.15 1108.38,-1567.09 1097.98,-1569.11 1101.51,-1575.15"/>
+<path fill="none" stroke="#00ff1e" d="M985.32,-606C1019.72,-606 1055.38,-606 1082.87,-606"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="1082.99,-609.5 1092.99,-606 1082.99,-602.5 1082.99,-609.5"/>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;sort -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge149" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge116" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;sort</title>
-<path fill="none" stroke="#00ff89" d="M969.14,-1751.91C974.72,-1749.4 980.06,-1746.46 985,-1743 1011.11,-1724.74 995,-1699.42 1021,-1681 1042.56,-1665.73 1072.19,-1660.74 1095.34,-1659.42"/>
-<polygon fill="#00ff89" stroke="#00ff89" points="1095.6,-1662.91 1105.47,-1659.05 1095.35,-1655.92 1095.6,-1662.91"/>
+<path fill="none" stroke="#00ff1e" d="M893.77,-618.16C918.03,-629.47 954.55,-647.2 985,-665 1029.43,-690.97 1078.5,-725.39 1107.08,-746.05"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="1105.11,-748.95 1115.26,-751.99 1109.23,-743.28 1105.11,-748.95"/>
 </g>
 <!-- proc~arrays_equal_internal -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node72" class="node">
+<g id="proc~~serial_fragment_processor~~CallsGraph_node57" class="node">
 <title>proc~arrays_equal_internal</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node72"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1196.5,-1714 1068.5,-1714 1068.5,-1690 1196.5,-1690 1196.5,-1714"/>
-<text text-anchor="middle" x="1132.5" y="-1699.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
+<g id="a_proc~~serial_fragment_processor~~CallsGraph_node57"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1196.5,-576 1068.5,-576 1068.5,-552 1196.5,-552 1196.5,-576"/>
+<text text-anchor="middle" x="1132.5" y="-561.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge148" class="edge">
+<g id="proc~~serial_fragment_processor~~CallsGraph_edge115" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal</title>
-<path fill="none" stroke="#00ff89" d="M948.16,-1751.97C960.6,-1749.44 973.22,-1746.46 985,-1743 1001.63,-1738.12 1004.51,-1733.34 1021,-1728 1034.2,-1723.73 1048.5,-1719.84 1062.3,-1716.45"/>
-<polygon fill="#00ff89" stroke="#00ff89" points="1063.32,-1719.8 1072.23,-1714.06 1061.69,-1712.99 1063.32,-1719.8"/>
-</g>
-<!-- proc~copy_and_displace_geometry -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node74" class="node">
-<title>proc~copy_and_displace_geometry</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node74"><a xlink:href="../proc/copy_and_displace_geometry.html" xlink:title="copy_and_displace_geometry">
-<polygon fill="#d9534f" stroke="#d9534f" points="1217.5,-226 1047.5,-226 1047.5,-202 1217.5,-202 1217.5,-226"/>
-<text text-anchor="middle" x="1132.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">copy_and_displace_geometry</text>
-</a>
-</g>
-</g>
-<!-- proc~generate_perturbed_geometries&#45;&gt;proc~copy_and_displace_geometry -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge150" class="edge">
-<title>proc~generate_perturbed_geometries&#45;&gt;proc~copy_and_displace_geometry</title>
-<path fill="none" stroke="#00ffc4" d="M942.8,-243.96C974.89,-238.87 1012.45,-232.9 1045.57,-227.65"/>
-<polygon fill="#00ffc4" stroke="#00ffc4" points="1046.37,-231.06 1055.69,-226.04 1045.27,-224.15 1046.37,-231.06"/>
-</g>
-<!-- proc~result_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_node75" class="node">
-<title>proc~result_reset</title>
-<g id="a_proc~~serial_fragment_processor~~CallsGraph_node75"><a xlink:href="../proc/result_reset.html" xlink:title="calculation_result_t%result_reset">
-<polygon fill="#d9534f" stroke="#d9534f" points="1225,-184 1040,-184 1040,-160 1225,-160 1225,-184"/>
-<text text-anchor="middle" x="1132.5" y="-169.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculation_result_t%result_reset</text>
-</a>
-</g>
-</g>
-<!-- proc~result_destroy&#45;&gt;proc~result_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge151" class="edge">
-<title>proc~result_destroy&#45;&gt;proc~result_reset</title>
-<path fill="none" stroke="#d700ff" d="M965.11,-172C986.09,-172 1008.29,-172 1029.41,-172"/>
-<polygon fill="#d700ff" stroke="#d700ff" points="1029.68,-175.5 1039.68,-172 1029.68,-168.5 1029.68,-175.5"/>
-</g>
-<!-- proc~result_reset&#45;&gt;proc~energy_reset -->
-<g id="proc~~serial_fragment_processor~~CallsGraph_edge152" class="edge">
-<title>proc~result_reset&#45;&gt;proc~energy_reset</title>
-<path fill="none" stroke="#7f00ff" d="M1225.08,-165.75C1260.13,-163.36 1299.78,-160.66 1333.5,-158.36"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="1334.03,-161.83 1343.77,-157.65 1333.55,-154.84 1334.03,-161.83"/>
+<path fill="none" stroke="#00ff1e" d="M942.8,-593.96C979.07,-588.2 1022.33,-581.33 1058.27,-575.63"/>
+<polygon fill="#00ff1e" stroke="#00ff1e" points="1058.88,-579.08 1068.2,-574.05 1057.78,-572.16 1058.88,-579.08"/>
 </g>
 </g>
 </svg>
@@ -2070,94 +1717,109 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~serial_fragment_processor~~CalledByGraph Pages: 1 -->
-<svg id="procserial_fragment_processorCalledByGraph" width="641pt" height="89pt"
- viewBox="0.00 0.00 641.00 89.29" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~serial_fragment_processor~~CalledByGraph" class="graph" transform="scale(0.8 0.8) rotate(0) translate(4 108)">
+<svg id="procserial_fragment_processorCalledByGraph" width="641pt" height="72pt"
+ viewBox="0.00 0.00 641.00 72.23" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_fragment_processor~~CalledByGraph" class="graph" transform="scale(0.64 0.64) rotate(0) translate(4 108)">
 <title>proc~~serial_fragment_processor~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 800,-108 800,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 990,-108 990,4 -4,4"/>
 <!-- proc~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_node1" class="node">
 <title>proc~serial_fragment_processor</title>
-<polygon fill="none" stroke="black" points="796,-64 642,-64 642,-40 796,-40 796,-64"/>
-<text text-anchor="middle" x="719" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+<polygon fill="none" stroke="black" points="986,-64 832,-64 832,-40 986,-40 986,-64"/>
+<text text-anchor="middle" x="909" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node2" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node2"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="796,-64 642,-64 642,-40 796,-40 796,-64"/>
+<text text-anchor="middle" x="719" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge1" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M796.2,-52C804.52,-52 813.03,-52 821.47,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="821.7,-55.5 831.7,-52 821.7,-48.5 821.7,-55.5"/>
 </g>
 <!-- proc~run_fragmented_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node2" class="node">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node3" class="node">
 <title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node2"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node3"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
 <polygon fill="#d9534f" stroke="#d9534f" points="606,-64 443,-64 443,-40 606,-40 606,-64"/>
 <text text-anchor="middle" x="524.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge1" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_fragment_processor</title>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge2" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor</title>
 <path fill="none" stroke="#ff0000" d="M606.02,-52C614.54,-52 623.22,-52 631.8,-52"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="631.8,-55.5 641.8,-52 631.8,-48.5 631.8,-55.5"/>
 </g>
 <!-- proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node3" class="node">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node4" class="node">
 <title>proc~run_calculation</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node4"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
 <polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
 <text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
 </a>
 </g>
 </g>
 <!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge2" class="edge">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge3" class="edge">
 <title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
 <path fill="none" stroke="#ff0000" d="M407.13,-52C415.24,-52 423.94,-52 432.78,-52"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="432.8,-55.5 442.8,-52 432.8,-48.5 432.8,-55.5"/>
 </g>
 <!-- proc~compute_energy_and_forces -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node4" class="node">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node5" class="node">
 <title>proc~compute_energy_and_forces</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node4"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node5"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
 <polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
 <text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge3" class="edge">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge4" class="edge">
 <title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
 </g>
 <!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node5" class="node">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node6" class="node">
 <title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node5"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
 <polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
 <text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
 </a>
 </g>
 </g>
 <!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge4" class="edge">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge5" class="edge">
 <title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
 </g>
 <!-- program~main -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node6" class="node">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_node7" class="node">
 <title>program~main</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node6"><a xlink:href="../program/main.html" xlink:title="main">
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
 <polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
 <text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
 </a>
 </g>
 </g>
 <!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge5" class="edge">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge6" class="edge">
 <title>program~main&#45;&gt;proc~run_calculation</title>
 <path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
 </g>
 <!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge6" class="edge">
+<g id="proc~~serial_fragment_processor~~CalledByGraph_edge7" class="edge">
 <title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
 <path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
@@ -2283,7 +1945,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~2"></span>
+              <span class="anchor" id="variable-coord_timer~4"></span>
               type(timer_type),
             </td>
               <td>private</td>
@@ -2300,7 +1962,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~8"></span>
+              <span class="anchor" id="variable-current_log_level~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -2317,7 +1979,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~15"></span>
+              <span class="anchor" id="variable-error~56"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2334,7 +1996,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_idx"></span>
+              <span class="anchor" id="variable-frag_idx~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2368,7 +2030,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~9"></span>
+              <span class="anchor" id="variable-fragment_size~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -2385,7 +2047,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~8"></span>
+              <span class="anchor" id="variable-iatom~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -2453,7 +2115,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~3"></span>
+              <span class="anchor" id="variable-phys_frag~5"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2470,7 +2132,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -2501,7 +2163,7 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">serial_fragment_processor</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">module subroutine </span><span class="n">serial_fragment_processor</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Process all fragments serially in single-rank mode</span>
 <span class="w">      </span><span class="c">!! This is used when running with only 1 MPI rank</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
@@ -2549,7 +2211,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Failed to build fragment in serial processing&quot;</span>
 <span class="w">         </span><span class="k">end if</span>
 
-<span class="k">         call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">),</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">),</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="o">=</span><span class="n">calc_type_local</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">),</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="o">=</span><span class="n">calc_type_local</span><span class="p">)</span>
 
 <span class="w">         </span><span class="c">! Debug output for gradients</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">calc_type_local</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CALC_TYPE_GRADIENT</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -2641,7 +2303,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 10:13 +0000             </p>
+ on 2026-01-06 10:20 +0000             </p>
           </div>
         </div>
         <br>
