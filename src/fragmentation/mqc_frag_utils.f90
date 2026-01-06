@@ -196,7 +196,7 @@ contains
       deallocate (fragment_sizes)
       deallocate (sort_indices)
 
-      call logger%info("Fragments sorted by size (largest first) for load balancing")
+      call logger%info("Fragments queue sorted!")
 
    end subroutine sort_fragments_by_size
 

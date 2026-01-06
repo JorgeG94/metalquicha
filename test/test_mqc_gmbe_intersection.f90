@@ -1,9 +1,10 @@
 module test_mqc_gmbe_intersection
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_frag_utils, only: find_fragment_intersection, generate_intersections, &
-                             compute_polymer_atoms, generate_polymer_intersections
+                             compute_polymer_atoms, generate_polymer_intersections, &
+                             gmbe_enumerate_pie_terms
    use mqc_physical_fragment, only: system_geometry_t
-   use pic_types, only: default_int, dp
+   use pic_types, only: default_int, dp, int64
    implicit none
    private
    public :: collect_mqc_gmbe_intersection_tests
@@ -27,7 +28,8 @@ contains
                   new_unittest("generate_multiple_overlaps", test_generate_multiple_overlaps), &
                   new_unittest("compute_polymer_atoms_dimer", test_compute_polymer_atoms_dimer), &
                   new_unittest("compute_polymer_atoms_overlapping", test_compute_polymer_atoms_overlapping), &
-                  new_unittest("generate_polymer_intersections_dimers", test_generate_polymer_intersections_dimers) &
+                  new_unittest("generate_polymer_intersections_dimers", test_generate_polymer_intersections_dimers), &
+                  new_unittest("pie_terms_storage_growth", test_pie_terms_storage_growth) &
                   ]
    end subroutine collect_mqc_gmbe_intersection_tests
 
@@ -556,6 +558,48 @@ contains
       call sys_geom%destroy()
 
    end subroutine test_generate_polymer_intersections_dimers
+
+   subroutine test_pie_terms_storage_growth(error)
+      !! Ensure PIE term storage grows beyond the initial capacity.
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys_geom
+      integer, allocatable :: primaries(:, :)
+      integer, allocatable :: pie_atom_sets(:, :), pie_coefficients(:)
+      integer(int64) :: n_pie_terms
+
+      sys_geom%n_monomers = 3
+      sys_geom%total_atoms = 6
+
+      allocate (sys_geom%fragment_sizes(3))
+      allocate (sys_geom%fragment_atoms(2, 3))
+
+      sys_geom%fragment_sizes = [2, 2, 2]
+      sys_geom%fragment_atoms(:, 1) = [0, 1]
+      sys_geom%fragment_atoms(:, 2) = [2, 3]
+      sys_geom%fragment_atoms(:, 3) = [4, 5]
+
+      allocate (primaries(3, 1))
+      primaries(:, 1) = [1, 2, 3]
+
+      call gmbe_enumerate_pie_terms(sys_geom, primaries, 3, 1, 1, &
+                                    pie_atom_sets, pie_coefficients, n_pie_terms, &
+                                    initial_max_terms=2_int64)
+
+      call check(error, n_pie_terms, 3_int64, "Expected 3 PIE terms from 3 distinct primaries")
+      if (allocated(error)) then
+         call sys_geom%destroy()
+         deallocate (primaries)
+         if (allocated(pie_atom_sets)) deallocate (pie_atom_sets)
+         if (allocated(pie_coefficients)) deallocate (pie_coefficients)
+         return
+      end if
+
+      if (allocated(pie_atom_sets)) deallocate (pie_atom_sets)
+      if (allocated(pie_coefficients)) deallocate (pie_coefficients)
+      deallocate (primaries)
+      call sys_geom%destroy()
+
+   end subroutine test_pie_terms_storage_growth
 
 end module test_mqc_gmbe_intersection
 

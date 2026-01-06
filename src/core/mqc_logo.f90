@@ -28,10 +28,10 @@ contains
       write (*, '(A)') '    ╔═══════════════════════════════════════════════╗'
       write (*, '(A)') '    ║              Met"al q"uicha                   ║'
       write (*, '(A)') '    ║                (Sunflower)                    ║'
-      write (*, '(A)') '    ║     A hastily put together framework for      ║'
-      write (*, '(A)') '    ║   Fortran Based High Performance Computing    ║'
+      write (*, '(A)') '    ║   A hastily put together Fortran code for     ║'
+      write (*, '(A)') '    ║     Fragmented Based Quantum Chemistry        ║'
       write (*, '(A)') '    ║                                               ║'
-      write (*, '(A)') '    ║        Case study: quantum chemistry          ║'
+      write (*, '(A)') '    ║        Coded up by Jorge as a hobby           ║'
       write (*, '(A)') '    ╚═══════════════════════════════════════════════╝'
       write (*, '(A)') ' '
 
