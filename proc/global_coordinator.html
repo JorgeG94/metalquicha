@@ -137,23 +137,23 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-calc_type_local~3">calc_type_local</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-coord_timer~3">coord_timer</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-coord_timer~4">coord_timer</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-current_fragment">current_fragment</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-dummy_msg~3">dummy_msg</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-finished_nodes">finished_nodes</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_idx~6">fragment_idx</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-handling_local_workers">handling_local_workers</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-has_pending~2">has_pending</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_dummy">local_dummy</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_finished_workers">local_finished_workers</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_status">local_status</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-req~5">req</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-request_source">request_source</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results~7">results</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results_received">results_received</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-status~5">status</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-dummy_msg~4">dummy_msg</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-finished_nodes~2">finished_nodes</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-fragment_idx~8">fragment_idx</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-handling_local_workers~2">handling_local_workers</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-has_pending~3">has_pending</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_dummy~2">local_dummy</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_finished_workers~2">local_finished_workers</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-local_status~2">local_status</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-req~8">req</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-request_source~2">request_source</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results~10">results</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-results_received~2">results_received</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-status~6">status</a>
             <a class="list-group-item" href="../proc/global_coordinator.html#variable-worker_fragment_map">worker_fragment_map</a>
-            <a class="list-group-item" href="../proc/global_coordinator.html#variable-worker_source">worker_source</a>
+            <a class="list-group-item" href="../proc/global_coordinator.html#variable-worker_source~2">worker_source</a>
         </div>
       </div>
     </div>
@@ -211,7 +211,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~15"></span>
+              <span class="anchor" id="variable-world_comm~14"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -241,7 +241,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~5"></span>
+              <span class="anchor" id="variable-total_fragments~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -256,7 +256,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -271,7 +271,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~18"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -316,7 +316,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~31"></span>
+              <span class="anchor" id="variable-sys_geom~44"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -331,7 +331,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~14"></span>
+              <span class="anchor" id="variable-calc_type~16"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -346,7 +346,7 @@ Uses int64 for total_fragments to handle large fragment counts that overflow int
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~21"></span>
+              <span class="anchor" id="variable-bonds~25"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1706,7 +1706,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~3"></span>
+              <span class="anchor" id="variable-coord_timer~4"></span>
               type(timer_type),
             </td>
               <td>private</td>
@@ -1740,7 +1740,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dummy_msg~3"></span>
+              <span class="anchor" id="variable-dummy_msg~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1757,7 +1757,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-finished_nodes"></span>
+              <span class="anchor" id="variable-finished_nodes~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1774,7 +1774,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~6"></span>
+              <span class="anchor" id="variable-fragment_idx~8"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1791,7 +1791,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-handling_local_workers"></span>
+              <span class="anchor" id="variable-handling_local_workers~2"></span>
               logical,
             </td>
               <td>private</td>
@@ -1808,7 +1808,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_pending~2"></span>
+              <span class="anchor" id="variable-has_pending~3"></span>
               logical,
             </td>
               <td>private</td>
@@ -1825,7 +1825,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_dummy"></span>
+              <span class="anchor" id="variable-local_dummy~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1842,7 +1842,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_finished_workers"></span>
+              <span class="anchor" id="variable-local_finished_workers~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1859,7 +1859,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_status"></span>
+              <span class="anchor" id="variable-local_status~2"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1876,7 +1876,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~5"></span>
+              <span class="anchor" id="variable-req~8"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1893,7 +1893,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-request_source"></span>
+              <span class="anchor" id="variable-request_source~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -1910,7 +1910,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -1927,7 +1927,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received"></span>
+              <span class="anchor" id="variable-results_received~2"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1944,7 +1944,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~5"></span>
+              <span class="anchor" id="variable-status~6"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1978,7 +1978,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-worker_source"></span>
+              <span class="anchor" id="variable-worker_source~2"></span>
               integer,
             </td>
               <td>private</td>
@@ -2239,7 +2239,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-06 12:00 +0000             </p>
+ on 2026-01-06 22:18 +0000             </p>
           </div>
         </div>
         <br>

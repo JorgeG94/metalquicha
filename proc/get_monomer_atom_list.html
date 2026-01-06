@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>atom_sets_equal &ndash; metalquicha</title>
+    <title>get_monomer_atom_list &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,8 +83,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>atom_sets_equal
-      <small>Function</small>
+    <h1>get_monomer_atom_list
+      <small>Subroutine</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">13 statements</a>
+                 title=" 0.4% of total for procedures.">27 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_gmbe_utils.f90"> Source File</a>
+              <a href="../src/mqc_mbe.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_utils.f90.html'>mqc_gmbe_utils.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-            <li class="breadcrumb-item active" aria-current="page">atom_sets_equal</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe.f90.html'>mqc_mbe.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_mbe.html'>mqc_mbe</a></li>
+            <li class="breadcrumb-item active" aria-current="page">get_monomer_atom_list</li>
           </ol>
         </nav>
       </div>
@@ -136,7 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/atom_sets_equal.html#variable-i~38">i</a>
+            <a class="list-group-item" href="../proc/get_monomer_atom_list.html#variable-base_idx">base_idx</a>
+            <a class="list-group-item" href="../proc/get_monomer_atom_list.html#variable-i~64">i</a>
         </div>
       </div>
     </div>
@@ -162,7 +163,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/atom_sets_equal.html#src">atom_sets_equal</a>
+        <a class="list-group-item" href="../proc/get_monomer_atom_list.html#src">get_monomer_atom_list</a>
       </div>
     </div>
 
@@ -172,11 +173,11 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private pure function atom_sets_equal(set1, set2, n_atoms) result(equal)  
+    <h2>private  subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)  
 </h2>
     
 
-    <p>Check if two atom sets are equal (assuming sorted)</p>
+    <p>Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.</p>
 
 
     <h3>Arguments</h3>
@@ -192,7 +193,22 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-set1"></span>
+              <span class="anchor" id="variable-sys_geom~34"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomer_idx~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -200,32 +216,32 @@
               
             </td>
             <td>::</td>
-            <td><strong>set1</strong>(:)</td>
+            <td><strong>monomer_idx</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-set2"></span>
+              <span class="anchor" id="variable-atom_list~2"></span>
               integer,
             </td>
-<td>intent(in)</td>
+<td>intent(out),</td>
               <td></td>            <td>
-              
+              allocatable
             </td>
             <td>::</td>
-            <td><strong>set2</strong>(:)</td>
+            <td><strong>atom_list</strong>(:)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~8"></span>
+              <span class="anchor" id="variable-n_atoms~12"></span>
               integer,
             </td>
-<td>intent(in)</td>
+<td>intent(out)</td>
               <td></td>            <td>
               
             </td>
@@ -238,13 +254,6 @@
     </tbody>
   </table>
 
-      <h3>Return Value
-        <small>
-          <span class="anchor" id="variable-equal~3"></span>
-          logical
-        </small>
-      </h3>
-      
     <br>
     <div class="card">
       <div class="card-header">
@@ -256,136 +265,51 @@
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~atom_sets_equal~~CalledByGraph Pages: 1 -->
-<svg id="procatom_sets_equalCalledByGraph" width="641pt" height="73pt"
- viewBox="0.00 0.00 641.00 73.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~atom_sets_equal~~CalledByGraph" class="graph" transform="scale(0.63 0.63) rotate(0) translate(4 112)">
-<title>proc~~atom_sets_equal~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 1014,-112 1014,4 -4,4"/>
-<!-- proc~atom_sets_equal -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node1" class="node">
-<title>proc~atom_sets_equal</title>
-<polygon fill="none" stroke="black" points="1010,-66 908,-66 908,-42 1010,-42 1010,-66"/>
-<text text-anchor="middle" x="959" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">atom_sets_equal</text>
+<!-- Title: proc~~get_monomer_atom_list~~CalledByGraph Pages: 1 -->
+<svg id="procget_monomer_atom_listCalledByGraph" width="420pt" height="74pt"
+ viewBox="0.00 0.00 420.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~get_monomer_atom_list~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~get_monomer_atom_list~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 416,-70 416,4 -4,4"/>
+<!-- proc~get_monomer_atom_list -->
+<g id="proc~~get_monomer_atom_list~~CalledByGraph_node1" class="node">
+<title>proc~get_monomer_atom_list</title>
+<polygon fill="none" stroke="black" points="412,-45 271,-45 271,-21 412,-21 412,-45"/>
+<text text-anchor="middle" x="341.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">get_monomer_atom_list</text>
 </g>
-<!-- proc~dfs_pie_accumulate -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node2" class="node">
-<title>proc~dfs_pie_accumulate</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node2"><a xlink:href="../proc/dfs_pie_accumulate.html" xlink:title="dfs_pie_accumulate">
-<polygon fill="#d9534f" stroke="#d9534f" points="872,-66 754,-66 754,-42 872,-42 872,-66"/>
-<text text-anchor="middle" x="813" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dfs_pie_accumulate</text>
+<!-- proc~compute_gmbe_energy_gradient -->
+<g id="proc~~get_monomer_atom_list~~CalledByGraph_node2" class="node">
+<title>proc~compute_gmbe_energy_gradient</title>
+<g id="a_proc~~get_monomer_atom_list~~CalledByGraph_node2"><a xlink:href="../proc/compute_gmbe_energy_gradient.html" xlink:title="compute_gmbe_energy_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="212,-66 23,-66 23,-42 212,-42 212,-66"/>
+<text text-anchor="middle" x="117.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_gmbe_energy_gradient</text>
 </a>
 </g>
 </g>
-<!-- proc~dfs_pie_accumulate&#45;&gt;proc~atom_sets_equal -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge1" class="edge">
-<title>proc~dfs_pie_accumulate&#45;&gt;proc~atom_sets_equal</title>
-<path fill="none" stroke="#ff0000" d="M872.16,-54C880.59,-54 889.29,-54 897.76,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="897.96,-57.5 907.96,-54 897.96,-50.5 897.96,-57.5"/>
+<!-- proc~compute_gmbe_energy_gradient&#45;&gt;proc~get_monomer_atom_list -->
+<g id="proc~~get_monomer_atom_list~~CalledByGraph_edge1" class="edge">
+<title>proc~compute_gmbe_energy_gradient&#45;&gt;proc~get_monomer_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M212,-45.15C228.14,-43.63 244.78,-42.05 260.52,-40.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="261.09,-44.03 270.72,-39.6 260.43,-37.06 261.09,-44.03"/>
 </g>
-<!-- proc~dfs_pie_accumulate&#45;&gt;proc~dfs_pie_accumulate -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge2" class="edge">
-<title>proc~dfs_pie_accumulate&#45;&gt;proc~dfs_pie_accumulate</title>
-<path fill="none" stroke="#ff0000" d="M788.86,-66.01C780.43,-74.97 788.48,-84 813,-84 827.94,-84 836.77,-80.65 839.48,-76"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="842.83,-74.95 837.14,-66.01 836.01,-76.55 842.83,-74.95"/>
-</g>
-<!-- proc~gmbe_enumerate_pie_terms -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node3" class="node">
-<title>proc~gmbe_enumerate_pie_terms</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_enumerate_pie_terms.html" xlink:title="gmbe_enumerate_pie_terms">
-<polygon fill="#d9534f" stroke="#d9534f" points="718,-66 552,-66 552,-42 718,-42 718,-66"/>
-<text text-anchor="middle" x="635" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_enumerate_pie_terms</text>
+<!-- proc~compute_gmbe_energy_gradient_hessian -->
+<g id="proc~~get_monomer_atom_list~~CalledByGraph_node3" class="node">
+<title>proc~compute_gmbe_energy_gradient_hessian</title>
+<g id="a_proc~~get_monomer_atom_list~~CalledByGraph_node3"><a xlink:href="../proc/compute_gmbe_energy_gradient_hessian.html" xlink:title="compute_gmbe_energy_gradient_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="235,-24 0,-24 0,0 235,0 235,-24"/>
+<text text-anchor="middle" x="117.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_gmbe_energy_gradient_hessian</text>
 </a>
 </g>
 </g>
-<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge3" class="edge">
-<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate</title>
-<path fill="none" stroke="#ff0000" d="M718.07,-54C726.68,-54 735.35,-54 743.77,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="743.9,-57.5 753.9,-54 743.9,-50.5 743.9,-57.5"/>
-</g>
-<!-- proc~run_fragmented_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node4" class="node">
-<title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node4"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="516,-66 353,-66 353,-42 516,-42 516,-66"/>
-<text text-anchor="middle" x="434.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
-</a>
-</g>
-</g>
-<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge4" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_enumerate_pie_terms</title>
-<path fill="none" stroke="#ff0000" d="M516.24,-54C524.56,-54 533.05,-54 541.49,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="541.72,-57.5 551.72,-54 541.72,-50.5 541.72,-57.5"/>
-</g>
-<!-- proc~run_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node5" class="node">
-<title>proc~run_calculation</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node5"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="317,-66 223,-66 223,-42 317,-42 317,-66"/>
-<text text-anchor="middle" x="270" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
-</a>
-</g>
-</g>
-<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge5" class="edge">
-<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M317.13,-54C325.24,-54 333.94,-54 342.78,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="342.8,-57.5 352.8,-54 342.8,-50.5 342.8,-57.5"/>
-</g>
-<!-- proc~compute_energy_and_forces -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node6" class="node">
-<title>proc~compute_energy_and_forces</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node6"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
-<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-108 10.5,-108 10.5,-84 176.5,-84 176.5,-108"/>
-<text text-anchor="middle" x="93.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
-</a>
-</g>
-</g>
-<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge6" class="edge">
-<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M148.85,-83.92C161.39,-81.06 174.67,-77.98 187,-75 195.32,-72.99 204.09,-70.81 212.69,-68.64"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="213.82,-71.96 222.65,-66.11 212.1,-65.18 213.82,-71.96"/>
-</g>
-<!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node7" class="node">
-<title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node7"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="187,-66 0,-66 0,-42 187,-42 187,-66"/>
-<text text-anchor="middle" x="93.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
-</a>
-</g>
-</g>
-<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge7" class="edge">
-<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M187.11,-54C195.83,-54 204.48,-54 212.7,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.87,-57.5 222.87,-54 212.87,-50.5 212.87,-57.5"/>
-</g>
-<!-- program~main -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_node8" class="node">
-<title>program~main</title>
-<g id="a_proc~~atom_sets_equal~~CalledByGraph_node8"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-24 66.5,-24 66.5,0 120.5,0 120.5,-24"/>
-<text text-anchor="middle" x="93.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
-</a>
-</g>
-</g>
-<!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~atom_sets_equal~~CalledByGraph_edge8" class="edge">
-<title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M120.86,-17.78C139.39,-21.9 164.75,-27.63 187,-33 195.32,-35.01 204.09,-37.19 212.69,-39.36"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.1,-42.82 222.65,-41.89 213.82,-36.04 212.1,-42.82"/>
+<!-- proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~get_monomer_atom_list -->
+<g id="proc~~get_monomer_atom_list~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_gmbe_energy_gradient_hessian&#45;&gt;proc~get_monomer_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M235.03,-23.02C243.73,-23.85 252.4,-24.67 260.8,-25.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="260.62,-28.96 270.9,-26.42 261.28,-21.99 260.62,-28.96"/>
 </g>
 </g>
 </svg>
-</div>                <script>
-                  var panprocatom_sets_equalCalledByGraph = svgPanZoom('#procatom_sets_equalCalledByGraph',
-                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
-                  );
-                </script>          <div>
+</div>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -483,7 +407,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~38"></span>
+              <span class="anchor" id="variable-base_idx"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>base_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~64"></span>
               integer,
             </td>
               <td>private</td>
@@ -514,21 +455,36 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">atom_sets_equal</span><span class="p">(</span><span class="n">set1</span><span class="p">,</span><span class="w"> </span><span class="n">set2</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">equal</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Check if two atom sets are equal (assuming sorted)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">set1</span><span class="p">(:),</span><span class="w"> </span><span class="n">set2</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">equal</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">get_monomer_atom_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_idx</span><span class="p">,</span><span class="w"> </span><span class="n">atom_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_list</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
 
-<span class="w">      </span><span class="n">equal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
-<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">set1</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">set2</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            </span><span class="n">equal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">            </span><span class="k">return</span>
-<span class="k">         end if</span>
-<span class="k">      end do</span>
-<span class="k">   end function </span><span class="n">atom_sets_equal</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">base_idx</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">(</span><span class="n">monomer_idx</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">            </span><span class="n">atom_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_idx</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      else</span>
+<span class="k">         </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">            </span><span class="n">base_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">monomer_idx</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span>
+<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
+<span class="w">               </span><span class="n">atom_list</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">base_idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">         else</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
+<span class="k">   end subroutine </span><span class="n">get_monomer_atom_list</span>
 </pre></div>
 
     </section>
