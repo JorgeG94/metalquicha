@@ -16,21 +16,16 @@ contains
       type(calculation_result_t), intent(out) :: result  !! Computation results
       integer(int32), intent(in) :: method       !! QC method
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
-      integer(int32), intent(in), optional :: calc_type  !! Calculation type
+      integer(int32), intent(in) :: calc_type  !! Calculation type
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
-      integer(int32) :: calc_type_local  !! Local copy of calc_type with default
+      integer(int32) :: calc_type_local  !! Local copy of calc_type
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
 #endif
 
-      ! Set default calc_type if not provided
-      if (present(calc_type)) then
-         calc_type_local = calc_type
-      else
-         calc_type_local = CALC_TYPE_ENERGY  ! Default to energy-only calculation
-      end if
+      calc_type_local = calc_type
 
       ! Query logger to determine verbosity
       call logger%configuration(level=current_log_level)
@@ -84,7 +79,7 @@ contains
       integer, intent(in) :: max_level, num_nodes
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
       type(system_geometry_t), intent(in), optional :: sys_geom
-      integer(int32), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
       type(timer_type) :: coord_timer
@@ -108,12 +103,7 @@ contains
       ! MPI request handles for non-blocking operations
       type(request_t) :: req
 
-      ! Set default calc_type if not provided
-      if (present(calc_type)) then
-         calc_type_local = calc_type
-      else
-         calc_type_local = CALC_TYPE_ENERGY
-      end if
+      calc_type_local = calc_type
 
       current_fragment = total_fragments
       finished_nodes = 0
@@ -363,7 +353,7 @@ contains
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
       class(comm_t), intent(in) :: world_comm, node_comm
-      integer(int32), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: calc_type
 
       integer(int64) :: fragment_idx
       integer(int32) :: fragment_size, fragment_type, dummy_msg
@@ -475,7 +465,7 @@ contains
       class(comm_t), intent(in) :: world_comm, node_comm
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
-      integer(int32), intent(in), optional :: calc_type
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int64) :: fragment_idx

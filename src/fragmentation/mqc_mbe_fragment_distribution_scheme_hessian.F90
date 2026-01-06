@@ -106,6 +106,7 @@ contains
       full_system%element_numbers = sys_geom%element_numbers
       full_system%coordinates = sys_geom%coordinates
       full_system%charge = sys_geom%charge
+      full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
 
       ! Allocate storage for all gradients

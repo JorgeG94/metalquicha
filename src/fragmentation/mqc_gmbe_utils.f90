@@ -667,7 +667,7 @@ contains
          ! New atom set
          if (n_terms >= max_terms) then
             call logger%error("Exceeded maximum PIE terms ("//to_char(max_terms)//")")
-            return
+            error stop "Exceeded maximum PIE terms"
          end if
          n_terms = n_terms + 1
          atom_sets(1:n_current_atoms, n_terms) = current_atoms(1:n_current_atoms)
