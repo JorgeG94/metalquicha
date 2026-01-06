@@ -141,11 +141,11 @@
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_fragment">first_fragment</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_level">first_level</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-frag_level~4">frag_level</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~8">fragment_size</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~64">i</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~11">iatom</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~13">fragment_size</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~74">i</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~13">iatom</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-io_stat~23">io_stat</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~20">j</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~21">j</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-json_line">json_line</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-level_name~2">level_name</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-output_file~2">output_file</a>
@@ -353,7 +353,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~11"></span>
+              <span class="anchor" id="variable-polymers~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -368,7 +368,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~3"></span>
+              <span class="anchor" id="variable-fragment_count~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -383,7 +383,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -398,7 +398,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -413,7 +413,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -428,7 +428,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level"></span>
+              <span class="anchor" id="variable-sum_by_level~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -443,7 +443,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~3"></span>
+              <span class="anchor" id="variable-total_energy~9"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -458,7 +458,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~3"></span>
+              <span class="anchor" id="variable-total_gradient~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -473,7 +473,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -488,7 +488,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1082,7 +1082,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~8"></span>
+              <span class="anchor" id="variable-fragment_size~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -1099,7 +1099,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~64"></span>
+              <span class="anchor" id="variable-i~74"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1116,7 +1116,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~11"></span>
+              <span class="anchor" id="variable-iatom~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -1150,7 +1150,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~20"></span>
+              <span class="anchor" id="variable-j~21"></span>
               integer,
             </td>
               <td>private</td>
@@ -1453,7 +1453,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-05 12:39 +0000             </p>
+ on 2026-01-06 10:13 +0000             </p>
           </div>
         </div>
         <br>

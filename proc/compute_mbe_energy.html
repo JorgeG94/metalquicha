@@ -136,17 +136,17 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-body_level">body_level</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-current_log_level~5">current_log_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-current_log_level">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-delta_e">delta_E</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-delta_energies~3">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-delta_energies">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-do_detailed_print">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-energies~3">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-fragment_size~11">fragment_size</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-i~70">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-energies">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-fragment_size">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-i~7">i</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-lookup">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-lookup_timer">lookup_timer</a>
-            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-sum_by_level~2">sum_by_level</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-nlevel~2">nlevel</a>
+            <a class="list-group-item" href="../proc/compute_mbe_energy.html#variable-sum_by_level">sum_by_level</a>
         </div>
       </div>
     </div>
@@ -351,7 +351,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -366,7 +366,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -381,7 +381,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -396,7 +396,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~6"></span>
+              <span class="anchor" id="variable-results"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -411,7 +411,7 @@ Detailed breakdown is printed only if logger level is verbose or higher.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -1197,24 +1197,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-body_level"></span>
-              integer,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>body_level</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level"></span>
               integer,
             </td>
               <td>private</td>
@@ -1248,7 +1231,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~3"></span>
+              <span class="anchor" id="variable-delta_energies"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1282,7 +1265,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~3"></span>
+              <span class="anchor" id="variable-energies"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1299,7 +1282,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~11"></span>
+              <span class="anchor" id="variable-fragment_size"></span>
               integer,
             </td>
               <td>private</td>
@@ -1316,7 +1299,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~70"></span>
+              <span class="anchor" id="variable-i~7"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1367,7 +1350,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sum_by_level~2"></span>
+              <span class="anchor" id="variable-nlevel~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nlevel</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sum_by_level"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -1412,7 +1412,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">body_level</span><span class="p">,</span><span class="w"> </span><span class="n">current_log_level</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">nlevel</span><span class="p">,</span><span class="w"> </span><span class="n">current_log_level</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(:),</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">(:),</span><span class="w"> </span><span class="n">energies</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">delta_E</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">do_detailed_print</span>
@@ -1448,12 +1448,12 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Bottom-up computation: process fragments by size (1-body, then 2-body, then 3-body, etc.)</span>
 <span class="w">      </span><span class="c">! This makes the algorithm independent of input fragment order</span>
 <span class="w">      </span><span class="c">! We process by n-mer level to ensure all subsets are computed before they&#39;re needed</span>
-<span class="w">      </span><span class="k">do </span><span class="n">body_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">      </span><span class="k">do </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">            </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 
-<span class="w">            </span><span class="c">! Only process fragments of the current body_level</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">body_level</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="w">            </span><span class="c">! Only process fragments of the current nlevel</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">nlevel</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
 <span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">               </span><span class="c">! 1-body: deltaE = E (no subsets to subtract)</span>
@@ -1461,7 +1461,7 @@ large graphs.</div>
 <span class="w">               </span><span class="n">sum_by_level</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
 <span class="w">            </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">               </span><span class="c">! n-body: deltaE = E - sum(all subset deltaEs)</span>
-<span class="w">               </span><span class="c">! All subsets have already been computed in previous body_level iterations</span>
+<span class="w">               </span><span class="c">! All subsets have already been computed in previous nlevel iterations</span>
 <span class="w">               </span><span class="n">delta_E</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compute_mbe</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_size</span><span class="p">),</span><span class="w"> </span><span class="n">lookup</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                     </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">)</span>
 <span class="w">               </span><span class="n">delta_energies</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">delta_E</span>
@@ -1477,11 +1477,11 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Print text summary to console</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;MBE Energy breakdown:&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">do </span><span class="n">body_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">body_level</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1e-15_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">do </span><span class="n">nlevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1e-15_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            block</span>
 <span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_line</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">body_level</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-body:  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">body_level</span><span class="p">)</span>
+<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">energy_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nlevel</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-body:  &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">nlevel</span><span class="p">)</span>
 <span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">energy_line</span><span class="p">))</span>
 <span class="w">            </span><span class="k">end block</span>
 <span class="k">         end if</span>
@@ -1527,7 +1527,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-05 12:39 +0000             </p>
+ on 2026-01-06 10:13 +0000             </p>
           </div>
         </div>
         <br>
