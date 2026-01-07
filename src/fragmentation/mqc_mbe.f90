@@ -14,6 +14,7 @@ module mqc_mbe
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
+   use omp_lib, only: omp_get_max_threads
 
    implicit none
    private
@@ -109,13 +110,16 @@ contains
       ! This makes the algorithm independent of input fragment order
       ! We process by n-mer level to ensure all subsets are computed before they're needed
       ! OpenMP parallelization: within each level, all computations are independent
+      call logger%info("MBE energy: using "//to_char(omp_get_max_threads())//" OpenMP threads")
+
       do nlevel = 1, max_level
          level_sum = 0.0_dp
 
          !$omp parallel do default(shared) &
          !$omp& private(j, i, delta_E) &
          !$omp& reduction(+:level_sum) &
-         !$omp& schedule(dynamic, 1000)
+         !$omp& schedule(dynamic, 1000) &
+         !$omp& num_threads(omp_get_max_threads())
          do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
             i = level_indices(j)
 
@@ -476,7 +480,8 @@ contains
          !$omp parallel do default(shared) &
          !$omp& private(j, i, delta_E) &
          !$omp& reduction(+:level_sum) &
-         !$omp& schedule(dynamic, 1000)
+         !$omp& schedule(dynamic, 1000) &
+         !$omp& num_threads(omp_get_max_threads())
          do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
             i = level_indices(j)
 
@@ -680,7 +685,8 @@ contains
          !$omp parallel do default(shared) &
          !$omp& private(j, i, delta_E) &
          !$omp& reduction(+:level_sum) &
-         !$omp& schedule(dynamic, 1000)
+         !$omp& schedule(dynamic, 1000) &
+         !$omp& num_threads(omp_get_max_threads())
          do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
             i = level_indices(j)
 
