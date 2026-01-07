@@ -39,13 +39,17 @@ contains
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(out) :: total_energy
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level
+      integer(int64) :: i, j, idx
+      integer :: nlevel, current_log_level
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
-      real(dp) :: delta_E
+      real(dp) :: delta_E, level_sum
       logical :: do_detailed_print
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: lookup_timer
+      ! OpenMP parallelization support
+      integer, allocatable :: fragment_sizes(:)
+      integer(int64), allocatable :: level_indices(:), level_offsets(:)
+      integer(int64) :: level_counts(max_level)
 
       call logger%configuration(level=current_log_level)
       do_detailed_print = (current_log_level >= verbose_level)
@@ -56,46 +60,81 @@ contains
       sum_by_level = 0.0_dp
       delta_energies = 0.0_dp
 
-      ! Extract total energies from results
+      ! Extract total energies from results and pre-compute fragment sizes
+      allocate (fragment_sizes(fragment_count))
       do i = 1_int64, fragment_count
          energies(i) = results(i)%energy%total()
+         fragment_sizes(i) = count(polymers(i, :) > 0)
       end do
 
       ! Build hash table for fast fragment lookups
       call lookup_timer%start()
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         call lookup%insert(polymers(i, :), fragment_size, i)
+         call lookup%insert(polymers(i, :), fragment_sizes(i), i)
       end do
       call lookup_timer%stop()
       call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
       call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
                         ", entries: "//to_char(lookup%n_entries))
 
+      ! Build level-indexed arrays for efficient parallel iteration
+      level_counts = 0_int64
+      do i = 1_int64, fragment_count
+         if (fragment_sizes(i) >= 1 .and. fragment_sizes(i) <= max_level) then
+            level_counts(fragment_sizes(i)) = level_counts(fragment_sizes(i)) + 1_int64
+         end if
+      end do
+
+      ! Compute level offsets (prefix sum)
+      allocate (level_offsets(max_level + 1))
+      level_offsets(1) = 1_int64
+      do nlevel = 1, max_level
+         level_offsets(nlevel + 1) = level_offsets(nlevel) + level_counts(nlevel)
+      end do
+
+      ! Build index array grouping fragments by level
+      allocate (level_indices(fragment_count))
+      level_counts = 0_int64  ! Reuse as insertion counters
+      do i = 1_int64, fragment_count
+         nlevel = fragment_sizes(i)
+         if (nlevel >= 1 .and. nlevel <= max_level) then
+            idx = level_offsets(nlevel) + level_counts(nlevel)
+            level_indices(idx) = i
+            level_counts(nlevel) = level_counts(nlevel) + 1_int64
+         end if
+      end do
+
       ! Bottom-up computation: process fragments by size (1-body, then 2-body, then 3-body, etc.)
       ! This makes the algorithm independent of input fragment order
       ! We process by n-mer level to ensure all subsets are computed before they're needed
+      ! OpenMP parallelization: within each level, all computations are independent
       do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+         level_sum = 0.0_dp
 
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
+         !$omp parallel do default(shared) &
+         !$omp& private(j, i, delta_E) &
+         !$omp& reduction(+:level_sum) &
+         !$omp& schedule(dynamic, 1000)
+         do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
+            i = level_indices(j)
 
-            if (fragment_size == 1) then
+            if (nlevel == 1) then
                ! 1-body: deltaE = E (no subsets to subtract)
                delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+               level_sum = level_sum + delta_energies(i)
+            else
                ! n-body: deltaE = E - sum(all subset deltaEs)
                ! All subsets have already been computed in previous nlevel iterations
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
+               delta_E = compute_mbe(i, polymers(i, 1:nlevel), lookup, &
+                                     energies, delta_energies, nlevel)
                delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+               level_sum = level_sum + delta_E
             end if
          end do
+         !$omp end parallel do
+
+         sum_by_level(nlevel) = level_sum
       end do
 
       ! Clean up lookup table
@@ -129,7 +168,7 @@ contains
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
                                          sum_by_level, total_energy, results=results)
 
-      deallocate (sum_by_level, delta_energies, energies)
+      deallocate (sum_by_level, delta_energies, energies, fragment_sizes, level_indices, level_offsets)
 
    end subroutine compute_mbe_energy
 
@@ -347,14 +386,18 @@ contains
       real(dp), intent(out) :: total_gradient(:, :)  !! (3, total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level, iatom
+      integer(int64) :: i, j, idx
+      integer :: nlevel, current_log_level, iatom
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
-      real(dp) :: delta_E
+      real(dp) :: delta_E, level_sum
       logical :: do_detailed_print
       type(fragment_lookup_t) :: lookup
       type(timer_type) :: lookup_timer
+      ! OpenMP parallelization support
+      integer, allocatable :: fragment_sizes(:)
+      integer(int64), allocatable :: level_indices(:), level_offsets(:)
+      integer(int64) :: level_counts(max_level)
 
       ! Validate that all fragments have gradients
       do i = 1_int64, fragment_count
@@ -374,9 +417,11 @@ contains
       sum_by_level = 0.0_dp
       delta_energies = 0.0_dp
 
-      ! Extract total energies from results
+      ! Extract total energies from results and pre-compute fragment sizes
+      allocate (fragment_sizes(fragment_count))
       do i = 1_int64, fragment_count
          energies(i) = results(i)%energy%total()
+         fragment_sizes(i) = count(polymers(i, :) > 0)
       end do
 
       ! Allocate arrays for gradient
@@ -388,45 +433,77 @@ contains
       call lookup_timer%start()
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         call lookup%insert(polymers(i, :), fragment_size, i)
+         call lookup%insert(polymers(i, :), fragment_sizes(i), i)
       end do
       call lookup_timer%stop()
       call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
       call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
                         ", entries: "//to_char(lookup%n_entries))
 
+      ! Build level-indexed arrays for efficient parallel iteration
+      level_counts = 0_int64
+      do i = 1_int64, fragment_count
+         if (fragment_sizes(i) >= 1 .and. fragment_sizes(i) <= max_level) then
+            level_counts(fragment_sizes(i)) = level_counts(fragment_sizes(i)) + 1_int64
+         end if
+      end do
+
+      ! Compute level offsets (prefix sum)
+      allocate (level_offsets(max_level + 1))
+      level_offsets(1) = 1_int64
+      do nlevel = 1, max_level
+         level_offsets(nlevel + 1) = level_offsets(nlevel) + level_counts(nlevel)
+      end do
+
+      ! Build index array grouping fragments by level
+      allocate (level_indices(fragment_count))
+      level_counts = 0_int64  ! Reuse as insertion counters
+      do i = 1_int64, fragment_count
+         nlevel = fragment_sizes(i)
+         if (nlevel >= 1 .and. nlevel <= max_level) then
+            idx = level_offsets(nlevel) + level_counts(nlevel)
+            level_indices(idx) = i
+            level_counts(nlevel) = level_counts(nlevel) + 1_int64
+         end if
+      end do
+
       ! Bottom-up computation: process fragments by size (1-body, 2-body, 3-body, etc.)
       ! Process by n-mer level to ensure all subsets are computed before they're needed
+      ! OpenMP parallelization: within each level, all computations are independent
       do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+         level_sum = 0.0_dp
 
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
+         !$omp parallel do default(shared) &
+         !$omp& private(j, i, delta_E) &
+         !$omp& reduction(+:level_sum) &
+         !$omp& schedule(dynamic, 1000)
+         do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
+            i = level_indices(j)
 
-            if (fragment_size == 1) then
+            if (nlevel == 1) then
                ! 1-body: deltaE = E, deltaG = G (no subsets to subtract)
                delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
+               level_sum = level_sum + delta_energies(i)
 
                ! Map fragment gradient to system coordinates
-               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:fragment_size), &
+               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:nlevel), &
                                                     sys_geom, delta_gradients(:, :, i), bonds)
-
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+            else
                ! n-body: deltaE = E - sum(all subset deltaEs), deltaG = G - sum(all subset deltaGs)
                ! Energy delta
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
+               delta_E = compute_mbe(i, polymers(i, 1:nlevel), lookup, &
+                                     energies, delta_energies, nlevel)
                delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+               level_sum = level_sum + delta_E
 
                ! Gradient delta
-               call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                         results, delta_gradients, fragment_size, sys_geom, bonds)
+               call compute_mbe_gradient(i, polymers(i, 1:nlevel), lookup, &
+                                         results, delta_gradients, nlevel, sys_geom, bonds)
             end if
          end do
+         !$omp end parallel do
+
+         sum_by_level(nlevel) = level_sum
       end do
 
       ! Clean up lookup table
@@ -435,10 +512,9 @@ contains
       ! Compute total energy
       total_energy = sum(sum_by_level)
 
-      ! Compute total gradient
+      ! Compute total gradient (using pre-computed sizes)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size <= max_level) then
+         if (fragment_sizes(i) <= max_level) then
             total_gradient = total_gradient + delta_gradients(:, :, i)
          end if
       end do
@@ -488,7 +564,8 @@ contains
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
                                          sum_by_level, total_energy, total_gradient, results=results)
 
-      deallocate (sum_by_level, delta_energies, energies, delta_gradients)
+      deallocate (sum_by_level, delta_energies, energies, delta_gradients, &
+                  fragment_sizes, level_indices, level_offsets)
 
    end subroutine compute_mbe_energy_gradient
 
@@ -509,8 +586,8 @@ contains
       real(dp), intent(out) :: total_hessian(:, :)   !! (3*total_atoms, 3*total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level, iatom
+      integer(int64) :: i, j, idx
+      integer :: nlevel, current_log_level, iatom
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
       type(fragment_lookup_t) :: lookup
@@ -518,7 +595,11 @@ contains
       integer :: hess_dim
       type(physical_fragment_t) :: fragment
       real(dp), allocatable :: temp_hess(:, :)
-      real(dp) :: delta_E
+      real(dp) :: delta_E, level_sum
+      ! OpenMP parallelization support
+      integer, allocatable :: fragment_sizes(:)
+      integer(int64), allocatable :: level_indices(:), level_offsets(:)
+      integer(int64) :: level_counts(max_level)
 
       hess_dim = 3*sys_geom%total_atoms
 
@@ -548,66 +629,99 @@ contains
       total_gradient = 0.0_dp
       total_hessian = 0.0_dp
 
+      ! Pre-compute fragment sizes and extract energies
+      allocate (fragment_sizes(fragment_count))
+      do i = 1_int64, fragment_count
+         energies(i) = results(i)%energy%total()
+         fragment_sizes(i) = count(polymers(i, :) > 0)
+      end do
+
       ! Build lookup table for fragment indices
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size > 0 .and. fragment_size <= max_level) then
-            call lookup%insert(polymers(i, 1:fragment_size), fragment_size, i)
+         if (fragment_sizes(i) > 0 .and. fragment_sizes(i) <= max_level) then
+            call lookup%insert(polymers(i, 1:fragment_sizes(i)), fragment_sizes(i), i)
          end if
       end do
 
-      ! Extract energies first
+      ! Build level-indexed arrays for efficient parallel iteration
+      level_counts = 0_int64
       do i = 1_int64, fragment_count
-         energies(i) = results(i)%energy%total()
+         if (fragment_sizes(i) >= 1 .and. fragment_sizes(i) <= max_level) then
+            level_counts(fragment_sizes(i)) = level_counts(fragment_sizes(i)) + 1_int64
+         end if
+      end do
+
+      ! Compute level offsets (prefix sum)
+      allocate (level_offsets(max_level + 1))
+      level_offsets(1) = 1_int64
+      do nlevel = 1, max_level
+         level_offsets(nlevel + 1) = level_offsets(nlevel) + level_counts(nlevel)
+      end do
+
+      ! Build index array grouping fragments by level
+      allocate (level_indices(fragment_count))
+      level_counts = 0_int64  ! Reuse as insertion counters
+      do i = 1_int64, fragment_count
+         nlevel = fragment_sizes(i)
+         if (nlevel >= 1 .and. nlevel <= max_level) then
+            idx = level_offsets(nlevel) + level_counts(nlevel)
+            level_indices(idx) = i
+            level_counts(nlevel) = level_counts(nlevel) + 1_int64
+         end if
       end do
 
       ! Compute delta energies, gradients, and Hessians for each fragment
       ! Process by n-mer level to ensure all subsets are computed before they're needed
+      ! OpenMP parallelization: within each level, all computations are independent
       do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
+         level_sum = 0.0_dp
 
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
+         !$omp parallel do default(shared) &
+         !$omp& private(j, i, delta_E) &
+         !$omp& reduction(+:level_sum) &
+         !$omp& schedule(dynamic, 1000)
+         do j = level_offsets(nlevel), level_offsets(nlevel + 1) - 1_int64
+            i = level_indices(j)
 
-            if (fragment_size == 1) then
+            if (nlevel == 1) then
                ! 1-body: delta = value (no subsets)
                delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
+               level_sum = level_sum + delta_energies(i)
 
                ! Map fragment gradient and Hessian to system coordinates
-               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:fragment_size), &
+               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:nlevel), &
                                                     sys_geom, delta_gradients(:, :, i), bonds)
-               call map_fragment_to_system_hessian(results(i)%hessian, polymers(i, 1:fragment_size), &
+               call map_fragment_to_system_hessian(results(i)%hessian, polymers(i, 1:nlevel), &
                                                    sys_geom, delta_hessians(:, :, i), bonds)
-
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+            else
                ! n-body: delta = value - sum(all subset deltas)
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
+               delta_E = compute_mbe(i, polymers(i, 1:nlevel), lookup, &
+                                     energies, delta_energies, nlevel)
                delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+               level_sum = level_sum + delta_E
 
                ! Gradient delta
-               call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                         results, delta_gradients, fragment_size, sys_geom, bonds)
+               call compute_mbe_gradient(i, polymers(i, 1:nlevel), lookup, &
+                                         results, delta_gradients, nlevel, sys_geom, bonds)
 
                ! Hessian delta
-               call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
-                                        results, delta_hessians, fragment_size, sys_geom, bonds)
+               call compute_mbe_hessian(i, polymers(i, 1:nlevel), lookup, &
+                                        results, delta_hessians, nlevel, sys_geom, bonds)
             end if
          end do
+         !$omp end parallel do
+
+         sum_by_level(nlevel) = level_sum
       end do
 
       ! Clean up lookup table
       call lookup%destroy()
 
-      ! Compute total energy, gradient, and Hessian
+      ! Compute total energy, gradient, and Hessian (using pre-computed sizes)
       total_energy = sum(sum_by_level)
       do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size <= max_level) then
+         if (fragment_sizes(i) <= max_level) then
             total_gradient = total_gradient + delta_gradients(:, :, i)
             total_hessian = total_hessian + delta_hessians(:, :, i)
          end if
@@ -655,7 +769,8 @@ contains
       call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
                                          sum_by_level, total_energy, total_gradient, total_hessian, results)
 
-      deallocate (sum_by_level, delta_energies, energies, delta_gradients, delta_hessians, temp_hess)
+      deallocate (sum_by_level, delta_energies, energies, delta_gradients, delta_hessians, temp_hess, &
+                  fragment_sizes, level_indices, level_offsets)
 
    end subroutine compute_mbe_energy_gradient_hessian
 
