@@ -744,7 +744,7 @@ contains
                   end if
                   if (config%frag_level > 10) then
                      call error%set(ERROR_VALIDATION, &
-                        "Fragmentation level must be <= 10 (decamers). Higher levels not supported.")
+                                    "Fragmentation level must be <= 10 (decamers). Higher levels not supported.")
                      return
                   end if
                end if
@@ -759,7 +759,7 @@ contains
                   end if
                   if (config%max_intersection_level > 10) then
                      call error%set(ERROR_VALIDATION, &
-                        "max_intersection_level must be <= 10 (decamers). Higher levels not supported.")
+                                    "max_intersection_level must be <= 10 (decamers). Higher levels not supported.")
                      return
                   end if
                end if

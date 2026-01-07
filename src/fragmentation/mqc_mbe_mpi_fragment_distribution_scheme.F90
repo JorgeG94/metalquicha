@@ -70,7 +70,7 @@ contains
    end subroutine do_fragment_work
 
    module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
