@@ -1,7 +1,7 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
-   subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+   module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it

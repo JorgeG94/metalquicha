@@ -710,8 +710,8 @@ contains
                   return
                end if
 
-               if (nmer_level > 8) then
-                  call error%set(ERROR_PARSE, "N-mer level too large in cutoffs (max 8 for octamer)")
+               if (nmer_level > 10) then
+                  call error%set(ERROR_PARSE, "N-mer level too large in cutoffs (max 10 for decamer)")
                   return
                end if
 
@@ -722,9 +722,9 @@ contains
                   return
                end if
 
-               ! Allocate array if not yet allocated (up to octamer = 8)
+               ! Allocate array if not yet allocated (up to decamer = 10)
                if (.not. allocated(config%fragment_cutoffs)) then
-                  allocate (config%fragment_cutoffs(8))
+                  allocate (config%fragment_cutoffs(10))
                   config%fragment_cutoffs = -1.0_dp  ! Initialize with sentinel value
                end if
 
@@ -737,10 +737,32 @@ contains
                config%frag_method = trim(value)
             case ('level')
                read (value, *, iostat=io_stat) config%frag_level
+               if (io_stat == 0) then
+                  if (config%frag_level < 1) then
+                     call error%set(ERROR_VALIDATION, "Fragmentation level must be >= 1")
+                     return
+                  end if
+                  if (config%frag_level > 10) then
+                     call error%set(ERROR_VALIDATION, &
+                                    "Fragmentation level must be <= 10 (decamers). Higher levels not supported.")
+                     return
+                  end if
+               end if
             case ('allow_overlapping_fragments')
                config%allow_overlapping_fragments = (trim(value) == 'true')
             case ('max_intersection_level')
                read (value, *, iostat=io_stat) config%max_intersection_level
+               if (io_stat == 0) then
+                  if (config%max_intersection_level < 1) then
+                     call error%set(ERROR_VALIDATION, "max_intersection_level must be >= 1")
+                     return
+                  end if
+                  if (config%max_intersection_level > 10) then
+                     call error%set(ERROR_VALIDATION, &
+                                    "max_intersection_level must be <= 10 (decamers). Higher levels not supported.")
+                     return
+                  end if
+               end if
             case ('embedding')
                config%embedding = trim(value)
             case ('cutoff_method')

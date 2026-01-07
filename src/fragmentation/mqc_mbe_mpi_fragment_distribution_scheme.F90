@@ -3,7 +3,7 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_sc
 
 contains
 
-   subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+   module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -69,8 +69,8 @@ contains
       end if
    end subroutine do_fragment_work
 
-   subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+   module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
@@ -349,7 +349,7 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   subroutine node_coordinator(world_comm, node_comm, calc_type)
+   module subroutine node_coordinator(world_comm, node_comm, calc_type)
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
       class(comm_t), intent(in) :: world_comm, node_comm
@@ -459,7 +459,7 @@ contains
       end do
    end subroutine node_coordinator
 
-   subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+   module subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
       !! Node worker for processing fragments assigned by node coordinator
       use mqc_error, only: error_t
       class(comm_t), intent(in) :: world_comm, node_comm
