@@ -28,109 +28,14 @@ contains
 
    subroutine compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
       !! Compute the many-body expansion (MBE) energy
-      !! Total = sum(E(i)) + sum(deltaE(ij)) + sum(deltaE(ijk)) + ...
-      !! General n-body correction:
-      !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all lower-order terms
-      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
-      !! Detailed breakdown is printed only if logger level is verbose or higher.
+      !! Public API wrapper - maintains backward compatibility
       use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: polymers(:, :), max_level
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(out) :: total_energy
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level
-      real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
-      real(dp) :: delta_E
-      logical :: do_detailed_print
-      type(fragment_lookup_t) :: lookup
-      type(timer_type) :: lookup_timer
-
-      call logger%configuration(level=current_log_level)
-      do_detailed_print = (current_log_level >= verbose_level)
-
-      allocate (sum_by_level(max_level))
-      allocate (delta_energies(fragment_count))
-      allocate (energies(fragment_count))
-      sum_by_level = 0.0_dp
-      delta_energies = 0.0_dp
-
-      ! Extract total energies from results
-      do i = 1_int64, fragment_count
-         energies(i) = results(i)%energy%total()
-      end do
-
-      ! Build hash table for fast fragment lookups
-      call lookup_timer%start()
-      call lookup%init(fragment_count)
-      do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         call lookup%insert(polymers(i, :), fragment_size, i)
-      end do
-      call lookup_timer%stop()
-      call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
-      call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
-                        ", entries: "//to_char(lookup%n_entries))
-
-      ! Bottom-up computation: process fragments by size (1-body, then 2-body, then 3-body, etc.)
-      ! This makes the algorithm independent of input fragment order
-      ! We process by n-mer level to ensure all subsets are computed before they're needed
-      do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
-
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
-
-            if (fragment_size == 1) then
-               ! 1-body: deltaE = E (no subsets to subtract)
-               delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
-               ! n-body: deltaE = E - sum(all subset deltaEs)
-               ! All subsets have already been computed in previous nlevel iterations
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
-               delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
-            end if
-         end do
-      end do
-
-      ! Clean up lookup table
-      call lookup%destroy()
-
-      total_energy = sum(sum_by_level)
-
-      ! Print text summary to console
-      call logger%info("MBE Energy breakdown:")
-      do nlevel = 1, max_level
-         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
-            block
-               character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
-               call logger%info(trim(energy_line))
-            end block
-         end if
-      end do
-      block
-         character(len=256) :: total_line
-         write (total_line, '(a,f20.10)') "  Total:   ", total_energy
-         call logger%info(trim(total_line))
-      end block
-
-      ! Print detailed breakdown if requested
-      if (do_detailed_print) then
-         call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
-      end if
-
-      ! Always write JSON file for machine-readable output
-      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy, results=results)
-
-      deallocate (sum_by_level, delta_energies, energies)
-
+      call compute_mbe_internal(polymers, fragment_count, max_level, results, total_energy)
    end subroutine compute_mbe_energy
 
    function compute_mbe(fragment_idx, fragment, lookup, energies, delta_energies, n) result(delta_E)
@@ -329,8 +234,7 @@ contains
    subroutine compute_mbe_energy_gradient(polymers, fragment_count, max_level, results, sys_geom, &
                                           total_energy, total_gradient, bonds)
       !! Compute both MBE energy and gradient in a single pass
-      !! This is more efficient than calling compute_mbe_energy and compute_mbe_gradient separately
-      !! as it only builds the lookup table once and processes all fragments in one loop
+      !! Public API wrapper - maintains backward compatibility
       use mqc_result_types, only: calculation_result_t
       use mqc_config_parser, only: bond_t
       integer(int64), intent(in) :: fragment_count
@@ -341,159 +245,16 @@ contains
       real(dp), intent(out) :: total_gradient(:, :)  !! (3, total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level, iatom
-      real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
-      real(dp), allocatable :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
-      real(dp) :: delta_E
-      logical :: do_detailed_print
-      type(fragment_lookup_t) :: lookup
-      type(timer_type) :: lookup_timer
-
-      ! Validate that all fragments have gradients
-      do i = 1_int64, fragment_count
-         if (.not. results(i)%has_gradient) then
-            call logger%error("Fragment "//to_char(i)//" does not have gradient!")
-            error stop "Missing gradient in compute_mbe_energy_gradient"
-         end if
-      end do
-
-      call logger%configuration(level=current_log_level)
-      do_detailed_print = (current_log_level >= verbose_level)
-
-      ! Allocate arrays for energy
-      allocate (sum_by_level(max_level))
-      allocate (delta_energies(fragment_count))
-      allocate (energies(fragment_count))
-      sum_by_level = 0.0_dp
-      delta_energies = 0.0_dp
-
-      ! Extract total energies from results
-      do i = 1_int64, fragment_count
-         energies(i) = results(i)%energy%total()
-      end do
-
-      ! Allocate arrays for gradient
-      allocate (delta_gradients(3, sys_geom%total_atoms, fragment_count))
-      delta_gradients = 0.0_dp
-      total_gradient = 0.0_dp
-
-      ! Build hash table for fast fragment lookups (shared for both energy and gradient)
-      call lookup_timer%start()
-      call lookup%init(fragment_count)
-      do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         call lookup%insert(polymers(i, :), fragment_size, i)
-      end do
-      call lookup_timer%stop()
-      call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
-      call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
-                        ", entries: "//to_char(lookup%n_entries))
-
-      ! Bottom-up computation: process fragments by size (1-body, 2-body, 3-body, etc.)
-      ! Process by n-mer level to ensure all subsets are computed before they're needed
-      do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
-
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
-
-            if (fragment_size == 1) then
-               ! 1-body: deltaE = E, deltaG = G (no subsets to subtract)
-               delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
-
-               ! Map fragment gradient to system coordinates
-               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:fragment_size), &
-                                                    sys_geom, delta_gradients(:, :, i), bonds)
-
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
-               ! n-body: deltaE = E - sum(all subset deltaEs), deltaG = G - sum(all subset deltaGs)
-               ! Energy delta
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
-               delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
-
-               ! Gradient delta
-               call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                         results, delta_gradients, fragment_size, sys_geom, bonds)
-            end if
-         end do
-      end do
-
-      ! Clean up lookup table
-      call lookup%destroy()
-
-      ! Compute total energy
-      total_energy = sum(sum_by_level)
-
-      ! Compute total gradient
-      do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size <= max_level) then
-            total_gradient = total_gradient + delta_gradients(:, :, i)
-         end if
-      end do
-
-      ! Print energy breakdown
-      call logger%info("MBE Energy breakdown:")
-      do nlevel = 1, max_level
-         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
-            block
-               character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
-               call logger%info(trim(energy_line))
-            end block
-         end if
-      end do
-      block
-         character(len=256) :: total_line
-         write (total_line, '(a,f20.10)') "  Total:   ", total_energy
-         call logger%info(trim(total_line))
-      end block
-
-      ! Print gradient info
-      call logger%info("MBE gradient computation completed")
-      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
-
-      ! Print detailed gradient if verbose and small system
-      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-         call logger%info(" ")
-         call logger%info("Total MBE Gradient (Hartree/Bohr):")
-         do iatom = 1, sys_geom%total_atoms
-            block
-               character(len=256) :: grad_line
-               write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
-                  total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-               call logger%info(trim(grad_line))
-            end block
-         end do
-         call logger%info(" ")
-      end if
-
-      ! Print detailed breakdown if requested
-      if (do_detailed_print) then
-         call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
-      end if
-
-      ! Always write JSON file for machine-readable output (include gradient)
-      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy, total_gradient, results=results)
-
-      deallocate (sum_by_level, delta_energies, energies, delta_gradients)
-
+      call compute_mbe_internal(polymers, fragment_count, max_level, results, total_energy, &
+                                sys_geom, total_gradient, bonds=bonds)
    end subroutine compute_mbe_energy_gradient
 
    subroutine compute_mbe_energy_gradient_hessian(polymers, fragment_count, max_level, results, sys_geom, &
                                                   total_energy, total_gradient, total_hessian, bonds)
       !! Compute MBE energy, gradient, and Hessian in a single pass
-      !! Most efficient for simultaneous energy+gradient+Hessian calculations
+      !! Public API wrapper - maintains backward compatibility
       use mqc_result_types, only: calculation_result_t
       use mqc_config_parser, only: bond_t
-      use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
-                                       redistribute_cap_gradients, redistribute_cap_hessian
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: polymers(:, :), max_level
       type(calculation_result_t), intent(in) :: results(:)
@@ -503,154 +264,8 @@ contains
       real(dp), intent(out) :: total_hessian(:, :)   !! (3*total_atoms, 3*total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)
 
-      integer(int64) :: i
-      integer :: fragment_size, nlevel, current_log_level, iatom
-      real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
-      real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
-      type(fragment_lookup_t) :: lookup
-      logical :: do_detailed_print
-      integer :: hess_dim
-      type(physical_fragment_t) :: fragment
-      real(dp), allocatable :: temp_hess(:, :)
-      real(dp) :: delta_E
-
-      hess_dim = 3*sys_geom%total_atoms
-
-      ! Validate all fragments have Hessians
-      do i = 1, fragment_count
-         if (.not. results(i)%has_hessian) then
-            call logger%error("Fragment "//to_char(i)//" does not have Hessian!")
-            error stop "Missing Hessian in compute_mbe_energy_gradient_hessian"
-         end if
-      end do
-
-      call logger%configuration(level=current_log_level)
-      do_detailed_print = (current_log_level >= verbose_level)
-
-      allocate (sum_by_level(max_level))
-      allocate (delta_energies(fragment_count))
-      allocate (energies(fragment_count))
-      allocate (delta_gradients(3, sys_geom%total_atoms, fragment_count))
-      allocate (delta_hessians(hess_dim, hess_dim, fragment_count))
-      allocate (temp_hess(hess_dim, hess_dim))
-
-      sum_by_level = 0.0_dp
-      delta_energies = 0.0_dp
-      energies = 0.0_dp
-      delta_gradients = 0.0_dp
-      delta_hessians = 0.0_dp
-      total_gradient = 0.0_dp
-      total_hessian = 0.0_dp
-
-      ! Build lookup table for fragment indices
-      call lookup%init(fragment_count)
-      do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size > 0 .and. fragment_size <= max_level) then
-            call lookup%insert(polymers(i, 1:fragment_size), fragment_size, i)
-         end if
-      end do
-
-      ! Extract energies first
-      do i = 1_int64, fragment_count
-         energies(i) = results(i)%energy%total()
-      end do
-
-      ! Compute delta energies, gradients, and Hessians for each fragment
-      ! Process by n-mer level to ensure all subsets are computed before they're needed
-      do nlevel = 1, max_level
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
-
-            ! Only process fragments of the current nlevel
-            if (fragment_size /= nlevel) cycle
-
-            if (fragment_size == 1) then
-               ! 1-body: delta = value (no subsets)
-               delta_energies(i) = energies(i)
-               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
-
-               ! Map fragment gradient and Hessian to system coordinates
-               call map_fragment_to_system_gradient(results(i)%gradient, polymers(i, 1:fragment_size), &
-                                                    sys_geom, delta_gradients(:, :, i), bonds)
-               call map_fragment_to_system_hessian(results(i)%hessian, polymers(i, 1:fragment_size), &
-                                                   sys_geom, delta_hessians(:, :, i), bonds)
-
-            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
-               ! n-body: delta = value - sum(all subset deltas)
-               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
-                                     energies, delta_energies, fragment_size)
-               delta_energies(i) = delta_E
-               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
-
-               ! Gradient delta
-               call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                         results, delta_gradients, fragment_size, sys_geom, bonds)
-
-               ! Hessian delta
-               call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
-                                        results, delta_hessians, fragment_size, sys_geom, bonds)
-            end if
-         end do
-      end do
-
-      ! Clean up lookup table
-      call lookup%destroy()
-
-      ! Compute total energy, gradient, and Hessian
-      total_energy = sum(sum_by_level)
-      do i = 1_int64, fragment_count
-         fragment_size = count(polymers(i, :) > 0)
-         if (fragment_size <= max_level) then
-            total_gradient = total_gradient + delta_gradients(:, :, i)
-            total_hessian = total_hessian + delta_hessians(:, :, i)
-         end if
-      end do
-
-      ! Print energy breakdown
-      call logger%info("MBE Energy breakdown:")
-      do nlevel = 1, max_level
-         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
-            block
-               character(len=256) :: energy_line
-               write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
-               call logger%info(trim(energy_line))
-            end block
-         end if
-      end do
-      block
-         character(len=256) :: total_line
-         write (total_line, '(a,f20.10)') "  Total:   ", total_energy
-         call logger%info(trim(total_line))
-      end block
-
-      ! Print gradient and Hessian info
-      call logger%info("MBE gradient computation completed")
-      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
-      call logger%info("MBE Hessian computation completed")
-      call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
-
-      ! Print detailed gradient if verbose and small system
-      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-         call logger%info(" ")
-         call logger%info("Total MBE Gradient (Hartree/Bohr):")
-         do iatom = 1, sys_geom%total_atoms
-            block
-               character(len=256) :: grad_line
-               write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
-                  total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-               call logger%info(trim(grad_line))
-            end block
-         end do
-         call logger%info(" ")
-      end if
-
-      ! Always write JSON file for machine-readable output (include gradient and Hessian)
-      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, total_energy, total_gradient, total_hessian, results)
-
-      deallocate (sum_by_level, delta_energies, energies, delta_gradients, delta_hessians, temp_hess)
-
+      call compute_mbe_internal(polymers, fragment_count, max_level, results, total_energy, &
+                                sys_geom, total_gradient, total_hessian, bonds)
    end subroutine compute_mbe_energy_gradient_hessian
 
    subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess, bonds)
@@ -769,6 +384,279 @@ contains
       end do
 
    end subroutine compute_mbe_hessian
+
+   !---------------------------------------------------------------------------
+   ! Helper subroutines for reducing code duplication
+   !---------------------------------------------------------------------------
+
+   subroutine build_mbe_lookup_table(polymers, fragment_count, max_level, lookup)
+      !! Build hash table for fast fragment lookups
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: max_level
+      type(fragment_lookup_t), intent(inout) :: lookup
+
+      integer(int64) :: i
+      integer :: fragment_size
+      type(timer_type) :: lookup_timer
+
+      call lookup_timer%start()
+      call lookup%init(fragment_count)
+      do i = 1_int64, fragment_count
+         fragment_size = count(polymers(i, :) > 0)
+         call lookup%insert(polymers(i, :), fragment_size, i)
+      end do
+      call lookup_timer%stop()
+      call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
+      call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
+                        ", entries: "//to_char(lookup%n_entries))
+   end subroutine build_mbe_lookup_table
+
+   subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy)
+      !! Print MBE energy breakdown to logger
+      real(dp), intent(in) :: sum_by_level(:)
+      integer, intent(in) :: max_level
+      real(dp), intent(in) :: total_energy
+
+      integer :: nlevel
+      character(len=256) :: energy_line
+
+      call logger%info("MBE Energy breakdown:")
+      do nlevel = 1, max_level
+         if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
+            write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
+            call logger%info(trim(energy_line))
+         end if
+      end do
+      write (energy_line, '(a,f20.10)') "  Total:   ", total_energy
+      call logger%info(trim(energy_line))
+   end subroutine print_mbe_energy_breakdown
+
+   subroutine print_mbe_gradient_info(total_gradient, sys_geom, current_log_level)
+      !! Print MBE gradient information
+      real(dp), intent(in) :: total_gradient(:, :)
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: current_log_level
+
+      integer :: iatom
+      character(len=256) :: grad_line
+
+      call logger%info("MBE gradient computation completed")
+      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
+
+      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
+         call logger%info(" ")
+         call logger%info("Total MBE Gradient (Hartree/Bohr):")
+         do iatom = 1, sys_geom%total_atoms
+            write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+               total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
+            call logger%info(trim(grad_line))
+         end do
+         call logger%info(" ")
+      end if
+   end subroutine print_mbe_gradient_info
+
+   subroutine compute_mbe_internal(polymers, fragment_count, max_level, results, &
+                                    total_energy, &
+                                    sys_geom, total_gradient, total_hessian, bonds)
+      !! Internal unified MBE computation for energy, gradient, and/or hessian
+      !!
+      !! This is the core routine that handles all MBE computations.
+      !! Optional arguments control what derivatives are computed:
+      !!   - If sys_geom and total_gradient are present: compute gradient
+      !!   - If total_hessian is also present: compute hessian
+      use mqc_result_types, only: calculation_result_t
+      use mqc_config_parser, only: bond_t
+
+      ! Required arguments
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: polymers(:, :), max_level
+      type(calculation_result_t), intent(in) :: results(:)
+      real(dp), intent(out) :: total_energy
+
+      ! Optional arguments for gradient computation
+      type(system_geometry_t), intent(in), optional :: sys_geom
+      real(dp), intent(out), optional :: total_gradient(:, :)  !! (3, total_atoms)
+
+      ! Optional arguments for hessian computation
+      real(dp), intent(out), optional :: total_hessian(:, :)   !! (3*total_atoms, 3*total_atoms)
+
+      ! Optional bond information for hydrogen cap handling
+      type(bond_t), intent(in), optional :: bonds(:)
+
+      ! Local variables
+      integer(int64) :: i
+      integer :: fragment_size, nlevel, current_log_level, hess_dim
+      real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
+      real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
+      real(dp) :: delta_E
+      logical :: do_detailed_print, compute_grad, compute_hess
+      type(fragment_lookup_t) :: lookup
+
+      ! Determine what to compute based on optional arguments
+      compute_grad = present(sys_geom) .and. present(total_gradient)
+      compute_hess = compute_grad .and. present(total_hessian)
+
+      ! Validate inputs for gradient computation
+      if (compute_grad) then
+         do i = 1_int64, fragment_count
+            if (.not. results(i)%has_gradient) then
+               call logger%error("Fragment "//to_char(i)//" does not have gradient!")
+               error stop "Missing gradient in compute_mbe_internal"
+            end if
+         end do
+      end if
+
+      ! Validate inputs for hessian computation
+      if (compute_hess) then
+         do i = 1_int64, fragment_count
+            if (.not. results(i)%has_hessian) then
+               call logger%error("Fragment "//to_char(i)//" does not have Hessian!")
+               error stop "Missing Hessian in compute_mbe_internal"
+            end if
+         end do
+         hess_dim = 3*sys_geom%total_atoms
+      end if
+
+      ! Get logger configuration
+      call logger%configuration(level=current_log_level)
+      do_detailed_print = (current_log_level >= verbose_level)
+
+      ! Allocate energy arrays (always needed)
+      allocate (sum_by_level(max_level))
+      allocate (delta_energies(fragment_count))
+      allocate (energies(fragment_count))
+      sum_by_level = 0.0_dp
+      delta_energies = 0.0_dp
+
+      ! Extract total energies from results
+      do i = 1_int64, fragment_count
+         energies(i) = results(i)%energy%total()
+      end do
+
+      ! Allocate gradient arrays if needed
+      if (compute_grad) then
+         allocate (delta_gradients(3, sys_geom%total_atoms, fragment_count))
+         delta_gradients = 0.0_dp
+         total_gradient = 0.0_dp
+      end if
+
+      ! Allocate hessian arrays if needed
+      if (compute_hess) then
+         allocate (delta_hessians(hess_dim, hess_dim, fragment_count))
+         delta_hessians = 0.0_dp
+         total_hessian = 0.0_dp
+      end if
+
+      ! Build hash table for fast fragment lookups
+      call build_mbe_lookup_table(polymers, fragment_count, max_level, lookup)
+
+      ! Bottom-up computation: process fragments by size (1-body, then 2-body, etc.)
+      ! This makes the algorithm independent of input fragment order
+      ! We process by n-mer level to ensure all subsets are computed before they're needed
+      do nlevel = 1, max_level
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+
+            ! Only process fragments of the current nlevel
+            if (fragment_size /= nlevel) cycle
+
+            if (fragment_size == 1) then
+               ! 1-body: delta = value (no subsets to subtract)
+               delta_energies(i) = energies(i)
+               sum_by_level(1) = sum_by_level(1) + delta_energies(i)
+
+               if (compute_grad) then
+                  call map_fragment_to_system_gradient(results(i)%gradient, &
+                       polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), bonds)
+               end if
+
+               if (compute_hess) then
+                  call map_fragment_to_system_hessian(results(i)%hessian, &
+                       polymers(i, 1:fragment_size), sys_geom, delta_hessians(:, :, i), bonds)
+               end if
+
+            else if (fragment_size >= 2 .and. fragment_size <= max_level) then
+               ! n-body: delta = value - sum(all subset deltas)
+               delta_E = compute_mbe(i, polymers(i, 1:fragment_size), lookup, &
+                                     energies, delta_energies, fragment_size)
+               delta_energies(i) = delta_E
+               sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
+
+               if (compute_grad) then
+                  call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
+                                            results, delta_gradients, fragment_size, sys_geom, bonds)
+               end if
+
+               if (compute_hess) then
+                  call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
+                                           results, delta_hessians, fragment_size, sys_geom, bonds)
+               end if
+            end if
+         end do
+      end do
+
+      ! Clean up lookup table
+      call lookup%destroy()
+
+      ! Compute totals
+      total_energy = sum(sum_by_level)
+
+      if (compute_grad) then
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size <= max_level) then
+               total_gradient = total_gradient + delta_gradients(:, :, i)
+            end if
+         end do
+      end if
+
+      if (compute_hess) then
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size <= max_level) then
+               total_hessian = total_hessian + delta_hessians(:, :, i)
+            end if
+         end do
+      end if
+
+      ! Print energy breakdown (always)
+      call print_mbe_energy_breakdown(sum_by_level, max_level, total_energy)
+
+      ! Print gradient info if computed
+      if (compute_grad) then
+         call print_mbe_gradient_info(total_gradient, sys_geom, current_log_level)
+      end if
+
+      ! Print hessian info if computed
+      if (compute_hess) then
+         call logger%info("MBE Hessian computation completed")
+         call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
+      end if
+
+      ! Print detailed breakdown if requested
+      if (do_detailed_print) then
+         call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
+      end if
+
+      ! Write JSON output with appropriate arguments
+      if (compute_hess) then
+         call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                            sum_by_level, total_energy, total_gradient, total_hessian, results)
+      else if (compute_grad) then
+         call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                            sum_by_level, total_energy, total_gradient, results=results)
+      else
+         call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                            sum_by_level, total_energy, results=results)
+      end if
+
+      ! Cleanup
+      deallocate (sum_by_level, delta_energies, energies)
+      if (allocated(delta_gradients)) deallocate (delta_gradients)
+      if (allocated(delta_hessians)) deallocate (delta_hessians)
+
+   end subroutine compute_mbe_internal
 
    subroutine compute_gmbe_energy(monomers, n_monomers, monomer_results, &
                                   n_intersections, intersection_results, &
