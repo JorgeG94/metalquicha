@@ -17,7 +17,6 @@ module mqc_method_xtb
    use tblite_xtb_gfn1, only: new_gfn1_calculator
    use tblite_xtb_gfn2, only: new_gfn2_calculator
    use tblite_xtb_singlepoint, only: xtb_singlepoint
-   use tblite_results, only: results_type
 
    implicit none
    private
@@ -46,7 +45,6 @@ contains
       class(xtb_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
-      type(results_type) :: xtb_result
 
       ! tblite calculation variables
       type(error_type), allocatable :: error
@@ -97,7 +95,7 @@ contains
       energy = 0.0_wp
 
       verbosity = merge(1, 0, this%verbose)
-      call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity, result=xtb_result)
+      call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
 
       ! Store result (XTB is a semi-empirical method, store as SCF energy)
       result%energy%scf = real(energy, dp)
