@@ -18,7 +18,7 @@ name = "mqc"
 source-dir = "app"
 main = "main.f90"
 [install]
-library = false
+library = true
 test = false
 [fortran]
 implicit-typing = false
