@@ -37,13 +37,14 @@ module mqc_mbe_fragment_distribution_scheme
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
 
    interface
-      module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+      module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
          implicit none
          integer(int64), intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
          integer(int32), intent(in) :: method
          type(physical_fragment_t), intent(in), optional :: phys_frag
          integer(int32), intent(in) :: calc_type
+         type(comm_t), intent(in), optional :: world_comm
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
