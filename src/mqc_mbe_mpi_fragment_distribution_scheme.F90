@@ -3,7 +3,7 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_sc
 
 contains
 
-   module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+   module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -17,6 +17,7 @@ contains
       integer(int32), intent(in) :: method       !! QC method
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
       integer(int32), intent(in) :: calc_type  !! Calculation type
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
@@ -52,7 +53,11 @@ contains
             call xtb_calc%calc_hessian(phys_frag, result)
          case default
             call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
-            error stop "Invalid calc_type in do_fragment_work"
+            if (present(world_comm)) then
+               call abort_comm(world_comm, 1)
+            else
+               error stop "Invalid calc_type in do_fragment_work"
+            end if
          end select
 
          ! Copy fragment distance to result for JSON output
@@ -60,7 +65,11 @@ contains
 #else
          call logger%error("XTB method requested but tblite support not compiled in")
          call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
-         error stop "tblite support not available"
+         if (present(world_comm)) then
+            call abort_comm(world_comm, 1)
+         else
+            error stop "tblite support not available"
+         end if
 #endif
       else
          ! For empty fragments, set energy to zero
@@ -135,7 +144,7 @@ contains
                if (worker_fragment_map(worker_source) == 0) then
                   call logger%error("Received result from worker "//to_char(worker_source)// &
                                     " but no fragment was assigned!")
-                  error stop "Invalid worker_fragment_map state"
+                  call abort_comm(world_comm, 1)
                end if
 
                ! Receive result and store it using the fragment index for this worker
@@ -248,24 +257,25 @@ contains
          if (calc_type_local == CALC_TYPE_HESSIAN) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for Hessian calculation in global_coordinator")
-               error stop "Missing sys_geom for Hessian calculation"
+               call abort_comm(world_comm, 1)
             end if
             allocate (mbe_total_gradient(3, sys_geom%total_atoms))
             allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
             call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, mbe_total_hessian, bonds)
+                             sys_geom, mbe_total_gradient, mbe_total_hessian, bonds, world_comm)
             deallocate (mbe_total_gradient, mbe_total_hessian)
          else if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for gradient calculation in global_coordinator")
-               error stop "Missing sys_geom for gradient calculation"
+               call abort_comm(world_comm, 1)
             end if
             allocate (mbe_total_gradient(3, sys_geom%total_atoms))
             call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, bonds=bonds)
+                             sys_geom, mbe_total_gradient, bonds=bonds, world_comm=world_comm)
             deallocate (mbe_total_gradient)
          else
-            call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy)
+            call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
+                             world_comm=world_comm)
          end if
 
          call coord_timer%stop()
@@ -387,7 +397,7 @@ contains
             if (worker_fragment_map(worker_source) == 0) then
                call logger%error("Node coordinator received result from worker "//to_char(worker_source)// &
                                  " but no fragment was assigned!")
-               error stop "Invalid worker_fragment_map state in node coordinator"
+               call abort_comm(world_comm, 1)
             end if
 
             ! Receive result from worker
@@ -511,16 +521,16 @@ contains
 
                if (error%has_error()) then
                   call logger%error(error%get_full_trace())
-                  error stop "Failed to build fragment in node worker"
+                  call abort_comm(world_comm, 1)
                end if
 
                ! Process the chemistry fragment with physical geometry
-               call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+               call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call do_fragment_work(fragment_idx, result, method, calc_type=calc_type)
+               call do_fragment_work(fragment_idx, result, method, calc_type=calc_type, world_comm=world_comm)
             end if
 
             ! Send result back to coordinator
@@ -536,7 +546,7 @@ contains
             ! Unexpected MPI tag - this should not happen in normal operation
             call logger%error("Worker received unexpected MPI tag: "//to_char(status%MPI_TAG))
             call logger%error("Expected TAG_WORKER_FRAGMENT or TAG_WORKER_FINISH")
-            error stop "MPI protocol error in node_worker"
+            call abort_comm(world_comm, 1)
          end select
       end do
    end subroutine node_worker

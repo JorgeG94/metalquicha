@@ -4,7 +4,7 @@ module mqc_mbe
    !! calculations with MPI parallelization and energy/gradient computation.
    use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
-   use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_detailed_breakdown, print_detailed_breakdown_json
@@ -25,7 +25,7 @@ module mqc_mbe
 
 contains
 
-   function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n) result(delta_E)
+   function compute_mbe_delta(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm) result(delta_E)
       !! Bottom-up computation of n-body correction (non-recursive, uses pre-computed subset deltas)
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all subset deltaE values
       !! All subsets must have been computed already (guaranteed by processing fragments in order)
@@ -33,6 +33,7 @@ contains
       integer, intent(in) :: fragment(:), n
       type(fragment_lookup_t), intent(in) :: lookup  !! Pre-built hash table for lookups
       real(dp), intent(in) :: energies(:), delta_energies(:)  !! Pre-computed delta values
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
       real(dp) :: delta_E
 
       ! Maximum MBE level supported (decamers)
@@ -71,7 +72,11 @@ contains
                   call logger%error(trim(error_msg))
                   write (error_msg, '(a,*(i0,1x))') "  Full fragment: ", (fragment(j), j=1, n)
                   call logger%error(trim(error_msg))
-                  error stop "Subset not found in bottom-up MBE!"
+                  if (present(world_comm)) then
+                     call abort_comm(world_comm, 1)
+                  else
+                     error stop "Subset not found in bottom-up MBE!"
+                  end if
                end block
             end if
 
@@ -86,7 +91,7 @@ contains
 
    end function compute_mbe_delta
 
-   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad, bonds)
+   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad, bonds, world_comm)
       !! Map fragment gradient to system gradient coordinates with hydrogen cap redistribution
       !!
       !! This function rebuilds the fragment to get local→global mappings and cap information,
@@ -102,6 +107,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(inout) :: sys_grad(:, :)  !! (3, total_atoms)
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
@@ -128,7 +134,11 @@ contains
          call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
-            error stop "Failed to build fragment in gradient mapping"
+            if (present(world_comm)) then
+               call abort_comm(world_comm, 1)
+            else
+               error stop "Failed to build fragment in gradient mapping"
+            end if
          end if
 
          ! Use new gradient redistribution with cap handling
@@ -162,7 +172,7 @@ contains
 
    end subroutine map_fragment_to_system_gradient
 
-   subroutine compute_mbe_gradient(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, bonds)
+ subroutine compute_mbe_gradient(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, bonds, world_comm)
       !! Bottom-up computation of n-body gradient correction
       !! Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
       !! All gradients are in system coordinates, so subtraction is simple
@@ -175,6 +185,7 @@ contains
       real(dp), intent(inout) :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
       type(system_geometry_t), intent(in) :: sys_geom
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       ! Maximum MBE level supported (decamers)
       integer, parameter :: MAX_MBE_LEVEL = 10
@@ -185,7 +196,7 @@ contains
 
       ! Start with the full n-mer gradient mapped to system coordinates
       call map_fragment_to_system_gradient(results(fragment_idx)%gradient, fragment, &
-                                           sys_geom, delta_gradients(:, :, fragment_idx), bonds)
+                                           sys_geom, delta_gradients(:, :, fragment_idx), bonds, world_comm)
 
       ! Subtract all proper subsets (size 1 to n-1)
       ! This is EXACTLY like the energy calculation, but for each gradient component
@@ -204,7 +215,14 @@ contains
 
             ! Look up subset index
             subset_idx = lookup%find(subset(1:subset_size), subset_size)
-            if (subset_idx < 0) error stop "Subset not found in MBE gradient!"
+            if (subset_idx < 0) then
+               call logger%error("Subset not found in MBE gradient computation")
+               if (present(world_comm)) then
+                  call abort_comm(world_comm, 1)
+               else
+                  error stop "Subset not found in MBE gradient!"
+               end if
+            end if
 
             ! Subtract pre-computed delta gradient (simple array subtraction in system coords)
             delta_gradients(:, :, fragment_idx) = delta_gradients(:, :, fragment_idx) - &
@@ -407,7 +425,7 @@ contains
 
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
                           total_energy, &
-                          sys_geom, total_gradient, total_hessian, bonds)
+                          sys_geom, total_gradient, total_hessian, bonds, world_comm)
       !! Compute many-body expansion (MBE) energy with optional gradient and/or hessian
       !!
       !! This is the core routine that handles all MBE computations.
@@ -433,6 +451,9 @@ contains
       ! Optional bond information for hydrogen cap handling
       type(bond_t), intent(in), optional :: bonds(:)
 
+      ! Optional MPI communicator for abort
+      type(comm_t), intent(in), optional :: world_comm
+
       ! Local variables
       integer(int64) :: i
       integer :: fragment_size, nlevel, current_log_level, hess_dim
@@ -451,7 +472,11 @@ contains
          do i = 1_int64, fragment_count
             if (.not. results(i)%has_gradient) then
                call logger%error("Fragment "//to_char(i)//" does not have gradient!")
-               error stop "Missing gradient in compute_mbe_internal"
+               if (present(world_comm)) then
+                  call abort_comm(world_comm, 1)
+               else
+                  error stop "Missing gradient in compute_mbe_internal"
+               end if
             end if
          end do
       end if
@@ -461,7 +486,11 @@ contains
          do i = 1_int64, fragment_count
             if (.not. results(i)%has_hessian) then
                call logger%error("Fragment "//to_char(i)//" does not have Hessian!")
-               error stop "Missing Hessian in compute_mbe_internal"
+               if (present(world_comm)) then
+                  call abort_comm(world_comm, 1)
+               else
+                  error stop "Missing Hessian in compute_mbe_internal"
+               end if
             end if
          end do
          hess_dim = 3*sys_geom%total_atoms
@@ -517,7 +546,7 @@ contains
 
                if (compute_grad) then
                   call map_fragment_to_system_gradient(results(i)%gradient, &
-                                                  polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), bonds)
+                                      polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), bonds, world_comm)
                end if
 
                if (compute_hess) then
@@ -528,13 +557,13 @@ contains
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
                ! n-body: delta = value - sum(all subset deltas)
                delta_E = compute_mbe_delta(i, polymers(i, 1:fragment_size), lookup, &
-                                           energies, delta_energies, fragment_size)
+                                           energies, delta_energies, fragment_size, world_comm)
                delta_energies(i) = delta_E
                sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
 
                if (compute_grad) then
                   call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                            results, delta_gradients, fragment_size, sys_geom, bonds)
+                                            results, delta_gradients, fragment_size, sys_geom, bonds, world_comm)
                end if
 
                if (compute_hess) then
@@ -702,7 +731,7 @@ contains
                            n_intersections, intersection_results, &
                            intersection_sets, intersection_levels, &
                            total_energy, &
-                           sys_geom, total_gradient, total_hessian, bonds)
+                           sys_geom, total_gradient, total_hessian, bonds, world_comm)
       !! Compute generalized many-body expansion (GMBE) energy with optional gradient and/or hessian
       !!
       !! This is the core routine that handles all GMBE computations using
@@ -736,6 +765,9 @@ contains
 
       ! Optional bond information for hydrogen cap handling
       type(bond_t), intent(in), optional :: bonds(:)
+
+      ! Optional MPI communicator for abort
+      type(comm_t), intent(in), optional :: world_comm
 
       ! Local variables
       integer :: i, k, max_level, current_log_level, hess_dim
@@ -774,7 +806,11 @@ contains
             call build_fragment_from_indices(sys_geom, monomer_idx, fragment, error, bonds)
             if (error%has_error()) then
                call logger%error(error%get_full_trace())
-               error stop "Failed to build monomer fragment in GMBE"
+               if (present(world_comm)) then
+                  call abort_comm(world_comm, 1)
+               else
+                  error stop "Failed to build monomer fragment in GMBE"
+               end if
             end if
             call redistribute_cap_gradients(fragment, monomer_results(i)%gradient, total_gradient)
             if (compute_hess .and. monomer_results(i)%has_hessian) then
@@ -809,7 +845,7 @@ contains
                                     (compute_hess .and. intersection_results(i)%has_hessian))) then
                call process_intersection_derivatives(i, k, sign_factor, intersection_results, &
                                                      intersection_sets, sys_geom, total_gradient, total_hessian, bonds, &
-                                                     compute_grad, compute_hess, hess_dim)
+                                                     compute_grad, compute_hess, hess_dim, world_comm)
             end if
          end do
 
@@ -871,7 +907,7 @@ contains
 
    subroutine process_intersection_derivatives(inter_idx, k, sign_factor, intersection_results, &
                                                intersection_sets, sys_geom, total_gradient, &
-                                               total_hessian, bonds, compute_grad, compute_hess, hess_dim)
+                                               total_hessian, bonds, compute_grad, compute_hess, hess_dim, world_comm)
       !! Process derivatives for a single intersection fragment
       use mqc_result_types, only: calculation_result_t
       use mqc_physical_fragment, only: build_fragment_from_atom_list, &
@@ -890,6 +926,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)
       logical, intent(in) :: compute_grad, compute_hess
       integer, intent(in) :: hess_dim
+      type(comm_t), intent(in), optional :: world_comm
 
       integer :: j, current_n, next_n, n_intersect
       integer, allocatable :: current_atoms(:), next_atoms(:), intersect_atoms(:)
@@ -926,7 +963,11 @@ contains
                                             inter_fragment, inter_error, bonds)
          if (inter_error%has_error()) then
             call logger%error(inter_error%get_full_trace())
-            error stop "Failed to build intersection fragment in GMBE"
+            if (present(world_comm)) then
+               call abort_comm(world_comm, 1)
+            else
+               error stop "Failed to build intersection fragment in GMBE"
+            end if
          end if
 
          if (compute_grad .and. intersection_results(inter_idx)%has_gradient) then

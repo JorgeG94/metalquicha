@@ -6,6 +6,7 @@ module mqc_method_xtb
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
+   use pic_logger, only: logger => global_logger
 
    ! tblite imports (reuse from mqc_mbe)
    use mctc_env, only: wp, error_type
@@ -83,11 +84,13 @@ contains
       case ("gfn2")
          call new_gfn2_calculator(calc, mol, error)
       case default
-         error stop "Unknown XTB variant: "//this%variant
+         call logger%error("Unknown XTB variant: "//this%variant)
+         return
       end select
 
       if (allocated(error)) then
-         error stop "Failed to create XTB calculator"
+         call logger%error("Failed to create XTB calculator")
+         return
       end if
 
       ! Create wavefunction and run single point calculation
@@ -153,11 +156,13 @@ contains
       case ("gfn2")
          call new_gfn2_calculator(calc, mol, error)
       case default
-         error stop "Unknown XTB variant: "//this%variant
+         call logger%error("Unknown XTB variant: "//this%variant)
+         return
       end select
 
       if (allocated(error)) then
-         error stop "Failed to create XTB calculator"
+         call logger%error("Failed to create XTB calculator")
+         return
       end if
 
       ! Allocate gradient and sigma arrays (initialize to zero)
@@ -251,7 +256,7 @@ contains
          call this%calc_gradient(forward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for forward displacement "//to_char(i))
-            error stop "Finite difference Hessian: gradient calculation failed"
+            return
          end if
          forward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()
@@ -260,7 +265,7 @@ contains
          call this%calc_gradient(backward_geoms(i)%geometry, disp_result)
          if (.not. disp_result%has_gradient) then
             call logger%error("Failed to compute gradient for backward displacement "//to_char(i))
-            error stop "Finite difference Hessian: gradient calculation failed"
+            return
          end if
          backward_gradients(i, :, :) = disp_result%gradient
          call disp_result%destroy()

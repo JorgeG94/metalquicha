@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 8.2% of total for modules and submodules.">681 statements</a>
+                 title=" 8.6% of total for modules and submodules.">718 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -199,15 +199,15 @@ GMBE energy with optional gradient and hessian</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
-                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
                   <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='mqc_mbe_io.html'>mqc_mbe_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_frag_utils.html'>mqc_frag_utils</a></li>
+                  <li class="list-inline-item">pic_timer</li>
                   <li class="list-inline-item">pic_types</li>
               </ul>
             </li>
@@ -1154,7 +1154,7 @@ large graphs.</div>
         <section>
           <h2>Functions</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe_delta"></span> <h3>private  function <a href='../proc/compute_mbe_delta.html'>compute_mbe_delta</a>(fragment_idx, fragment, lookup, energies, delta_energies, n) result(delta_E)  
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe_delta"></span> <h3>private  function <a href='../proc/compute_mbe_delta.html'>compute_mbe_delta</a>(fragment_idx, fragment, lookup, energies, delta_energies, n, world_comm) result(delta_E)  
 </h3></div>
     <div class="card-body">
           
@@ -1175,7 +1175,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~2"></span>
+              <span class="anchor" id="variable-fragment_idx~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1250,7 +1250,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1261,6 +1261,21 @@ All subsets must have been computed already (guaranteed by processing fragments 
             <td><strong>n</strong></td>
             <td>
 
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~15"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+<p>MPI communicator for abort</p>
             </td>
         </tr>
     </tbody>
@@ -1281,7 +1296,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_gmbe"></span> <h3>public  subroutine <a href='../proc/compute_gmbe.html'>compute_gmbe</a>(monomers, n_monomers, monomer_results, n_intersections, intersection_results, intersection_sets, intersection_levels, total_energy, sys_geom, total_gradient, total_hessian, bonds)  
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_gmbe"></span> <h3>public  subroutine <a href='../proc/compute_gmbe.html'>compute_gmbe</a>(monomers, n_monomers, monomer_results, n_intersections, intersection_results, intersection_sets, intersection_levels, total_energy, sys_geom, total_gradient, total_hessian, bonds, world_comm)  
 </h3></div>
     <div class="card-body">
           
@@ -1300,7 +1315,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~5"></span>
+              <span class="anchor" id="variable-monomers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1420,7 +1435,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~27"></span>
+              <span class="anchor" id="variable-sys_geom~25"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1465,7 +1480,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~11"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1478,6 +1493,21 @@ All subsets must have been computed already (guaranteed by processing fragments 
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~19"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -1486,7 +1516,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe"></span> <h3>public  subroutine <a href='../proc/compute_mbe.html'>compute_mbe</a>(polymers, fragment_count, max_level, results, total_energy, sys_geom, total_gradient, total_hessian, bonds)  
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe"></span> <h3>public  subroutine <a href='../proc/compute_mbe.html'>compute_mbe</a>(polymers, fragment_count, max_level, results, total_energy, sys_geom, total_gradient, total_hessian, bonds, world_comm)  
 </h3></div>
     <div class="card-body">
           
@@ -1505,7 +1535,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~9"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1580,7 +1610,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~25"></span>
+              <span class="anchor" id="variable-sys_geom~23"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1625,7 +1655,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~10"></span>
+              <span class="anchor" id="variable-bonds~12"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1634,6 +1664,21 @@ All subsets must have been computed already (guaranteed by processing fragments 
             </td>
             <td>::</td>
             <td><strong>bonds</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~18"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
             <td>
 
             </td>
@@ -1665,7 +1710,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1731,7 +1776,7 @@ All subsets must have been computed already (guaranteed by processing fragments 
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe_gradient"></span> <h3>private  subroutine <a href='../proc/compute_mbe_gradient.html'>compute_mbe_gradient</a>(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, bonds)  
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_mbe_gradient"></span> <h3>private  subroutine <a href='../proc/compute_mbe_gradient.html'>compute_mbe_gradient</a>(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, bonds, world_comm)  
 </h3></div>
     <div class="card-body">
           
@@ -1752,7 +1797,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~3"></span>
+              <span class="anchor" id="variable-fragment_idx~10"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1827,7 +1872,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~2"></span>
+              <span class="anchor" id="variable-n~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1842,7 +1887,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~21"></span>
+              <span class="anchor" id="variable-sys_geom~19"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1857,7 +1902,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~7"></span>
+              <span class="anchor" id="variable-bonds~9"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1868,6 +1913,21 @@ All gradients are in system coordinates, so subtraction is simple</p>
             <td><strong>bonds</strong>(:)</td>
             <td>
 <p>Bond information for caps</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~17"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+<p>MPI communicator for abort</p>
             </td>
         </tr>
     </tbody>
@@ -1898,7 +1958,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-fragment_idx~11"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1973,7 +2033,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~3"></span>
+              <span class="anchor" id="variable-n~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1988,7 +2048,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~23"></span>
+              <span class="anchor" id="variable-sys_geom~21"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2003,7 +2063,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~9"></span>
+              <span class="anchor" id="variable-bonds~11"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2043,7 +2103,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~29"></span>
+              <span class="anchor" id="variable-sys_geom~27"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2088,7 +2148,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~6"></span>
+              <span class="anchor" id="variable-n_atoms~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2109,7 +2169,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-map_fragment_to_system_gradient"></span> <h3>private  subroutine <a href='../proc/map_fragment_to_system_gradient.html'>map_fragment_to_system_gradient</a>(frag_grad, monomers, sys_geom, sys_grad, bonds)  
+    <div class="card-header codesum"><span class="anchor" id="proc-map_fragment_to_system_gradient"></span> <h3>private  subroutine <a href='../proc/map_fragment_to_system_gradient.html'>map_fragment_to_system_gradient</a>(frag_grad, monomers, sys_geom, sys_grad, bonds, world_comm)  
 </h3></div>
     <div class="card-body">
           
@@ -2143,7 +2203,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~3"></span>
+              <span class="anchor" id="variable-monomers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2158,7 +2218,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~20"></span>
+              <span class="anchor" id="variable-sys_geom~18"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2188,7 +2248,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~6"></span>
+              <span class="anchor" id="variable-bonds~8"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2199,6 +2259,21 @@ Mirrors MBE gradient logic but for second derivatives</p>
             <td><strong>bonds</strong>(:)</td>
             <td>
 <p>Bond information for caps</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~16"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+<p>MPI communicator for abort</p>
             </td>
         </tr>
     </tbody>
@@ -2243,7 +2318,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~4"></span>
+              <span class="anchor" id="variable-monomers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2258,7 +2333,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~22"></span>
+              <span class="anchor" id="variable-sys_geom~20"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2288,7 +2363,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~8"></span>
+              <span class="anchor" id="variable-bonds~10"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2473,7 +2548,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~26"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2713,7 +2788,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~24"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2749,7 +2824,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-process_intersection_derivatives"></span> <h3>private  subroutine <a href='../proc/process_intersection_derivatives.html'>process_intersection_derivatives</a>(inter_idx, k, sign_factor, intersection_results, intersection_sets, sys_geom, total_gradient, total_hessian, bonds, compute_grad, compute_hess, hess_dim)  
+    <div class="card-header codesum"><span class="anchor" id="proc-process_intersection_derivatives"></span> <h3>private  subroutine <a href='../proc/process_intersection_derivatives.html'>process_intersection_derivatives</a>(inter_idx, k, sign_factor, intersection_results, intersection_sets, sys_geom, total_gradient, total_hessian, bonds, compute_grad, compute_hess, hess_dim, world_comm)  
 </h3></div>
     <div class="card-body">
           
@@ -2783,7 +2858,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~8"></span>
+              <span class="anchor" id="variable-k~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2843,7 +2918,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~26"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2888,7 +2963,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~12"></span>
+              <span class="anchor" id="variable-bonds~14"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -2946,6 +3021,21 @@ Mirrors MBE gradient logic but for second derivatives</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~20"></span>
+              type(comm_t),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -2976,7 +3066,7 @@ Mirrors MBE gradient logic but for second derivatives</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-08 11:02 +0000             </p>
+ on 2026-01-09 10:11 +0000             </p>
           </div>
         </div>
         <br>

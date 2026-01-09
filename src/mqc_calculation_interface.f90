@@ -3,7 +3,7 @@ module mqc_calculation_interface
    !! Provides a clean interface for computing energies and forces
    !! that can be used by optimization algorithms, MD integrators, and MC samplers
    use pic_types, only: int32, dp
-   use pic_mpi_lib, only: comm_t, bcast
+   use pic_mpi_lib, only: comm_t, bcast, abort_comm
    use pic_logger, only: logger => global_logger
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_parser, only: bond_t
@@ -81,14 +81,14 @@ contains
             gradient = result%gradient
          else if (need_gradient) then
             call logger%error("Gradient requested but not computed!")
-            error stop "Missing gradient in compute_energy_and_forces"
+            call abort_comm(world_comm, 1)
          end if
 
          if (need_hessian .and. result%has_hessian) then
             hessian = result%hessian
          else if (need_hessian) then
             call logger%error("Hessian requested but not computed!")
-            error stop "Missing Hessian in compute_energy_and_forces"
+            call abort_comm(world_comm, 1)
          end if
 
          ! Clean up

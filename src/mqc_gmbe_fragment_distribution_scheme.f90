@@ -5,7 +5,8 @@ module mqc_gmbe_fragment_distribution_scheme
    use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
    use mqc_calc_types, only: CALC_TYPE_GRADIENT
- use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, &
+                          wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
@@ -260,7 +261,7 @@ contains
       if (int(size(pie_atom_sets, 2), int64) < n_pie_terms .or. &
           int(size(pie_coefficients), int64) < n_pie_terms) then
          call logger%error("PIE term arrays are smaller than n_pie_terms")
-         error stop "Invalid PIE term array sizes"
+         call abort_comm(world_comm, 1)
       end if
 
       current_term_idx = n_pie_terms
@@ -288,7 +289,7 @@ contains
                if (worker_term_map(worker_source) == 0) then
                   call logger%error("Received result from worker "//to_char(worker_source)// &
                                     " but no term was assigned!")
-                  error stop "Invalid worker_term_map state"
+                  call abort_comm(world_comm, 1)
                end if
 
                call result_irecv(results(worker_term_map(worker_source)), node_comm, worker_source, &
