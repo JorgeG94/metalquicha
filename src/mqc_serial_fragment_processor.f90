@@ -48,6 +48,13 @@ contains
 
          call do_fragment_work(frag_idx, results(frag_idx), method, phys_frag, calc_type=calc_type_local)
 
+         ! Check for calculation errors
+         if (results(frag_idx)%has_error) then
+            call logger%error("Fragment "//to_char(frag_idx)//" calculation failed: "// &
+                              results(frag_idx)%error%get_message())
+            error stop "Fragment calculation failed in serial processing"
+         end if
+
          ! Debug output for gradients
          if (calc_type_local == CALC_TYPE_GRADIENT .and. results(frag_idx)%has_gradient) then
             call logger%configuration(level=current_log_level)

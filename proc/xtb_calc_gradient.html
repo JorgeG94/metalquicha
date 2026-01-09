@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.8% of total for procedures.">62 statements</a>
+                 title=" 0.9% of total for procedures.">64 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,12 +138,12 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-calc~2">calc</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-ctx~2">ctx</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-energy~2">energy</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~2">error</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-gradient">gradient</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-energy~3">energy</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-error~9">error</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-gradient~2">gradient</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-mol~2">mol</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-num~2">num</a>
-            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma">sigma</a>
+            <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-sigma~2">sigma</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-verbosity~2">verbosity</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-wfn~2">wfn</a>
             <a class="list-group-item" href="../proc/xtb_calc_gradient.html#variable-xyz~2">xyz</a>
@@ -204,7 +204,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~2"></span>
+              <span class="anchor" id="variable-this~21"></span>
               class(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(in)</td>
@@ -219,7 +219,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~2"></span>
+              <span class="anchor" id="variable-fragment~5"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
 <td>intent(in)</td>
@@ -234,7 +234,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~2"></span>
+              <span class="anchor" id="variable-result~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -273,78 +273,81 @@
 <polygon fill="none" stroke="black" points="188,-150 0,-150 0,-126 188,-126 188,-150"/>
 <text text-anchor="middle" x="94" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">xtb_method_t%xtb_calc_gradient</text>
 </g>
-<!-- error -->
+<!-- new -->
 <g id="proc~~xtb_calc_gradient~~CallsGraph_node2" class="node">
-<title>error</title>
+<title>new</title>
 <polygon fill="#777777" stroke="#777777" points="319,-276 265,-276 265,-252 319,-252 319,-276"/>
-<text text-anchor="middle" x="292" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<text text-anchor="middle" x="292" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
 </g>
-<!-- proc~xtb_calc_gradient&#45;&gt;error -->
+<!-- proc~xtb_calc_gradient&#45;&gt;new -->
 <g id="proc~~xtb_calc_gradient~~CallsGraph_edge1" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;error</title>
+<title>proc~xtb_calc_gradient&#45;&gt;new</title>
 <path fill="none" stroke="#ff0000" d="M106.67,-150.16C128.03,-171.76 175.68,-217.01 224,-243 233.68,-248.21 244.86,-252.35 255.27,-255.54"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="254.37,-258.92 264.95,-258.3 256.29,-252.19 254.37,-258.92"/>
 </g>
-<!-- new -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_node3" class="node">
-<title>new</title>
-<polygon fill="#777777" stroke="#777777" points="319,-234 265,-234 265,-210 319,-210 319,-234"/>
-<text text-anchor="middle" x="292" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new</text>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_edge2" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new</title>
-<path fill="none" stroke="#ff0000" d="M117.37,-150.21C142.73,-163.75 185.56,-185.69 224,-201 233.94,-204.96 244.93,-208.67 255.1,-211.84"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="254.33,-215.26 264.91,-214.82 256.36,-208.56 254.33,-215.26"/>
-</g>
 <!-- new_gfn1_calculator -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_node4" class="node">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_node3" class="node">
 <title>new_gfn1_calculator</title>
-<polygon fill="#777777" stroke="#777777" points="353,-192 231,-192 231,-168 353,-168 353,-192"/>
-<text text-anchor="middle" x="292" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
+<polygon fill="#777777" stroke="#777777" points="353,-234 231,-234 231,-210 353,-210 353,-234"/>
+<text text-anchor="middle" x="292" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn1_calculator</text>
 </g>
 <!-- proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_edge3" class="edge">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_edge2" class="edge">
 <title>proc~xtb_calc_gradient&#45;&gt;new_gfn1_calculator</title>
+<path fill="none" stroke="#ff0000" d="M117.37,-150.21C142.73,-163.75 185.56,-185.69 224,-201 229.03,-203 234.32,-204.94 239.64,-206.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="238.61,-210.12 249.2,-209.97 240.82,-203.48 238.61,-210.12"/>
+</g>
+<!-- new_gfn2_calculator -->
+<g id="proc~~xtb_calc_gradient~~CallsGraph_node4" class="node">
+<title>new_gfn2_calculator</title>
+<polygon fill="#777777" stroke="#777777" points="353,-192 231,-192 231,-168 353,-168 353,-192"/>
+<text text-anchor="middle" x="292" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator -->
+<g id="proc~~xtb_calc_gradient~~CallsGraph_edge3" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator</title>
 <path fill="none" stroke="#ff0000" d="M151.17,-150.04C174.13,-154.96 200.87,-160.69 224.77,-165.81"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="224.31,-169.29 234.83,-167.96 225.78,-162.45 224.31,-169.29"/>
 </g>
-<!-- new_gfn2_calculator -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_node5" class="node">
-<title>new_gfn2_calculator</title>
-<polygon fill="#777777" stroke="#777777" points="353,-150 231,-150 231,-126 353,-126 353,-150"/>
-<text text-anchor="middle" x="292" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_gfn2_calculator</text>
-</g>
-<!-- proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_edge4" class="edge">
-<title>proc~xtb_calc_gradient&#45;&gt;new_gfn2_calculator</title>
-<path fill="none" stroke="#ff0000" d="M188.12,-138C199.12,-138 210.21,-138 220.82,-138"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="220.83,-141.5 230.83,-138 220.83,-134.5 220.83,-141.5"/>
-</g>
 <!-- new_wavefunction -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_node6" class="node">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_node5" class="node">
 <title>new_wavefunction</title>
-<polygon fill="#777777" stroke="#777777" points="347.5,-108 236.5,-108 236.5,-84 347.5,-84 347.5,-108"/>
-<text text-anchor="middle" x="292" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
+<polygon fill="#777777" stroke="#777777" points="347.5,-150 236.5,-150 236.5,-126 347.5,-126 347.5,-150"/>
+<text text-anchor="middle" x="292" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_wavefunction</text>
 </g>
 <!-- proc~xtb_calc_gradient&#45;&gt;new_wavefunction -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_edge5" class="edge">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_edge4" class="edge">
 <title>proc~xtb_calc_gradient&#45;&gt;new_wavefunction</title>
-<path fill="none" stroke="#ff0000" d="M151.17,-125.96C174.63,-120.94 202.03,-115.06 226.33,-109.86"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="227.13,-113.27 236.18,-107.75 225.67,-106.42 227.13,-113.27"/>
+<path fill="none" stroke="#ff0000" d="M188.12,-138C201.01,-138 214.01,-138 226.22,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="226.28,-141.5 236.28,-138 226.28,-134.5 226.28,-141.5"/>
 </g>
 <!-- proc~energy_total -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_node7" class="node">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_node6" class="node">
 <title>proc~energy_total</title>
-<g id="a_proc~~xtb_calc_gradient~~CallsGraph_node7"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="360,-66 224,-66 224,-42 360,-42 360,-66"/>
-<text text-anchor="middle" x="292" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+<g id="a_proc~~xtb_calc_gradient~~CallsGraph_node6"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="360,-108 224,-108 224,-84 360,-84 360,-108"/>
+<text text-anchor="middle" x="292" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
 </a>
 </g>
 </g>
 <!-- proc~xtb_calc_gradient&#45;&gt;proc~energy_total -->
-<g id="proc~~xtb_calc_gradient~~CallsGraph_edge6" class="edge">
+<g id="proc~~xtb_calc_gradient~~CallsGraph_edge5" class="edge">
 <title>proc~xtb_calc_gradient&#45;&gt;proc~energy_total</title>
+<path fill="none" stroke="#ff0000" d="M151.17,-125.96C174.13,-121.04 200.87,-115.31 224.77,-110.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="225.78,-113.55 234.83,-108.04 224.31,-106.71 225.78,-113.55"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~xtb_calc_gradient~~CallsGraph_node7" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~xtb_calc_gradient~~CallsGraph_node7"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="344.5,-66 239.5,-66 239.5,-42 344.5,-42 344.5,-66"/>
+<text text-anchor="middle" x="292" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;proc~error_set -->
+<g id="proc~~xtb_calc_gradient~~CallsGraph_edge6" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;proc~error_set</title>
 <path fill="none" stroke="#ff0000" d="M117.37,-125.79C142.73,-112.25 185.56,-90.31 224,-75 229.03,-73 234.32,-71.06 239.64,-69.22"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="240.82,-72.52 249.2,-66.03 238.61,-65.88 240.82,-72.52"/>
 </g>
@@ -364,16 +367,16 @@
 <g id="proc~~xtb_calc_gradient~~CallsGraph_node9" class="node">
 <title>proc~mp2_total</title>
 <g id="a_proc~~xtb_calc_gradient~~CallsGraph_node9"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="547,-66 396,-66 396,-42 547,-42 547,-66"/>
-<text text-anchor="middle" x="471.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="547,-108 396,-108 396,-84 547,-84 547,-108"/>
+<text text-anchor="middle" x="471.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_total&#45;&gt;proc~mp2_total -->
 <g id="proc~~xtb_calc_gradient~~CallsGraph_edge8" class="edge">
 <title>proc~energy_total&#45;&gt;proc~mp2_total</title>
-<path fill="none" stroke="#4800ff" d="M360.11,-54C368.5,-54 377.17,-54 385.8,-54"/>
-<polygon fill="#4800ff" stroke="#4800ff" points="385.87,-57.5 395.87,-54 385.87,-50.5 385.87,-57.5"/>
+<path fill="none" stroke="#0091ff" d="M360.11,-96C368.5,-96 377.17,-96 385.8,-96"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="385.87,-99.5 395.87,-96 385.87,-92.5 385.87,-99.5"/>
 </g>
 </g>
 </svg>
@@ -933,7 +936,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~2"></span>
+              <span class="anchor" id="variable-energy~3"></span>
               real(kind=wp),
             </td>
               <td>private</td>
@@ -950,7 +953,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~9"></span>
               type(error_type),
             </td>
               <td>private,</td>
@@ -967,7 +970,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient"></span>
+              <span class="anchor" id="variable-gradient~2"></span>
               real(kind=wp),
             </td>
               <td>private,</td>
@@ -1018,7 +1021,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma"></span>
+              <span class="anchor" id="variable-sigma~2"></span>
               real(kind=wp),
             </td>
               <td>private,</td>
@@ -1144,12 +1147,14 @@ large graphs.</div>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;gfn2&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">new_gfn2_calculator</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
 <span class="w">      </span><span class="k">case </span><span class="n">default</span>
-<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown XTB variant: &quot;</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unknown XTB variant: &quot;</span><span class="o">//</span><span class="n">this</span><span class="p">%</span><span class="n">variant</span><span class="p">)</span>
+<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end select</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to create XTB calculator&quot;</span><span class="p">)</span>
+<span class="k">         call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_GENERIC</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Failed to create XTB calculator&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
@@ -1213,7 +1218,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:11 +0000             </p>
+ on 2026-01-09 10:18 +0000             </p>
           </div>
         </div>
         <br>

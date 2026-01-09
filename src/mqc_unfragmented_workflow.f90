@@ -58,6 +58,17 @@ contains
       ! Process the full system
       call do_fragment_work(0_int64, result, method, phys_frag=full_system, calc_type=calc_type)
 
+      ! Check for calculation errors
+      if (result%has_error) then
+         call logger%error("Unfragmented calculation failed: "//result%error%get_message())
+         if (present(result_out)) then
+            result_out = result
+            return
+         else
+            error stop "Unfragmented calculation failed"
+         end if
+      end if
+
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")
       block

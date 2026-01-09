@@ -356,22 +356,32 @@ contains
    ! Helper subroutines for reducing code duplication
    !---------------------------------------------------------------------------
 
-   subroutine build_mbe_lookup_table(polymers, fragment_count, max_level, lookup)
+   subroutine build_mbe_lookup_table(polymers, fragment_count, max_level, lookup, error)
       !! Build hash table for fast fragment lookups
+      use mqc_error, only: error_t
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
       integer, intent(in) :: max_level
       type(fragment_lookup_t), intent(inout) :: lookup
+      type(error_t), intent(out), optional :: error
 
       integer(int64) :: i
       integer :: fragment_size
       type(timer_type) :: lookup_timer
+      type(error_t) :: insert_error
 
       call lookup_timer%start()
       call lookup%init(fragment_count)
       do i = 1_int64, fragment_count
          fragment_size = count(polymers(i, :) > 0)
-         call lookup%insert(polymers(i, :), fragment_size, i)
+         call lookup%insert(polymers(i, :), fragment_size, i, insert_error)
+         if (insert_error%has_error()) then
+            if (present(error)) then
+               error = insert_error
+               call error%add_context("build_mbe_lookup_table")
+            end if
+            return
+         end if
       end do
       call lookup_timer%stop()
       call logger%debug("Time to build lookup table: "//to_char(lookup_timer%get_elapsed_time())//" s")
@@ -527,7 +537,19 @@ contains
       end if
 
       ! Build hash table for fast fragment lookups
-      call build_mbe_lookup_table(polymers, fragment_count, max_level, lookup)
+      block
+         use mqc_error, only: error_t
+         type(error_t) :: lookup_error
+         call build_mbe_lookup_table(polymers, fragment_count, max_level, lookup, lookup_error)
+         if (lookup_error%has_error()) then
+            call logger%error("Failed to build lookup table: "//lookup_error%get_message())
+            if (present(world_comm)) then
+               call abort_comm(world_comm, 1)
+            else
+               error stop "Failed to build lookup table"
+            end if
+         end if
+      end block
 
       ! Bottom-up computation: process fragments by size (1-body, then 2-body, etc.)
       ! This makes the algorithm independent of input fragment order

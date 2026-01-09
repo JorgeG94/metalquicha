@@ -4,6 +4,7 @@ module mqc_result_types
    !! quantum chemistry calculations including energies, gradients, and properties.
    use pic_types, only: dp
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
+   use mqc_error, only: error_t
    implicit none
    private
 
@@ -74,6 +75,10 @@ module mqc_result_types
       logical :: has_sigma = .false.     !! Stress tensor has been computed
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
+
+      ! Error handling
+      type(error_t) :: error             !! Calculation error (if any)
+      logical :: has_error = .false.     !! True if calculation failed
    contains
       procedure :: destroy => result_destroy  !! Clean up allocated memory
       procedure :: reset => result_reset      !! Reset all values and flags
@@ -186,11 +191,13 @@ contains
       !! Reset all values and flags in calculation_result_t
       class(calculation_result_t), intent(inout) :: this
       call this%energy%reset()
+      call this%error%clear()
       this%has_energy = .false.
       this%has_gradient = .false.
       this%has_sigma = .false.
       this%has_hessian = .false.
       this%has_dipole = .false.
+      this%has_error = .false.
    end subroutine result_reset
 
    subroutine result_send(result, comm, dest, tag)

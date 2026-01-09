@@ -337,8 +337,13 @@ contains
          call copy_and_displace_geometry(full_system, atom_idx, coord, displacement, displaced_geom)
          call xtb_calc%calc_gradient(displaced_geom, grad_result)
 
+         if (grad_result%has_error) then
+            call logger%error("Worker gradient calculation error for forward displacement "// &
+                              to_char(disp_idx)//": "//grad_result%error%get_message())
+            call abort_comm(world_comm, 1)
+         end if
          if (.not. grad_result%has_gradient) then
-            call logger%error("Worker failed gradient for displacement "//to_char(disp_idx))
+            call logger%error("Worker failed gradient for forward displacement "//to_char(disp_idx))
             call abort_comm(world_comm, 1)
          end if
 
@@ -357,8 +362,13 @@ contains
          call copy_and_displace_geometry(full_system, atom_idx, coord, -displacement, displaced_geom)
          call xtb_calc%calc_gradient(displaced_geom, grad_result)
 
+         if (grad_result%has_error) then
+            call logger%error("Worker gradient calculation error for backward displacement "// &
+                              to_char(disp_idx)//": "//grad_result%error%get_message())
+            call abort_comm(world_comm, 1)
+         end if
          if (.not. grad_result%has_gradient) then
-            call logger%error("Worker failed gradient for displacement "//to_char(disp_idx))
+            call logger%error("Worker failed gradient for backward displacement "//to_char(disp_idx))
             call abort_comm(world_comm, 1)
          end if
 

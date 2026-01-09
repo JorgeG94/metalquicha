@@ -172,6 +172,7 @@ contains
       integer, allocatable :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64) :: n_pie_terms  !! Number of unique PIE terms
+      type(error_t) :: pie_error  !! Error from PIE enumeration
 
       ! Generate fragments
       if (world_comm%rank() == 0) then
@@ -221,7 +222,11 @@ contains
 
             ! Use DFS to enumerate PIE terms with coefficients
             call gmbe_enumerate_pie_terms(sys_geom, polymers, n_primaries, max_level, max_intersection_level, &
-                                          pie_atom_sets, pie_coefficients, n_pie_terms)
+                                          pie_atom_sets, pie_coefficients, n_pie_terms, pie_error)
+            if (pie_error%has_error()) then
+               call logger%error("GMBE PIE enumeration failed: "//pie_error%get_message())
+               call abort_comm(world_comm, 1)
+            end if
 
             call logger%info("GMBE PIE enumeration complete: "//to_char(n_pie_terms)//" unique subsystems to evaluate")
 

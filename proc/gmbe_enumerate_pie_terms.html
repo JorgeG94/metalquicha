@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for procedures.">82 statements</a>
+                 title=" 1.1% of total for procedures.">84 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -140,9 +140,9 @@
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-candidates">candidates</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-clique">clique</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-current_atoms">current_atoms</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~8">i</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~5">j</a>
-            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~5">max_atoms</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-i~34">i</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-j~9">j</a>
+            <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_atoms~8">max_atoms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms">max_terms</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-max_terms_i">max_terms_i</a>
             <a class="list-group-item" href="../proc/gmbe_enumerate_pie_terms.html#variable-n_candidates">n_candidates</a>
@@ -185,7 +185,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine gmbe_enumerate_pie_terms(sys_geom, primaries, n_primaries, polymer_level, max_k_level, pie_atom_sets, pie_coefficients, n_pie_terms, initial_max_terms)  
+    <h2>public  subroutine gmbe_enumerate_pie_terms(sys_geom, primaries, n_primaries, polymer_level, max_k_level, pie_atom_sets, pie_coefficients, n_pie_terms, error, initial_max_terms)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -546,7 +546,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~13"></span>
+              <span class="anchor" id="variable-sys_geom~24"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -576,7 +576,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_primaries"></span>
+              <span class="anchor" id="variable-n_primaries~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -621,7 +621,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets"></span>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -636,7 +636,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients"></span>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -651,7 +651,7 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms"></span>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(out)</td>
@@ -662,6 +662,21 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
             <td><strong>n_pie_terms</strong></td>
             <td>
                 <p>Number of unique PIE terms</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~40"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                <p>Error status</p>
             </td>
         </tr>
         <tr>
@@ -694,185 +709,213 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~gmbe_enumerate_pie_terms~~CallsGraph Pages: 1 -->
-<svg id="procgmbe_enumerate_pie_termsCallsGraph" width="602pt" height="301pt"
- viewBox="0.00 0.00 602.00 300.67" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 296.67)">
+<svg id="procgmbe_enumerate_pie_termsCallsGraph" width="641pt" height="407pt"
+ viewBox="0.00 0.00 641.00 407.11" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph" class="graph" transform="scale(0.95 0.95) rotate(0) translate(4 424.07)">
 <title>proc~~gmbe_enumerate_pie_terms~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-296.67 598,-296.67 598,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-424.07 670,-424.07 670,4 -4,4"/>
 <!-- proc~gmbe_enumerate_pie_terms -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node1" class="node">
 <title>proc~gmbe_enumerate_pie_terms</title>
-<polygon fill="none" stroke="black" points="166,-191.67 0,-191.67 0,-167.67 166,-167.67 166,-191.67"/>
-<text text-anchor="middle" x="83" y="-177.27" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_enumerate_pie_terms</text>
+<polygon fill="none" stroke="black" points="166,-296.07 0,-296.07 0,-272.07 166,-272.07 166,-296.07"/>
+<text text-anchor="middle" x="83" y="-281.67" font-family="Helvetica,sans-Serif" font-size="10.50">gmbe_enumerate_pie_terms</text>
 </g>
 <!-- atom_list -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node2" class="node">
 <title>atom_list</title>
-<polygon fill="#777777" stroke="#777777" points="306.5,-292.67 245.5,-292.67 245.5,-268.67 306.5,-268.67 306.5,-292.67"/>
-<text text-anchor="middle" x="276" y="-278.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atom_list</text>
+<polygon fill="#777777" stroke="#777777" points="306.5,-420.07 245.5,-420.07 245.5,-396.07 306.5,-396.07 306.5,-420.07"/>
+<text text-anchor="middle" x="276" y="-405.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atom_list</text>
 </g>
 <!-- proc~gmbe_enumerate_pie_terms&#45;&gt;atom_list -->
 <g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge1" class="edge">
 <title>proc~gmbe_enumerate_pie_terms&#45;&gt;atom_list</title>
-<path fill="none" stroke="#ff0000" d="M100.5,-191.85C122.7,-207.83 163.83,-236.04 202,-254.67 212.66,-259.88 224.64,-264.58 235.76,-268.51"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="234.66,-271.84 245.26,-271.76 236.93,-265.21 234.66,-271.84"/>
-</g>
-<!-- error -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node3" class="node">
-<title>error</title>
-<polygon fill="#777777" stroke="#777777" points="594,-169.67 540,-169.67 540,-145.67 594,-145.67 594,-169.67"/>
-<text text-anchor="middle" x="567" y="-155.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
-</g>
-<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;error -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge2" class="edge">
-<title>proc~gmbe_enumerate_pie_terms&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M110.01,-191.85C133.47,-202.12 169.22,-216.01 202,-221.67 334.27,-244.51 380.41,-274.02 504,-221.67 524.72,-212.9 541.91,-193.43 552.89,-178.26"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="555.84,-180.16 558.62,-169.93 550.07,-176.19 555.84,-180.16"/>
+<path fill="none" stroke="#ff0000" d="M94.44,-296.15C113.61,-317.59 156.63,-362.35 202,-387.07 212.28,-392.67 224.22,-396.92 235.42,-400.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.88,-403.54 245.43,-402.66 236.63,-396.77 234.88,-403.54"/>
 </g>
 <!-- info -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node4" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node3" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="303,-212.67 249,-212.67 249,-188.67 303,-188.67 303,-212.67"/>
-<text text-anchor="middle" x="276" y="-198.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="303,-378.07 249,-378.07 249,-354.07 303,-354.07 303,-378.07"/>
+<text text-anchor="middle" x="276" y="-363.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~gmbe_enumerate_pie_terms&#45;&gt;info -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge3" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge2" class="edge">
 <title>proc~gmbe_enumerate_pie_terms&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M166.11,-188.7C191.42,-191.48 218.02,-194.41 238.59,-196.67"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="238.43,-200.17 248.76,-197.79 239.2,-193.22 238.43,-200.17"/>
+<path fill="none" stroke="#ff0000" d="M104.31,-296.14C127.37,-309.47 166.43,-330.92 202,-345.07 213.87,-349.79 227.21,-353.95 239.21,-357.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="238.34,-360.68 248.91,-359.9 240.16,-353.92 238.34,-360.68"/>
 </g>
 <!-- proc~compute_polymer_atoms -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node5" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node4" class="node">
 <title>proc~compute_polymer_atoms</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node5"><a xlink:href="../proc/compute_polymer_atoms.html" xlink:title="compute_polymer_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="350,-170.67 202,-170.67 202,-146.67 350,-146.67 350,-170.67"/>
-<text text-anchor="middle" x="276" y="-156.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_polymer_atoms</text>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node4"><a xlink:href="../proc/compute_polymer_atoms.html" xlink:title="compute_polymer_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="350,-336.07 202,-336.07 202,-312.07 350,-312.07 350,-336.07"/>
+<text text-anchor="middle" x="276" y="-321.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_polymer_atoms</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~compute_polymer_atoms -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge4" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge3" class="edge">
 <title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~compute_polymer_atoms</title>
-<path fill="none" stroke="#ff0000" d="M166.11,-170.65C174.68,-169.7 183.41,-168.74 191.99,-167.8"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="192.43,-171.27 201.99,-166.7 191.67,-164.31 192.43,-171.27"/>
+<path fill="none" stroke="#ff0000" d="M141.31,-296.07C162.08,-300.42 185.74,-305.38 207.33,-309.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.9,-313.38 217.4,-312.01 208.33,-306.53 206.9,-313.38"/>
 </g>
 <!-- proc~dfs_pie_accumulate -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node6" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node5" class="node">
 <title>proc~dfs_pie_accumulate</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node6"><a xlink:href="../proc/dfs_pie_accumulate.html" xlink:title="dfs_pie_accumulate">
-<polygon fill="#d9534f" stroke="#d9534f" points="335,-110.67 217,-110.67 217,-86.67 335,-86.67 335,-110.67"/>
-<text text-anchor="middle" x="276" y="-96.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dfs_pie_accumulate</text>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node5"><a xlink:href="../proc/dfs_pie_accumulate.html" xlink:title="dfs_pie_accumulate">
+<polygon fill="#d9534f" stroke="#d9534f" points="335,-172.07 217,-172.07 217,-148.07 335,-148.07 335,-172.07"/>
+<text text-anchor="middle" x="276" y="-157.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dfs_pie_accumulate</text>
 </a>
 </g>
 </g>
 <!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge5" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge4" class="edge">
 <title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~dfs_pie_accumulate</title>
-<path fill="none" stroke="#ff0000" d="M112.59,-167.55C145.74,-153.49 200.51,-130.26 237.16,-114.72"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="238.68,-117.88 246.52,-110.75 235.95,-111.43 238.68,-117.88"/>
+<path fill="none" stroke="#ff0000" d="M102.66,-271.96C136.47,-250.01 207.98,-203.58 247.43,-177.97"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249.78,-180.62 256.26,-172.24 245.97,-174.74 249.78,-180.62"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="525,-256.07 386,-256.07 386,-232.07 525,-232.07 525,-256.07"/>
+<text text-anchor="middle" x="455.5" y="-241.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_has_error -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge5" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M166.19,-274.15C178.2,-272.75 190.42,-271.35 202,-270.07 260.19,-263.62 325.98,-256.87 375.82,-251.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="376.28,-255.33 385.88,-250.85 375.58,-248.36 376.28,-255.33"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node7" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node7"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="666,-182.07 561,-182.07 561,-158.07 666,-158.07 666,-182.07"/>
+<text text-anchor="middle" x="613.5" y="-167.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_set -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge6" class="edge">
+<title>proc~gmbe_enumerate_pie_terms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M166.03,-287.9C275.69,-291.78 463.4,-293.68 525,-265.07 558.96,-249.3 585.85,-213.68 600.44,-190.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="603.49,-192.53 605.76,-182.18 597.53,-188.86 603.49,-192.53"/>
 </g>
 <!-- to_char -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node7" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node8" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="594,-86.67 540,-86.67 540,-62.67 594,-62.67 594,-86.67"/>
-<text text-anchor="middle" x="567" y="-72.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="640.5,-26.07 586.5,-26.07 586.5,-2.07 640.5,-2.07 640.5,-26.07"/>
+<text text-anchor="middle" x="613.5" y="-11.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~gmbe_enumerate_pie_terms&#45;&gt;to_char -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge6" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge7" class="edge">
 <title>proc~gmbe_enumerate_pie_terms&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M95.25,-167.34C115.01,-146.32 158.04,-103.35 202,-77.67 277.02,-33.86 300.41,-26.56 386,-11.67 437.67,-2.69 455.63,8.59 504,-11.67 524.59,-20.3 541.8,-39.46 552.82,-54.4"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="549.96,-56.42 558.57,-62.6 555.69,-52.4 549.96,-56.42"/>
+<path fill="none" stroke="#ff0000" d="M91.66,-271.9C121.86,-225.34 238.29,-58.8 386,-13.07 450.65,6.94 530.73,-0.4 576.29,-7.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="575.85,-10.84 586.28,-8.98 576.96,-3.93 575.85,-10.84"/>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;proc~dfs_pie_accumulate -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge9" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge10" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;proc~dfs_pie_accumulate</title>
-<path fill="none" stroke="#0000ff" d="M248.22,-110.69C238.52,-119.65 247.78,-128.67 276,-128.67 293.64,-128.67 303.87,-125.15 306.69,-120.31"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="310.02,-119.24 303.78,-110.69 303.33,-121.27 310.02,-119.24"/>
+<path fill="none" stroke="#00ff91" d="M246.57,-172.08C236.29,-181.04 246.1,-190.07 276,-190.07 294.69,-190.07 305.53,-186.54 308.52,-181.71"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="311.82,-180.54 305.43,-172.08 305.15,-182.68 311.82,-180.54"/>
+</g>
+<!-- proc~dfs_pie_accumulate&#45;&gt;proc~error_has_error -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge11" class="edge">
+<title>proc~dfs_pie_accumulate&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff91" d="M294.85,-172.09C315.91,-185.86 352.33,-208.41 386,-223.07 390.47,-225.02 395.17,-226.86 399.94,-228.58"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="399.15,-232.02 409.75,-231.96 401.43,-225.4 399.15,-232.02"/>
 </g>
 <!-- new_clique -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node8" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node9" class="node">
 <title>new_clique</title>
-<polygon fill="#777777" stroke="#777777" points="481,-212.67 409,-212.67 409,-188.67 481,-188.67 481,-212.67"/>
-<text text-anchor="middle" x="445" y="-198.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_clique</text>
+<polygon fill="#777777" stroke="#777777" points="491.5,-130.07 419.5,-130.07 419.5,-106.07 491.5,-106.07 491.5,-130.07"/>
+<text text-anchor="middle" x="455.5" y="-115.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_clique</text>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;new_clique -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge7" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge8" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;new_clique</title>
-<path fill="none" stroke="#0000ff" d="M305.18,-110.69C319.39,-117.48 336.44,-126.79 350,-137.67 369.17,-153.06 365.78,-165.69 386,-179.67 390.19,-182.57 394.82,-185.11 399.59,-187.33"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="398.26,-190.57 408.84,-191.22 400.98,-184.12 398.26,-190.57"/>
+<path fill="none" stroke="#00ff91" d="M327.86,-148.03C353.62,-141.94 384.6,-134.61 409.48,-128.72"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="410.46,-132.09 419.39,-126.38 408.85,-125.28 410.46,-132.09"/>
 </g>
 <!-- proc~atom_sets_equal -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node9" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node10" class="node">
 <title>proc~atom_sets_equal</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node9"><a xlink:href="../proc/atom_sets_equal.html" xlink:title="atom_sets_equal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="496,-170.67 394,-170.67 394,-146.67 496,-146.67 496,-170.67"/>
-<text text-anchor="middle" x="445" y="-156.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atom_sets_equal</text>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node10"><a xlink:href="../proc/atom_sets_equal.html" xlink:title="atom_sets_equal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="506.5,-88.07 404.5,-88.07 404.5,-64.07 506.5,-64.07 506.5,-88.07"/>
+<text text-anchor="middle" x="455.5" y="-73.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atom_sets_equal</text>
 </a>
 </g>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;proc~atom_sets_equal -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge8" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge9" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;proc~atom_sets_equal</title>
-<path fill="none" stroke="#0000ff" d="M310.79,-110.82C336.8,-120.16 372.91,-133.13 400.98,-143.22"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="399.95,-146.56 410.54,-146.65 402.31,-139.98 399.95,-146.56"/>
+<path fill="none" stroke="#00ff91" d="M294.85,-148.05C315.91,-134.28 352.33,-111.73 386,-97.07 390.47,-95.12 395.17,-93.28 399.94,-91.56"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="401.43,-94.75 409.75,-88.19 399.15,-88.13 401.43,-94.75"/>
 </g>
 <!-- proc~grow_pie_storage -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node10" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node11" class="node">
 <title>proc~grow_pie_storage</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node10"><a xlink:href="../proc/grow_pie_storage.html" xlink:title="grow_pie_storage">
-<polygon fill="#d9534f" stroke="#d9534f" points="498,-128.67 392,-128.67 392,-104.67 498,-104.67 498,-128.67"/>
-<text text-anchor="middle" x="445" y="-114.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">grow_pie_storage</text>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node11"><a xlink:href="../proc/grow_pie_storage.html" xlink:title="grow_pie_storage">
+<polygon fill="#d9534f" stroke="#d9534f" points="508.5,-46.07 402.5,-46.07 402.5,-22.07 508.5,-22.07 508.5,-46.07"/>
+<text text-anchor="middle" x="455.5" y="-31.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">grow_pie_storage</text>
 </a>
 </g>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;proc~grow_pie_storage -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge10" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge12" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;proc~grow_pie_storage</title>
-<path fill="none" stroke="#0000ff" d="M335.41,-104.97C350.31,-106.58 366.39,-108.31 381.49,-109.94"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="381.44,-113.45 391.76,-111.04 382.19,-106.49 381.44,-113.45"/>
+<path fill="none" stroke="#00ff91" d="M286.42,-147.78C303.78,-125.97 342.98,-80.4 386,-55.07 389.04,-53.28 392.25,-51.63 395.55,-50.11"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="397.14,-53.24 405.03,-46.16 394.45,-46.77 397.14,-53.24"/>
 </g>
 <!-- proc~intersect_atom_lists -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node11" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node12" class="node">
 <title>proc~intersect_atom_lists</title>
-<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node11"><a xlink:href="../proc/intersect_atom_lists.html" xlink:title="intersect_atom_lists">
-<polygon fill="#d9534f" stroke="#d9534f" points="504,-86.67 386,-86.67 386,-62.67 504,-62.67 504,-86.67"/>
-<text text-anchor="middle" x="445" y="-72.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">intersect_atom_lists</text>
+<g id="a_proc~~gmbe_enumerate_pie_terms~~CallsGraph_node12"><a xlink:href="../proc/intersect_atom_lists.html" xlink:title="intersect_atom_lists">
+<polygon fill="#d9534f" stroke="#d9534f" points="514.5,-214.07 396.5,-214.07 396.5,-190.07 514.5,-190.07 514.5,-214.07"/>
+<text text-anchor="middle" x="455.5" y="-199.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">intersect_atom_lists</text>
 </a>
 </g>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;proc~intersect_atom_lists -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge11" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge13" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;proc~intersect_atom_lists</title>
-<path fill="none" stroke="#0000ff" d="M335.41,-90.28C348.45,-88.41 362.39,-86.4 375.79,-84.48"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="376.51,-87.91 385.91,-83.02 375.51,-80.98 376.51,-87.91"/>
+<path fill="none" stroke="#00ff91" d="M327.86,-172.11C348.38,-176.96 372.22,-182.6 393.65,-187.67"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="393.09,-191.14 403.63,-190.03 394.7,-184.32 393.09,-191.14"/>
 </g>
 <!-- test_intersect -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node12" class="node">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_node13" class="node">
 <title>test_intersect</title>
-<polygon fill="#777777" stroke="#777777" points="487,-44.67 403,-44.67 403,-20.67 487,-20.67 487,-44.67"/>
-<text text-anchor="middle" x="445" y="-30.27" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">test_intersect</text>
+<polygon fill="#777777" stroke="#777777" points="497.5,-172.07 413.5,-172.07 413.5,-148.07 497.5,-148.07 497.5,-172.07"/>
+<text text-anchor="middle" x="455.5" y="-157.67" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">test_intersect</text>
 </g>
 <!-- proc~dfs_pie_accumulate&#45;&gt;test_intersect -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge12" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge14" class="edge">
 <title>proc~dfs_pie_accumulate&#45;&gt;test_intersect</title>
-<path fill="none" stroke="#0000ff" d="M305.55,-86.48C327.46,-77.23 358.51,-64.32 386,-53.67 390.57,-51.91 395.35,-50.1 400.13,-48.32"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="401.68,-51.48 409.86,-44.75 399.27,-44.91 401.68,-51.48"/>
+<path fill="none" stroke="#00ff91" d="M335.12,-160.07C357.1,-160.07 381.94,-160.07 403.25,-160.07"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="403.4,-163.57 413.4,-160.07 403.4,-156.57 403.4,-163.57"/>
 </g>
-<!-- proc~grow_pie_storage&#45;&gt;error -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge13" class="edge">
-<title>proc~grow_pie_storage&#45;&gt;error</title>
-<path fill="none" stroke="#00ff66" d="M481.35,-128.75C496.67,-133.98 514.57,-140.1 529.96,-145.36"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="529.06,-148.75 539.66,-148.67 531.32,-142.13 529.06,-148.75"/>
+<!-- proc~grow_pie_storage&#45;&gt;proc~error_set -->
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge15" class="edge">
+<title>proc~grow_pie_storage&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff66" d="M508.63,-46.22C514.41,-48.66 520,-51.58 525,-55.07 560.4,-79.76 587.73,-123.19 601.86,-149.03"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="598.84,-150.81 606.61,-158 605.02,-147.53 598.84,-150.81"/>
 </g>
 <!-- proc~grow_pie_storage&#45;&gt;to_char -->
-<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge14" class="edge">
+<g id="proc~~gmbe_enumerate_pie_terms~~CallsGraph_edge16" class="edge">
 <title>proc~grow_pie_storage&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff66" d="M480.39,-104.64C495.84,-99.23 514.08,-92.84 529.75,-87.36"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="531.34,-90.51 539.62,-83.91 529.02,-83.91 531.34,-90.51"/>
+<path fill="none" stroke="#00ff66" d="M508.88,-27.36C531.04,-24.51 556.3,-21.27 576.34,-18.71"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="576.82,-22.17 586.29,-17.43 575.93,-15.23 576.82,-22.17"/>
 </g>
 </g>
 </svg>
-</div>          <div>
+</div>                <script>
+                  var panprocgmbe_enumerate_pie_termsCallsGraph = svgPanZoom('#procgmbe_enumerate_pie_termsCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
@@ -1228,7 +1271,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~8"></span>
+              <span class="anchor" id="variable-i~34"></span>
               integer,
             </td>
               <td>private</td>
@@ -1245,7 +1288,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~5"></span>
+              <span class="anchor" id="variable-j~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1262,7 +1305,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~5"></span>
+              <span class="anchor" id="variable-max_atoms~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -1413,7 +1456,7 @@ parameter
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">gmbe_enumerate_pie_terms</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">primaries</span><span class="p">,</span><span class="w"> </span><span class="n">n_primaries</span><span class="p">,</span><span class="w"> </span><span class="n">polymer_level</span><span class="p">,</span><span class="w"> </span><span class="n">max_k_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                       </span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">initial_max_terms</span><span class="p">)</span>
+<span class="w">                                       </span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">initial_max_terms</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Enumerate all unique intersections via DFS and accumulate PIE coefficients</span>
 <span class="w">      </span><span class="c">!! This implements the GMBE(N) algorithm with inclusion-exclusion principle</span>
 <span class="w">      </span><span class="c">!!</span>
@@ -1433,6 +1476,7 @@ parameter
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Unique atom sets (max_atoms, n_terms)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! PIE coefficient for each term</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="w">      </span><span class="c">!! Number of unique PIE terms</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span><span class="w">             </span><span class="c">!! Error status</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">initial_max_terms</span><span class="w">  </span><span class="c">!! Initial PIE storage capacity</span>
 
 <span class="w">      </span><span class="c">! Temporary storage for PIE terms (allocate generously)</span>
@@ -1460,13 +1504,13 @@ parameter
 <span class="k">         </span><span class="n">max_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">INITIAL_MAX_PIE_TERMS</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_terms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Initial PIE term capacity must be positive&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Invalid initial PIE term capacity&quot;</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Initial PIE term capacity must be positive&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">max_terms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nb">huge</span><span class="p">(</span><span class="mi">0_default_int</span><span class="p">),</span><span class="w"> </span><span class="n">int64</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Initial PIE term capacity exceeds default integer limit&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Invalid initial PIE term capacity&quot;</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Initial PIE term capacity exceeds default integer limit&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
 <span class="k">      </span><span class="n">max_terms_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">max_terms</span><span class="p">,</span><span class="w"> </span><span class="n">default_int</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">temp_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">max_terms_i</span><span class="p">))</span>
@@ -1512,15 +1556,16 @@ parameter
 <span class="w">         </span><span class="k">call </span><span class="n">dfs_pie_accumulate</span><span class="p">(</span><span class="n">primary_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">primary_n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_primaries</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">clique</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">current_atoms</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">primary_n_atoms</span><span class="p">(</span><span class="n">i</span><span class="p">)),</span><span class="w"> </span><span class="n">primary_n_atoms</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                 </span><span class="n">candidates</span><span class="p">,</span><span class="w"> </span><span class="n">n_candidates</span><span class="p">,</span><span class="w"> </span><span class="n">max_k_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                 </span><span class="n">temp_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">temp_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">max_terms</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end do</span>
+<span class="w">                                 </span><span class="n">temp_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">temp_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">max_terms</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      end do</span>
 
 <span class="w">      </span><span class="c">! Copy to output arrays</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_pie_terms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0_int64</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">n_pie_terms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nb">huge</span><span class="p">(</span><span class="mi">0_default_int</span><span class="p">),</span><span class="w"> </span><span class="n">int64</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;n_pie_terms exceeds default integer limit&quot;</span><span class="p">)</span>
-<span class="w">            </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;PIE term count too large for allocation&quot;</span>
-<span class="w">         </span><span class="k">end if</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;n_pie_terms exceeds default integer limit&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
 <span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">default_int</span><span class="p">)))</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">default_int</span><span class="p">)))</span>
 <span class="w">         </span><span class="n">pie_atom_sets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">n_pie_terms</span><span class="p">)</span>
@@ -1557,7 +1602,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:11 +0000             </p>
+ on 2026-01-09 10:18 +0000             </p>
           </div>
         </div>
         <br>

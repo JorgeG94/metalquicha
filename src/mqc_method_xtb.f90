@@ -6,6 +6,7 @@ module mqc_method_xtb
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
+   use mqc_error, only: ERROR_GENERIC, ERROR_VALIDATION
    use pic_logger, only: logger => global_logger
 
    ! tblite imports (reuse from mqc_mbe)
@@ -84,12 +85,14 @@ contains
       case ("gfn2")
          call new_gfn2_calculator(calc, mol, error)
       case default
-         call logger%error("Unknown XTB variant: "//this%variant)
+         call result%error%set(ERROR_VALIDATION, "Unknown XTB variant: "//this%variant)
+         result%has_error = .true.
          return
       end select
 
       if (allocated(error)) then
-         call logger%error("Failed to create XTB calculator")
+         call result%error%set(ERROR_GENERIC, "Failed to create XTB calculator")
+         result%has_error = .true.
          return
       end if
 
@@ -156,12 +159,14 @@ contains
       case ("gfn2")
          call new_gfn2_calculator(calc, mol, error)
       case default
-         call logger%error("Unknown XTB variant: "//this%variant)
+         call result%error%set(ERROR_VALIDATION, "Unknown XTB variant: "//this%variant)
+         result%has_error = .true.
          return
       end select
 
       if (allocated(error)) then
-         call logger%error("Failed to create XTB calculator")
+         call result%error%set(ERROR_GENERIC, "Failed to create XTB calculator")
+         result%has_error = .true.
          return
       end if
 
@@ -254,8 +259,10 @@ contains
 
          ! Forward
          call this%calc_gradient(forward_geoms(i)%geometry, disp_result)
-         if (.not. disp_result%has_gradient) then
-            call logger%error("Failed to compute gradient for forward displacement "//to_char(i))
+         if (disp_result%has_error .or. .not. disp_result%has_gradient) then
+            call result%error%set(ERROR_GENERIC, "Failed to compute gradient for forward displacement "//to_char(i))
+            result%has_error = .true.
+            call disp_result%destroy()
             return
          end if
          forward_gradients(i, :, :) = disp_result%gradient
@@ -263,8 +270,10 @@ contains
 
          ! Backward
          call this%calc_gradient(backward_geoms(i)%geometry, disp_result)
-         if (.not. disp_result%has_gradient) then
-            call logger%error("Failed to compute gradient for backward displacement "//to_char(i))
+         if (disp_result%has_error .or. .not. disp_result%has_gradient) then
+            call result%error%set(ERROR_GENERIC, "Failed to compute gradient for backward displacement "//to_char(i))
+            result%has_error = .true.
+            call disp_result%destroy()
             return
          end if
          backward_gradients(i, :, :) = disp_result%gradient
@@ -283,6 +292,12 @@ contains
 
       ! Also compute energy and gradient at reference geometry for completeness
       call this%calc_gradient(fragment, disp_result)
+      if (disp_result%has_error) then
+         result%error = disp_result%error
+         result%has_error = .true.
+         call disp_result%destroy()
+         return
+      end if
       result%energy = disp_result%energy
       result%has_energy = disp_result%has_energy
       if (disp_result%has_gradient) then

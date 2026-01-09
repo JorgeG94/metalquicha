@@ -119,6 +119,14 @@ contains
 
          ! Compute energy (and gradient if requested)
          call do_fragment_work(term_idx, results(term_idx), method, phys_frag, calc_type)
+
+         ! Check for calculation errors
+         if (results(term_idx)%has_error) then
+            call logger%error("PIE term "//to_char(term_idx)//" calculation failed: "// &
+                              results(term_idx)%error%get_message())
+            error stop "PIE term calculation failed in serial processing"
+         end if
+
          term_energy = results(term_idx)%energy%total()
 
          ! Store energy for JSON output
@@ -295,6 +303,15 @@ contains
                call result_irecv(results(worker_term_map(worker_source)), node_comm, worker_source, &
                                  TAG_WORKER_SCALAR_RESULT, req)
                call wait(req)
+
+               ! Check for calculation errors from worker
+               if (results(worker_term_map(worker_source))%has_error) then
+                  call logger%error("PIE term "//to_char(worker_term_map(worker_source))// &
+                                    " calculation failed: "// &
+                                    results(worker_term_map(worker_source))%error%get_message())
+                  call abort_comm(world_comm, 1)
+               end if
+
                worker_term_map(worker_source) = 0
                results_received = results_received + 1
                if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
@@ -315,6 +332,14 @@ contains
             call wait(req)
             call result_irecv(results(term_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
+
+            ! Check for calculation errors from node coordinator
+            if (results(term_idx)%has_error) then
+               call logger%error("PIE term "//to_char(term_idx)//" calculation failed: "// &
+                                 results(term_idx)%error%get_message())
+               call abort_comm(world_comm, 1)
+            end if
+
             results_received = results_received + 1
             if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
                 results_received == n_pie_terms) then

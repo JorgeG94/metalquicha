@@ -1,4 +1,5 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
+   use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
    implicit none
 
 contains
@@ -52,24 +53,24 @@ contains
          case (CALC_TYPE_HESSIAN)
             call xtb_calc%calc_hessian(phys_frag, result)
          case default
-            call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
-            if (present(world_comm)) then
-               call abort_comm(world_comm, 1)
-            else
-               error stop "Invalid calc_type in do_fragment_work"
-            end if
+            call result%error%set(ERROR_VALIDATION, "Unknown calc_type: "//calc_type_to_string(calc_type_local))
+            result%has_error = .true.
+            return
          end select
+
+         ! Check for calculation errors
+         if (result%has_error) then
+            call result%error%add_context("do_fragment_work:fragment_"//to_char(fragment_idx))
+            return
+         end if
 
          ! Copy fragment distance to result for JSON output
          result%distance = phys_frag%distance
 #else
-         call logger%error("XTB method requested but tblite support not compiled in")
-         call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
-         if (present(world_comm)) then
-            call abort_comm(world_comm, 1)
-         else
-            error stop "tblite support not available"
-         end if
+         call result%error%set(ERROR_GENERIC, "XTB method requested but tblite support not compiled in. "// &
+                               "Please rebuild with -DMQC_ENABLE_TBLITE=ON")
+         result%has_error = .true.
+         return
 #endif
       else
          ! For empty fragments, set energy to zero
@@ -151,6 +152,15 @@ contains
                call result_irecv(results(worker_fragment_map(worker_source)), node_comm, worker_source, &
                                  TAG_WORKER_SCALAR_RESULT, req)
                call wait(req)
+
+               ! Check for calculation errors from worker
+               if (results(worker_fragment_map(worker_source))%has_error) then
+                  call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
+                                    " calculation failed: "// &
+                                    results(worker_fragment_map(worker_source))%error%get_message())
+                  call abort_comm(world_comm, 1)
+               end if
+
                ! Clear the mapping since we've received the result
                worker_fragment_map(worker_source) = 0
                results_received = results_received + 1
@@ -174,6 +184,14 @@ contains
             call wait(req)
             call result_irecv(results(fragment_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
+
+            ! Check for calculation errors from node coordinator
+            if (results(fragment_idx)%has_error) then
+               call logger%error("Fragment "//to_char(fragment_idx)//" calculation failed: "// &
+                                 results(fragment_idx)%error%get_message())
+               call abort_comm(world_comm, 1)
+            end if
+
             results_received = results_received + 1
             if (mod(results_received, max(1_int64, total_fragments/10)) == 0 .or. &
                 results_received == total_fragments) then
@@ -403,6 +421,14 @@ contains
             ! Receive result from worker
             call result_irecv(worker_result, node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
+
+            ! Check for calculation errors before forwarding
+            if (worker_result%has_error) then
+               call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
+                                 " calculation failed on worker "//to_char(worker_source)//": "// &
+                                 worker_result%error%get_message())
+               call abort_comm(world_comm, 1)
+            end if
 
             ! Forward results to global coordinator with fragment index
             call isend(world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
