@@ -4,6 +4,7 @@ module mqc_driver
    !! with MPI parallelization and node-based work distribution.
    use pic_types, only: int32, int64, dp
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
+   use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
@@ -31,14 +32,13 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(world_comm, node_comm, config, sys_geom, bonds, result_out)
+   subroutine run_calculation(resources, config, sys_geom, bonds, result_out)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
       !! calculation routine with proper MPI setup and validation.
       !! If result_out is present, returns result instead of writing JSON (for dynamics/optimization)
-      type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
-      type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
+      type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
@@ -51,7 +51,7 @@ contains
       ! Set max_level from config
       max_level = config%nlevel
 
-      if (world_comm%rank() == 0) then
+      if (resources%mpi_comms%world_comm%rank() == 0) then
          call logger%info("============================================")
          call logger%info("Loaded geometry:")
          call logger%info("  Total monomers: "//to_char(sys_geom%n_monomers))
@@ -63,7 +63,7 @@ contains
 
       ! Warn if overlapping fragments flag is set but nlevel=0
       if (config%allow_overlapping_fragments .and. max_level == 0) then
-         if (world_comm%rank() == 0) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
             call logger%warning("allow_overlapping_fragments is set to true, but nlevel=0")
             call logger%warning("Running unfragmented calculation - overlapping fragments flag will be ignored")
          end if
@@ -77,9 +77,10 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-       call run_unfragmented_calculation(world_comm, sys_geom, config%method, config%calc_type, bonds, config, result_out)
+         call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
+                                           config%method, config%calc_type, bonds, config, result_out)
       else
-         call run_fragmented_calculation(world_comm, node_comm, config%method, config%calc_type, sys_geom, max_level, &
+         call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
                                          config%allow_overlapping_fragments, &
                                          config%max_intersection_level, bonds, config)
       end if
@@ -131,15 +132,14 @@ contains
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(world_comm, node_comm, method, calc_type, sys_geom, max_level, &
+   subroutine run_fragmented_calculation(resources, method, calc_type, sys_geom, max_level, &
                                          allow_overlapping_fragments, max_intersection_level, bonds, driver_config)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
       !! and coordinates many-body expansion calculation using hierarchical parallelism.
       !! If allow_overlapping_fragments=true, uses GMBE with intersection correction.
-      type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
-      type(comm_t), intent(in) :: node_comm   !! Node-local MPI communicator
+      type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       integer(int32), intent(in) :: method  !! Quantum chemistry method
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
@@ -175,7 +175,7 @@ contains
       type(error_t) :: pie_error  !! Error from PIE enumeration
 
       ! Generate fragments
-      if (world_comm%rank() == 0) then
+      if (resources%mpi_comms%world_comm%rank() == 0) then
          if (allow_overlapping_fragments) then
             ! GMBE mode: PIE-based inclusion-exclusion
             ! GMBE(1): primaries are monomers
@@ -225,7 +225,7 @@ contains
                                           pie_atom_sets, pie_coefficients, n_pie_terms, pie_error)
             if (pie_error%has_error()) then
                call logger%error("GMBE PIE enumeration failed: "//pie_error%get_message())
-               call abort_comm(world_comm, 1)
+               call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
 
             call logger%info("GMBE PIE enumeration complete: "//to_char(n_pie_terms)//" unique subsystems to evaluate")
@@ -277,24 +277,24 @@ contains
       end if
 
       ! Broadcast total_fragments to all ranks
-      call bcast(world_comm, total_fragments, 1, 0)
+      call bcast(resources%mpi_comms%world_comm, total_fragments, 1, 0)
 
       ! Determine node leaders
       global_node_rank = -1
-      if (node_comm%rank() == 0) global_node_rank = world_comm%rank()
+      if (resources%mpi_comms%node_comm%rank() == 0) global_node_rank = resources%mpi_comms%world_comm%rank()
 
-      allocate (all_node_leader_ranks(world_comm%size()))
-      call allgather(world_comm, global_node_rank, all_node_leader_ranks)
+      allocate (all_node_leader_ranks(resources%mpi_comms%world_comm%size()))
+      call allgather(resources%mpi_comms%world_comm, global_node_rank, all_node_leader_ranks)
 
       num_nodes = count(all_node_leader_ranks /= -1)
 
-      if (world_comm%rank() == 0) then
+      if (resources%mpi_comms%world_comm%rank() == 0) then
          call logger%info("Running with "//to_char(num_nodes)//" node(s)")
       end if
 
       allocate (node_leader_ranks(num_nodes))
       i = 0
-      do j = 1, world_comm%size()
+      do j = 1, resources%mpi_comms%world_comm%size()
          if (all_node_leader_ranks(j) /= -1) then
             i = i + 1
             node_leader_ranks(i) = all_node_leader_ranks(j)
@@ -303,7 +303,7 @@ contains
       deallocate (all_node_leader_ranks)
 
       ! Execute appropriate role
-      if (world_comm%size() == 1) then
+      if (resources%mpi_comms%world_comm%size() == 1) then
          ! Single rank: process fragments serially
          call logger%info("Running in serial mode (single MPI rank)")
          if (allow_overlapping_fragments) then
@@ -313,34 +313,34 @@ contains
             ! Standard MBE serial processing
             call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
          end if
-      else if (world_comm%leader() .and. node_comm%leader()) then
+      else if (resources%mpi_comms%world_comm%leader() .and. resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
          if (allow_overlapping_fragments) then
             ! GMBE MPI processing - PIE-based approach
-            call gmbe_pie_coordinator(world_comm, node_comm, pie_atom_sets, pie_coefficients, n_pie_terms, &
+            call gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
                                       node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
          else
             ! Standard MBE MPI processing
-            call global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+            call global_coordinator(resources, total_fragments, polymers, max_level, &
                                     node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
          end if
-      else if (node_comm%leader()) then
+      else if (resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
-         call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as node coordinator")
+         call logger%verbose("Rank "//to_char(resources%mpi_comms%world_comm%rank())//": Acting as node coordinator")
          ! Node coordinator works for both MBE and GMBE (receives fragments from global coordinator)
-         call node_coordinator(world_comm, node_comm, calc_type)
+         call node_coordinator(resources, calc_type)
       else
          ! Worker
          call omp_set_num_threads(1)
-         call logger%verbose("Rank "//to_char(world_comm%rank())//": Acting as worker")
+         call logger%verbose("Rank "//to_char(resources%mpi_comms%world_comm%rank())//": Acting as worker")
          ! Worker processes work for both MBE and GMBE (fragment_type distinguishes them)
-         call node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+         call node_worker(resources, sys_geom, method, calc_type, bonds)
       end if
 
       ! Cleanup
-      if (world_comm%rank() == 0) then
+      if (resources%mpi_comms%world_comm%rank() == 0) then
          if (allocated(polymers)) deallocate (polymers)
          if (allocated(node_leader_ranks)) deallocate (node_leader_ranks)
          if (allocated(intersections)) deallocate (intersections)
@@ -352,7 +352,7 @@ contains
 
    end subroutine run_fragmented_calculation
 
-   subroutine run_multi_molecule_calculations(world_comm, node_comm, mqc_config)
+   subroutine run_multi_molecule_calculations(resources, mqc_config)
       !! Run calculations for multiple molecules with MPI parallelization
       !! Each molecule is independent, so assign one molecule per rank
       use mqc_config_parser, only: mqc_config_t
@@ -361,13 +361,12 @@ contains
       use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
       use mqc_json, only: merge_multi_molecule_json
 
-      type(comm_t), intent(in) :: world_comm
-      type(comm_t), intent(in) :: node_comm
+      type(resources_t), intent(in) :: resources
       type(mqc_config_t), intent(in) :: mqc_config
 
       type(driver_config_t) :: config
       type(system_geometry_t) :: sys_geom
-      type(comm_t) :: mol_comm, mol_node_comm
+      type(resources_t) :: mol_resources
       type(error_t) :: error
       integer :: imol, my_rank, num_ranks, color
       integer :: molecules_processed
@@ -375,8 +374,8 @@ contains
       logical :: has_fragmented_molecules
       character(len=256), allocatable :: individual_json_files(:)
 
-      my_rank = world_comm%rank()
-      num_ranks = world_comm%size()
+      my_rank = resources%mpi_comms%world_comm%rank()
+      num_ranks = resources%mpi_comms%world_comm%size()
 
       ! Allocate array to track individual JSON files for merging
       allocate (individual_json_files(mqc_config%nmol))
@@ -444,14 +443,14 @@ contains
                if (my_rank == 0) then
                   call logger%error("Error converting geometry for "//mol_name//": "//error%get_full_trace())
                end if
-               call abort_comm(world_comm, 1)
+               call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
 
             ! Set output filename suffix for this molecule
             call set_molecule_suffix("_"//trim(mol_name))
 
             ! Run calculation for this molecule
-            call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+            call run_calculation(resources, config, sys_geom, mqc_config%molecules(imol)%bonds)
 
             ! Track the JSON filename for later merging
             individual_json_files(imol) = get_output_json_filename()
@@ -491,14 +490,14 @@ contains
                if (error%has_error()) then
                   call error%add_context("mqc_driver:run_multi_molecule_calculation")
   call logger%error("Rank "//to_char(my_rank)//": Error converting geometry for "//mol_name//": "//error%get_full_trace())
-                  call abort_comm(world_comm, 1)
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
                end if
 
                ! Set output filename suffix for this molecule
                call set_molecule_suffix("_"//trim(mol_name))
 
                ! Run calculation for this molecule
-               call run_calculation(world_comm, node_comm, config, sys_geom, mqc_config%molecules(imol)%bonds)
+               call run_calculation(resources, config, sys_geom, mqc_config%molecules(imol)%bonds)
 
                ! Track the JSON filename for later merging
                individual_json_files(imol) = get_output_json_filename()
@@ -520,7 +519,7 @@ contains
       end if
 
       ! Synchronize all ranks
-      call world_comm%barrier()
+      call resources%mpi_comms%world_comm%barrier()
 
       ! In parallel execution, rank 0 needs to reconstruct all JSON filenames for merging
       ! since each rank only populated its own entry

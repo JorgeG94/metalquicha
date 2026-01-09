@@ -9,6 +9,7 @@ module mqc_calculation_interface
    use mqc_config_parser, only: bond_t
    use mqc_result_types, only: calculation_result_t
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   use mqc_resources, only: resources_t
 
    implicit none
    private
@@ -34,7 +35,7 @@ contains
 
    end subroutine sync_geometry_to_workers
 
-   subroutine compute_energy_and_forces(sys_geom, driver_config, world_comm, node_comm, &
+   subroutine compute_energy_and_forces(sys_geom, driver_config, resources, &
                                         energy, gradient, hessian, bonds)
       !! Compute energy and forces for current geometry
       !! This is the main interface for optimization/dynamics codes
@@ -52,7 +53,7 @@ contains
       use mqc_config_adapter, only: driver_config_t
       type(system_geometry_t), intent(inout) :: sys_geom
       type(driver_config_t), intent(in) :: driver_config
-      type(comm_t), intent(in) :: world_comm, node_comm
+      type(resources_t), intent(in) :: resources
       real(dp), intent(out) :: energy
       real(dp), intent(out), optional :: gradient(:, :)  !! (3, total_atoms)
       real(dp), intent(out), optional :: hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
@@ -67,28 +68,28 @@ contains
 
       ! Synchronize geometry from master to all ranks
       ! (Master may have updated coordinates for optimization/dynamics)
-      call sync_geometry_to_workers(sys_geom, world_comm)
+      call sync_geometry_to_workers(sys_geom, resources%mpi_comms%world_comm)
 
       ! Call the main calculation driver
       ! This handles both fragmented and unfragmented cases
-      call run_calculation(world_comm, node_comm, driver_config, sys_geom, bonds, result)
+      call run_calculation(resources, driver_config, sys_geom, bonds, result)
 
       ! Extract results (only valid on master rank)
-      if (world_comm%rank() == 0) then
+      if (resources%mpi_comms%world_comm%rank() == 0) then
          energy = result%energy%total()
 
          if (need_gradient .and. result%has_gradient) then
             gradient = result%gradient
          else if (need_gradient) then
             call logger%error("Gradient requested but not computed!")
-            call abort_comm(world_comm, 1)
+            call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
 
          if (need_hessian .and. result%has_hessian) then
             hessian = result%hessian
          else if (need_hessian) then
             call logger%error("Hessian requested but not computed!")
-            call abort_comm(world_comm, 1)
+            call abort_comm(resources%mpi_comms%world_comm, 1)
          end if
 
          ! Clean up

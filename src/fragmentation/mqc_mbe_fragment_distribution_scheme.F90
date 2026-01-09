@@ -7,6 +7,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, &
                           request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
+   use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger, verbose_level, info_level
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz, print_unfragmented_json
@@ -47,10 +48,10 @@ module mqc_mbe_fragment_distribution_scheme
          type(comm_t), intent(in), optional :: world_comm
       end subroutine do_fragment_work
 
-      module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+      module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
                                            node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
          implicit none
-         type(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) :: max_level, num_nodes
          integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
@@ -59,9 +60,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine global_coordinator
 
-      module subroutine node_coordinator(world_comm, node_comm, calc_type)
+      module subroutine node_coordinator(resources, calc_type)
          implicit none
-         class(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          integer(int32), intent(in) :: calc_type
       end subroutine node_coordinator
 
@@ -75,9 +76,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine serial_fragment_processor
 
-      module subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+      module subroutine node_worker(resources, sys_geom, method, calc_type, bonds)
          implicit none
-         class(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
          integer(int32), intent(in) :: calc_type
