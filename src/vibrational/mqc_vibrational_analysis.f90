@@ -7,6 +7,7 @@ module mqc_vibrational_analysis
    use pic_logger, only:
    use mqc_elements, only: element_mass, element_number_to_symbol
    use pic_logger, only: logger => global_logger
+   use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
    implicit none
    private
 
@@ -19,25 +20,6 @@ module mqc_vibrational_analysis
    public :: compute_cartesian_displacements
    public :: compute_ir_intensities
    public :: print_vibrational_analysis
-
-   ! Conversion factor from atomic units (Hartree/Bohr²/amu) to cm⁻¹
-   ! Derived from fundamental constants:
-   !   sqrt(Hartree/(Bohr²·amu)) → s⁻¹ → cm⁻¹
-   real(dp), parameter :: AU_TO_CM1 = 2.642461e7_dp
-
-   ! Conversion factor from atomic units (Hartree/Bohr²) to mdyne/Å
-   ! 1 Hartree/Bohr² = 15.569141 mdyne/Å
-   real(dp), parameter :: AU_TO_MDYNE_ANG = 15.569141_dp
-
-   ! Conversion factor from atomic units of dipole derivatives to km/mol (IR intensity)
-   ! From xtb: autokmmol converts (dμ/dQ)² in a.u. to the Naperian absorption coefficient
-   ! A = (π·N_A·|dμ/dQ|²) / (3·4·π·ε₀·c²) measured in km/mol
-   ! Reference: IUPAC, Quantities, Units and Symbols in Physical Chemistry (1993)
-   real(dp), parameter :: AU_TO_KMMOL = 1.7770969e6_dp
-
-   ! Conversion factor from amu to atomic units of mass (electron masses)
-   ! 1 amu = 1822.888 electron masses
-   real(dp), parameter :: AMU_TO_AU = 1822.888_dp
 
 contains
 
