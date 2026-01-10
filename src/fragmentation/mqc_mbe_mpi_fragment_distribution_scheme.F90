@@ -1,4 +1,4 @@
-submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
+submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
    use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
    implicit none
 
@@ -43,6 +43,16 @@ contains
          ! Setup XTB method
          xtb_calc%variant = method_type_to_string(method)
          xtb_calc%verbose = is_verbose
+
+         ! Set solvation options from module-level config
+         if (allocated(xtb_options%solvent)) then
+            xtb_calc%solvent = xtb_options%solvent
+         end if
+         if (allocated(xtb_options%solvation_model)) then
+            xtb_calc%solvation_model = xtb_options%solvation_model
+         end if
+         xtb_calc%use_cds = xtb_options%use_cds
+         xtb_calc%use_shift = xtb_options%use_shift
 
          ! Run the calculation using the method API
          select case (calc_type_local)
@@ -577,4 +587,4 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
       end do
    end subroutine node_worker
 
-end submodule mqc_mbe_fragment_distribution_scheme
+end submodule mpi_fragment_work_smod

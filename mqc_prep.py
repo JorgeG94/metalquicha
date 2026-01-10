@@ -55,11 +55,77 @@ class SchemaTag:
     index_base: int = 0
     units: str = "angstrom"
 
+# ----------------------------
+# Supported solvents from tblite
+# ----------------------------
+# From tblite's src/tblite/solvation/data.f90
+TBLITE_SOLVENTS = {
+    # Common solvents
+    "water", "h2o",
+    "methanol", "ch3oh",
+    "ethanol", "c2h5oh",
+    "acetone",
+    "acetonitrile", "ch3cn",
+    # Aromatics
+    "benzene",
+    "toluene",
+    # Halogenated
+    "chloroform", "chcl3",
+    "dichloromethane", "ch2cl2", "dcm",
+    "carbon tetrachloride", "ccl4",
+    # Polar aprotic
+    "dmso", "dimethylsulfoxide",
+    "dmf", "dimethylformamide",
+    "thf", "tetrahydrofuran",
+    # Ethers
+    "diethylether", "ether",
+    "dioxane",
+    # Alkanes
+    "hexane", "n-hexane",
+    "cyclohexane",
+    "heptane", "n-heptane",
+    "octane", "n-octane",
+    # Other organics
+    "pyridine",
+    "aniline",
+    "nitromethane",
+    "nitrobenzene",
+    "formamide",
+    "phenol",
+    "cs2", "carbondisulfide",
+    # Alcohols
+    "1-propanol", "propanol",
+    "2-propanol", "isopropanol",
+    "1-butanol", "butanol",
+    "2-butanol",
+    "1-octanol", "octanol",
+    # Esters/acids
+    "ethyl acetate", "ethylacetate",
+    "acetic acid", "aceticacid",
+    "formic acid", "formicacid",
+    # Additional solvents
+    "chlorobenzene",
+    "furan",
+    "hexadecane",
+    "pentane",
+    "decane",
+    "decanol",
+    "woctanol",  # wet octanol
+    "inf",  # infinite dielectric (conductor)
+}
+
+# Supported solvation models
+# Note: CPCM is not yet implemented in metalquicha
+SOLVATION_MODELS = {"alpb", "gbsa"}
+
+
 @dataclass
 class Model:
     method: str
     basis: Optional[str] = None
     aux_basis: Optional[str] = None
+    solvent: Optional[str] = None
+    solvation_model: Optional[str] = None
 
 @dataclass
 class SCF:
@@ -215,11 +281,46 @@ def parse_schema(obj: Any) -> SchemaTag:
     die("schema must be string or object")
 
 def parse_model(d: Dict[str, Any]) -> Model:
-    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
+    require_only_keys(d, {"method", "basis", "aux_basis", "solvent", "solvation_model"}, "model")
     method = req_type(d.get("method"), str, "model.method")
     basis = opt_type(d.get("basis"), str, "model.basis")
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
-    return Model(method=method, basis=basis, aux_basis=aux)
+
+    # Parse solvation settings
+    solvent = opt_type(d.get("solvent"), str, "model.solvent")
+    solvation_model = opt_type(d.get("solvation_model"), str, "model.solvation_model")
+
+    # Validate solvent if specified
+    if solvent is not None:
+        solvent_lower = solvent.lower()
+        if solvent_lower not in TBLITE_SOLVENTS:
+            # Provide helpful error with suggestions
+            die(f"model.solvent: unknown solvent '{solvent}'. "
+                f"Supported solvents include: water, methanol, ethanol, acetone, acetonitrile, "
+                f"benzene, toluene, chloroform, dichloromethane, dmso, dmf, thf, "
+                f"diethylether, hexane, cyclohexane, and many more. "
+                f"See documentation for full list.")
+        # Store normalized (lowercase) solvent name
+        solvent = solvent_lower
+
+    # Validate solvation model if specified
+    if solvation_model is not None:
+        solvation_model_lower = solvation_model.lower()
+        if solvation_model_lower not in SOLVATION_MODELS:
+            die(f"model.solvation_model: unknown model '{solvation_model}'. "
+                f"Supported models: {', '.join(sorted(SOLVATION_MODELS))}")
+        solvation_model = solvation_model_lower
+
+    # If solvent is specified but model isn't, default to alpb
+    if solvent is not None and solvation_model is None:
+        solvation_model = "alpb"
+
+    # If solvation model is specified without solvent, that's an error
+    if solvation_model is not None and solvent is None:
+        die("model.solvation_model: cannot specify solvation model without solvent")
+
+    return Model(method=method, basis=basis, aux_basis=aux,
+                 solvent=solvent, solvation_model=solvation_model)
 
 def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian], Optional[AIMD], Optional[Fragmentation]]:
     require_only_keys(d, {"scf", "hessian", "aimd", "fragmentation"}, "keywords")
@@ -729,6 +830,10 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"basis = {inp.model.basis}\n")
     if inp.model.aux_basis is not None:
         buf.write(f"aux_basis = {inp.model.aux_basis}\n")
+    if inp.model.solvent is not None:
+        buf.write(f"solvent = {inp.model.solvent}\n")
+    if inp.model.solvation_model is not None:
+        buf.write(f"solvation_model = {inp.model.solvation_model}\n")
     buf.write("end  ! model\n\n")
 
     # %driver (always)

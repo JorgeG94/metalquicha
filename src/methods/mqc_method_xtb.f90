@@ -14,7 +14,11 @@ module mqc_method_xtb
    use mctc_io, only: structure_type, new
    use pic_timer, only: timer_type
    use tblite_context_type, only: context_type
-   use tblite_wavefunction, only: wavefunction_type, new_wavefunction
+   use tblite_wavefunction, only: wavefunction_type, new_wavefunction, get_molecular_dipole_moment
+   use tblite_container, only: container_type
+   use tblite_solvation, only: solvation_type, solvation_input, alpb_input, &
+                               new_solvation, new_solvation_cds, new_solvation_shift, &
+                               cds_input, shift_input
    use tblite_xtb_calculator, only: xtb_calculator
    use tblite_xtb_gfn1, only: new_gfn1_calculator
    use tblite_xtb_gfn2, only: new_gfn2_calculator
@@ -34,6 +38,11 @@ module mqc_method_xtb
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
       real(wp) :: kt = 300.0_wp*3.166808578545117e-06_wp  !! Electronic temperature (300 K)
+      ! Solvation settings (leave solvent unallocated for gas phase)
+      character(len=:), allocatable :: solvent  !! Solvent name: "water", "ethanol", etc.
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default) or "gbsa"
+      logical :: use_cds = .true.               !! Include non-polar CDS terms
+      logical :: use_shift = .true.             !! Include solution state shift
    contains
       procedure :: calc_energy => xtb_calc_energy      !! Energy-only calculation
       procedure :: calc_gradient => xtb_calc_gradient  !! Energy + gradient calculation
@@ -58,12 +67,22 @@ contains
       real(wp) :: energy
       type(context_type) :: ctx
       integer :: verbosity
+      real(wp) :: dipole_wp(3)
 
       if (this%verbose) then
          print *, "XTB: Calculating energy using ", this%variant
          print *, "XTB: Fragment has", fragment%n_atoms, "atoms"
          print *, "XTB: nelec =", fragment%nelec
          print *, "XTB: charge =", fragment%charge
+         if (allocated(this%solvent)) then
+            if (allocated(this%solvation_model)) then
+               print *, "XTB: Solvation: ", trim(this%solvation_model), " with solvent = ", this%solvent
+            else
+               print *, "XTB: Solvation: alpb with solvent = ", this%solvent
+            end if
+         else
+            print *, "XTB: Solvation: none (gas phase)"
+         end if
       end if
 
       ! Convert fragment to tblite format
@@ -96,6 +115,22 @@ contains
          return
       end if
 
+      ! Add solvation if configured
+      if (allocated(this%solvent)) then
+         if (allocated(this%solvation_model)) then
+            call add_solvation_to_calc(calc, mol, this%solvent, this%solvation_model, this%variant, &
+                                       this%use_cds, this%use_shift, error)
+         else
+            call add_solvation_to_calc(calc, mol, this%solvent, "alpb", this%variant, &
+                                       this%use_cds, this%use_shift, error)
+         end if
+         if (allocated(error)) then
+            call result%error%set(ERROR_GENERIC, "Failed to add solvation: "//error%message)
+            result%has_error = .true.
+            return
+         end if
+      end if
+
       ! Create wavefunction and run single point calculation
       call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, this%kt)
       energy = 0.0_wp
@@ -103,12 +138,22 @@ contains
       verbosity = merge(1, 0, this%verbose)
       call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
 
+      ! Compute molecular dipole moment from wavefunction
+      dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
+
       ! Store result (XTB is a semi-empirical method, store as SCF energy)
       result%energy%scf = real(energy, dp)
       result%has_energy = .true.
 
+      ! Store dipole moment
+      allocate (result%dipole(3))
+      result%dipole = real(dipole_wp, dp)
+      result%has_dipole = .true.
+
       if (this%verbose) then
          print *, "XTB: Energy =", result%energy%total()
+         print *, "XTB: Dipole (e*Bohr) =", result%dipole
+         print *, "XTB: Dipole magnitude (Debye) =", norm2(result%dipole)*2.541746_dp
       end if
 
       deallocate (num, xyz)
@@ -133,12 +178,22 @@ contains
       integer :: verbosity
       real(wp), allocatable :: gradient(:, :)
       real(wp), allocatable :: sigma(:, :)
+      real(wp) :: dipole_wp(3)
 
       if (this%verbose) then
          print *, "XTB: Calculating gradient using ", this%variant
          print *, "XTB: Fragment has", fragment%n_atoms, "atoms"
          print *, "XTB: nelec =", fragment%nelec
          print *, "XTB: charge =", fragment%charge
+         if (allocated(this%solvent)) then
+            if (allocated(this%solvation_model)) then
+               print *, "XTB: Solvation: ", trim(this%solvation_model), " with solvent = ", this%solvent
+            else
+               print *, "XTB: Solvation: alpb with solvent = ", this%solvent
+            end if
+         else
+            print *, "XTB: Solvation: none (gas phase)"
+         end if
       end if
 
       ! Convert fragment to tblite format
@@ -170,6 +225,22 @@ contains
          return
       end if
 
+      ! Add solvation if configured
+      if (allocated(this%solvent)) then
+         if (allocated(this%solvation_model)) then
+            call add_solvation_to_calc(calc, mol, this%solvent, this%solvation_model, this%variant, &
+                                       this%use_cds, this%use_shift, error)
+         else
+            call add_solvation_to_calc(calc, mol, this%solvent, "alpb", this%variant, &
+                                       this%use_cds, this%use_shift, error)
+         end if
+         if (allocated(error)) then
+            call result%error%set(ERROR_GENERIC, "Failed to add solvation: "//error%message)
+            result%has_error = .true.
+            return
+         end if
+      end if
+
       ! Allocate gradient and sigma arrays (initialize to zero)
       allocate (gradient(3, fragment%n_atoms))
       allocate (sigma(3, 3))
@@ -183,6 +254,9 @@ contains
       verbosity = merge(1, 0, this%verbose)
       call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, &
                            gradient=gradient, sigma=sigma, verbosity=verbosity)
+
+      ! Compute molecular dipole moment from wavefunction
+      dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
 
       ! Store results (XTB is a semi-empirical method, store as SCF energy)
       result%energy%scf = real(energy, dp)
@@ -198,9 +272,16 @@ contains
       result%sigma = real(sigma, dp)
       result%has_sigma = .true.
 
+      ! Store dipole moment
+      allocate (result%dipole(3))
+      result%dipole = real(dipole_wp, dp)
+      result%has_dipole = .true.
+
       if (this%verbose) then
          print *, "XTB: Energy =", result%energy%total()
          print *, "XTB: Gradient norm =", sqrt(sum(result%gradient**2))
+         print *, "XTB: Dipole (e*Bohr) =", result%dipole
+         print *, "XTB: Dipole magnitude (Debye) =", norm2(result%dipole)*2.541746_dp
          print *, "XTB: Gradient calculation complete"
       end if
 
@@ -322,5 +403,65 @@ contains
       deallocate (forward_geoms, backward_geoms)
 
    end subroutine xtb_calc_hessian
+
+   subroutine add_solvation_to_calc(calc, mol, solvent, solvation_model, method, use_cds, use_shift, error)
+      !! Add implicit solvation model to XTB calculator
+      !!
+      !! Adds ALPB or GBSA solvation plus optional CDS and shift corrections.
+      type(xtb_calculator), intent(inout) :: calc
+      type(structure_type), intent(in) :: mol
+      character(len=*), intent(in) :: solvent
+      character(len=*), intent(in) :: solvation_model  !! "alpb" (default) or "gbsa"
+      character(len=*), intent(in) :: method
+      logical, intent(in) :: use_cds, use_shift
+      type(error_type), allocatable, intent(out) :: error
+
+      type(solvation_input) :: solv_input
+      class(container_type), allocatable :: cont
+      class(solvation_type), allocatable :: solv
+      logical :: use_alpb
+
+      ! Determine if using ALPB or GBSA (GBSA = ALPB with alpb flag false)
+      use_alpb = .true.
+      if (trim(solvation_model) == 'gbsa') then
+         use_alpb = .false.
+      end if
+
+      ! 1. Add ALPB/GBSA (polar electrostatic solvation)
+      allocate (solv_input%alpb)
+      solv_input%alpb%solvent = solvent
+      solv_input%alpb%alpb = use_alpb
+
+      call new_solvation(solv, mol, solv_input, error, method)
+      if (allocated(error)) return
+      call move_alloc(solv, cont)
+      call calc%push_back(cont)
+
+      deallocate (solv_input%alpb)
+
+      ! 2. Add CDS (non-polar: cavity, dispersion, surface) if requested
+      if (use_cds) then
+         allocate (solv_input%cds)
+         solv_input%cds%solvent = solvent
+
+         call new_solvation_cds(solv, mol, solv_input, error, method)
+         if (allocated(error)) return
+         call move_alloc(solv, cont)
+         call calc%push_back(cont)
+
+         deallocate (solv_input%cds)
+      end if
+
+      ! 3. Add shift (solution state correction) if requested
+      if (use_shift) then
+         allocate (solv_input%shift)
+         solv_input%shift%solvent = solvent
+
+         call new_solvation_shift(solv, solv_input, error, method)
+         if (allocated(error)) return
+         call move_alloc(solv, cont)
+         call calc%push_back(cont)
+      end if
+   end subroutine add_solvation_to_calc
 
 end module mqc_method_xtb

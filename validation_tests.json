@@ -93,6 +93,18 @@
       "expected_gradient_norm": 0.034523358557187,
       "expected_hessian_frobenius_norm": 1.410449942210,
       "type": "unfragmented"
-    }
+    },
+    {
+      "name": "ALBP solvation of w1 in water",
+      "input": "validation/inputs/w1_water.mqc",
+      "expected_energy": -5.912219839402070,
+      "type": "unfragmented"
+     },
+      {
+      "name": "GBSA solvation of w1 in water",
+      "input": "validation/inputs/w1_water_gbsa.mqc",
+      "expected_energy": -5.935225830899037,
+      "type": "unfragmented"
+     }
   ]
 }

@@ -29,6 +29,12 @@ module mqc_config_adapter
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
 
+      ! XTB solvation settings
+      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default) or "gbsa"
+      logical :: use_cds = .true.               !! Include CDS non-polar terms
+      logical :: use_shift = .true.             !! Include solution state shift
+
       ! Calculation-specific keywords (structured)
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
       type(aimd_keywords_t) :: aimd        !! AIMD calculation keywords
@@ -83,6 +89,16 @@ contains
          allocate (driver_config%fragment_cutoffs(size(mqc_config%fragment_cutoffs)))
          driver_config%fragment_cutoffs = mqc_config%fragment_cutoffs
       end if
+
+      ! Copy XTB solvation settings
+      if (allocated(mqc_config%solvent)) then
+         driver_config%solvent = mqc_config%solvent
+      end if
+      if (allocated(mqc_config%solvation_model)) then
+         driver_config%solvation_model = mqc_config%solvation_model
+      end if
+      driver_config%use_cds = mqc_config%use_cds
+      driver_config%use_shift = mqc_config%use_shift
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement

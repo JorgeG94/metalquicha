@@ -341,10 +341,28 @@ contains
 
       if (result%has_energy) then
          write (json_line, '(a,f25.15)') '    "total_energy": ', result%energy%total()
-         if (result%has_gradient .or. result%has_hessian) then
+         if (result%has_dipole .or. result%has_gradient .or. result%has_hessian) then
             write (json_line, '(a,a)') trim(json_line), ','
          end if
          write (unit, '(a)') trim(json_line)
+      end if
+
+      ! Add dipole if present
+      if (result%has_dipole) then
+         write (unit, '(a)') '    "dipole": {'
+         write (json_line, '(a,f25.15,a)') '      "x": ', result%dipole(1), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "y": ', result%dipole(2), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "z": ', result%dipole(3), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(result%dipole)*2.541746_dp
+         write (unit, '(a)') trim(json_line)
+         if (result%has_gradient .or. result%has_hessian) then
+            write (unit, '(a)') '    },'
+         else
+            write (unit, '(a)') '    }'
+         end if
       end if
 
       ! Add gradient norm if present

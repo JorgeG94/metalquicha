@@ -32,10 +32,21 @@ module mqc_mbe_fragment_distribution_scheme
    implicit none
    private
 
+   ! XTB method options (module-level, set once at startup)
+   type :: xtb_options_t
+      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default) or "gbsa"
+      logical :: use_cds = .true.               !! Include CDS non-polar terms
+      logical :: use_shift = .true.             !! Include solution state shift
+   end type xtb_options_t
+
+   type(xtb_options_t), save :: xtb_options  !! Module-level XTB options
+
    ! Public interface
    public :: do_fragment_work, global_coordinator, node_coordinator
    public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
+   public :: set_xtb_options  !! Set XTB solvation options
 
    interface
       module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
@@ -119,5 +130,29 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine hessian_worker
 
    end interface
+
+contains
+
+   subroutine set_xtb_options(solvent, solvation_model, use_cds, use_shift)
+      !! Set module-level XTB solvation options
+      !! Call this once at startup before running calculations
+      character(len=*), intent(in), optional :: solvent  !! Solvent name or empty for gas phase
+      character(len=*), intent(in), optional :: solvation_model  !! "alpb" (default) or "gbsa"
+      logical, intent(in), optional :: use_cds           !! Include CDS non-polar terms
+      logical, intent(in), optional :: use_shift         !! Include solution state shift
+
+      if (present(solvent) .and. len_trim(solvent) > 0) then
+         xtb_options%solvent = trim(solvent)
+      end if
+      if (present(solvation_model) .and. len_trim(solvation_model) > 0) then
+         xtb_options%solvation_model = trim(solvation_model)
+      end if
+      if (present(use_cds)) then
+         xtb_options%use_cds = use_cds
+      end if
+      if (present(use_shift)) then
+         xtb_options%use_shift = use_shift
+      end if
+   end subroutine set_xtb_options
 
 end module mqc_mbe_fragment_distribution_scheme
