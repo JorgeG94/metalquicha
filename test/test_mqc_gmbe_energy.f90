@@ -1,6 +1,6 @@
 module test_mqc_gmbe_energy
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_mbe, only: compute_gmbe_energy
+   use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use pic_types, only: dp
    implicit none
@@ -49,9 +49,9 @@ contains
       allocate (intersection_levels(0))
 
       ! Compute GMBE energy
-      call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
-                               n_intersections, intersection_results, &
-                               intersection_sets, intersection_levels, total_energy)
+      call compute_gmbe(monomers, n_monomers, monomer_results, &
+                        n_intersections, intersection_results, &
+                        intersection_sets, intersection_levels, total_energy)
 
       ! Total should be -10 + (-15) = -25
       call check(error, total_energy, -25.0_dp, thr=1.0e-10_dp, &
@@ -101,9 +101,9 @@ contains
       intersection_levels(1) = 2
 
       ! Compute GMBE energy
-      call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
-                               n_intersections, intersection_results, &
-                               intersection_sets, intersection_levels, total_energy)
+      call compute_gmbe(monomers, n_monomers, monomer_results, &
+                        n_intersections, intersection_results, &
+                        intersection_sets, intersection_levels, total_energy)
 
       ! Total = -100 + (-95) - (-8) = -100 - 95 + 8 = -187
       call check(error, total_energy, -187.0_dp, thr=1.0e-10_dp, &
@@ -159,9 +159,9 @@ contains
       intersection_levels(2) = 2
 
       ! Compute GMBE energy
-      call compute_gmbe_energy(monomers, n_monomers, monomer_results, &
-                               n_intersections, intersection_results, &
-                               intersection_sets, intersection_levels, total_energy)
+      call compute_gmbe(monomers, n_monomers, monomer_results, &
+                        n_intersections, intersection_results, &
+                        intersection_sets, intersection_levels, total_energy)
 
       ! Total = -100 + (-95) + (-98) - (-8) - (-7.5)
       !       = -100 - 95 - 98 + 8 + 7.5

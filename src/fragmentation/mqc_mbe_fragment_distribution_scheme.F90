@@ -7,11 +7,12 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, &
                           request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
+   use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger, verbose_level, info_level
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_fragment_xyz, print_unfragmented_json
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
-   use mqc_mbe, only: compute_mbe_energy, compute_mbe_energy_gradient, compute_mbe_energy_gradient_hessian
+   use mqc_mbe, only: compute_mbe
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
@@ -31,25 +32,41 @@ module mqc_mbe_fragment_distribution_scheme
    implicit none
    private
 
+   ! XTB method options (module-level, set once at startup)
+   type :: xtb_options_t
+      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
+      logical :: use_cds = .true.               !! Include CDS non-polar terms (not for CPCM)
+      logical :: use_shift = .true.             !! Include solution state shift (not for CPCM)
+      ! CPCM-specific settings
+      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM
+      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM
+   end type xtb_options_t
+
+   type(xtb_options_t), save :: xtb_options  !! Module-level XTB options
+
    ! Public interface
    public :: do_fragment_work, global_coordinator, node_coordinator
    public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
+   public :: set_xtb_options  !! Set XTB solvation options
 
    interface
-      module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+      module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
          implicit none
          integer(int64), intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
          integer(int32), intent(in) :: method
          type(physical_fragment_t), intent(in), optional :: phys_frag
          integer(int32), intent(in) :: calc_type
+         type(comm_t), intent(in), optional :: world_comm
       end subroutine do_fragment_work
 
-      module subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
+      module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
                                            node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
          implicit none
-         type(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) :: max_level, num_nodes
          integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
@@ -58,9 +75,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine global_coordinator
 
-      module subroutine node_coordinator(world_comm, node_comm, calc_type)
+      module subroutine node_coordinator(resources, calc_type)
          implicit none
-         class(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          integer(int32), intent(in) :: calc_type
       end subroutine node_coordinator
 
@@ -74,9 +91,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine serial_fragment_processor
 
-      module subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+      module subroutine node_worker(resources, sys_geom, method, calc_type, bonds)
          implicit none
-         class(comm_t), intent(in) :: world_comm, node_comm
+         type(resources_t), intent(in) :: resources
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
          integer(int32), intent(in) :: calc_type
@@ -117,5 +134,41 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine hessian_worker
 
    end interface
+
+contains
+
+   subroutine set_xtb_options(solvent, solvation_model, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale)
+      !! Set module-level XTB solvation options
+      !! Call this once at startup before running calculations
+      character(len=*), intent(in), optional :: solvent  !! Solvent name or empty for gas phase
+      character(len=*), intent(in), optional :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
+      logical, intent(in), optional :: use_cds           !! Include CDS non-polar terms (not for CPCM)
+      logical, intent(in), optional :: use_shift         !! Include solution state shift (not for CPCM)
+      real(dp), intent(in), optional :: dielectric       !! Direct dielectric constant for CPCM
+      integer, intent(in), optional :: cpcm_nang         !! Angular grid points for CPCM
+      real(dp), intent(in), optional :: cpcm_rscale      !! Radii scaling for CPCM
+
+      if (present(solvent) .and. len_trim(solvent) > 0) then
+         xtb_options%solvent = trim(solvent)
+      end if
+      if (present(solvation_model) .and. len_trim(solvation_model) > 0) then
+         xtb_options%solvation_model = trim(solvation_model)
+      end if
+      if (present(use_cds)) then
+         xtb_options%use_cds = use_cds
+      end if
+      if (present(use_shift)) then
+         xtb_options%use_shift = use_shift
+      end if
+      if (present(dielectric)) then
+         xtb_options%dielectric = dielectric
+      end if
+      if (present(cpcm_nang)) then
+         xtb_options%cpcm_nang = cpcm_nang
+      end if
+      if (present(cpcm_rscale)) then
+         xtb_options%cpcm_rscale = cpcm_rscale
+      end if
+   end subroutine set_xtb_options
 
 end module mqc_mbe_fragment_distribution_scheme

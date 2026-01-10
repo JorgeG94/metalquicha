@@ -5,7 +5,8 @@ module mqc_gmbe_fragment_distribution_scheme
    use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
    use mqc_calc_types, only: CALC_TYPE_GRADIENT
- use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG
+   use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, &
+                          wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
@@ -18,6 +19,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
    use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json
+   use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    implicit none
    ! Error handling imported where needed
    private
@@ -117,6 +119,14 @@ contains
 
          ! Compute energy (and gradient if requested)
          call do_fragment_work(term_idx, results(term_idx), method, phys_frag, calc_type)
+
+         ! Check for calculation errors
+         if (results(term_idx)%has_error) then
+            call logger%error("PIE term "//to_char(term_idx)//" calculation failed: "// &
+                              results(term_idx)%error%get_message())
+            error stop "PIE term calculation failed in serial processing"
+         end if
+
          term_energy = results(term_idx)%energy%total()
 
          ! Store energy for JSON output
@@ -184,6 +194,26 @@ contains
       if (calc_type == CALC_TYPE_HESSIAN) then
          call logger%info("GMBE PIE Hessian computation completed")
          call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
+
+         ! Compute and print full vibrational analysis
+         block
+            real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
+            real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+
+            call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
+            call compute_vibrational_analysis(total_hessian, sys_geom%element_numbers, frequencies, &
+                                              reduced_masses, force_constants, cart_disp, &
+                                              coordinates=sys_geom%coordinates, &
+                                              project_trans_rot=.true., &
+                                              force_constants_mdyne=fc_mdyne)
+
+            if (allocated(frequencies)) then
+               call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                               cart_disp, sys_geom%element_numbers, &
+                                               force_constants_mdyne=fc_mdyne)
+               deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
+            end if
+         end block
       end if
 
       call logger%info(" ")
@@ -200,14 +230,15 @@ contains
 
    end subroutine serial_gmbe_pie_processor
 
-   subroutine gmbe_pie_coordinator(world_comm, node_comm, pie_atom_sets, pie_coefficients, n_pie_terms, &
+   subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
                                    node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
+      use mqc_resources, only: resources_t
 
-      type(comm_t), intent(in) :: world_comm, node_comm
+      type(resources_t), intent(in) :: resources
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64), intent(in) :: n_pie_terms
@@ -226,7 +257,7 @@ contains
 
       ! Storage for results
       type(calculation_result_t), allocatable :: results(:)
-      integer(int64) :: worker_term_map(node_comm%size())
+      integer(int64) :: worker_term_map(resources%mpi_comms%node_comm%size())
       integer :: worker_source
       real(dp) :: total_energy
       real(dp), allocatable :: total_gradient(:, :)
@@ -239,13 +270,13 @@ contains
       if (int(size(pie_atom_sets, 2), int64) < n_pie_terms .or. &
           int(size(pie_coefficients), int64) < n_pie_terms) then
          call logger%error("PIE term arrays are smaller than n_pie_terms")
-         error stop "Invalid PIE term array sizes"
+         call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
 
       current_term_idx = n_pie_terms
       finished_nodes = 0
       local_finished_workers = 0
-      handling_local_workers = (node_comm%size() > 1)
+      handling_local_workers = (resources%mpi_comms%node_comm%size() > 1)
       results_received = 0_int64
       worker_term_map = 0
 
@@ -260,19 +291,28 @@ contains
          ! PRIORITY 1: Check for incoming results from local workers
          if (handling_local_workers) then
             do
-               call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
+           call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
                if (.not. has_pending) exit
 
                worker_source = local_status%MPI_SOURCE
                if (worker_term_map(worker_source) == 0) then
                   call logger%error("Received result from worker "//to_char(worker_source)// &
                                     " but no term was assigned!")
-                  error stop "Invalid worker_term_map state"
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
                end if
 
-               call result_irecv(results(worker_term_map(worker_source)), node_comm, worker_source, &
+               call result_irecv(results(worker_term_map(worker_source)), resources%mpi_comms%node_comm, worker_source, &
                                  TAG_WORKER_SCALAR_RESULT, req)
                call wait(req)
+
+               ! Check for calculation errors from worker
+               if (results(worker_term_map(worker_source))%has_error) then
+                  call logger%error("PIE term "//to_char(worker_term_map(worker_source))// &
+                                    " calculation failed: "// &
+                                    results(worker_term_map(worker_source))%error%get_message())
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
+               end if
+
                worker_term_map(worker_source) = 0
                results_received = results_received + 1
                if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
@@ -286,13 +326,21 @@ contains
 
          ! PRIORITY 1b: Check for incoming results from remote node coordinators
          do
-            call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
+            call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
             if (.not. has_pending) exit
 
-            call irecv(world_comm, term_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+            call irecv(resources%mpi_comms%world_comm, term_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
-            call result_irecv(results(term_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+      call result_irecv(results(term_idx), resources%mpi_comms%world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
+
+            ! Check for calculation errors from node coordinator
+            if (results(term_idx)%has_error) then
+               call logger%error("PIE term "//to_char(term_idx)//" calculation failed: "// &
+                                 results(term_idx)%error%get_message())
+               call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
             results_received = results_received + 1
             if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
                 results_received == n_pie_terms) then
@@ -303,36 +351,37 @@ contains
          end do
 
          ! PRIORITY 2: Remote node coordinator requests
-         call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_REQUEST, has_pending, status)
+         call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_REQUEST, has_pending, status)
          if (has_pending) then
-            call irecv(world_comm, dummy_msg, status%MPI_SOURCE, TAG_NODE_REQUEST, req)
+            call irecv(resources%mpi_comms%world_comm, dummy_msg, status%MPI_SOURCE, TAG_NODE_REQUEST, req)
             call wait(req)
             request_source = status%MPI_SOURCE
 
             if (current_term_idx >= 1) then
-               call send_pie_term_to_node(world_comm, current_term_idx, pie_atom_sets, request_source)
+               call send_pie_term_to_node(resources%mpi_comms%world_comm, current_term_idx, pie_atom_sets, request_source)
                current_term_idx = current_term_idx - 1
             else
-               call isend(world_comm, -1, request_source, TAG_NODE_FINISH, req)
+               call isend(resources%mpi_comms%world_comm, -1, request_source, TAG_NODE_FINISH, req)
                call wait(req)
                finished_nodes = finished_nodes + 1
             end if
          end if
 
          ! PRIORITY 3: Local workers (shared memory) - send new work
-         if (handling_local_workers .and. local_finished_workers < node_comm%size() - 1) then
-            call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, local_status)
+         if (handling_local_workers .and. local_finished_workers < resources%mpi_comms%node_comm%size() - 1) then
+            call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, local_status)
             if (has_pending) then
                if (worker_term_map(local_status%MPI_SOURCE) == 0) then
-                  call irecv(node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
+                  call irecv(resources%mpi_comms%node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
                   call wait(req)
 
                   if (current_term_idx >= 1) then
-                     call send_pie_term_to_worker(node_comm, current_term_idx, pie_atom_sets, local_status%MPI_SOURCE)
+                     call send_pie_term_to_worker(resources%mpi_comms%node_comm, &
+                                                  current_term_idx, pie_atom_sets, local_status%MPI_SOURCE)
                      worker_term_map(local_status%MPI_SOURCE) = current_term_idx
                      current_term_idx = current_term_idx - 1
                   else
-                     call isend(node_comm, -1, local_status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                     call isend(resources%mpi_comms%node_comm, -1, local_status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                      call wait(req)
                      local_finished_workers = local_finished_workers + 1
                   end if
@@ -341,7 +390,7 @@ contains
          end if
 
          ! Finalize local worker completion
-         if (handling_local_workers .and. local_finished_workers >= node_comm%size() - 1 &
+         if (handling_local_workers .and. local_finished_workers >= resources%mpi_comms%node_comm%size() - 1 &
              .and. results_received >= n_pie_terms) then
             handling_local_workers = .false.
             finished_nodes = finished_nodes + 1
@@ -501,6 +550,26 @@ contains
          ! Print Hessian information
          call logger%info("GMBE PIE Hessian computation completed")
          call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
+
+         ! Compute and print full vibrational analysis
+         block
+            real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
+            real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+
+            call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
+            call compute_vibrational_analysis(total_hessian, sys_geom%element_numbers, frequencies, &
+                                              reduced_masses, force_constants, cart_disp, &
+                                              coordinates=sys_geom%coordinates, &
+                                              project_trans_rot=.true., &
+                                              force_constants_mdyne=fc_mdyne)
+
+            if (allocated(frequencies)) then
+               call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                               cart_disp, sys_geom%element_numbers, &
+                                               force_constants_mdyne=fc_mdyne)
+               deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
+            end if
+         end block
       end if
 
       call coord_timer%stop()

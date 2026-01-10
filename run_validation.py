@@ -167,6 +167,28 @@ def validate_energy(calculated: float, expected: float, tolerance: float) -> boo
     return abs(calculated - expected) < tolerance
 
 
+def cleanup_output_files(verbose: bool = False) -> None:
+    """Remove any existing output_*.json files to ensure clean test runs"""
+    output_files = list(Path(".").glob("output_*.json"))
+
+    if not output_files:
+        if verbose:
+            print("No output_*.json files to clean up.\n")
+        return
+
+    print(f"{Colors.BOLD}Cleaning up {len(output_files)} existing output file(s)...{Colors.RESET}")
+
+    for output_file in output_files:
+        try:
+            output_file.unlink()
+            if verbose:
+                print(f"  Removed: {output_file}")
+        except Exception as e:
+            print(f"  {Colors.YELLOW}Warning: Could not remove {output_file}: {e}{Colors.RESET}")
+
+    print()
+
+
 def prepare_mqc_files(validation_dir: str = "validation", prep_script: str = "mqc_prep.py", verbose: bool = False) -> None:
     """Run mqc_prep.py on all JSON files in validation/inputs/"""
     inputs_dir = Path(validation_dir) / "inputs"
@@ -406,6 +428,9 @@ def main():
                        help="Verbose output")
 
     args = parser.parse_args()
+
+    # Clean up any existing output files to ensure fresh test runs
+    cleanup_output_files(verbose=args.verbose)
 
     # Prepare .mqc files from JSON inputs (unless skipped)
     if not args.skip_prep:

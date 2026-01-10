@@ -75,7 +75,7 @@
       "input": "validation/inputs/hess_gly3_ov.mqc",
       "expected_energy": -47.0192718920,
       "expected_gradient_norm": 0.1406590140,
-      "expected_hessian_frobenius_norm": 4.0772716405,
+      "expected_hessian_frobenius_norm": 4.077069191300,
       "type": "fragmented"
     },
     {
@@ -83,7 +83,7 @@
       "input": "validation/inputs/prism_hessian.mqc",
       "expected_energy": -34.6736678571,
       "expected_gradient_norm": 0.0315774691,
-      "expected_hessian_frobenius_norm": 3.2639067125,
+      "expected_hessian_frobenius_norm": 3.263705700400,
       "type": "fragmented"
     },
     {
@@ -91,8 +91,26 @@
       "input": "validation/inputs/hess_h3o.mqc",
       "expected_energy": -5.773131213617977,
       "expected_gradient_norm": 0.034523358557187,
-      "expected_hessian_frobenius_norm": 1.410627986768969,
+      "expected_hessian_frobenius_norm": 1.410449942210,
       "type": "unfragmented"
-    }
+    },
+    {
+      "name": "ALBP solvation of w1 in water",
+      "input": "validation/inputs/w1_water.mqc",
+      "expected_energy": -5.912219839402070,
+      "type": "unfragmented"
+     },
+      {
+      "name": "CPCM solvation of w1 in water",
+      "input": "validation/inputs/w1_water_cpcm.mqc",
+      "expected_energy": -5.881430808516041,
+      "type": "unfragmented"
+     },
+      {
+      "name": "GBSA solvation of w1 in water",
+      "input": "validation/inputs/w1_water_gbsa.mqc",
+      "expected_energy": -5.935225830899037,
+      "type": "unfragmented"
+     }
   ]
 }

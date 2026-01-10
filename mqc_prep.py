@@ -55,11 +55,80 @@ class SchemaTag:
     index_base: int = 0
     units: str = "angstrom"
 
+# ----------------------------
+# Supported solvents from tblite
+# ----------------------------
+# From tblite's src/tblite/solvation/data.f90
+TBLITE_SOLVENTS = {
+    # Common solvents
+    "water", "h2o",
+    "methanol", "ch3oh",
+    "ethanol", "c2h5oh",
+    "acetone",
+    "acetonitrile", "ch3cn",
+    # Aromatics
+    "benzene",
+    "toluene",
+    # Halogenated
+    "chloroform", "chcl3",
+    "dichloromethane", "ch2cl2", "dcm",
+    "carbon tetrachloride", "ccl4",
+    # Polar aprotic
+    "dmso", "dimethylsulfoxide",
+    "dmf", "dimethylformamide",
+    "thf", "tetrahydrofuran",
+    # Ethers
+    "diethylether", "ether",
+    "dioxane",
+    # Alkanes
+    "hexane", "n-hexane",
+    "cyclohexane",
+    "heptane", "n-heptane",
+    "octane", "n-octane",
+    # Other organics
+    "pyridine",
+    "aniline",
+    "nitromethane",
+    "nitrobenzene",
+    "formamide",
+    "phenol",
+    "cs2", "carbondisulfide",
+    # Alcohols
+    "1-propanol", "propanol",
+    "2-propanol", "isopropanol",
+    "1-butanol", "butanol",
+    "2-butanol",
+    "1-octanol", "octanol",
+    # Esters/acids
+    "ethyl acetate", "ethylacetate",
+    "acetic acid", "aceticacid",
+    "formic acid", "formicacid",
+    # Additional solvents
+    "chlorobenzene",
+    "furan",
+    "hexadecane",
+    "pentane",
+    "decane",
+    "decanol",
+    "woctanol",  # wet octanol
+    "inf",  # infinite dielectric (conductor)
+}
+
+# Supported solvation models
+SOLVATION_MODELS = {"alpb", "gbsa", "cpcm"}
+
+
 @dataclass
 class Model:
     method: str
     basis: Optional[str] = None
     aux_basis: Optional[str] = None
+    solvent: Optional[str] = None
+    solvation_model: Optional[str] = None
+    # CPCM-specific settings
+    dielectric: Optional[float] = None      # Direct dielectric constant (for CPCM)
+    cpcm_nang: Optional[int] = None         # Angular grid points for CPCM cavity
+    cpcm_rscale: Optional[float] = None     # Radii scaling for CPCM cavity
 
 @dataclass
 class SCF:
@@ -215,11 +284,86 @@ def parse_schema(obj: Any) -> SchemaTag:
     die("schema must be string or object")
 
 def parse_model(d: Dict[str, Any]) -> Model:
-    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
+    require_only_keys(d, {"method", "basis", "aux_basis", "solvent", "solvation_model",
+                          "dielectric", "cpcm_nang", "cpcm_rscale"}, "model")
     method = req_type(d.get("method"), str, "model.method")
     basis = opt_type(d.get("basis"), str, "model.basis")
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
-    return Model(method=method, basis=basis, aux_basis=aux)
+
+    # Parse solvation settings
+    solvent = opt_type(d.get("solvent"), str, "model.solvent")
+    solvation_model = opt_type(d.get("solvation_model"), str, "model.solvation_model")
+
+    # Parse CPCM-specific settings
+    dielectric = d.get("dielectric")
+    if dielectric is not None:
+        if not isinstance(dielectric, (int, float)):
+            die("model.dielectric must be a number")
+        dielectric = float(dielectric)
+        if dielectric <= 0:
+            die("model.dielectric must be > 0")
+
+    cpcm_nang = d.get("cpcm_nang")
+    if cpcm_nang is not None:
+        if not isinstance(cpcm_nang, int):
+            die("model.cpcm_nang must be an integer")
+        if cpcm_nang <= 0:
+            die("model.cpcm_nang must be > 0")
+
+    cpcm_rscale = d.get("cpcm_rscale")
+    if cpcm_rscale is not None:
+        if not isinstance(cpcm_rscale, (int, float)):
+            die("model.cpcm_rscale must be a number")
+        cpcm_rscale = float(cpcm_rscale)
+        if cpcm_rscale <= 0 or cpcm_rscale > 2.0:
+            die("model.cpcm_rscale must be in range (0, 2.0]")
+
+    # Validate solvent if specified
+    if solvent is not None:
+        solvent_lower = solvent.lower()
+        if solvent_lower not in TBLITE_SOLVENTS:
+            # Provide helpful error with suggestions
+            die(f"model.solvent: unknown solvent '{solvent}'. "
+                f"Supported solvents include: water, methanol, ethanol, acetone, acetonitrile, "
+                f"benzene, toluene, chloroform, dichloromethane, dmso, dmf, thf, "
+                f"diethylether, hexane, cyclohexane, and many more. "
+                f"See documentation for full list.")
+        # Store normalized (lowercase) solvent name
+        solvent = solvent_lower
+
+    # Validate solvation model if specified
+    if solvation_model is not None:
+        solvation_model_lower = solvation_model.lower()
+        if solvation_model_lower not in SOLVATION_MODELS:
+            die(f"model.solvation_model: unknown model '{solvation_model}'. "
+                f"Supported models: {', '.join(sorted(SOLVATION_MODELS))}")
+        solvation_model = solvation_model_lower
+
+    # If dielectric is specified without solvation_model, default to cpcm
+    if dielectric is not None and solvation_model is None:
+        solvation_model = "cpcm"
+
+    # If solvent is specified but model isn't, default to alpb
+    if solvent is not None and solvation_model is None:
+        solvation_model = "alpb"
+
+    # Validation: need either solvent or dielectric for solvation
+    if solvation_model is not None and solvent is None and dielectric is None:
+        die("model.solvation_model: cannot specify solvation model without solvent or dielectric")
+
+    # CPCM-specific validation
+    if solvation_model == "cpcm":
+        # CPCM needs either solvent or dielectric
+        if solvent is None and dielectric is None:
+            die("model: CPCM solvation requires either 'solvent' or 'dielectric'")
+    else:
+        # ALPB/GBSA need solvent name
+        if solvation_model is not None and solvent is None:
+            die(f"model: {solvation_model.upper()} solvation requires a solvent name")
+
+    return Model(method=method, basis=basis, aux_basis=aux,
+                 solvent=solvent, solvation_model=solvation_model,
+                 dielectric=dielectric, cpcm_nang=cpcm_nang, cpcm_rscale=cpcm_rscale)
 
 def parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian], Optional[AIMD], Optional[Fragmentation]]:
     require_only_keys(d, {"scf", "hessian", "aimd", "fragmentation"}, "keywords")
@@ -729,6 +873,17 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"basis = {inp.model.basis}\n")
     if inp.model.aux_basis is not None:
         buf.write(f"aux_basis = {inp.model.aux_basis}\n")
+    if inp.model.solvent is not None:
+        buf.write(f"solvent = {inp.model.solvent}\n")
+    if inp.model.solvation_model is not None:
+        buf.write(f"solvation_model = {inp.model.solvation_model}\n")
+    # CPCM-specific settings
+    if inp.model.dielectric is not None:
+        buf.write(f"dielectric = {fmt_float(inp.model.dielectric)}\n")
+    if inp.model.cpcm_nang is not None:
+        buf.write(f"cpcm_nang = {inp.model.cpcm_nang}\n")
+    if inp.model.cpcm_rscale is not None:
+        buf.write(f"cpcm_rscale = {fmt_float(inp.model.cpcm_rscale)}\n")
     buf.write("end  ! model\n\n")
 
     # %driver (always)

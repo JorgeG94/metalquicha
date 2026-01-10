@@ -1,0 +1,35 @@
+{
+    "schema": { "name": "mqc-frag", "version": "1.0" },
+    "molecules": [{
+        "xyz": "sample_inputs/h3op.xyz",
+        "molecular_charge": 1,
+        "molecular_multiplicity": 1
+    }],
+  "model": {
+    "method": "XTB-GFN1",
+    "solvent": "water",
+    "solvation_model": "gbsa",
+    "basis": "cc-pVDZ",
+    "aux_basis": "cc-pVDZ-RIFIT"
+  },
+  "keywords":{
+    "scf": {
+      "maxiter": 300,
+      "tolerance": 1e-6
+    },
+    "fragmentation":{
+        "method": "MBE",
+        "allow_overlapping_fragments": false,
+        "level": 2,
+        "embedding": "none",
+        "cutoff_method": "distance",
+        "distance_metric": "min"
+    }
+  },
+  "system": {
+    "logger":{
+      "level": "Verbose"
+    }
+  },
+  "driver": "Energy"
+}

@@ -151,19 +151,18 @@ contains
    end subroutine print_detailed_breakdown
 
    subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
-                                            energies, delta_energies, sum_by_level, total_energy, &
-                                            total_gradient, total_hessian, results)
+                                            energies, delta_energies, sum_by_level, &
+                                            mbe_result, results)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
-      !! Optionally includes total gradient and Hessian if provided
+      !! Includes total gradient, Hessian, and dipole based on mbe_result%has_* flags
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
-      use mqc_result_types, only: calculation_result_t
+      use mqc_result_types, only: calculation_result_t, mbe_result_t
       integer, intent(in) :: polymers(:, :), max_level
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
-      real(dp), intent(in) :: sum_by_level(:), total_energy
-      real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
-      real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
+      real(dp), intent(in) :: sum_by_level(:)
+      type(mbe_result_t), intent(in) :: mbe_result  !! MBE aggregated results
       type(calculation_result_t), intent(in), optional :: results(:)  !! Fragment results with distance info
 
       integer(int64) :: i
@@ -195,7 +194,7 @@ contains
       write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
       write (unit, '(a)') trim(json_line)
 
-      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
+      write (json_line, '(a,f20.10,a)') '    "total_energy": ', mbe_result%total_energy, ','
       write (unit, '(a)') trim(json_line)
 
       write (unit, '(a)') '    "levels": ['
@@ -284,24 +283,42 @@ contains
       end if
 
       ! Close levels array (with comma if we have more fields)
-      if (present(total_gradient) .or. present(total_hessian)) then
+      if (mbe_result%has_gradient .or. mbe_result%has_hessian .or. mbe_result%has_dipole) then
          write (unit, '(a)') '    ],'
       else
          write (unit, '(a)') '    ]'
       end if
 
-      ! Add gradient norm if present (inside basename object)
-      if (present(total_gradient)) then
-         write (json_line, '(a,f20.10)') '    "gradient_norm": ', sqrt(sum(total_gradient**2))
-         if (present(total_hessian)) then
+      ! Add dipole if computed (inside basename object)
+      if (mbe_result%has_dipole) then
+         write (unit, '(a)') '    "dipole": {'
+         write (json_line, '(a,f25.15,a)') '      "x": ', mbe_result%dipole(1), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "y": ', mbe_result%dipole(2), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "z": ', mbe_result%dipole(3), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(mbe_result%dipole)*2.541746_dp
+         write (unit, '(a)') trim(json_line)
+         if (mbe_result%has_gradient .or. mbe_result%has_hessian) then
+            write (unit, '(a)') '    },'
+         else
+            write (unit, '(a)') '    }'
+         end if
+      end if
+
+      ! Add gradient norm if computed (inside basename object)
+      if (mbe_result%has_gradient) then
+         write (json_line, '(a,f20.10)') '    "gradient_norm": ', sqrt(sum(mbe_result%gradient**2))
+         if (mbe_result%has_hessian) then
             write (json_line, '(a,a)') trim(json_line), ','
          end if
          write (unit, '(a)') trim(json_line)
       end if
 
-      ! Add Hessian Frobenius norm if present (inside basename object)
-      if (present(total_hessian)) then
-         write (json_line, '(a,f20.10)') '    "hessian_frobenius_norm": ', sqrt(sum(total_hessian**2))
+      ! Add Hessian Frobenius norm if computed (inside basename object)
+      if (mbe_result%has_hessian) then
+         write (json_line, '(a,f20.10)') '    "hessian_frobenius_norm": ', sqrt(sum(mbe_result%hessian**2))
          write (unit, '(a)') trim(json_line)
       end if
 
@@ -341,10 +358,28 @@ contains
 
       if (result%has_energy) then
          write (json_line, '(a,f25.15)') '    "total_energy": ', result%energy%total()
-         if (result%has_gradient .or. result%has_hessian) then
+         if (result%has_dipole .or. result%has_gradient .or. result%has_hessian) then
             write (json_line, '(a,a)') trim(json_line), ','
          end if
          write (unit, '(a)') trim(json_line)
+      end if
+
+      ! Add dipole if present
+      if (result%has_dipole) then
+         write (unit, '(a)') '    "dipole": {'
+         write (json_line, '(a,f25.15,a)') '      "x": ', result%dipole(1), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "y": ', result%dipole(2), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "z": ', result%dipole(3), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(result%dipole)*2.541746_dp
+         write (unit, '(a)') trim(json_line)
+         if (result%has_gradient .or. result%has_hessian) then
+            write (unit, '(a)') '    },'
+         else
+            write (unit, '(a)') '    }'
+         end if
       end if
 
       ! Add gradient norm if present

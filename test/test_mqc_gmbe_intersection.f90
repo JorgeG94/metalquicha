@@ -4,6 +4,7 @@ module test_mqc_gmbe_intersection
                              compute_polymer_atoms, generate_polymer_intersections, &
                              gmbe_enumerate_pie_terms
    use mqc_physical_fragment, only: system_geometry_t
+   use mqc_error, only: error_t
    use pic_types, only: default_int, dp, int64
    implicit none
    private
@@ -566,6 +567,7 @@ contains
       integer, allocatable :: primaries(:, :)
       integer, allocatable :: pie_atom_sets(:, :), pie_coefficients(:)
       integer(int64) :: n_pie_terms
+      type(error_t) :: pie_error
 
       sys_geom%n_monomers = 3
       sys_geom%total_atoms = 6
@@ -583,7 +585,15 @@ contains
 
       call gmbe_enumerate_pie_terms(sys_geom, primaries, 3, 1, 1, &
                                     pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                    initial_max_terms=2_int64)
+                                    pie_error, initial_max_terms=2_int64)
+      call check(error,.not. pie_error%has_error(), "PIE enumeration should not fail")
+      if (allocated(error)) then
+         call sys_geom%destroy()
+         deallocate (primaries)
+         if (allocated(pie_atom_sets)) deallocate (pie_atom_sets)
+         if (allocated(pie_coefficients)) deallocate (pie_coefficients)
+         return
+      end if
 
       call check(error, n_pie_terms, 3_int64, "Expected 3 PIE terms from 3 distinct primaries")
       if (allocated(error)) then

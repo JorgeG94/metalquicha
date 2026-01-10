@@ -72,6 +72,16 @@ module mqc_config_parser
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
 
+      ! XTB solvation settings
+      character(len=:), allocatable :: solvent  !! Solvent name (e.g., "water", "ethanol") or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! Solvation model: "alpb" (default), "gbsa", or "cpcm"
+      logical :: use_cds = .true.               !! Include non-polar CDS terms in solvation (not for CPCM)
+      logical :: use_shift = .true.             !! Include solution state shift in solvation (not for CPCM)
+      ! CPCM-specific settings
+      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM cavity
+      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM cavity
+
       ! Driver information
       integer(int32) :: calc_type = CALC_TYPE_ENERGY
 
@@ -329,6 +339,32 @@ contains
             config%basis = trim(value)
          case ('aux_basis')
             config%aux_basis = trim(value)
+         case ('solvent')
+            config%solvent = trim(value)
+         case ('solvation_model')
+            config%solvation_model = trim(value)
+         case ('use_cds')
+            config%use_cds = (trim(value) == 'true')
+         case ('use_shift')
+            config%use_shift = (trim(value) == 'true')
+         case ('dielectric')
+            read (value, *, iostat=io_stat) config%dielectric
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid dielectric value: "//trim(value))
+               return
+            end if
+         case ('cpcm_nang')
+            read (value, *, iostat=io_stat) config%cpcm_nang
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_nang value: "//trim(value))
+               return
+            end if
+         case ('cpcm_rscale')
+            read (value, *, iostat=io_stat) config%cpcm_rscale
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_rscale value: "//trim(value))
+               return
+            end if
          case default
             call error%set(ERROR_PARSE, "Unknown key in %model section: "//trim(key))
             return
@@ -710,8 +746,8 @@ contains
                   return
                end if
 
-               if (nmer_level > 8) then
-                  call error%set(ERROR_PARSE, "N-mer level too large in cutoffs (max 8 for octamer)")
+               if (nmer_level > 10) then
+                  call error%set(ERROR_PARSE, "N-mer level too large in cutoffs (max 10 for decamer)")
                   return
                end if
 
@@ -722,9 +758,9 @@ contains
                   return
                end if
 
-               ! Allocate array if not yet allocated (up to octamer = 8)
+               ! Allocate array if not yet allocated (up to decamer = 10)
                if (.not. allocated(config%fragment_cutoffs)) then
-                  allocate (config%fragment_cutoffs(8))
+                  allocate (config%fragment_cutoffs(10))
                   config%fragment_cutoffs = -1.0_dp  ! Initialize with sentinel value
                end if
 
@@ -737,10 +773,32 @@ contains
                config%frag_method = trim(value)
             case ('level')
                read (value, *, iostat=io_stat) config%frag_level
+               if (io_stat == 0) then
+                  if (config%frag_level < 0) then
+                     call error%set(ERROR_VALIDATION, "Fragmentation level must be >= 0 (0 = unfragmented)")
+                     return
+                  end if
+                  if (config%frag_level > 10) then
+                     call error%set(ERROR_VALIDATION, &
+                                    "Fragmentation level must be <= 10 (decamers). Higher levels not supported.")
+                     return
+                  end if
+               end if
             case ('allow_overlapping_fragments')
                config%allow_overlapping_fragments = (trim(value) == 'true')
             case ('max_intersection_level')
                read (value, *, iostat=io_stat) config%max_intersection_level
+               if (io_stat == 0) then
+                  if (config%max_intersection_level < 1) then
+                     call error%set(ERROR_VALIDATION, "max_intersection_level must be >= 1")
+                     return
+                  end if
+                  if (config%max_intersection_level > 10) then
+                     call error%set(ERROR_VALIDATION, &
+                                    "max_intersection_level must be <= 10 (decamers). Higher levels not supported.")
+                     return
+                  end if
+               end if
             case ('embedding')
                config%embedding = trim(value)
             case ('cutoff_method')

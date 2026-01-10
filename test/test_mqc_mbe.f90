@@ -1,7 +1,7 @@
 module test_mqc_mbe
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_mbe, only: compute_mbe_energy
-   use mqc_result_types, only: calculation_result_t
+   use mqc_mbe, only: compute_mbe
+   use mqc_result_types, only: calculation_result_t, mbe_result_t
    use pic_types, only: dp, int64
    implicit none
    private
@@ -27,8 +27,8 @@ contains
       !! Test MBE energy with monomers only (nlevel=1)
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
       integer, allocatable :: polymers(:, :)
-      real(dp) :: total_energy
       integer(int64) :: fragment_count
       integer :: max_level
 
@@ -52,11 +52,12 @@ contains
       results(3)%has_energy = .true.
 
       ! Compute MBE energy
-      call compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
 
       ! Total should be -10 + (-15) + (-20) = -45
-      call check(error, total_energy, -45.0_dp, thr=1.0e-10_dp, &
+      call check(error, mbe_result%total_energy, -45.0_dp, thr=1.0e-10_dp, &
                  message="MBE monomers only should equal sum of monomer energies")
+      call mbe_result%destroy()
       if (allocated(error)) return
 
       if (allocated(results)) deallocate (results)
@@ -70,8 +71,8 @@ contains
       !! where deltaE(1,2) = E(1,2) - E(1) - E(2)
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
       integer, allocatable :: polymers(:, :)
-      real(dp) :: total_energy
       integer(int64) :: fragment_count
       integer :: max_level
 
@@ -99,12 +100,13 @@ contains
       results(3)%has_energy = .true.
 
       ! Compute MBE energy
-      call compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
 
       ! deltaE(1,2) = E(1,2) - E(1) - E(2) = -26 - (-10) - (-15) = -26 + 10 + 15 = -1
       ! Total = E(1) + E(2) + deltaE(1,2) = -10 + (-15) + (-1) = -26
-      call check(error, total_energy, -26.0_dp, thr=1.0e-10_dp, &
+      call check(error, mbe_result%total_energy, -26.0_dp, thr=1.0e-10_dp, &
                  message="MBE with simple dimer")
+      call mbe_result%destroy()
       if (allocated(error)) return
 
       if (allocated(results)) deallocate (results)
@@ -117,8 +119,8 @@ contains
       !! 3 monomers + 3 dimers + 1 trimer
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
       integer, allocatable :: polymers(:, :)
-      real(dp) :: total_energy
       integer(int64) :: fragment_count
       integer :: max_level
 
@@ -151,7 +153,7 @@ contains
       results(7)%energy%scf = -33.5_dp
       results(7)%has_energy = .true.
 
-      call compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
 
       ! 1-body: -10 + -12 + -11 = -33
       ! 2-body deltas: -0.5 + -0.3 + -0.4 = -1.2
@@ -159,8 +161,9 @@ contains
       !             = -33.5 - (-10) - (-12) - (-11) - (-0.5) - (-0.3) - (-0.4)
       !             = -33.5 + 10 + 12 + 11 + 0.5 + 0.3 + 0.4 = 0.7
       ! Total = -33 + (-1.2) + 0.7 = -33.5
-      call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
+      call check(error, mbe_result%total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in sorted order")
+      call mbe_result%destroy()
       if (allocated(error)) return
 
       if (allocated(results)) deallocate (results)
@@ -173,8 +176,8 @@ contains
       !! This tests that internal sorting works correctly
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
       integer, allocatable :: polymers(:, :)
-      real(dp) :: total_energy
       integer(int64) :: fragment_count
       integer :: max_level
 
@@ -207,11 +210,12 @@ contains
       results(7)%energy%scf = -11.0_dp
       results(5:7)%has_energy = .true.
 
-      call compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
 
       ! Should get same answer as sorted order test
-      call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
+      call check(error, mbe_result%total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in reverse order (tests internal sorting)")
+      call mbe_result%destroy()
       if (allocated(error)) return
 
       if (allocated(results)) deallocate (results)
@@ -224,8 +228,8 @@ contains
       !! Order: [dimer], [monomer], [trimer], [monomer], [dimer], [dimer], [monomer]
       type(error_type), allocatable, intent(out) :: error
       type(calculation_result_t), allocatable :: results(:)
+      type(mbe_result_t) :: mbe_result
       integer, allocatable :: polymers(:, :)
-      real(dp) :: total_energy
       integer(int64) :: fragment_count
       integer :: max_level
 
@@ -271,11 +275,12 @@ contains
       results(7)%energy%scf = -11.0_dp
       results(7)%has_energy = .true.
 
-      call compute_mbe_energy(polymers, fragment_count, max_level, results, total_energy)
+      call compute_mbe(polymers, fragment_count, max_level, results, mbe_result)
 
       ! Should get same answer regardless of input order
-      call check(error, total_energy, -33.5_dp, thr=1.0e-10_dp, &
+      call check(error, mbe_result%total_energy, -33.5_dp, thr=1.0e-10_dp, &
                  message="MBE with fragments in random/mixed order")
+      call mbe_result%destroy()
       if (allocated(error)) return
 
       if (allocated(results)) deallocate (results)

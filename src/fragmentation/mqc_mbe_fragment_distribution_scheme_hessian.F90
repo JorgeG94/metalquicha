@@ -52,6 +52,8 @@ contains
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients
+      use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
+                                          compute_vibrational_analysis, print_vibrational_analysis
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -76,9 +78,12 @@ contains
       type(request_t) :: req
       integer :: current_log_level
       logical :: is_verbose
-      character(len=256) :: result_line
+      character(len=2048) :: result_line  ! Large buffer for Hessian matrix rows
       real(dp) :: hess_norm
       integer :: i, j
+      real(dp), allocatable :: frequencies(:)
+      real(dp), allocatable :: eigenvalues(:)
+      real(dp), allocatable :: projected_hessian(:, :)
 #ifndef MQC_WITHOUT_TBLITE
       type(xtb_method_t) :: xtb_calc
 #endif
@@ -94,6 +99,7 @@ contains
       call logger%info("Distributed unfragmented Hessian calculation")
       call logger%info("  Total atoms: "//to_char(n_atoms))
       call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
+      call logger%info("  Finite difference step size: "//to_char(displacement)//" Bohr")
       call logger%info("  MPI ranks: "//to_char(n_ranks))
       call logger%info("  Work distribution: Dynamic queue")
       call logger%info("============================================")
@@ -196,6 +202,12 @@ contains
       result%hessian = hessian
       result%has_hessian = .true.
 
+      ! Compute vibrational frequencies from the Hessian (with trans/rot projection)
+      call logger%info("  Computing vibrational frequencies (projecting trans/rot modes)...")
+      call compute_vibrational_frequencies(result%hessian, sys_geom%element_numbers, frequencies, eigenvalues, &
+                                           coordinates=sys_geom%coordinates, project_trans_rot=.true., &
+                                           projected_hessian_out=projected_hessian)
+
       ! Print results
       call logger%info("============================================")
       call logger%info("Distributed Hessian calculation completed")
@@ -220,9 +232,39 @@ contains
                call logger%info(trim(result_line))
             end do
             call logger%info(" ")
+
+            ! Print projected mass-weighted Hessian
+            if (allocated(projected_hessian)) then
+               call logger%info("Mass-weighted Hessian after trans/rot projection (a.u.):")
+               do i = 1, 3*n_atoms
+                  write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (projected_hessian(i, j), j=1, 3*n_atoms)
+                  call logger%info(trim(result_line))
+               end do
+               call logger%info(" ")
+            end if
          end if
       end if
-      call logger%info("============================================")
+
+      ! Compute and print full vibrational analysis
+      if (allocated(frequencies)) then
+         block
+            real(dp), allocatable :: vib_freqs(:), reduced_masses(:), force_constants(:)
+            real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+
+            call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, vib_freqs, &
+                                              reduced_masses, force_constants, cart_disp, &
+                                              coordinates=sys_geom%coordinates, &
+                                              project_trans_rot=.true., &
+                                              force_constants_mdyne=fc_mdyne)
+
+            if (allocated(vib_freqs)) then
+               call print_vibrational_analysis(vib_freqs, reduced_masses, force_constants, &
+                                               cart_disp, sys_geom%element_numbers, &
+                                               force_constants_mdyne=fc_mdyne)
+               deallocate (vib_freqs, reduced_masses, force_constants, cart_disp, fc_mdyne)
+            end if
+         end block
+      end if
 
       ! Output JSON
       call print_unfragmented_json(result)
@@ -231,6 +273,9 @@ contains
       call result%destroy()
       deallocate (forward_gradients, backward_gradients)
       if (allocated(hessian)) deallocate (hessian)
+      if (allocated(frequencies)) deallocate (frequencies)
+      if (allocated(eigenvalues)) deallocate (eigenvalues)
+      if (allocated(projected_hessian)) deallocate (projected_hessian)
 
    end subroutine hessian_coordinator
 
@@ -292,8 +337,13 @@ contains
          call copy_and_displace_geometry(full_system, atom_idx, coord, displacement, displaced_geom)
          call xtb_calc%calc_gradient(displaced_geom, grad_result)
 
+         if (grad_result%has_error) then
+            call logger%error("Worker gradient calculation error for forward displacement "// &
+                              to_char(disp_idx)//": "//grad_result%error%get_message())
+            call abort_comm(world_comm, 1)
+         end if
          if (.not. grad_result%has_gradient) then
-            call logger%error("Worker failed gradient for displacement "//to_char(disp_idx))
+            call logger%error("Worker failed gradient for forward displacement "//to_char(disp_idx))
             call abort_comm(world_comm, 1)
          end if
 
@@ -312,8 +362,13 @@ contains
          call copy_and_displace_geometry(full_system, atom_idx, coord, -displacement, displaced_geom)
          call xtb_calc%calc_gradient(displaced_geom, grad_result)
 
+         if (grad_result%has_error) then
+            call logger%error("Worker gradient calculation error for backward displacement "// &
+                              to_char(disp_idx)//": "//grad_result%error%get_message())
+            call abort_comm(world_comm, 1)
+         end if
          if (.not. grad_result%has_gradient) then
-            call logger%error("Worker failed gradient for displacement "//to_char(disp_idx))
+            call logger%error("Worker failed gradient for backward displacement "//to_char(disp_idx))
             call abort_comm(world_comm, 1)
          end if
 

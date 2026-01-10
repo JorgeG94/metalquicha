@@ -13,7 +13,7 @@ module mqc_finite_differences
    public :: copy_and_displace_geometry   !! Copy and displace geometry
 
    ! Default displacement step size (Bohr)
-   real(dp), parameter, public :: DEFAULT_DISPLACEMENT = 0.01_dp  !! ~0.05 Angstrom
+   real(dp), parameter, public :: DEFAULT_DISPLACEMENT = 0.005_dp  !! ~0.05 Angstrom
 
    type :: displaced_geometry_t
       !! Container for a single displaced geometry
@@ -186,6 +186,15 @@ contains
                       backward_gradients(disp_idx, jcoord, jatom))/(2.0_dp*displacement)
                end do
             end do
+         end do
+      end do
+
+      ! Symmetrize the Hessian: H = (H + H^T) / 2
+      ! This reduces numerical noise from finite differences
+      do i_global = 1, n_coords
+         do j_global = i_global + 1, n_coords
+            hessian(i_global, j_global) = 0.5_dp*(hessian(i_global, j_global) + hessian(j_global, i_global))
+            hessian(j_global, i_global) = hessian(i_global, j_global)
          end do
       end do
 

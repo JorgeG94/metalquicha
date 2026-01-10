@@ -56,6 +56,7 @@ contains
       type(basis_file_t) :: basis_file
       character(len=:), allocatable :: path_to_basis
       logical :: file_exists
+      type(error_t) :: file_error
 
       ! Find the basis file
       path_to_basis = find_basis_file()
@@ -66,7 +67,9 @@ contains
          return
       end if
 
-      call open_basis_file(basis_file, path_to_basis)
+      call open_basis_file(basis_file, path_to_basis, file_error)
+      call check(error,.not. file_error%has_error(), "Should open basis file without error")
+      if (allocated(error)) return
 
       call check(error, len(basis_file%data_section) > 0, &
                  "Basis file should contain data")
@@ -83,6 +86,7 @@ contains
       type(basis_file_t) :: basis_file
       character(len=:), allocatable :: h_content, path_to_basis
       logical :: file_exists
+      type(error_t) :: file_error
 
       path_to_basis = find_basis_file()
       inquire (file=path_to_basis, exist=file_exists)
@@ -91,8 +95,17 @@ contains
          return
       end if
 
-      call open_basis_file(basis_file, path_to_basis)
-      h_content = extract_element(basis_file, "HYDROGEN")
+      call open_basis_file(basis_file, path_to_basis, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to open basis file")
+         return
+      end if
+
+      call extract_element(basis_file, "HYDROGEN", h_content, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to extract hydrogen")
+         return
+      end if
       print *, h_content
 
       call check(error, len(h_content) > 0, "Should extract hydrogen basis content")
@@ -111,6 +124,7 @@ contains
       type(basis_file_t) :: basis_file
       character(len=:), allocatable :: c_content, path_to_basis
       logical :: file_exists
+      type(error_t) :: file_error
 
       path_to_basis = find_basis_file()
       inquire (file=path_to_basis, exist=file_exists)
@@ -119,8 +133,17 @@ contains
          return
       end if
 
-      call open_basis_file(basis_file, path_to_basis)
-      c_content = extract_element(basis_file, "CARBON")
+      call open_basis_file(basis_file, path_to_basis, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to open basis file")
+         return
+      end if
+
+      call extract_element(basis_file, "CARBON", c_content, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to extract carbon")
+         return
+      end if
 
       call check(error, len(c_content) > 0, "Should extract carbon basis content")
       if (allocated(error)) return
@@ -143,7 +166,7 @@ contains
       type(basis_file_t) :: basis_file
       type(atomic_basis_type) :: h_basis
       character(len=:), allocatable :: h_content, path_to_basis
-      type(error_t) :: parse_error
+      type(error_t) :: parse_error, file_error
       logical :: file_exists
 
       path_to_basis = find_basis_file()
@@ -153,8 +176,17 @@ contains
          return
       end if
 
-      call open_basis_file(basis_file, path_to_basis)
-      h_content = extract_element(basis_file, "HYDROGEN")
+      call open_basis_file(basis_file, path_to_basis, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to open basis file")
+         return
+      end if
+
+      call extract_element(basis_file, "HYDROGEN", h_content, file_error)
+      if (file_error%has_error()) then
+         call check(error, .false., "Failed to extract hydrogen")
+         return
+      end if
 
       ! Parse the extracted content
       call parse_element_basis(h_content, "HYDROGEN", h_basis, parse_error)

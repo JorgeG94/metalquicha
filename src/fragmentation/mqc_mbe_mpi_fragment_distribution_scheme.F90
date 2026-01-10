@@ -1,9 +1,10 @@
-submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
+submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
+   use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
    implicit none
 
 contains
 
-   subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+   module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -17,6 +18,7 @@ contains
       integer(int32), intent(in) :: method       !! QC method
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
       integer(int32), intent(in) :: calc_type  !! Calculation type
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
@@ -42,6 +44,20 @@ contains
          xtb_calc%variant = method_type_to_string(method)
          xtb_calc%verbose = is_verbose
 
+         ! Set solvation options from module-level config
+         if (allocated(xtb_options%solvent)) then
+            xtb_calc%solvent = xtb_options%solvent
+         end if
+         if (allocated(xtb_options%solvation_model)) then
+            xtb_calc%solvation_model = xtb_options%solvation_model
+         end if
+         xtb_calc%use_cds = xtb_options%use_cds
+         xtb_calc%use_shift = xtb_options%use_shift
+         ! CPCM-specific settings
+         xtb_calc%dielectric = xtb_options%dielectric
+         xtb_calc%cpcm_nang = xtb_options%cpcm_nang
+         xtb_calc%cpcm_rscale = xtb_options%cpcm_rscale
+
          ! Run the calculation using the method API
          select case (calc_type_local)
          case (CALC_TYPE_ENERGY)
@@ -51,16 +67,24 @@ contains
          case (CALC_TYPE_HESSIAN)
             call xtb_calc%calc_hessian(phys_frag, result)
          case default
-            call logger%error("Unknown calc_type: "//calc_type_to_string(calc_type_local))
-            error stop "Invalid calc_type in do_fragment_work"
+            call result%error%set(ERROR_VALIDATION, "Unknown calc_type: "//calc_type_to_string(calc_type_local))
+            result%has_error = .true.
+            return
          end select
+
+         ! Check for calculation errors
+         if (result%has_error) then
+            call result%error%add_context("do_fragment_work:fragment_"//to_char(fragment_idx))
+            return
+         end if
 
          ! Copy fragment distance to result for JSON output
          result%distance = phys_frag%distance
 #else
-         call logger%error("XTB method requested but tblite support not compiled in")
-         call logger%error("Please rebuild with -DMQC_ENABLE_TBLITE=ON")
-         error stop "tblite support not available"
+         call result%error%set(ERROR_GENERIC, "XTB method requested but tblite support not compiled in. "// &
+                               "Please rebuild with -DMQC_ENABLE_TBLITE=ON")
+         result%has_error = .true.
+         return
 #endif
       else
          ! For empty fragments, set energy to zero
@@ -69,12 +93,12 @@ contains
       end if
    end subroutine do_fragment_work
 
-   subroutine global_coordinator(world_comm, node_comm, total_fragments, polymers, max_level, &
-                                 node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+   module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
+                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
-      type(comm_t), intent(in) :: world_comm, node_comm
+      type(resources_t), intent(in) :: resources
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: max_level, num_nodes
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
@@ -97,7 +121,7 @@ contains
 
       ! Storage for results
       type(calculation_result_t), allocatable :: results(:)
-      integer(int64) :: worker_fragment_map(node_comm%size())
+      integer(int64) :: worker_fragment_map(resources%mpi_comms%node_comm%size())
       integer :: worker_source
 
       ! MPI request handles for non-blocking operations
@@ -108,7 +132,7 @@ contains
       current_fragment = total_fragments
       finished_nodes = 0
       local_finished_workers = 0
-      handling_local_workers = (node_comm%size() > 1)
+      handling_local_workers = (resources%mpi_comms%node_comm%size() > 1)
       results_received = 0_int64
 
       ! Allocate storage for results
@@ -126,7 +150,7 @@ contains
          if (handling_local_workers) then
             ! Keep checking for results until there are none pending
             do
-               call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
+           call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
                if (.not. has_pending) exit
 
                worker_source = local_status%MPI_SOURCE
@@ -135,13 +159,22 @@ contains
                if (worker_fragment_map(worker_source) == 0) then
                   call logger%error("Received result from worker "//to_char(worker_source)// &
                                     " but no fragment was assigned!")
-                  error stop "Invalid worker_fragment_map state"
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
                end if
 
                ! Receive result and store it using the fragment index for this worker
-               call result_irecv(results(worker_fragment_map(worker_source)), node_comm, worker_source, &
+            call result_irecv(results(worker_fragment_map(worker_source)), resources%mpi_comms%node_comm, worker_source, &
                                  TAG_WORKER_SCALAR_RESULT, req)
                call wait(req)
+
+               ! Check for calculation errors from worker
+               if (results(worker_fragment_map(worker_source))%has_error) then
+                  call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
+                                    " calculation failed: "// &
+                                    results(worker_fragment_map(worker_source))%error%get_message())
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
+               end if
+
                ! Clear the mapping since we've received the result
                worker_fragment_map(worker_source) = 0
                results_received = results_received + 1
@@ -156,15 +189,23 @@ contains
 
          ! PRIORITY 1b: Check for incoming results from remote node coordinators
          do
-            call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
+            call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
             if (.not. has_pending) exit
 
             ! Receive fragment index and result from node coordinator
             ! TODO: serialize the data for better performance
-            call irecv(world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+            call irecv(resources%mpi_comms%world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
-            call result_irecv(results(fragment_idx), world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+  call result_irecv(results(fragment_idx), resources%mpi_comms%world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
             call wait(req)
+
+            ! Check for calculation errors from node coordinator
+            if (results(fragment_idx)%has_error) then
+               call logger%error("Fragment "//to_char(fragment_idx)//" calculation failed: "// &
+                                 results(fragment_idx)%error%get_message())
+               call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
             results_received = results_received + 1
             if (mod(results_received, max(1_int64, total_fragments/10)) == 0 .or. &
                 results_received == total_fragments) then
@@ -175,39 +216,39 @@ contains
          end do
 
          ! PRIORITY 2: Remote node coordinator requests
-         call iprobe(world_comm, MPI_ANY_SOURCE, TAG_NODE_REQUEST, has_pending, status)
+         call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_REQUEST, has_pending, status)
          if (has_pending) then
-            call irecv(world_comm, dummy_msg, status%MPI_SOURCE, TAG_NODE_REQUEST, req)
+            call irecv(resources%mpi_comms%world_comm, dummy_msg, status%MPI_SOURCE, TAG_NODE_REQUEST, req)
             call wait(req)
             request_source = status%MPI_SOURCE
 
             if (current_fragment >= 1) then
-               call send_fragment_to_node(world_comm, current_fragment, polymers, request_source)
+               call send_fragment_to_node(resources%mpi_comms%world_comm, current_fragment, polymers, request_source)
                current_fragment = current_fragment - 1
             else
-               call isend(world_comm, -1, request_source, TAG_NODE_FINISH, req)
+               call isend(resources%mpi_comms%world_comm, -1, request_source, TAG_NODE_FINISH, req)
                call wait(req)
                finished_nodes = finished_nodes + 1
             end if
          end if
 
          ! PRIORITY 3: Local workers (shared memory) - send new work
-         if (handling_local_workers .and. local_finished_workers < node_comm%size() - 1) then
-            call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, local_status)
+         if (handling_local_workers .and. local_finished_workers < resources%mpi_comms%node_comm%size() - 1) then
+            call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, has_pending, local_status)
             if (has_pending) then
                ! Only process work request if this worker doesn't have pending results
                if (worker_fragment_map(local_status%MPI_SOURCE) == 0) then
-                  call irecv(node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
+                  call irecv(resources%mpi_comms%node_comm, local_dummy, local_status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
                   call wait(req)
 
                   if (current_fragment >= 1) then
-                     call send_fragment_to_worker(node_comm, current_fragment, polymers, &
+                     call send_fragment_to_worker(resources%mpi_comms%node_comm, current_fragment, polymers, &
                                                   local_status%MPI_SOURCE)
                      ! Track which fragment was sent to this worker
                      worker_fragment_map(local_status%MPI_SOURCE) = current_fragment
                      current_fragment = current_fragment - 1
                   else
-                     call isend(node_comm, -1, local_status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                     call isend(resources%mpi_comms%node_comm, -1, local_status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                      call wait(req)
                      local_finished_workers = local_finished_workers + 1
                   end if
@@ -218,7 +259,7 @@ contains
          end if
 
          ! Finalize local worker completion
-         if (handling_local_workers .and. local_finished_workers >= node_comm%size() - 1 &
+         if (handling_local_workers .and. local_finished_workers >= resources%mpi_comms%node_comm%size() - 1 &
              .and. results_received >= total_fragments) then
             handling_local_workers = .false.
             if (num_nodes == 1) then
@@ -235,38 +276,34 @@ contains
       call coord_timer%stop()
       call logger%info("Time to evaluate all fragments "//to_char(coord_timer%get_elapsed_time())//" s")
       block
-         real(dp) :: mbe_total_energy
-         real(dp), allocatable :: mbe_total_gradient(:, :)
-         real(dp), allocatable :: mbe_total_hessian(:, :)
+         use mqc_result_types, only: mbe_result_t
+         type(mbe_result_t) :: mbe_result
 
          ! Compute the many-body expansion
          call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
 
-         ! Use combined function if computing gradients or Hessians (more efficient)
+         ! Allocate mbe_result components based on calc_type
+         call mbe_result%allocate_dipole()  ! Always compute dipole
          if (calc_type_local == CALC_TYPE_HESSIAN) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for Hessian calculation in global_coordinator")
-               error stop "Missing sys_geom for Hessian calculation"
+               call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
-            allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-            allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
-            call compute_mbe_energy_gradient_hessian(polymers, total_fragments, max_level, results, sys_geom, &
-                                                     mbe_total_energy, mbe_total_gradient, mbe_total_hessian, bonds)
-            deallocate (mbe_total_gradient, mbe_total_hessian)
+            call mbe_result%allocate_gradient(sys_geom%total_atoms)
+            call mbe_result%allocate_hessian(sys_geom%total_atoms)
          else if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for gradient calculation in global_coordinator")
-               error stop "Missing sys_geom for gradient calculation"
+               call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
-            allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-            call compute_mbe_energy_gradient(polymers, total_fragments, max_level, results, sys_geom, &
-                                             mbe_total_energy, mbe_total_gradient, bonds)
-            deallocate (mbe_total_gradient)
-         else
-            call compute_mbe_energy(polymers, total_fragments, max_level, results, mbe_total_energy)
+            call mbe_result%allocate_gradient(sys_geom%total_atoms)
          end if
+
+         call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, &
+                          sys_geom, bonds, resources%mpi_comms%world_comm)
+         call mbe_result%destroy()
 
          call coord_timer%stop()
          call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")
@@ -349,10 +386,10 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   subroutine node_coordinator(world_comm, node_comm, calc_type)
+   module subroutine node_coordinator(resources, calc_type)
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
-      class(comm_t), intent(in) :: world_comm, node_comm
+      type(resources_t), intent(in) :: resources
       integer(int32), intent(in) :: calc_type
 
       integer(int64) :: fragment_idx
@@ -364,7 +401,7 @@ contains
       integer(int32) :: local_dummy
 
       ! For tracking worker-fragment mapping and collecting results
-      integer(int64) :: worker_fragment_map(node_comm%size())
+      integer(int64) :: worker_fragment_map(resources%mpi_comms%node_comm%size())
       integer(int32) :: worker_source
       type(calculation_result_t) :: worker_result
 
@@ -376,10 +413,10 @@ contains
       dummy_msg = 0
       worker_fragment_map = 0
 
-      do while (finished_workers < node_comm%size() - 1)
+      do while (finished_workers < resources%mpi_comms%node_comm%size() - 1)
 
          ! PRIORITY 1: Check for incoming results from local workers
-         call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_result, status)
+         call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_result, status)
          if (has_result) then
             worker_source = status%MPI_SOURCE
 
@@ -387,17 +424,25 @@ contains
             if (worker_fragment_map(worker_source) == 0) then
                call logger%error("Node coordinator received result from worker "//to_char(worker_source)// &
                                  " but no fragment was assigned!")
-               error stop "Invalid worker_fragment_map state in node coordinator"
+               call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
 
             ! Receive result from worker
-            call result_irecv(worker_result, node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
+            call result_irecv(worker_result, resources%mpi_comms%node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
+            ! Check for calculation errors before forwarding
+            if (worker_result%has_error) then
+               call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
+                                 " calculation failed on worker "//to_char(worker_source)//": "// &
+                                 worker_result%error%get_message())
+               call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
             ! Forward results to global coordinator with fragment index
-            call isend(world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
+call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
             call wait(req)
-            call result_isend(worker_result, world_comm, 0, TAG_NODE_SCALAR_RESULT, req)                ! result
+  call result_isend(worker_result, resources%mpi_comms%world_comm, 0, TAG_NODE_SCALAR_RESULT, req)                ! result
             call wait(req)
 
             ! Clear the mapping
@@ -405,38 +450,38 @@ contains
          end if
 
          ! PRIORITY 2: Check for work requests from local workers
-         call iprobe(node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, local_message_pending, status)
+         call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, local_message_pending, status)
 
          if (local_message_pending) then
             ! Only process work request if this worker doesn't have pending results
             if (worker_fragment_map(status%MPI_SOURCE) == 0) then
-               call irecv(node_comm, local_dummy, status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
+               call irecv(resources%mpi_comms%node_comm, local_dummy, status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
                call wait(req)
 
                if (more_fragments) then
-                  call isend(world_comm, dummy_msg, 0, TAG_NODE_REQUEST, req)
+                  call isend(resources%mpi_comms%world_comm, dummy_msg, 0, TAG_NODE_REQUEST, req)
                   call wait(req)
-                  call irecv(world_comm, fragment_idx, 0, MPI_ANY_TAG, req)
+                  call irecv(resources%mpi_comms%world_comm, fragment_idx, 0, MPI_ANY_TAG, req)
                   call wait(req, global_status)
 
                   if (global_status%MPI_TAG == TAG_NODE_FRAGMENT) then
                      ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
-                     call irecv(world_comm, fragment_type, 0, TAG_NODE_FRAGMENT, req)
+                     call irecv(resources%mpi_comms%world_comm, fragment_type, 0, TAG_NODE_FRAGMENT, req)
                      call wait(req)
-                     call irecv(world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, req)
+                     call irecv(resources%mpi_comms%world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, req)
                      call wait(req)
                      ! Note: must use blocking recv for allocatable arrays since size is unknown
                      allocate (fragment_indices(fragment_size))
-                     call recv(world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
+                     call recv(resources%mpi_comms%world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
 
                      ! Forward to worker
-                     call isend(node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                     call isend(resources%mpi_comms%node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                     call isend(node_comm, fragment_type, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                     call isend(resources%mpi_comms%node_comm, fragment_type, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                     call isend(node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                     call isend(resources%mpi_comms%node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                     call isend(node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                  call isend(resources%mpi_comms%node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
 
                      ! Track which fragment was sent to this worker
@@ -444,13 +489,13 @@ contains
 
                      deallocate (fragment_indices)
                   else
-                     call isend(node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                     call isend(resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                      call wait(req)
                      finished_workers = finished_workers + 1
                      more_fragments = .false.
                   end if
                else
-                  call isend(node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                  call isend(resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                   call wait(req)
                   finished_workers = finished_workers + 1
                end if
@@ -459,10 +504,10 @@ contains
       end do
    end subroutine node_coordinator
 
-   subroutine node_worker(world_comm, node_comm, sys_geom, method, calc_type, bonds)
+   module subroutine node_worker(resources, sys_geom, method, calc_type, bonds)
       !! Node worker for processing fragments assigned by node coordinator
       use mqc_error, only: error_t
-      class(comm_t), intent(in) :: world_comm, node_comm
+      type(resources_t), intent(in) :: resources
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in) :: calc_type
@@ -483,21 +528,21 @@ contains
       dummy_msg = 0
 
       do
-         call isend(node_comm, dummy_msg, 0, TAG_WORKER_REQUEST, req)
+         call isend(resources%mpi_comms%node_comm, dummy_msg, 0, TAG_WORKER_REQUEST, req)
          call wait(req)
-         call irecv(node_comm, fragment_idx, 0, MPI_ANY_TAG, req)
+         call irecv(resources%mpi_comms%node_comm, fragment_idx, 0, MPI_ANY_TAG, req)
          call wait(req, status)
 
          select case (status%MPI_TAG)
          case (TAG_WORKER_FRAGMENT)
             ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
-            call irecv(node_comm, fragment_type, 0, TAG_WORKER_FRAGMENT, req)
+            call irecv(resources%mpi_comms%node_comm, fragment_type, 0, TAG_WORKER_FRAGMENT, req)
             call wait(req)
-            call irecv(node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, req)
+            call irecv(resources%mpi_comms%node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, req)
             call wait(req)
             ! Note: must use blocking recv for allocatable arrays since size is unknown
             allocate (fragment_indices(fragment_size))
-            call recv(node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
+            call recv(resources%mpi_comms%node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
 
             ! Build physical fragment based on type
             if (present(sys_geom)) then
@@ -511,20 +556,20 @@ contains
 
                if (error%has_error()) then
                   call logger%error(error%get_full_trace())
-                  error stop "Failed to build fragment in node worker"
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
                end if
 
                ! Process the chemistry fragment with physical geometry
-               call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type)
+               call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, resources%mpi_comms%world_comm)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call do_fragment_work(fragment_idx, result, method, calc_type=calc_type)
+       call do_fragment_work(fragment_idx, result, method, calc_type=calc_type, world_comm=resources%mpi_comms%world_comm)
             end if
 
             ! Send result back to coordinator
-            call result_isend(result, node_comm, 0, TAG_WORKER_SCALAR_RESULT, req)
+            call result_isend(result, resources%mpi_comms%node_comm, 0, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
             ! Clean up result
@@ -536,9 +581,9 @@ contains
             ! Unexpected MPI tag - this should not happen in normal operation
             call logger%error("Worker received unexpected MPI tag: "//to_char(status%MPI_TAG))
             call logger%error("Expected TAG_WORKER_FRAGMENT or TAG_WORKER_FINISH")
-            error stop "MPI protocol error in node_worker"
+            call abort_comm(resources%mpi_comms%world_comm, 1)
          end select
       end do
    end subroutine node_worker
 
-end submodule mqc_mbe_fragment_distribution_scheme
+end submodule mpi_fragment_work_smod

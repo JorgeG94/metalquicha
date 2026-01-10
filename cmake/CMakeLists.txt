@@ -11,21 +11,21 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/modules/"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
 # Compiler-specific configurations
-if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set(standard_compile_flags "-ffree-line-length-none -fbacktrace")
   set(warning_flags
       "-Wall -Wextra -Wpedantic -Wsurprising -Waliasing -Wampersand -Warray-bounds -Wcharacter-truncation -Wconversion -Wline-truncation -Wintrinsics-std -Wno-tabs -Wunderflow -Wunused-parameter -Wintrinsic-shadow -Wno-align-commons -Wsurprising"
   )
   set(fpe "-ffpe-check -ffpe-trap=invalid,zero,overflow")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
   set(standard_compile_flags "-traceback")
   set(fpe "-check all -fpe0")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
   set(standard_compile_flags "-axAVX2 -traceback")
   set(fpe "-check all -fpe0")
 elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
-  set(standard_compile_flags "-traceback")
-elseif(CMAKE_Fortran_COMPILER_ID MATCHES "LLVMFlang")
+  set(standard_compile_flags "-traceback -Minfo=mp")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
   set(standard_compile_flags "")
 endif()
 

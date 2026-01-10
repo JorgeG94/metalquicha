@@ -4,6 +4,7 @@ module mqc_fragment_lookup
    use pic_types, only: int32, int64, dp
    use pic_sorting, only: sort
    use pic_hash_32bit, only: fnv_1a_hash
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
@@ -51,18 +52,24 @@ contains
       this%initialized = .true.
    end subroutine fragment_lookup_init
 
-   subroutine fragment_lookup_insert(this, monomers, n, fragment_idx)
+   subroutine fragment_lookup_insert(this, monomers, n, fragment_idx, error)
       !! Insert a monomer combination -> fragment index mapping
       class(fragment_lookup_t), intent(inout) :: this
       integer, intent(in) :: monomers(:), n
       integer(int64), intent(in) :: fragment_idx
+      type(error_t), intent(out), optional :: error
 
       integer(int32) :: hash_val
       integer :: bucket
       type(hash_entry_t), pointer :: new_entry
       integer, allocatable :: sorted_key(:)
 
-      if (.not. this%initialized) error stop "Hash table not initialized"
+      if (.not. this%initialized) then
+         if (present(error)) then
+            call error%set(ERROR_VALIDATION, "Hash table not initialized")
+         end if
+         return
+      end if
 
       ! Sort monomers for canonical key
       allocate (sorted_key(n))

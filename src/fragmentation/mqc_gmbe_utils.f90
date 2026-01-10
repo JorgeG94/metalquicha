@@ -7,6 +7,7 @@ module mqc_gmbe_utils
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    use mqc_combinatorics, only: next_combination, next_combination_init
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
@@ -522,7 +523,7 @@ contains
    end subroutine generate_k_way_intersections_from_lists
 
    subroutine gmbe_enumerate_pie_terms(sys_geom, primaries, n_primaries, polymer_level, max_k_level, &
-                                       pie_atom_sets, pie_coefficients, n_pie_terms, initial_max_terms)
+                                       pie_atom_sets, pie_coefficients, n_pie_terms, error, initial_max_terms)
       !! Enumerate all unique intersections via DFS and accumulate PIE coefficients
       !! This implements the GMBE(N) algorithm with inclusion-exclusion principle
       !!
@@ -542,6 +543,7 @@ contains
       integer, allocatable, intent(out) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_terms)
       integer, allocatable, intent(out) :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64), intent(out) :: n_pie_terms      !! Number of unique PIE terms
+      type(error_t), intent(out) :: error             !! Error status
       integer(int64), intent(in), optional :: initial_max_terms  !! Initial PIE storage capacity
 
       ! Temporary storage for PIE terms (allocate generously)
@@ -569,12 +571,12 @@ contains
          max_terms = INITIAL_MAX_PIE_TERMS
       end if
       if (max_terms < 1_int64) then
-         call logger%error("Initial PIE term capacity must be positive")
-         error stop "Invalid initial PIE term capacity"
+         call error%set(ERROR_VALIDATION, "Initial PIE term capacity must be positive")
+         return
       end if
       if (max_terms > int(huge(0_default_int), int64)) then
-         call logger%error("Initial PIE term capacity exceeds default integer limit")
-         error stop "Invalid initial PIE term capacity"
+         call error%set(ERROR_VALIDATION, "Initial PIE term capacity exceeds default integer limit")
+         return
       end if
       max_terms_i = int(max_terms, default_int)
 
@@ -621,14 +623,15 @@ contains
          call dfs_pie_accumulate(primary_atoms, primary_n_atoms, n_primaries, max_atoms, &
                                  clique, 1, current_atoms(1:primary_n_atoms(i)), primary_n_atoms(i), &
                                  candidates, n_candidates, max_k_level, &
-                                 temp_atom_sets, temp_coefficients, n_pie_terms, max_terms)
+                                 temp_atom_sets, temp_coefficients, n_pie_terms, max_terms, error)
+         if (error%has_error()) return
       end do
 
       ! Copy to output arrays
       if (n_pie_terms > 0_int64) then
          if (n_pie_terms > int(huge(0_default_int), int64)) then
-            call logger%error("n_pie_terms exceeds default integer limit")
-            error stop "PIE term count too large for allocation"
+            call error%set(ERROR_VALIDATION, "n_pie_terms exceeds default integer limit")
+            return
          end if
          allocate (pie_atom_sets(max_atoms, int(n_pie_terms, default_int)))
          allocate (pie_coefficients(int(n_pie_terms, default_int)))
@@ -647,7 +650,7 @@ contains
    recursive subroutine dfs_pie_accumulate(primary_atoms, primary_n_atoms, n_primaries, max_atoms, &
                                            clique, clique_size, current_atoms, n_current_atoms, &
                                            candidates, n_candidates, max_k_level, &
-                                           atom_sets, coefficients, n_terms, max_terms)
+                                           atom_sets, coefficients, n_terms, max_terms, error)
       !! DFS helper: accumulate PIE coefficients for intersections
       integer, intent(in) :: primary_atoms(:, :)    !! Precomputed atom lists
       integer, intent(in) :: primary_n_atoms(:)     !! Atom counts
@@ -663,6 +666,7 @@ contains
       integer, allocatable, intent(inout) :: coefficients(:)
       integer(int64), intent(inout) :: n_terms
       integer(int64), intent(inout) :: max_terms
+      type(error_t), intent(inout) :: error         !! Error status
 
       integer :: sign, i, candidate_idx, candidate_pos
       integer(int64) :: term_idx
@@ -689,7 +693,8 @@ contains
       if (.not. found) then
          ! New atom set
          if (n_terms >= max_terms) then
-            call grow_pie_storage(atom_sets, coefficients, max_terms, max_atoms)
+            call grow_pie_storage(atom_sets, coefficients, max_terms, max_atoms, error)
+            if (error%has_error()) return
          end if
          n_terms = n_terms + 1_int64
          atom_sets(1:n_current_atoms, n_terms) = current_atoms(1:n_current_atoms)
@@ -746,7 +751,11 @@ contains
             call dfs_pie_accumulate(primary_atoms, primary_n_atoms, n_primaries, max_atoms, &
                                     new_clique, clique_size + 1, new_atoms, n_new_atoms, &
                                     new_candidates, n_new_candidates, max_k_level, &
-                                    atom_sets, coefficients, n_terms, max_terms)
+                                    atom_sets, coefficients, n_terms, max_terms, error)
+            if (error%has_error()) then
+               deallocate (new_atoms, new_candidates)
+               return
+            end if
          end block
       end do
 
@@ -754,12 +763,13 @@ contains
 
    end subroutine dfs_pie_accumulate
 
-   subroutine grow_pie_storage(atom_sets, coefficients, max_terms, max_atoms)
+   subroutine grow_pie_storage(atom_sets, coefficients, max_terms, max_atoms, error)
       !! Grow PIE term storage arrays when capacity is exceeded.
       integer, allocatable, intent(inout) :: atom_sets(:, :)
       integer, allocatable, intent(inout) :: coefficients(:)
       integer(int64), intent(inout) :: max_terms
       integer, intent(in) :: max_atoms
+      type(error_t), intent(inout) :: error
 
       integer(int64) :: new_max_terms
       integer(default_int) :: old_terms_i, new_terms_i
@@ -770,8 +780,8 @@ contains
       max_default_int = int(huge(0_default_int), int64)
       new_max_terms = max_terms*2_int64
       if (new_max_terms <= max_terms) then
-         call logger%error("PIE term capacity overflow")
-         error stop "PIE term capacity overflow"
+         call error%set(ERROR_VALIDATION, "PIE term capacity overflow")
+         return
       end if
 
       if (new_max_terms > max_default_int) then
@@ -779,8 +789,8 @@ contains
       end if
 
       if (new_max_terms == max_terms) then
-         call logger%error("Exceeded maximum PIE terms ("//to_char(max_terms)//")")
-         error stop "Exceeded maximum PIE terms"
+         call error%set(ERROR_VALIDATION, "Exceeded maximum PIE terms ("//to_char(max_terms)//")")
+         return
       end if
 
       old_terms_i = int(max_terms, default_int)

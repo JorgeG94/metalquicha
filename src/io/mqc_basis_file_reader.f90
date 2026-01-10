@@ -2,6 +2,7 @@
 module mqc_basis_file_reader
    !! Module for reading and parsing GAMESS formatted basis set files
    use pic_types, only: int32, dp
+   use mqc_error, only: error_t, ERROR_IO, ERROR_VALIDATION
    implicit none
 
    private
@@ -15,10 +16,11 @@ module mqc_basis_file_reader
 
 contains
 
-   subroutine open_basis_file(basis_file, filename)
+   subroutine open_basis_file(basis_file, filename, error)
       !! Open and read a GAMESS formatted basis set file
       type(basis_file_t), intent(out) :: basis_file
       character(len=*), intent(in) :: filename
+      type(error_t), intent(out) :: error
 
       integer :: unit, iostat, file_size
       logical :: file_exists
@@ -27,7 +29,8 @@ contains
       ! Check if file exists
       inquire (file=filename, exist=file_exists, size=file_size)
       if (.not. file_exists) then
-         error stop "Basis set file not found: "//filename
+         call error%set(ERROR_IO, "Basis set file not found: "//filename)
+         return
       end if
 
       ! Allocate buffer for entire file
@@ -36,21 +39,30 @@ contains
       ! Open and read entire file
       open (newunit=unit, file=filename, status='old', action='read', &
             access='stream', form='unformatted', iostat=iostat)
-      if (iostat /= 0) error stop "Error opening file: "//filename
+      if (iostat /= 0) then
+         call error%set(ERROR_IO, "Error opening file: "//filename)
+         return
+      end if
 
       read (unit, iostat=iostat) basis_file%full_content
-      if (iostat /= 0) error stop "Error reading file: "//filename
+      if (iostat /= 0) then
+         close (unit)
+         call error%set(ERROR_IO, "Error reading file: "//filename)
+         return
+      end if
       close (unit)
 
       ! Extract the $DATA section
       data_start = index(basis_file%full_content, "$DATA")
       if (data_start == 0) then
-         error stop "Could not find $DATA section in basis set file"
+         call error%set(ERROR_VALIDATION, "Could not find $DATA section in basis set file: "//filename)
+         return
       end if
 
       data_end = index(basis_file%full_content(data_start:), "$END")
       if (data_end == 0) then
-         error stop "Could not find $END marker in basis set file"
+         call error%set(ERROR_VALIDATION, "Could not find $END marker in basis set file: "//filename)
+         return
       end if
 
       ! Store just the data section (between $DATA and $END)
@@ -58,11 +70,12 @@ contains
 
    end subroutine open_basis_file
 
-   function extract_element(basis_file, element) result(element_content)
+   subroutine extract_element(basis_file, element, element_content, error)
       !! Extract the basis set data for a specific element from the basis file
       type(basis_file_t), intent(in) :: basis_file
       character(len=*), intent(in) :: element
-      character(len=:), allocatable :: element_content
+      character(len=:), allocatable, intent(out) :: element_content
+      type(error_t), intent(out) :: error
 
       integer :: start_pos, end_pos, i
       character(len=:), allocatable :: search_element
@@ -79,7 +92,8 @@ contains
          if (index(basis_file%data_section, trim(search_element)//new_line('a')) == 1) then
             start_pos = 1
          else
-            error stop "Element not found in basis set file: "//element
+            call error%set(ERROR_VALIDATION, "Element not found in basis set file: "//element)
+            return
          end if
       else
          start_pos = start_pos + 1  ! Skip the leading newline
@@ -122,7 +136,7 @@ contains
       ! Extract the section
       element_content = basis_file%data_section(start_pos:end_pos)
 
-   end function extract_element
+   end subroutine extract_element
 
    pure function is_letter(c) result(is_alpha)
       !! Check if character is a letter (A-Z or a-z)

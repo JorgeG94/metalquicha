@@ -1,11 +1,13 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
-   subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+   module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
       use mqc_error, only: error_t
+      use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
+                                          compute_vibrational_analysis, print_vibrational_analysis
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in) :: calc_type
@@ -56,15 +58,33 @@ contains
       ! Process the full system
       call do_fragment_work(0_int64, result, method, phys_frag=full_system, calc_type=calc_type)
 
+      ! Check for calculation errors
+      if (result%has_error) then
+         call logger%error("Unfragmented calculation failed: "//result%error%get_message())
+         if (present(result_out)) then
+            result_out = result
+            return
+         else
+            error stop "Unfragmented calculation failed"
+         end if
+      end if
+
       call logger%info("============================================")
       call logger%info("Unfragmented calculation completed")
       block
-         character(len=256) :: result_line
+         character(len=2048) :: result_line  ! Large buffer for Hessian matrix rows
          integer :: current_log_level, iatom, i, j
          real(dp) :: hess_norm
 
          write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
+
+         if (result%has_dipole) then
+            write (result_line, '(a,3f15.8)') "  Dipole (e*Bohr): ", result%dipole
+            call logger%info(trim(result_line))
+            write (result_line, '(a,f15.8)') "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
+            call logger%info(trim(result_line))
+         end if
 
          if (result%has_gradient) then
             write (result_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(result%gradient**2))
@@ -101,6 +121,51 @@ contains
                end do
                call logger%info(" ")
             end if
+
+            ! Compute and print vibrational analysis
+            block
+               real(dp), allocatable :: frequencies(:), eigenvalues(:), projected_hessian(:, :)
+               real(dp), allocatable :: reduced_masses(:), force_constants(:)
+               real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+               integer :: ii, jj
+
+               ! First get projected Hessian for verbose output
+               call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
+               call compute_vibrational_frequencies(result%hessian, sys_geom%element_numbers, frequencies, eigenvalues, &
+                                                    coordinates=sys_geom%coordinates, project_trans_rot=.true., &
+                                                    projected_hessian_out=projected_hessian)
+
+               ! Print projected mass-weighted Hessian if verbose and small system
+               if (current_log_level >= verbose_level .and. total_atoms < 20) then
+                  if (allocated(projected_hessian)) then
+                     call logger%info(" ")
+                     call logger%info("Mass-weighted Hessian after trans/rot projection (a.u.):")
+                     do ii = 1, 3*total_atoms
+                        write (result_line, '(a,i5,a,999f15.8)') "  Row ", ii, ": ", &
+                           (projected_hessian(ii, jj), jj=1, 3*total_atoms)
+                        call logger%info(trim(result_line))
+                     end do
+                     call logger%info(" ")
+                  end if
+               end if
+
+               ! Compute full vibrational analysis and print
+               call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
+                                                 reduced_masses, force_constants, cart_disp, &
+                                                 coordinates=sys_geom%coordinates, &
+                                                 project_trans_rot=.true., &
+                                                 force_constants_mdyne=fc_mdyne)
+
+               if (allocated(frequencies)) then
+                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                  cart_disp, sys_geom%element_numbers, &
+                                                  force_constants_mdyne=fc_mdyne)
+                  deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
+               end if
+
+               if (allocated(eigenvalues)) deallocate (eigenvalues)
+               if (allocated(projected_hessian)) deallocate (projected_hessian)
+            end block
          end if
       end block
       call logger%info("============================================")
