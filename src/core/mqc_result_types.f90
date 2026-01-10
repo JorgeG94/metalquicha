@@ -223,6 +223,12 @@ contains
       if (result%has_gradient) then
          call send(comm, result%gradient, dest, tag)
       end if
+
+      ! Send dipole flag and data if present
+      call send(comm, result%has_dipole, dest, tag)
+      if (result%has_dipole) then
+         call send(comm, result%dipole, dest, tag)
+      end if
    end subroutine result_send
 
    subroutine result_isend(result, comm, dest, tag, req)
@@ -256,6 +262,12 @@ contains
       call send(comm, result%has_hessian, dest, tag)
       if (result%has_hessian) then
          call send(comm, result%hessian, dest, tag)
+      end if
+
+      ! Send dipole flag and data (blocking to avoid needing multiple request handles)
+      call send(comm, result%has_dipole, dest, tag)
+      if (result%has_dipole) then
+         call send(comm, result%dipole, dest, tag)
       end if
    end subroutine result_isend
 
@@ -291,6 +303,13 @@ contains
       if (result%has_hessian) then
          ! Receive allocatable Hessian array (MPI lib handles allocation)
          call recv(comm, result%hessian, source, tag, status)
+      end if
+
+      ! Receive dipole flag and data if present
+      call recv(comm, result%has_dipole, source, tag, status)
+      if (result%has_dipole) then
+         ! Receive allocatable dipole array (MPI lib handles allocation)
+         call recv(comm, result%dipole, source, tag, status)
       end if
    end subroutine result_recv
 
@@ -329,6 +348,13 @@ contains
       if (result%has_hessian) then
          ! Receive allocatable Hessian array (MPI lib handles allocation)
          call recv(comm, result%hessian, source, tag, status)
+      end if
+
+      ! Receive dipole flag and data (blocking to avoid needing multiple request handles)
+      call recv(comm, result%has_dipole, source, tag, status)
+      if (result%has_dipole) then
+         ! Receive allocatable dipole array (MPI lib handles allocation)
+         call recv(comm, result%dipole, source, tag, status)
       end if
    end subroutine result_irecv
 

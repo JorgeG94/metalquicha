@@ -279,11 +279,15 @@ contains
          real(dp) :: mbe_total_energy
          real(dp), allocatable :: mbe_total_gradient(:, :)
          real(dp), allocatable :: mbe_total_hessian(:, :)
+         real(dp), allocatable :: mbe_total_dipole(:)
 
          ! Compute the many-body expansion
          call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
+
+         ! Allocate dipole array (always, as it's a small 3-element vector)
+         allocate (mbe_total_dipole(3))
 
          ! Use combined function if computing gradients or Hessians (more efficient)
          if (calc_type_local == CALC_TYPE_HESSIAN) then
@@ -294,7 +298,7 @@ contains
             allocate (mbe_total_gradient(3, sys_geom%total_atoms))
             allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
             call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, mbe_total_hessian, bonds, resources%mpi_comms%world_comm)
+                 sys_geom, mbe_total_gradient, mbe_total_hessian, mbe_total_dipole, bonds, resources%mpi_comms%world_comm)
             deallocate (mbe_total_gradient, mbe_total_hessian)
          else if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
@@ -303,12 +307,13 @@ contains
             end if
             allocate (mbe_total_gradient(3, sys_geom%total_atoms))
             call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, bonds=bonds, world_comm=resources%mpi_comms%world_comm)
+      sys_geom, mbe_total_gradient, total_dipole=mbe_total_dipole, bonds=bonds, world_comm=resources%mpi_comms%world_comm)
             deallocate (mbe_total_gradient)
          else
             call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             world_comm=resources%mpi_comms%world_comm)
+                             total_dipole=mbe_total_dipole, world_comm=resources%mpi_comms%world_comm)
          end if
+         deallocate (mbe_total_dipole)
 
          call coord_timer%stop()
          call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")

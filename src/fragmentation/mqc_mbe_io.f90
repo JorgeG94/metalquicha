@@ -152,10 +152,10 @@ contains
 
    subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, &
                                             energies, delta_energies, sum_by_level, total_energy, &
-                                            total_gradient, total_hessian, results)
+                                            total_gradient, total_hessian, results, total_dipole)
       !! Write detailed energy breakdown to results.json file
       !! Outputs structured JSON with all fragment energies and deltaE corrections
-      !! Optionally includes total gradient and Hessian if provided
+      !! Optionally includes total gradient, Hessian, and dipole if provided
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
       use mqc_result_types, only: calculation_result_t
       integer, intent(in) :: polymers(:, :), max_level
@@ -165,6 +165,7 @@ contains
       real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
       real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
       type(calculation_result_t), intent(in), optional :: results(:)  !! Fragment results with distance info
+      real(dp), intent(in), optional :: total_dipole(:)  !! (3) Total dipole moment
 
       integer(int64) :: i
       integer :: fragment_size, j, frag_level, unit, io_stat, iatom
@@ -284,10 +285,28 @@ contains
       end if
 
       ! Close levels array (with comma if we have more fields)
-      if (present(total_gradient) .or. present(total_hessian)) then
+      if (present(total_gradient) .or. present(total_hessian) .or. present(total_dipole)) then
          write (unit, '(a)') '    ],'
       else
          write (unit, '(a)') '    ]'
+      end if
+
+      ! Add dipole if present (inside basename object)
+      if (present(total_dipole)) then
+         write (unit, '(a)') '    "dipole": {'
+         write (json_line, '(a,f25.15,a)') '      "x": ', total_dipole(1), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "y": ', total_dipole(2), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15,a)') '      "z": ', total_dipole(3), ','
+         write (unit, '(a)') trim(json_line)
+         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(total_dipole)*2.541746_dp
+         write (unit, '(a)') trim(json_line)
+         if (present(total_gradient) .or. present(total_hessian)) then
+            write (unit, '(a)') '    },'
+         else
+            write (unit, '(a)') '    }'
+         end if
       end if
 
       ! Add gradient norm if present (inside basename object)

@@ -21,6 +21,7 @@ contains
       real(dp) :: mbe_total_energy
       real(dp), allocatable :: mbe_total_gradient(:, :)
       real(dp), allocatable :: mbe_total_hessian(:, :)
+      real(dp), allocatable :: mbe_total_dipole(:)
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
@@ -100,21 +101,26 @@ contains
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
 
+      ! Allocate dipole array (always, as it's a small 3-element vector)
+      allocate (mbe_total_dipole(3))
+
       ! Use unified compute_mbe with optional arguments based on calc_type
       if (calc_type_local == CALC_TYPE_HESSIAN) then
          allocate (mbe_total_gradient(3, sys_geom%total_atoms))
          allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
          call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                          sys_geom, mbe_total_gradient, mbe_total_hessian, bonds)
+                          sys_geom, mbe_total_gradient, mbe_total_hessian, mbe_total_dipole, bonds)
          deallocate (mbe_total_gradient, mbe_total_hessian)
       else if (calc_type_local == CALC_TYPE_GRADIENT) then
          allocate (mbe_total_gradient(3, sys_geom%total_atoms))
          call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                          sys_geom, mbe_total_gradient, bonds=bonds)
+                          sys_geom, mbe_total_gradient, total_dipole=mbe_total_dipole, bonds=bonds)
          deallocate (mbe_total_gradient)
       else
-         call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy)
+         call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
+                          total_dipole=mbe_total_dipole)
       end if
+      deallocate (mbe_total_dipole)
 
       call coord_timer%stop()
       call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")

@@ -236,6 +236,65 @@ contains
 
    end subroutine compute_mbe_gradient
 
+   subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm)
+      !! Bottom-up computation of n-body dipole correction
+      !! Exactly mirrors the energy MBE logic: deltaDipole = Dipole - sum(all subset deltaDipoles)
+      !! Dipoles are additive vectors in the system frame, no coordinate mapping needed
+      use mqc_result_types, only: calculation_result_t
+      integer(int64), intent(in) :: fragment_idx
+      integer, intent(in) :: fragment(:), n
+      type(fragment_lookup_t), intent(in) :: lookup
+      type(calculation_result_t), intent(in) :: results(:)
+      real(dp), intent(inout) :: delta_dipoles(:, :)  !! (3, fragment_count)
+      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+
+      ! Maximum MBE level supported (decamers)
+      integer, parameter :: MAX_MBE_LEVEL = 10
+      integer :: subset_size, i
+      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
+      integer(int64) :: subset_idx
+      logical :: has_next
+
+      ! Start with the full n-mer dipole
+      delta_dipoles(:, fragment_idx) = results(fragment_idx)%dipole
+
+      ! Subtract all proper subsets (size 1 to n-1)
+      do subset_size = 1, n - 1
+         ! Initialize first combination
+         do i = 1, subset_size
+            indices(i) = i
+         end do
+
+         ! Loop through all combinations
+         do
+            ! Build current subset
+            do i = 1, subset_size
+               subset(i) = fragment(indices(i))
+            end do
+
+            ! Look up subset index
+            subset_idx = lookup%find(subset(1:subset_size), subset_size)
+            if (subset_idx < 0) then
+               call logger%error("Subset not found in MBE dipole computation")
+               if (present(world_comm)) then
+                  call abort_comm(world_comm, 1)
+               else
+                  error stop "Subset not found in MBE dipole!"
+               end if
+            end if
+
+            ! Subtract pre-computed delta dipole
+            delta_dipoles(:, fragment_idx) = delta_dipoles(:, fragment_idx) - &
+                                             delta_dipoles(:, subset_idx)
+
+            ! Get next combination
+            call get_next_combination(indices, subset_size, n, has_next)
+            if (.not. has_next) exit
+         end do
+      end do
+
+   end subroutine compute_mbe_dipole
+
    subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess, bonds)
       !! Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_hessian
@@ -435,13 +494,14 @@ contains
 
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
                           total_energy, &
-                          sys_geom, total_gradient, total_hessian, bonds, world_comm)
-      !! Compute many-body expansion (MBE) energy with optional gradient and/or hessian
+                          sys_geom, total_gradient, total_hessian, total_dipole, bonds, world_comm)
+      !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
       !! This is the core routine that handles all MBE computations.
-      !! Optional arguments control what derivatives are computed:
+      !! Optional arguments control what derivatives/properties are computed:
       !!   - If sys_geom and total_gradient are present: compute gradient
       !!   - If total_hessian is also present: compute hessian
+      !!   - If total_dipole is present: compute total dipole moment
       use mqc_result_types, only: calculation_result_t
       use mqc_config_parser, only: bond_t
 
@@ -458,6 +518,9 @@ contains
       ! Optional arguments for hessian computation
       real(dp), intent(out), optional :: total_hessian(:, :)   !! (3*total_atoms, 3*total_atoms)
 
+      ! Optional arguments for dipole computation
+      real(dp), intent(out), optional :: total_dipole(:)       !! (3) Total dipole moment
+
       ! Optional bond information for hydrogen cap handling
       type(bond_t), intent(in), optional :: bonds(:)
 
@@ -469,13 +532,15 @@ contains
       integer :: fragment_size, nlevel, current_log_level, hess_dim
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
+      real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
       real(dp) :: delta_E
-      logical :: do_detailed_print, compute_grad, compute_hess
+      logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole
       type(fragment_lookup_t) :: lookup
 
       ! Determine what to compute based on optional arguments
       compute_grad = present(sys_geom) .and. present(total_gradient)
       compute_hess = compute_grad .and. present(total_hessian)
+      compute_dipole = present(total_dipole)
 
       ! Validate inputs for gradient computation
       if (compute_grad) then
@@ -506,6 +571,17 @@ contains
          hess_dim = 3*sys_geom%total_atoms
       end if
 
+      ! Validate inputs for dipole computation
+      if (compute_dipole) then
+         do i = 1_int64, fragment_count
+            if (.not. results(i)%has_dipole) then
+               call logger%warning("Fragment "//to_char(i)//" does not have dipole - skipping dipole MBE")
+               compute_dipole = .false.
+               exit
+            end if
+         end do
+      end if
+
       ! Get logger configuration
       call logger%configuration(level=current_log_level)
       do_detailed_print = (current_log_level >= verbose_level)
@@ -534,6 +610,13 @@ contains
          allocate (delta_hessians(hess_dim, hess_dim, fragment_count))
          delta_hessians = 0.0_dp
          total_hessian = 0.0_dp
+      end if
+
+      ! Allocate dipole arrays if needed
+      if (compute_dipole) then
+         allocate (delta_dipoles(3, fragment_count))
+         delta_dipoles = 0.0_dp
+         total_dipole = 0.0_dp
       end if
 
       ! Build hash table for fast fragment lookups
@@ -576,6 +659,11 @@ contains
                                                    polymers(i, 1:fragment_size), sys_geom, delta_hessians(:, :, i), bonds)
                end if
 
+               if (compute_dipole) then
+                  ! For 1-body, delta dipole is just the fragment dipole
+                  delta_dipoles(:, i) = results(i)%dipole
+               end if
+
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
                ! n-body: delta = value - sum(all subset deltas)
                delta_E = compute_mbe_delta(i, polymers(i, 1:fragment_size), lookup, &
@@ -591,6 +679,11 @@ contains
                if (compute_hess) then
                   call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
                                            results, delta_hessians, fragment_size, sys_geom, bonds)
+               end if
+
+               if (compute_dipole) then
+                  call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
+                                          results, delta_dipoles, fragment_size, world_comm)
                end if
             end if
          end do
@@ -616,6 +709,15 @@ contains
             fragment_size = count(polymers(i, :) > 0)
             if (fragment_size <= max_level) then
                total_hessian = total_hessian + delta_hessians(:, :, i)
+            end if
+         end do
+      end if
+
+      if (compute_dipole) then
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size <= max_level) then
+               total_dipole = total_dipole + delta_dipoles(:, i)
             end if
          end do
       end if
@@ -654,6 +756,20 @@ contains
          end block
       end if
 
+      ! Print dipole info if computed
+      if (compute_dipole) then
+         block
+            character(len=256) :: dipole_line
+            real(dp) :: dipole_magnitude
+            dipole_magnitude = norm2(total_dipole)*2.541746_dp  ! Convert e*Bohr to Debye
+            call logger%info("MBE Dipole moment:")
+            write (dipole_line, '(a,3f15.8)') "  Dipole (e*Bohr): ", total_dipole
+            call logger%info(trim(dipole_line))
+            write (dipole_line, '(a,f15.8)') "  Dipole magnitude (Debye): ", dipole_magnitude
+            call logger%info(trim(dipole_line))
+         end block
+      end if
+
       ! Print detailed breakdown if requested
       if (do_detailed_print) then
          call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
@@ -662,19 +778,20 @@ contains
       ! Write JSON output with appropriate arguments
       if (compute_hess) then
          call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                            sum_by_level, total_energy, total_gradient, total_hessian, results)
+                                         sum_by_level, total_energy, total_gradient, total_hessian, results, total_dipole)
       else if (compute_grad) then
          call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                            sum_by_level, total_energy, total_gradient, results=results)
+                                   sum_by_level, total_energy, total_gradient, results=results, total_dipole=total_dipole)
       else
          call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                            sum_by_level, total_energy, results=results)
+                                            sum_by_level, total_energy, results=results, total_dipole=total_dipole)
       end if
 
       ! Cleanup
       deallocate (sum_by_level, delta_energies, energies)
       if (allocated(delta_gradients)) deallocate (delta_gradients)
       if (allocated(delta_hessians)) deallocate (delta_hessians)
+      if (allocated(delta_dipoles)) deallocate (delta_dipoles)
 
    end subroutine compute_mbe
 
