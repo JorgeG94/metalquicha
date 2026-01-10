@@ -412,11 +412,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run metalquicha validation tests")
     parser.add_argument("--manifest", default="validation_tests.json",
                        help="Path to validation manifest JSON")
-    parser.add_argument("--exe", default="./build/mqc",
+    parser.add_argument("--exe", default="../build/mqc",
                        help="Path to metalquicha executable")
-    parser.add_argument("--prep-script", default="mqc_prep.py",
+    parser.add_argument("--prep-script", default="../mqc_prep.py",
                        help="Path to mqc_prep.py script")
-    parser.add_argument("--validation-dir", default="validation",
+    parser.add_argument("--validation-dir", default=".",
                        help="Path to validation directory containing inputs/")
     parser.add_argument("--skip-prep", action="store_true",
                        help="Skip .mqc file preparation step")

@@ -48,7 +48,8 @@ jobs:
         shell: bash -el {0}
         run: |
           conda activate mqc
-          python3 run_validation.py --exe ./build/mqc -v
+          cd validation
+          python3 run_validation.py -v
 
       - name: Upload validation outputs on failure
         if: failure()
@@ -56,8 +57,8 @@ jobs:
         with:
           name: validation-outputs-tblite
           path: |
-            output_*.json
-            validation_logs/*.log
+            validation/output_*.json
+            validation/validation_logs/*.log
           retention-days: 7
 
       - name: Clean build dir
