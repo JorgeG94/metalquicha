@@ -15,6 +15,7 @@ module mqc_mbe
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
+   use mqc_program_limits, only: MAX_MBE_LEVEL
 
    implicit none
    private
@@ -36,8 +37,6 @@ contains
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
       real(dp) :: delta_E
 
-      ! Maximum MBE level supported (decamers)
-      integer, parameter :: MAX_MBE_LEVEL = 10
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
@@ -187,8 +186,6 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
-      ! Maximum MBE level supported (decamers)
-      integer, parameter :: MAX_MBE_LEVEL = 10
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
@@ -248,8 +245,6 @@ contains
       real(dp), intent(inout) :: delta_dipoles(:, :)  !! (3, fragment_count)
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
-      ! Maximum MBE level supported (decamers)
-      integer, parameter :: MAX_MBE_LEVEL = 10
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx
@@ -372,8 +367,6 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       type(bond_t), intent(in), optional :: bonds(:)
 
-      ! Maximum MBE level supported (decamers)
-      integer, parameter :: MAX_MBE_LEVEL = 10
       integer :: subset_size, i, hess_dim
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
       integer(int64) :: subset_idx

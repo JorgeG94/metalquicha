@@ -7,6 +7,7 @@ module mqc_vibrational_analysis
    use pic_logger, only:
    use mqc_elements, only: element_mass, element_number_to_symbol
    use pic_logger, only: logger => global_logger
+   use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
    implicit none
    private
 
@@ -17,16 +18,8 @@ module mqc_vibrational_analysis
    public :: compute_reduced_masses
    public :: compute_force_constants
    public :: compute_cartesian_displacements
+   public :: compute_ir_intensities
    public :: print_vibrational_analysis
-
-   ! Conversion factor from atomic units (Hartree/Bohr²/amu) to cm⁻¹
-   ! Derived from fundamental constants:
-   !   sqrt(Hartree/(Bohr²·amu)) → s⁻¹ → cm⁻¹
-   real(dp), parameter :: AU_TO_CM1 = 2.642461e7_dp
-
-   ! Conversion factor from atomic units (Hartree/Bohr²) to mdyne/Å
-   ! 1 Hartree/Bohr² = 15.569141 mdyne/Å
-   real(dp), parameter :: AU_TO_MDYNE_ANG = 15.569141_dp
 
 contains
 
@@ -144,7 +137,8 @@ contains
                                            cartesian_displacements, &
                                            eigenvalues_out, eigenvectors_out, &
                                            coordinates, project_trans_rot, &
-                                           force_constants_mdyne)
+                                           force_constants_mdyne, &
+                                           dipole_derivatives, ir_intensities)
       !! Perform complete vibrational analysis from Hessian matrix.
       !!
       !! This is a convenience wrapper that computes:
@@ -152,6 +146,7 @@ contains
       !! - Reduced masses in amu
       !! - Force constants in Hartree/Bohr² (and optionally mdyne/Å)
       !! - Cartesian displacement vectors (normalized)
+      !! - IR intensities in km/mol (if dipole_derivatives provided)
       !!
       !! Optionally projects out translation/rotation modes.
       real(dp), intent(in) :: hessian(:, :)
@@ -176,6 +171,10 @@ contains
          !! If true, project out translation/rotation modes
       real(dp), allocatable, intent(out), optional :: force_constants_mdyne(:)
          !! Force constants in mdyne/Å
+      real(dp), intent(in), optional :: dipole_derivatives(:, :)
+         !! Cartesian dipole derivatives (3, 3*N) in a.u. for IR intensities
+      real(dp), allocatable, intent(out), optional :: ir_intensities(:)
+         !! IR intensities in km/mol
 
       real(dp), allocatable :: eigenvalues(:)
       real(dp), allocatable :: eigenvectors(:, :)
@@ -197,6 +196,12 @@ contains
       ! Compute Cartesian displacements from eigenvectors
       call compute_cartesian_displacements(eigenvectors, element_numbers, &
                                            cartesian_displacements)
+
+      ! Compute IR intensities if dipole derivatives are provided
+      if (present(dipole_derivatives) .and. present(ir_intensities)) then
+         call compute_ir_intensities(dipole_derivatives, eigenvectors, element_numbers, &
+                                     ir_intensities)
+      end if
 
       ! Optionally return eigenvalues and eigenvectors
       if (present(eigenvalues_out)) then
@@ -572,10 +577,68 @@ contains
 
    end subroutine compute_cartesian_displacements
 
+   subroutine compute_ir_intensities(dipole_derivatives, eigenvectors, element_numbers, ir_intensities)
+      !! Compute IR intensities from dipole derivatives and normal modes.
+      !!
+      !! IR intensities are computed by transforming Cartesian dipole derivatives
+      !! to normal mode coordinates and computing the squared magnitude.
+      !!
+      !! For each normal mode i:
+      !!   trdip(k) = Σ_j dipd(k,j) * L(j,i) * 1/√m_j
+      !!   IR(i) = AU_TO_KMMOL * (trdip(1)² + trdip(2)² + trdip(3)²)
+      !!
+      !! where:
+      !!   dipd(k,j) = ∂μ_k/∂x_j (Cartesian dipole derivative)
+      !!   L(j,i) = mass-weighted eigenvector component
+      !!   m_j = atomic mass for coordinate j
+      !!
+      !! Reference: xtb hessian.F90 lines 501-535
+      real(dp), intent(in) :: dipole_derivatives(:, :)
+         !! Cartesian dipole derivatives (3, 3*N) in atomic units
+      real(dp), intent(in) :: eigenvectors(:, :)
+         !! Mass-weighted eigenvectors from Hessian diagonalization (3*N x 3*N)
+      integer, intent(in) :: element_numbers(:)
+         !! Atomic numbers for each atom (N atoms)
+      real(dp), allocatable, intent(out) :: ir_intensities(:)
+         !! IR intensities in km/mol (one per mode)
+
+      integer :: n_atoms, n_coords, iatom, i, j, k
+      real(dp) :: mass, inv_sqrt_mass, trdip(3)
+
+      n_atoms = size(element_numbers)
+      n_coords = 3*n_atoms
+
+      allocate (ir_intensities(n_coords))
+
+      ! For each normal mode i
+      do i = 1, n_coords
+         trdip = 0.0_dp
+
+         ! Transform dipole derivative from Cartesian to normal mode coordinates
+         ! trdip(k) = Σ_j dipd(k,j) * L(j,i) * amass_au(j)
+         ! where amass_au(j) = 1/√(m_j in atomic units) = 1/√(m_amu * AMU_TO_AU)
+         ! This matches xtb's formula in hessian.F90 lines 526-535
+         do j = 1, n_coords
+            iatom = (j - 1)/3 + 1
+            mass = element_mass(element_numbers(iatom))
+            ! Convert mass to atomic units (electron masses) before taking sqrt
+            inv_sqrt_mass = 1.0_dp/sqrt(mass*AMU_TO_AU)
+
+            do k = 1, 3  ! x, y, z components of dipole
+               trdip(k) = trdip(k) + dipole_derivatives(k, j)*eigenvectors(j, i)*inv_sqrt_mass
+            end do
+         end do
+
+         ! IR intensity = |dμ/dQ|² * conversion factor
+         ir_intensities(i) = AU_TO_KMMOL*(trdip(1)**2 + trdip(2)**2 + trdip(3)**2)
+      end do
+
+   end subroutine compute_ir_intensities
+
    subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                          cartesian_displacements, element_numbers, &
                                          force_constants_mdyne, print_displacements, &
-                                         n_atoms)
+                                         n_atoms, ir_intensities)
       !! Print vibrational analysis results in a formatted table.
       !!
       !! Output format is similar to Gaussian, with frequencies grouped in columns.
@@ -596,12 +659,14 @@ contains
          !! If true, print Cartesian displacement vectors (default: true)
       integer, intent(in), optional :: n_atoms
          !! Number of atoms (if not provided, derived from size of element_numbers)
+      real(dp), intent(in), optional :: ir_intensities(:)
+         !! IR intensities in km/mol
 
       integer :: n_modes, n_at, n_groups, igroup, imode, iatom, icoord, k
       integer :: mode_start, mode_end, modes_in_group
       logical :: do_print_disp
       character(len=512) :: line
-      character(len=16) :: freq_str, mass_str, fc_str
+      character(len=16) :: freq_str, mass_str, fc_str, ir_str
       character(len=2) :: elem_sym
       character(len=3) :: coord_label
       real(dp) :: fc_value
@@ -675,6 +740,16 @@ contains
             end do
          end if
          call logger%info(trim(line))
+
+         ! IR intensities (if provided)
+         if (present(ir_intensities)) then
+            line = " IR Intens  --  "
+            do k = mode_start, mode_end
+               write (ir_str, '(f12.4)') ir_intensities(k)
+               line = trim(line)//ir_str
+            end do
+            call logger%info(trim(line))
+         end if
 
          ! Cartesian displacements
          if (do_print_disp) then

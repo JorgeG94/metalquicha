@@ -12,6 +12,7 @@ module mqc_physical_fragment
    use mqc_cgto, only: molecular_basis_type
    use mqc_config_parser, only: bond_t
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_physical_constants, only: BOHR_TO_ANGSTROM, ANGSTROM_TO_BOHR
    implicit none
    private
 
@@ -83,23 +84,20 @@ module mqc_physical_fragment
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
 
-   ! Physical constants
-   real(dp), parameter :: bohr_radius = 0.52917721092_dp  !! Bohr radius in Ångström
-
 contains
 
    pure elemental function to_angstrom(bohr_value) result(angstrom_value)
       !! Convert coordinate from Bohr to Angstrom
       real(dp), intent(in) :: bohr_value
       real(dp) :: angstrom_value
-      angstrom_value = bohr_value*bohr_radius
+      angstrom_value = bohr_value*BOHR_TO_ANGSTROM
    end function to_angstrom
 
    pure elemental function to_bohr(angstrom_value) result(bohr_value)
       !! Convert coordinate from Angstrom to Bohr
       real(dp), intent(in) :: angstrom_value
       real(dp) :: bohr_value
-      bohr_value = angstrom_value/bohr_radius
+      bohr_value = angstrom_value*ANGSTROM_TO_BOHR
    end function to_bohr
 
    subroutine initialize_system_geometry(full_geom_file, monomer_file, sys_geom, error)

@@ -10,6 +10,7 @@ module mqc_finite_differences
    public :: generate_perturbed_geometries  !! Generate forward/backward displacements
    public :: displaced_geometry_t           !! Container for displaced geometry
    public :: finite_diff_hessian_from_gradients  !! Compute Hessian from gradient differences
+   public :: finite_diff_dipole_derivatives  !! Compute dipole derivatives from dipole differences
    public :: copy_and_displace_geometry   !! Copy and displace geometry
 
    ! Default displacement step size (Bohr)
@@ -205,5 +206,41 @@ contains
       class(displaced_geometry_t), intent(inout) :: this
       call this%geometry%destroy()
    end subroutine displaced_geometry_destroy
+
+   subroutine finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
+                                             displacement, dipole_derivatives)
+      !! Compute dipole moment derivatives via central finite differences
+      !!
+      !! Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)
+      !!
+      !! This is used for IR intensity calculations, where we need the dipole
+      !! moment derivatives with respect to Cartesian nuclear coordinates.
+      !!
+      !! Args:
+      !!   n_atoms: Number of atoms
+      !!   forward_dipoles: Dipoles at forward-displaced geometries (3*n_atoms, 3)
+      !!   backward_dipoles: Dipoles at backward-displaced geometries (3*n_atoms, 3)
+      !!   displacement: Step size in Bohr
+      !!   dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.
+      integer, intent(in) :: n_atoms
+      real(dp), intent(in) :: forward_dipoles(:, :)   !! (3*n_atoms, 3)
+      real(dp), intent(in) :: backward_dipoles(:, :)  !! (3*n_atoms, 3)
+      real(dp), intent(in) :: displacement
+      real(dp), intent(out), allocatable :: dipole_derivatives(:, :)  !! (3, 3*n_atoms)
+
+      integer :: n_coords, j, k
+
+      n_coords = 3*n_atoms
+      allocate (dipole_derivatives(3, n_coords))
+
+      ! Central difference: d_mu_k/d_x_j = (mu_k(x_j+h) - mu_k(x_j-h)) / (2h)
+      do j = 1, n_coords       ! Cartesian coordinate index (which coordinate was displaced)
+         do k = 1, 3           ! Dipole component (x, y, z)
+            dipole_derivatives(k, j) = (forward_dipoles(j, k) - backward_dipoles(j, k))/ &
+                                       (2.0_dp*displacement)
+         end do
+      end do
+
+   end subroutine finite_diff_dipole_derivatives
 
 end module mqc_finite_differences

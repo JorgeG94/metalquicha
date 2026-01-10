@@ -66,6 +66,7 @@ module mqc_result_types
       real(dp), allocatable :: sigma(:, :)     !! Stress tensor (3,3) (Hartree/Bohr^3)
       real(dp), allocatable :: hessian(:, :)    !! Energy hessian (future implementation)
       real(dp), allocatable :: dipole(:)        !! Dipole moment vector (3) (Debye)
+      real(dp), allocatable :: dipole_derivatives(:, :)  !! Dipole derivatives (3, 3N) in a.u. for IR intensities
 
       ! Fragment metadata
       real(dp) :: distance = 0.0_dp      !! Minimal atomic distance between monomers (Angstrom, 0 for monomers)
@@ -76,6 +77,7 @@ module mqc_result_types
       logical :: has_sigma = .false.     !! Stress tensor has been computed
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
+      logical :: has_dipole_derivatives = .false.  !! Dipole derivatives have been computed
 
       ! Error handling
       type(error_t) :: error             !! Calculation error (if any)
@@ -210,6 +212,7 @@ contains
       if (allocated(this%sigma)) deallocate (this%sigma)
       if (allocated(this%hessian)) deallocate (this%hessian)
       if (allocated(this%dipole)) deallocate (this%dipole)
+      if (allocated(this%dipole_derivatives)) deallocate (this%dipole_derivatives)
       call this%reset()
    end subroutine result_destroy
 
@@ -223,6 +226,7 @@ contains
       this%has_sigma = .false.
       this%has_hessian = .false.
       this%has_dipole = .false.
+      this%has_dipole_derivatives = .false.
       this%has_error = .false.
    end subroutine result_reset
 
