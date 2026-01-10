@@ -25,6 +25,7 @@ module mqc_physical_fragment
    ! TODO: in theory there should be a nice way to redistribute for a general matrix of any shape, need to think about this!
    public :: redistribute_cap_gradients  !! Redistribute hydrogen cap gradients to original atoms
    public :: redistribute_cap_hessian    !! Redistribute hydrogen cap Hessian to original atoms
+   public :: redistribute_cap_dipole_derivatives  !! Redistribute hydrogen cap dipole derivatives to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: calculate_monomer_distance  !! Calculate minimal distance between monomers in a fragment
 
@@ -578,6 +579,56 @@ contains
       end if
 
    end subroutine redistribute_cap_hessian
+
+   subroutine redistribute_cap_dipole_derivatives(fragment, fragment_dipole_derivs, system_dipole_derivs)
+      !! Redistribute hydrogen cap dipole derivatives to original atoms
+      !!
+      !! Dipole derivatives have shape (3, 3*N_atoms) where each column corresponds to
+      !! the derivative of the 3 dipole components w.r.t. one Cartesian coordinate.
+      !! The mapping is similar to the column dimension of the Hessian.
+      !!
+      !! Algorithm:
+      !!   1. For real atoms: accumulate to system using local_to_global mapping
+      !!   2. For hydrogen caps: add to the original atom the cap replaces
+      type(physical_fragment_t), intent(in) :: fragment
+      real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (3, 3*n_atoms_fragment)
+      real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)
+
+      integer :: i, local_i, global_i, icart
+      integer :: i_cap, local_cap_idx, global_original_idx
+      integer :: n_real_atoms
+
+      n_real_atoms = fragment%n_atoms - fragment%n_caps
+
+      ! Accumulate dipole derivative columns for real atoms
+      do i = 1, n_real_atoms
+         local_i = i
+         global_i = fragment%local_to_global(local_i)
+         if (global_i <= 0) cycle
+
+         do icart = 1, 3
+            system_dipole_derivs(:, (global_i - 1)*3 + icart) = &
+               system_dipole_derivs(:, (global_i - 1)*3 + icart) + &
+               fragment_dipole_derivs(:, (local_i - 1)*3 + icart)
+         end do
+      end do
+
+      ! Redistribute cap contributions to their original atoms
+      if (fragment%n_caps > 0 .and. allocated(fragment%cap_replaces_atom)) then
+         do i_cap = 1, fragment%n_caps
+            local_cap_idx = n_real_atoms + i_cap
+            ! cap_replaces_atom is 0-indexed, add 1 for Fortran arrays
+            global_original_idx = fragment%cap_replaces_atom(i_cap) + 1
+
+            do icart = 1, 3
+               system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) = &
+                  system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) + &
+                  fragment_dipole_derivs(:, (local_cap_idx - 1)*3 + icart)
+            end do
+         end do
+      end if
+
+   end subroutine redistribute_cap_dipole_derivatives
 
    subroutine check_duplicate_atoms(fragment, error)
       !! Validate that fragment has no spatially overlapping atoms

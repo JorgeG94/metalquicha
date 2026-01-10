@@ -353,6 +353,61 @@ contains
 
    end subroutine map_fragment_to_system_hessian
 
+   subroutine map_fragment_to_system_dipole_derivatives(frag_dipole_derivs, monomers, sys_geom, sys_dipole_derivs, bonds)
+      !! Map fragment dipole derivatives to system coordinates with hydrogen cap redistribution
+      !!
+      !! Dipole derivatives have shape (3, 3*N) where each column corresponds to
+      !! the derivative of dipole w.r.t. one Cartesian coordinate of one atom.
+      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_dipole_derivatives
+      use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
+      real(dp), intent(in) :: frag_dipole_derivs(:, :)  !! (3, 3*natoms_frag)
+      integer, intent(in) :: monomers(:)
+      type(system_geometry_t), intent(in) :: sys_geom
+      real(dp), intent(inout) :: sys_dipole_derivs(:, :)  !! (3, 3*total_atoms)
+      type(bond_t), intent(in), optional :: bonds(:)
+
+      type(physical_fragment_t) :: fragment
+      type(error_t) :: error
+
+      ! Zero out
+      sys_dipole_derivs = 0.0_dp
+
+      if (present(bonds)) then
+         ! Rebuild fragment to get local→global mapping and cap information
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
+         call redistribute_cap_dipole_derivatives(fragment, frag_dipole_derivs, sys_dipole_derivs)
+         call fragment%destroy()
+      else
+         ! Code path for fragments without hydrogen caps
+         ! Map fragment dipole derivative columns to system positions (fixed-size monomers only)
+         block
+            integer :: i_mon, i_atom
+            integer :: frag_atom_idx, sys_atom_idx
+            integer :: frag_col_start, sys_col_start
+            integer :: n_monomers
+
+            n_monomers = size(monomers)
+            frag_atom_idx = 0
+
+            ! Map each monomer's atoms
+            do i_mon = 1, n_monomers
+               do i_atom = 1, sys_geom%atoms_per_monomer
+                  frag_atom_idx = frag_atom_idx + 1
+                  sys_atom_idx = (monomers(i_mon) - 1)*sys_geom%atoms_per_monomer + i_atom
+                  frag_col_start = (frag_atom_idx - 1)*3 + 1
+                  sys_col_start = (sys_atom_idx - 1)*3 + 1
+
+                  ! Copy the 3 columns (x, y, z derivatives) for this atom
+                  sys_dipole_derivs(:, sys_col_start:sys_col_start + 2) = &
+                     frag_dipole_derivs(:, frag_col_start:frag_col_start + 2)
+               end do
+            end do
+         end block
+      end if
+
+   end subroutine map_fragment_to_system_dipole_derivatives
+
    subroutine compute_mbe_hessian(fragment_idx, fragment, lookup, results, delta_hessians, n, sys_geom, bonds)
       !! Bottom-up computation of n-body Hessian correction
       !! Mirrors MBE gradient logic but for second derivatives
@@ -403,6 +458,55 @@ contains
       end do
 
    end subroutine compute_mbe_hessian
+
+   subroutine compute_mbe_dipole_derivatives(fragment_idx, fragment, lookup, results, delta_dipole_derivs, n, sys_geom, bonds)
+      !! Bottom-up computation of n-body dipole derivative correction
+      !! Mirrors MBE Hessian logic but for dipole derivatives
+      use mqc_result_types, only: calculation_result_t
+      use mqc_config_parser, only: bond_t
+      use mqc_error, only: error_t
+      integer(int64), intent(in) :: fragment_idx
+      integer, intent(in) :: fragment(:), n
+      type(fragment_lookup_t), intent(in) :: lookup
+      type(calculation_result_t), intent(in) :: results(:)
+      real(dp), intent(inout) :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(bond_t), intent(in), optional :: bonds(:)
+
+      integer :: subset_size, i
+      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
+      integer(int64) :: subset_idx
+      logical :: has_next
+
+      ! Start with the full n-mer dipole derivatives mapped to system coordinates
+      call map_fragment_to_system_dipole_derivatives(results(fragment_idx)%dipole_derivatives, fragment, &
+                                                     sys_geom, delta_dipole_derivs(:, :, fragment_idx), bonds)
+
+      ! Subtract all proper subsets (size 1 to n-1)
+      do subset_size = 1, n - 1
+         ! Initialize first combination
+         do i = 1, subset_size
+            indices(i) = i
+         end do
+
+         has_next = .true.
+         do while (has_next)
+            do i = 1, subset_size
+               subset(i) = fragment(indices(i))
+            end do
+            subset_idx = lookup%find(subset(1:subset_size), subset_size)
+
+            if (subset_idx > 0) then
+               ! Subtract this subset's delta dipole derivatives
+               delta_dipole_derivs(:, :, fragment_idx) = delta_dipole_derivs(:, :, fragment_idx) - &
+                                                         delta_dipole_derivs(:, :, subset_idx)
+            end if
+
+            call get_next_combination(indices, subset_size, n, has_next)
+         end do
+      end do
+
+   end subroutine compute_mbe_dipole_derivatives
 
    !---------------------------------------------------------------------------
    ! Helper subroutines for reducing code duplication
@@ -514,14 +618,17 @@ contains
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
       real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
+      real(dp), allocatable :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
+      real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
       real(dp) :: delta_E
-      logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole
+      logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
       type(fragment_lookup_t) :: lookup
 
       ! Determine what to compute based on allocated components in mbe_result
       compute_grad = allocated(mbe_result%gradient)
       compute_hess = allocated(mbe_result%hessian)
       compute_dipole = allocated(mbe_result%dipole)
+      compute_dipole_derivs = .false.  ! Will be set true if all fragments have dipole_derivatives
 
       ! Validate inputs for gradient computation
       if (compute_grad) then
@@ -563,6 +670,17 @@ contains
          end do
       end if
 
+      ! Check if dipole derivatives are available (for IR intensities)
+      if (compute_hess) then
+         compute_dipole_derivs = .true.
+         do i = 1_int64, fragment_count
+            if (.not. results(i)%has_dipole_derivatives) then
+               compute_dipole_derivs = .false.
+               exit
+            end if
+         end do
+      end if
+
       ! Get logger configuration
       call logger%configuration(level=current_log_level)
       do_detailed_print = (current_log_level >= verbose_level)
@@ -598,6 +716,14 @@ contains
          allocate (delta_dipoles(3, fragment_count))
          delta_dipoles = 0.0_dp
          mbe_result%dipole = 0.0_dp
+      end if
+
+      ! Allocate dipole derivative delta arrays if needed (for IR intensities)
+      if (compute_dipole_derivs) then
+         allocate (delta_dipole_derivs(3, hess_dim, fragment_count))
+         delta_dipole_derivs = 0.0_dp
+         allocate (mbe_result%dipole_derivatives(3, hess_dim))
+         mbe_result%dipole_derivatives = 0.0_dp
       end if
 
       ! Build hash table for fast fragment lookups
@@ -645,6 +771,12 @@ contains
                   delta_dipoles(:, i) = results(i)%dipole
                end if
 
+               if (compute_dipole_derivs) then
+                  ! For 1-body, delta dipole derivatives are just the fragment values mapped to system
+                  call map_fragment_to_system_dipole_derivatives(results(i)%dipole_derivatives, &
+                                              polymers(i, 1:fragment_size), sys_geom, delta_dipole_derivs(:, :, i), bonds)
+               end if
+
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
                ! n-body: delta = value - sum(all subset deltas)
                delta_E = compute_mbe_delta(i, polymers(i, 1:fragment_size), lookup, &
@@ -665,6 +797,11 @@ contains
                if (compute_dipole) then
                   call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
                                           results, delta_dipoles, fragment_size, world_comm)
+               end if
+
+               if (compute_dipole_derivs) then
+                  call compute_mbe_dipole_derivatives(i, polymers(i, 1:fragment_size), lookup, &
+                                                      results, delta_dipole_derivs, fragment_size, sys_geom, bonds)
                end if
             end if
          end do
@@ -707,6 +844,16 @@ contains
          mbe_result%has_dipole = .true.
       end if
 
+      if (compute_dipole_derivs) then
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size <= max_level) then
+               mbe_result%dipole_derivatives = mbe_result%dipole_derivatives + delta_dipole_derivs(:, :, i)
+            end if
+         end do
+         mbe_result%has_dipole_derivatives = .true.
+      end if
+
       ! Print energy breakdown (always)
       call print_mbe_energy_breakdown(sum_by_level, max_level, mbe_result%total_energy)
 
@@ -726,16 +873,34 @@ contains
             real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
-            call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
-                                              reduced_masses, force_constants, cart_disp, &
-                                              coordinates=sys_geom%coordinates, &
-                                              project_trans_rot=.true., &
-                                              force_constants_mdyne=fc_mdyne)
+            if (compute_dipole_derivs) then
+               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
+                                                 reduced_masses, force_constants, cart_disp, &
+                                                 coordinates=sys_geom%coordinates, &
+                                                 project_trans_rot=.true., &
+                                                 force_constants_mdyne=fc_mdyne, &
+                                                 dipole_derivatives=mbe_result%dipole_derivatives, &
+                                                 ir_intensities=ir_intensities)
+            else
+               call compute_vibrational_analysis(mbe_result%hessian, sys_geom%element_numbers, frequencies, &
+                                                 reduced_masses, force_constants, cart_disp, &
+                                                 coordinates=sys_geom%coordinates, &
+                                                 project_trans_rot=.true., &
+                                                 force_constants_mdyne=fc_mdyne)
+            end if
 
             if (allocated(frequencies)) then
-               call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                               cart_disp, sys_geom%element_numbers, &
-                                               force_constants_mdyne=fc_mdyne)
+               if (allocated(ir_intensities)) then
+                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                  cart_disp, sys_geom%element_numbers, &
+                                                  force_constants_mdyne=fc_mdyne, &
+                                                  ir_intensities=ir_intensities)
+                  deallocate (ir_intensities)
+               else
+                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                  cart_disp, sys_geom%element_numbers, &
+                                                  force_constants_mdyne=fc_mdyne)
+               end if
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
          end block
@@ -769,6 +934,7 @@ contains
       if (allocated(delta_gradients)) deallocate (delta_gradients)
       if (allocated(delta_hessians)) deallocate (delta_hessians)
       if (allocated(delta_dipoles)) deallocate (delta_dipoles)
+      if (allocated(delta_dipole_derivs)) deallocate (delta_dipole_derivs)
 
    end subroutine compute_mbe
 

@@ -35,7 +35,8 @@ contains
       !! Evaluates each unique atom set once and sums with PIE coefficients
       !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
-      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
+      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
+                                       redistribute_cap_dipole_derivatives
       use mqc_error, only: error_t
       use pic_logger, only: info_level
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
@@ -57,6 +58,9 @@ contains
       real(dp), allocatable :: term_gradient(:, :)  !! Temporary gradient for each term
       real(dp), allocatable :: total_hessian(:, :)  !! Total Hessian (3*total_atoms, 3*total_atoms)
       real(dp), allocatable :: term_hessian(:, :)  !! Temporary Hessian for each term
+      real(dp), allocatable :: total_dipole_derivs(:, :)  !! Total dipole derivatives (3, 3*total_atoms)
+      real(dp), allocatable :: term_dipole_derivs(:, :)   !! Temporary dipole derivatives for each term
+      real(dp), allocatable :: ir_intensities(:)          !! IR intensities in km/mol
       integer :: coeff
 
       if (int(size(pie_atom_sets, 2), int64) < n_pie_terms .or. &
@@ -85,6 +89,10 @@ contains
          allocate (total_hessian(hess_dim, hess_dim))
          allocate (term_hessian(hess_dim, hess_dim))
          total_hessian = 0.0_dp
+         ! Allocate dipole derivative arrays for IR intensities
+         allocate (total_dipole_derivs(3, hess_dim))
+         allocate (term_dipole_derivs(3, hess_dim))
+         total_dipole_derivs = 0.0_dp
       end if
 
       do term_idx = 1_int64, n_pie_terms
@@ -154,6 +162,14 @@ contains
 
             ! Accumulate with PIE coefficient
             total_hessian = total_hessian + real(coeff, dp)*term_hessian
+
+            ! Accumulate dipole derivatives if present (for IR intensities)
+            if (results(term_idx)%has_dipole_derivatives) then
+               term_dipole_derivs = 0.0_dp
+               call redistribute_cap_dipole_derivatives(phys_frag, results(term_idx)%dipole_derivatives, &
+                                                        term_dipole_derivs)
+               total_dipole_derivs = total_dipole_derivs + real(coeff, dp)*term_dipole_derivs
+            end if
          end if
 
          call logger%verbose("PIE term "//to_char(term_idx)//"/"//to_char(n_pie_terms)// &
@@ -205,13 +221,17 @@ contains
                                               reduced_masses, force_constants, cart_disp, &
                                               coordinates=sys_geom%coordinates, &
                                               project_trans_rot=.true., &
-                                              force_constants_mdyne=fc_mdyne)
+                                              force_constants_mdyne=fc_mdyne, &
+                                              dipole_derivatives=total_dipole_derivs, &
+                                              ir_intensities=ir_intensities)
 
             if (allocated(frequencies)) then
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                cart_disp, sys_geom%element_numbers, &
-                                               force_constants_mdyne=fc_mdyne)
+                                               force_constants_mdyne=fc_mdyne, &
+                                               ir_intensities=ir_intensities)
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
+               if (allocated(ir_intensities)) deallocate (ir_intensities)
             end if
          end block
       end if
@@ -227,6 +247,8 @@ contains
       if (allocated(term_gradient)) deallocate (term_gradient)
       if (allocated(total_hessian)) deallocate (total_hessian)
       if (allocated(term_hessian)) deallocate (term_hessian)
+      if (allocated(total_dipole_derivs)) deallocate (total_dipole_derivs)
+      if (allocated(term_dipole_derivs)) deallocate (term_dipole_derivs)
 
    end subroutine serial_gmbe_pie_processor
 
@@ -235,7 +257,8 @@ contains
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
-      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian
+      use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
+                                       redistribute_cap_dipole_derivatives
       use mqc_resources, only: resources_t
 
       type(resources_t), intent(in) :: resources
@@ -262,6 +285,8 @@ contains
       real(dp) :: total_energy
       real(dp), allocatable :: total_gradient(:, :)
       real(dp), allocatable :: total_hessian(:, :)
+      real(dp), allocatable :: total_dipole_derivs(:, :)  !! Total dipole derivatives (3, 3*total_atoms)
+      real(dp), allocatable :: ir_intensities(:)          !! IR intensities in km/mol
       integer :: hess_dim
 
       ! MPI request handles
@@ -494,11 +519,15 @@ contains
             total_gradient = 0.0_dp
          end if
 
+         ! Allocate dipole derivative arrays for IR intensities
+         allocate (total_dipole_derivs(3, hess_dim))
+         total_dipole_derivs = 0.0_dp
+
          do term_idx = 1_int64, n_pie_terms
             if (results(term_idx)%has_hessian .or. results(term_idx)%has_gradient) then
                block
                   use mqc_error, only: error_t
-                  real(dp), allocatable :: term_gradient(:, :), term_hessian(:, :)
+                  real(dp), allocatable :: term_gradient(:, :), term_hessian(:, :), term_dipole_derivs(:, :)
                   type(physical_fragment_t) :: phys_frag
                   type(error_t) :: error
                   integer :: n_atoms, max_atoms
@@ -534,6 +563,18 @@ contains
                         call redistribute_cap_hessian(phys_frag, results(term_idx)%hessian, term_hessian)
                         total_hessian = total_hessian + real(pie_coefficients(term_idx), dp)*term_hessian
                         deallocate (term_hessian)
+
+                        ! Accumulate dipole derivatives if present (for IR intensities)
+                        if (results(term_idx)%has_dipole_derivatives) then
+                           allocate (term_dipole_derivs(3, hess_dim))
+                           term_dipole_derivs = 0.0_dp
+                           call redistribute_cap_dipole_derivatives(phys_frag, &
+                                                                    results(term_idx)%dipole_derivatives, &
+                                                                    term_dipole_derivs)
+                           total_dipole_derivs = total_dipole_derivs + &
+                                                 real(pie_coefficients(term_idx), dp)*term_dipole_derivs
+                           deallocate (term_dipole_derivs)
+                        end if
                      end if
 
                      call phys_frag%destroy()
@@ -561,15 +602,20 @@ contains
                                               reduced_masses, force_constants, cart_disp, &
                                               coordinates=sys_geom%coordinates, &
                                               project_trans_rot=.true., &
-                                              force_constants_mdyne=fc_mdyne)
+                                              force_constants_mdyne=fc_mdyne, &
+                                              dipole_derivatives=total_dipole_derivs, &
+                                              ir_intensities=ir_intensities)
 
             if (allocated(frequencies)) then
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                cart_disp, sys_geom%element_numbers, &
-                                               force_constants_mdyne=fc_mdyne)
+                                               force_constants_mdyne=fc_mdyne, &
+                                               ir_intensities=ir_intensities)
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
+               if (allocated(ir_intensities)) deallocate (ir_intensities)
             end if
          end block
+         if (allocated(total_dipole_derivs)) deallocate (total_dipole_derivs)
       end if
 
       call coord_timer%stop()
