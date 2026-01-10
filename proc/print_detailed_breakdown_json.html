@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.7% of total for procedures.">123 statements</a>
+                 title=" 1.7% of total for procedures.">138 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,21 +136,21 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-basename~4">basename</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-basename~3">basename</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-count_by_level~2">count_by_level</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_fragment">first_fragment</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-first_level">first_level</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-frag_level~4">frag_level</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~9">fragment_size</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~38">i</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~14">iatom</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-io_stat~21">io_stat</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~13">j</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-fragment_size~10">fragment_size</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-i~54">i</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-iatom~9">iatom</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-io_stat~19">io_stat</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-j~20">j</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-json_line">json_line</a>
             <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-level_name~2">level_name</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-output_file~2">output_file</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-total_atoms~2">total_atoms</a>
-            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-unit~26">unit</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-output_file">output_file</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-total_atoms~3">total_atoms</a>
+            <a class="list-group-item" href="../proc/print_detailed_breakdown_json.html#variable-unit~27">unit</a>
         </div>
       </div>
     </div>
@@ -186,7 +186,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, total_energy, total_gradient, total_hessian, results)  
+    <h2>public  subroutine print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, sum_by_level, mbe_result, results)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -351,7 +351,7 @@ large graphs.</div>
 
     <p>Write detailed energy breakdown to results.json file
 Outputs structured JSON with all fragment energies and deltaE corrections
-Optionally includes total gradient and Hessian if provided
+Includes total gradient, Hessian, and dipole based on mbe_result%has_* flags
 Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p>
 
 
@@ -368,7 +368,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~8"></span>
+              <span class="anchor" id="variable-polymers~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -398,7 +398,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~9"></span>
+              <span class="anchor" id="variable-max_level~15"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -458,47 +458,17 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~5"></span>
-              real(kind=dp),
+              <span class="anchor" id="variable-mbe_result~2"></span>
+              type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>total_energy</strong></td>
+            <td><strong>mbe_result</strong></td>
             <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-total_gradient~6"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>total_gradient</strong>(:,:)</td>
-            <td>
-                <p>(3, total_atoms)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-total_hessian~4"></span>
-              real(kind=dp),
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>total_hessian</strong>(:,:)</td>
-            <td>
-                <p>(3<em>total_atoms, 3</em>total_atoms)</p>
+                <p>MBE aggregated results</p>
             </td>
         </tr>
         <tr>
@@ -943,7 +913,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~4"></span>
+              <span class="anchor" id="variable-basename~3"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -1028,7 +998,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~9"></span>
+              <span class="anchor" id="variable-fragment_size~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -1045,7 +1015,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~38"></span>
+              <span class="anchor" id="variable-i~54"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1062,7 +1032,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~14"></span>
+              <span class="anchor" id="variable-iatom~9"></span>
               integer,
             </td>
               <td>private</td>
@@ -1079,7 +1049,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~21"></span>
+              <span class="anchor" id="variable-io_stat~19"></span>
               integer,
             </td>
               <td>private</td>
@@ -1096,7 +1066,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~13"></span>
+              <span class="anchor" id="variable-j~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -1147,7 +1117,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_file~2"></span>
+              <span class="anchor" id="variable-output_file"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -1164,7 +1134,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~2"></span>
+              <span class="anchor" id="variable-total_atoms~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1181,7 +1151,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~26"></span>
+              <span class="anchor" id="variable-unit~27"></span>
               integer,
             </td>
               <td>private</td>
@@ -1213,19 +1183,18 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_detailed_breakdown_json</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                            </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                            </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">,</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                            </span><span class="n">mbe_result</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write detailed energy breakdown to results.json file</span>
 <span class="w">      </span><span class="c">!! Outputs structured JSON with all fragment energies and deltaE corrections</span>
-<span class="w">      </span><span class="c">!! Optionally includes total gradient and Hessian if provided</span>
+<span class="w">      </span><span class="c">!! Includes total gradient, Hessian, and dipole based on mbe_result%has_* flags</span>
 <span class="w">      </span><span class="c">!! Uses int64 for fragment_count to handle large fragment counts that overflow int32.</span>
-<span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result_t</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">max_level</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energies</span><span class="p">(:),</span><span class="w"> </span><span class="n">delta_energies</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(:),</span><span class="w"> </span><span class="n">total_energy</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, total_atoms)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sum_by_level</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mbe_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mbe_result</span><span class="w">  </span><span class="c">!! MBE aggregated results</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Fragment results with distance info</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
@@ -1257,7 +1226,7 @@ large graphs.</div>
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  &quot;&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;&quot;: {&#39;</span>
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
 
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;levels&quot;: [&#39;</span>
@@ -1346,24 +1315,42 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Close levels array (with comma if we have more fields)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_hessian</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_dipole</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    ],&#39;</span>
 <span class="w">      </span><span class="k">else</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    ]&#39;</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Add gradient norm if present (inside basename object)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;gradient_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="c">! Add dipole if computed (inside basename object)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_dipole</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;dipole&quot;: {&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;x&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;y&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;z&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;magnitude_debye&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">norm2</span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    },&#39;</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! Add gradient norm if computed (inside basename object)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;gradient_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="w">      </span><span class="c">! Add Hessian Frobenius norm if present (inside basename object)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;hessian_frobenius_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">      </span><span class="c">! Add Hessian Frobenius norm if computed (inside basename object)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;hessian_frobenius_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">mbe_result</span><span class="p">%</span><span class="n">hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
 <span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
@@ -1399,7 +1386,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:29 +0000             </p>
+ on 2026-01-10 08:53 +0000             </p>
           </div>
         </div>
         <br>

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 3.8% of total for derived types.</p>Including implementation: 11 statements,  1.2% of total for derived types.">11 statements</a>
+                 title="<p> 5.4% of total for derived types.</p>Including implementation: 18 statements,  1.7% of total for derived types.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,14 +137,21 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/driver_config_t.html#variable-aimd">aimd</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-allow_overlapping_fragments">allow_overlapping_fragments</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~8">calc_type</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_cutoffs">fragment_cutoffs</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian~3">hessian</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-max_intersection_level">max_intersection_level</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-method~4">method</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-allow_overlapping_fragments~2">allow_overlapping_fragments</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~2">calc_type</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-cpcm_nang~2">cpcm_nang</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-cpcm_rscale~2">cpcm_rscale</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-dielectric~2">dielectric</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_cutoffs~2">fragment_cutoffs</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian">hessian</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-max_intersection_level~2">max_intersection_level</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-method~2">method</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-nlevel">nlevel</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-scf~2">scf</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-scf">scf</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-solvation_model~2">solvation_model</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-solvent~2">solvent</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-use_cds~2">use_cds</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-use_shift~2">use_shift</a>
         </div>
       </div>
     </div>
@@ -339,7 +346,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -356,7 +363,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~2"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -373,7 +380,58 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_cutoffs"></span>
+              <span class="anchor" id="variable-cpcm_nang~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cpcm_nang</strong></td>
+<td> =</td>
+                <td>110</td>
+            <td>
+                <p>Number of angular grid points for CPCM</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cpcm_rscale~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cpcm_rscale</strong></td>
+<td> =</td>
+                <td>1.0_dp</td>
+            <td>
+                <p>Radii scaling factor for CPCM</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dielectric~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dielectric</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+                <p>Direct dielectric constant (-1 = use solvent lookup)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_cutoffs~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -390,7 +448,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~3"></span>
+              <span class="anchor" id="variable-hessian"></span>
               type(<a href='hessian_keywords_t.html'>hessian_keywords_t</a>),
             </td>
               <td>public</td>
@@ -407,7 +465,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level"></span>
+              <span class="anchor" id="variable-max_intersection_level~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -424,7 +482,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method~4"></span>
+              <span class="anchor" id="variable-method~2"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -458,7 +516,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf~2"></span>
+              <span class="anchor" id="variable-scf"></span>
               type(<a href='scf_keywords_t.html'>scf_keywords_t</a>),
             </td>
               <td>public</td>
@@ -471,6 +529,74 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>SCF calculation keywords</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solvation_model~2"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>solvation_model</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>&ldquo;alpb&rdquo; (default), &ldquo;gbsa&rdquo;, or &ldquo;cpcm&rdquo;</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solvent~2"></span>
+              character(len=:),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>solvent</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Solvent name or empty for gas phase</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_cds~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_cds</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Include CDS non-polar terms (not for CPCM)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_shift~2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_shift</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Include solution state shift (not for CPCM)</p>
             </td>
         </tr>
     </tbody>
@@ -494,6 +620,16 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">  </span><span class="c">!! Enable GMBE for overlapping fragments</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">999</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE (default: no limit)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_cutoffs</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Distance cutoffs for n-mer screening (Angstrom)</span>
+
+<span class="w">      </span><span class="c">! XTB solvation settings</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvent</span><span class="w">  </span><span class="c">!! Solvent name or empty for gas phase</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvation_model</span><span class="w">  </span><span class="c">!! &quot;alpb&quot; (default), &quot;gbsa&quot;, or &quot;cpcm&quot;</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_cds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w">               </span><span class="c">!! Include CDS non-polar terms (not for CPCM)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w">             </span><span class="c">!! Include solution state shift (not for CPCM)</span>
+<span class="w">      </span><span class="c">! CPCM-specific settings</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dielectric</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mf">1.0_dp</span><span class="w">          </span><span class="c">!! Direct dielectric constant (-1 = use solvent lookup)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cpcm_nang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">110</span><span class="w">                </span><span class="c">!! Number of angular grid points for CPCM</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cpcm_rscale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="w">          </span><span class="c">!! Radii scaling factor for CPCM</span>
 
 <span class="w">      </span><span class="c">! Calculation-specific keywords (structured)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">hessian_keywords_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="w">  </span><span class="c">!! Hessian calculation keywords</span>
@@ -522,7 +658,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:29 +0000             </p>
+ on 2026-01-10 08:53 +0000             </p>
           </div>
         </div>
         <br>

@@ -12,6 +12,7 @@ module mqc_result_types
    public :: cc_energy_t           !! Coupled cluster energy components type
    public :: energy_t              !! Energy components type
    public :: calculation_result_t  !! Main result container type
+   public :: mbe_result_t          !! MBE aggregated result container type
    public :: result_send, result_isend  !! Send result over MPI
    public :: result_recv, result_irecv  !! Receive result over MPI
 
@@ -83,6 +84,31 @@ module mqc_result_types
       procedure :: destroy => result_destroy  !! Clean up allocated memory
       procedure :: reset => result_reset      !! Reset all values and flags
    end type calculation_result_t
+
+   type :: mbe_result_t
+      !! Container for Many-Body Expansion aggregated results
+      !!
+      !! Stores total properties computed via MBE: energy, gradient, hessian, dipole.
+      !! Caller allocates desired components before calling compute_mbe; the function
+      !! uses allocated() to determine what to compute and sets has_* flags on success.
+
+      real(dp) :: total_energy = 0.0_dp              !! Total MBE energy (Hartree)
+      real(dp), allocatable :: gradient(:, :)        !! Total gradient (3, total_atoms) (Hartree/Bohr)
+      real(dp), allocatable :: hessian(:, :)         !! Total Hessian (3*natoms, 3*natoms)
+      real(dp), allocatable :: dipole(:)             !! Total dipole moment (3) (e*Bohr)
+
+      ! Computation status flags
+      logical :: has_energy = .false.                !! Energy has been computed
+      logical :: has_gradient = .false.              !! Gradient has been computed
+      logical :: has_hessian = .false.               !! Hessian has been computed
+      logical :: has_dipole = .false.                !! Dipole has been computed
+   contains
+      procedure :: destroy => mbe_result_destroy            !! Clean up allocated memory
+      procedure :: reset => mbe_result_reset                !! Reset all values and flags
+      procedure :: allocate_gradient => mbe_result_allocate_gradient
+      procedure :: allocate_hessian => mbe_result_allocate_hessian
+      procedure :: allocate_dipole => mbe_result_allocate_dipole
+   end type mbe_result_t
 
 contains
 
@@ -200,6 +226,57 @@ contains
       this%has_error = .false.
    end subroutine result_reset
 
+   !---------------------------------------------------------------------------
+   ! mbe_result_t type-bound procedures
+   !---------------------------------------------------------------------------
+
+   subroutine mbe_result_destroy(this)
+      !! Clean up allocated memory in mbe_result_t
+      class(mbe_result_t), intent(inout) :: this
+      if (allocated(this%gradient)) deallocate (this%gradient)
+      if (allocated(this%hessian)) deallocate (this%hessian)
+      if (allocated(this%dipole)) deallocate (this%dipole)
+      call this%reset()
+   end subroutine mbe_result_destroy
+
+   subroutine mbe_result_reset(this)
+      !! Reset all values and flags in mbe_result_t
+      class(mbe_result_t), intent(inout) :: this
+      this%total_energy = 0.0_dp
+      this%has_energy = .false.
+      this%has_gradient = .false.
+      this%has_hessian = .false.
+      this%has_dipole = .false.
+   end subroutine mbe_result_reset
+
+   subroutine mbe_result_allocate_gradient(this, total_atoms)
+      !! Allocate gradient array for total_atoms
+      class(mbe_result_t), intent(inout) :: this
+      integer, intent(in) :: total_atoms
+      if (allocated(this%gradient)) deallocate (this%gradient)
+      allocate (this%gradient(3, total_atoms))
+      this%gradient = 0.0_dp
+   end subroutine mbe_result_allocate_gradient
+
+   subroutine mbe_result_allocate_hessian(this, total_atoms)
+      !! Allocate hessian array for total_atoms
+      class(mbe_result_t), intent(inout) :: this
+      integer, intent(in) :: total_atoms
+      integer :: hess_dim
+      hess_dim = 3*total_atoms
+      if (allocated(this%hessian)) deallocate (this%hessian)
+      allocate (this%hessian(hess_dim, hess_dim))
+      this%hessian = 0.0_dp
+   end subroutine mbe_result_allocate_hessian
+
+   subroutine mbe_result_allocate_dipole(this)
+      !! Allocate dipole array (always 3 components)
+      class(mbe_result_t), intent(inout) :: this
+      if (allocated(this%dipole)) deallocate (this%dipole)
+      allocate (this%dipole(3))
+      this%dipole = 0.0_dp
+   end subroutine mbe_result_allocate_dipole
+
    subroutine result_send(result, comm, dest, tag)
       !! Send calculation result over MPI (blocking)
       !! Sends energy components and conditionally sends gradient based on has_gradient flag
@@ -222,6 +299,12 @@ contains
       call send(comm, result%has_gradient, dest, tag)
       if (result%has_gradient) then
          call send(comm, result%gradient, dest, tag)
+      end if
+
+      ! Send dipole flag and data if present
+      call send(comm, result%has_dipole, dest, tag)
+      if (result%has_dipole) then
+         call send(comm, result%dipole, dest, tag)
       end if
    end subroutine result_send
 
@@ -257,6 +340,12 @@ contains
       if (result%has_hessian) then
          call send(comm, result%hessian, dest, tag)
       end if
+
+      ! Send dipole flag and data (blocking to avoid needing multiple request handles)
+      call send(comm, result%has_dipole, dest, tag)
+      if (result%has_dipole) then
+         call send(comm, result%dipole, dest, tag)
+      end if
    end subroutine result_isend
 
    subroutine result_recv(result, comm, source, tag, status)
@@ -291,6 +380,13 @@ contains
       if (result%has_hessian) then
          ! Receive allocatable Hessian array (MPI lib handles allocation)
          call recv(comm, result%hessian, source, tag, status)
+      end if
+
+      ! Receive dipole flag and data if present
+      call recv(comm, result%has_dipole, source, tag, status)
+      if (result%has_dipole) then
+         ! Receive allocatable dipole array (MPI lib handles allocation)
+         call recv(comm, result%dipole, source, tag, status)
       end if
    end subroutine result_recv
 
@@ -329,6 +425,13 @@ contains
       if (result%has_hessian) then
          ! Receive allocatable Hessian array (MPI lib handles allocation)
          call recv(comm, result%hessian, source, tag, status)
+      end if
+
+      ! Receive dipole flag and data (blocking to avoid needing multiple request handles)
+      call recv(comm, result%has_dipole, source, tag, status)
+      if (result%has_dipole) then
+         ! Receive allocatable dipole array (MPI lib handles allocation)
+         call recv(comm, result%dipole, source, tag, status)
       end if
    end subroutine result_irecv
 

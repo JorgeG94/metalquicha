@@ -29,6 +29,16 @@ module mqc_config_adapter
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
 
+      ! XTB solvation settings
+      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
+      logical :: use_cds = .true.               !! Include CDS non-polar terms (not for CPCM)
+      logical :: use_shift = .true.             !! Include solution state shift (not for CPCM)
+      ! CPCM-specific settings
+      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM
+      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM
+
       ! Calculation-specific keywords (structured)
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
       type(aimd_keywords_t) :: aimd        !! AIMD calculation keywords
@@ -83,6 +93,20 @@ contains
          allocate (driver_config%fragment_cutoffs(size(mqc_config%fragment_cutoffs)))
          driver_config%fragment_cutoffs = mqc_config%fragment_cutoffs
       end if
+
+      ! Copy XTB solvation settings
+      if (allocated(mqc_config%solvent)) then
+         driver_config%solvent = mqc_config%solvent
+      end if
+      if (allocated(mqc_config%solvation_model)) then
+         driver_config%solvation_model = mqc_config%solvation_model
+      end if
+      driver_config%use_cds = mqc_config%use_cds
+      driver_config%use_shift = mqc_config%use_shift
+      ! Copy CPCM-specific settings
+      driver_config%dielectric = mqc_config%dielectric
+      driver_config%cpcm_nang = mqc_config%cpcm_nang
+      driver_config%cpcm_rscale = mqc_config%cpcm_rscale
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement

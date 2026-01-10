@@ -32,10 +32,25 @@ module mqc_mbe_fragment_distribution_scheme
    implicit none
    private
 
+   ! XTB method options (module-level, set once at startup)
+   type :: xtb_options_t
+      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
+      logical :: use_cds = .true.               !! Include CDS non-polar terms (not for CPCM)
+      logical :: use_shift = .true.             !! Include solution state shift (not for CPCM)
+      ! CPCM-specific settings
+      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM
+      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM
+   end type xtb_options_t
+
+   type(xtb_options_t), save :: xtb_options  !! Module-level XTB options
+
    ! Public interface
    public :: do_fragment_work, global_coordinator, node_coordinator
    public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
+   public :: set_xtb_options  !! Set XTB solvation options
 
    interface
       module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
@@ -119,5 +134,41 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine hessian_worker
 
    end interface
+
+contains
+
+   subroutine set_xtb_options(solvent, solvation_model, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale)
+      !! Set module-level XTB solvation options
+      !! Call this once at startup before running calculations
+      character(len=*), intent(in), optional :: solvent  !! Solvent name or empty for gas phase
+      character(len=*), intent(in), optional :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
+      logical, intent(in), optional :: use_cds           !! Include CDS non-polar terms (not for CPCM)
+      logical, intent(in), optional :: use_shift         !! Include solution state shift (not for CPCM)
+      real(dp), intent(in), optional :: dielectric       !! Direct dielectric constant for CPCM
+      integer, intent(in), optional :: cpcm_nang         !! Angular grid points for CPCM
+      real(dp), intent(in), optional :: cpcm_rscale      !! Radii scaling for CPCM
+
+      if (present(solvent) .and. len_trim(solvent) > 0) then
+         xtb_options%solvent = trim(solvent)
+      end if
+      if (present(solvation_model) .and. len_trim(solvation_model) > 0) then
+         xtb_options%solvation_model = trim(solvation_model)
+      end if
+      if (present(use_cds)) then
+         xtb_options%use_cds = use_cds
+      end if
+      if (present(use_shift)) then
+         xtb_options%use_shift = use_shift
+      end if
+      if (present(dielectric)) then
+         xtb_options%dielectric = dielectric
+      end if
+      if (present(cpcm_nang)) then
+         xtb_options%cpcm_nang = cpcm_nang
+      end if
+      if (present(cpcm_rscale)) then
+         xtb_options%cpcm_rscale = cpcm_rscale
+      end if
+   end subroutine set_xtb_options
 
 end module mqc_mbe_fragment_distribution_scheme

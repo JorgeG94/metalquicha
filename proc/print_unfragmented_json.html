@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">39 statements</a>
+                 title=" 0.7% of total for procedures.">55 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-basename~5">basename</a>
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-iatom~15">iatom</a>
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-io_stat~22">io_stat</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-basename~4">basename</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-iatom~10">iatom</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-io_stat~20">io_stat</a>
             <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-json_line~2">json_line</a>
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-output_file~3">output_file</a>
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-total_atoms~3">total_atoms</a>
-            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-unit~27">unit</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-output_file~2">output_file</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-total_atoms~4">total_atoms</a>
+            <a class="list-group-item" href="../proc/print_unfragmented_json.html#variable-unit~28">unit</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@ Outputs structured JSON with energy and optionally gradient</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~13"></span>
+              <span class="anchor" id="variable-result~7"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -702,7 +702,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~5"></span>
+              <span class="anchor" id="variable-basename~4"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -719,7 +719,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~15"></span>
+              <span class="anchor" id="variable-iatom~10"></span>
               integer,
             </td>
               <td>private</td>
@@ -736,7 +736,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~22"></span>
+              <span class="anchor" id="variable-io_stat~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -770,7 +770,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_file~3"></span>
+              <span class="anchor" id="variable-output_file~2"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -787,7 +787,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_atoms~3"></span>
+              <span class="anchor" id="variable-total_atoms~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -804,7 +804,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~27"></span>
+              <span class="anchor" id="variable-unit~28"></span>
               integer,
             </td>
               <td>private</td>
@@ -861,11 +861,29 @@ large graphs.</div>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_energy</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Add dipole if present</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_dipole</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;dipole&quot;: {&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;x&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;y&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;z&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f25.15)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;magnitude_debye&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">norm2</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="mf">2.541746_dp</span>
+<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    },&#39;</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Add gradient norm if present</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -912,7 +930,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:29 +0000             </p>
+ on 2026-01-10 08:53 +0000             </p>
           </div>
         </div>
         <br>

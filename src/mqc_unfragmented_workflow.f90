@@ -79,6 +79,13 @@ contains
          write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
 
+         if (result%has_dipole) then
+            write (result_line, '(a,3f15.8)') "  Dipole (e*Bohr): ", result%dipole
+            call logger%info(trim(result_line))
+            write (result_line, '(a,f15.8)') "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
+            call logger%info(trim(result_line))
+         end if
+
          if (result%has_gradient) then
             write (result_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(result%gradient**2))
             call logger%info(trim(result_line))

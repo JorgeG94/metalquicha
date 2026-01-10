@@ -7,6 +7,7 @@ contains
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
       use mqc_error, only: error_t
+      use mqc_result_types, only: mbe_result_t
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
@@ -18,9 +19,7 @@ contains
       integer :: fragment_size, current_log_level, iatom
       integer, allocatable :: fragment_indices(:)
       type(calculation_result_t), allocatable :: results(:)
-      real(dp) :: mbe_total_energy
-      real(dp), allocatable :: mbe_total_gradient(:, :)
-      real(dp), allocatable :: mbe_total_hessian(:, :)
+      type(mbe_result_t) :: mbe_result
       type(physical_fragment_t) :: phys_frag
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
@@ -100,21 +99,17 @@ contains
       call logger%info("Computing Many-Body Expansion (MBE)...")
       call coord_timer%start()
 
-      ! Use unified compute_mbe with optional arguments based on calc_type
+      ! Allocate mbe_result components based on calc_type
+      call mbe_result%allocate_dipole()  ! Always compute dipole
       if (calc_type_local == CALC_TYPE_HESSIAN) then
-         allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-         allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
-         call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                          sys_geom, mbe_total_gradient, mbe_total_hessian, bonds)
-         deallocate (mbe_total_gradient, mbe_total_hessian)
+         call mbe_result%allocate_gradient(sys_geom%total_atoms)
+         call mbe_result%allocate_hessian(sys_geom%total_atoms)
       else if (calc_type_local == CALC_TYPE_GRADIENT) then
-         allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-         call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                          sys_geom, mbe_total_gradient, bonds=bonds)
-         deallocate (mbe_total_gradient)
-      else
-         call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy)
+         call mbe_result%allocate_gradient(sys_geom%total_atoms)
       end if
+
+      call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, sys_geom, bonds)
+      call mbe_result%destroy()
 
       call coord_timer%stop()
       call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")

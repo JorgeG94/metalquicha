@@ -72,6 +72,16 @@ module mqc_config_parser
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
 
+      ! XTB solvation settings
+      character(len=:), allocatable :: solvent  !! Solvent name (e.g., "water", "ethanol") or empty for gas phase
+      character(len=:), allocatable :: solvation_model  !! Solvation model: "alpb" (default), "gbsa", or "cpcm"
+      logical :: use_cds = .true.               !! Include non-polar CDS terms in solvation (not for CPCM)
+      logical :: use_shift = .true.             !! Include solution state shift in solvation (not for CPCM)
+      ! CPCM-specific settings
+      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM cavity
+      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM cavity
+
       ! Driver information
       integer(int32) :: calc_type = CALC_TYPE_ENERGY
 
@@ -329,6 +339,32 @@ contains
             config%basis = trim(value)
          case ('aux_basis')
             config%aux_basis = trim(value)
+         case ('solvent')
+            config%solvent = trim(value)
+         case ('solvation_model')
+            config%solvation_model = trim(value)
+         case ('use_cds')
+            config%use_cds = (trim(value) == 'true')
+         case ('use_shift')
+            config%use_shift = (trim(value) == 'true')
+         case ('dielectric')
+            read (value, *, iostat=io_stat) config%dielectric
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid dielectric value: "//trim(value))
+               return
+            end if
+         case ('cpcm_nang')
+            read (value, *, iostat=io_stat) config%cpcm_nang
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_nang value: "//trim(value))
+               return
+            end if
+         case ('cpcm_rscale')
+            read (value, *, iostat=io_stat) config%cpcm_rscale
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_rscale value: "//trim(value))
+               return
+            end if
          case default
             call error%set(ERROR_PARSE, "Unknown key in %model section: "//trim(key))
             return

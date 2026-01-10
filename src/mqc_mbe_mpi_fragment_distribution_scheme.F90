@@ -1,4 +1,4 @@
-submodule(mqc_mbe_fragment_distribution_scheme) mqc_mbe_fragment_distribution_scheme
+submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
    use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
    implicit none
 
@@ -43,6 +43,20 @@ contains
          ! Setup XTB method
          xtb_calc%variant = method_type_to_string(method)
          xtb_calc%verbose = is_verbose
+
+         ! Set solvation options from module-level config
+         if (allocated(xtb_options%solvent)) then
+            xtb_calc%solvent = xtb_options%solvent
+         end if
+         if (allocated(xtb_options%solvation_model)) then
+            xtb_calc%solvation_model = xtb_options%solvation_model
+         end if
+         xtb_calc%use_cds = xtb_options%use_cds
+         xtb_calc%use_shift = xtb_options%use_shift
+         ! CPCM-specific settings
+         xtb_calc%dielectric = xtb_options%dielectric
+         xtb_calc%cpcm_nang = xtb_options%cpcm_nang
+         xtb_calc%cpcm_rscale = xtb_options%cpcm_rscale
 
          ! Run the calculation using the method API
          select case (calc_type_local)
@@ -262,39 +276,34 @@ contains
       call coord_timer%stop()
       call logger%info("Time to evaluate all fragments "//to_char(coord_timer%get_elapsed_time())//" s")
       block
-         real(dp) :: mbe_total_energy
-         real(dp), allocatable :: mbe_total_gradient(:, :)
-         real(dp), allocatable :: mbe_total_hessian(:, :)
+         use mqc_result_types, only: mbe_result_t
+         type(mbe_result_t) :: mbe_result
 
          ! Compute the many-body expansion
          call logger%info(" ")
          call logger%info("Computing Many-Body Expansion (MBE)...")
          call coord_timer%start()
 
-         ! Use combined function if computing gradients or Hessians (more efficient)
+         ! Allocate mbe_result components based on calc_type
+         call mbe_result%allocate_dipole()  ! Always compute dipole
          if (calc_type_local == CALC_TYPE_HESSIAN) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for Hessian calculation in global_coordinator")
                call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
-            allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-            allocate (mbe_total_hessian(3*sys_geom%total_atoms, 3*sys_geom%total_atoms))
-            call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, mbe_total_hessian, bonds, resources%mpi_comms%world_comm)
-            deallocate (mbe_total_gradient, mbe_total_hessian)
+            call mbe_result%allocate_gradient(sys_geom%total_atoms)
+            call mbe_result%allocate_hessian(sys_geom%total_atoms)
          else if (calc_type_local == CALC_TYPE_GRADIENT) then
             if (.not. present(sys_geom)) then
                call logger%error("sys_geom required for gradient calculation in global_coordinator")
                call abort_comm(resources%mpi_comms%world_comm, 1)
             end if
-            allocate (mbe_total_gradient(3, sys_geom%total_atoms))
-            call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             sys_geom, mbe_total_gradient, bonds=bonds, world_comm=resources%mpi_comms%world_comm)
-            deallocate (mbe_total_gradient)
-         else
-            call compute_mbe(polymers, total_fragments, max_level, results, mbe_total_energy, &
-                             world_comm=resources%mpi_comms%world_comm)
+            call mbe_result%allocate_gradient(sys_geom%total_atoms)
          end if
+
+         call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, &
+                          sys_geom, bonds, resources%mpi_comms%world_comm)
+         call mbe_result%destroy()
 
          call coord_timer%stop()
          call logger%info("Time to compute MBE "//to_char(coord_timer%get_elapsed_time())//" s")
@@ -577,4 +586,4 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
       end do
    end subroutine node_worker
 
-end submodule mqc_mbe_fragment_distribution_scheme
+end submodule mpi_fragment_work_smod

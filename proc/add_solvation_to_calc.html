@@ -1,0 +1,1201 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>add_solvation_to_calc &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>add_solvation_to_calc
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.0% of total for procedures.">76 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_method_xtb.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_method_xtb.f90.html'>mqc_method_xtb.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></li>
+            <li class="breadcrumb-item active" aria-current="page">add_solvation_to_calc</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/add_solvation_to_calc.html#variable-cont">cont</a>
+            <a class="list-group-item" href="../proc/add_solvation_to_calc.html#variable-eps">eps</a>
+            <a class="list-group-item" href="../proc/add_solvation_to_calc.html#variable-solv">solv</a>
+            <a class="list-group-item" href="../proc/add_solvation_to_calc.html#variable-solv_input">solv_input</a>
+            <a class="list-group-item" href="../proc/add_solvation_to_calc.html#variable-use_alpb">use_alpb</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/add_solvation_to_calc.html#src">add_solvation_to_calc</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine add_solvation_to_calc(calc, mol, solvent, solvation_model, method, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale, error)  
+</h2>
+    
+
+    <p>Add implicit solvation model to XTB calculator</p>
+<p>Adds ALPB, GBSA, or CPCM solvation. For ALPB/GBSA, optionally adds CDS and shift corrections.
+CPCM does not support CDS or shift corrections.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calc~3"></span>
+              type(xtb_calculator),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calc</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mol~9"></span>
+              type(structure_type),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solvent~6"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>solvent</strong></td>
+            <td>
+                <p>Solvent name (can be empty if dielectric &gt; 0)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solvation_model~6"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>solvation_model</strong></td>
+            <td>
+                <p>&ldquo;alpb&rdquo;, &ldquo;gbsa&rdquo;, or &ldquo;cpcm&rdquo;</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~21"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+                <p>&ldquo;gfn1&rdquo; or &ldquo;gfn2&rdquo;</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_cds~6"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_cds</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_shift~6"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_shift</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dielectric~6"></span>
+              real(kind=wp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dielectric</strong></td>
+            <td>
+                <p>Direct dielectric constant (-1 = use solvent lookup)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cpcm_nang~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cpcm_nang</strong></td>
+            <td>
+                <p>Angular grid points for CPCM</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cpcm_rscale~6"></span>
+              real(kind=wp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cpcm_rscale</strong></td>
+            <td>
+                <p>Radii scaling for CPCM</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~58"></span>
+              type(error_type),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~add_solvation_to_calc~~CallsGraph Pages: 1 -->
+<svg id="procadd_solvation_to_calcCallsGraph" width="301pt" height="200pt"
+ viewBox="0.00 0.00 301.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~add_solvation_to_calc~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<title>proc~~add_solvation_to_calc~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 297,-196 297,4 -4,4"/>
+<!-- proc~add_solvation_to_calc -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node1" class="node">
+<title>proc~add_solvation_to_calc</title>
+<polygon fill="none" stroke="black" points="129,-108 0,-108 0,-84 129,-84 129,-108"/>
+<text text-anchor="middle" x="64.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">add_solvation_to_calc</text>
+</g>
+<!-- new_solvation -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node2" class="node">
+<title>new_solvation</title>
+<polygon fill="#777777" stroke="#777777" points="273,-192 185,-192 185,-168 273,-168 273,-192"/>
+<text text-anchor="middle" x="229" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_edge1" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation</title>
+<path fill="none" stroke="#ff0000" d="M82.03,-108.24C101.21,-122.01 134.15,-144.36 165,-159 169.03,-160.91 173.29,-162.73 177.61,-164.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="176.51,-167.76 187.1,-167.98 178.95,-161.2 176.51,-167.76"/>
+</g>
+<!-- new_solvation_cds -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node3" class="node">
+<title>new_solvation_cds</title>
+<polygon fill="#777777" stroke="#777777" points="284.5,-150 173.5,-150 173.5,-126 284.5,-126 284.5,-150"/>
+<text text-anchor="middle" x="229" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation_cds</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation_cds -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_edge2" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation_cds</title>
+<path fill="none" stroke="#ff0000" d="M112.07,-108.04C130.59,-112.82 152.09,-118.38 171.49,-123.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="170.87,-126.85 181.43,-125.96 172.62,-120.07 170.87,-126.85"/>
+</g>
+<!-- new_solvation_shift -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node4" class="node">
+<title>new_solvation_shift</title>
+<polygon fill="#777777" stroke="#777777" points="286.5,-108 171.5,-108 171.5,-84 286.5,-84 286.5,-108"/>
+<text text-anchor="middle" x="229" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">new_solvation_shift</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;new_solvation_shift -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_edge3" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;new_solvation_shift</title>
+<path fill="none" stroke="#ff0000" d="M129.26,-96C139.77,-96 150.69,-96 161.27,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="161.29,-99.5 171.29,-96 161.29,-92.5 161.29,-99.5"/>
+</g>
+<!-- proc~get_solvent_dielectric -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node5" class="node">
+<title>proc~get_solvent_dielectric</title>
+<g id="a_proc~~add_solvation_to_calc~~CallsGraph_node5"><a xlink:href="../proc/get_solvent_dielectric.html" xlink:title="get_solvent_dielectric">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="293,-66 165,-66 165,-42 293,-42 293,-66"/>
+<text text-anchor="middle" x="229" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_solvent_dielectric</text>
+</a>
+</g>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;proc~get_solvent_dielectric -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_edge4" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;proc~get_solvent_dielectric</title>
+<path fill="none" stroke="#ff0000" d="M112.07,-83.96C130.59,-79.18 152.09,-73.62 171.49,-68.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.62,-71.93 181.43,-66.04 170.87,-65.15 172.62,-71.93"/>
+</g>
+<!-- push_back -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_node6" class="node">
+<title>push_back</title>
+<polygon fill="#777777" stroke="#777777" points="263.5,-24 194.5,-24 194.5,0 263.5,0 263.5,-24"/>
+<text text-anchor="middle" x="229" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">push_back</text>
+</g>
+<!-- proc~add_solvation_to_calc&#45;&gt;push_back -->
+<g id="proc~~add_solvation_to_calc~~CallsGraph_edge5" class="edge">
+<title>proc~add_solvation_to_calc&#45;&gt;push_back</title>
+<path fill="none" stroke="#ff0000" d="M82.03,-83.76C101.21,-69.99 134.15,-47.64 165,-33 171.23,-30.04 177.98,-27.32 184.68,-24.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="186.08,-28.11 194.38,-21.53 183.79,-21.49 186.08,-28.11"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~add_solvation_to_calc~~CalledByGraph Pages: 1 -->
+<svg id="procadd_solvation_to_calcCalledByGraph" width="641pt" height="104pt"
+ viewBox="0.00 0.00 641.00 104.17" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~add_solvation_to_calc~~CalledByGraph" class="graph" transform="scale(0.46 0.46) rotate(0) translate(4 224)">
+<title>proc~~add_solvation_to_calc~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-224 1399,-224 1399,4 -4,4"/>
+<!-- proc~add_solvation_to_calc -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node1" class="node">
+<title>proc~add_solvation_to_calc</title>
+<polygon fill="none" stroke="black" points="1395,-98 1266,-98 1266,-74 1395,-74 1395,-98"/>
+<text text-anchor="middle" x="1330.5" y="-83.6" font-family="Helvetica,sans-Serif" font-size="10.50">add_solvation_to_calc</text>
+</g>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node2" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node2"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1226.5,-77 1045.5,-77 1045.5,-53 1226.5,-53 1226.5,-77"/>
+<text text-anchor="middle" x="1136" y="-62.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~add_solvation_to_calc -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge1" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~add_solvation_to_calc</title>
+<path fill="none" stroke="#ff0000" d="M1226.77,-74.79C1236.49,-75.85 1246.29,-76.92 1255.79,-77.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1255.63,-81.46 1265.95,-79.07 1256.39,-74.5 1255.63,-81.46"/>
+</g>
+<!-- proc~xtb_calc_gradient -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node3" class="node">
+<title>proc~xtb_calc_gradient</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node3"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="1230,-138 1042,-138 1042,-114 1230,-114 1230,-138"/>
+<text text-anchor="middle" x="1136" y="-123.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_gradient&#45;&gt;proc~add_solvation_to_calc -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge2" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;proc~add_solvation_to_calc</title>
+<path fill="none" stroke="#ff0000" d="M1194.76,-114C1215.79,-109.63 1239.76,-104.65 1261.59,-100.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1262.37,-103.52 1271.45,-98.06 1260.95,-96.67 1262.37,-103.52"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node4" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node4"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="781.5,-98 669.5,-98 669.5,-74 781.5,-74 781.5,-98"/>
+<text text-anchor="middle" x="725.5" y="-83.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge3" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_energy</title>
+<path fill="none" stroke="#ff0000" d="M771.83,-73.93C787.59,-70.3 805.46,-66.8 822,-65 893,-57.29 973.6,-57.49 1035.23,-59.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1035.22,-63.02 1045.34,-59.87 1035.47,-56.03 1035.22,-63.02"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge4" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00ffff" d="M774.33,-98.05C789.48,-101.45 806.36,-104.82 822,-107 891.59,-116.7 970.57,-121.45 1031.78,-123.78"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1031.71,-127.28 1041.83,-124.14 1031.97,-120.28 1031.71,-127.28"/>
+</g>
+<!-- proc~xtb_calc_hessian -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node7" class="node">
+<title>proc~xtb_calc_hessian</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node7"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1006,-98 822,-98 822,-74 1006,-74 1006,-98"/>
+<text text-anchor="middle" x="914" y="-83.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge11" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian</title>
+<path fill="none" stroke="#7f00ff" d="M781.7,-86C791.21,-86 801.35,-86 811.62,-86"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="811.92,-89.5 821.92,-86 811.92,-82.5 811.92,-89.5"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node5" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node5"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="974.5,-220 853.5,-220 853.5,-196 974.5,-196 974.5,-220"/>
+<text text-anchor="middle" x="914" y="-205.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge5" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00ffff" d="M974.75,-196.15C985.28,-193.51 996.04,-190.46 1006,-187 1040.81,-174.91 1078.71,-156.28 1104.37,-142.79"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1106.05,-145.86 1113.24,-138.07 1102.76,-139.68 1106.05,-145.86"/>
+</g>
+<!-- proc~hessian_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node6" class="node">
+<title>proc~hessian_worker</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node6"><a xlink:href="../proc/hessian_worker.html" xlink:title="hessian_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="961.5,-178 866.5,-178 866.5,-154 961.5,-154 961.5,-178"/>
+<text text-anchor="middle" x="914" y="-163.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_worker&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge6" class="edge">
+<title>proc~hessian_worker&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00ffff" d="M961.66,-157.52C989.89,-152.38 1026.57,-145.71 1058.91,-139.83"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1059.58,-143.27 1068.8,-138.04 1058.33,-136.38 1059.58,-143.27"/>
+</g>
+<!-- proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge7" class="edge">
+<title>proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00ffff" d="M981.01,-98C1005.48,-102.45 1033.42,-107.53 1058.73,-112.13"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1058.19,-115.59 1068.66,-113.94 1059.45,-108.71 1058.19,-115.59"/>
+</g>
+<!-- interface~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node8" class="node">
+<title>interface~do_fragment_work</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node8"><a xlink:href="../interface/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#a7506f" stroke="#a7506f" points="586.5,-98 474.5,-98 474.5,-74 586.5,-74 586.5,-98"/>
+<text text-anchor="middle" x="530.5" y="-83.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- interface~do_fragment_work&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge8" class="edge">
+<title>interface~do_fragment_work&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M586.55,-86C609.16,-86 635.52,-86 659.11,-86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="659.38,-89.5 669.38,-86 659.38,-82.5 659.38,-89.5"/>
+</g>
+<!-- interface~hessian_coordinator -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node9" class="node">
+<title>interface~hessian_coordinator</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node9"><a xlink:href="../interface/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="786,-220 665,-220 665,-196 786,-196 786,-220"/>
+<text text-anchor="middle" x="725.5" y="-205.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge9" class="edge">
+<title>interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M786.02,-208C804.28,-208 824.52,-208 843.39,-208"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="843.4,-211.5 853.4,-208 843.4,-204.5 843.4,-211.5"/>
+</g>
+<!-- interface~hessian_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node10" class="node">
+<title>interface~hessian_worker</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node10"><a xlink:href="../interface/hessian_worker.html" xlink:title="hessian_worker">
+<polygon fill="#a7506f" stroke="#a7506f" points="773,-178 678,-178 678,-154 773,-154 773,-178"/>
+<text text-anchor="middle" x="725.5" y="-163.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_worker</text>
+</a>
+</g>
+</g>
+<!-- interface~hessian_worker&#45;&gt;proc~hessian_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge10" class="edge">
+<title>interface~hessian_worker&#45;&gt;proc~hessian_worker</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M773.08,-166C798.23,-166 829.47,-166 856.05,-166"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="856.37,-169.5 866.37,-166 856.37,-162.5 856.37,-169.5"/>
+</g>
+<!-- proc~distributed_unfragmented_hessian -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node11" class="node">
+<title>proc~distributed_unfragmented_hessian</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node11"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="629,-201 432,-201 432,-177 629,-177 629,-201"/>
+<text text-anchor="middle" x="530.5" y="-186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge16" class="edge">
+<title>proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator</title>
+<path fill="none" stroke="#00ff00" d="M629.13,-198.61C637.77,-199.46 646.4,-200.31 654.74,-201.13"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="654.46,-204.62 664.75,-202.12 655.14,-197.66 654.46,-204.62"/>
+</g>
+<!-- proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge17" class="edge">
+<title>proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_worker</title>
+<path fill="none" stroke="#0000ff" d="M629.13,-177.37C642.42,-175.78 655.69,-174.2 667.92,-172.74"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="668.41,-176.21 677.92,-171.55 667.58,-169.26 668.41,-176.21"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node12" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node12"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="338.5,-150 256.5,-150 256.5,-126 338.5,-126 338.5,-150"/>
+<text text-anchor="middle" x="297.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge12" class="edge">
+<title>proc~node_worker&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M338.85,-129.46C356.42,-125.7 377.24,-121.2 396,-117 419.77,-111.68 445.87,-105.66 468.64,-100.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="469.57,-103.73 478.51,-98.04 467.98,-96.91 469.57,-103.73"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node13" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node13"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="374.5,-108 220.5,-108 220.5,-84 374.5,-84 374.5,-108"/>
+<text text-anchor="middle" x="297.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge13" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M374.78,-92.7C403.69,-91.45 436.32,-90.03 464.13,-88.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="464.31,-92.33 474.15,-88.4 464.01,-85.33 464.31,-92.33"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node14" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node14"><a xlink:href="../proc/serial_gmbe_pie_processor.html" xlink:title="serial_gmbe_pie_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="376,-66 219,-66 219,-42 376,-42 376,-66"/>
+<text text-anchor="middle" x="297.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_pie_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge14" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M376.06,-64.74C404.65,-68.71 436.73,-73.15 464.14,-76.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="464.01,-80.46 474.4,-78.37 464.97,-73.53 464.01,-80.46"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node15" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node15"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="374,-24 221,-24 221,0 374,0 374,-24"/>
+<text text-anchor="middle" x="297.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge15" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M361.83,-24.04C373.29,-26.67 385.07,-29.68 396,-33 429.79,-43.27 467.04,-58.39 493.59,-69.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="492.3,-73.11 502.86,-73.9 495.1,-66.7 492.3,-73.11"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node16" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node16"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="396,-201 199,-201 199,-177 396,-177 396,-201"/>
+<text text-anchor="middle" x="297.5" y="-186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge18" class="edge">
+<title>interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M396.13,-189C404.63,-189 413.25,-189 421.83,-189"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="421.85,-192.5 431.85,-189 421.85,-185.5 421.85,-192.5"/>
+</g>
+<!-- interface~node_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node17" class="node">
+<title>interface~node_worker</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node17"><a xlink:href="../interface/node_worker.html" xlink:title="node_worker">
+<polygon fill="#a7506f" stroke="#a7506f" points="122.5,-150 40.5,-150 40.5,-126 122.5,-126 122.5,-150"/>
+<text text-anchor="middle" x="81.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- interface~node_worker&#45;&gt;proc~node_worker -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge19" class="edge">
+<title>interface~node_worker&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M122.5,-138C157.44,-138 208.34,-138 246.07,-138"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="246.33,-141.5 256.33,-138 246.33,-134.5 246.33,-141.5"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node18" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node18"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="158.5,-108 4.5,-108 4.5,-84 158.5,-84 158.5,-108"/>
+<text text-anchor="middle" x="81.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge20" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M158.55,-96C175.17,-96 192.87,-96 209.86,-96"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="210.33,-99.5 220.33,-96 210.33,-92.5 210.33,-99.5"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node19" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node19"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="158,-24 5,-24 5,0 158,0 158,-24"/>
+<text text-anchor="middle" x="81.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge22" class="edge">
+<title>interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M158.25,-12C175.24,-12 193.37,-12 210.73,-12"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="210.85,-15.5 220.85,-12 210.85,-8.5 210.85,-15.5"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_node20" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~add_solvation_to_calc~~CalledByGraph_node20"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="163,-66 0,-66 0,-42 163,-42 163,-66"/>
+<text text-anchor="middle" x="81.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~add_solvation_to_calc~~CalledByGraph_edge21" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#0066ff" d="M163.1,-54C177.92,-54 193.47,-54 208.5,-54"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="208.81,-57.5 218.81,-54 208.81,-50.5 208.81,-57.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocadd_solvation_to_calcCalledByGraph = svgPanZoom('#procadd_solvation_to_calcCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cont"></span>
+              class(container_type),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>cont</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eps"></span>
+              real(kind=wp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eps</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solv"></span>
+              class(solvation_type),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>solv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-solv_input"></span>
+              type(solvation_input),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>solv_input</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_alpb"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_alpb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">add_solvation_to_calc</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">solvent</span><span class="p">,</span><span class="w"> </span><span class="n">solvation_model</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">use_shift</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">dielectric</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_nang</span><span class="p">,</span><span class="w"> </span><span class="n">cpcm_rscale</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Add implicit solvation model to XTB calculator</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Adds ALPB, GBSA, or CPCM solvation. For ALPB/GBSA, optionally adds CDS and shift corrections.</span>
+<span class="w">      </span><span class="c">!! CPCM does not support CDS or shift corrections.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">xtb_calculator</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">structure_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mol</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvent</span><span class="w">           </span><span class="c">!! Solvent name (can be empty if dielectric &gt; 0)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solvation_model</span><span class="w">   </span><span class="c">!! &quot;alpb&quot;, &quot;gbsa&quot;, or &quot;cpcm&quot;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method</span><span class="w">            </span><span class="c">!! &quot;gfn1&quot; or &quot;gfn2&quot;</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_cds</span><span class="p">,</span><span class="w"> </span><span class="n">use_shift</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dielectric</span><span class="w">                </span><span class="c">!! Direct dielectric constant (-1 = use solvent lookup)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cpcm_nang</span><span class="w">                  </span><span class="c">!! Angular grid points for CPCM</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cpcm_rscale</span><span class="w">               </span><span class="c">!! Radii scaling for CPCM</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_type</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">solvation_input</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solv_input</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">container_type</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cont</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">solvation_type</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solv</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_alpb</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">wp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">eps</span>
+
+<span class="w">      </span><span class="c">! Handle CPCM model separately</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">solvation_model</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;cpcm&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="c">! CPCM does not support CDS or shift - silently skip them</span>
+<span class="w">         </span><span class="c">! (use_cds and use_shift are ignored for CPCM)</span>
+
+<span class="w">         </span><span class="c">! Get dielectric constant (direct value or lookup from solvent name)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dielectric</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0_wp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dielectric</span>
+<span class="w">         </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">solvent</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">eps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_solvent_dielectric</span><span class="p">(</span><span class="n">solvent</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eps</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0_wp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               allocate</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">               </span><span class="n">error</span><span class="p">%</span><span class="n">message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Unknown solvent for CPCM dielectric lookup: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">solvent</span><span class="p">)</span>
+<span class="w">               </span><span class="k">return</span>
+<span class="k">            end if</span>
+<span class="k">         else</span>
+<span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">            </span><span class="n">error</span><span class="p">%</span><span class="n">message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;CPCM requires either solvent name or dielectric constant&quot;</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+
+<span class="w">         </span><span class="c">! Create CPCM solvation</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">cpcm</span><span class="p">)</span>
+<span class="w">         </span><span class="n">solv_input</span><span class="p">%</span><span class="n">cpcm</span><span class="p">%</span><span class="n">dielectric_const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eps</span>
+<span class="w">         </span><span class="n">solv_input</span><span class="p">%</span><span class="n">cpcm</span><span class="p">%</span><span class="n">nang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cpcm_nang</span>
+<span class="w">         </span><span class="n">solv_input</span><span class="p">%</span><span class="n">cpcm</span><span class="p">%</span><span class="n">rscale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cpcm_rscale</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">new_solvation</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">solv_input</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">         call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">cont</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">calc</span><span class="p">%</span><span class="n">push_back</span><span class="p">(</span><span class="n">cont</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! For ALPB/GBSA, we need a solvent name</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">solvent</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">         </span><span class="n">error</span><span class="p">%</span><span class="n">message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ALPB/GBSA solvation requires a solvent name&quot;</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! Determine if using ALPB or GBSA (GBSA = ALPB with alpb flag false)</span>
+<span class="w">      </span><span class="n">use_alpb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">solvation_model</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;gbsa&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">use_alpb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! 1. Add ALPB/GBSA (polar electrostatic solvation)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">alpb</span><span class="p">)</span>
+<span class="w">      </span><span class="n">solv_input</span><span class="p">%</span><span class="n">alpb</span><span class="p">%</span><span class="n">solvent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solvent</span>
+<span class="w">      </span><span class="n">solv_input</span><span class="p">%</span><span class="n">alpb</span><span class="p">%</span><span class="n">alpb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">use_alpb</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">new_solvation</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">solv_input</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">cont</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">calc</span><span class="p">%</span><span class="n">push_back</span><span class="p">(</span><span class="n">cont</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">alpb</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! 2. Add CDS (non-polar: cavity, dispersion, surface) if requested</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_cds</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">cds</span><span class="p">)</span>
+<span class="w">         </span><span class="n">solv_input</span><span class="p">%</span><span class="n">cds</span><span class="p">%</span><span class="n">solvent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solvent</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">new_solvation_cds</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">mol</span><span class="p">,</span><span class="w"> </span><span class="n">solv_input</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">         call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">cont</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">calc</span><span class="p">%</span><span class="n">push_back</span><span class="p">(</span><span class="n">cont</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">cds</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! 3. Add shift (solution state correction) if requested</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_shift</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">solv_input</span><span class="p">%</span><span class="n">shift</span><span class="p">)</span>
+<span class="w">         </span><span class="n">solv_input</span><span class="p">%</span><span class="n">shift</span><span class="p">%</span><span class="n">solvent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solvent</span>
+
+<span class="w">         </span><span class="k">call </span><span class="n">new_solvation_shift</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">solv_input</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">error</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">         call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">solv</span><span class="p">,</span><span class="w"> </span><span class="n">cont</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">calc</span><span class="p">%</span><span class="n">push_back</span><span class="p">(</span><span class="n">cont</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">   end subroutine </span><span class="n">add_solvation_to_calc</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-10 08:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

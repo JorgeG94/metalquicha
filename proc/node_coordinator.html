@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for procedures.">80 statements</a>
+                 title=" 1.0% of total for procedures.">80 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -107,7 +107,7 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html'>mqc_mbe_mpi_fragment_distribution_scheme.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
+                <li class="breadcrumb-item"><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></li>
             <li class="breadcrumb-item active" aria-current="page">node_coordinator</li>
           </ol>
         </nav>
@@ -138,17 +138,17 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-dummy_msg~2">dummy_msg</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-finished_workers">finished_workers</a>
-            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_idx~5">fragment_idx</a>
-            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_indices~4">fragment_indices</a>
-            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_size~4">fragment_size</a>
+            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_idx~10">fragment_idx</a>
+            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_indices~3">fragment_indices</a>
+            <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_size~7">fragment_size</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-fragment_type~3">fragment_type</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-global_status">global_status</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-has_result">has_result</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-local_dummy~2">local_dummy</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-local_message_pending">local_message_pending</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-more_fragments">more_fragments</a>
-            <a class="list-group-item" href="../proc/node_coordinator.html#variable-req~6">req</a>
-            <a class="list-group-item" href="../proc/node_coordinator.html#variable-status~4">status</a>
+            <a class="list-group-item" href="../proc/node_coordinator.html#variable-req~4">req</a>
+            <a class="list-group-item" href="../proc/node_coordinator.html#variable-status~2">status</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-worker_fragment_map~2">worker_fragment_map</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-worker_result">worker_result</a>
             <a class="list-group-item" href="../proc/node_coordinator.html#variable-worker_source~2">worker_source</a>
@@ -209,7 +209,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -224,7 +224,7 @@ Handles work requests and result collection from local workers</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~6"></span>
+              <span class="anchor" id="variable-calc_type~16"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -761,7 +761,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~5"></span>
+              <span class="anchor" id="variable-fragment_idx~10"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -778,7 +778,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_indices~4"></span>
+              <span class="anchor" id="variable-fragment_indices~3"></span>
               integer(kind=int32),
             </td>
               <td>private,</td>
@@ -795,7 +795,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~4"></span>
+              <span class="anchor" id="variable-fragment_size~7"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -914,7 +914,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~6"></span>
+              <span class="anchor" id="variable-req~4"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -931,7 +931,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~4"></span>
+              <span class="anchor" id="variable-status~2"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1153,7 +1153,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-09 10:29 +0000             </p>
+ on 2026-01-10 08:53 +0000             </p>
           </div>
         </div>
         <br>
