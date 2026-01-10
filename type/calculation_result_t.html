@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 5.4% of total for derived types.</p>Including implementation: 37 statements,  3.4% of total for derived types.">18 statements</a>
+                 title="<p> 6.0% of total for derived types.</p>Including implementation: 41 statements,  3.7% of total for derived types.">20 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,18 +137,20 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-dipole">dipole</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-dipole_derivatives~2">dipole_derivatives</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-distance~3">distance</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-energy~2">energy</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-error~54">error</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-gradient~2">gradient</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-energy~4">energy</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-error~32">error</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-gradient~3">gradient</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_dipole">has_dipole</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_dipole_derivatives">has_dipole_derivatives</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_energy">has_energy</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_error~2">has_error</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_gradient">has_gradient</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_hessian">has_hessian</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_sigma">has_sigma</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-hessian~5">hessian</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-sigma">sigma</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-hessian~4">hessian</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-sigma~2">sigma</a>
         </div>
       </div>
     </div>
@@ -175,7 +177,7 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/calculation_result_t.html#boundprocedure-destroy~11">destroy</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#boundprocedure-destroy~6">destroy</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#boundprocedure-reset~4">reset</a>
         </div>
       </div>
@@ -373,6 +375,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-dipole_derivatives~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>dipole_derivatives</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Dipole derivatives (3, 3N) in a.u. for IR intensities</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-distance~3"></span>
               real(kind=dp),
             </td>
@@ -390,7 +409,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy~2"></span>
+              <span class="anchor" id="variable-energy~4"></span>
               type(<a href='energy_t.html'>energy_t</a>),
             </td>
               <td>public</td>
@@ -407,7 +426,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~54"></span>
+              <span class="anchor" id="variable-error~32"></span>
               type(<a href='error_t.html'>error_t</a>),
             </td>
               <td>public</td>
@@ -424,7 +443,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~2"></span>
+              <span class="anchor" id="variable-gradient~3"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -454,6 +473,23 @@ large graphs.</div>
                 <td>.false.</td>
             <td>
                 <p>Dipole moment has been computed</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_dipole_derivatives"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_dipole_derivatives</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Dipole derivatives have been computed</p>
             </td>
         </tr>
         <tr>
@@ -543,7 +579,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~5"></span>
+              <span class="anchor" id="variable-hessian~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -560,7 +596,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sigma"></span>
+              <span class="anchor" id="variable-sigma~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -588,7 +624,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~11"></span>
+      <span class="anchor" id="boundprocedure-destroy~6"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/result_destroy.html'>result_destroy</a>
@@ -715,6 +751,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sigma</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">     </span><span class="c">!! Stress tensor (3,3) (Hartree/Bohr^3)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">    </span><span class="c">!! Energy hessian (future implementation)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole</span><span class="p">(:)</span><span class="w">        </span><span class="c">!! Dipole moment vector (3) (Debye)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Dipole derivatives (3, 3N) in a.u. for IR intensities</span>
 
 <span class="w">      </span><span class="c">! Fragment metadata</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">      </span><span class="c">!! Minimal atomic distance between monomers (Angstrom, 0 for monomers)</span>
@@ -725,6 +762,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">     </span><span class="c">!! Stress tensor has been computed</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_hessian</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">   </span><span class="c">!! Hessian has been computed</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">    </span><span class="c">!! Dipole moment has been computed</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole_derivatives</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">  </span><span class="c">!! Dipole derivatives have been computed</span>
 
 <span class="w">      </span><span class="c">! Error handling</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span><span class="w">             </span><span class="c">!! Calculation error (if any)</span>
@@ -755,7 +793,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 08:53 +0000             </p>
+ on 2026-01-10 10:13 +0000             </p>
           </div>
         </div>
         <br>

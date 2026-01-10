@@ -126,7 +126,7 @@ contains
             block
                real(dp), allocatable :: frequencies(:), eigenvalues(:), projected_hessian(:, :)
                real(dp), allocatable :: reduced_masses(:), force_constants(:)
-               real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+               real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:), ir_intensities(:)
                integer :: ii, jj
 
                ! First get projected Hessian for verbose output
@@ -149,17 +149,35 @@ contains
                   end if
                end if
 
-               ! Compute full vibrational analysis and print
-               call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
-                                                 reduced_masses, force_constants, cart_disp, &
-                                                 coordinates=sys_geom%coordinates, &
-                                                 project_trans_rot=.true., &
-                                                 force_constants_mdyne=fc_mdyne)
+               ! Compute full vibrational analysis and print (with IR intensities if available)
+               if (result%has_dipole_derivatives) then
+                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
+                                                    reduced_masses, force_constants, cart_disp, &
+                                                    coordinates=sys_geom%coordinates, &
+                                                    project_trans_rot=.true., &
+                                                    force_constants_mdyne=fc_mdyne, &
+                                                    dipole_derivatives=result%dipole_derivatives, &
+                                                    ir_intensities=ir_intensities)
+               else
+                  call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, frequencies, &
+                                                    reduced_masses, force_constants, cart_disp, &
+                                                    coordinates=sys_geom%coordinates, &
+                                                    project_trans_rot=.true., &
+                                                    force_constants_mdyne=fc_mdyne)
+               end if
 
                if (allocated(frequencies)) then
-                  call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                  cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne)
+                  if (allocated(ir_intensities)) then
+                     call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                     cart_disp, sys_geom%element_numbers, &
+                                                     force_constants_mdyne=fc_mdyne, &
+                                                     ir_intensities=ir_intensities)
+                     deallocate (ir_intensities)
+                  else
+                     call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                     cart_disp, sys_geom%element_numbers, &
+                                                     force_constants_mdyne=fc_mdyne)
+                  end if
                   deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
                end if
 

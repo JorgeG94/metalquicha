@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.5% of total for procedures.">120 statements</a>
+                 title=" 1.6% of total for procedures.">129 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -142,12 +142,13 @@
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-fc_str">fc_str</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-fc_value">fc_value</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-freq_str">freq_str</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-iatom~17">iatom</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-iatom~20">iatom</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-icoord~6">icoord</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-igroup">igroup</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-imode">imode</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-k~18">k</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-line~30">line</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-ir_str">ir_str</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-k~20">k</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-line~13">line</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mass_str">mass_str</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mode_end">mode_end</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mode_start">mode_start</a>
@@ -190,7 +191,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, cartesian_displacements, element_numbers, force_constants_mdyne, print_displacements, n_atoms)  
+    <h2>public  subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, cartesian_displacements, element_numbers, force_constants_mdyne, print_displacements, n_atoms, ir_intensities)  
 </h2>
     
 
@@ -212,7 +213,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~4"></span>
+              <span class="anchor" id="variable-frequencies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -272,7 +273,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~9"></span>
+              <span class="anchor" id="variable-element_numbers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -317,7 +318,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~16"></span>
+              <span class="anchor" id="variable-n_atoms~20"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -328,6 +329,21 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
             <td><strong>n_atoms</strong></td>
             <td>
                 <p>Number of atoms (if not provided, derived from size of element_numbers)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ir_intensities~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ir_intensities</strong>(:)</td>
+            <td>
+                <p>IR intensities in km/mol</p>
             </td>
         </tr>
     </tbody>
@@ -1042,7 +1058,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~17"></span>
+              <span class="anchor" id="variable-iatom~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -1110,7 +1126,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~18"></span>
+              <span class="anchor" id="variable-ir_str"></span>
+              character(len=16),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ir_str</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -1127,7 +1160,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~30"></span>
+              <span class="anchor" id="variable-line~13"></span>
               character(len=512),
             </td>
               <td>private</td>
@@ -1280,7 +1313,7 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_vibrational_analysis</span><span class="p">(</span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">reduced_masses</span><span class="p">,</span><span class="w"> </span><span class="n">force_constants</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">cartesian_displacements</span><span class="p">,</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">force_constants_mdyne</span><span class="p">,</span><span class="w"> </span><span class="n">print_displacements</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                         </span><span class="n">n_atoms</span><span class="p">)</span>
+<span class="w">                                         </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Print vibrational analysis results in a formatted table.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Output format is similar to Gaussian, with frequencies grouped in columns.</span>
@@ -1301,12 +1334,14 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! If true, print Cartesian displacement vectors (default: true)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
 <span class="w">         </span><span class="c">!! Number of atoms (if not provided, derived from size of element_numbers)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! IR intensities in km/mol</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_modes</span><span class="p">,</span><span class="w"> </span><span class="n">n_at</span><span class="p">,</span><span class="w"> </span><span class="n">n_groups</span><span class="p">,</span><span class="w"> </span><span class="n">igroup</span><span class="p">,</span><span class="w"> </span><span class="n">imode</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">icoord</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mode_start</span><span class="p">,</span><span class="w"> </span><span class="n">mode_end</span><span class="p">,</span><span class="w"> </span><span class="n">modes_in_group</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">do_print_disp</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">line</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">freq_str</span><span class="p">,</span><span class="w"> </span><span class="n">mass_str</span><span class="p">,</span><span class="w"> </span><span class="n">fc_str</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">freq_str</span><span class="p">,</span><span class="w"> </span><span class="n">mass_str</span><span class="p">,</span><span class="w"> </span><span class="n">fc_str</span><span class="p">,</span><span class="w"> </span><span class="n">ir_str</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">elem_sym</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coord_label</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fc_value</span>
@@ -1380,6 +1415,16 @@ large graphs.</div>
 <span class="w">            </span><span class="k">end do</span>
 <span class="k">         end if</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+<span class="w">         </span><span class="c">! IR intensities (if provided)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">ir_intensities</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot; IR Intens  --  &quot;</span>
+<span class="w">            </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mode_start</span><span class="p">,</span><span class="w"> </span><span class="n">mode_end</span>
+<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">ir_str</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(f12.4)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<span class="w">               </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">//</span><span class="n">ir_str</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+<span class="w">         </span><span class="k">end if</span>
 
 <span class="w">         </span><span class="c">! Cartesian displacements</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">do_print_disp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1468,7 +1513,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 08:53 +0000             </p>
+ on 2026-01-10 10:13 +0000             </p>
           </div>
         </div>
         <br>

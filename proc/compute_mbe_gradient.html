@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">40 statements</a>
+                 title=" 0.5% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,9 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-max_mbe_level~2">MAX_MBE_LEVEL</a>
-            <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-has_next~2">has_next</a>
-            <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-i~38">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-has_next~4">has_next</a>
+            <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-i~56">i</a>
             <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-indices~3">indices</a>
             <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-subset~2">subset</a>
             <a class="list-group-item" href="../proc/compute_mbe_gradient.html#variable-subset_idx~2">subset_idx</a>
@@ -450,7 +449,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~3"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -465,7 +464,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~11"></span>
+              <span class="anchor" id="variable-fragment~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -495,7 +494,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results"></span>
+              <span class="anchor" id="variable-results~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -525,7 +524,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~3"></span>
+              <span class="anchor" id="variable-n~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -540,7 +539,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~28"></span>
+              <span class="anchor" id="variable-sys_geom~29"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -555,7 +554,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~16"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -570,7 +569,7 @@ All gradients are in system coordinates, so subtraction is simple</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~8"></span>
+              <span class="anchor" id="variable-world_comm~6"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1362,24 +1361,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_mbe_level~2"></span>
-              integer,
-            </td>
-              <td>private,</td>
-            <td>
-parameter               
-            </td>
-            <td>::</td>
-            <td><strong>MAX_MBE_LEVEL</strong></td>
-<td> =</td>
-                <td>10</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-has_next~2"></span>
+              <span class="anchor" id="variable-has_next~4"></span>
               logical,
             </td>
               <td>private</td>
@@ -1396,7 +1378,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~38"></span>
+              <span class="anchor" id="variable-i~56"></span>
               integer,
             </td>
               <td>private</td>
@@ -1510,8 +1492,6 @@ parameter
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Bond information for caps</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span><span class="w">  </span><span class="c">!! MPI communicator for abort</span>
 
-<span class="w">      </span><span class="c">! Maximum MBE level supported (decamers)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">MAX_MBE_LEVEL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_size</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">),</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">MAX_MBE_LEVEL</span><span class="p">)</span><span class="w">  </span><span class="c">! Stack arrays to avoid heap contention</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset_idx</span>
@@ -1581,7 +1561,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 08:53 +0000             </p>
+ on 2026-01-10 10:13 +0000             </p>
           </div>
         </div>
         <br>

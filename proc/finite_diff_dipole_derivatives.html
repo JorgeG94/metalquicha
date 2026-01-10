@@ -1,0 +1,704 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>finite_diff_dipole_derivatives &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>finite_diff_dipole_derivatives
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">15 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_finite_differences.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_finite_differences.f90.html'>mqc_finite_differences.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
+            <li class="breadcrumb-item active" aria-current="page">finite_diff_dipole_derivatives</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-j~25">j</a>
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-k~14">k</a>
+            <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#variable-n_coords~2">n_coords</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/finite_diff_dipole_derivatives.html#src">finite_diff_dipole_derivatives</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, displacement, dipole_derivatives)  
+</h2>
+    
+
+    <p>Compute dipole moment derivatives via central finite differences</p>
+<p>Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)</p>
+<p>This is used for IR intensity calculations, where we need the dipole
+moment derivatives with respect to Cartesian nuclear coordinates.</p>
+<p>Args:
+  n_atoms: Number of atoms
+  forward_dipoles: Dipoles at forward-displaced geometries (3<em>n_atoms, 3)
+  backward_dipoles: Dipoles at backward-displaced geometries (3</em>n_atoms, 3)
+  displacement: Step size in Bohr
+  dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~14"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-forward_dipoles~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>forward_dipoles</strong>(:,:)</td>
+            <td>
+                <p>(3*n_atoms, 3)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-backward_dipoles~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>backward_dipoles</strong>(:,:)</td>
+            <td>
+                <p>(3*n_atoms, 3)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-displacement~7"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>displacement</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dipole_derivatives"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>dipole_derivatives</strong>(:,:)</td>
+            <td>
+                <p>(3, 3*n_atoms)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~finite_diff_dipole_derivatives~~CalledByGraph Pages: 1 -->
+<svg id="procfinite_diff_dipole_derivativesCalledByGraph" width="641pt" height="94pt"
+ viewBox="0.00 0.00 641.00 93.78" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph" class="graph" transform="scale(0.59 0.59) rotate(0) translate(4 154)">
+<title>proc~~finite_diff_dipole_derivatives~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 1076,-154 1076,4 -4,4"/>
+<!-- proc~finite_diff_dipole_derivatives -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node1" class="node">
+<title>proc~finite_diff_dipole_derivatives</title>
+<polygon fill="none" stroke="black" points="1072,-87 908,-87 908,-63 1072,-63 1072,-87"/>
+<text text-anchor="middle" x="990" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">finite_diff_dipole_derivatives</text>
+</g>
+<!-- proc~xtb_calc_hessian -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node2" class="node">
+<title>proc~xtb_calc_hessian</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node2"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="872,-87 688,-87 688,-63 872,-63 872,-87"/>
+<text text-anchor="middle" x="780" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_hessian&#45;&gt;proc~finite_diff_dipole_derivatives -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge1" class="edge">
+<title>proc~xtb_calc_hessian&#45;&gt;proc~finite_diff_dipole_derivatives</title>
+<path fill="none" stroke="#ff0000" d="M872.23,-75C880.69,-75 889.26,-75 897.72,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="897.97,-78.5 907.97,-75 897.97,-71.5 897.97,-78.5"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node3" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node3"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="652,-87 540,-87 540,-63 652,-63 652,-87"/>
+<text text-anchor="middle" x="596" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge2" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~xtb_calc_hessian</title>
+<path fill="none" stroke="#ff0000" d="M652.1,-75C660.22,-75 668.8,-75 677.5,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="677.76,-78.5 687.76,-75 677.76,-71.5 677.76,-78.5"/>
+</g>
+<!-- interface~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node4" class="node">
+<title>interface~do_fragment_work</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node4"><a xlink:href="../interface/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#a7506f" stroke="#a7506f" points="504,-87 392,-87 392,-63 504,-63 504,-87"/>
+<text text-anchor="middle" x="448" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- interface~do_fragment_work&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge3" class="edge">
+<title>interface~do_fragment_work&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M504.2,-75C512.46,-75 521.05,-75 529.51,-75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="529.73,-78.5 539.73,-75 529.73,-71.5 529.73,-78.5"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node5" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node5"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="318.5,-150 236.5,-150 236.5,-126 318.5,-126 318.5,-150"/>
+<text text-anchor="middle" x="277.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge4" class="edge">
+<title>proc~node_worker&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M318.72,-128.47C330.84,-125.24 344.08,-121.33 356,-117 375.87,-109.78 397.38,-99.95 414.49,-91.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="416.09,-94.73 423.51,-87.17 412.99,-88.46 416.09,-94.73"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node6" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node6"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="354.5,-108 200.5,-108 200.5,-84 354.5,-84 354.5,-108"/>
+<text text-anchor="middle" x="277.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge5" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M354.86,-86.48C363.75,-85.38 372.75,-84.25 381.48,-83.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="382.07,-86.62 391.56,-81.91 381.21,-79.67 382.07,-86.62"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node7" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node7"><a xlink:href="../proc/serial_gmbe_pie_processor.html" xlink:title="serial_gmbe_pie_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="356,-66 199,-66 199,-42 356,-42 356,-66"/>
+<text text-anchor="middle" x="277.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_pie_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge6" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M356.34,-63.7C364.8,-64.76 373.34,-65.82 381.63,-66.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="381.24,-70.33 391.6,-68.09 382.1,-63.39 381.24,-70.33"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node8" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node8"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="354,-24 201,-24 201,0 354,0 354,-24"/>
+<text text-anchor="middle" x="277.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge7" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M328.09,-24.1C337.45,-26.76 347.09,-29.76 356,-33 375.87,-40.22 397.38,-50.05 414.49,-58.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="412.99,-61.54 423.51,-62.83 416.09,-55.27 412.99,-61.54"/>
+</g>
+<!-- interface~node_worker -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node9" class="node">
+<title>interface~node_worker</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node9"><a xlink:href="../interface/node_worker.html" xlink:title="node_worker">
+<polygon fill="#a7506f" stroke="#a7506f" points="122.5,-150 40.5,-150 40.5,-126 122.5,-126 122.5,-150"/>
+<text text-anchor="middle" x="81.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- interface~node_worker&#45;&gt;proc~node_worker -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge8" class="edge">
+<title>interface~node_worker&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M122.7,-138C152.74,-138 194.01,-138 226.24,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="226.35,-141.5 236.35,-138 226.35,-134.5 226.35,-141.5"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node10" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node10"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="158.5,-108 4.5,-108 4.5,-84 158.5,-84 158.5,-108"/>
+<text text-anchor="middle" x="81.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge9" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M158.62,-96C168.99,-96 179.71,-96 190.25,-96"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="190.28,-99.5 200.28,-96 190.28,-92.5 190.28,-99.5"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node11" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node11"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="158,-24 5,-24 5,0 158,0 158,-24"/>
+<text text-anchor="middle" x="81.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge11" class="edge">
+<title>interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M158.06,-12C168.7,-12 179.71,-12 190.53,-12"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="190.83,-15.5 200.83,-12 190.83,-8.5 190.83,-15.5"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_node12" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~finite_diff_dipole_derivatives~~CalledByGraph_node12"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="163,-66 0,-66 0,-42 163,-42 163,-66"/>
+<text text-anchor="middle" x="81.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~finite_diff_dipole_derivatives~~CalledByGraph_edge10" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#00ffff" d="M163.09,-54C171.62,-54 180.32,-54 188.93,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.97,-57.5 198.97,-54 188.97,-50.5 188.97,-57.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocfinite_diff_dipole_derivativesCalledByGraph = svgPanZoom('#procfinite_diff_dipole_derivativesCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~25"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~14"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_coords~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_coords</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">finite_diff_dipole_derivatives</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">forward_dipoles</span><span class="p">,</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                             </span><span class="n">displacement</span><span class="p">,</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Compute dipole moment derivatives via central finite differences</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Computes: d_mu_k/d_x_j = (mu_k(+h) - mu_k(-h)) / (2h)</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! This is used for IR intensity calculations, where we need the dipole</span>
+<span class="w">      </span><span class="c">!! moment derivatives with respect to Cartesian nuclear coordinates.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Args:</span>
+<span class="w">      </span><span class="c">!!   n_atoms: Number of atoms</span>
+<span class="w">      </span><span class="c">!!   forward_dipoles: Dipoles at forward-displaced geometries (3*n_atoms, 3)</span>
+<span class="w">      </span><span class="c">!!   backward_dipoles: Dipoles at backward-displaced geometries (3*n_atoms, 3)</span>
+<span class="w">      </span><span class="c">!!   displacement: Step size in Bohr</span>
+<span class="w">      </span><span class="c">!!   dipole_derivatives: Output derivatives (3, 3*n_atoms) in a.u.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">forward_dipoles</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (3*n_atoms, 3)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*n_atoms, 3)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">displacement</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, 3*n_atoms)</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_coords</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+
+<span class="w">      </span><span class="n">n_coords</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">dipole_derivatives</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span><span class="p">))</span>
+
+<span class="w">      </span><span class="c">! Central difference: d_mu_k/d_x_j = (mu_k(x_j+h) - mu_k(x_j-h)) / (2h)</span>
+<span class="w">      </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span><span class="w">       </span><span class="c">! Cartesian coordinate index (which coordinate was displaced)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w">           </span><span class="c">! Dipole component (x, y, z)</span>
+<span class="w">            </span><span class="n">dipole_derivatives</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">forward_dipoles</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">backward_dipoles</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">))</span><span class="o">/</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="p">(</span><span class="mf">2.0_dp</span><span class="o">*</span><span class="n">displacement</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      end do</span>
+
+<span class="k">   end subroutine </span><span class="n">finite_diff_dipole_derivatives</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-10 10:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,1114 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>compute_ir_intensities &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>compute_ir_intensities
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">23 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_vibrational_analysis.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_vibrational_analysis.f90.html'>mqc_vibrational_analysis.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_ir_intensities</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-i~73">i</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-iatom~19">iatom</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-inv_sqrt_mass~3">inv_sqrt_mass</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-j~28">j</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-k~19">k</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-mass~6">mass</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-n_atoms~19">n_atoms</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-n_coords~8">n_coords</a>
+            <a class="list-group-item" href="../proc/compute_ir_intensities.html#variable-trdip">trdip</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/compute_ir_intensities.html#src">compute_ir_intensities</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine compute_ir_intensities(dipole_derivatives, eigenvectors, element_numbers, ir_intensities)  
+</h2>
+    
+
+    <p>Compute IR intensities from dipole derivatives and normal modes.</p>
+<p>IR intensities are computed by transforming Cartesian dipole derivatives
+to normal mode coordinates and computing the squared magnitude.</p>
+<p>For each normal mode i:
+  trdip(k) = Σ_j dipd(k,j) * L(j,i) * 1/√m_j
+  IR(i) = AU_TO_KMMOL * (trdip(1)² + trdip(2)² + trdip(3)²)</p>
+<p>where:
+  dipd(k,j) = ∂μ_k/∂x_j (Cartesian dipole derivative)
+  L(j,i) = mass-weighted eigenvector component
+  m_j = atomic mass for coordinate j</p>
+<p>Reference: xtb hessian.F90 lines 501-535</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dipole_derivatives~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dipole_derivatives</strong>(:,:)</td>
+            <td>
+                <p>Cartesian dipole derivatives (3, 3*N) in atomic units</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eigenvectors~5"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eigenvectors</strong>(:,:)</td>
+            <td>
+                <p>Mass-weighted eigenvectors from Hessian diagonalization (3<em>N x 3</em>N)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_numbers~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>element_numbers</strong>(:)</td>
+            <td>
+                <p>Atomic numbers for each atom (N atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ir_intensities~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ir_intensities</strong>(:)</td>
+            <td>
+                <p>IR intensities in km/mol (one per mode)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_ir_intensities~~CallsGraph Pages: 1 -->
+<svg id="proccompute_ir_intensitiesCallsGraph" width="266pt" height="32pt"
+ viewBox="0.00 0.00 266.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_ir_intensities~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~compute_ir_intensities~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 262,-28 262,4 -4,4"/>
+<!-- proc~compute_ir_intensities -->
+<g id="proc~~compute_ir_intensities~~CallsGraph_node1" class="node">
+<title>proc~compute_ir_intensities</title>
+<polygon fill="none" stroke="black" points="132,-24 0,-24 0,0 132,0 132,-24"/>
+<text text-anchor="middle" x="66" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_ir_intensities</text>
+</g>
+<!-- proc~element_mass -->
+<g id="proc~~compute_ir_intensities~~CallsGraph_node2" class="node">
+<title>proc~element_mass</title>
+<g id="a_proc~~compute_ir_intensities~~CallsGraph_node2"><a xlink:href="../proc/element_mass.html" xlink:title="element_mass">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="258,-24 168,-24 168,0 258,0 258,-24"/>
+<text text-anchor="middle" x="213" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_mass</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_ir_intensities&#45;&gt;proc~element_mass -->
+<g id="proc~~compute_ir_intensities~~CallsGraph_edge1" class="edge">
+<title>proc~compute_ir_intensities&#45;&gt;proc~element_mass</title>
+<path fill="none" stroke="#ff0000" d="M132.29,-12C140.75,-12 149.33,-12 157.59,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="157.83,-15.5 167.83,-12 157.83,-8.5 157.83,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_ir_intensities~~CalledByGraph Pages: 1 -->
+<svg id="proccompute_ir_intensitiesCalledByGraph" width="641pt" height="113pt"
+ viewBox="0.00 0.00 641.00 112.70" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_ir_intensities~~CalledByGraph" class="graph" transform="scale(0.41 0.41) rotate(0) translate(4 268)">
+<title>proc~~compute_ir_intensities~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-268 1543,-268 1543,4 -4,4"/>
+<!-- proc~compute_ir_intensities -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node1" class="node">
+<title>proc~compute_ir_intensities</title>
+<polygon fill="none" stroke="black" points="1539,-162 1407,-162 1407,-138 1539,-138 1539,-162"/>
+<text text-anchor="middle" x="1473" y="-147.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_ir_intensities</text>
+</g>
+<!-- proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node2" class="node">
+<title>proc~compute_vibrational_analysis</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node2"><a xlink:href="../proc/compute_vibrational_analysis.html" xlink:title="compute_vibrational_analysis">
+<polygon fill="#d9534f" stroke="#d9534f" points="1371,-162 1201,-162 1201,-138 1371,-138 1371,-162"/>
+<text text-anchor="middle" x="1286" y="-147.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_analysis</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_ir_intensities -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge1" class="edge">
+<title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_ir_intensities</title>
+<path fill="none" stroke="#ff0000" d="M1371.11,-150C1379.66,-150 1388.31,-150 1396.75,-150"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1396.94,-153.5 1406.94,-150 1396.94,-146.5 1396.94,-153.5"/>
+</g>
+<!-- proc~compute_gmbe -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node3" class="node">
+<title>proc~compute_gmbe</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node3"><a xlink:href="../proc/compute_gmbe.html" xlink:title="compute_gmbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="1136.5,-264 1040.5,-264 1040.5,-240 1136.5,-240 1136.5,-264"/>
+<text text-anchor="middle" x="1088.5" y="-249.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_gmbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_gmbe&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M1136.66,-241.41C1146.24,-238.56 1156.11,-235.11 1165,-231 1201.58,-214.11 1239.41,-186.61 1262.57,-168.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1264.77,-171.13 1270.41,-162.16 1260.41,-165.66 1264.77,-171.13"/>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node4" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node4"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="1133,-142 1044,-142 1044,-118 1133,-118 1133,-142"/>
+<text text-anchor="middle" x="1088.5" y="-127.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge3" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M1133.37,-134.49C1150.42,-136.23 1170.65,-138.3 1190.68,-140.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1190.5,-143.85 1200.8,-141.39 1191.21,-136.89 1190.5,-143.85"/>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node5" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node5"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="1155,-222 1022,-222 1022,-198 1155,-198 1155,-222"/>
+<text text-anchor="middle" x="1088.5" y="-207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge4" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M1129.06,-197.86C1159.9,-188.39 1202.89,-175.2 1235.92,-165.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1237.3,-168.3 1245.83,-162.02 1235.24,-161.61 1237.3,-168.3"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node6" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node6"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="1149,-44 1028,-44 1028,-20 1149,-20 1149,-44"/>
+<text text-anchor="middle" x="1088.5" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge5" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M1125.31,-44.09C1138.15,-48.98 1152.54,-55.1 1165,-62 1201.64,-82.28 1239.99,-112.16 1263.2,-131.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1261.11,-134.17 1271.03,-137.9 1265.6,-128.8 1261.11,-134.17"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node7" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node7"><a xlink:href="../proc/serial_gmbe_pie_processor.html" xlink:title="serial_gmbe_pie_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="976,-190 819,-190 819,-166 976,-166 976,-190"/>
+<text text-anchor="middle" x="897.5" y="-175.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_pie_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge6" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M976.25,-172.37C1037.98,-167.9 1124.54,-161.62 1190.3,-156.86"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1190.95,-160.32 1200.67,-156.11 1190.45,-153.34 1190.95,-160.32"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node8" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node8"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1165,-95 1012,-95 1012,-71 1165,-71 1165,-95"/>
+<text text-anchor="middle" x="1088.5" y="-80.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~compute_vibrational_analysis -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge7" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~compute_vibrational_analysis</title>
+<path fill="none" stroke="#ff0000" d="M1124.9,-95.13C1157.29,-106.23 1205.35,-122.7 1240.36,-134.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1239.27,-138.03 1249.86,-137.96 1241.53,-131.4 1239.27,-138.03"/>
+</g>
+<!-- interface~hessian_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node9" class="node">
+<title>interface~hessian_coordinator</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node9"><a xlink:href="../interface/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="958,-25 837,-25 837,-1 958,-1 958,-25"/>
+<text text-anchor="middle" x="897.5" y="-10.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge11" class="edge">
+<title>interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M958.04,-18.99C977.02,-20.89 998.19,-23.02 1017.83,-25"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1017.63,-28.49 1027.93,-26.01 1018.33,-21.53 1017.63,-28.49"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node10" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node10"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="761,-66 608,-66 608,-42 761,-42 761,-66"/>
+<text text-anchor="middle" x="684.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge13" class="edge">
+<title>interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M761.08,-58.44C819.73,-62.01 903.06,-67.34 976,-73 984.36,-73.65 993.06,-74.36 1001.76,-75.1"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1001.69,-78.61 1011.95,-75.98 1002.29,-71.63 1001.69,-78.61"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node11" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node11"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="954,-148 841,-148 841,-124 954,-124 954,-148"/>
+<text text-anchor="middle" x="897.5" y="-133.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge8" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ffff00" d="M954.18,-134.23C979.35,-133.43 1008.97,-132.49 1033.89,-131.7"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1034.01,-135.2 1043.89,-131.38 1033.79,-128.2 1034.01,-135.2"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node12" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node12"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="533,-150 370,-150 370,-126 533,-126 533,-150"/>
+<text text-anchor="middle" x="451.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge10" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#00ff00" d="M483.81,-150.04C510.55,-159.79 550.23,-173.01 586,-180 734.81,-209.1 912.79,-212.51 1011.69,-211.7"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1011.92,-215.2 1021.88,-211.6 1011.85,-208.2 1011.92,-215.2"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge12" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#0000ff" d="M520.93,-150.04C541.77,-153.36 564.78,-156.69 586,-159 660.89,-167.16 746.35,-172.07 808.63,-174.85"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="808.66,-178.35 818.81,-175.29 808.97,-171.36 808.66,-178.35"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node14" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node14"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="741,-150 628,-150 628,-126 741,-126 741,-150"/>
+<text text-anchor="middle" x="684.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~global_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge19" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M533.29,-138C560.86,-138 591.33,-138 617.59,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="617.8,-141.5 627.8,-138 617.8,-134.5 617.8,-141.5"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node15" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node15"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="761.5,-108 607.5,-108 607.5,-84 761.5,-84 761.5,-108"/>
+<text text-anchor="middle" x="684.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge20" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#cbff00" d="M518.7,-125.96C546.36,-120.93 578.68,-115.06 607.33,-109.85"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="608.08,-113.27 617.3,-108.04 606.83,-106.38 608.08,-113.27"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node13" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node13"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="974.5,-106 820.5,-106 820.5,-82 974.5,-82 974.5,-106"/>
+<text text-anchor="middle" x="897.5" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge9" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ffff00" d="M961.7,-106.04C985.05,-110.49 1011.29,-115.48 1033.73,-119.76"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1033.28,-123.23 1043.75,-121.67 1034.59,-116.36 1033.28,-123.23"/>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge16" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M741.21,-137.47C768.62,-137.21 801.83,-136.9 830.5,-136.63"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="830.87,-140.12 840.84,-136.53 830.81,-133.12 830.87,-140.12"/>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge18" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M761.68,-95.28C777.36,-95.13 793.99,-94.97 810.01,-94.82"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="810.47,-98.32 820.44,-94.72 810.4,-91.32 810.47,-98.32"/>
+</g>
+<!-- proc~distributed_unfragmented_hessian -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node16" class="node">
+<title>proc~distributed_unfragmented_hessian</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node16"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="783,-24 586,-24 586,0 783,0 783,-24"/>
+<text text-anchor="middle" x="684.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge14" class="edge">
+<title>proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M783.28,-12.46C798.03,-12.53 812.97,-12.6 826.97,-12.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="826.95,-16.17 836.97,-12.72 826.98,-9.17 826.95,-16.17"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node17" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node17"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-118 223,-118 223,-94 317,-94 317,-118"/>
+<text text-anchor="middle" x="270" y="-103.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge17" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#0066ff" d="M317.23,-114.24C334.3,-117.28 354.14,-120.82 373.22,-124.22"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="372.65,-127.68 383.11,-125.99 373.88,-120.79 372.65,-127.68"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node18" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node18"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="539.5,-87 363.5,-87 363.5,-63 539.5,-63 539.5,-87"/>
+<text text-anchor="middle" x="451.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge25" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#cc00ff" d="M317.23,-98.02C333.53,-95.2 352.36,-91.95 370.63,-88.79"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="371.45,-92.2 380.71,-87.05 370.26,-85.31 371.45,-92.2"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge15" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation</title>
+<path fill="none" stroke="#cbff00" d="M539.5,-67.09C558.58,-65.36 578.77,-63.52 597.8,-61.79"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="598.29,-65.26 607.93,-60.87 597.66,-58.29 598.29,-65.26"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node19" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node19"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="550,-24 353,-24 353,0 550,0 550,-24"/>
+<text text-anchor="middle" x="451.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge21" class="edge">
+<title>interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M550.13,-12C558.63,-12 567.25,-12 575.83,-12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="575.85,-15.5 585.85,-12 575.85,-8.5 575.85,-15.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node20" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node20"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="176.5,-160 10.5,-160 10.5,-136 176.5,-136 176.5,-160"/>
+<text text-anchor="middle" x="93.5" y="-145.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge22" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M148.85,-135.92C161.39,-133.06 174.67,-129.98 187,-127 195.32,-124.99 204.09,-122.81 212.69,-120.64"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="213.82,-123.96 222.65,-118.11 212.1,-117.18 213.82,-123.96"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node21" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node21"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="187,-118 0,-118 0,-94 187,-94 187,-118"/>
+<text text-anchor="middle" x="93.5" y="-103.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge23" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M187.11,-106C195.83,-106 204.48,-106 212.7,-106"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="212.87,-109.5 222.87,-106 212.87,-102.5 212.87,-109.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_node22" class="node">
+<title>program~main</title>
+<g id="a_proc~~compute_ir_intensities~~CalledByGraph_node22"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="120.5,-76 66.5,-76 66.5,-52 120.5,-52 120.5,-76"/>
+<text text-anchor="middle" x="93.5" y="-61.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_ir_intensities~~CalledByGraph_edge24" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M120.86,-69.78C139.39,-73.9 164.75,-79.63 187,-85 195.32,-87.01 204.09,-89.19 212.69,-91.36"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="212.1,-94.82 222.65,-93.89 213.82,-88.04 212.1,-94.82"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_ir_intensitiesCalledByGraph = svgPanZoom('#proccompute_ir_intensitiesCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~73"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iatom~19"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iatom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-inv_sqrt_mass~3"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>inv_sqrt_mass</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~28"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~19"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mass~6"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mass</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~19"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_coords~8"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_coords</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trdip"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>trdip</strong>(3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_ir_intensities</span><span class="p">(</span><span class="n">dipole_derivatives</span><span class="p">,</span><span class="w"> </span><span class="n">eigenvectors</span><span class="p">,</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Compute IR intensities from dipole derivatives and normal modes.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! IR intensities are computed by transforming Cartesian dipole derivatives</span>
+<span class="w">      </span><span class="c">!! to normal mode coordinates and computing the squared magnitude.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! For each normal mode i:</span>
+<span class="w">      </span><span class="c">!!   trdip(k) = Σ_j dipd(k,j) * L(j,i) * 1/√m_j</span>
+<span class="w">      </span><span class="c">!!   IR(i) = AU_TO_KMMOL * (trdip(1)² + trdip(2)² + trdip(3)²)</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! where:</span>
+<span class="w">      </span><span class="c">!!   dipd(k,j) = ∂μ_k/∂x_j (Cartesian dipole derivative)</span>
+<span class="w">      </span><span class="c">!!   L(j,i) = mass-weighted eigenvector component</span>
+<span class="w">      </span><span class="c">!!   m_j = atomic mass for coordinate j</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Reference: xtb hessian.F90 lines 501-535</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! Cartesian dipole derivatives (3, 3*N) in atomic units</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">eigenvectors</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! Mass-weighted eigenvectors from Hessian diagonalization (3*N x 3*N)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Atomic numbers for each atom (N atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! IR intensities in km/mol (one per mode)</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mass</span><span class="p">,</span><span class="w"> </span><span class="n">inv_sqrt_mass</span><span class="p">,</span><span class="w"> </span><span class="n">trdip</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="w">      </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">element_numbers</span><span class="p">)</span>
+<span class="w">      </span><span class="n">n_coords</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">n_atoms</span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">ir_intensities</span><span class="p">(</span><span class="n">n_coords</span><span class="p">))</span>
+
+<span class="w">      </span><span class="c">! For each normal mode i</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span>
+<span class="w">         </span><span class="n">trdip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+
+<span class="w">         </span><span class="c">! Transform dipole derivative from Cartesian to normal mode coordinates</span>
+<span class="w">         </span><span class="c">! trdip(k) = Σ_j dipd(k,j) * L(j,i) * amass_au(j)</span>
+<span class="w">         </span><span class="c">! where amass_au(j) = 1/√(m_j in atomic units) = 1/√(m_amu * AMU_TO_AU)</span>
+<span class="w">         </span><span class="c">! This matches xtb&#39;s formula in hessian.F90 lines 526-535</span>
+<span class="w">         </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_coords</span>
+<span class="w">            </span><span class="n">iatom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">mass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_mass</span><span class="p">(</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">iatom</span><span class="p">))</span>
+<span class="w">            </span><span class="c">! Convert mass to atomic units (electron masses) before taking sqrt</span>
+<span class="w">            </span><span class="n">inv_sqrt_mass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="o">/</span><span class="nb">sqrt</span><span class="p">(</span><span class="n">mass</span><span class="o">*</span><span class="n">AMU_TO_AU</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w">  </span><span class="c">! x, y, z components of dipole</span>
+<span class="w">               </span><span class="n">trdip</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trdip</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dipole_derivatives</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="o">*</span><span class="n">eigenvectors</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">inv_sqrt_mass</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">         end do</span>
+
+<span class="w">         </span><span class="c">! IR intensity = |dμ/dQ|² * conversion factor</span>
+<span class="w">         </span><span class="n">ir_intensities</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AU_TO_KMMOL</span><span class="o">*</span><span class="p">(</span><span class="n">trdip</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">trdip</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">trdip</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">   end subroutine </span><span class="n">compute_ir_intensities</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-10 10:13 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -306,7 +306,8 @@ contains
       !!
       !! This requires 6N gradient calculations (forward and backward for each coordinate)
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
-                                        finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT
+                                        finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives, &
+                                        DEFAULT_DISPLACEMENT
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
 
@@ -317,9 +318,12 @@ contains
       type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
       real(dp), allocatable :: forward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
       real(dp), allocatable :: backward_gradients(:, :, :)  ! (n_displacements, 3, n_atoms)
+      real(dp), allocatable :: forward_dipoles(:, :)   ! (n_displacements, 3) for IR intensities
+      real(dp), allocatable :: backward_dipoles(:, :)  ! (n_displacements, 3) for IR intensities
       type(calculation_result_t) :: disp_result
       real(dp) :: displacement
       integer :: n_atoms, n_displacements, i
+      logical :: compute_dipole_derivs
 
       n_atoms = fragment%n_atoms
       n_displacements = 3*n_atoms
@@ -340,6 +344,13 @@ contains
       allocate (forward_gradients(n_displacements, 3, n_atoms))
       allocate (backward_gradients(n_displacements, 3, n_atoms))
 
+      ! Allocate storage for dipoles at displaced geometries (for IR intensities)
+      allocate (forward_dipoles(n_displacements, 3))
+      allocate (backward_dipoles(n_displacements, 3))
+      forward_dipoles = 0.0_dp
+      backward_dipoles = 0.0_dp
+      compute_dipole_derivs = .true.  ! Will be set to false if any dipole is missing
+
       ! Compute gradients at all forward-displaced geometries
       if (this%verbose) then
          call logger%info("  Computing forward-displaced gradients...")
@@ -355,6 +366,12 @@ contains
             return
          end if
          forward_gradients(i, :, :) = disp_result%gradient
+         ! Capture dipole for IR intensity calculation
+         if (disp_result%has_dipole) then
+            forward_dipoles(i, :) = disp_result%dipole
+         else
+            compute_dipole_derivs = .false.
+         end if
          call disp_result%destroy()
 
          ! Backward
@@ -366,6 +383,12 @@ contains
             return
          end if
          backward_gradients(i, :, :) = disp_result%gradient
+         ! Capture dipole for IR intensity calculation
+         if (disp_result%has_dipole) then
+            backward_dipoles(i, :) = disp_result%dipole
+         else
+            compute_dipole_derivs = .false.
+         end if
          call disp_result%destroy()
 
       end do
@@ -378,6 +401,16 @@ contains
       end if
       call finite_diff_hessian_from_gradients(fragment, forward_gradients, backward_gradients, &
                                               displacement, result%hessian)
+
+      ! Compute dipole derivatives for IR intensity calculation
+      if (compute_dipole_derivs) then
+         call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
+                                             displacement, result%dipole_derivatives)
+         result%has_dipole_derivatives = .true.
+         if (this%verbose) then
+            call logger%info("  Dipole derivatives computed for IR intensities")
+         end if
+      end if
 
       ! Also compute energy and gradient at reference geometry for completeness
       call this%calc_gradient(fragment, disp_result)
@@ -404,6 +437,7 @@ contains
 
       ! Cleanup
       deallocate (forward_gradients, backward_gradients)
+      deallocate (forward_dipoles, backward_dipoles)
       do i = 1, n_displacements
          call forward_geoms(i)%destroy()
          call backward_geoms(i)%destroy()
