@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.2% of total for procedures.">113 statements</a>
+                 title=" 0.9% of total for procedures.">82 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,18 +136,28 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-basename~6">basename</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-first_intersection">first_intersection</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-first_level~2">first_level</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-i~85">i</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-io_stat~25">io_stat</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-j~28">j</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-json_line~3">json_line</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-k~20">k</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-basename~4">basename</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-frag_obj~2">frag_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-frags_arr~2">frags_arr</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-i~41">i</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-indices~7">indices</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-int_frag_obj">int_frag_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-int_frags_arr">int_frags_arr</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-intersect_obj">intersect_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-io_stat~7">io_stat</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-iunit~3">iunit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-j~11">j</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-json~3">json</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-k~4">k</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-level_count">level_count</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-max_level~18">max_level</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-level_obj~2">level_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-levels_arr~2">levels_arr</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-main_obj~3">main_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-max_level~12">max_level</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-monomers_obj">monomers_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-n_indices">n_indices</a>
             <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-output_file~4">output_file</a>
-            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-unit~31">unit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_json.html#variable-root~3">root</a>
         </div>
       </div>
     </div>
@@ -188,8 +198,7 @@
     
 
     <p>Write GMBE calculation results to output JSON file
-Outputs structured JSON with monomers, intersections, and total energy
-Intersection parameters are optional and should be omitted when n_intersections=0</p>
+Uses json-fortran for clean, maintainable JSON output</p>
 
 
     <h3>Arguments</h3>
@@ -205,7 +214,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~10"></span>
+              <span class="anchor" id="variable-n_monomers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -250,7 +259,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~7"></span>
+              <span class="anchor" id="variable-n_intersections~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -280,7 +289,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~8"></span>
+              <span class="anchor" id="variable-intersection_sets~4"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -290,12 +299,12 @@ Intersection parameters are optional and should be omitted when n_intersections=
             <td>::</td>
             <td><strong>intersection_sets</strong>(:,:)</td>
             <td>
-                <p>(n_monomers, n_intersections)</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~7"></span>
+              <span class="anchor" id="variable-intersection_levels~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -310,7 +319,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~8"></span>
+              <span class="anchor" id="variable-total_energy~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -338,100 +347,160 @@ Intersection parameters are optional and should be omitted when n_intersections=
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~print_gmbe_json~~CallsGraph Pages: 1 -->
-<svg id="procprint_gmbe_jsonCallsGraph" width="480pt" height="200pt"
- viewBox="0.00 0.00 480.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~print_gmbe_json~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<svg id="procprint_gmbe_jsonCallsGraph" width="480pt" height="410pt"
+ viewBox="0.00 0.00 480.00 410.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~print_gmbe_json~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 406)">
 <title>proc~~print_gmbe_json~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 476,-196 476,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-406 476,-406 476,4 -4,4"/>
 <!-- proc~print_gmbe_json -->
 <g id="proc~~print_gmbe_json~~CallsGraph_node1" class="node">
 <title>proc~print_gmbe_json</title>
-<polygon fill="none" stroke="black" points="100,-108 0,-108 0,-84 100,-84 100,-108"/>
-<text text-anchor="middle" x="50" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_gmbe_json</text>
+<polygon fill="none" stroke="black" points="100,-213 0,-213 0,-189 100,-189 100,-213"/>
+<text text-anchor="middle" x="50" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_gmbe_json</text>
+</g>
+<!-- add -->
+<g id="proc~~print_gmbe_json~~CallsGraph_node2" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="237.5,-402 183.5,-402 183.5,-378 237.5,-378 237.5,-402"/>
+<text text-anchor="middle" x="210.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;add -->
+<g id="proc~~print_gmbe_json~~CallsGraph_edge1" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;add</title>
+<path fill="none" stroke="#ff0000" d="M53.62,-213.27C60.91,-244.27 84.33,-326.33 136,-369 146.5,-377.67 160.38,-382.76 173.26,-385.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.79,-389.23 183.28,-387.73 174.14,-382.36 172.79,-389.23"/>
+</g>
+<!-- create_array -->
+<g id="proc~~print_gmbe_json~~CallsGraph_node3" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="250.5,-360 170.5,-360 170.5,-336 250.5,-336 250.5,-360"/>
+<text text-anchor="middle" x="210.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;create_array -->
+<g id="proc~~print_gmbe_json~~CallsGraph_edge2" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;create_array</title>
+<path fill="none" stroke="#ff0000" d="M55.76,-213.13C66.27,-238.31 93.93,-296.47 136,-327 143.26,-332.27 151.8,-336.22 160.45,-339.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="159.62,-342.58 170.2,-342.12 161.64,-335.88 159.62,-342.58"/>
+</g>
+<!-- create_object -->
+<g id="proc~~print_gmbe_json~~CallsGraph_node4" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="253,-318 168,-318 168,-294 253,-294 253,-318"/>
+<text text-anchor="middle" x="210.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;create_object -->
+<g id="proc~~print_gmbe_json~~CallsGraph_edge3" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff0000" d="M60.03,-213.22C74.19,-231.53 103.4,-265.95 136,-285 142.85,-289 150.5,-292.28 158.22,-294.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="157.37,-298.36 167.96,-298.03 159.48,-291.68 157.37,-298.36"/>
+</g>
+<!-- destroy -->
+<g id="proc~~print_gmbe_json~~CallsGraph_node5" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="237.5,-276 183.5,-276 183.5,-252 237.5,-252 237.5,-276"/>
+<text text-anchor="middle" x="210.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;destroy -->
+<g id="proc~~print_gmbe_json~~CallsGraph_edge4" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff0000" d="M72.88,-213.18C89.76,-222.24 113.89,-234.46 136,-243 147.99,-247.63 161.43,-251.77 173.51,-255.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.71,-258.52 183.27,-257.74 174.52,-251.76 172.71,-258.52"/>
 </g>
 <!-- error -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node2" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node6" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="237.5,-192 183.5,-192 183.5,-168 237.5,-168 237.5,-192"/>
-<text text-anchor="middle" x="210.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="237.5,-234 183.5,-234 183.5,-210 237.5,-210 237.5,-234"/>
+<text text-anchor="middle" x="210.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~print_gmbe_json&#45;&gt;error -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge1" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge5" class="edge">
 <title>proc~print_gmbe_json&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M64.13,-108.13C80.03,-122.21 108.16,-145.27 136,-159 147.72,-164.78 161.29,-169.22 173.56,-172.49"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="172.94,-175.95 183.49,-174.97 174.64,-169.15 172.94,-175.95"/>
+<path fill="none" stroke="#ff0000" d="M100.28,-207.53C123.87,-210.65 151.6,-214.33 173.22,-217.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.93,-220.69 183.3,-218.53 173.85,-213.75 172.93,-220.69"/>
 </g>
 <!-- info -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node3" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node7" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="237.5,-150 183.5,-150 183.5,-126 237.5,-126 237.5,-150"/>
-<text text-anchor="middle" x="210.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="237.5,-192 183.5,-192 183.5,-168 237.5,-168 237.5,-192"/>
+<text text-anchor="middle" x="210.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~print_gmbe_json&#45;&gt;info -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge2" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge6" class="edge">
 <title>proc~print_gmbe_json&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M96.42,-108.04C120.85,-114.51 150.57,-122.38 173.4,-128.44"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="172.81,-131.9 183.37,-131.08 174.6,-125.13 172.81,-131.9"/>
+<path fill="none" stroke="#ff0000" d="M100.28,-194.47C123.87,-191.35 151.6,-187.67 173.22,-184.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="173.85,-188.25 183.3,-183.47 172.93,-181.31 173.85,-188.25"/>
+</g>
+<!-- initialize -->
+<g id="proc~~print_gmbe_json~~CallsGraph_node8" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="239,-150 182,-150 182,-126 239,-126 239,-150"/>
+<text text-anchor="middle" x="210.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~print_gmbe_json&#45;&gt;initialize -->
+<g id="proc~~print_gmbe_json~~CallsGraph_edge7" class="edge">
+<title>proc~print_gmbe_json&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff0000" d="M72.88,-188.82C89.76,-179.76 113.89,-167.54 136,-159 147.49,-154.56 160.31,-150.58 171.98,-147.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="173.15,-150.62 181.89,-144.62 171.32,-143.86 173.15,-150.62"/>
 </g>
 <!-- proc~energy_total -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node4" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node9" class="node">
 <title>proc~energy_total</title>
-<g id="a_proc~~print_gmbe_json~~CallsGraph_node4"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
+<g id="a_proc~~print_gmbe_json~~CallsGraph_node9"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="278.5,-108 142.5,-108 142.5,-84 278.5,-84 278.5,-108"/>
 <text text-anchor="middle" x="210.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_json&#45;&gt;proc~energy_total -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge3" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge8" class="edge">
 <title>proc~print_gmbe_json&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff0000" d="M100.28,-96C110.51,-96 121.52,-96 132.47,-96"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="132.49,-99.5 142.49,-96 132.49,-92.5 132.49,-99.5"/>
+<path fill="none" stroke="#ff0000" d="M60.03,-188.78C74.19,-170.47 103.4,-136.05 136,-117 139.17,-115.15 142.5,-113.46 145.94,-111.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="147.28,-115.14 155.22,-108.12 144.63,-108.66 147.28,-115.14"/>
 </g>
 <!-- proc~get_basename -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node5" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node10" class="node">
 <title>proc~get_basename</title>
-<g id="a_proc~~print_gmbe_json~~CallsGraph_node5"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<g id="a_proc~~print_gmbe_json~~CallsGraph_node10"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="256,-66 165,-66 165,-42 256,-42 256,-66"/>
 <text text-anchor="middle" x="210.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_json&#45;&gt;proc~get_basename -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge4" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge9" class="edge">
 <title>proc~print_gmbe_json&#45;&gt;proc~get_basename</title>
-<path fill="none" stroke="#ff0000" d="M96.42,-83.96C114.73,-79.11 136,-73.48 155.12,-68.41"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="156.13,-71.76 164.89,-65.82 154.33,-65 156.13,-71.76"/>
+<path fill="none" stroke="#ff0000" d="M55.76,-188.87C66.27,-163.69 93.93,-105.53 136,-75 141.83,-70.77 148.5,-67.38 155.38,-64.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="156.54,-67.98 164.85,-61.4 154.25,-61.37 156.54,-67.98"/>
 </g>
 <!-- proc~get_output_json_filename -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node6" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node11" class="node">
 <title>proc~get_output_json_filename</title>
-<g id="a_proc~~print_gmbe_json~~CallsGraph_node6"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<g id="a_proc~~print_gmbe_json~~CallsGraph_node11"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="285,-24 136,-24 136,0 285,0 285,-24"/>
 <text text-anchor="middle" x="210.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_json&#45;&gt;proc~get_output_json_filename -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge5" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge10" class="edge">
 <title>proc~print_gmbe_json&#45;&gt;proc~get_output_json_filename</title>
-<path fill="none" stroke="#ff0000" d="M64.13,-83.87C80.03,-69.79 108.16,-46.73 136,-33 140.06,-31 144.34,-29.16 148.72,-27.47"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="150.15,-30.68 158.39,-24.02 147.79,-24.08 150.15,-30.68"/>
+<path fill="none" stroke="#ff0000" d="M53.62,-188.73C60.91,-157.73 84.33,-75.67 136,-33 137.75,-31.56 139.59,-30.21 141.5,-28.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="143.27,-31.98 150.3,-24.05 139.86,-25.87 143.27,-31.98"/>
 </g>
 <!-- proc~mp2_total -->
-<g id="proc~~print_gmbe_json~~CallsGraph_node7" class="node">
+<g id="proc~~print_gmbe_json~~CallsGraph_node12" class="node">
 <title>proc~mp2_total</title>
-<g id="a_proc~~print_gmbe_json~~CallsGraph_node7"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<g id="a_proc~~print_gmbe_json~~CallsGraph_node12"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="472,-108 321,-108 321,-84 472,-84 472,-108"/>
 <text text-anchor="middle" x="396.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_total&#45;&gt;proc~mp2_total -->
-<g id="proc~~print_gmbe_json~~CallsGraph_edge6" class="edge">
+<g id="proc~~print_gmbe_json~~CallsGraph_edge11" class="edge">
 <title>proc~energy_total&#45;&gt;proc~mp2_total</title>
-<path fill="none" stroke="#00ff66" d="M278.71,-96C289.06,-96 299.86,-96 310.53,-96"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="310.7,-99.5 320.7,-96 310.7,-92.5 310.7,-99.5"/>
+<path fill="none" stroke="#3200ff" d="M278.71,-96C289.06,-96 299.86,-96 310.53,-96"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="310.7,-99.5 320.7,-96 310.7,-92.5 310.7,-99.5"/>
 </g>
 </g>
 </svg>
@@ -533,7 +602,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~6"></span>
+              <span class="anchor" id="variable-basename~4"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -550,15 +619,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-first_intersection"></span>
-              logical,
+              <span class="anchor" id="variable-frag_obj~2"></span>
+              type(json_value),
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              pointer
             </td>
             <td>::</td>
-            <td><strong>first_intersection</strong></td>
+            <td><strong>frag_obj</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -567,15 +636,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-first_level~2"></span>
-              logical,
+              <span class="anchor" id="variable-frags_arr~2"></span>
+              type(json_value),
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              pointer
             </td>
             <td>::</td>
-            <td><strong>first_level</strong></td>
+            <td><strong>frags_arr</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -584,7 +653,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~85"></span>
+              <span class="anchor" id="variable-i~41"></span>
               integer,
             </td>
               <td>private</td>
@@ -601,7 +670,75 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~25"></span>
+              <span class="anchor" id="variable-indices~7"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-int_frag_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>int_frag_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-int_frags_arr"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>int_frags_arr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intersect_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>intersect_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-io_stat~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -618,7 +755,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~28"></span>
+              <span class="anchor" id="variable-iunit~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iunit</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~11"></span>
               integer,
             </td>
               <td>private</td>
@@ -635,15 +789,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_line~3"></span>
-              character(len=512),
+              <span class="anchor" id="variable-json~3"></span>
+              type(json_core),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>json_line</strong></td>
+            <td><strong>json</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -652,7 +806,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~20"></span>
+              <span class="anchor" id="variable-k~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -686,7 +840,58 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~18"></span>
+              <span class="anchor" id="variable-level_obj~2"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>level_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-levels_arr~2"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>levels_arr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-main_obj~3"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>main_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -695,6 +900,40 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>max_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-monomers_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>monomers_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_indices"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_indices</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -720,15 +959,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~31"></span>
-              integer,
+              <span class="anchor" id="variable-root~3"></span>
+              type(json_value),
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              pointer
             </td>
             <td>::</td>
-            <td><strong>unit</strong></td>
+            <td><strong>root</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -755,149 +994,109 @@ large graphs.</div>
 <span class="w">                              </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                              </span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write GMBE calculation results to output JSON file</span>
-<span class="w">      </span><span class="c">!! Outputs structured JSON with monomers, intersections, and total energy</span>
-<span class="w">      </span><span class="c">!! Intersection parameters are optional and should be omitted when n_intersections=0</span>
+<span class="w">      </span><span class="c">!! Uses json-fortran for clean, maintainable JSON output</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_monomers</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_intersections</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (n_monomers, n_intersections)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersection_levels</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
 
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_line</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">monomers_obj</span><span class="p">,</span><span class="w"> </span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">frag_obj</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">intersect_obj</span><span class="p">,</span><span class="w"> </span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="n">int_frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">int_frag_obj</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span><span class="p">,</span><span class="w"> </span><span class="n">level_count</span><span class="p">,</span><span class="w"> </span><span class="n">n_indices</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">output_file</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">first_level</span><span class="p">,</span><span class="w"> </span><span class="n">first_intersection</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_count</span>
 
 <span class="w">      </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_output_json_filename</span><span class="p">()</span>
 <span class="w">      </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_basename</span><span class="p">()</span>
 
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">(</span><span class="n">real_format</span><span class="o">=</span><span class="n">JSON_REAL_FORMAT</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">)</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing GMBE JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
-
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;{&quot;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  &quot;&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;&quot;: {&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Monomers section</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;monomers&quot;: {&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;count&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;fragments&quot;: [&#39;</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">monomers_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;monomers&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">monomers_obj</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">monomers_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;fragments&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">monomers_obj</span><span class="p">,</span><span class="w"> </span><span class="n">frags_arr</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        {&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;index&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n_monomers</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        },&#39;</span>
-<span class="w">         </span><span class="k">else</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        }&#39;</span>
-<span class="w">         </span><span class="k">end if</span>
-<span class="k">      end do</span>
-
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      ]&#39;</span>
-
-<span class="w">      </span><span class="c">! Add comma after monomers if we have intersections</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">          </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    },&#39;</span>
-<span class="w">      </span><span class="k">else</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">frag_obj</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;index&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_indices</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">monomer_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">())</span>
+<span class="w">      </span><span class="k">end do</span>
 
 <span class="w">      </span><span class="c">! Intersections section</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n_intersections</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_results</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">          </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;intersections&quot;: {&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;total_count&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;levels&quot;: [&#39;</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">intersect_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;intersections&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">intersect_obj</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">intersect_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span><span class="p">)</span>
 
-<span class="w">         </span><span class="n">first_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;levels&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">intersect_obj</span><span class="p">,</span><span class="w"> </span><span class="n">levels_arr</span><span class="p">)</span>
+
 <span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span>
-<span class="w">            </span><span class="c">! Count intersections at this level</span>
-<span class="w">            </span><span class="n">level_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span>
-<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="n">level_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">level_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="k">end do</span>
+<span class="w">            </span><span class="n">level_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">intersection_levels</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
 
-<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">level_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        },&#39;</span>
-<span class="w">               </span><span class="k">end if</span>
-<span class="k">               </span><span class="n">first_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">level_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="n">level_obj</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">level_count</span><span class="p">)</span>
 
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        {&#39;</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;level&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;count&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">level_count</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;fragments&quot;: [&#39;</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">int_frags_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;fragments&#39;</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="n">int_frags_arr</span><span class="p">)</span>
 
-<span class="w">               </span><span class="n">first_intersection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">               </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_intersections</span>
 <span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_levels</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                     if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_intersection</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                        write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;            },&#39;</span>
-<span class="w">                     </span><span class="k">end if</span>
-<span class="k">                     </span><span class="n">first_intersection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="k">                     call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">int_frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">int_frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">int_frag_obj</span><span class="p">)</span>
 
-<span class="w">                     </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;            {&#39;</span>
-
-<span class="w">                     </span><span class="c">! Write indices</span>
-<span class="w">                     </span><span class="n">json_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;              &quot;indices&quot;: [&#39;</span>
-<span class="w">                     </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_monomers</span>
+<span class="w">                     </span><span class="c">! Count and extract non-zero indices</span>
+<span class="w">                     </span><span class="n">n_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">n_indices</span><span class="p">))</span>
+<span class="w">                     </span><span class="n">n_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">                     </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 <span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                           if</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                              write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
-<span class="w">                           </span><span class="k">else</span>
-<span class="k">                              write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
-<span class="w">                           </span><span class="k">end if</span>
-<span class="k">                        end if</span>
+<span class="k">                           </span><span class="n">n_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_indices</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                           </span><span class="n">indices</span><span class="p">(</span><span class="n">n_indices</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intersection_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="w">                        </span><span class="k">end if</span>
 <span class="k">                     end do</span>
-<span class="k">                     write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;],&#39;</span>
-<span class="w">                     </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="k">                     call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">int_frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;indices&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
 
-<span class="w">                     </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;              &quot;energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">()</span>
-<span class="w">                     </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">                     </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">int_frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">intersection_results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">())</span>
 <span class="w">                  </span><span class="k">end if</span>
 <span class="k">               end do</span>
-
-<span class="k">               if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_intersection</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">                  write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;            }&#39;</span>
-<span class="w">               </span><span class="k">end if</span>
-<span class="k">               write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          ]&#39;</span>
-<span class="w">            </span><span class="k">end if</span>
+<span class="k">            end if</span>
 <span class="k">         end do</span>
+<span class="k">      end if</span>
 
-<span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        }&#39;</span>
-<span class="w">         </span><span class="k">end if</span>
+<span class="w">      </span><span class="c">! Write to file</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing GMBE JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
 
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      ]&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  }&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;}&#39;</span>
-
-<span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="k">print</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE JSON output written successfully to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">print_gmbe_json</span>
@@ -924,7 +1123,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-11 09:40 +0000             </p>
+ on 2026-01-11 11:56 +0000             </p>
           </div>
         </div>
         <br>

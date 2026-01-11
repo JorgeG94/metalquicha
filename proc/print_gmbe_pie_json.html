@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">79 statements</a>
+                 title=" 0.7% of total for procedures.">58 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,17 +136,22 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-basename~7">basename</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-first_term">first_term</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-i~86">i</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-io_stat~26">io_stat</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-j~29">j</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-json_line~4">json_line</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-max_atoms~11">max_atoms</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_atoms~24">n_atoms</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-atom_indices~2">atom_indices</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-basename~5">basename</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-i~42">i</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-io_stat~8">io_stat</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-iunit~4">iunit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-j~12">j</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-json~4">json</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-main_obj~4">main_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-max_atoms">max_atoms</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_atoms~7">n_atoms</a>
             <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-n_nonzero_terms">n_nonzero_terms</a>
             <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-output_file~5">output_file</a>
-            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-unit~32">unit</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-pie_obj">pie_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-root~4">root</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-term_obj">term_obj</a>
+            <a class="list-group-item" href="../proc/print_gmbe_pie_json.html#variable-terms_arr">terms_arr</a>
         </div>
       </div>
     </div>
@@ -187,8 +192,7 @@
     
 
     <p>Write GMBE PIE calculation results to output JSON file
-Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
-Optionally includes total gradient and Hessian norms</p>
+Uses json-fortran for clean, maintainable JSON output</p>
 
 
     <h3>Arguments</h3>
@@ -204,7 +208,7 @@ Optionally includes total gradient and Hessian norms</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              <span class="anchor" id="variable-pie_atom_sets"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -214,12 +218,12 @@ Optionally includes total gradient and Hessian norms</p>
             <td>::</td>
             <td><strong>pie_atom_sets</strong>(:,:)</td>
             <td>
-                <p>Unique atom sets (max_atoms, n_pie_terms)</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~5"></span>
+              <span class="anchor" id="variable-pie_coefficients"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -229,12 +233,12 @@ Optionally includes total gradient and Hessian norms</p>
             <td>::</td>
             <td><strong>pie_coefficients</strong>(:)</td>
             <td>
-                <p>PIE coefficient for each term</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_energies~2"></span>
+              <span class="anchor" id="variable-pie_energies"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -244,12 +248,12 @@ Optionally includes total gradient and Hessian norms</p>
             <td>::</td>
             <td><strong>pie_energies</strong>(:)</td>
             <td>
-                <p>Raw energy for each term</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -264,7 +268,7 @@ Optionally includes total gradient and Hessian norms</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~9"></span>
+              <span class="anchor" id="variable-total_energy~6"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -279,7 +283,7 @@ Optionally includes total gradient and Hessian norms</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~7"></span>
+              <span class="anchor" id="variable-total_gradient~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -289,12 +293,12 @@ Optionally includes total gradient and Hessian norms</p>
             <td>::</td>
             <td><strong>total_gradient</strong>(:,:)</td>
             <td>
-                <p>(3, total_atoms)</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~5"></span>
+              <span class="anchor" id="variable-total_hessian~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -304,7 +308,7 @@ Optionally includes total gradient and Hessian norms</p>
             <td>::</td>
             <td><strong>total_hessian</strong>(:,:)</td>
             <td>
-                <p>(3<em>total_atoms, 3</em>total_atoms)</p>
+                
             </td>
         </tr>
     </tbody>
@@ -322,70 +326,130 @@ Optionally includes total gradient and Hessian norms</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~print_gmbe_pie_json~~CallsGraph Pages: 1 -->
-<svg id="procprint_gmbe_pie_jsonCallsGraph" width="315pt" height="158pt"
- viewBox="0.00 0.00 315.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~print_gmbe_pie_json~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<svg id="procprint_gmbe_pie_jsonCallsGraph" width="315pt" height="368pt"
+ viewBox="0.00 0.00 315.00 368.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 364)">
 <title>proc~~print_gmbe_pie_json~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 311,-154 311,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-364 311,-364 311,4 -4,4"/>
 <!-- proc~print_gmbe_pie_json -->
 <g id="proc~~print_gmbe_pie_json~~CallsGraph_node1" class="node">
 <title>proc~print_gmbe_pie_json</title>
-<polygon fill="none" stroke="black" points="122,-87 0,-87 0,-63 122,-63 122,-87"/>
-<text text-anchor="middle" x="61" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_gmbe_pie_json</text>
+<polygon fill="none" stroke="black" points="122,-192 0,-192 0,-168 122,-168 122,-192"/>
+<text text-anchor="middle" x="61" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_gmbe_pie_json</text>
+</g>
+<!-- add -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node2" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="259.5,-360 205.5,-360 205.5,-336 259.5,-336 259.5,-360"/>
+<text text-anchor="middle" x="232.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;add -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge1" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;add</title>
+<path fill="none" stroke="#ff0000" d="M66.56,-192.41C77.63,-220.76 108.69,-290.64 158,-327 168.87,-335.02 182.72,-339.98 195.46,-343.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.85,-346.49 205.35,-345.12 196.29,-339.64 194.85,-346.49"/>
+</g>
+<!-- create_array -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node3" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="272.5,-318 192.5,-318 192.5,-294 272.5,-294 272.5,-318"/>
+<text text-anchor="middle" x="232.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;create_array -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge2" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;create_array</title>
+<path fill="none" stroke="#ff0000" d="M69.67,-192.07C84.19,-213.94 117.89,-260.17 158,-285 165.54,-289.67 174.16,-293.33 182.77,-296.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="181.85,-299.57 192.44,-299.1 183.87,-292.87 181.85,-299.57"/>
+</g>
+<!-- create_object -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node4" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="275,-276 190,-276 190,-252 275,-252 275,-276"/>
+<text text-anchor="middle" x="232.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;create_object -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge3" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff0000" d="M77.11,-192.02C95.34,-206.01 127.37,-228.97 158,-243 165.04,-246.23 172.69,-249.07 180.31,-251.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="179.3,-254.9 189.89,-254.48 181.35,-248.2 179.3,-254.9"/>
+</g>
+<!-- destroy -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node5" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="259.5,-234 205.5,-234 205.5,-210 259.5,-210 259.5,-234"/>
+<text text-anchor="middle" x="232.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;destroy -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge4" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff0000" d="M110.57,-192.04C137.74,-198.77 171.02,-207.01 195.78,-213.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.95,-216.55 205.49,-215.56 196.63,-209.75 194.95,-216.55"/>
 </g>
 <!-- error -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_node2" class="node">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node6" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="259.5,-150 205.5,-150 205.5,-126 259.5,-126 259.5,-150"/>
-<text text-anchor="middle" x="232.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="259.5,-192 205.5,-192 205.5,-168 259.5,-168 259.5,-192"/>
+<text text-anchor="middle" x="232.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;error -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge1" class="edge">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge5" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M87.29,-87.18C106.44,-96.12 133.52,-108.19 158,-117 170.1,-121.35 183.56,-125.42 195.63,-128.79"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="194.81,-132.19 205.38,-131.45 196.65,-125.44 194.81,-132.19"/>
+<path fill="none" stroke="#ff0000" d="M122.24,-180C146.66,-180 174.05,-180 195.3,-180"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.5,-183.5 205.5,-180 195.5,-176.5 195.5,-183.5"/>
 </g>
 <!-- info -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_node3" class="node">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node7" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="259.5,-108 205.5,-108 205.5,-84 259.5,-84 259.5,-108"/>
-<text text-anchor="middle" x="232.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="259.5,-150 205.5,-150 205.5,-126 259.5,-126 259.5,-150"/>
+<text text-anchor="middle" x="232.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;info -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge2" class="edge">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge6" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M122.24,-82.46C146.66,-85.49 174.05,-88.88 195.3,-91.51"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="195.14,-95.02 205.5,-92.78 196,-88.08 195.14,-95.02"/>
+<path fill="none" stroke="#ff0000" d="M110.57,-167.96C137.74,-161.23 171.02,-152.99 195.78,-146.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="196.63,-150.25 205.49,-144.44 194.95,-143.45 196.63,-150.25"/>
+</g>
+<!-- initialize -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node8" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="261,-108 204,-108 204,-84 261,-84 261,-108"/>
+<text text-anchor="middle" x="232.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~print_gmbe_pie_json&#45;&gt;initialize -->
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge7" class="edge">
+<title>proc~print_gmbe_pie_json&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff0000" d="M77.11,-167.98C95.34,-153.99 127.37,-131.03 158,-117 169.29,-111.83 182.15,-107.63 193.92,-104.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.12,-107.69 203.92,-101.78 193.36,-100.92 195.12,-107.69"/>
 </g>
 <!-- proc~get_basename -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_node4" class="node">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node9" class="node">
 <title>proc~get_basename</title>
-<g id="a_proc~~print_gmbe_pie_json~~CallsGraph_node4"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<g id="a_proc~~print_gmbe_pie_json~~CallsGraph_node9"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="278,-66 187,-66 187,-42 278,-42 278,-66"/>
 <text text-anchor="middle" x="232.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_basename -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge3" class="edge">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge8" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;proc~get_basename</title>
-<path fill="none" stroke="#ff0000" d="M122.24,-67.54C140.05,-65.33 159.45,-62.93 176.89,-60.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="177.42,-64.23 186.91,-59.52 176.56,-57.28 177.42,-64.23"/>
+<path fill="none" stroke="#ff0000" d="M69.67,-167.93C84.19,-146.06 117.89,-99.83 158,-75 163.84,-71.39 170.32,-68.38 176.94,-65.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="178.35,-69.09 186.69,-62.56 176.1,-62.46 178.35,-69.09"/>
 </g>
 <!-- proc~get_output_json_filename -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_node5" class="node">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_node10" class="node">
 <title>proc~get_output_json_filename</title>
-<g id="a_proc~~print_gmbe_pie_json~~CallsGraph_node5"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<g id="a_proc~~print_gmbe_pie_json~~CallsGraph_node10"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
 <polygon fill="#d94e8f" stroke="#d94e8f" points="307,-24 158,-24 158,0 307,0 307,-24"/>
 <text text-anchor="middle" x="232.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
 </a>
 </g>
 </g>
 <!-- proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename -->
-<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge4" class="edge">
+<g id="proc~~print_gmbe_pie_json~~CallsGraph_edge9" class="edge">
 <title>proc~print_gmbe_pie_json&#45;&gt;proc~get_output_json_filename</title>
-<path fill="none" stroke="#ff0000" d="M87.29,-62.82C106.44,-53.88 133.52,-41.81 158,-33 163.82,-30.91 169.95,-28.88 176.1,-26.96"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="177.16,-30.3 185.72,-24.05 175.13,-23.6 177.16,-30.3"/>
+<path fill="none" stroke="#ff0000" d="M66.56,-167.59C77.63,-139.24 108.69,-69.36 158,-33 160.1,-31.45 162.32,-30.01 164.61,-28.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.45,-31.68 173.81,-24.06 163.3,-25.42 166.45,-31.68"/>
 </g>
 </g>
 </svg>
@@ -713,7 +777,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basename~7"></span>
+              <span class="anchor" id="variable-atom_indices~2"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basename~5"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -730,24 +811,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-first_term"></span>
-              logical,
-            </td>
-              <td>private</td>
-            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>first_term</strong></td>
-                <td></td>
-                <td></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-i~86"></span>
+              <span class="anchor" id="variable-i~42"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -764,7 +828,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~26"></span>
+              <span class="anchor" id="variable-io_stat~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -781,7 +845,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~29"></span>
+              <span class="anchor" id="variable-iunit~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iunit</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -798,15 +879,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_line~4"></span>
-              character(len=512),
+              <span class="anchor" id="variable-json~4"></span>
+              type(json_core),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>json_line</strong></td>
+            <td><strong>json</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -815,7 +896,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms~11"></span>
+              <span class="anchor" id="variable-main_obj~4"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>main_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -832,7 +930,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~24"></span>
+              <span class="anchor" id="variable-n_atoms~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -883,15 +981,66 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~32"></span>
-              integer,
+              <span class="anchor" id="variable-pie_obj"></span>
+              type(json_value),
             </td>
-              <td>private</td>
+              <td>private,</td>
             <td>
-              
+              pointer
             </td>
             <td>::</td>
-            <td><strong>unit</strong></td>
+            <td><strong>pie_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~4"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>term_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms_arr"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>terms_arr</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -917,112 +1066,81 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_gmbe_pie_json</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                  </span><span class="n">total_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Write GMBE PIE calculation results to output JSON file</span>
-<span class="w">      </span><span class="c">!! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)</span>
-<span class="w">      </span><span class="c">!! Optionally includes total gradient and Hessian norms</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Unique atom sets (max_atoms, n_pie_terms)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! PIE coefficient for each term</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Raw energy for each term</span>
+<span class="w">      </span><span class="c">!! Uses json-fortran for clean, maintainable JSON output</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_energy</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3, total_atoms)</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! (3*total_atoms, 3*total_atoms)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_gradient</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_hessian</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="n">term_obj</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">n_nonzero_terms</span>
-<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
-<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">first_term</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_line</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_indices</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">output_file</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span>
 
 <span class="w">      </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_output_json_filename</span><span class="p">()</span>
 <span class="w">      </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_basename</span><span class="p">()</span>
 
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
-<span class="w">         </span><span class="k">return</span>
-<span class="k">      end if</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">(</span><span class="n">real_format</span><span class="o">=</span><span class="n">JSON_REAL_FORMAT</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">)</span>
 
-<span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing GMBE PIE JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;gradient_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hessian_frobenius_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
 
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;{&quot;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  &quot;&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;&quot;: {&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;total_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total_energy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-
-<span class="w">      </span><span class="c">! Add gradient if present</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;gradient_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end if</span>
-
-<span class="w">      </span><span class="c">! Add Hessian if present</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">total_hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;hessian_frobenius_norm&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">total_hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">      </span><span class="k">end if</span>
+<span class="w">      </span><span class="c">! Count non-zero coefficient terms</span>
+<span class="w">      </span><span class="n">n_nonzero_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_pie_terms</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! PIE terms section</span>
-<span class="w">      </span><span class="c">! First count non-zero coefficient terms</span>
-<span class="w">      </span><span class="n">n_nonzero_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
-<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">n_nonzero_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_nonzero_terms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">      </span><span class="k">end do</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pie_terms&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">pie_obj</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">n_nonzero_terms</span><span class="p">))</span>
 
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    &quot;pie_terms&quot;: {&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;count&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">n_nonzero_terms</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      &quot;terms&quot;: [&#39;</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;terms&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="n">terms_arr</span><span class="p">)</span>
 
 <span class="w">      </span><span class="n">max_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-<span class="w">      </span><span class="n">first_term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
-<span class="w">         </span><span class="c">! Skip terms with zero coefficient</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="k">         if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_term</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        },&#39;</span>
-<span class="w">         </span><span class="n">first_term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="n">term_obj</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        {&#39;</span>
-
-<span class="w">         </span><span class="c">! Extract atom list size</span>
+<span class="w">         </span><span class="c">! Extract atom list size (atoms until negative sentinel)</span>
 <span class="w">         </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">         </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_atoms</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 <span class="w">            </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="k">end do</span>
 
-<span class="w">         </span><span class="c">! Write atom indices</span>
-<span class="w">         </span><span class="n">json_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;          &quot;atom_indices&quot;: [&#39;</span>
-<span class="w">         </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">               write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="k">else</span>
-<span class="k">               write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="k">end if</span>
-<span class="k">         end do</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;],&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_indices</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">         </span><span class="n">atom_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;atom_indices&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">atom_indices</span><span class="p">)</span>
+<span class="w">         </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_indices</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,i0,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;coefficient&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;,&#39;</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">json_line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a,f20.10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;          &quot;weighted_energy&quot;: &#39;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">            </span><span class="kt">real</span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">json_line</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;coefficient&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;weighted_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">      </span><span class="k">end do</span>
 
-<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">first_term</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;        }&#39;</span>
+<span class="w">      </span><span class="c">! Write to file</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing GMBE PIE JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
 
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;      ]&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;    }&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;  }&#39;</span>
-<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;}&#39;</span>
-
-<span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="k">print</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;GMBE PIE JSON output written successfully to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
 
 <span class="w">   </span><span class="k">end subroutine </span><span class="n">print_gmbe_pie_json</span>
@@ -1049,7 +1167,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-11 09:40 +0000             </p>
+ on 2026-01-11 11:56 +0000             </p>
           </div>
         </div>
         <br>
