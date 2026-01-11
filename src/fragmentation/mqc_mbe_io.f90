@@ -746,7 +746,7 @@ contains
       write (unit, '(a)', advance='no') '      "frequencies_cm1": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.4)') frequencies(i)
+         write (json_line, '(ES15.6)') frequencies(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       write (unit, '(a)') '],'
@@ -755,7 +755,7 @@ contains
       write (unit, '(a)', advance='no') '      "reduced_masses_amu": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.6)') reduced_masses(i)
+         write (json_line, '(ES15.6)') reduced_masses(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       write (unit, '(a)') '],'
@@ -764,7 +764,7 @@ contains
       write (unit, '(a)', advance='no') '      "force_constants_mdyne_ang": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.6)') force_constants(i)
+         write (json_line, '(ES15.6)') force_constants(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       if (has_ir) then
@@ -778,7 +778,7 @@ contains
          write (unit, '(a)', advance='no') '      "ir_intensities_km_mol": ['
          do i = 1, n_modes
             if (i > 1) write (unit, '(a)', advance='no') ', '
-            write (json_line, '(f12.4)') ir_intensities(i)
+            write (json_line, '(ES15.6)') ir_intensities(i)
             write (unit, '(a)', advance='no') trim(adjustl(json_line))
          end do
          write (unit, '(a)') ']'
@@ -1079,7 +1079,7 @@ contains
       write (unit, '(a)', advance='no') '      "frequencies_cm1": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.4)') frequencies(i)
+         write (json_line, '(ES15.6)') frequencies(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       write (unit, '(a)') '],'
@@ -1088,7 +1088,7 @@ contains
       write (unit, '(a)', advance='no') '      "reduced_masses_amu": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.6)') reduced_masses(i)
+         write (json_line, '(ES15.6)') reduced_masses(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       write (unit, '(a)') '],'
@@ -1097,7 +1097,7 @@ contains
       write (unit, '(a)', advance='no') '      "force_constants_mdyne_ang": ['
       do i = 1, n_modes
          if (i > 1) write (unit, '(a)', advance='no') ', '
-         write (json_line, '(f12.6)') force_constants(i)
+         write (json_line, '(ES15.6)') force_constants(i)
          write (unit, '(a)', advance='no') trim(adjustl(json_line))
       end do
       if (has_ir) then
@@ -1111,7 +1111,7 @@ contains
          write (unit, '(a)', advance='no') '      "ir_intensities_km_mol": ['
          do i = 1, n_modes
             if (i > 1) write (unit, '(a)', advance='no') ', '
-            write (json_line, '(f12.4)') ir_intensities(i)
+            write (json_line, '(ES15.6)') ir_intensities(i)
             write (unit, '(a)', advance='no') trim(adjustl(json_line))
          end do
          write (unit, '(a)') ']'

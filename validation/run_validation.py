@@ -466,9 +466,18 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     failure_reasons.append(f"Frequency count mismatch ({len(calculated_freqs)} vs {len(expected_freqs)})")
                 else:
                     freq_errors = []
+                    # Use looser tolerance for near-zero frequencies (trans/rot modes)
+                    # These are numerically noisy and vary between machines
+                    near_zero_threshold = 10.0  # cm^-1
+                    near_zero_tolerance = 1.0   # cm^-1 tolerance for near-zero modes
                     for idx, (calc_f, exp_f) in enumerate(zip(calculated_freqs, expected_freqs)):
                         freq_diff = abs(calc_f - exp_f)
-                        if freq_diff >= tolerance:
+                        # Use looser tolerance if both values are near zero
+                        if abs(exp_f) < near_zero_threshold and abs(calc_f) < near_zero_threshold:
+                            effective_tolerance = near_zero_tolerance
+                        else:
+                            effective_tolerance = tolerance
+                        if freq_diff >= effective_tolerance:
                             freq_errors.append((idx, calc_f, exp_f, freq_diff))
 
                     if freq_errors:
