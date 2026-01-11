@@ -22,5 +22,6 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
    getting_started
    capabilities
    input_files
+   json_output
    validation
    vibrational_analysis
