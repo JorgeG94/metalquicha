@@ -593,7 +593,6 @@ contains
       !!   L(j,i) = mass-weighted eigenvector component
       !!   m_j = atomic mass for coordinate j
       !!
-      !! Reference: xtb hessian.F90 lines 501-535
       real(dp), intent(in) :: dipole_derivatives(:, :)
          !! Cartesian dipole derivatives (3, 3*N) in atomic units
       real(dp), intent(in) :: eigenvectors(:, :)

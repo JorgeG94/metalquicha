@@ -11,9 +11,12 @@ module mqc_thermochemistry
    !! Output follows Gaussian-style formatting for compatibility.
    use pic_types, only: dp
    use pic_logger, only: logger => global_logger
-   use mqc_physical_constants, only: BOHR_TO_ANGSTROM, AMU_TO_AU, &
-                                     KB_HARTREE, CM1_TO_KELVIN, R_CALMOLK, R_HARTREE, &
-                                     PI, ROTCONST_AMUA2_TO_GHZ, &
+   use pic_io, only: to_char
+   use mqc_physical_constants, only: BOHR_TO_ANGSTROM, AMU_TO_AU, AMU_TO_KG, &
+                                     KB_HARTREE, KB_SI, H_SI, CM1_TO_KELVIN, &
+                                     R_CALMOLK, R_HARTREE, ATM_TO_PA, CAL_TO_J, &
+                                     PI, ROTCONST_AMUA2_TO_GHZ, ROTTEMP_AMUA2_TO_K, &
+                                     VIB_CLASSICAL_LIMIT, &
                                      HARTREE_TO_KCALMOL, HARTREE_TO_JMOL, HARTREE_TO_CALMOL
    use mqc_elements, only: element_mass
    use pic_lapack_interfaces, only: pic_syev
@@ -175,7 +178,7 @@ contains
 
       if (info /= 0) then
          call logger%warning("Failed to diagonalize inertia tensor, info = "// &
-                             trim(adjustl(int_to_str(info))))
+                             trim(adjustl(to_char(info))))
          moments = 0.0_dp
          is_linear = .false.
          return
@@ -247,7 +250,7 @@ contains
       end do
 
       if (n_imag > 0) then
-         call logger%warning("Thermochemistry: "//trim(adjustl(int_to_str(n_imag)))// &
+         call logger%warning("Thermochemistry: "//trim(adjustl(to_char(n_imag)))// &
                              " imaginary frequency(ies) skipped")
       end if
 
@@ -275,23 +278,18 @@ contains
       real(dp), intent(out) :: Cv          !! Heat capacity in cal/(mol*K)
 
       real(dp) :: mass_kg, T, P_pa
-      real(dp) :: h_si, kb_si
       real(dp) :: lambda_cubed, V_molar, qt
 
-      ! Physical constants in SI
-      h_si = 6.62607015e-34_dp    ! J*s
-      kb_si = 1.380649e-23_dp     ! J/K
-
       ! Convert inputs to SI
-      mass_kg = total_mass*1.66054e-27_dp  ! amu to kg
+      mass_kg = total_mass*AMU_TO_KG
       T = temperature
-      P_pa = pressure*101325.0_dp          ! atm to Pa
+      P_pa = pressure*ATM_TO_PA
 
       ! Thermal de Broglie wavelength cubed: lambda^3 = (h^2 / (2*pi*m*k*T))^(3/2)
-      lambda_cubed = (h_si*h_si/(2.0_dp*PI*mass_kg*kb_si*T))**1.5_dp
+      lambda_cubed = (H_SI*H_SI/(2.0_dp*PI*mass_kg*KB_SI*T))**1.5_dp
 
       ! Molar volume at given T and P (ideal gas): V = R*T/P = k*T/P per molecule
-      V_molar = kb_si*T/P_pa  ! m^3 per molecule
+      V_molar = KB_SI*T/P_pa  ! m^3 per molecule
 
       ! Translational partition function per molecule
       qt = V_molar/lambda_cubed
@@ -334,10 +332,10 @@ contains
       !   I_SI = I * 1.66054e-47 kg*m^2
       !   theta_rot = h^2 / (8*pi^2 * I_SI * k_B)
       !             = (6.62607e-34)^2 / (8 * pi^2 * 1.66054e-47 * 1.38065e-23 * I)
-      !             = 24.2637 / I  [K]
+      !             = ROTTEMP_AMUA2_TO_K / I  [K]
       do i = 1, 3
          if (moments(i) > LINEAR_THRESHOLD) then
-            theta_rot(i) = 24.2637_dp/moments(i)
+            theta_rot(i) = ROTTEMP_AMUA2_TO_K/moments(i)
          else
             theta_rot(i) = 0.0_dp
          end if
@@ -412,7 +410,7 @@ contains
          u = theta_v/T
 
          ! Avoid numerical issues for very large u (very low T or high freq)
-         if (u > 100.0_dp) then
+         if (u > VIB_CLASSICAL_LIMIT) then
             ! Classical limit: modes are frozen out
             cycle
          end if
@@ -466,30 +464,25 @@ contains
       real(dp), intent(out) :: q_vib            !! Vibrational partition function
 
       real(dp) :: mass_kg, T, P_pa
-      real(dp) :: h_si, kb_si
       real(dp) :: lambda, V_molar
       real(dp) :: theta_rot(3), u
       integer :: i
 
-      ! Physical constants in SI
-      h_si = 6.62607015e-34_dp    ! J*s
-      kb_si = 1.380649e-23_dp     ! J/K
-
       T = temperature
-      mass_kg = total_mass*1.66054e-27_dp  ! amu to kg
-      P_pa = pressure*101325.0_dp          ! atm to Pa
+      mass_kg = total_mass*AMU_TO_KG
+      P_pa = pressure*ATM_TO_PA
 
       ! Translational partition function: q_trans = (2*pi*m*k*T/h^2)^(3/2) * V
       ! where V = kT/P for ideal gas (per molecule)
-      lambda = h_si/sqrt(2.0_dp*PI*mass_kg*kb_si*T)  ! thermal de Broglie wavelength
-      V_molar = kb_si*T/P_pa  ! volume per molecule
+      lambda = H_SI/sqrt(2.0_dp*PI*mass_kg*KB_SI*T)  ! thermal de Broglie wavelength
+      V_molar = KB_SI*T/P_pa  ! volume per molecule
       q_trans = V_molar/(lambda**3)
 
       ! Rotational partition function
-      ! theta_rot = h^2 / (8*pi^2*I*k_B) = 24.2637 / I (for I in amu*Angstrom^2)
+      ! theta_rot = h^2 / (8*pi^2*I*k_B) = ROTTEMP_AMUA2_TO_K / I (for I in amu*Angstrom^2)
       do i = 1, 3
          if (moments(i) > 1.0e-6_dp) then
-            theta_rot(i) = 24.2637_dp/moments(i)
+            theta_rot(i) = ROTTEMP_AMUA2_TO_K/moments(i)
          else
             theta_rot(i) = 0.0_dp
          end if
@@ -643,7 +636,7 @@ contains
       ! Use Cp for translation (Cv + R) as is standard for thermochemistry output
       Cv_total = (result%Cv_trans + R_CALMOLK) + result%Cv_rot + result%Cv_vib
       S_total = result%S_trans + result%S_rot + result%S_vib + result%S_elec
-      S_total_J = S_total*4.184_dp  ! cal to J
+      S_total_J = S_total*CAL_TO_J  ! cal to J
 
       ! Thermodynamic quantities in Hartree
       ! H(0)-H(T)+PV is the thermal correction WITHOUT ZPE (just E_trans + E_rot + E_vib + RT)
@@ -691,24 +684,24 @@ contains
 
       write (line, '(F8.2,A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
          result%temperature, "  VIB", result%q_vib, H_vib_cal, result%Cv_vib, &
-         result%S_vib, result%S_vib*4.184_dp
+         result%S_vib, result%S_vib*CAL_TO_J
       call logger%info(trim(line))
 
       write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
          "          ROT", result%q_rot, H_rot_cal, result%Cv_rot, &
-         result%S_rot, result%S_rot*4.184_dp
+         result%S_rot, result%S_rot*CAL_TO_J
       call logger%info(trim(line))
 
       write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
          "          INT", result%q_rot*result%q_vib, H_vib_cal + H_rot_cal, &
          result%Cv_vib + result%Cv_rot, result%S_vib + result%S_rot, &
-         (result%S_vib + result%S_rot)*4.184_dp
+         (result%S_vib + result%S_rot)*CAL_TO_J
       call logger%info(trim(line))
 
       ! For TR, report Cp = Cv + R (constant pressure heat capacity for ideal gas)
       write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
          "          TR ", result%q_trans, H_trans_cal, result%Cv_trans + R_CALMOLK, &
-         result%S_trans, result%S_trans*4.184_dp
+         result%S_trans, result%S_trans*CAL_TO_J
       call logger%info(trim(line))
 
       call logger%info("  -------------------------------------------------------------------------")
@@ -748,12 +741,5 @@ contains
       call logger%info(" ")
 
    end subroutine print_thermochemistry
-
-   pure function int_to_str(i) result(str)
-      !! Convert integer to string (helper function)
-      integer, intent(in) :: i
-      character(len=20) :: str
-      write (str, '(I0)') i
-   end function int_to_str
 
 end module mqc_thermochemistry
