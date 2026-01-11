@@ -8,6 +8,7 @@ module mqc_vibrational_analysis
    use mqc_elements, only: element_mass, element_number_to_symbol
    use pic_logger, only: logger => global_logger
    use mqc_physical_constants, only: AU_TO_CM1, AU_TO_MDYNE_ANG, AU_TO_KMMOL, AMU_TO_AU
+   use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry, print_thermochemistry
    implicit none
    private
 
@@ -592,7 +593,6 @@ contains
       !!   L(j,i) = mass-weighted eigenvector component
       !!   m_j = atomic mass for coordinate j
       !!
-      !! Reference: xtb hessian.F90 lines 501-535
       real(dp), intent(in) :: dipole_derivatives(:, :)
          !! Cartesian dipole derivatives (3, 3*N) in atomic units
       real(dp), intent(in) :: eigenvectors(:, :)
@@ -638,11 +638,14 @@ contains
    subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                          cartesian_displacements, element_numbers, &
                                          force_constants_mdyne, print_displacements, &
-                                         n_atoms, ir_intensities)
+                                         n_atoms, ir_intensities, &
+                                         coordinates, electronic_energy)
       !! Print vibrational analysis results in a formatted table.
       !!
       !! Output format is similar to Gaussian, with frequencies grouped in columns.
       !! Optionally prints Cartesian displacement vectors for each mode.
+      !! If coordinates and electronic_energy are provided, also computes and prints
+      !! thermochemistry using the RRHO approximation.
       real(dp), intent(in) :: frequencies(:)
          !! Vibrational frequencies in cm⁻¹
       real(dp), intent(in) :: reduced_masses(:)
@@ -661,6 +664,10 @@ contains
          !! Number of atoms (if not provided, derived from size of element_numbers)
       real(dp), intent(in), optional :: ir_intensities(:)
          !! IR intensities in km/mol
+      real(dp), intent(in), optional :: coordinates(:, :)
+         !! Atomic coordinates (3, n_atoms) in Bohr - needed for thermochemistry
+      real(dp), intent(in), optional :: electronic_energy
+         !! Electronic energy in Hartree - needed for thermochemistry
 
       integer :: n_modes, n_at, n_groups, igroup, imode, iatom, icoord, k
       integer :: mode_start, mode_end, modes_in_group
@@ -813,6 +820,16 @@ contains
 
       call logger%info("============================================================")
       call logger%info(" ")
+
+      ! Compute and print thermochemistry if coordinates and energy are provided
+      if (present(coordinates) .and. present(electronic_energy)) then
+         block
+            type(thermochemistry_result_t) :: thermo_result
+            call compute_thermochemistry(coordinates, element_numbers, frequencies, &
+                                         n_at, n_modes, thermo_result)
+            call print_thermochemistry(thermo_result, electronic_energy)
+         end block
+      end if
 
    end subroutine print_vibrational_analysis
 

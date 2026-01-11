@@ -1,0 +1,1399 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>compute_thermochemistry &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>compute_thermochemistry
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for procedures.">43 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_thermochemistry.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_thermochemistry.f90.html'>mqc_thermochemistry.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_thermochemistry</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-p">P</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-s_total">S_total</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-t~5">T</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-center_of_mass~2">center_of_mass</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-mult">mult</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-principal_axes~2">principal_axes</a>
+            <a class="list-group-item" href="../proc/compute_thermochemistry.html#variable-sigma~5">sigma</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/compute_thermochemistry.html#src">compute_thermochemistry</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine compute_thermochemistry(coords, atomic_numbers, frequencies, n_atoms, n_freqs, result, temperature, pressure, symmetry_number, spin_multiplicity)  
+</h2>
+    
+
+    <p>Main driver for thermochemistry calculations.</p>
+<p>Computes all thermodynamic quantities from molecular geometry and vibrational frequencies.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coords~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coords</strong>(:,:)</td>
+            <td>
+                <p>Coordinates (3, n_atoms) in Bohr</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atomic_numbers~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atomic_numbers</strong>(:)</td>
+            <td>
+                <p>Atomic numbers</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frequencies~7"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frequencies</strong>(:)</td>
+            <td>
+                <p>Frequencies in cm^-1</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~18"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+            <td>
+                <p>Number of atoms</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_freqs~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_freqs</strong></td>
+            <td>
+                <p>Number of frequencies</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~13"></span>
+              type(<a href='../type/thermochemistry_result_t.html'>thermochemistry_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+                <p>Output results</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temperature~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temperature</strong></td>
+            <td>
+                <p>Temperature in K (default 298.15)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pressure~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pressure</strong></td>
+            <td>
+                <p>Pressure in atm (default 1.0)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-symmetry_number~3"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>symmetry_number</strong></td>
+            <td>
+                <p>Symmetry number (default 1)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spin_multiplicity~3"></span>
+              integer,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spin_multiplicity</strong></td>
+            <td>
+                <p>Spin multiplicity (default 1)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_thermochemistry~~CallsGraph Pages: 1 -->
+<svg id="proccompute_thermochemistryCallsGraph" width="503pt" height="347pt"
+ viewBox="0.00 0.00 503.00 347.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_thermochemistry~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 343)">
+<title>proc~~compute_thermochemistry~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-343 499,-343 499,4 -4,4"/>
+<!-- proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node1" class="node">
+<title>proc~compute_thermochemistry</title>
+<polygon fill="none" stroke="black" points="157,-171 0,-171 0,-147 157,-147 157,-171"/>
+<text text-anchor="middle" x="78.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_thermochemistry</text>
+</g>
+<!-- proc~compute_electronic_entropy -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node2" class="node">
+<title>proc~compute_electronic_entropy</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node2"><a xlink:href="../proc/compute_electronic_entropy.html" xlink:title="compute_electronic_entropy">
+<polygon fill="#d9534f" stroke="#d9534f" points="362.5,-318 199.5,-318 199.5,-294 362.5,-294 362.5,-318"/>
+<text text-anchor="middle" x="281" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_electronic_entropy</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge1" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy</title>
+<path fill="none" stroke="#ff0000" d="M86.87,-171.26C102.82,-196.7 143.17,-255.32 193,-285 196.03,-286.8 199.2,-288.45 202.48,-289.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="201.33,-293.27 211.91,-293.85 204,-286.8 201.33,-293.27"/>
+</g>
+<!-- proc~compute_moments_of_inertia -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node3" class="node">
+<title>proc~compute_moments_of_inertia</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node3"><a xlink:href="../proc/compute_moments_of_inertia.html" xlink:title="compute_moments_of_inertia">
+<polygon fill="#d9534f" stroke="#d9534f" points="366.5,-276 195.5,-276 195.5,-252 366.5,-252 366.5,-276"/>
+<text text-anchor="middle" x="281" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_moments_of_inertia</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge2" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia</title>
+<path fill="none" stroke="#ff0000" d="M92.34,-171.27C112.26,-189.63 152.58,-224.12 193,-243 197.43,-245.07 202.09,-246.95 206.84,-248.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.12,-252.1 216.72,-251.9 208.32,-245.45 206.12,-252.1"/>
+</g>
+<!-- proc~compute_partition_functions -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node4" class="node">
+<title>proc~compute_partition_functions</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node4"><a xlink:href="../proc/compute_partition_functions.html" xlink:title="compute_partition_functions">
+<polygon fill="#d9534f" stroke="#d9534f" points="363,-192 199,-192 199,-168 363,-168 363,-192"/>
+<text text-anchor="middle" x="281" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_partition_functions</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge3" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions</title>
+<path fill="none" stroke="#ff0000" d="M157.02,-167.12C167.37,-168.2 178.07,-169.32 188.63,-170.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="188.4,-173.92 198.71,-171.49 189.13,-166.96 188.4,-173.92"/>
+</g>
+<!-- proc~compute_rotational_constants -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node5" class="node">
+<title>proc~compute_rotational_constants</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node5"><a xlink:href="../proc/compute_rotational_constants.html" xlink:title="compute_rotational_constants">
+<polygon fill="#d9534f" stroke="#d9534f" points="367,-150 195,-150 195,-126 367,-126 367,-150"/>
+<text text-anchor="middle" x="281" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_constants</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge4" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants</title>
+<path fill="none" stroke="#ff0000" d="M157.02,-150.88C166.08,-149.93 175.41,-148.95 184.68,-147.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="185.12,-151.46 194.7,-146.93 184.39,-144.5 185.12,-151.46"/>
+</g>
+<!-- proc~compute_rotational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node6" class="node">
+<title>proc~compute_rotational_thermo</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node6"><a xlink:href="../proc/compute_rotational_thermo.html" xlink:title="compute_rotational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="361,-108 201,-108 201,-84 361,-84 361,-108"/>
+<text text-anchor="middle" x="281" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge5" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo</title>
+<path fill="none" stroke="#ff0000" d="M109.05,-146.98C131.76,-138 164.06,-125.81 193,-117 200.42,-114.74 208.26,-112.56 216.06,-110.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="217.07,-113.88 225.9,-108.01 215.34,-107.09 217.07,-113.88"/>
+</g>
+<!-- proc~compute_translational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node7" class="node">
+<title>proc~compute_translational_thermo</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node7"><a xlink:href="../proc/compute_translational_thermo.html" xlink:title="compute_translational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="369,-66 193,-66 193,-42 369,-42 369,-66"/>
+<text text-anchor="middle" x="281" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_translational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge6" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo</title>
+<path fill="none" stroke="#ff0000" d="M92.34,-146.73C112.26,-128.37 152.58,-93.88 193,-75 197.43,-72.93 202.09,-71.05 206.84,-69.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="208.32,-72.55 216.72,-66.1 206.12,-65.9 208.32,-72.55"/>
+</g>
+<!-- proc~compute_vibrational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node8" class="node">
+<title>proc~compute_vibrational_thermo</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node8"><a xlink:href="../proc/compute_vibrational_thermo.html" xlink:title="compute_vibrational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="364,-24 198,-24 198,0 364,0 364,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge7" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo</title>
+<path fill="none" stroke="#ff0000" d="M86.87,-146.74C102.82,-121.3 143.17,-62.68 193,-33 196.03,-31.2 199.2,-29.55 202.48,-28.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="204,-31.2 211.91,-24.15 201.33,-24.73 204,-31.2"/>
+</g>
+<!-- proc~compute_zpe -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node9" class="node">
+<title>proc~compute_zpe</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node9"><a xlink:href="../proc/compute_zpe.html" xlink:title="compute_zpe">
+<polygon fill="#d9534f" stroke="#d9534f" points="323,-234 239,-234 239,-210 323,-210 323,-234"/>
+<text text-anchor="middle" x="281" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_zpe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_zpe -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge8" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_zpe</title>
+<path fill="none" stroke="#ff0000" d="M109.05,-171.02C131.76,-180 164.06,-192.19 193,-201 204.5,-204.5 216.99,-207.8 228.82,-210.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="228.03,-214.12 238.57,-213.05 229.67,-207.31 228.03,-214.12"/>
+</g>
+<!-- pic_syev -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node10" class="node">
+<title>pic_syev</title>
+<polygon fill="#777777" stroke="#777777" points="479,-339 421,-339 421,-315 479,-315 479,-339"/>
+<text text-anchor="middle" x="450" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;pic_syev -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge9" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;pic_syev</title>
+<path fill="none" stroke="#ffbf00" d="M342.16,-276.09C351.29,-278.62 360.49,-281.58 369,-285 386.18,-291.91 388.63,-297.34 405,-306 407.75,-307.46 410.63,-308.93 413.52,-310.38"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="412.25,-313.65 422.76,-314.92 415.33,-307.37 412.25,-313.65"/>
+</g>
+<!-- proc~element_mass -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node11" class="node">
+<title>proc~element_mass</title>
+<g id="a_proc~~compute_thermochemistry~~CallsGraph_node11"><a xlink:href="../proc/element_mass.html" xlink:title="element_mass">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="495,-297 405,-297 405,-273 495,-273 495,-297"/>
+<text text-anchor="middle" x="450" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_mass</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;proc~element_mass -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge10" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;proc~element_mass</title>
+<path fill="none" stroke="#ffbf00" d="M366.97,-274.68C376.35,-275.86 385.71,-277.04 394.57,-278.15"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="394.35,-281.66 404.71,-279.43 395.22,-274.71 394.35,-281.66"/>
+</g>
+<!-- to_char -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node12" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="477,-255 423,-255 423,-231 477,-231 477,-255"/>
+<text text-anchor="middle" x="450" y="-240.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;to_char -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge11" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;to_char</title>
+<path fill="none" stroke="#ffbf00" d="M366.97,-253.32C382.99,-251.3 398.94,-249.29 412.46,-247.6"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="413.25,-251.02 422.73,-246.3 412.37,-244.08 413.25,-251.02"/>
+</g>
+<!-- warning -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_node13" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="477.5,-213 422.5,-213 422.5,-189 477.5,-189 477.5,-213"/>
+<text text-anchor="middle" x="450" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;warning -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge12" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;warning</title>
+<path fill="none" stroke="#ffbf00" d="M342.16,-251.91C351.29,-249.38 360.49,-246.42 369,-243 386.18,-236.09 388.63,-230.66 405,-222 407.75,-220.54 410.63,-219.07 413.52,-217.62"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="415.33,-220.63 422.76,-213.08 412.25,-214.35 415.33,-220.63"/>
+</g>
+<!-- proc~compute_zpe&#45;&gt;to_char -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge13" class="edge">
+<title>proc~compute_zpe&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff00bf" d="M323.28,-227.19C350.74,-230.64 386.46,-235.14 412.81,-238.45"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="412.4,-241.93 422.76,-239.7 413.27,-234.98 412.4,-241.93"/>
+</g>
+<!-- proc~compute_zpe&#45;&gt;warning -->
+<g id="proc~~compute_thermochemistry~~CallsGraph_edge14" class="edge">
+<title>proc~compute_zpe&#45;&gt;warning</title>
+<path fill="none" stroke="#ff00bf" d="M323.28,-216.81C350.57,-213.38 386.02,-208.92 412.31,-205.61"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="412.78,-209.08 422.26,-204.36 411.9,-202.14 412.78,-209.08"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~compute_thermochemistry~~CalledByGraph Pages: 1 -->
+<svg id="proccompute_thermochemistryCalledByGraph" width="641pt" height="84pt"
+ viewBox="0.00 0.00 641.00 83.71" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_thermochemistry~~CalledByGraph" class="graph" transform="scale(0.35 0.35) rotate(0) translate(4 238)">
+<title>proc~~compute_thermochemistry~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-238 1849,-238 1849,4 -4,4"/>
+<!-- proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node1" class="node">
+<title>proc~compute_thermochemistry</title>
+<polygon fill="none" stroke="black" points="1845,-130 1688,-130 1688,-106 1845,-106 1845,-130"/>
+<text text-anchor="middle" x="1766.5" y="-115.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_thermochemistry</text>
+</g>
+<!-- proc~compute_mbe -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node2" class="node">
+<title>proc~compute_mbe</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node2"><a xlink:href="../proc/compute_mbe.html" xlink:title="compute_mbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="1434,-150 1345,-150 1345,-126 1434,-126 1434,-150"/>
+<text text-anchor="middle" x="1389.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge1" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1434.25,-135.67C1493.7,-132.5 1601.32,-126.76 1677.75,-122.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1678.05,-126.17 1687.85,-122.14 1677.68,-119.18 1678.05,-126.17"/>
+</g>
+<!-- proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node5" class="node">
+<title>proc~print_vibrational_analysis</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node5"><a xlink:href="../proc/print_vibrational_analysis.html" xlink:title="print_vibrational_analysis">
+<polygon fill="#d9534f" stroke="#d9534f" points="1652,-110 1504,-110 1504,-86 1652,-86 1652,-110"/>
+<text text-anchor="middle" x="1578" y="-95.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_vibrational_analysis</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge12" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1434.23,-128.62C1457.04,-123.73 1485.42,-117.64 1510.85,-112.19"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1511.76,-115.57 1520.81,-110.05 1510.3,-108.73 1511.76,-115.57"/>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node3" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="1456,-234 1323,-234 1323,-210 1456,-210 1456,-234"/>
+<text text-anchor="middle" x="1389.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge2" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1456.18,-211.94C1509.64,-202.86 1586.67,-187.74 1652,-167 1679.74,-158.19 1709.95,-144.96 1732.22,-134.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1733.73,-137.63 1741.25,-130.16 1730.71,-131.31 1733.73,-137.63"/>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge13" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1447.66,-210C1454.72,-207.51 1461.68,-204.54 1468,-201 1506.43,-179.46 1541.68,-141.39 1561.16,-118.06"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1563.98,-120.14 1567.61,-110.19 1558.56,-115.71 1563.98,-120.14"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node4" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node4"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="1450,-24 1329,-24 1329,0 1450,0 1450,-24"/>
+<text text-anchor="middle" x="1389.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge3" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1450.16,-15.17C1504.16,-19.47 1585.23,-29.55 1652,-53 1684.39,-64.38 1718.1,-84.98 1740.28,-99.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1738.54,-103 1748.76,-105.78 1742.5,-97.23 1738.54,-103"/>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge14" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1442.86,-24.09C1451.39,-26.65 1460.04,-29.63 1468,-33 1498.17,-45.8 1530.08,-65.67 1551.52,-80.07"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1549.8,-83.13 1560.04,-85.87 1553.74,-77.35 1549.8,-83.13"/>
+</g>
+<!-- proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge4" class="edge">
+<title>proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1652.17,-105.85C1660.61,-106.75 1669.27,-107.68 1677.88,-108.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1677.61,-112.09 1687.93,-109.68 1678.36,-105.13 1677.61,-112.09"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node6" class="node">
+<title>proc~serial_gmbe_pie_processor</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node6"><a xlink:href="../proc/serial_gmbe_pie_processor.html" xlink:title="serial_gmbe_pie_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="1468,-192 1311,-192 1311,-168 1468,-168 1468,-192"/>
+<text text-anchor="middle" x="1389.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_gmbe_pie_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge5" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1468.23,-170.03C1520.36,-163.02 1590.46,-152.97 1652,-142 1668.26,-139.1 1685.74,-135.6 1702,-132.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1702.89,-135.57 1711.94,-130.06 1701.43,-128.72 1702.89,-135.57"/>
+</g>
+<!-- proc~serial_gmbe_pie_processor&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge15" class="edge">
+<title>proc~serial_gmbe_pie_processor&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1441.95,-167.97C1450.77,-165.37 1459.74,-162.37 1468,-159 1497.34,-147.03 1528.7,-128.85 1550.21,-115.45"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1552.21,-118.33 1558.8,-110.03 1548.47,-112.41 1552.21,-118.33"/>
+</g>
+<!-- proc~unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node7" class="node">
+<title>proc~unfragmented_calculation</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node7"><a xlink:href="../proc/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1466,-66 1313,-66 1313,-42 1466,-42 1466,-66"/>
+<text text-anchor="middle" x="1389.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge6" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M1466.24,-55.49C1518.88,-57.78 1590.36,-63.4 1652,-77 1678.38,-82.82 1706.97,-93.18 1728.86,-102.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1727.53,-105.26 1738.11,-105.83 1730.2,-98.79 1727.53,-105.26"/>
+</g>
+<!-- proc~unfragmented_calculation&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge16" class="edge">
+<title>proc~unfragmented_calculation&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1441.46,-66.02C1464.59,-71.48 1492.12,-77.98 1516.31,-83.68"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1515.56,-87.1 1526.1,-85.99 1517.17,-80.29 1515.56,-87.1"/>
+</g>
+<!-- interface~hessian_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node8" class="node">
+<title>interface~hessian_coordinator</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node8"><a xlink:href="../interface/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="1258.5,-24 1137.5,-24 1137.5,0 1258.5,0 1258.5,-24"/>
+<text text-anchor="middle" x="1198" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge10" class="edge">
+<title>interface~hessian_coordinator&#45;&gt;proc~hessian_coordinator</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1258.7,-12C1277.73,-12 1298.96,-12 1318.64,-12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1318.78,-15.5 1328.78,-12 1318.78,-8.5 1318.78,-15.5"/>
+</g>
+<!-- interface~unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node9" class="node">
+<title>interface~unfragmented_calculation</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node9"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<polygon fill="#a7506f" stroke="#a7506f" points="830,-66 677,-66 677,-42 830,-42 830,-66"/>
+<text text-anchor="middle" x="753.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge18" class="edge">
+<title>interface~unfragmented_calculation&#45;&gt;proc~unfragmented_calculation</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M830.03,-54C948.68,-54 1178.02,-54 1302.71,-54"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1302.97,-57.5 1312.97,-54 1302.97,-50.5 1302.97,-57.5"/>
+</g>
+<!-- proc~compute_gmbe -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node10" class="node">
+<title>proc~compute_gmbe</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node10"><a xlink:href="../proc/compute_gmbe.html" xlink:title="compute_gmbe">
+<polygon fill="#d9534f" stroke="#d9534f" points="1437.5,-108 1341.5,-108 1341.5,-84 1437.5,-84 1437.5,-108"/>
+<text text-anchor="middle" x="1389.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_gmbe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_gmbe&#45;&gt;proc~print_vibrational_analysis -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge11" class="edge">
+<title>proc~compute_gmbe&#45;&gt;proc~print_vibrational_analysis</title>
+<path fill="none" stroke="#00ffff" d="M1437.56,-96.5C1454.65,-96.69 1474.51,-96.9 1493.8,-97.11"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1493.77,-100.61 1503.81,-97.22 1493.85,-93.61 1493.77,-100.61"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node11" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node11"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="1254.5,-152 1141.5,-152 1141.5,-128 1254.5,-128 1254.5,-152"/>
+<text text-anchor="middle" x="1198" y="-137.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge7" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M1254.58,-139.41C1279.92,-139.15 1309.79,-138.83 1334.89,-138.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1335.01,-142.06 1344.97,-138.46 1334.93,-135.07 1335.01,-142.06"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node12" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node12"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="835,-152 672,-152 672,-128 835,-128 835,-152"/>
+<text text-anchor="middle" x="753.5" y="-137.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge9" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#ffff00" d="M786.65,-152.02C813.38,-161.5 852.64,-174.21 888,-181 1036.64,-209.56 1213.85,-218.24 1312.53,-220.87"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1312.62,-224.37 1322.7,-221.13 1312.79,-217.37 1312.62,-224.37"/>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge17" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~serial_gmbe_pie_processor</title>
+<path fill="none" stroke="#0000ff" d="M820.85,-152.02C842.22,-155.47 866.05,-158.86 888,-161 1032.13,-175.02 1200.53,-178.84 1300.64,-179.8"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1300.68,-183.3 1310.71,-179.89 1300.75,-176.3 1300.68,-183.3"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node14" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node14"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="1043,-152 930,-152 930,-128 1043,-128 1043,-152"/>
+<text text-anchor="middle" x="986.5" y="-137.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~global_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge24" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M835.29,-140C862.86,-140 893.33,-140 919.59,-140"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="919.8,-143.5 929.8,-140 919.8,-136.5 919.8,-143.5"/>
+</g>
+<!-- interface~serial_fragment_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node15" class="node">
+<title>interface~serial_fragment_processor</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node15"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#a7506f" stroke="#a7506f" points="1063.5,-110 909.5,-110 909.5,-86 1063.5,-86 1063.5,-110"/>
+<text text-anchor="middle" x="986.5" y="-95.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge25" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#cbff00" d="M820.7,-127.96C848.36,-122.93 880.68,-117.06 909.33,-111.85"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="910.08,-115.27 919.3,-110.04 908.83,-108.38 910.08,-115.27"/>
+</g>
+<!-- proc~serial_fragment_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node13" class="node">
+<title>proc~serial_fragment_processor</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node13"><a xlink:href="../proc/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<polygon fill="#d9534f" stroke="#d9534f" points="1275,-110 1121,-110 1121,-86 1275,-86 1275,-110"/>
+<text text-anchor="middle" x="1198" y="-95.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- proc~serial_fragment_processor&#45;&gt;proc~compute_mbe -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge8" class="edge">
+<title>proc~serial_fragment_processor&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M1255.86,-110C1280.96,-115.3 1310.31,-121.5 1335.02,-126.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1334.43,-130.16 1344.94,-128.81 1335.88,-123.32 1334.43,-130.16"/>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge21" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1043.09,-140C1070.08,-140 1102.7,-140 1130.96,-140"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1131.15,-143.5 1141.15,-140 1131.15,-136.5 1131.15,-143.5"/>
+</g>
+<!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge23" class="edge">
+<title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M1063.73,-98C1078.99,-98 1095.12,-98 1110.69,-98"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1110.83,-101.5 1120.83,-98 1110.83,-94.5 1110.83,-101.5"/>
+</g>
+<!-- proc~distributed_unfragmented_hessian -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node16" class="node">
+<title>proc~distributed_unfragmented_hessian</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node16"><a xlink:href="../proc/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1085,-24 888,-24 888,0 1085,0 1085,-24"/>
+<text text-anchor="middle" x="986.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge19" class="edge">
+<title>proc~distributed_unfragmented_hessian&#45;&gt;interface~hessian_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M1085.2,-12C1099.39,-12 1113.76,-12 1127.26,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1127.39,-15.5 1137.39,-12 1127.39,-8.5 1127.39,-15.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node17" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node17"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-86 313,-86 313,-62 407,-62 407,-86"/>
+<text text-anchor="middle" x="360" y="-71.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge22" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#0000ff" d="M407.06,-81.77C471.9,-92.7 591.09,-112.79 671.07,-126.27"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="670.67,-129.75 681.11,-127.97 671.83,-122.85 670.67,-129.75"/>
+</g>
+<!-- proc~run_unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node18" class="node">
+<title>proc~run_unfragmented_calculation</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node18"><a xlink:href="../proc/run_unfragmented_calculation.html" xlink:title="run_unfragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="619,-66 443,-66 443,-42 619,-42 619,-66"/>
+<text text-anchor="middle" x="531" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_unfragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge30" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_unfragmented_calculation</title>
+<path fill="none" stroke="#cc00ff" d="M407.18,-68.53C415.27,-67.58 423.96,-66.55 432.85,-65.5"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="433.41,-68.95 442.93,-64.3 432.59,-62 433.41,-68.95"/>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge20" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~unfragmented_calculation</title>
+<path fill="none" stroke="#ffff00" d="M619.15,-54C634.75,-54 651,-54 666.57,-54"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="666.68,-57.5 676.68,-54 666.68,-50.5 666.68,-57.5"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node19" class="node">
+<title>interface~distributed_unfragmented_hessian</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node19"><a xlink:href="../interface/distributed_unfragmented_hessian.html" xlink:title="distributed_unfragmented_hessian">
+<polygon fill="#a7506f" stroke="#a7506f" points="852,-24 655,-24 655,0 852,0 852,-24"/>
+<text text-anchor="middle" x="753.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">distributed_unfragmented_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge31" class="edge">
+<title>proc~run_unfragmented_calculation&#45;&gt;interface~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#ff0000" d="M595.19,-41.96C621.48,-36.96 652.17,-31.11 679.43,-25.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="680.14,-29.35 689.3,-24.04 678.83,-22.47 680.14,-29.35"/>
+</g>
+<!-- interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge26" class="edge">
+<title>interface~distributed_unfragmented_hessian&#45;&gt;proc~distributed_unfragmented_hessian</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M852.13,-12C860.63,-12 869.25,-12 877.83,-12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="877.85,-15.5 887.85,-12 877.85,-8.5 877.85,-15.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node20" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node20"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-126 100.5,-126 100.5,-102 266.5,-102 266.5,-126"/>
+<text text-anchor="middle" x="183.5" y="-111.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge27" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M236.86,-102C257.74,-97.21 281.82,-91.69 303.05,-86.82"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="303.94,-90.21 312.9,-84.57 302.37,-83.39 303.94,-90.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node21" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node21"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-46 90,-46 90,-22 277,-22 277,-46"/>
+<text text-anchor="middle" x="183.5" y="-31.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge28" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M236.86,-46C257.74,-50.79 281.82,-56.31 303.05,-61.18"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="302.37,-64.61 312.9,-63.43 303.94,-57.79 302.37,-64.61"/>
+</g>
+<!-- program~main -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_node22" class="node">
+<title>program~main</title>
+<g id="a_proc~~compute_thermochemistry~~CalledByGraph_node22"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
+<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge29" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#0066ff" d="M54.25,-55.59C107.66,-58.81 230.05,-66.21 302.43,-70.58"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="302.54,-74.09 312.73,-71.2 302.96,-67.11 302.54,-74.09"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~compute_thermochemistry~~CalledByGraph_edge32" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#00ffff" d="M54.21,-50.61C61.81,-49.62 70.61,-48.48 79.96,-47.27"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="80.42,-50.74 89.89,-45.99 79.52,-43.8 80.42,-50.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccompute_thermochemistryCalledByGraph = svgPanZoom('#proccompute_thermochemistryCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-p"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>P</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s_total"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>S_total</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-t~5"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>T</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-center_of_mass~2"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>center_of_mass</strong>(3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mult"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mult</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-principal_axes~2"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>principal_axes</strong>(3,3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sigma~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sigma</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">compute_thermochemistry</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_freqs</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                      </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">temperature</span><span class="p">,</span><span class="w"> </span><span class="n">pressure</span><span class="p">,</span><span class="w"> </span><span class="n">symmetry_number</span><span class="p">,</span><span class="w"> </span><span class="n">spin_multiplicity</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Main driver for thermochemistry calculations.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Computes all thermodynamic quantities from molecular geometry and vibrational frequencies.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coords</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">           </span><span class="c">!! Coordinates (3, n_atoms) in Bohr</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">(:)</span><span class="w">       </span><span class="c">!! Atomic numbers</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frequencies</span><span class="p">(:)</span><span class="w">         </span><span class="c">!! Frequencies in cm^-1</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_atoms</span><span class="w">                 </span><span class="c">!! Number of atoms</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_freqs</span><span class="w">                 </span><span class="c">!! Number of frequencies</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">thermochemistry_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span><span class="w">  </span><span class="c">!! Output results</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">temperature</span><span class="w">  </span><span class="c">!! Temperature in K (default 298.15)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pressure</span><span class="w">     </span><span class="c">!! Pressure in atm (default 1.0)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symmetry_number</span><span class="w">    </span><span class="c">!! Symmetry number (default 1)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">spin_multiplicity</span><span class="w">  </span><span class="c">!! Spin multiplicity (default 1)</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">center_of_mass</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">principal_axes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">P</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sigma</span><span class="p">,</span><span class="w"> </span><span class="n">mult</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">S_total</span>
+
+<span class="w">      </span><span class="c">! Set parameters</span>
+<span class="w">      </span><span class="n">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_TEMPERATURE</span>
+<span class="w">      </span><span class="n">P</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_PRESSURE</span>
+<span class="w">      </span><span class="n">sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_SYMMETRY_NUMBER</span>
+<span class="w">      </span><span class="n">mult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_SPIN_MULTIPLICITY</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">temperature</span><span class="p">))</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temperature</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">pressure</span><span class="p">))</span><span class="w"> </span><span class="n">P</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pressure</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">symmetry_number</span><span class="p">))</span><span class="w"> </span><span class="n">sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">symmetry_number</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">spin_multiplicity</span><span class="p">))</span><span class="w"> </span><span class="n">mult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">spin_multiplicity</span>
+
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">T</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">pressure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">P</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">symmetry_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">spin_multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mult</span>
+
+<span class="w">      </span><span class="c">! Compute moments of inertia</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_moments_of_inertia</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="w"> </span><span class="n">atomic_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                      </span><span class="n">center_of_mass</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">moments</span><span class="p">,</span><span class="w"> </span><span class="n">principal_axes</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                      </span><span class="k">result</span><span class="p">%</span><span class="n">is_linear</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">total_mass</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute rotational constants</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_rotational_constants</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">moments</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">is_linear</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">rot_const</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute ZPE</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_zpe</span><span class="p">(</span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">n_freqs</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">n_real_freqs</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="k">result</span><span class="p">%</span><span class="n">zpe_hartree</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">zpe_kcalmol</span><span class="p">)</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">n_imag_freqs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_freqs</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">n_real_freqs</span>
+
+<span class="w">      </span><span class="c">! Compute translational contributions</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_translational_thermo</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">total_mass</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">P</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                        </span><span class="k">result</span><span class="p">%</span><span class="n">E_trans</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_trans</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">Cv_trans</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute rotational contributions</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_rotational_thermo</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">moments</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">sigma</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">is_linear</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                     </span><span class="k">result</span><span class="p">%</span><span class="n">E_rot</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_rot</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">Cv_rot</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute vibrational contributions (thermal, excluding ZPE)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_vibrational_thermo</span><span class="p">(</span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">n_freqs</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                      </span><span class="k">result</span><span class="p">%</span><span class="n">E_vib</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_vib</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">Cv_vib</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute electronic contributions</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">E_elec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">  </span><span class="c">! Ground state only</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_electronic_entropy</span><span class="p">(</span><span class="n">mult</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_elec</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute partition functions</span>
+<span class="w">      </span><span class="k">call </span><span class="n">compute_partition_functions</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">total_mass</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">moments</span><span class="p">,</span><span class="w"> </span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">n_freqs</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">P</span><span class="p">,</span><span class="w"> </span><span class="n">sigma</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">is_linear</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="k">result</span><span class="p">%</span><span class="n">q_trans</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">q_rot</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">q_vib</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Compute summary quantities</span>
+<span class="w">      </span><span class="c">! Thermal correction to energy = ZPE + E_trans + E_rot + E_vib + E_elec</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">thermal_correction_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">zpe_hartree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                         </span><span class="k">result</span><span class="p">%</span><span class="n">E_trans</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">E_rot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">E_vib</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">E_elec</span>
+
+<span class="w">      </span><span class="c">! Thermal correction to enthalpy = E_tot + RT</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">thermal_correction_enthalpy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">thermal_correction_energy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">R_HARTREE</span><span class="o">*</span><span class="n">T</span>
+
+<span class="w">      </span><span class="c">! Total entropy in Hartree/K</span>
+<span class="w">      </span><span class="n">S_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">S_trans</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_rot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_vib</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">S_elec</span><span class="p">)</span><span class="o">/</span><span class="n">HARTREE_TO_CALMOL</span>
+
+<span class="w">      </span><span class="c">! Thermal correction to Gibbs = H - TS</span>
+<span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">thermal_correction_gibbs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">thermal_correction_enthalpy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">T</span><span class="o">*</span><span class="n">S_total</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">compute_thermochemistry</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-11 09:40 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

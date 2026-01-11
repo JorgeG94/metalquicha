@@ -54,6 +54,8 @@ contains
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
       use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
                                           compute_vibrational_analysis, print_vibrational_analysis
+      use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
+      use mqc_mbe_io, only: print_vibrational_json
 #ifndef MQC_WITHOUT_TBLITE
       use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -275,11 +277,13 @@ contains
          end if
       end if
 
-      ! Compute and print full vibrational analysis
+      ! Compute and print full vibrational analysis with thermochemistry
       if (allocated(frequencies)) then
          block
             real(dp), allocatable :: vib_freqs(:), reduced_masses(:), force_constants(:)
             real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:), ir_intensities(:)
+            type(thermochemistry_result_t) :: thermo_result
+            integer :: n_at, n_modes
 
             if (result%has_dipole_derivatives) then
                call compute_vibrational_analysis(result%hessian, sys_geom%element_numbers, vib_freqs, &
@@ -298,24 +302,41 @@ contains
             end if
 
             if (allocated(vib_freqs)) then
+               ! Compute thermochemistry
+               n_at = size(sys_geom%element_numbers)
+               n_modes = size(vib_freqs)
+               call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
+                                            vib_freqs, n_at, n_modes, thermo_result)
+
+               ! Print vibrational analysis to log
                if (allocated(ir_intensities)) then
                   call print_vibrational_analysis(vib_freqs, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
                                                   force_constants_mdyne=fc_mdyne, &
-                                                  ir_intensities=ir_intensities)
+                                                  ir_intensities=ir_intensities, &
+                                                  coordinates=sys_geom%coordinates, &
+                                                  electronic_energy=result%energy%total())
+                  ! Write vibrational/thermochemistry JSON
+                  call print_vibrational_json(result, vib_freqs, reduced_masses, fc_mdyne, &
+                                              thermo_result, ir_intensities)
                   deallocate (ir_intensities)
                else
                   call print_vibrational_analysis(vib_freqs, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne)
+                                                  force_constants_mdyne=fc_mdyne, &
+                                                  coordinates=sys_geom%coordinates, &
+                                                  electronic_energy=result%energy%total())
+                  ! Write vibrational/thermochemistry JSON
+                  call print_vibrational_json(result, vib_freqs, reduced_masses, fc_mdyne, &
+                                              thermo_result)
                end if
                deallocate (vib_freqs, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
          end block
+      else
+         ! No Hessian/frequencies - use the old JSON output
+         call print_unfragmented_json(result)
       end if
-
-      ! Output JSON
-      call print_unfragmented_json(result)
 
       ! Cleanup
       call result%destroy()

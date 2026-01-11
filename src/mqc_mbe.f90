@@ -7,7 +7,8 @@ module mqc_mbe
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
-   use mqc_mbe_io, only: print_detailed_breakdown, print_detailed_breakdown_json
+   use mqc_mbe_io, only: print_detailed_breakdown, print_detailed_breakdown_json, print_vibrational_json_mbe
+   use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
@@ -867,10 +868,12 @@ contains
          call logger%info("MBE Hessian computation completed")
          call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(mbe_result%hessian**2))))
 
-         ! Compute and print full vibrational analysis
+         ! Compute and print full vibrational analysis with thermochemistry
          block
             real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
             real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+            type(thermochemistry_result_t) :: thermo_result
+            integer :: n_at, n_modes
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
             if (compute_dipole_derivs) then
@@ -890,16 +893,33 @@ contains
             end if
 
             if (allocated(frequencies)) then
+               ! Compute thermochemistry
+               n_at = size(sys_geom%element_numbers)
+               n_modes = size(frequencies)
+               call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
+                                            frequencies, n_at, n_modes, thermo_result)
+
+               ! Print vibrational analysis to log
                if (allocated(ir_intensities)) then
                   call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
                                                   force_constants_mdyne=fc_mdyne, &
-                                                  ir_intensities=ir_intensities)
+                                                  ir_intensities=ir_intensities, &
+                                                  coordinates=sys_geom%coordinates, &
+                                                  electronic_energy=mbe_result%total_energy)
+                  ! Write vibrational/thermochemistry JSON
+                  call print_vibrational_json_mbe(mbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result, ir_intensities)
                   deallocate (ir_intensities)
                else
                   call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
-                                                  force_constants_mdyne=fc_mdyne)
+                                                  force_constants_mdyne=fc_mdyne, &
+                                                  coordinates=sys_geom%coordinates, &
+                                                  electronic_energy=mbe_result%total_energy)
+                  ! Write vibrational/thermochemistry JSON
+                  call print_vibrational_json_mbe(mbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result)
                end if
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
@@ -925,9 +945,11 @@ contains
          call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
       end if
 
-      ! Write JSON output
-      call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                         sum_by_level, mbe_result, results)
+      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
+      if (.not. compute_hess) then
+         call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
+                                            sum_by_level, mbe_result, results)
+      end if
 
       ! Cleanup
       deallocate (sum_by_level, delta_energies, energies)
@@ -1179,7 +1201,9 @@ contains
             if (allocated(frequencies)) then
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                cart_disp, sys_geom%element_numbers, &
-                                               force_constants_mdyne=fc_mdyne)
+                                               force_constants_mdyne=fc_mdyne, &
+                                               coordinates=sys_geom%coordinates, &
+                                               electronic_energy=total_energy)
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
          end block

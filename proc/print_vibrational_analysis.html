@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.6% of total for procedures.">129 statements</a>
+                 title=" 1.5% of total for procedures.">138 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -142,13 +142,13 @@
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-fc_str">fc_str</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-fc_value">fc_value</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-freq_str">freq_str</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-iatom~18">iatom</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-iatom~15">iatom</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-icoord~6">icoord</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-igroup">igroup</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-imode">imode</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-ir_str">ir_str</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-k~20">k</a>
-            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-line~23">line</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-k~15">k</a>
+            <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-line~13">line</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mass_str">mass_str</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mode_end">mode_end</a>
             <a class="list-group-item" href="../proc/print_vibrational_analysis.html#variable-mode_start">mode_start</a>
@@ -191,13 +191,15 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, cartesian_displacements, element_numbers, force_constants_mdyne, print_displacements, n_atoms, ir_intensities)  
+    <h2>public  subroutine print_vibrational_analysis(frequencies, reduced_masses, force_constants, cartesian_displacements, element_numbers, force_constants_mdyne, print_displacements, n_atoms, ir_intensities, coordinates, electronic_energy)  
 </h2>
     
 
     <p>Print vibrational analysis results in a formatted table.</p>
 <p>Output format is similar to Gaussian, with frequencies grouped in columns.
-Optionally prints Cartesian displacement vectors for each mode.</p>
+Optionally prints Cartesian displacement vectors for each mode.
+If coordinates and electronic_energy are provided, also computes and prints
+thermochemistry using the RRHO approximation.</p>
 
 
     <h3>Arguments</h3>
@@ -213,7 +215,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~4"></span>
+              <span class="anchor" id="variable-frequencies~3"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -318,7 +320,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~22"></span>
+              <span class="anchor" id="variable-n_atoms~15"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -333,7 +335,7 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~6"></span>
+              <span class="anchor" id="variable-ir_intensities~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in),</td>
@@ -344,6 +346,36 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
             <td><strong>ir_intensities</strong>(:)</td>
             <td>
                 <p>IR intensities in km/mol</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coordinates~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coordinates</strong>(:,:)</td>
+            <td>
+                <p>Atomic coordinates (3, n_atoms) in Bohr - needed for thermochemistry</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-electronic_energy"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>electronic_energy</strong></td>
+            <td>
+                <p>Electronic energy in Hartree - needed for thermochemistry</p>
             </td>
         </tr>
     </tbody>
@@ -361,59 +393,276 @@ Optionally prints Cartesian displacement vectors for each mode.</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~print_vibrational_analysis~~CallsGraph Pages: 1 -->
-<svg id="procprint_vibrational_analysisCallsGraph" width="355pt" height="116pt"
- viewBox="0.00 0.00 355.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~print_vibrational_analysis~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<svg id="procprint_vibrational_analysisCallsGraph" width="641pt" height="397pt"
+ viewBox="0.00 0.00 641.00 397.03" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~print_vibrational_analysis~~CallsGraph" class="graph" transform="scale(0.92 0.92) rotate(0) translate(4 425.24)">
 <title>proc~~print_vibrational_analysis~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 351,-112 351,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-425.24 689,-425.24 689,4 -4,4"/>
 <!-- proc~print_vibrational_analysis -->
 <g id="proc~~print_vibrational_analysis~~CallsGraph_node1" class="node">
 <title>proc~print_vibrational_analysis</title>
-<polygon fill="none" stroke="black" points="148,-66 0,-66 0,-42 148,-42 148,-66"/>
-<text text-anchor="middle" x="74" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_vibrational_analysis</text>
+<polygon fill="none" stroke="black" points="148,-358 0,-358 0,-334 148,-334 148,-358"/>
+<text text-anchor="middle" x="74" y="-343.6" font-family="Helvetica,sans-Serif" font-size="10.50">print_vibrational_analysis</text>
 </g>
 <!-- info -->
 <g id="proc~~print_vibrational_analysis~~CallsGraph_node2" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="292.5,-108 238.5,-108 238.5,-84 292.5,-84 292.5,-108"/>
-<text text-anchor="middle" x="265.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="498,-418 444,-418 444,-394 498,-394 498,-418"/>
+<text text-anchor="middle" x="471" y="-403.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;info -->
 <g id="proc~~print_vibrational_analysis~~CallsGraph_edge1" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M129.3,-66.04C161.16,-73.1 200.51,-81.82 228.53,-88.03"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="227.79,-91.45 238.31,-90.2 229.3,-84.61 227.79,-91.45"/>
+<path fill="none" stroke="#ff0000" d="M90.5,-358.09C110.68,-373 147.7,-397.53 184,-407 271.34,-429.78 378.85,-419.7 433.85,-411.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="434.42,-415.4 443.81,-410.49 433.4,-408.47 434.42,-415.4"/>
+</g>
+<!-- proc~compute_thermochemistry -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node3" class="node">
+<title>proc~compute_thermochemistry</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node3"><a xlink:href="../proc/compute_thermochemistry.html" xlink:title="compute_thermochemistry">
+<polygon fill="#d9534f" stroke="#d9534f" points="344,-213 187,-213 187,-189 344,-189 344,-213"/>
+<text text-anchor="middle" x="265.5" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_thermochemistry</text>
+</a>
+</g>
+</g>
+<!-- proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge2" class="edge">
+<title>proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M90.83,-333.89C123.99,-308.51 200.94,-249.64 240.32,-219.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="242.77,-222.04 248.58,-213.18 238.51,-216.48 242.77,-222.04"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~print_vibrational_analysis~~CallsGraph_node3" class="node">
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node4" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node3"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="347,-66 184,-66 184,-42 347,-42 347,-66"/>
-<text text-anchor="middle" x="265.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node4"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="347,-171 184,-171 184,-147 347,-147 347,-171"/>
+<text text-anchor="middle" x="265.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~print_vibrational_analysis~~CallsGraph_edge2" class="edge">
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge3" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#ff0000" d="M148.27,-54C156.65,-54 165.27,-54 173.85,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="173.88,-57.5 183.88,-54 173.88,-50.5 173.88,-57.5"/>
+<path fill="none" stroke="#ff0000" d="M79.42,-333.77C91.22,-302.87 126.58,-221.21 184,-180 186.23,-178.4 188.58,-176.92 191.01,-175.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="192.69,-178.62 200.12,-171.08 189.6,-172.34 192.69,-178.62"/>
+</g>
+<!-- proc~print_thermochemistry -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node5" class="node">
+<title>proc~print_thermochemistry</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node5"><a xlink:href="../proc/print_thermochemistry.html" xlink:title="print_thermochemistry">
+<polygon fill="#d9534f" stroke="#d9534f" points="332.5,-398 198.5,-398 198.5,-374 332.5,-374 332.5,-398"/>
+<text text-anchor="middle" x="265.5" y="-383.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_thermochemistry</text>
+</a>
+</g>
+</g>
+<!-- proc~print_vibrational_analysis&#45;&gt;proc~print_thermochemistry -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge4" class="edge">
+<title>proc~print_vibrational_analysis&#45;&gt;proc~print_thermochemistry</title>
+<path fill="none" stroke="#ff0000" d="M131.86,-358C152.47,-362.35 175.94,-367.31 197.36,-371.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="196.85,-375.3 207.36,-373.94 198.3,-368.45 196.85,-375.3"/>
 </g>
 <!-- warning -->
-<g id="proc~~print_vibrational_analysis~~CallsGraph_node4" class="node">
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node6" class="node">
 <title>warning</title>
-<polygon fill="#777777" stroke="#777777" points="293,-24 238,-24 238,0 293,0 293,-24"/>
-<text text-anchor="middle" x="265.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+<polygon fill="#777777" stroke="#777777" points="667.5,-150 612.5,-150 612.5,-126 667.5,-126 667.5,-150"/>
+<text text-anchor="middle" x="640" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;warning -->
-<g id="proc~~print_vibrational_analysis~~CallsGraph_edge3" class="edge">
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge5" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;warning</title>
-<path fill="none" stroke="#ff0000" d="M129.3,-41.96C160.96,-34.95 200.03,-26.29 228.02,-20.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="228.79,-23.5 237.79,-17.92 227.27,-16.67 228.79,-23.5"/>
+<path fill="none" stroke="#ff0000" d="M148.39,-352.42C267.1,-361.29 494.49,-371.59 559,-327 615.11,-288.21 632.04,-201.74 637.01,-160.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="640.51,-160.81 638.1,-150.49 633.55,-160.06 640.51,-160.81"/>
+</g>
+<!-- proc~compute_electronic_entropy -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node7" class="node">
+<title>proc~compute_electronic_entropy</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node7"><a xlink:href="../proc/compute_electronic_entropy.html" xlink:title="compute_electronic_entropy">
+<polygon fill="#d9534f" stroke="#d9534f" points="552.5,-150 389.5,-150 389.5,-126 552.5,-126 552.5,-150"/>
+<text text-anchor="middle" x="471" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_electronic_entropy</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge6" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy</title>
+<path fill="none" stroke="#cbff00" d="M320.86,-188.99C329.73,-186.41 338.72,-183.42 347,-180 364.12,-172.93 365.82,-165.91 383,-159 388.45,-156.81 394.18,-154.81 400,-152.98"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="401.24,-156.27 409.84,-150.09 399.26,-149.56 401.24,-156.27"/>
+</g>
+<!-- proc~compute_moments_of_inertia -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node8" class="node">
+<title>proc~compute_moments_of_inertia</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node8"><a xlink:href="../proc/compute_moments_of_inertia.html" xlink:title="compute_moments_of_inertia">
+<polygon fill="#d9534f" stroke="#d9534f" points="556.5,-66 385.5,-66 385.5,-42 556.5,-42 556.5,-66"/>
+<text text-anchor="middle" x="471" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_moments_of_inertia</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge7" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia</title>
+<path fill="none" stroke="#cbff00" d="M334.23,-188.96C338.86,-186.49 343.19,-183.54 347,-180 383.17,-146.45 346.52,-108.22 383,-75 384.3,-73.81 385.66,-72.69 387.07,-71.63"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="389.05,-74.52 395.59,-66.18 385.28,-68.62 389.05,-74.52"/>
+</g>
+<!-- proc~compute_partition_functions -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node9" class="node">
+<title>proc~compute_partition_functions</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node9"><a xlink:href="../proc/compute_partition_functions.html" xlink:title="compute_partition_functions">
+<polygon fill="#d9534f" stroke="#d9534f" points="553,-24 389,-24 389,0 553,0 553,-24"/>
+<text text-anchor="middle" x="471" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_partition_functions</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge8" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions</title>
+<path fill="none" stroke="#cbff00" d="M335.34,-188.91C339.6,-186.44 343.55,-183.5 347,-180 394.2,-132.08 335.36,-80.48 383,-33 384.1,-31.9 385.25,-30.86 386.44,-29.87"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="388.61,-32.62 394.83,-24.04 384.62,-26.87 388.61,-32.62"/>
+</g>
+<!-- proc~compute_rotational_constants -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node10" class="node">
+<title>proc~compute_rotational_constants</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node10"><a xlink:href="../proc/compute_rotational_constants.html" xlink:title="compute_rotational_constants">
+<polygon fill="#d9534f" stroke="#d9534f" points="557,-318 385,-318 385,-294 557,-294 557,-318"/>
+<text text-anchor="middle" x="471" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_constants</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge9" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants</title>
+<path fill="none" stroke="#cbff00" d="M279.74,-213.25C300.28,-231.59 341.76,-266.05 383,-285 387.65,-287.14 392.53,-289.07 397.53,-290.82"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="396.63,-294.2 407.22,-293.95 398.78,-287.54 396.63,-294.2"/>
+</g>
+<!-- proc~compute_rotational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node11" class="node">
+<title>proc~compute_rotational_thermo</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node11"><a xlink:href="../proc/compute_rotational_thermo.html" xlink:title="compute_rotational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="551,-276 391,-276 391,-252 551,-252 551,-276"/>
+<text text-anchor="middle" x="471" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge10" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo</title>
+<path fill="none" stroke="#cbff00" d="M297.34,-213.16C320.65,-222.1 353.55,-234.17 383,-243 390.43,-245.23 398.27,-247.39 406.08,-249.42"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="405.37,-252.85 415.92,-251.92 407.09,-246.06 405.37,-252.85"/>
+</g>
+<!-- proc~compute_translational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node12" class="node">
+<title>proc~compute_translational_thermo</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node12"><a xlink:href="../proc/compute_translational_thermo.html" xlink:title="compute_translational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="559,-234 383,-234 383,-210 559,-210 559,-234"/>
+<text text-anchor="middle" x="471" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_translational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge11" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo</title>
+<path fill="none" stroke="#cbff00" d="M344.02,-209C353.44,-209.97 363.15,-210.97 372.81,-211.97"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="372.53,-215.46 382.84,-213.01 373.25,-208.5 372.53,-215.46"/>
+</g>
+<!-- proc~compute_vibrational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node13" class="node">
+<title>proc~compute_vibrational_thermo</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node13"><a xlink:href="../proc/compute_vibrational_thermo.html" xlink:title="compute_vibrational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="554,-192 388,-192 388,-168 554,-168 554,-192"/>
+<text text-anchor="middle" x="471" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_thermo</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge12" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo</title>
+<path fill="none" stroke="#cbff00" d="M344.02,-193C355.02,-191.86 366.43,-190.69 377.69,-189.53"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="378.37,-192.97 387.96,-188.47 377.66,-186.01 378.37,-192.97"/>
+</g>
+<!-- proc~compute_zpe -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node14" class="node">
+<title>proc~compute_zpe</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node14"><a xlink:href="../proc/compute_zpe.html" xlink:title="compute_zpe">
+<polygon fill="#d9534f" stroke="#d9534f" points="513,-108 429,-108 429,-84 513,-84 513,-108"/>
+<text text-anchor="middle" x="471" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_zpe</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_thermochemistry&#45;&gt;proc~compute_zpe -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge13" class="edge">
+<title>proc~compute_thermochemistry&#45;&gt;proc~compute_zpe</title>
+<path fill="none" stroke="#cbff00" d="M331.92,-188.88C337.29,-186.44 342.41,-183.51 347,-180 372.61,-160.4 357.22,-136.37 383,-117 393.39,-109.19 406.28,-104.25 418.92,-101.13"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="419.91,-104.49 428.96,-98.99 418.45,-97.65 419.91,-104.49"/>
+</g>
+<!-- proc~print_thermochemistry&#45;&gt;info -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge14" class="edge">
+<title>proc~print_thermochemistry&#45;&gt;info</title>
+<path fill="none" stroke="#0066ff" d="M332.57,-392.49C366.12,-395.79 405.59,-399.67 433.61,-402.42"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="433.45,-405.92 443.75,-403.42 434.14,-398.96 433.45,-405.92"/>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;warning -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge18" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;warning</title>
+<path fill="none" stroke="#ffbf00" d="M540.18,-66.01C546.77,-68.47 553.17,-71.43 559,-75 579.97,-87.84 575.48,-102.05 595,-117 597.62,-119.01 600.46,-120.89 603.4,-122.64"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="601.9,-125.81 612.37,-127.48 605.23,-119.65 601.9,-125.81"/>
+</g>
+<!-- pic_syev -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node15" class="node">
+<title>pic_syev</title>
+<polygon fill="#777777" stroke="#777777" points="669,-66 611,-66 611,-42 669,-42 669,-66"/>
+<text text-anchor="middle" x="640" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;pic_syev -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge15" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;pic_syev</title>
+<path fill="none" stroke="#ffbf00" d="M556.97,-54C572.35,-54 587.67,-54 600.84,-54"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="600.89,-57.5 610.89,-54 600.89,-50.5 600.89,-57.5"/>
+</g>
+<!-- proc~element_mass -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node16" class="node">
+<title>proc~element_mass</title>
+<g id="a_proc~~print_vibrational_analysis~~CallsGraph_node16"><a xlink:href="../proc/element_mass.html" xlink:title="element_mass">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="685,-24 595,-24 595,0 685,0 685,-24"/>
+<text text-anchor="middle" x="640" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_mass</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;proc~element_mass -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge16" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;proc~element_mass</title>
+<path fill="none" stroke="#ffbf00" d="M522.65,-41.95C534.58,-39.07 547.25,-35.96 559,-33 567.31,-30.91 576.09,-28.65 584.67,-26.42"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="585.82,-29.73 594.61,-23.82 584.05,-22.96 585.82,-29.73"/>
+</g>
+<!-- to_char -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_node17" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="667,-108 613,-108 613,-84 667,-84 667,-108"/>
+<text text-anchor="middle" x="640" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~compute_moments_of_inertia&#45;&gt;to_char -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge17" class="edge">
+<title>proc~compute_moments_of_inertia&#45;&gt;to_char</title>
+<path fill="none" stroke="#ffbf00" d="M522.65,-66.05C534.58,-68.93 547.25,-72.04 559,-75 573.31,-78.61 589.03,-82.7 602.72,-86.31"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="602.17,-89.79 612.73,-88.96 603.96,-83.02 602.17,-89.79"/>
+</g>
+<!-- proc~compute_zpe&#45;&gt;warning -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge20" class="edge">
+<title>proc~compute_zpe&#45;&gt;warning</title>
+<path fill="none" stroke="#ff00bf" d="M513.2,-105.77C527.69,-109.25 544.08,-113.24 559,-117 573.2,-120.58 588.79,-124.64 602.4,-128.23"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="601.8,-131.69 612.37,-130.87 603.6,-124.93 601.8,-131.69"/>
+</g>
+<!-- proc~compute_zpe&#45;&gt;to_char -->
+<g id="proc~~print_vibrational_analysis~~CallsGraph_edge19" class="edge">
+<title>proc~compute_zpe&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff00bf" d="M513.28,-96C540.62,-96 576.14,-96 602.45,-96"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="602.76,-99.5 612.76,-96 602.76,-92.5 602.76,-99.5"/>
 </g>
 </g>
 </svg>
-</div>          <div>
+</div>                <script>
+                  var panprocprint_vibrational_analysisCallsGraph = svgPanZoom('#procprint_vibrational_analysisCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
@@ -1058,7 +1307,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~18"></span>
+              <span class="anchor" id="variable-iatom~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -1143,7 +1392,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~20"></span>
+              <span class="anchor" id="variable-k~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -1160,7 +1409,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~23"></span>
+              <span class="anchor" id="variable-line~13"></span>
               character(len=512),
             </td>
               <td>private</td>
@@ -1313,11 +1562,14 @@ large graphs.</div>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">print_vibrational_analysis</span><span class="p">(</span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="n">reduced_masses</span><span class="p">,</span><span class="w"> </span><span class="n">force_constants</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">cartesian_displacements</span><span class="p">,</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                         </span><span class="n">force_constants_mdyne</span><span class="p">,</span><span class="w"> </span><span class="n">print_displacements</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                         </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">)</span>
+<span class="w">                                         </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                         </span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">electronic_energy</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Print vibrational analysis results in a formatted table.</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Output format is similar to Gaussian, with frequencies grouped in columns.</span>
 <span class="w">      </span><span class="c">!! Optionally prints Cartesian displacement vectors for each mode.</span>
+<span class="w">      </span><span class="c">!! If coordinates and electronic_energy are provided, also computes and prints</span>
+<span class="w">      </span><span class="c">!! thermochemistry using the RRHO approximation.</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frequencies</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! Vibrational frequencies in cm⁻¹</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">reduced_masses</span><span class="p">(:)</span>
@@ -1336,6 +1588,10 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! Number of atoms (if not provided, derived from size of element_numbers)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ir_intensities</span><span class="p">(:)</span>
 <span class="w">         </span><span class="c">!! IR intensities in km/mol</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">         </span><span class="c">!! Atomic coordinates (3, n_atoms) in Bohr - needed for thermochemistry</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">electronic_energy</span>
+<span class="w">         </span><span class="c">!! Electronic energy in Hartree - needed for thermochemistry</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_modes</span><span class="p">,</span><span class="w"> </span><span class="n">n_at</span><span class="p">,</span><span class="w"> </span><span class="n">n_groups</span><span class="p">,</span><span class="w"> </span><span class="n">igroup</span><span class="p">,</span><span class="w"> </span><span class="n">imode</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">icoord</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mode_start</span><span class="p">,</span><span class="w"> </span><span class="n">mode_end</span><span class="p">,</span><span class="w"> </span><span class="n">modes_in_group</span>
@@ -1489,7 +1745,17 @@ large graphs.</div>
 <span class="k">      call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;============================================================&quot;</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
 
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">print_vibrational_analysis</span>
+<span class="w">      </span><span class="c">! Compute and print thermochemistry if coordinates and energy are provided</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">present</span><span class="p">(</span><span class="n">electronic_energy</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         block</span>
+<span class="k">            type</span><span class="p">(</span><span class="n">thermochemistry_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">thermo_result</span>
+<span class="w">            </span><span class="k">call </span><span class="n">compute_thermochemistry</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">frequencies</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                         </span><span class="n">n_at</span><span class="p">,</span><span class="w"> </span><span class="n">n_modes</span><span class="p">,</span><span class="w"> </span><span class="n">thermo_result</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">print_thermochemistry</span><span class="p">(</span><span class="n">thermo_result</span><span class="p">,</span><span class="w"> </span><span class="n">electronic_energy</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end block</span>
+<span class="k">      end if</span>
+
+<span class="k">   end subroutine </span><span class="n">print_vibrational_analysis</span>
 </pre></div>
 
     </section>
@@ -1513,7 +1779,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-11 02:34 +0000             </p>
+ on 2026-01-11 09:40 +0000             </p>
           </div>
         </div>
         <br>

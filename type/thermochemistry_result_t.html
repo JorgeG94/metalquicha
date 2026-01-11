@@ -1,0 +1,801 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>thermochemistry_result_t &ndash; metalquicha </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>thermochemistry_result_t
+      <small>Derived Type</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title="<p> 8.4% of total for derived types.</p>Including implementation: 31 statements,  2.7% of total for derived types.">31 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_thermochemistry.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_thermochemistry.f90.html'>mqc_thermochemistry.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
+            <li class="breadcrumb-item active" aria-current="page">thermochemistry_result_t</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-cv_rot">Cv_rot</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-cv_trans">Cv_trans</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-cv_vib">Cv_vib</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-e_elec">E_elec</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-e_rot">E_rot</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-e_trans">E_trans</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-e_vib">E_vib</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-s_elec">S_elec</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-s_rot">S_rot</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-s_trans">S_trans</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-s_vib">S_vib</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-is_linear">is_linear</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-moments">moments</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-n_imag_freqs">n_imag_freqs</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-n_real_freqs">n_real_freqs</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-pressure">pressure</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-q_rot">q_rot</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-q_trans">q_trans</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-q_vib">q_vib</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-rot_const">rot_const</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-spin_multiplicity">spin_multiplicity</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-symmetry_number">symmetry_number</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-temperature">temperature</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-thermal_correction_energy">thermal_correction_energy</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-thermal_correction_enthalpy">thermal_correction_enthalpy</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-thermal_correction_gibbs">thermal_correction_gibbs</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-total_mass~2">total_mass</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-zpe_hartree">zpe_hartree</a>
+            <a class="list-group-item" href="../type/thermochemistry_result_t.html#variable-zpe_kcalmol">zpe_kcalmol</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../type/thermochemistry_result_t.html#src">thermochemistry_result_t</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2 id="type-def-statement">
+        type, public :: thermochemistry_result_t</h2>
+    <p>Container for thermochemistry calculation results</p>
+    <br>
+
+    <section>
+    <h2>Components</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cv_rot"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>Cv_rot</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Rotational heat capacity</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cv_trans"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>Cv_trans</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Translational heat capacity</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cv_vib"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>Cv_vib</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Vibrational heat capacity</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_elec"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>E_elec</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Electronic thermal energy (always 0)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_rot"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>E_rot</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Rotational thermal energy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_trans"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>E_trans</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Translational thermal energy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e_vib"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>E_vib</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Vibrational thermal energy (excluding ZPE)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s_elec"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>S_elec</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Electronic entropy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s_rot"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>S_rot</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Rotational entropy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s_trans"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>S_trans</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Translational entropy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s_vib"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>S_vib</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Vibrational entropy</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-is_linear"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>is_linear</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>True if molecule is linear</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-moments"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>moments</strong>(3)</td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Principal moments of inertia in amu*Angstrom^2</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_imag_freqs"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_imag_freqs</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Number of imaginary frequencies (skipped)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_real_freqs"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_real_freqs</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Number of real vibrational frequencies</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pressure"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pressure</strong></td>
+<td> =</td>
+                <td>DEFAULT_PRESSURE</td>
+            <td>
+                <p>Pressure in atm</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-q_rot"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>q_rot</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Rotational partition function</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-q_trans"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>q_trans</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Translational partition function</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-q_vib"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>q_vib</strong></td>
+<td> =</td>
+                <td>1.0_dp</td>
+            <td>
+                <p>Vibrational partition function</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-rot_const"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>rot_const</strong>(3)</td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Rotational constants in GHz</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spin_multiplicity"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spin_multiplicity</strong></td>
+<td> =</td>
+                <td>DEFAULT_SPIN_MULTIPLICITY</td>
+            <td>
+                <p>Electronic spin multiplicity</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-symmetry_number"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>symmetry_number</strong></td>
+<td> =</td>
+                <td>DEFAULT_SYMMETRY_NUMBER</td>
+            <td>
+                <p>Rotational symmetry number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temperature"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>temperature</strong></td>
+<td> =</td>
+                <td>DEFAULT_TEMPERATURE</td>
+            <td>
+                <p>Temperature in K</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-thermal_correction_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>thermal_correction_energy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>E_tot = ZPE + E_trans + E_rot + E_vib</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-thermal_correction_enthalpy"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>thermal_correction_enthalpy</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>H = E_tot + RT</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-thermal_correction_gibbs"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>thermal_correction_gibbs</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>G = H - TS</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_mass~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_mass</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Total mass in amu</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-zpe_hartree"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>zpe_hartree</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>ZPE in Hartree</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-zpe_kcalmol"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>zpe_kcalmol</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>ZPE in kcal/mol</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+
+
+
+    <section>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">thermochemistry_result_t</span>
+<span class="w">      </span><span class="c">!! Container for thermochemistry calculation results</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_TEMPERATURE</span><span class="w">     </span><span class="c">!! Temperature in K</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pressure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_PRESSURE</span><span class="w">           </span><span class="c">!! Pressure in atm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">symmetry_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_SYMMETRY_NUMBER</span><span class="w">  </span><span class="c">!! Rotational symmetry number</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">spin_multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DEFAULT_SPIN_MULTIPLICITY</span><span class="w">  </span><span class="c">!! Electronic spin multiplicity</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_linear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">                    </span><span class="c">!! True if molecule is linear</span>
+
+<span class="w">      </span><span class="c">! Molecular properties</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_mass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                   </span><span class="c">!! Total mass in amu</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">moments</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                   </span><span class="c">!! Principal moments of inertia in amu*Angstrom^2</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">rot_const</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                 </span><span class="c">!! Rotational constants in GHz</span>
+
+<span class="w">      </span><span class="c">! Zero-point energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">zpe_hartree</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                  </span><span class="c">!! ZPE in Hartree</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">zpe_kcalmol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                  </span><span class="c">!! ZPE in kcal/mol</span>
+
+<span class="w">      </span><span class="c">! Thermal energy contributions (Hartree)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">E_trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                      </span><span class="c">!! Translational thermal energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">E_rot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                        </span><span class="c">!! Rotational thermal energy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">E_vib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                        </span><span class="c">!! Vibrational thermal energy (excluding ZPE)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">E_elec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                       </span><span class="c">!! Electronic thermal energy (always 0)</span>
+
+<span class="w">      </span><span class="c">! Entropy contributions (cal/(mol*K))</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">S_trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                      </span><span class="c">!! Translational entropy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">S_rot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                        </span><span class="c">!! Rotational entropy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">S_vib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                        </span><span class="c">!! Vibrational entropy</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">S_elec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                       </span><span class="c">!! Electronic entropy</span>
+
+<span class="w">      </span><span class="c">! Heat capacity contributions (cal/(mol*K))</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">Cv_trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                     </span><span class="c">!! Translational heat capacity</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">Cv_rot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                       </span><span class="c">!! Rotational heat capacity</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">Cv_vib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                       </span><span class="c">!! Vibrational heat capacity</span>
+
+<span class="w">      </span><span class="c">! Summary quantities (Hartree)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">thermal_correction_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">    </span><span class="c">!! E_tot = ZPE + E_trans + E_rot + E_vib</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">thermal_correction_enthalpy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">  </span><span class="c">!! H = E_tot + RT</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">thermal_correction_gibbs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">     </span><span class="c">!! G = H - TS</span>
+
+<span class="w">      </span><span class="c">! Partition functions</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q_trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                      </span><span class="c">!! Translational partition function</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q_rot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">                        </span><span class="c">!! Rotational partition function</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q_vib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="w">                        </span><span class="c">!! Vibrational partition function</span>
+
+<span class="w">      </span><span class="c">! Counts</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_real_freqs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">                       </span><span class="c">!! Number of real vibrational frequencies</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_imag_freqs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">                       </span><span class="c">!! Number of imaginary frequencies (skipped)</span>
+<span class="w">   </span><span class="k">end type </span><span class="n">thermochemistry_result_t</span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-11 09:40 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

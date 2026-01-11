@@ -8,6 +8,8 @@ contains
       use mqc_error, only: error_t
       use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
                                           compute_vibrational_analysis, print_vibrational_analysis
+      use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
+      use mqc_mbe_io, only: print_vibrational_json
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in) :: calc_type
@@ -167,17 +169,40 @@ contains
                end if
 
                if (allocated(frequencies)) then
-                  if (allocated(ir_intensities)) then
-                     call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                     cart_disp, sys_geom%element_numbers, &
-                                                     force_constants_mdyne=fc_mdyne, &
-                                                     ir_intensities=ir_intensities)
-                     deallocate (ir_intensities)
-                  else
-                     call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
-                                                     cart_disp, sys_geom%element_numbers, &
-                                                     force_constants_mdyne=fc_mdyne)
-                  end if
+                  ! Compute thermochemistry for JSON output
+                  block
+                     type(thermochemistry_result_t) :: thermo_result
+                     integer :: n_modes, n_at
+
+                     n_at = size(sys_geom%element_numbers)
+                     n_modes = size(frequencies)
+
+                     call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
+                                                  frequencies, n_at, n_modes, thermo_result)
+
+                     ! Print vibrational analysis to log
+                     if (allocated(ir_intensities)) then
+                        call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                        cart_disp, sys_geom%element_numbers, &
+                                                        force_constants_mdyne=fc_mdyne, &
+                                                        ir_intensities=ir_intensities, &
+                                                        coordinates=sys_geom%coordinates, &
+                                                        electronic_energy=result%energy%total())
+                        ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
+                        call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
+                                                    thermo_result, ir_intensities)
+                        deallocate (ir_intensities)
+                     else
+                        call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
+                                                        cart_disp, sys_geom%element_numbers, &
+                                                        force_constants_mdyne=fc_mdyne, &
+                                                        coordinates=sys_geom%coordinates, &
+                                                        electronic_energy=result%energy%total())
+                        ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
+                        call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
+                                                    thermo_result)
+                     end if
+                  end block
                   deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
                end if
 
@@ -194,7 +219,10 @@ contains
          result_out = result
       else
          ! Write JSON and clean up (normal mode)
-         call print_unfragmented_json(result)
+         ! Note: If we had a Hessian, the vibrational JSON was already written above
+         if (.not. result%has_hessian) then
+            call print_unfragmented_json(result)
+         end if
          call result%destroy()
       end if
 

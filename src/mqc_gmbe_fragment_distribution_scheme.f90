@@ -16,10 +16,11 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list
    use mqc_config_parser, only: bond_t
-   use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
+   use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv, mbe_result_t
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
-   use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json
+   use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json, print_vibrational_json_mbe
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
+   use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    implicit none
    ! Error handling imported where needed
    private
@@ -211,10 +212,13 @@ contains
          call logger%info("GMBE PIE Hessian computation completed")
          call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
 
-         ! Compute and print full vibrational analysis
+         ! Compute and print full vibrational analysis with thermochemistry
          block
             real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
             real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+            type(thermochemistry_result_t) :: thermo_result
+            type(mbe_result_t) :: gmbe_result
+            integer :: n_at, n_modes
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
             call compute_vibrational_analysis(total_hessian, sys_geom%element_numbers, frequencies, &
@@ -226,21 +230,53 @@ contains
                                               ir_intensities=ir_intensities)
 
             if (allocated(frequencies)) then
+               ! Compute thermochemistry
+               n_at = size(sys_geom%element_numbers)
+               n_modes = size(frequencies)
+               call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
+                                            frequencies, n_at, n_modes, thermo_result)
+
+               ! Print vibrational analysis to log
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                cart_disp, sys_geom%element_numbers, &
                                                force_constants_mdyne=fc_mdyne, &
-                                               ir_intensities=ir_intensities)
+                                               ir_intensities=ir_intensities, &
+                                               coordinates=sys_geom%coordinates, &
+                                               electronic_energy=total_energy)
+
+               ! Build temporary mbe_result for JSON output
+               gmbe_result%total_energy = total_energy
+               gmbe_result%has_energy = .true.
+               gmbe_result%has_hessian = .true.
+               if (allocated(total_gradient)) then
+                  gmbe_result%has_gradient = .true.
+                  allocate (gmbe_result%gradient, source=total_gradient)
+               end if
+               allocate (gmbe_result%hessian, source=total_hessian)
+
+               ! Write vibrational/thermochemistry JSON
+               if (allocated(ir_intensities)) then
+                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result, ir_intensities)
+                  deallocate (ir_intensities)
+               else
+                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result)
+               end if
+
+               call gmbe_result%destroy()
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
-               if (allocated(ir_intensities)) deallocate (ir_intensities)
             end if
          end block
       end if
 
       call logger%info(" ")
 
-      ! Write JSON output
-      call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
-                               total_gradient, total_hessian)
+      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
+      if (calc_type /= CALC_TYPE_HESSIAN) then
+         call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
+                                  total_gradient, total_hessian)
+      end if
 
       deallocate (pie_energies, results)
       if (allocated(total_gradient)) deallocate (total_gradient)
@@ -592,10 +628,13 @@ contains
          call logger%info("GMBE PIE Hessian computation completed")
          call logger%info("  Total Hessian Frobenius norm: "//to_char(sqrt(sum(total_hessian**2))))
 
-         ! Compute and print full vibrational analysis
+         ! Compute and print full vibrational analysis with thermochemistry
          block
             real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
             real(dp), allocatable :: cart_disp(:, :), fc_mdyne(:)
+            type(thermochemistry_result_t) :: thermo_result
+            type(mbe_result_t) :: gmbe_result
+            integer :: n_at, n_modes
 
             call logger%info("  Computing vibrational analysis (projecting trans/rot modes)...")
             call compute_vibrational_analysis(total_hessian, sys_geom%element_numbers, frequencies, &
@@ -607,12 +646,42 @@ contains
                                               ir_intensities=ir_intensities)
 
             if (allocated(frequencies)) then
+               ! Compute thermochemistry
+               n_at = size(sys_geom%element_numbers)
+               n_modes = size(frequencies)
+               call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
+                                            frequencies, n_at, n_modes, thermo_result)
+
+               ! Print vibrational analysis to log
                call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                cart_disp, sys_geom%element_numbers, &
                                                force_constants_mdyne=fc_mdyne, &
-                                               ir_intensities=ir_intensities)
+                                               ir_intensities=ir_intensities, &
+                                               coordinates=sys_geom%coordinates, &
+                                               electronic_energy=total_energy)
+
+               ! Build temporary mbe_result for JSON output
+               gmbe_result%total_energy = total_energy
+               gmbe_result%has_energy = .true.
+               gmbe_result%has_hessian = .true.
+               if (allocated(total_gradient)) then
+                  gmbe_result%has_gradient = .true.
+                  allocate (gmbe_result%gradient, source=total_gradient)
+               end if
+               allocate (gmbe_result%hessian, source=total_hessian)
+
+               ! Write vibrational/thermochemistry JSON
+               if (allocated(ir_intensities)) then
+                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result, ir_intensities)
+                  deallocate (ir_intensities)
+               else
+                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
+                                                  thermo_result)
+               end if
+
+               call gmbe_result%destroy()
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
-               if (allocated(ir_intensities)) deallocate (ir_intensities)
             end if
          end block
          if (allocated(total_dipole_derivs)) deallocate (total_dipole_derivs)
@@ -625,17 +694,19 @@ contains
       call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
       call logger%info(" ")
 
-      ! Write JSON output (reuse existing function)
-      block
-         real(dp), allocatable :: pie_energies(:)
-         allocate (pie_energies(n_pie_terms))
-         do term_idx = 1_int64, n_pie_terms
-            pie_energies(term_idx) = results(term_idx)%energy%total()
-         end do
-         call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
-                                  total_gradient, total_hessian)
-         deallocate (pie_energies)
-      end block
+      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
+      if (calc_type /= CALC_TYPE_HESSIAN) then
+         block
+            real(dp), allocatable :: pie_energies(:)
+            allocate (pie_energies(n_pie_terms))
+            do term_idx = 1_int64, n_pie_terms
+               pie_energies(term_idx) = results(term_idx)%energy%total()
+            end do
+            call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
+                                     total_gradient, total_hessian)
+            deallocate (pie_energies)
+         end block
+      end if
 
       deallocate (results)
       if (allocated(total_gradient)) deallocate (total_gradient)
