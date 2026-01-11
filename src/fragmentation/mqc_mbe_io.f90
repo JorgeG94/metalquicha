@@ -8,6 +8,7 @@ module mqc_mbe_io
    use mqc_io_helpers, only: get_output_json_filename, get_basename
    use mqc_thermochemistry, only: thermochemistry_result_t
    use mqc_physical_constants, only: HARTREE_TO_CALMOL, R_CALMOLK, AU_TO_DEBYE, CAL_TO_J
+   use mqc_program_limits, only: JSON_REAL_FORMAT
    use json_module, only: json_core, json_value
    implicit none
    private
@@ -183,7 +184,7 @@ contains
          call logger%warning("Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.")
       end if
 
-      call json%initialize()
+      call json%initialize(real_format=JSON_REAL_FORMAT)
       call json%create_object(root, '')
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
@@ -285,7 +286,7 @@ contains
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      call json%initialize()
+      call json%initialize(real_format=JSON_REAL_FORMAT)
       call json%create_object(root, '')
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
@@ -343,7 +344,7 @@ contains
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      call json%initialize()
+      call json%initialize(real_format=JSON_REAL_FORMAT)
       call json%create_object(root, '')
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
@@ -452,7 +453,7 @@ contains
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      call json%initialize()
+      call json%initialize(real_format=JSON_REAL_FORMAT)
       call json%create_object(root, '')
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
@@ -548,7 +549,7 @@ contains
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      call json%initialize()
+      call json%initialize(real_format=JSON_REAL_FORMAT)
 
       ! Create root object
       call json%create_object(root, '')

@@ -32,6 +32,10 @@ module mqc_program_limits
    !> Maximum length for element symbols (e.g., "He", "Uue")
    integer, parameter, public :: MAX_ELEMENT_SYMBOL_LEN = 4
 
+   !> JSON output format for real numbers (scientific notation)
+   !> Valid values: 'G', 'E', 'EN', 'ES' (json-fortran uses machine precision)
+   character(len=*), parameter, public :: JSON_REAL_FORMAT = 'ES'
+
    !---------------------------------------------------------------------------
    ! Geometry/Structure Limits
    !---------------------------------------------------------------------------
