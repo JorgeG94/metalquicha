@@ -1,9 +1,7 @@
-# based on finding tblite inside xtb
-
-set(_lib "tblite")
-set(_pkg "TBLITE")
-set(_url "https://github.com/tblite/tblite")
-set(_rev "v0.5.0")
+set(_lib "jsonfortran")
+set(_pkg "JSONFORTRAN")
+set(_url "https://github.com/jacobwilliams/json-fortran.git")
+set(_rev "9.2.0")
 
 include("${CMAKE_CURRENT_LIST_DIR}/sample_utils.cmake")
 
