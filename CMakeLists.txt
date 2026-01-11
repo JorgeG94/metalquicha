@@ -92,6 +92,11 @@ endif()
 
 target_link_libraries(${main_lib} ${libraries_to_link})
 
+# Add json-fortran module directory for Fortran USE statements and ensure
+# jsonfortran is built before metalquicha (for .mod files)
+target_include_directories(${main_lib} PRIVATE "${jsonfortran_BINARY_DIR}")
+add_dependencies(${main_lib} jsonfortran)
+
 add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
 
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")

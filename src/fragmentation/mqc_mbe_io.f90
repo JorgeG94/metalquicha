@@ -158,253 +158,163 @@ contains
                                             energies, delta_energies, sum_by_level, &
                                             mbe_result, results)
       !! Write detailed energy breakdown to results.json file
-      !! Outputs structured JSON with all fragment energies and deltaE corrections
-      !! Includes total gradient, Hessian, and dipole based on mbe_result%has_* flags
-      !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
+      !! Uses json-fortran for clean, maintainable JSON output
       use mqc_result_types, only: calculation_result_t, mbe_result_t
       integer, intent(in) :: polymers(:, :), max_level
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
       real(dp), intent(in) :: sum_by_level(:)
-      type(mbe_result_t), intent(in) :: mbe_result  !! MBE aggregated results
-      type(calculation_result_t), intent(in), optional :: results(:)  !! Fragment results with distance info
+      type(mbe_result_t), intent(in) :: mbe_result
+      type(calculation_result_t), intent(in), optional :: results(:)
 
-      integer(int64) :: i
-      integer :: fragment_size, j, frag_level, unit, io_stat, iatom
-      character(len=512) :: json_line
-      integer(int64) :: count_by_level
-      logical :: first_level, first_fragment
+      type(json_core) :: json
+      type(json_value), pointer :: root, main_obj, levels_arr, level_obj, frags_arr, frag_obj
+      type(json_value), pointer :: dipole_obj
+      integer(int64) :: i, count_by_level
+      integer :: fragment_size, j, frag_level, iunit, io_stat
+      integer, allocatable :: indices(:)
       character(len=32) :: level_name
-      integer :: total_atoms
       character(len=256) :: output_file, basename
 
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         return
-      end if
-
-      call logger%info("Writing JSON output to "//trim(output_file))
-
-      ! Warn if we have very high fragmentation levels
       if (max_level > 10) then
          call logger%warning("Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.")
       end if
 
-      write (unit, '(a)') "{"
-      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
-      write (unit, '(a)') trim(json_line)
+      call json%initialize()
+      call json%create_object(root, '')
+      call json%create_object(main_obj, trim(basename))
+      call json%add(root, main_obj)
 
-      write (json_line, '(a,f20.10,a)') '    "total_energy": ', mbe_result%total_energy, ','
-      write (unit, '(a)') trim(json_line)
+      call json%add(main_obj, 'total_energy', mbe_result%total_energy)
 
-      write (unit, '(a)') '    "levels": ['
+      ! Build levels array
+      call json%create_array(levels_arr, 'levels')
+      call json%add(main_obj, levels_arr)
 
-      first_level = .true.
       do frag_level = 1, max_level
          count_by_level = 0_int64
-
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
             if (fragment_size == frag_level) count_by_level = count_by_level + 1_int64
          end do
 
          if (count_by_level > 0_int64) then
-            if (.not. first_level) then
-               write (unit, '(a)') '      },'
-            end if
-            first_level = .false.
-
-            write (unit, '(a)') '      {'
+            call json%create_object(level_obj, '')
+            call json%add(levels_arr, level_obj)
 
             level_name = get_frag_level_name(frag_level)
+            call json%add(level_obj, 'frag_level', frag_level)
+            call json%add(level_obj, 'name', trim(level_name))
+            call json%add(level_obj, 'count', int(count_by_level))
+            call json%add(level_obj, 'total_energy', sum_by_level(frag_level))
 
-            write (json_line, '(a,i0,a)') '        "frag_level": ', frag_level, ','
-            write (unit, '(a)') trim(json_line)
-            write (json_line, '(a,a,a)') '        "name": "', trim(level_name), '",'
-            write (unit, '(a)') trim(json_line)
-            write (json_line, '(a,i0,a)') '        "count": ', count_by_level, ','
-            write (unit, '(a)') trim(json_line)
-            write (json_line, '(a,f20.10,a)') '        "total_energy": ', sum_by_level(frag_level), ','
-            write (unit, '(a)') trim(json_line)
-            write (unit, '(a)') '        "fragments": ['
+            call json%create_array(frags_arr, 'fragments')
+            call json%add(level_obj, frags_arr)
 
-            first_fragment = .true.
             do i = 1_int64, fragment_count
                fragment_size = count(polymers(i, :) > 0)
-
                if (fragment_size == frag_level) then
-                  if (.not. first_fragment) then
-                     write (unit, '(a)') '          },'
-                  end if
-                  first_fragment = .false.
+                  call json%create_object(frag_obj, '')
+                  call json%add(frags_arr, frag_obj)
 
-                  write (unit, '(a)') '          {'
+                  allocate (indices(fragment_size))
+                  indices = polymers(i, 1:fragment_size)
+                  call json%add(frag_obj, 'indices', indices)
+                  deallocate (indices)
 
-                  json_line = '            "indices": ['
-                  do j = 1, fragment_size
-                     if (j > 1) then
-                        write (json_line, '(a,a,i0)') trim(json_line), ', ', polymers(i, j)
-                     else
-                        write (json_line, '(a,i0)') trim(json_line), polymers(i, j)
-                     end if
-                  end do
-                  write (json_line, '(a,a)') trim(json_line), '],'
-                  write (unit, '(a)') trim(json_line)
+                  call json%add(frag_obj, 'energy', energies(i))
 
-                  write (json_line, '(a,f20.10,a)') '            "energy": ', energies(i), ','
-                  write (unit, '(a)') trim(json_line)
-
-                  ! Add distance field if available
                   if (present(results)) then
-                     write (json_line, '(a,f20.10)') '            "distance": ', results(i)%distance
-                     if (frag_level > 1) then
-                        write (json_line, '(a,a)') trim(json_line), ','
-                        write (unit, '(a)') trim(json_line)
-                        write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
-                     end if
-                  else
-                     if (frag_level > 1) then
-                        write (json_line, '(a,f20.10)') '            "delta_energy": ', delta_energies(i)
-                     end if
+                     call json%add(frag_obj, 'distance', results(i)%distance)
                   end if
-                  write (unit, '(a)') trim(json_line)
+                  if (frag_level > 1) then
+                     call json%add(frag_obj, 'delta_energy', delta_energies(i))
+                  end if
                end if
             end do
-
-            if (.not. first_fragment) then
-               write (unit, '(a)') '          }'
-            end if
-            write (unit, '(a)') '        ]'
          end if
       end do
 
-      if (.not. first_level) then
-         write (unit, '(a)') '      }'
-      end if
-
-      ! Close levels array (with comma if we have more fields)
-      if (mbe_result%has_gradient .or. mbe_result%has_hessian .or. mbe_result%has_dipole) then
-         write (unit, '(a)') '    ],'
-      else
-         write (unit, '(a)') '    ]'
-      end if
-
-      ! Add dipole if computed (inside basename object)
+      ! Add dipole if computed
       if (mbe_result%has_dipole) then
-         write (unit, '(a)') '    "dipole": {'
-         write (json_line, '(a,f25.15,a)') '      "x": ', mbe_result%dipole(1), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15,a)') '      "y": ', mbe_result%dipole(2), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15,a)') '      "z": ', mbe_result%dipole(3), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(mbe_result%dipole)*AU_TO_DEBYE
-         write (unit, '(a)') trim(json_line)
-         if (mbe_result%has_gradient .or. mbe_result%has_hessian) then
-            write (unit, '(a)') '    },'
-         else
-            write (unit, '(a)') '    }'
-         end if
+         call json%create_object(dipole_obj, 'dipole')
+         call json%add(main_obj, dipole_obj)
+         call json%add(dipole_obj, 'x', mbe_result%dipole(1))
+         call json%add(dipole_obj, 'y', mbe_result%dipole(2))
+         call json%add(dipole_obj, 'z', mbe_result%dipole(3))
+         call json%add(dipole_obj, 'magnitude_debye', norm2(mbe_result%dipole)*AU_TO_DEBYE)
       end if
 
-      ! Add gradient norm if computed (inside basename object)
       if (mbe_result%has_gradient) then
-         write (json_line, '(a,f20.10)') '    "gradient_norm": ', sqrt(sum(mbe_result%gradient**2))
-         if (mbe_result%has_hessian) then
-            write (json_line, '(a,a)') trim(json_line), ','
-         end if
-         write (unit, '(a)') trim(json_line)
+         call json%add(main_obj, 'gradient_norm', sqrt(sum(mbe_result%gradient**2)))
       end if
 
-      ! Add Hessian Frobenius norm if computed (inside basename object)
       if (mbe_result%has_hessian) then
-         write (json_line, '(a,f20.10)') '    "hessian_frobenius_norm": ', sqrt(sum(mbe_result%hessian**2))
-         write (unit, '(a)') trim(json_line)
+         call json%add(main_obj, 'hessian_frobenius_norm', sqrt(sum(mbe_result%hessian**2)))
       end if
 
-      ! Close basename object
-      write (unit, '(a)') '  }'
-      ! Close outer object
-      write (unit, '(a)') '}'
+      ! Write to file
+      call logger%info("Writing JSON output to "//trim(output_file))
+      open (newunit=iunit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         call json%destroy(root)
+         return
+      end if
 
-      close (unit)
+      call json%print(root, iunit)
+      close (iunit)
+      call json%destroy(root)
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine print_detailed_breakdown_json
 
    subroutine print_unfragmented_json(result)
       !! Write unfragmented calculation results to output JSON file
-      !! Outputs structured JSON with energy and optionally gradient
+      !! Uses json-fortran for clean, maintainable JSON output
       type(calculation_result_t), intent(in) :: result
 
-      integer :: unit, io_stat, iatom, total_atoms
-      character(len=512) :: json_line
+      type(json_core) :: json
+      type(json_value), pointer :: root, main_obj, dipole_obj
+      integer :: iunit, io_stat
       character(len=256) :: output_file, basename
 
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      call json%initialize()
+      call json%create_object(root, '')
+      call json%create_object(main_obj, trim(basename))
+      call json%add(root, main_obj)
+
+      if (result%has_energy) call json%add(main_obj, 'total_energy', result%energy%total())
+
+      if (result%has_dipole) then
+         call json%create_object(dipole_obj, 'dipole')
+         call json%add(main_obj, dipole_obj)
+         call json%add(dipole_obj, 'x', result%dipole(1))
+         call json%add(dipole_obj, 'y', result%dipole(2))
+         call json%add(dipole_obj, 'z', result%dipole(3))
+         call json%add(dipole_obj, 'magnitude_debye', norm2(result%dipole)*AU_TO_DEBYE)
+      end if
+
+      if (result%has_gradient) call json%add(main_obj, 'gradient_norm', sqrt(sum(result%gradient**2)))
+      if (result%has_hessian) call json%add(main_obj, 'hessian_frobenius_norm', sqrt(sum(result%hessian**2)))
+
+      call logger%info("Writing JSON output to "//trim(output_file))
+      open (newunit=iunit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
       if (io_stat /= 0) then
          call logger%error("Failed to open "//trim(output_file)//" for writing")
+         call json%destroy(root)
          return
       end if
 
-      call logger%info("Writing JSON output to "//trim(output_file))
-
-      write (unit, '(a)') "{"
-      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
-      write (unit, '(a)') trim(json_line)
-
-      if (result%has_energy) then
-         write (json_line, '(a,f25.15)') '    "total_energy": ', result%energy%total()
-         if (result%has_dipole .or. result%has_gradient .or. result%has_hessian) then
-            write (json_line, '(a,a)') trim(json_line), ','
-         end if
-         write (unit, '(a)') trim(json_line)
-      end if
-
-      ! Add dipole if present
-      if (result%has_dipole) then
-         write (unit, '(a)') '    "dipole": {'
-         write (json_line, '(a,f25.15,a)') '      "x": ', result%dipole(1), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15,a)') '      "y": ', result%dipole(2), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15,a)') '      "z": ', result%dipole(3), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f25.15)') '      "magnitude_debye": ', norm2(result%dipole)*AU_TO_DEBYE
-         write (unit, '(a)') trim(json_line)
-         if (result%has_gradient .or. result%has_hessian) then
-            write (unit, '(a)') '    },'
-         else
-            write (unit, '(a)') '    }'
-         end if
-      end if
-
-      ! Add gradient norm if present
-      if (result%has_gradient) then
-         write (json_line, '(a,f25.15)') '    "gradient_norm": ', sqrt(sum(result%gradient**2))
-         if (result%has_hessian) then
-            write (json_line, '(a,a)') trim(json_line), ','
-         end if
-         write (unit, '(a)') trim(json_line)
-      end if
-
-      ! Add Hessian Frobenius norm if present
-      if (result%has_hessian) then
-         write (json_line, '(a,f25.15)') '    "hessian_frobenius_norm": ', sqrt(sum(result%hessian**2))
-         write (unit, '(a)') trim(json_line)
-      end if
-
-      write (unit, '(a)') '  }'
-      write (unit, '(a)') '}'
-
-      close (unit)
+      call json%print(root, iunit)
+      close (iunit)
+      call json%destroy(root)
       call logger%info("JSON output written successfully to "//trim(output_file))
 
    end subroutine print_unfragmented_json
@@ -413,149 +323,109 @@ contains
                               n_intersections, intersection_results, &
                               intersection_sets, intersection_levels, total_energy)
       !! Write GMBE calculation results to output JSON file
-      !! Outputs structured JSON with monomers, intersections, and total energy
-      !! Intersection parameters are optional and should be omitted when n_intersections=0
+      !! Uses json-fortran for clean, maintainable JSON output
       integer, intent(in) :: n_monomers
       integer, intent(in) :: monomer_indices(:)
       type(calculation_result_t), intent(in) :: monomer_results(:)
       integer, intent(in) :: n_intersections
       type(calculation_result_t), intent(in), optional :: intersection_results(:)
-      integer, intent(in), optional :: intersection_sets(:, :)  !! (n_monomers, n_intersections)
+      integer, intent(in), optional :: intersection_sets(:, :)
       integer, intent(in), optional :: intersection_levels(:)
       real(dp), intent(in) :: total_energy
 
-      integer :: i, j, k, max_level, unit, io_stat
-      character(len=512) :: json_line
+      type(json_core) :: json
+      type(json_value), pointer :: root, main_obj, monomers_obj, frags_arr, frag_obj
+      type(json_value), pointer :: intersect_obj, levels_arr, level_obj, int_frags_arr, int_frag_obj
+      integer :: i, j, k, max_level, iunit, io_stat, level_count, n_indices
+      integer, allocatable :: indices(:)
       character(len=256) :: output_file, basename
-      logical :: first_level, first_intersection
-      integer :: level_count
 
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         return
-      end if
+      call json%initialize()
+      call json%create_object(root, '')
+      call json%create_object(main_obj, trim(basename))
+      call json%add(root, main_obj)
 
-      call logger%info("Writing GMBE JSON output to "//trim(output_file))
-
-      write (unit, '(a)') "{"
-      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
-      write (unit, '(a)') trim(json_line)
-
-      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
-      write (unit, '(a)') trim(json_line)
+      call json%add(main_obj, 'total_energy', total_energy)
 
       ! Monomers section
-      write (unit, '(a)') '    "monomers": {'
-      write (json_line, '(a,i0,a)') '      "count": ', n_monomers, ','
-      write (unit, '(a)') trim(json_line)
-      write (unit, '(a)') '      "fragments": ['
+      call json%create_object(monomers_obj, 'monomers')
+      call json%add(main_obj, monomers_obj)
+      call json%add(monomers_obj, 'count', n_monomers)
+
+      call json%create_array(frags_arr, 'fragments')
+      call json%add(monomers_obj, frags_arr)
 
       do i = 1, n_monomers
-         write (unit, '(a)') '        {'
-         write (json_line, '(a,i0,a)') '          "index": ', monomer_indices(i), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f20.10)') '          "energy": ', monomer_results(i)%energy%total()
-         write (unit, '(a)') trim(json_line)
-         if (i < n_monomers) then
-            write (unit, '(a)') '        },'
-         else
-            write (unit, '(a)') '        }'
-         end if
+         call json%create_object(frag_obj, '')
+         call json%add(frags_arr, frag_obj)
+         call json%add(frag_obj, 'index', monomer_indices(i))
+         call json%add(frag_obj, 'energy', monomer_results(i)%energy%total())
       end do
-
-      write (unit, '(a)') '      ]'
-
-      ! Add comma after monomers if we have intersections
-      if (n_intersections > 0 .and. present(intersection_results) .and. &
-          present(intersection_sets) .and. present(intersection_levels)) then
-         write (unit, '(a)') '    },'
-      else
-         write (unit, '(a)') '    }'
-      end if
 
       ! Intersections section
       if (n_intersections > 0 .and. present(intersection_results) .and. &
           present(intersection_sets) .and. present(intersection_levels)) then
          max_level = maxval(intersection_levels)
 
-         write (unit, '(a)') '    "intersections": {'
-         write (json_line, '(a,i0,a)') '      "total_count": ', n_intersections, ','
-         write (unit, '(a)') trim(json_line)
-         write (unit, '(a)') '      "levels": ['
+         call json%create_object(intersect_obj, 'intersections')
+         call json%add(main_obj, intersect_obj)
+         call json%add(intersect_obj, 'total_count', n_intersections)
 
-         first_level = .true.
+         call json%create_array(levels_arr, 'levels')
+         call json%add(intersect_obj, levels_arr)
+
          do k = 2, max_level
-            ! Count intersections at this level
-            level_count = 0
-            do i = 1, n_intersections
-               if (intersection_levels(i) == k) level_count = level_count + 1
-            end do
+            level_count = count(intersection_levels == k)
 
             if (level_count > 0) then
-               if (.not. first_level) then
-                  write (unit, '(a)') '        },'
-               end if
-               first_level = .false.
+               call json%create_object(level_obj, '')
+               call json%add(levels_arr, level_obj)
+               call json%add(level_obj, 'level', k)
+               call json%add(level_obj, 'count', level_count)
 
-               write (unit, '(a)') '        {'
-               write (json_line, '(a,i0,a)') '          "level": ', k, ','
-               write (unit, '(a)') trim(json_line)
-               write (json_line, '(a,i0,a)') '          "count": ', level_count, ','
-               write (unit, '(a)') trim(json_line)
-               write (unit, '(a)') '          "fragments": ['
+               call json%create_array(int_frags_arr, 'fragments')
+               call json%add(level_obj, int_frags_arr)
 
-               first_intersection = .true.
                do i = 1, n_intersections
                   if (intersection_levels(i) == k) then
-                     if (.not. first_intersection) then
-                        write (unit, '(a)') '            },'
-                     end if
-                     first_intersection = .false.
+                     call json%create_object(int_frag_obj, '')
+                     call json%add(int_frags_arr, int_frag_obj)
 
-                     write (unit, '(a)') '            {'
-
-                     ! Write indices
-                     json_line = '              "indices": ['
-                     do j = 1, n_monomers
+                     ! Count and extract non-zero indices
+                     n_indices = count(intersection_sets(:, i) > 0)
+                     allocate (indices(n_indices))
+                     n_indices = 0
+                     do j = 1, size(intersection_sets, 1)
                         if (intersection_sets(j, i) > 0) then
-                           if (j > 1 .and. intersection_sets(j - 1, i) > 0) then
-                              write (json_line, '(a,a,i0)') trim(json_line), ', ', intersection_sets(j, i)
-                           else
-                              write (json_line, '(a,i0)') trim(json_line), intersection_sets(j, i)
-                           end if
+                           n_indices = n_indices + 1
+                           indices(n_indices) = intersection_sets(j, i)
                         end if
                      end do
-                     write (json_line, '(a,a)') trim(json_line), '],'
-                     write (unit, '(a)') trim(json_line)
+                     call json%add(int_frag_obj, 'indices', indices)
+                     deallocate (indices)
 
-                     write (json_line, '(a,f20.10)') '              "energy": ', intersection_results(i)%energy%total()
-                     write (unit, '(a)') trim(json_line)
+                     call json%add(int_frag_obj, 'energy', intersection_results(i)%energy%total())
                   end if
                end do
-
-               if (.not. first_intersection) then
-                  write (unit, '(a)') '            }'
-               end if
-               write (unit, '(a)') '          ]'
             end if
          end do
-
-         if (.not. first_level) then
-            write (unit, '(a)') '        }'
-         end if
-
-         write (unit, '(a)') '      ]'
-         write (unit, '(a)') '    }'
       end if
 
-      write (unit, '(a)') '  }'
-      write (unit, '(a)') '}'
+      ! Write to file
+      call logger%info("Writing GMBE JSON output to "//trim(output_file))
+      open (newunit=iunit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         call json%destroy(root)
+         return
+      end if
 
-      close (unit)
+      call json%print(root, iunit)
+      close (iunit)
+      call json%destroy(root)
       call logger%info("GMBE JSON output written successfully to "//trim(output_file))
 
    end subroutine print_gmbe_json
@@ -563,112 +433,81 @@ contains
    subroutine print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
                                   total_gradient, total_hessian)
       !! Write GMBE PIE calculation results to output JSON file
-      !! Outputs structured JSON with PIE terms (atom sets with coefficients and energies)
-      !! Optionally includes total gradient and Hessian norms
-      integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
-      integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
-      real(dp), intent(in) :: pie_energies(:)  !! Raw energy for each term
+      !! Uses json-fortran for clean, maintainable JSON output
+      integer, intent(in) :: pie_atom_sets(:, :)
+      integer, intent(in) :: pie_coefficients(:)
+      real(dp), intent(in) :: pie_energies(:)
       integer(int64), intent(in) :: n_pie_terms
       real(dp), intent(in) :: total_energy
-      real(dp), intent(in), optional :: total_gradient(:, :)  !! (3, total_atoms)
-      real(dp), intent(in), optional :: total_hessian(:, :)  !! (3*total_atoms, 3*total_atoms)
+      real(dp), intent(in), optional :: total_gradient(:, :)
+      real(dp), intent(in), optional :: total_hessian(:, :)
 
-      integer :: j, max_atoms, n_atoms
+      type(json_core) :: json
+      type(json_value), pointer :: root, main_obj, pie_obj, terms_arr, term_obj
+      integer :: j, max_atoms, n_atoms, iunit, io_stat
       integer(int64) :: i, n_nonzero_terms
-      integer :: unit, io_stat
-      logical :: first_term
-      character(len=512) :: json_line
+      integer, allocatable :: atom_indices(:)
       character(len=256) :: output_file, basename
 
       output_file = get_output_json_filename()
       basename = get_basename()
 
-      open (newunit=unit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
-      if (io_stat /= 0) then
-         call logger%error("Failed to open "//trim(output_file)//" for writing")
-         return
-      end if
+      call json%initialize()
+      call json%create_object(root, '')
+      call json%create_object(main_obj, trim(basename))
+      call json%add(root, main_obj)
 
-      call logger%info("Writing GMBE PIE JSON output to "//trim(output_file))
+      call json%add(main_obj, 'total_energy', total_energy)
+      if (present(total_gradient)) call json%add(main_obj, 'gradient_norm', sqrt(sum(total_gradient**2)))
+      if (present(total_hessian)) call json%add(main_obj, 'hessian_frobenius_norm', sqrt(sum(total_hessian**2)))
 
-      write (unit, '(a)') "{"
-      write (json_line, '(a,a,a)') '  "', trim(basename), '": {'
-      write (unit, '(a)') trim(json_line)
-
-      write (json_line, '(a,f20.10,a)') '    "total_energy": ', total_energy, ','
-      write (unit, '(a)') trim(json_line)
-
-      ! Add gradient if present
-      if (present(total_gradient)) then
-         write (json_line, '(a,f20.10,a)') '    "gradient_norm": ', sqrt(sum(total_gradient**2)), ','
-         write (unit, '(a)') trim(json_line)
-      end if
-
-      ! Add Hessian if present
-      if (present(total_hessian)) then
-         write (json_line, '(a,f20.10,a)') '    "hessian_frobenius_norm": ', sqrt(sum(total_hessian**2)), ','
-         write (unit, '(a)') trim(json_line)
-      end if
+      ! Count non-zero coefficient terms
+      n_nonzero_terms = count(pie_coefficients(1:n_pie_terms) /= 0)
 
       ! PIE terms section
-      ! First count non-zero coefficient terms
-      n_nonzero_terms = 0_int64
-      do i = 1_int64, n_pie_terms
-         if (pie_coefficients(i) /= 0) n_nonzero_terms = n_nonzero_terms + 1
-      end do
+      call json%create_object(pie_obj, 'pie_terms')
+      call json%add(main_obj, pie_obj)
+      call json%add(pie_obj, 'count', int(n_nonzero_terms))
 
-      write (unit, '(a)') '    "pie_terms": {'
-      write (json_line, '(a,i0,a)') '      "count": ', n_nonzero_terms, ','
-      write (unit, '(a)') trim(json_line)
-      write (unit, '(a)') '      "terms": ['
+      call json%create_array(terms_arr, 'terms')
+      call json%add(pie_obj, terms_arr)
 
       max_atoms = size(pie_atom_sets, 1)
-      first_term = .true.
 
       do i = 1_int64, n_pie_terms
-         ! Skip terms with zero coefficient
          if (pie_coefficients(i) == 0) cycle
 
-         if (.not. first_term) write (unit, '(a)') '        },'
-         first_term = .false.
+         call json%create_object(term_obj, '')
+         call json%add(terms_arr, term_obj)
 
-         write (unit, '(a)') '        {'
-
-         ! Extract atom list size
+         ! Extract atom list size (atoms until negative sentinel)
          n_atoms = 0
          do while (n_atoms < max_atoms .and. pie_atom_sets(n_atoms + 1, i) >= 0)
             n_atoms = n_atoms + 1
          end do
 
-         ! Write atom indices
-         json_line = '          "atom_indices": ['
-         do j = 1, n_atoms
-            if (j > 1) then
-               write (json_line, '(a,a,i0)') trim(json_line), ', ', pie_atom_sets(j, i)
-            else
-               write (json_line, '(a,i0)') trim(json_line), pie_atom_sets(j, i)
-            end if
-         end do
-         write (json_line, '(a,a)') trim(json_line), '],'
-         write (unit, '(a)') trim(json_line)
+         allocate (atom_indices(n_atoms))
+         atom_indices = pie_atom_sets(1:n_atoms, i)
+         call json%add(term_obj, 'atom_indices', atom_indices)
+         deallocate (atom_indices)
 
-         write (json_line, '(a,i0,a)') '          "coefficient": ', pie_coefficients(i), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f20.10,a)') '          "energy": ', pie_energies(i), ','
-         write (unit, '(a)') trim(json_line)
-         write (json_line, '(a,f20.10)') '          "weighted_energy": ', &
-            real(pie_coefficients(i), dp)*pie_energies(i)
-         write (unit, '(a)') trim(json_line)
+         call json%add(term_obj, 'coefficient', pie_coefficients(i))
+         call json%add(term_obj, 'energy', pie_energies(i))
+         call json%add(term_obj, 'weighted_energy', real(pie_coefficients(i), dp)*pie_energies(i))
       end do
 
-      if (.not. first_term) write (unit, '(a)') '        }'
+      ! Write to file
+      call logger%info("Writing GMBE PIE JSON output to "//trim(output_file))
+      open (newunit=iunit, file=trim(output_file), status='replace', action='write', iostat=io_stat)
+      if (io_stat /= 0) then
+         call logger%error("Failed to open "//trim(output_file)//" for writing")
+         call json%destroy(root)
+         return
+      end if
 
-      write (unit, '(a)') '      ]'
-      write (unit, '(a)') '    }'
-      write (unit, '(a)') '  }'
-      write (unit, '(a)') '}'
-
-      close (unit)
+      call json%print(root, iunit)
+      close (iunit)
+      call json%destroy(root)
       call logger%info("GMBE PIE JSON output written successfully to "//trim(output_file))
 
    end subroutine print_gmbe_pie_json
