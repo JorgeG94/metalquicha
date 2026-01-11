@@ -188,13 +188,13 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -943,7 +943,7 @@ Supports up to decamers (10-mers), then falls back to &ldquo;N-mers&rdquo; forma
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_level~2"></span>
+              <span class="anchor" id="variable-frag_level"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -995,7 +995,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~13"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1025,7 +1025,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
+              <span class="anchor" id="variable-max_level~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1098,7 +1098,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1128,7 +1128,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~16"></span>
+              <span class="anchor" id="variable-max_level~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1188,7 +1188,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~2"></span>
+              <span class="anchor" id="variable-mbe_result~3"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1203,7 +1203,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~9"></span>
+              <span class="anchor" id="variable-results~10"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1243,7 +1243,7 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~14"></span>
+              <span class="anchor" id="variable-fragment_idx~13"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1300,7 +1300,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~8"></span>
+              <span class="anchor" id="variable-n_monomers~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1345,7 +1345,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~4"></span>
+              <span class="anchor" id="variable-n_intersections~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1375,7 +1375,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~5"></span>
+              <span class="anchor" id="variable-intersection_sets~4"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1390,7 +1390,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~4"></span>
+              <span class="anchor" id="variable-intersection_levels~3"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -1405,7 +1405,7 @@ Intersection parameters are optional and should be omitted when n_intersections=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~6"></span>
+              <span class="anchor" id="variable-total_energy~7"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1447,7 +1447,7 @@ Optionally includes total gradient and Hessian norms</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1462,7 +1462,7 @@ Optionally includes total gradient and Hessian norms</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1492,7 +1492,7 @@ Optionally includes total gradient and Hessian norms</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1507,7 +1507,7 @@ Optionally includes total gradient and Hessian norms</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -1578,7 +1578,7 @@ Outputs structured JSON with energy and optionally gradient</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~13"></span>
+              <span class="anchor" id="variable-result~12"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1621,7 +1621,7 @@ Outputs structured JSON with energy and optionally gradient</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 12:44 +0000             </p>
+ on 2026-01-11 02:34 +0000             </p>
           </div>
         </div>
         <br>

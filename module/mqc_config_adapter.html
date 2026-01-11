@@ -204,13 +204,13 @@ Check for overlapping fragments (for testing)</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_config_parser.html'>mqc_config_parser</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -995,7 +995,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type"></span>
+              <span class="anchor" id="variable-calc_type~5"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -1080,7 +1080,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~4"></span>
+              <span class="anchor" id="variable-hessian~2"></span>
               type(<a href='../type/hessian_keywords_t.html'>hessian_keywords_t</a>),
             </td>
               <td>public</td>
@@ -1114,7 +1114,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method"></span>
+              <span class="anchor" id="variable-method~3"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -1347,7 +1347,7 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~5"></span>
+              <span class="anchor" id="variable-error~6"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1404,7 +1404,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~2"></span>
+              <span class="anchor" id="variable-driver_config"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1477,7 +1477,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~4"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1492,7 +1492,7 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error"></span>
+              <span class="anchor" id="variable-error~2"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1563,7 +1563,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
+              <span class="anchor" id="variable-sys_geom~7"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1593,7 +1593,7 @@ Supports both identical and variable-sized fragments</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~3"></span>
+              <span class="anchor" id="variable-error~4"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1649,7 +1649,7 @@ Treats entire system as a single monomer</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~4"></span>
+              <span class="anchor" id="variable-sys_geom~5"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1810,7 +1810,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~5"></span>
+              <span class="anchor" id="variable-sys_geom~6"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1825,7 +1825,7 @@ Handles fragment allocation, size checking, and overlap validation</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~2"></span>
+              <span class="anchor" id="variable-error~3"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1881,7 +1881,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
+              <span class="anchor" id="variable-sys_geom~8"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1926,7 +1926,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~4"></span>
+              <span class="anchor" id="variable-error~5"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1969,7 +1969,7 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 12:44 +0000             </p>
+ on 2026-01-11 02:34 +0000             </p>
           </div>
         </div>
         <br>

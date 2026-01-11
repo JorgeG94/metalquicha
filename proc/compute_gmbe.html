@@ -139,15 +139,15 @@
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_grad~2">compute_grad</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-compute_hess~2">compute_hess</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-current_log_level~7">current_log_level</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~48">error</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~27">fragment</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-error~11">error</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-fragment~9">fragment</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-has_intersections~2">has_intersections</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~5">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~55">i</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~14">k</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-hess_dim~3">hess_dim</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-i~23">i</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-k~8">k</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_counts~2">level_counts</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-level_energies~2">level_energies</a>
-            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~14">max_level</a>
+            <a class="list-group-item" href="../proc/compute_gmbe.html#variable-max_level~8">max_level</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_energy~2">monomer_energy</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-monomer_idx">monomer_idx</a>
             <a class="list-group-item" href="../proc/compute_gmbe.html#variable-sign_factor~2">sign_factor</a>
@@ -195,10 +195,10 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -694,7 +694,7 @@ Optional arguments control what derivatives are computed:
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-monomers~9"></span>
+              <span class="anchor" id="variable-monomers~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -709,7 +709,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~6"></span>
+              <span class="anchor" id="variable-n_monomers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -739,7 +739,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_intersections~2"></span>
+              <span class="anchor" id="variable-n_intersections"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -769,7 +769,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_sets~2"></span>
+              <span class="anchor" id="variable-intersection_sets"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -784,7 +784,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-intersection_levels~2"></span>
+              <span class="anchor" id="variable-intersection_levels"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -799,7 +799,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~5"></span>
+              <span class="anchor" id="variable-total_energy~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out)</td>
@@ -814,7 +814,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~37"></span>
+              <span class="anchor" id="variable-sys_geom~21"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -829,7 +829,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~3"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -844,7 +844,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_hessian~3"></span>
+              <span class="anchor" id="variable-total_hessian"></span>
               real(kind=dp),
             </td>
 <td>intent(out),</td>
@@ -859,7 +859,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~26"></span>
+              <span class="anchor" id="variable-bonds~10"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -874,7 +874,7 @@ Optional arguments control what derivatives are computed:
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~14"></span>
+              <span class="anchor" id="variable-world_comm~11"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -1971,7 +1971,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~48"></span>
+              <span class="anchor" id="variable-error~11"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -1988,7 +1988,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~27"></span>
+              <span class="anchor" id="variable-fragment~9"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2022,7 +2022,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hess_dim~5"></span>
+              <span class="anchor" id="variable-hess_dim~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2039,7 +2039,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~55"></span>
+              <span class="anchor" id="variable-i~23"></span>
               integer,
             </td>
               <td>private</td>
@@ -2056,7 +2056,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-k~14"></span>
+              <span class="anchor" id="variable-k~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -2107,7 +2107,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~14"></span>
+              <span class="anchor" id="variable-max_level~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -2389,7 +2389,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-10 12:44 +0000             </p>
+ on 2026-01-11 02:34 +0000             </p>
           </div>
         </div>
         <br>
