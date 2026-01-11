@@ -3,54 +3,54 @@
   "tolerance": 1.0e-6,
   "tests": [
     { "name": "GMBE(1) test gly3",
-      "input": "validation/inputs/overlapping_gly3.mqc",
+      "input": "inputs/overlapping_gly3.mqc",
       "expected_energy": -47.0192718920,
       "type" : "fragmented"
       },
     { "name": "GMBE(3) test decane",
-      "input": "validation/inputs/nlevel_3_ov_decane.mqc",
+      "input": "inputs/nlevel_3_ov_decane.mqc",
       "expected_energy": -33.0506139740,
       "type" : "fragmented"
       },
     {
       "name": "Unfragmented glycine tripeptide",
-      "input": "validation/inputs/no_frag.mqc",
+      "input": "inputs/no_frag.mqc",
       "expected_energy": -143.291489223019653,
       "type": "unfragmented"
     },
     {
       "name": "Charged cluster MBE",
-      "input": "validation/inputs/charged_cluster.mqc",
+      "input": "inputs/charged_cluster.mqc",
       "expected_energy": -45.7161383790,
       "type": "fragmented"
     },
     {
       "name": "Glycine 10-mer MBE",
-      "input": "validation/inputs/gly10.mqc",
+      "input": "inputs/gly10.mqc",
       "expected_energy": -143.3014637669,
       "type": "fragmented"
     },
     {
       "name": "Water prism MBE",
-      "input": "validation/inputs/prism.mqc",
+      "input": "inputs/prism.mqc",
       "expected_energy": -34.6736678571,
       "type": "fragmented"
     },
     {
       "name": "Water 20-mer isomer MBE",
-      "input": "validation/inputs/w20_isomer.mqc",
+      "input": "inputs/w20_isomer.mqc",
       "expected_energy": -115.6850246841,
       "type": "fragmented"
     },
     {
       "name": "Hydronium ion unfragmented",
-      "input": "validation/inputs/h3o.mqc",
+      "input": "inputs/h3o.mqc",
       "expected_energy": -5.773131213617977,
       "type": "unfragmented"
     },
     {
       "name": "Multi-fragment calculation",
-      "input": "validation/inputs/multi_frag.mqc",
+      "input": "inputs/multi_frag.mqc",
       "expected_energies": {
         "molecule_1": -34.6736678571,
         "molecule_2": -34.6736678571
@@ -59,7 +59,7 @@
     },
     {
       "name": "Multi-structure conformers",
-      "input": "validation/inputs/multi_structure.mqc",
+      "input": "inputs/multi_structure.mqc",
       "expected_energies": {
         "molecule_1": -34.683832133514869,
         "molecule_2": -34.683832133514869,
@@ -72,7 +72,7 @@
     },
     {
       "name": "Hessian + gradient overlapping gly3",
-      "input": "validation/inputs/hess_gly3_ov.mqc",
+      "input": "inputs/hess_gly3_ov.mqc",
       "expected_energy": -47.0192718920,
       "expected_gradient_norm": 0.1406590140,
       "expected_hessian_frobenius_norm": 4.077069191300,
@@ -80,7 +80,7 @@
     },
     {
       "name": "Hessian + gradient prism",
-      "input": "validation/inputs/prism_hessian.mqc",
+      "input": "inputs/prism_hessian.mqc",
       "expected_energy": -34.6736678571,
       "expected_gradient_norm": 0.0315774691,
       "expected_hessian_frobenius_norm": 3.263705700400,
@@ -88,7 +88,7 @@
     },
     {
       "name": "Hessian + gradient unfrag h3o",
-      "input": "validation/inputs/hess_h3o.mqc",
+      "input": "inputs/hess_h3o.mqc",
       "expected_energy": -5.773131213617977,
       "expected_gradient_norm": 0.034523358557187,
       "expected_hessian_frobenius_norm": 1.410449942210,
@@ -96,19 +96,19 @@
     },
     {
       "name": "ALBP solvation of w1 in water",
-      "input": "validation/inputs/w1_water.mqc",
+      "input": "inputs/w1_water.mqc",
       "expected_energy": -5.912219839402070,
       "type": "unfragmented"
      },
       {
       "name": "CPCM solvation of w1 in water",
-      "input": "validation/inputs/w1_water_cpcm.mqc",
+      "input": "inputs/w1_water_cpcm.mqc",
       "expected_energy": -5.881430808516041,
       "type": "unfragmented"
      },
       {
       "name": "GBSA solvation of w1 in water",
-      "input": "validation/inputs/w1_water_gbsa.mqc",
+      "input": "inputs/w1_water_gbsa.mqc",
       "expected_energy": -5.935225830899037,
       "type": "unfragmented"
      }
