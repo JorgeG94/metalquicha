@@ -111,6 +111,17 @@
       "input": "inputs/w1_water_gbsa.mqc",
       "expected_energy": -5.935225830899037,
       "type": "unfragmented"
+     },
+     {
+      "name": "Thermochemistry + vibrational analysis w1",
+      "input": "inputs/w1_vib_therm.mqc",
+      "expected_energy": -5.070544353838080,
+      "expected_gradient_norm": 0.000185024381720,
+      "expected_hessian_frobenius_norm": 1.364748705645287,
+      "expected_frequencies": [-0.0000, -0.0000, -0.0000, -0.0000, 0.0000, 0.0000, 1538.8240, 3642.8647, 3651.4750],
+      "expected_zpe": 0.020123434314,
+      "expected_gibbs_correction": 0.001844309467,
+      "type": "unfragmented"
      }
   ]
 }

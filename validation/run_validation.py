@@ -144,6 +144,56 @@ def extract_hessian_norm(json_data: Dict) -> Optional[float]:
     return None
 
 
+def extract_frequencies(json_data: Dict) -> Optional[List[float]]:
+    """Extract vibrational frequencies from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "vibrational_analysis" in data:
+        vib_data = data["vibrational_analysis"]
+        if "frequencies_cm1" in vib_data:
+            return [float(f) for f in vib_data["frequencies_cm1"]]
+
+    return None
+
+
+def extract_zpe(json_data: Dict) -> Optional[float]:
+    """Extract zero-point energy in Hartree from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "thermochemistry" in data:
+        thermo = data["thermochemistry"]
+        if "zero_point_energy_hartree" in thermo:
+            return float(thermo["zero_point_energy_hartree"])
+
+    return None
+
+
+def extract_gibbs_correction(json_data: Dict) -> Optional[float]:
+    """Extract thermal correction to Gibbs free energy from JSON output"""
+    if not json_data:
+        return None
+
+    top_key = list(json_data.keys())[0]
+    data = json_data[top_key]
+
+    if "thermochemistry" in data:
+        thermo = data["thermochemistry"]
+        if "thermal_corrections_hartree" in thermo:
+            corrections = thermo["thermal_corrections_hartree"]
+            if "to_gibbs" in corrections:
+                return float(corrections["to_gibbs"])
+
+    return None
+
+
 def extract_multi_molecule_energies(json_data: Dict) -> Dict[str, float]:
     """Extract energies from multi-molecule calculation"""
     energies = {}
@@ -232,7 +282,8 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                         exe_path: str = "./build/mqc",
                         verbose: bool = False,
                         use_mpi: bool = False,
-                        nprocs: int = 4) -> tuple:
+                        nprocs: int = 4,
+                        test_filter: Optional[str] = None) -> tuple:
     """Run all validation tests and return (passed, failed) counts"""
 
     # Load validation manifest
@@ -241,6 +292,14 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
 
     tolerance = manifest.get("tolerance", 1.0e-9)
     tests = manifest.get("tests", [])
+
+    # Filter tests if requested
+    if test_filter:
+        tests = [t for t in tests if test_filter.lower() in t["name"].lower() or
+                 test_filter.lower() in t["input"].lower()]
+        if not tests:
+            print(f"{Colors.YELLOW}No tests matching '{test_filter}'{Colors.RESET}")
+            return 0, 0, []
 
     passed = 0
     failed = 0
@@ -390,6 +449,81 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                     elif verbose:
                         print(f"    Hessian norm: {calculated_hess:.12f} (diff: {hess_diff:.2e})")
 
+            # Validate frequencies if present
+            if "expected_frequencies" in test:
+                expected_freqs = test["expected_frequencies"]
+                calculated_freqs = extract_frequencies(output_data)
+
+                if calculated_freqs is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract frequencies from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing frequencies")
+                elif len(calculated_freqs) != len(expected_freqs):
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Frequency count mismatch")
+                    print(f"    Expected:   {len(expected_freqs)} frequencies")
+                    print(f"    Calculated: {len(calculated_freqs)} frequencies")
+                    test_passed = False
+                    failure_reasons.append(f"Frequency count mismatch ({len(calculated_freqs)} vs {len(expected_freqs)})")
+                else:
+                    freq_errors = []
+                    for idx, (calc_f, exp_f) in enumerate(zip(calculated_freqs, expected_freqs)):
+                        freq_diff = abs(calc_f - exp_f)
+                        if freq_diff >= tolerance:
+                            freq_errors.append((idx, calc_f, exp_f, freq_diff))
+
+                    if freq_errors:
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Frequency mismatch ({len(freq_errors)} modes)")
+                        for idx, calc_f, exp_f, freq_diff in freq_errors[:3]:  # Show first 3
+                            print(f"    Mode {idx}: expected {exp_f:.4f}, got {calc_f:.4f} (diff: {freq_diff:.2e})")
+                        if len(freq_errors) > 3:
+                            print(f"    ... and {len(freq_errors) - 3} more")
+                        test_passed = False
+                        failure_reasons.append(f"Frequency mismatch ({len(freq_errors)} modes)")
+                    elif verbose:
+                        print(f"    Frequencies: {len(calculated_freqs)} modes validated")
+
+            # Validate ZPE if present
+            if "expected_zpe" in test:
+                expected_zpe = test["expected_zpe"]
+                calculated_zpe = extract_zpe(output_data)
+
+                if calculated_zpe is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract ZPE from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing ZPE")
+                else:
+                    zpe_diff = abs(calculated_zpe - expected_zpe)
+                    if not validate_energy(calculated_zpe, expected_zpe, tolerance):
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - ZPE mismatch")
+                        print(f"    Expected:   {expected_zpe:.12f}")
+                        print(f"    Calculated: {calculated_zpe:.12f}")
+                        print(f"    Difference: {zpe_diff:.2e} (tolerance: {tolerance:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"ZPE mismatch (diff: {zpe_diff:.2e})")
+                    elif verbose:
+                        print(f"    ZPE: {calculated_zpe:.12f} (diff: {zpe_diff:.2e})")
+
+            # Validate Gibbs correction if present
+            if "expected_gibbs_correction" in test:
+                expected_gibbs = test["expected_gibbs_correction"]
+                calculated_gibbs = extract_gibbs_correction(output_data)
+
+                if calculated_gibbs is None:
+                    print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Could not extract Gibbs correction from JSON")
+                    test_passed = False
+                    failure_reasons.append("Missing Gibbs correction")
+                else:
+                    gibbs_diff = abs(calculated_gibbs - expected_gibbs)
+                    if not validate_energy(calculated_gibbs, expected_gibbs, tolerance):
+                        print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Gibbs correction mismatch")
+                        print(f"    Expected:   {expected_gibbs:.12f}")
+                        print(f"    Calculated: {calculated_gibbs:.12f}")
+                        print(f"    Difference: {gibbs_diff:.2e} (tolerance: {tolerance:.2e})")
+                        test_passed = False
+                        failure_reasons.append(f"Gibbs mismatch (diff: {gibbs_diff:.2e})")
+                    elif verbose:
+                        print(f"    Gibbs correction: {calculated_gibbs:.12f} (diff: {gibbs_diff:.2e})")
+
             # Report final test status
             if test_passed:
                 print(f"  {Colors.GREEN}✓ PASSED{Colors.RESET}")
@@ -426,6 +560,8 @@ def main():
                        help="Number of MPI processes for fragmented calculations (default: 4)")
     parser.add_argument("-v", "--verbose", action="store_true",
                        help="Verbose output")
+    parser.add_argument("-t", "--test", type=str, default=None,
+                       help="Run only tests matching this name (substring match)")
 
     args = parser.parse_args()
 
@@ -446,7 +582,8 @@ def main():
         exe_path=args.exe,
         verbose=args.verbose,
         use_mpi=args.mpi,
-        nprocs=args.np
+        nprocs=args.np,
+        test_filter=args.test
     )
 
     # Summary
