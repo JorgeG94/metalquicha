@@ -10,7 +10,7 @@ module mqc_driver
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
                                           serial_fragment_processor, do_fragment_work, distributed_unfragmented_hessian, &
-                                                   set_xtb_options
+                                                   set_xtb_options, init_calculator
    use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_pie_processor, gmbe_pie_coordinator
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
@@ -86,6 +86,10 @@ contains
       else
          call set_xtb_options(use_cds=config%use_cds, use_shift=config%use_shift)
       end if
+
+      ! Initialize the polymorphic calculator based on method type
+      ! This should be called after set_xtb_options to pick up solvation settings
+      call init_calculator(config%method)
 
       ! Set max_level from config
       max_level = config%nlevel

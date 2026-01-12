@@ -25,6 +25,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_config_adapter, only: driver_config_t
 
    ! Method API imports
+   use mqc_method_base, only: qc_method_t
 #ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
 #endif
@@ -46,11 +47,16 @@ module mqc_mbe_fragment_distribution_scheme
 
    type(xtb_options_t), save :: xtb_options  !! Module-level XTB options
 
+   ! Module-level calculator (polymorphic, set once at startup via init_calculator)
+   class(qc_method_t), allocatable, save :: active_calculator
+
    ! Public interface
    public :: do_fragment_work, global_coordinator, node_coordinator
    public :: serial_fragment_processor
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
    public :: set_xtb_options  !! Set XTB solvation options
+   public :: init_calculator  !! Initialize the polymorphic calculator
+   public :: active_calculator  !! Module-level calculator instance
 
    interface
       module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
@@ -170,5 +176,46 @@ contains
          xtb_options%cpcm_rscale = cpcm_rscale
       end if
    end subroutine set_xtb_options
+
+   subroutine init_calculator(method)
+      !! Initialize the module-level polymorphic calculator
+      !!
+      !! Creates and configures the appropriate calculator type based on the
+      !! method parameter. Uses the previously-set xtb_options for XTB methods.
+      !! Call this once at job startup, after set_xtb_options if using XTB.
+      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF
+      integer(int32), intent(in) :: method  !! Method type constant
+
+      ! Deallocate if already allocated (allows re-initialization)
+      if (allocated(active_calculator)) deallocate (active_calculator)
+
+      select case (method)
+#ifndef MQC_WITHOUT_TBLITE
+      case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
+         allocate (xtb_method_t :: active_calculator)
+         ! Configure XTB calculator
+         select type (calc => active_calculator)
+         type is (xtb_method_t)
+            calc%variant = method_type_to_string(method)
+            ! Copy solvation options from module-level config
+            if (allocated(xtb_options%solvent)) then
+               calc%solvent = xtb_options%solvent
+            end if
+            if (allocated(xtb_options%solvation_model)) then
+               calc%solvation_model = xtb_options%solvation_model
+            end if
+            calc%use_cds = xtb_options%use_cds
+            calc%use_shift = xtb_options%use_shift
+            calc%dielectric = xtb_options%dielectric
+            calc%cpcm_nang = xtb_options%cpcm_nang
+            calc%cpcm_rscale = xtb_options%cpcm_rscale
+         end select
+         call logger%info("Initialized XTB calculator: "//method_type_to_string(method))
+#endif
+      case default
+         call logger%error("Unknown or unsupported method type in init_calculator")
+         error stop "Unsupported method type"
+      end select
+   end subroutine init_calculator
 
 end module mqc_mbe_fragment_distribution_scheme

@@ -8,14 +8,16 @@ contains
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
-      !! specified quantum chemistry method (GFN-xTB variants).
+      !! the module-level active_calculator (initialized via init_calculator).
+      !! The method parameter is kept for interface compatibility but is ignored
+      !! when active_calculator is initialized.
       !! Verbosity is controlled by the global logger level.
 
       use pic_logger, only: verbose_level
 
       integer(int64), intent(in) :: fragment_idx        !! Fragment index for identification
       type(calculation_result_t), intent(out) :: result  !! Computation results
-      integer(int32), intent(in) :: method       !! QC method
+      integer(int32), intent(in) :: method       !! QC method (used if active_calculator not initialized)
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
@@ -23,9 +25,6 @@ contains
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
       integer(int32) :: calc_type_local  !! Local copy of calc_type
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
-#endif
 
       calc_type_local = calc_type
 
@@ -39,33 +38,28 @@ contains
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
+         ! Check if active_calculator is initialized
+         if (.not. allocated(active_calculator)) then
+            ! Fallback: initialize calculator now (for backward compatibility)
+            call init_calculator(method)
+         end if
+
+         ! Set verbose flag on calculator (XTB-specific, use select type)
+         select type (calc => active_calculator)
 #ifndef MQC_WITHOUT_TBLITE
-         ! Setup XTB method
-         xtb_calc%variant = method_type_to_string(method)
-         xtb_calc%verbose = is_verbose
+         type is (xtb_method_t)
+            calc%verbose = is_verbose
+#endif
+         end select
 
-         ! Set solvation options from module-level config
-         if (allocated(xtb_options%solvent)) then
-            xtb_calc%solvent = xtb_options%solvent
-         end if
-         if (allocated(xtb_options%solvation_model)) then
-            xtb_calc%solvation_model = xtb_options%solvation_model
-         end if
-         xtb_calc%use_cds = xtb_options%use_cds
-         xtb_calc%use_shift = xtb_options%use_shift
-         ! CPCM-specific settings
-         xtb_calc%dielectric = xtb_options%dielectric
-         xtb_calc%cpcm_nang = xtb_options%cpcm_nang
-         xtb_calc%cpcm_rscale = xtb_options%cpcm_rscale
-
-         ! Run the calculation using the method API
+         ! Run the calculation using the polymorphic method API
          select case (calc_type_local)
          case (CALC_TYPE_ENERGY)
-            call xtb_calc%calc_energy(phys_frag, result)
+            call active_calculator%calc_energy(phys_frag, result)
          case (CALC_TYPE_GRADIENT)
-            call xtb_calc%calc_gradient(phys_frag, result)
+            call active_calculator%calc_gradient(phys_frag, result)
          case (CALC_TYPE_HESSIAN)
-            call xtb_calc%calc_hessian(phys_frag, result)
+            call active_calculator%calc_hessian(phys_frag, result)
          case default
             call result%error%set(ERROR_VALIDATION, "Unknown calc_type: "//calc_type_to_string(calc_type_local))
             result%has_error = .true.
@@ -80,12 +74,6 @@ contains
 
          ! Copy fragment distance to result for JSON output
          result%distance = phys_frag%distance
-#else
-         call result%error%set(ERROR_GENERIC, "XTB method requested but tblite support not compiled in. "// &
-                               "Please rebuild with -DMQC_ENABLE_TBLITE=ON")
-         result%has_error = .true.
-         return
-#endif
       else
          ! For empty fragments, set energy to zero
          call result%energy%reset()

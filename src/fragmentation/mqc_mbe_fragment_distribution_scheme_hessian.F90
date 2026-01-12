@@ -13,9 +13,6 @@ contains
                                         finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT, &
                                         copy_and_displace_geometry
       use mqc_config_adapter, only: driver_config_t
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
@@ -56,9 +53,6 @@ contains
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
       use mqc_mbe_io, only: print_vibrational_json
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
@@ -90,9 +84,6 @@ contains
       real(dp), allocatable :: frequencies(:)
       real(dp), allocatable :: eigenvalues(:)
       real(dp), allocatable :: projected_hessian(:, :)
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc
-#endif
 
       n_ranks = world_comm%size()
       n_atoms = sys_geom%total_atoms
@@ -214,11 +205,21 @@ contains
 
       ! Compute energy and gradient at reference geometry
       call logger%info("  Computing reference energy and gradient...")
+
+      ! Ensure calculator is initialized
+      if (.not. allocated(active_calculator)) then
+         call init_calculator(method)
+      end if
+
+      ! Set verbose flag on calculator (XTB-specific)
+      select type (calc => active_calculator)
 #ifndef MQC_WITHOUT_TBLITE
-      xtb_calc%variant = method_type_to_string(method)
-      xtb_calc%verbose = is_verbose
-      call xtb_calc%calc_gradient(full_system, result)
+      type is (xtb_method_t)
+         calc%verbose = is_verbose
 #endif
+      end select
+
+      call active_calculator%calc_gradient(full_system, result)
 
       ! Store Hessian in result
       if (allocated(result%hessian)) deallocate (result%hessian)
@@ -353,9 +354,6 @@ contains
       !! Worker for distributed Hessian calculation
       !! Requests displacement indices, computes gradients, and sends results back
       use mqc_finite_differences, only: copy_and_displace_geometry
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
@@ -367,9 +365,6 @@ contains
       integer :: n_atoms, disp_idx, atom_idx, coord, gradient_type, dummy_msg
       type(MPI_Status) :: status
       type(request_t) :: req
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc
-#endif
 
       n_atoms = sys_geom%total_atoms
 
@@ -384,10 +379,18 @@ contains
       full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
 
+      ! Ensure calculator is initialized
+      if (.not. allocated(active_calculator)) then
+         call init_calculator(method)
+      end if
+
+      ! Set verbose flag off for workers (XTB-specific)
+      select type (calc => active_calculator)
 #ifndef MQC_WITHOUT_TBLITE
-      ! Setup XTB method
-      xtb_calc%variant = method_type_to_string(method)
-      xtb_calc%verbose = .false.
+      type is (xtb_method_t)
+         calc%verbose = .false.
+#endif
+      end select
 
       dummy_msg = 0
       do
@@ -405,7 +408,7 @@ contains
 
          ! Compute FORWARD gradient
          call copy_and_displace_geometry(full_system, atom_idx, coord, displacement, displaced_geom)
-         call xtb_calc%calc_gradient(displaced_geom, grad_result)
+         call active_calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
             call logger%error("Worker gradient calculation error for forward displacement "// &
@@ -434,7 +437,7 @@ contains
 
          ! Compute BACKWARD gradient
          call copy_and_displace_geometry(full_system, atom_idx, coord, -displacement, displaced_geom)
-         call xtb_calc%calc_gradient(displaced_geom, grad_result)
+         call active_calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
             call logger%error("Worker gradient calculation error for backward displacement "// &
@@ -461,10 +464,6 @@ contains
          call grad_result%destroy()
          call displaced_geom%destroy()
       end do
-#else
-      call logger%error("XTB method requested but tblite support not compiled in")
-      call abort_comm(world_comm, 1)
-#endif
 
    end subroutine hessian_worker
 end submodule mqc_hessian_distribution_scheme
