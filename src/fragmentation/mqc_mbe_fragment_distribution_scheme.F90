@@ -29,6 +29,7 @@ module mqc_mbe_fragment_distribution_scheme
 #ifndef MQC_WITHOUT_TBLITE
    use mqc_method_xtb, only: xtb_method_t
 #endif
+   use mqc_method_hf, only: hf_method_t
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
    implicit none
    private
@@ -212,6 +213,9 @@ contains
          end select
          call logger%info("Initialized XTB calculator: "//method_type_to_string(method))
 #endif
+      case (METHOD_TYPE_HF)
+         allocate (hf_method_t :: active_calculator)
+         call logger%info("Initialized HF calculator (placeholder)")
       case default
          call logger%error("Unknown or unsupported method type in init_calculator")
          error stop "Unsupported method type"
