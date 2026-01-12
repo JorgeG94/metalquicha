@@ -639,7 +639,8 @@ contains
                                          cartesian_displacements, element_numbers, &
                                          force_constants_mdyne, print_displacements, &
                                          n_atoms, ir_intensities, &
-                                         coordinates, electronic_energy)
+                                         coordinates, electronic_energy, &
+                                         temperature, pressure)
       !! Print vibrational analysis results in a formatted table.
       !!
       !! Output format is similar to Gaussian, with frequencies grouped in columns.
@@ -668,6 +669,10 @@ contains
          !! Atomic coordinates (3, n_atoms) in Bohr - needed for thermochemistry
       real(dp), intent(in), optional :: electronic_energy
          !! Electronic energy in Hartree - needed for thermochemistry
+      real(dp), intent(in), optional :: temperature
+         !! Temperature for thermochemistry in K (default: 298.15)
+      real(dp), intent(in), optional :: pressure
+         !! Pressure for thermochemistry in atm (default: 1.0)
 
       integer :: n_modes, n_at, n_groups, igroup, imode, iatom, icoord, k
       integer :: mode_start, mode_end, modes_in_group
@@ -826,7 +831,8 @@ contains
          block
             type(thermochemistry_result_t) :: thermo_result
             call compute_thermochemistry(coordinates, element_numbers, frequencies, &
-                                         n_at, n_modes, thermo_result)
+                                         n_at, n_modes, thermo_result, &
+                                         temperature=temperature, pressure=pressure)
             call print_thermochemistry(thermo_result, electronic_energy)
          end block
       end if

@@ -100,13 +100,16 @@ module mqc_mbe_fragment_distribution_scheme
          type(bond_t), intent(in), optional :: bonds(:)
       end subroutine node_worker
 
-      module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+      module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+                                                 temperature, pressure)
          implicit none
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
          integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
          type(calculation_result_t), intent(out), optional :: result_out
+         real(dp), intent(in), optional :: temperature
+         real(dp), intent(in), optional :: pressure
       end subroutine unfragmented_calculation
 
       module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
@@ -117,12 +120,14 @@ module mqc_mbe_fragment_distribution_scheme
          type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
       end subroutine distributed_unfragmented_hessian
 
-      module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
+      module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
          integer(int32), intent(in) :: method
          real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+         real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
+         real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
       end subroutine hessian_coordinator
 
       module subroutine hessian_worker(world_comm, sys_geom, method, displacement)

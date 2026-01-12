@@ -12,7 +12,7 @@ except Exception:
 
 from .validation import die, require_only_keys, req_type, opt_type, check_index_0based
 from .models import (
-    SchemaTag, Model, SCF, Hessian, AIMD, FragCutoffs, Fragmentation,
+    SchemaTag, Model, XTB, SCF, Hessian, AIMD, FragCutoffs, Fragmentation,
     Logger, System, Molecule, Input,
     TBLITE_SOLVENTS, SOLVATION_MODELS,
 )
@@ -97,45 +97,51 @@ def _parse_schema(obj: Any) -> SchemaTag:
 
 def _parse_model(d: Dict[str, Any]) -> Model:
     """Parse model section."""
-    require_only_keys(d, {"method", "basis", "aux_basis", "solvent", "solvation_model",
-                          "dielectric", "cpcm_nang", "cpcm_rscale"}, "model")
+    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
     method = req_type(d.get("method"), str, "model.method")
     basis = opt_type(d.get("basis"), str, "model.basis")
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
 
-    # Parse solvation settings
-    solvent = opt_type(d.get("solvent"), str, "model.solvent")
-    solvation_model = opt_type(d.get("solvation_model"), str, "model.solvation_model")
+    return Model(method=method, basis=basis, aux_basis=aux)
+
+
+def _parse_xtb_keywords(d: Dict[str, Any]) -> XTB:
+    """Parse keywords.xtb section for XTB-specific settings."""
+    require_only_keys(d, {"solvent", "solvation_model", "dielectric", "cpcm_nang", "cpcm_rscale"},
+                      "keywords.xtb")
+
+    solvent = opt_type(d.get("solvent"), str, "keywords.xtb.solvent")
+    solvation_model = opt_type(d.get("solvation_model"), str, "keywords.xtb.solvation_model")
 
     # Parse CPCM-specific settings
     dielectric = d.get("dielectric")
     if dielectric is not None:
         if not isinstance(dielectric, (int, float)):
-            die("model.dielectric must be a number")
+            die("keywords.xtb.dielectric must be a number")
         dielectric = float(dielectric)
         if dielectric <= 0:
-            die("model.dielectric must be > 0")
+            die("keywords.xtb.dielectric must be > 0")
 
     cpcm_nang = d.get("cpcm_nang")
     if cpcm_nang is not None:
         if not isinstance(cpcm_nang, int):
-            die("model.cpcm_nang must be an integer")
+            die("keywords.xtb.cpcm_nang must be an integer")
         if cpcm_nang <= 0:
-            die("model.cpcm_nang must be > 0")
+            die("keywords.xtb.cpcm_nang must be > 0")
 
     cpcm_rscale = d.get("cpcm_rscale")
     if cpcm_rscale is not None:
         if not isinstance(cpcm_rscale, (int, float)):
-            die("model.cpcm_rscale must be a number")
+            die("keywords.xtb.cpcm_rscale must be a number")
         cpcm_rscale = float(cpcm_rscale)
         if cpcm_rscale <= 0 or cpcm_rscale > 2.0:
-            die("model.cpcm_rscale must be in range (0, 2.0]")
+            die("keywords.xtb.cpcm_rscale must be in range (0, 2.0]")
 
     # Validate solvent if specified
     if solvent is not None:
         solvent_lower = solvent.lower()
         if solvent_lower not in TBLITE_SOLVENTS:
-            die(f"model.solvent: unknown solvent '{solvent}'. "
+            die(f"keywords.xtb.solvent: unknown solvent '{solvent}'. "
                 f"Supported solvents include: water, methanol, ethanol, acetone, acetonitrile, "
                 f"benzene, toluene, chloroform, dichloromethane, dmso, dmf, thf, "
                 f"diethylether, hexane, cyclohexane, and many more. "
@@ -146,7 +152,7 @@ def _parse_model(d: Dict[str, Any]) -> Model:
     if solvation_model is not None:
         solvation_model_lower = solvation_model.lower()
         if solvation_model_lower not in SOLVATION_MODELS:
-            die(f"model.solvation_model: unknown model '{solvation_model}'. "
+            die(f"keywords.xtb.solvation_model: unknown model '{solvation_model}'. "
                 f"Supported models: {', '.join(sorted(SOLVATION_MODELS))}")
         solvation_model = solvation_model_lower
 
@@ -160,24 +166,23 @@ def _parse_model(d: Dict[str, Any]) -> Model:
 
     # Validation: need either solvent or dielectric for solvation
     if solvation_model is not None and solvent is None and dielectric is None:
-        die("model.solvation_model: cannot specify solvation model without solvent or dielectric")
+        die("keywords.xtb.solvation_model: cannot specify solvation model without solvent or dielectric")
 
     # CPCM-specific validation
     if solvation_model == "cpcm":
         if solvent is None and dielectric is None:
-            die("model: CPCM solvation requires either 'solvent' or 'dielectric'")
+            die("keywords.xtb: CPCM solvation requires either 'solvent' or 'dielectric'")
     else:
         if solvation_model is not None and solvent is None:
-            die(f"model: {solvation_model.upper()} solvation requires a solvent name")
+            die(f"keywords.xtb: {solvation_model.upper()} solvation requires a solvent name")
 
-    return Model(method=method, basis=basis, aux_basis=aux,
-                 solvent=solvent, solvation_model=solvation_model,
-                 dielectric=dielectric, cpcm_nang=cpcm_nang, cpcm_rscale=cpcm_rscale)
+    return XTB(solvent=solvent, solvation_model=solvation_model,
+               dielectric=dielectric, cpcm_nang=cpcm_nang, cpcm_rscale=cpcm_rscale)
 
 
-def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian], Optional[AIMD], Optional[Fragmentation]]:
+def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian], Optional[AIMD], Optional[Fragmentation], Optional[XTB]]:
     """Parse keywords section."""
-    require_only_keys(d, {"scf", "hessian", "aimd", "fragmentation"}, "keywords")
+    require_only_keys(d, {"scf", "hessian", "aimd", "fragmentation", "xtb"}, "keywords")
 
     scf = None
     if "scf" in d:
@@ -196,7 +201,7 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
     hessian = None
     if "hessian" in d:
         hd = req_type(d["hessian"], dict, "keywords.hessian")
-        require_only_keys(hd, {"finite_difference_displacement", "displacement"}, "keywords.hessian")
+        require_only_keys(hd, {"finite_difference_displacement", "displacement", "temperature", "pressure"}, "keywords.hessian")
         disp = hd.get("finite_difference_displacement") or hd.get("displacement")
         if disp is None:
             disp = 0.001
@@ -204,7 +209,21 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
             die("keywords.hessian.finite_difference_displacement must be number")
         if float(disp) <= 0:
             die("keywords.hessian.finite_difference_displacement must be > 0")
-        hessian = Hessian(finite_difference_displacement=float(disp))
+
+        temperature = hd.get("temperature", 298.15)
+        if not isinstance(temperature, (int, float)):
+            die("keywords.hessian.temperature must be number")
+        if float(temperature) <= 0:
+            die("keywords.hessian.temperature must be > 0")
+
+        pressure = hd.get("pressure", 1.0)
+        if not isinstance(pressure, (int, float)):
+            die("keywords.hessian.pressure must be number")
+        if float(pressure) <= 0:
+            die("keywords.hessian.pressure must be > 0")
+
+        hessian = Hessian(finite_difference_displacement=float(disp),
+                          temperature=float(temperature), pressure=float(pressure))
 
     aimd_obj = None
     if "aimd" in d:
@@ -319,7 +338,12 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
             cutoffs=cutoffs,
         )
 
-    return scf, hessian, aimd_obj, frag
+    xtb = None
+    if "xtb" in d:
+        xd = req_type(d["xtb"], dict, "keywords.xtb")
+        xtb = _parse_xtb_keywords(xd)
+
+    return scf, hessian, aimd_obj, frag, xtb
 
 
 def _parse_system(d: Dict[str, Any]) -> System:
@@ -473,7 +497,7 @@ def parse_json_to_input(json_path: Union[str, Path]) -> Input:
 
     kw = data.get("keywords", {})
     req_type(kw, dict, "keywords")
-    scf, hessian, aimd, frag = _parse_keywords(kw)
+    scf, hessian, aimd, frag, xtb = _parse_keywords(kw)
 
     system = None
     sys_data = data.get("system")
@@ -488,4 +512,4 @@ def parse_json_to_input(json_path: Union[str, Path]) -> Input:
         molecules.append(_parse_molecule(req_type(m, dict, f"molecules[{mi}]"), base_dir, mi))
 
     return Input(schema=schema, model=model, driver=driver, molecules=molecules,
-                 title=title, scf=scf, hessian=hessian, aimd=aimd, fragmentation=frag, system=system)
+                 title=title, scf=scf, hessian=hessian, aimd=aimd, fragmentation=frag, xtb=xtb, system=system)

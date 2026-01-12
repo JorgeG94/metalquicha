@@ -24,20 +24,25 @@ contains
 
       integer :: my_rank, n_ranks
       real(dp) :: displacement
+      real(dp) :: temperature, pressure
 
       my_rank = world_comm%rank()
       n_ranks = world_comm%size()
 
-      ! Use provided displacement or default
+      ! Use provided settings or defaults
       if (present(driver_config)) then
          displacement = driver_config%hessian%displacement
+         temperature = driver_config%hessian%temperature
+         pressure = driver_config%hessian%pressure
       else
          displacement = DEFAULT_DISPLACEMENT
+         temperature = 298.15_dp
+         pressure = 1.0_dp
       end if
 
       if (my_rank == 0) then
          ! Rank 0 is the coordinator
-         call hessian_coordinator(world_comm, sys_geom, method, displacement)
+         call hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure)
       else
          ! Other ranks are workers
          call hessian_worker(world_comm, sys_geom, method, displacement)
@@ -48,7 +53,7 @@ contains
 
    end subroutine distributed_unfragmented_hessian
 
-   module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement)
+   module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure)
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
@@ -64,6 +69,8 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method
       real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+      real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
+      real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
 
       type(physical_fragment_t) :: full_system
       type(timer_type) :: coord_timer
@@ -306,7 +313,8 @@ contains
                n_at = size(sys_geom%element_numbers)
                n_modes = size(vib_freqs)
                call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
-                                            vib_freqs, n_at, n_modes, thermo_result)
+                                            vib_freqs, n_at, n_modes, thermo_result, &
+                                            temperature=temperature, pressure=pressure)
 
                ! Print vibrational analysis to log
                if (allocated(ir_intensities)) then
@@ -315,7 +323,8 @@ contains
                                                   force_constants_mdyne=fc_mdyne, &
                                                   ir_intensities=ir_intensities, &
                                                   coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=result%energy%total())
+                                                  electronic_energy=result%energy%total(), &
+                                                  temperature=temperature, pressure=pressure)
                   ! Write vibrational/thermochemistry JSON
                   call print_vibrational_json(result, vib_freqs, reduced_masses, fc_mdyne, &
                                               thermo_result, ir_intensities)
@@ -325,7 +334,8 @@ contains
                                                   cart_disp, sys_geom%element_numbers, &
                                                   force_constants_mdyne=fc_mdyne, &
                                                   coordinates=sys_geom%coordinates, &
-                                                  electronic_energy=result%energy%total())
+                                                  electronic_energy=result%energy%total(), &
+                                                  temperature=temperature, pressure=pressure)
                   ! Write vibrational/thermochemistry JSON
                   call print_vibrational_json(result, vib_freqs, reduced_masses, fc_mdyne, &
                                               thermo_result)

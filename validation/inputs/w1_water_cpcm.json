@@ -7,14 +7,16 @@
     }],
   "model": {
     "method": "XTB-GFN1",
-    "solvent": "water",
-    "solvation_model": "cpcm",
-    "cpcm_nang": 1000,
-    "cpcm_rscale": 1.0,
     "basis": "cc-pVDZ",
     "aux_basis": "cc-pVDZ-RIFIT"
   },
   "keywords":{
+    "xtb": {
+      "solvent": "water",
+      "solvation_model": "cpcm",
+      "cpcm_nang": 1000,
+      "cpcm_rscale": 1.0
+    },
     "scf": {
       "maxiter": 300,
       "tolerance": 1e-6

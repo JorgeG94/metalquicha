@@ -162,11 +162,21 @@ contains
          call logger%info("Running unfragmented calculation")
          call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
-         call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+         if (present(driver_config)) then
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+                                          driver_config%hessian%temperature, driver_config%hessian%pressure)
+         else
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+         end if
       else if (sys_geom%total_atoms > 0) then
          ! Multi-molecule mode: non-zero rank with a molecule
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Running unfragmented calculation")
-         call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+         if (present(driver_config)) then
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+                                          driver_config%hessian%temperature, driver_config%hessian%pressure)
+         else
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+         end if
       end if
 
    end subroutine run_unfragmented_calculation

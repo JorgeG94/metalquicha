@@ -7,12 +7,14 @@
     }],
   "model": {
     "method": "XTB-GFN1",
-    "solvent": "water",
-    "solvation_model": "alpb",
     "basis": "cc-pVDZ",
     "aux_basis": "cc-pVDZ-RIFIT"
   },
   "keywords":{
+    "xtb": {
+      "solvent": "water",
+      "solvation_model": "alpb"
+    },
     "scf": {
       "maxiter": 300,
       "tolerance": 1e-6

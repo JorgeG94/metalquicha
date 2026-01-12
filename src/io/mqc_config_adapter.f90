@@ -110,6 +110,8 @@ contains
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement
+      driver_config%hessian%temperature = mqc_config%hessian_temperature
+      driver_config%hessian%pressure = mqc_config%hessian_pressure
       driver_config%aimd%dt = mqc_config%aimd_dt
       driver_config%aimd%nsteps = mqc_config%aimd_nsteps
       driver_config%aimd%initial_temperature = mqc_config%aimd_initial_temperature

@@ -1,7 +1,8 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
-   module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+   module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+                                              temperature, pressure)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
@@ -15,6 +16,8 @@ contains
       integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(calculation_result_t), intent(out), optional :: result_out
+      real(dp), intent(in), optional :: temperature  !! Temperature for thermochemistry (K)
+      real(dp), intent(in), optional :: pressure     !! Pressure for thermochemistry (atm)
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -178,7 +181,8 @@ contains
                      n_modes = size(frequencies)
 
                      call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
-                                                  frequencies, n_at, n_modes, thermo_result)
+                                                  frequencies, n_at, n_modes, thermo_result, &
+                                                  temperature=temperature, pressure=pressure)
 
                      ! Print vibrational analysis to log
                      if (allocated(ir_intensities)) then
@@ -187,7 +191,8 @@ contains
                                                         force_constants_mdyne=fc_mdyne, &
                                                         ir_intensities=ir_intensities, &
                                                         coordinates=sys_geom%coordinates, &
-                                                        electronic_energy=result%energy%total())
+                                                        electronic_energy=result%energy%total(), &
+                                                        temperature=temperature, pressure=pressure)
                         ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
                         call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
                                                     thermo_result, ir_intensities)
@@ -197,7 +202,8 @@ contains
                                                         cart_disp, sys_geom%element_numbers, &
                                                         force_constants_mdyne=fc_mdyne, &
                                                         coordinates=sys_geom%coordinates, &
-                                                        electronic_energy=result%energy%total())
+                                                        electronic_energy=result%energy%total(), &
+                                                        temperature=temperature, pressure=pressure)
                         ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
                         call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
                                                     thermo_result)

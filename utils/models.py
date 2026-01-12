@@ -80,8 +80,13 @@ class Model:
     method: str
     basis: Optional[str] = None
     aux_basis: Optional[str] = None
+
+
+@dataclass
+class XTB:
+    """XTB-specific settings (solvation, etc.)."""
     solvent: Optional[str] = None
-    solvation_model: Optional[str] = None
+    solvation_model: Optional[str] = None  # "alpb", "gbsa", or "cpcm"
     # CPCM-specific settings
     dielectric: Optional[float] = None
     cpcm_nang: Optional[int] = None
@@ -99,6 +104,8 @@ class SCF:
 class Hessian:
     """Hessian calculation settings."""
     finite_difference_displacement: float = 0.001  # Bohr
+    temperature: float = 298.15  # K for thermochemistry
+    pressure: float = 1.0  # atm for thermochemistry
 
 
 @dataclass
@@ -166,4 +173,5 @@ class Input:
     hessian: Optional[Hessian] = None
     aimd: Optional[AIMD] = None
     fragmentation: Optional[Fragmentation] = None
+    xtb: Optional[XTB] = None
     system: Optional[System] = None

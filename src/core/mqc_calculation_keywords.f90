@@ -11,6 +11,8 @@ module mqc_calculation_keywords
    type :: hessian_keywords_t
       !! Hessian calculation keywords
       real(dp) :: displacement = 0.001_dp  !! Finite difference displacement (Bohr)
+      real(dp) :: temperature = 298.15_dp  !! Temperature for thermochemistry (K)
+      real(dp) :: pressure = 1.0_dp        !! Pressure for thermochemistry (atm)
    end type hessian_keywords_t
 
    type :: aimd_keywords_t

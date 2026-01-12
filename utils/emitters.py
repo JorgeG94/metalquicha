@@ -155,16 +155,6 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"basis = {inp.model.basis}\n")
     if inp.model.aux_basis is not None:
         buf.write(f"aux_basis = {inp.model.aux_basis}\n")
-    if inp.model.solvent is not None:
-        buf.write(f"solvent = {inp.model.solvent}\n")
-    if inp.model.solvation_model is not None:
-        buf.write(f"solvation_model = {inp.model.solvation_model}\n")
-    if inp.model.dielectric is not None:
-        buf.write(f"dielectric = {_fmt_float(inp.model.dielectric)}\n")
-    if inp.model.cpcm_nang is not None:
-        buf.write(f"cpcm_nang = {inp.model.cpcm_nang}\n")
-    if inp.model.cpcm_rscale is not None:
-        buf.write(f"cpcm_rscale = {_fmt_float(inp.model.cpcm_rscale)}\n")
     buf.write("end  ! model\n\n")
 
     # %driver
@@ -202,10 +192,27 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"tolerance = {_fmt_float(inp.scf.tolerance)}\n")
         buf.write("end  ! scf\n\n")
 
+    # %xtb (optional)
+    if inp.xtb is not None:
+        buf.write("%xtb\n")
+        if inp.xtb.solvent is not None:
+            buf.write(f"solvent = {inp.xtb.solvent}\n")
+        if inp.xtb.solvation_model is not None:
+            buf.write(f"solvation_model = {inp.xtb.solvation_model}\n")
+        if inp.xtb.dielectric is not None:
+            buf.write(f"dielectric = {_fmt_float(inp.xtb.dielectric)}\n")
+        if inp.xtb.cpcm_nang is not None:
+            buf.write(f"cpcm_nang = {inp.xtb.cpcm_nang}\n")
+        if inp.xtb.cpcm_rscale is not None:
+            buf.write(f"cpcm_rscale = {_fmt_float(inp.xtb.cpcm_rscale)}\n")
+        buf.write("end  ! xtb\n\n")
+
     # %hessian (optional)
     if inp.hessian is not None:
         buf.write("%hessian\n")
         buf.write(f"finite_difference_displacement = {_fmt_float(inp.hessian.finite_difference_displacement)}\n")
+        buf.write(f"temperature = {_fmt_float(inp.hessian.temperature)}\n")
+        buf.write(f"pressure = {_fmt_float(inp.hessian.pressure)}\n")
         buf.write("end  ! hessian\n\n")
 
     # %aimd (optional)

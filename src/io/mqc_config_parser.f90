@@ -112,6 +112,8 @@ module mqc_config_parser
 
       ! Hessian settings
       real(dp) :: hessian_displacement = 0.001_dp  !! Finite difference displacement (Bohr)
+      real(dp) :: hessian_temperature = 298.15_dp  !! Temperature for thermochemistry (K)
+      real(dp) :: hessian_pressure = 1.0_dp        !! Pressure for thermochemistry (atm)
 
       ! AIMD settings
       real(dp) :: aimd_dt = 1.0_dp                    !! Timestep (femtoseconds)
@@ -211,6 +213,8 @@ contains
                call parse_connectivity_section(unit, config, parse_error)
             case ('%scf')
                call parse_scf_section(unit, config, parse_error)
+            case ('%xtb')
+               call parse_xtb_section(unit, config, parse_error)
             case ('%hessian')
                call parse_hessian_section(unit, config, parse_error)
             case ('%aimd')
@@ -339,32 +343,6 @@ contains
             config%basis = trim(value)
          case ('aux_basis')
             config%aux_basis = trim(value)
-         case ('solvent')
-            config%solvent = trim(value)
-         case ('solvation_model')
-            config%solvation_model = trim(value)
-         case ('use_cds')
-            config%use_cds = (trim(value) == 'true')
-         case ('use_shift')
-            config%use_shift = (trim(value) == 'true')
-         case ('dielectric')
-            read (value, *, iostat=io_stat) config%dielectric
-            if (io_stat /= 0) then
-               call error%set(ERROR_PARSE, "Invalid dielectric value: "//trim(value))
-               return
-            end if
-         case ('cpcm_nang')
-            read (value, *, iostat=io_stat) config%cpcm_nang
-            if (io_stat /= 0) then
-               call error%set(ERROR_PARSE, "Invalid cpcm_nang value: "//trim(value))
-               return
-            end if
-         case ('cpcm_rscale')
-            read (value, *, iostat=io_stat) config%cpcm_rscale
-            if (io_stat /= 0) then
-               call error%set(ERROR_PARSE, "Invalid cpcm_rscale value: "//trim(value))
-               return
-            end if
          case default
             call error%set(ERROR_PARSE, "Unknown key in %model section: "//trim(key))
             return
@@ -599,6 +577,68 @@ contains
 
    end subroutine parse_scf_section
 
+   subroutine parse_xtb_section(unit, config, error)
+      !! Parse %xtb section for XTB-specific settings (solvation, etc.)
+      integer, intent(in) :: unit
+      type(mqc_config_t), intent(inout) :: config
+      type(error_t), intent(out) :: error
+
+      character(len=MAX_LINE_LEN) :: line, key, value
+      integer :: io_stat, eq_pos
+      do
+         read (unit, '(A)', iostat=io_stat) line
+         if (io_stat /= 0) then
+            call error%set(ERROR_IO, "Unexpected end of file in %xtb section")
+            return
+         end if
+
+         line = adjustl(line)
+         if (len_trim(line) == 0) cycle
+         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+
+         if (trim(strip_comment(line)) == 'end') exit
+
+         eq_pos = index(line, '=')
+         if (eq_pos == 0) cycle
+
+         key = adjustl(line(1:eq_pos - 1))
+         value = adjustl(line(eq_pos + 1:))
+
+         select case (trim(key))
+         case ('solvent')
+            config%solvent = trim(value)
+         case ('solvation_model')
+            config%solvation_model = trim(value)
+         case ('use_cds')
+            config%use_cds = (trim(value) == 'true')
+         case ('use_shift')
+            config%use_shift = (trim(value) == 'true')
+         case ('dielectric')
+            read (value, *, iostat=io_stat) config%dielectric
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid dielectric value: "//trim(value))
+               return
+            end if
+         case ('cpcm_nang')
+            read (value, *, iostat=io_stat) config%cpcm_nang
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_nang value: "//trim(value))
+               return
+            end if
+         case ('cpcm_rscale')
+            read (value, *, iostat=io_stat) config%cpcm_rscale
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid cpcm_rscale value: "//trim(value))
+               return
+            end if
+         case default
+            call error%set(ERROR_PARSE, "Unknown key in %xtb section: "//trim(key))
+            return
+         end select
+      end do
+
+   end subroutine parse_xtb_section
+
    subroutine parse_hessian_section(unit, config, error)
       integer, intent(in) :: unit
       type(mqc_config_t), intent(inout) :: config
@@ -628,6 +668,18 @@ contains
          select case (trim(key))
          case ('finite_difference_displacement', 'displacement')
             read (value, *, iostat=io_stat) config%hessian_displacement
+         case ('temperature')
+            read (value, *, iostat=io_stat) config%hessian_temperature
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid temperature value: "//trim(value))
+               return
+            end if
+         case ('pressure')
+            read (value, *, iostat=io_stat) config%hessian_pressure
+            if (io_stat /= 0) then
+               call error%set(ERROR_PARSE, "Invalid pressure value: "//trim(value))
+               return
+            end if
          case default
             call error%set(ERROR_PARSE, "Unknown key in %hessian section: "//trim(key))
             return
