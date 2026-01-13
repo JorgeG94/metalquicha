@@ -9,7 +9,24 @@ module mqc_method_config
    private
 
    public :: method_config_t
-   public :: xtb_config_t, hf_config_t, dft_config_t, mcscf_config_t
+   public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
+
+   !============================================================================
+   ! SCF Configuration (shared by HF and DFT)
+   !============================================================================
+   type :: scf_config_t
+      !! Shared SCF settings for HF and DFT methods
+      integer :: max_iter = 100
+         !! Maximum SCF iterations
+      real(dp) :: energy_convergence = 1.0e-8_dp
+         !! Energy convergence threshold (Hartree)
+      real(dp) :: density_convergence = 1.0e-6_dp
+         !! Density matrix convergence threshold
+      logical :: use_diis = .true.
+         !! Use DIIS acceleration
+      integer :: diis_size = 8
+         !! Number of Fock matrices for DIIS
+   end type scf_config_t
 
    !============================================================================
    ! XTB Configuration (GFN1, GFN2)
@@ -41,27 +58,11 @@ module mqc_method_config
    end type xtb_config_t
 
    !============================================================================
-   ! Hartree-Fock Configuration
-   !============================================================================
-   type :: hf_config_t
-      !! Configuration for Hartree-Fock method
-      integer :: max_scf_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_convergence = 1.0e-8_dp
-         !! Energy convergence threshold (Hartree)
-      real(dp) :: density_convergence = 1.0e-6_dp
-         !! Density matrix convergence threshold
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! Number of Fock matrices for DIIS
-   end type hf_config_t
-
-   !============================================================================
-   ! DFT Configuration
+   ! DFT Configuration (uses scf_config_t for SCF settings)
    !============================================================================
    type :: dft_config_t
       !! Configuration for Kohn-Sham DFT method
+      !! Note: SCF settings (convergence, DIIS) come from scf_config_t
       character(len=32) :: functional = 'b3lyp'
          !! XC functional: "lda", "pbe", "b3lyp", "m06-2x", etc.
 
@@ -72,18 +73,6 @@ module mqc_method_config
          !! Radial grid points per atom
       integer :: angular_points = 302
          !! Angular grid points (Lebedev)
-
-      ! SCF settings (inherits some from HF)
-      integer :: max_scf_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_convergence = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_convergence = 1.0e-6_dp
-         !! Density convergence threshold
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! DIIS history size
 
       ! Density fitting
       logical :: use_density_fitting = .false.
@@ -161,13 +150,15 @@ module mqc_method_config
       logical :: use_spherical = .true.
          !! Spherical vs Cartesian basis functions
 
+      !----- Shared configurations -----
+      type(scf_config_t) :: scf
+         !! Shared SCF settings (used by HF and DFT)
+
       !----- Method-specific configurations -----
       type(xtb_config_t) :: xtb
          !! XTB settings (GFN1, GFN2)
-      type(hf_config_t) :: hf
-         !! Hartree-Fock settings
       type(dft_config_t) :: dft
-         !! DFT settings
+         !! DFT-specific settings (functional, grid, dispersion)
       type(mcscf_config_t) :: mcscf
          !! MCSCF/CASSCF settings
 
@@ -204,23 +195,18 @@ contains
       this%xtb%cpcm_nang = 110
       this%xtb%cpcm_rscale = 1.0_dp
 
-      ! HF defaults
-      this%hf%max_scf_iter = 100
-      this%hf%energy_convergence = 1.0e-8_dp
-      this%hf%density_convergence = 1.0e-6_dp
-      this%hf%use_diis = .true.
-      this%hf%diis_size = 8
+      ! SCF defaults (shared by HF and DFT)
+      this%scf%max_iter = 100
+      this%scf%energy_convergence = 1.0e-8_dp
+      this%scf%density_convergence = 1.0e-6_dp
+      this%scf%use_diis = .true.
+      this%scf%diis_size = 8
 
-      ! DFT defaults
+      ! DFT-specific defaults
       this%dft%functional = 'b3lyp'
       this%dft%grid_type = 'medium'
       this%dft%radial_points = 75
       this%dft%angular_points = 302
-      this%dft%max_scf_iter = 100
-      this%dft%energy_convergence = 1.0e-8_dp
-      this%dft%density_convergence = 1.0e-6_dp
-      this%dft%use_diis = .true.
-      this%dft%diis_size = 8
       this%dft%use_density_fitting = .false.
       this%dft%aux_basis_set = ''
       this%dft%use_dispersion = .false.

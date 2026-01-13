@@ -111,24 +111,28 @@ contains
 #endif
 
    subroutine configure_hf(method, config)
-      !! Configure a Hartree-Fock method instance from config%hf
+      !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)
       class(qc_method_t), intent(inout) :: method
       type(method_config_t), intent(in) :: config
 
       select type (m => method)
       type is (hf_method_t)
-         ! From config%hf
-         m%options%max_iter = config%hf%max_scf_iter
-         m%options%conv_tol = config%hf%energy_convergence
-         ! From common settings
+         ! Common settings
+         m%options%basis_set = config%basis_set
          m%options%spherical = config%use_spherical
          m%options%verbose = config%verbose
-         ! basis_set is in config%basis_set for when HF is implemented
+
+         ! SCF settings from shared config%scf
+         m%options%max_iter = config%scf%max_iter
+         m%options%conv_tol = config%scf%energy_convergence
+         m%options%density_tol = config%scf%density_convergence
+         m%options%use_diis = config%scf%use_diis
+         m%options%diis_size = config%scf%diis_size
       end select
    end subroutine configure_hf
 
    subroutine configure_dft(method, config)
-      !! Configure a DFT method instance from config%dft
+      !! Configure a DFT method instance from config%scf (shared) and config%dft (DFT-specific)
       class(qc_method_t), intent(inout) :: method
       type(method_config_t), intent(in) :: config
 
@@ -139,18 +143,18 @@ contains
          m%options%spherical = config%use_spherical
          m%options%verbose = config%verbose
 
-         ! From config%dft
+         ! SCF settings from shared config%scf
+         m%options%max_iter = config%scf%max_iter
+         m%options%energy_tol = config%scf%energy_convergence
+         m%options%density_tol = config%scf%density_convergence
+         m%options%use_diis = config%scf%use_diis
+         m%options%diis_size = config%scf%diis_size
+
+         ! DFT-specific from config%dft
          m%options%functional = config%dft%functional
          m%options%grid_type = config%dft%grid_type
          m%options%radial_points = config%dft%radial_points
          m%options%angular_points = config%dft%angular_points
-
-         ! SCF settings
-         m%options%max_iter = config%dft%max_scf_iter
-         m%options%energy_tol = config%dft%energy_convergence
-         m%options%density_tol = config%dft%density_convergence
-         m%options%use_diis = config%dft%use_diis
-         m%options%diis_size = config%dft%diis_size
 
          ! Density fitting
          m%options%use_density_fitting = config%dft%use_density_fitting

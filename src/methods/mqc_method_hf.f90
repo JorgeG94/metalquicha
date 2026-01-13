@@ -13,14 +13,24 @@ module mqc_method_hf
 
    type :: hf_options_t
       !! Hartree-Fock calculation options
+      character(len=32) :: basis_set = 'sto-3g'
+         !! Basis set name
+      logical :: spherical = .true.
+         !! Use spherical (true) or Cartesian (false) basis
+      logical :: verbose = .false.
+         !! Print SCF iterations
+
+      ! SCF settings (from shared scf_config_t)
       integer :: max_iter = 100
          !! Maximum SCF iterations
       real(dp) :: conv_tol = 1.0e-8_dp
          !! Energy convergence threshold
-      logical :: spherical = .false.
-         !! Use spherical (true) or Cartesian (false) basis
-      logical :: verbose = .true.
-         !! Print SCF iterations
+      real(dp) :: density_tol = 1.0e-6_dp
+         !! Density matrix convergence threshold
+      logical :: use_diis = .true.
+         !! Use DIIS acceleration
+      integer :: diis_size = 8
+         !! Number of Fock matrices for DIIS
    end type hf_options_t
 
    type, extends(qc_method_t) :: hf_method_t
