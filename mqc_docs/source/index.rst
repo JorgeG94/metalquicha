@@ -32,3 +32,4 @@ The API docs for the code itself can be found here: https://jorgeg94.github.io/m
 
    developer_input_parameters
    developer_json_output
+   developer_method_config
