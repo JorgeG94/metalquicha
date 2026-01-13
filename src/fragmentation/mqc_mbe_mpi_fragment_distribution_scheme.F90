@@ -4,18 +4,18 @@ submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
 
 contains
 
-   module subroutine do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, world_comm)
+   module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
-      !! specified quantum chemistry method (GFN-xTB variants).
+      !! the factory pattern to create a calculator from the provided method_config.
       !! Verbosity is controlled by the global logger level.
 
       use pic_logger, only: verbose_level
 
       integer(int64), intent(in) :: fragment_idx        !! Fragment index for identification
       type(calculation_result_t), intent(out) :: result  !! Computation results
-      integer(int32), intent(in) :: method       !! QC method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
@@ -23,9 +23,8 @@ contains
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
       integer(int32) :: calc_type_local  !! Local copy of calc_type
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc  !! XTB calculator instance
-#endif
+      type(method_config_t) :: local_config  !! Local copy for verbose override
+      class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator instance
 
       calc_type_local = calc_type
 
@@ -39,33 +38,21 @@ contains
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
-#ifndef MQC_WITHOUT_TBLITE
-         ! Setup XTB method
-         xtb_calc%variant = method_type_to_string(method)
-         xtb_calc%verbose = is_verbose
+         ! Copy config and override verbose based on logger level
+         local_config = method_config
+         local_config%verbose = is_verbose
 
-         ! Set solvation options from module-level config
-         if (allocated(xtb_options%solvent)) then
-            xtb_calc%solvent = xtb_options%solvent
-         end if
-         if (allocated(xtb_options%solvation_model)) then
-            xtb_calc%solvation_model = xtb_options%solvation_model
-         end if
-         xtb_calc%use_cds = xtb_options%use_cds
-         xtb_calc%use_shift = xtb_options%use_shift
-         ! CPCM-specific settings
-         xtb_calc%dielectric = xtb_options%dielectric
-         xtb_calc%cpcm_nang = xtb_options%cpcm_nang
-         xtb_calc%cpcm_rscale = xtb_options%cpcm_rscale
+         ! Create calculator using factory
+         calculator = create_method(local_config)
 
-         ! Run the calculation using the method API
+         ! Run the calculation using polymorphic dispatch
          select case (calc_type_local)
          case (CALC_TYPE_ENERGY)
-            call xtb_calc%calc_energy(phys_frag, result)
+            call calculator%calc_energy(phys_frag, result)
          case (CALC_TYPE_GRADIENT)
-            call xtb_calc%calc_gradient(phys_frag, result)
+            call calculator%calc_gradient(phys_frag, result)
          case (CALC_TYPE_HESSIAN)
-            call xtb_calc%calc_hessian(phys_frag, result)
+            call calculator%calc_hessian(phys_frag, result)
          case default
             call result%error%set(ERROR_VALIDATION, "Unknown calc_type: "//calc_type_to_string(calc_type_local))
             result%has_error = .true.
@@ -80,12 +67,9 @@ contains
 
          ! Copy fragment distance to result for JSON output
          result%distance = phys_frag%distance
-#else
-         call result%error%set(ERROR_GENERIC, "XTB method requested but tblite support not compiled in. "// &
-                               "Please rebuild with -DMQC_ENABLE_TBLITE=ON")
-         result%has_error = .true.
-         return
-#endif
+
+         ! Cleanup
+         deallocate (calculator)
       else
          ! For empty fragments, set energy to zero
          call result%energy%reset()
@@ -94,7 +78,7 @@ contains
    end subroutine do_fragment_work
 
    module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds, json_data)
+                                       node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
@@ -104,6 +88,7 @@ contains
       integer, intent(in) :: max_level, num_nodes
       integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
       type(system_geometry_t), intent(in), optional :: sys_geom
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
@@ -388,10 +373,11 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   module subroutine node_coordinator(resources, calc_type)
+   module subroutine node_coordinator(resources, method_config, calc_type)
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
       type(resources_t), intent(in) :: resources
+      type(method_config_t), intent(in) :: method_config  !! Method configuration (passed through to workers)
       integer(int32), intent(in) :: calc_type
 
       integer(int64) :: fragment_idx
@@ -506,12 +492,12 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
       end do
    end subroutine node_coordinator
 
-   module subroutine node_worker(resources, sys_geom, method, calc_type, bonds)
+   module subroutine node_worker(resources, sys_geom, method_config, calc_type, bonds)
       !! Node worker for processing fragments assigned by node coordinator
       use mqc_error, only: error_t
       type(resources_t), intent(in) :: resources
       type(system_geometry_t), intent(in), optional :: sys_geom
-      integer(int32), intent(in) :: method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
 
@@ -562,12 +548,13 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
                end if
 
                ! Process the chemistry fragment with physical geometry
-               call do_fragment_work(fragment_idx, result, method, phys_frag, calc_type, resources%mpi_comms%world_comm)
+          call do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, resources%mpi_comms%world_comm)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-       call do_fragment_work(fragment_idx, result, method, calc_type=calc_type, world_comm=resources%mpi_comms%world_comm)
+               call do_fragment_work(fragment_idx, result, method_config, &
+                                     calc_type=calc_type, world_comm=resources%mpi_comms%world_comm)
             end if
 
             ! Send result back to coordinator

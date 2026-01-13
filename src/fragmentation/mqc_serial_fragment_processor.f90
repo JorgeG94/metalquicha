@@ -3,7 +3,8 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_serial_fragment_processor
 
 contains
 
-   module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds, json_data)
+   module subroutine serial_fragment_processor(total_fragments, polymers, max_level, &
+                                               sys_geom, method_config, calc_type, bonds, json_data)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
       use mqc_error, only: error_t
@@ -12,7 +13,7 @@ contains
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: polymers(:, :), max_level
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
@@ -47,7 +48,7 @@ contains
             error stop "Failed to build fragment in serial processing"
          end if
 
-         call do_fragment_work(frag_idx, results(frag_idx), method, phys_frag, calc_type=calc_type_local)
+         call do_fragment_work(frag_idx, results(frag_idx), method_config, phys_frag, calc_type=calc_type_local)
 
          ! Check for calculation errors
          if (results(frag_idx)%has_error) then

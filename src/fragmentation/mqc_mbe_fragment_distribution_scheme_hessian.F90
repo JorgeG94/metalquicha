@@ -3,7 +3,7 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_hessian_distribution_scheme
 
 contains
 
-   module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config, json_data)
+   module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method_config, driver_config, json_data)
       !! Compute Hessian for unfragmented system using MPI distribution
       !!
       !! Uses a dynamic work queue approach: workers request displacement indices
@@ -14,13 +14,10 @@ contains
                                         copy_and_displace_geometry
       use mqc_config_adapter, only: driver_config_t
       use mqc_json_output_types, only: json_output_data_t
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
@@ -45,13 +42,13 @@ contains
       if (my_rank == 0) then
          ! Rank 0 is the coordinator
          if (present(json_data)) then
-            call hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure, json_data)
+            call hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure, json_data)
          else
-            call hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure)
+            call hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure)
          end if
       else
          ! Other ranks are workers
-         call hessian_worker(world_comm, sys_geom, method, displacement)
+         call hessian_worker(world_comm, sys_geom, method_config, displacement)
       end if
 
       ! Synchronize all ranks before returning
@@ -59,7 +56,7 @@ contains
 
    end subroutine distributed_unfragmented_hessian
 
-   module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure, json_data)
+module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure, json_data)
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
@@ -67,13 +64,12 @@ contains
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
       use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
+      use mqc_method_base, only: qc_method_t
+      use mqc_method_factory, only: create_method
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
       real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
       real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
@@ -104,9 +100,8 @@ contains
       real(dp), allocatable :: frequencies(:)
       real(dp), allocatable :: eigenvalues(:)
       real(dp), allocatable :: projected_hessian(:, :)
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc
-#endif
+      class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator
+      type(method_config_t) :: local_config  !! Local copy for verbose override
 
       n_ranks = world_comm%size()
       n_atoms = sys_geom%total_atoms
@@ -228,11 +223,11 @@ contains
 
       ! Compute energy and gradient at reference geometry
       call logger%info("  Computing reference energy and gradient...")
-#ifndef MQC_WITHOUT_TBLITE
-      xtb_calc%variant = method_type_to_string(method)
-      xtb_calc%verbose = is_verbose
-      call xtb_calc%calc_gradient(full_system, result)
-#endif
+      local_config = method_config
+      local_config%verbose = is_verbose
+      calculator = create_method(local_config)
+      call calculator%calc_gradient(full_system, result)
+      deallocate (calculator)
 
       ! Store Hessian in result
       if (allocated(result%hessian)) deallocate (result%hessian)
@@ -374,17 +369,16 @@ contains
 
    end subroutine hessian_coordinator
 
-   module subroutine hessian_worker(world_comm, sys_geom, method, displacement)
+   module subroutine hessian_worker(world_comm, sys_geom, method_config, displacement)
       !! Worker for distributed Hessian calculation
       !! Requests displacement indices, computes gradients, and sends results back
       use mqc_finite_differences, only: copy_and_displace_geometry
-#ifndef MQC_WITHOUT_TBLITE
-      use mqc_method_xtb, only: xtb_method_t
-#endif
+      use mqc_method_base, only: qc_method_t
+      use mqc_method_factory, only: create_method
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
 
       type(physical_fragment_t) :: full_system, displaced_geom
@@ -392,9 +386,8 @@ contains
       integer :: n_atoms, disp_idx, atom_idx, coord, gradient_type, dummy_msg
       type(MPI_Status) :: status
       type(request_t) :: req
-#ifndef MQC_WITHOUT_TBLITE
-      type(xtb_method_t) :: xtb_calc
-#endif
+      class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator
+      type(method_config_t) :: local_config  !! Local copy for verbose override
 
       n_atoms = sys_geom%total_atoms
 
@@ -409,10 +402,10 @@ contains
       full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
 
-#ifndef MQC_WITHOUT_TBLITE
-      ! Setup XTB method
-      xtb_calc%variant = method_type_to_string(method)
-      xtb_calc%verbose = .false.
+      ! Create calculator using factory
+      local_config = method_config
+      local_config%verbose = .false.
+      calculator = create_method(local_config)
 
       dummy_msg = 0
       do
@@ -430,7 +423,7 @@ contains
 
          ! Compute FORWARD gradient
          call copy_and_displace_geometry(full_system, atom_idx, coord, displacement, displaced_geom)
-         call xtb_calc%calc_gradient(displaced_geom, grad_result)
+         call calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
             call logger%error("Worker gradient calculation error for forward displacement "// &
@@ -459,7 +452,7 @@ contains
 
          ! Compute BACKWARD gradient
          call copy_and_displace_geometry(full_system, atom_idx, coord, -displacement, displaced_geom)
-         call xtb_calc%calc_gradient(displaced_geom, grad_result)
+         call calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
             call logger%error("Worker gradient calculation error for backward displacement "// &
@@ -486,10 +479,9 @@ contains
          call grad_result%destroy()
          call displaced_geom%destroy()
       end do
-#else
-      call logger%error("XTB method requested but tblite support not compiled in")
-      call abort_comm(world_comm, 1)
-#endif
+
+      ! Cleanup
+      deallocate (calculator)
 
    end subroutine hessian_worker
 
