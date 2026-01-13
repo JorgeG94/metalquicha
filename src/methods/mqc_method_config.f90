@@ -9,7 +9,25 @@ module mqc_method_config
    private
 
    public :: method_config_t
-   public :: xtb_config_t, hf_config_t, dft_config_t, mcscf_config_t
+   public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
+   public :: correlation_config_t, cc_config_t, f12_config_t
+
+   !============================================================================
+   ! SCF Configuration (shared by HF and DFT)
+   !============================================================================
+   type :: scf_config_t
+      !! Shared SCF settings for HF and DFT methods
+      integer :: max_iter = 100
+         !! Maximum SCF iterations
+      real(dp) :: energy_convergence = 1.0e-8_dp
+         !! Energy convergence threshold (Hartree)
+      real(dp) :: density_convergence = 1.0e-6_dp
+         !! Density matrix convergence threshold
+      logical :: use_diis = .true.
+         !! Use DIIS acceleration
+      integer :: diis_size = 8
+         !! Number of Fock matrices for DIIS
+   end type scf_config_t
 
    !============================================================================
    ! XTB Configuration (GFN1, GFN2)
@@ -41,27 +59,11 @@ module mqc_method_config
    end type xtb_config_t
 
    !============================================================================
-   ! Hartree-Fock Configuration
-   !============================================================================
-   type :: hf_config_t
-      !! Configuration for Hartree-Fock method
-      integer :: max_scf_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_convergence = 1.0e-8_dp
-         !! Energy convergence threshold (Hartree)
-      real(dp) :: density_convergence = 1.0e-6_dp
-         !! Density matrix convergence threshold
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! Number of Fock matrices for DIIS
-   end type hf_config_t
-
-   !============================================================================
-   ! DFT Configuration
+   ! DFT Configuration (uses scf_config_t for SCF settings)
    !============================================================================
    type :: dft_config_t
       !! Configuration for Kohn-Sham DFT method
+      !! Note: SCF settings (convergence, DIIS) come from scf_config_t
       character(len=32) :: functional = 'b3lyp'
          !! XC functional: "lda", "pbe", "b3lyp", "m06-2x", etc.
 
@@ -72,18 +74,6 @@ module mqc_method_config
          !! Radial grid points per atom
       integer :: angular_points = 302
          !! Angular grid points (Lebedev)
-
-      ! SCF settings (inherits some from HF)
-      integer :: max_scf_iter = 100
-         !! Maximum SCF iterations
-      real(dp) :: energy_convergence = 1.0e-8_dp
-         !! Energy convergence threshold
-      real(dp) :: density_convergence = 1.0e-6_dp
-         !! Density convergence threshold
-      logical :: use_diis = .true.
-         !! Use DIIS acceleration
-      integer :: diis_size = 8
-         !! DIIS history size
 
       ! Density fitting
       logical :: use_density_fitting = .false.
@@ -140,6 +130,95 @@ module mqc_method_config
    end type mcscf_config_t
 
    !============================================================================
+   ! Correlation Configuration (shared by MP2, CC, etc.)
+   !============================================================================
+   type :: correlation_config_t
+      !! Shared settings for all post-HF correlation methods
+      real(dp) :: energy_convergence = 1.0e-8_dp
+         !! Correlation energy convergence threshold
+
+      ! Frozen core
+      integer :: n_frozen_core = -1
+         !! Number of frozen core orbitals (-1 = auto from elements)
+      logical :: freeze_core = .true.
+         !! Whether to freeze core orbitals
+
+      ! Density fitting for correlation
+      logical :: use_df = .true.
+         !! Use density fitting (RI) for correlation integrals
+      character(len=32) :: aux_basis = ''
+         !! Auxiliary basis for RI (e.g., "cc-pvdz-ri", "cc-pvtz-ri")
+
+      ! Local correlation
+      logical :: use_local = .false.
+         !! Use local correlation approximation
+      character(len=16) :: local_type = 'dlpno'
+         !! Local correlation type: "pno", "dlpno", "lmp2", "lno"
+      real(dp) :: pno_threshold = 1.0e-7_dp
+         !! PNO occupation threshold for truncation
+
+      ! Spin-component scaling (for MP2)
+      logical :: use_scs = .false.
+         !! Use spin-component scaled MP2
+      real(dp) :: scs_ss = 1.0_dp/3.0_dp
+         !! Same-spin scaling factor (default: 1/3 for SCS-MP2)
+      real(dp) :: scs_os = 1.2_dp
+         !! Opposite-spin scaling factor (default: 6/5 for SCS-MP2)
+   end type correlation_config_t
+
+   !============================================================================
+   ! Coupled Cluster Configuration
+   !============================================================================
+   type :: cc_config_t
+      !! Coupled-cluster specific settings (CCSD, CCSD(T), CC2, CC3, etc.)
+      integer :: max_iter = 100
+         !! Maximum CC iterations
+      real(dp) :: amplitude_convergence = 1.0e-7_dp
+         !! T-amplitude convergence threshold
+
+      ! Excitation level
+      logical :: include_triples = .false.
+         !! Include (T) triples correction
+      logical :: perturbative_triples = .true.
+         !! Use perturbative (T) vs full CCSDT
+
+      ! DIIS for CC
+      logical :: use_diis = .true.
+         !! Use DIIS for amplitude equations
+      integer :: diis_size = 8
+         !! DIIS subspace size
+
+      ! EOM-CC for excited states
+      integer :: n_roots = 0
+         !! Number of EOM-CC roots (0 = ground state only)
+      character(len=8) :: eom_type = 'ee'
+         !! EOM type: "ee" (excitation), "ip" (ionization), "ea" (attachment)
+   end type cc_config_t
+
+   !============================================================================
+   ! F12 Explicitly Correlated Configuration
+   !============================================================================
+   type :: f12_config_t
+      !! Settings for explicitly correlated F12 methods (MP2-F12, CCSD-F12, etc.)
+      real(dp) :: geminal_exponent = 1.0_dp
+         !! Slater-type geminal exponent (beta)
+      character(len=8) :: ansatz = '3c'
+         !! F12 ansatz: "3c", "3c(fix)", "2b", "2a"
+
+      ! Auxiliary basis sets for F12
+      character(len=32) :: cabs_basis = ''
+         !! Complementary auxiliary basis (CABS) for RI
+      character(len=32) :: optri_basis = ''
+         !! Optional RI basis for F12 intermediates
+
+      ! Approximations
+      logical :: use_exponent_fit = .false.
+         !! Fit geminal exponent to basis set
+      logical :: scale_triples = .true.
+         !! Apply F12 scaling to (T) correction
+   end type f12_config_t
+
+   !============================================================================
    ! Main Configuration Type (Composition)
    !============================================================================
    type :: method_config_t
@@ -161,15 +240,23 @@ module mqc_method_config
       logical :: use_spherical = .true.
          !! Spherical vs Cartesian basis functions
 
+      !----- Shared configurations -----
+      type(scf_config_t) :: scf
+         !! Shared SCF settings (used by HF and DFT)
+      type(correlation_config_t) :: corr
+         !! Shared correlation settings (used by MP2, CC, etc.)
+
       !----- Method-specific configurations -----
       type(xtb_config_t) :: xtb
          !! XTB settings (GFN1, GFN2)
-      type(hf_config_t) :: hf
-         !! Hartree-Fock settings
       type(dft_config_t) :: dft
-         !! DFT settings
+         !! DFT-specific settings (functional, grid, dispersion)
       type(mcscf_config_t) :: mcscf
          !! MCSCF/CASSCF settings
+      type(cc_config_t) :: cc
+         !! Coupled-cluster specific settings (CCSD, CCSD(T), etc.)
+      type(f12_config_t) :: f12
+         !! F12 explicitly correlated settings
 
    contains
       procedure :: reset => config_reset
@@ -204,23 +291,18 @@ contains
       this%xtb%cpcm_nang = 110
       this%xtb%cpcm_rscale = 1.0_dp
 
-      ! HF defaults
-      this%hf%max_scf_iter = 100
-      this%hf%energy_convergence = 1.0e-8_dp
-      this%hf%density_convergence = 1.0e-6_dp
-      this%hf%use_diis = .true.
-      this%hf%diis_size = 8
+      ! SCF defaults (shared by HF and DFT)
+      this%scf%max_iter = 100
+      this%scf%energy_convergence = 1.0e-8_dp
+      this%scf%density_convergence = 1.0e-6_dp
+      this%scf%use_diis = .true.
+      this%scf%diis_size = 8
 
-      ! DFT defaults
+      ! DFT-specific defaults
       this%dft%functional = 'b3lyp'
       this%dft%grid_type = 'medium'
       this%dft%radial_points = 75
       this%dft%angular_points = 302
-      this%dft%max_scf_iter = 100
-      this%dft%energy_convergence = 1.0e-8_dp
-      this%dft%density_convergence = 1.0e-6_dp
-      this%dft%use_diis = .true.
-      this%dft%diis_size = 8
       this%dft%use_density_fitting = .false.
       this%dft%aux_basis_set = ''
       this%dft%use_dispersion = .false.
@@ -240,6 +322,37 @@ contains
       this%mcscf%pt2_type = 'nevpt2'
       this%mcscf%ipea_shift = 0.25_dp
       this%mcscf%imaginary_shift = 0.0_dp
+
+      ! Correlation defaults (shared by MP2, CC, etc.)
+      this%corr%energy_convergence = 1.0e-8_dp
+      this%corr%n_frozen_core = -1
+      this%corr%freeze_core = .true.
+      this%corr%use_df = .true.
+      this%corr%aux_basis = ''
+      this%corr%use_local = .false.
+      this%corr%local_type = 'dlpno'
+      this%corr%pno_threshold = 1.0e-7_dp
+      this%corr%use_scs = .false.
+      this%corr%scs_ss = 1.0_dp/3.0_dp
+      this%corr%scs_os = 1.2_dp
+
+      ! Coupled-cluster defaults
+      this%cc%max_iter = 100
+      this%cc%amplitude_convergence = 1.0e-7_dp
+      this%cc%include_triples = .false.
+      this%cc%perturbative_triples = .true.
+      this%cc%use_diis = .true.
+      this%cc%diis_size = 8
+      this%cc%n_roots = 0
+      this%cc%eom_type = 'ee'
+
+      ! F12 defaults
+      this%f12%geminal_exponent = 1.0_dp
+      this%f12%ansatz = '3c'
+      this%f12%cabs_basis = ''
+      this%f12%optri_basis = ''
+      this%f12%use_exponent_fit = .false.
+      this%f12%scale_triples = .true.
    end subroutine config_reset
 
 end module mqc_method_config
