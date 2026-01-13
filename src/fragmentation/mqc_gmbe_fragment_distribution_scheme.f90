@@ -16,8 +16,10 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list
    use mqc_config_parser, only: bond_t
-   use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv, mbe_result_t
+   use mqc_result_types, only: calculation_result_t, result_send, result_isend, &
+                               result_recv, result_irecv, mbe_result_t
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
+   use mqc_method_config, only: method_config_t
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_GMBE_PIE
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
@@ -31,7 +33,8 @@ module mqc_gmbe_fragment_distribution_scheme
 
 contains
 
-   subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds, json_data)
+   subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, &
+                                        sys_geom, method_config, calc_type, bonds, json_data)
       !! Serial GMBE processor using PIE coefficients
       !! Evaluates each unique atom set once and sums with PIE coefficients
       !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
@@ -45,7 +48,8 @@ contains
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64), intent(in) :: n_pie_terms
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method, calc_type
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
@@ -129,7 +133,7 @@ contains
          end if
 
          ! Compute energy (and gradient if requested)
-         call do_fragment_work(term_idx, results(term_idx), method, phys_frag, calc_type)
+         call do_fragment_work(term_idx, results(term_idx), method_config, phys_frag, calc_type)
 
          ! Check for calculation errors
          if (results(term_idx)%has_error) then
@@ -330,7 +334,7 @@ contains
    end subroutine serial_gmbe_pie_processor
 
    subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                   node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds, json_data)
+                                   node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
       !! If json_data is present, populates it for centralized JSON output
@@ -345,7 +349,8 @@ contains
       integer(int64), intent(in) :: n_pie_terms
       integer, intent(in) :: node_leader_ranks(:), num_nodes
       type(system_geometry_t), intent(in) :: sys_geom
-      integer(int32), intent(in) :: method, calc_type
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
+      integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 

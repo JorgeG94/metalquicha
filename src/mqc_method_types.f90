@@ -9,6 +9,7 @@ module mqc_method_types
 
    ! Public constants
    public :: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF
+   public :: METHOD_TYPE_DFT, METHOD_TYPE_MCSCF
    public :: METHOD_TYPE_UNKNOWN
 
    ! Public functions
@@ -19,6 +20,8 @@ module mqc_method_types
    integer(int32), parameter :: METHOD_TYPE_GFN1 = 1
    integer(int32), parameter :: METHOD_TYPE_GFN2 = 2
    integer(int32), parameter :: METHOD_TYPE_HF = 3
+   integer(int32), parameter :: METHOD_TYPE_DFT = 4
+   integer(int32), parameter :: METHOD_TYPE_MCSCF = 5
 
 contains
 
@@ -47,8 +50,12 @@ contains
          method_type = METHOD_TYPE_GFN1
       case ('gfn2')
          method_type = METHOD_TYPE_GFN2
-      case ('hf')
+      case ('hf', 'rhf', 'uhf')
          method_type = METHOD_TYPE_HF
+      case ('dft', 'ks', 'kohn-sham')
+         method_type = METHOD_TYPE_DFT
+      case ('mcscf', 'casscf', 'casci')
+         method_type = METHOD_TYPE_MCSCF
       case default
          method_type = METHOD_TYPE_UNKNOWN
       end select
@@ -69,6 +76,10 @@ contains
          method_str = "gfn2"
       case (METHOD_TYPE_HF)
          method_str = "hf"
+      case (METHOD_TYPE_DFT)
+         method_str = "dft"
+      case (METHOD_TYPE_MCSCF)
+         method_str = "mcscf"
       case default
          method_str = "unknown"
       end select

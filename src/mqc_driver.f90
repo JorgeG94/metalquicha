@@ -9,8 +9,8 @@ module mqc_driver
    use pic_io, only: to_char
    use omp_lib, only: omp_get_max_threads, omp_set_num_threads
    use mqc_mbe_fragment_distribution_scheme, only: global_coordinator, node_coordinator, node_worker, unfragmented_calculation, &
-                                          serial_fragment_processor, do_fragment_work, distributed_unfragmented_hessian, &
-                                                   set_xtb_options
+                                             serial_fragment_processor, do_fragment_work, distributed_unfragmented_hessian
+   use mqc_method_config, only: method_config_t
    use mqc_gmbe_fragment_distribution_scheme, only: serial_gmbe_pie_processor, gmbe_pie_coordinator
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
@@ -53,43 +53,43 @@ contains
       integer :: i  !! Loop counter
       type(json_output_data_t) :: json_data  !! Cached output data for centralized JSON writing
       logical :: should_write_json  !! Whether this rank should write JSON
+      type(method_config_t) :: method_config  !! Method configuration built from driver config
 
-      ! Set XTB solvation options from config (before any calculations)
-      if (allocated(config%solvent) .or. config%dielectric > 0.0_dp) then
-         if (allocated(config%solvation_model)) then
-            call set_xtb_options(solvent=config%solvent, solvation_model=config%solvation_model, &
-                                 use_cds=config%use_cds, use_shift=config%use_shift, &
-                                 dielectric=config%dielectric, cpcm_nang=config%cpcm_nang, &
-                                 cpcm_rscale=config%cpcm_rscale)
-         else
-            call set_xtb_options(solvent=config%solvent, solvation_model="alpb", &
-                                 use_cds=config%use_cds, use_shift=config%use_shift, &
-                                 dielectric=config%dielectric, cpcm_nang=config%cpcm_nang, &
-                                 cpcm_rscale=config%cpcm_rscale)
-         end if
+      ! Build method_config from driver_config
+      method_config%method_type = config%method
+      method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
+
+      ! XTB-specific settings (nested in method_config%xtb)
+      method_config%xtb%use_cds = config%use_cds
+      method_config%xtb%use_shift = config%use_shift
+      method_config%xtb%dielectric = config%dielectric
+      method_config%xtb%cpcm_nang = config%cpcm_nang
+      method_config%xtb%cpcm_rscale = config%cpcm_rscale
+      if (allocated(config%solvent)) method_config%xtb%solvent = config%solvent
+      if (allocated(config%solvation_model)) then
+         method_config%xtb%solvation_model = config%solvation_model
+      else if (allocated(config%solvent) .or. config%dielectric > 0.0_dp) then
+         method_config%xtb%solvation_model = 'alpb'  ! Default solvation model
+      end if
+
+      ! Log solvation settings
+      if (method_config%xtb%has_solvation()) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
-            if (allocated(config%solvation_model)) then
-               if (trim(config%solvation_model) == 'cpcm') then
-                  if (config%dielectric > 0.0_dp) then
-                     call logger%info("XTB solvation enabled: cpcm with dielectric = "//to_char(config%dielectric))
-                  else
-                     call logger%info("XTB solvation enabled: cpcm with "//config%solvent)
-                  end if
-                  call logger%info("  CPCM grid points (nang): "//to_char(config%cpcm_nang))
-                  call logger%info("  CPCM radii scale: "//to_char(config%cpcm_rscale))
+            if (trim(method_config%xtb%solvation_model) == 'cpcm') then
+               if (config%dielectric > 0.0_dp) then
+                  call logger%info("XTB solvation enabled: cpcm with dielectric = "//to_char(config%dielectric))
                else
-                  call logger%info("XTB solvation enabled: "//trim(config%solvation_model)//" with "//config%solvent)
-                  if (config%use_cds) call logger%info("  CDS (non-polar) terms: enabled")
-                  if (config%use_shift) call logger%info("  Solution state shift: enabled")
+                  call logger%info("XTB solvation enabled: cpcm with "//trim(method_config%xtb%solvent))
                end if
+               call logger%info("  CPCM grid points (nang): "//to_char(config%cpcm_nang))
+               call logger%info("  CPCM radii scale: "//to_char(config%cpcm_rscale))
             else
-               call logger%info("XTB solvation enabled: alpb with "//config%solvent)
+               call logger%info("XTB solvation enabled: "//trim(method_config%xtb%solvation_model)//" with "// &
+                                trim(method_config%xtb%solvent))
                if (config%use_cds) call logger%info("  CDS (non-polar) terms: enabled")
                if (config%use_shift) call logger%info("  Solution state shift: enabled")
             end if
          end if
-      else
-         call set_xtb_options(use_cds=config%use_cds, use_shift=config%use_shift)
       end if
 
       ! Set max_level from config
@@ -124,22 +124,22 @@ contains
          if (present(result_out)) then
             ! For dynamics/optimization: return result directly, no JSON output
             call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
-                                              config%method, config%calc_type, bonds, config, result_out)
+                                              method_config, config%calc_type, bonds, config, result_out)
          else
             ! Normal mode: collect json_data for centralized output
             call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
-                                              config%method, config%calc_type, bonds, config, &
+                                              method_config, config%calc_type, bonds, config, &
                                               json_data=json_data)
          end if
       else
          if (present(result_out)) then
             ! For fragmented calculations with result_out (future use)
-            call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
+            call run_fragmented_calculation(resources, method_config, config%calc_type, sys_geom, max_level, &
                                             config%allow_overlapping_fragments, &
                                             config%max_intersection_level, bonds, config)
          else
             ! Normal mode: collect json_data for centralized output
-            call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
+            call run_fragmented_calculation(resources, method_config, config%calc_type, sys_geom, max_level, &
                                             config%allow_overlapping_fragments, &
                                             config%max_intersection_level, bonds, config, json_data)
          end if
@@ -170,7 +170,8 @@ contains
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config, result_out, json_data)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method_config, &
+                                           calc_type, bonds, driver_config, result_out, json_data)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! For single-molecule mode: Only rank 0 runs (validates single rank)
@@ -179,7 +180,7 @@ contains
       !! If result_out is present, returns result instead of writing JSON
       type(comm_t), intent(in) :: world_comm  !! Global MPI communicator
       type(system_geometry_t), intent(in) :: sys_geom  !! Complete system geometry
-      integer(int32), intent(in) :: method  !! Quantum chemistry method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
@@ -194,7 +195,7 @@ contains
             call logger%info("  MPI ranks: "//to_char(world_comm%size()))
             call logger%info(" ")
          end if
-         call distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config, json_data)
+         call distributed_unfragmented_hessian(world_comm, sys_geom, method_config, driver_config, json_data)
          return
       end if
 
@@ -208,25 +209,25 @@ contains
          call logger%info("  Calculation type: "//calc_type_to_string(calc_type))
          call logger%info(" ")
          if (present(driver_config)) then
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+            call unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, &
                                           driver_config%hessian%temperature, driver_config%hessian%pressure, json_data)
          else
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, json_data=json_data)
+            call unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, json_data=json_data)
          end if
       else if (sys_geom%total_atoms > 0) then
          ! Multi-molecule mode: non-zero rank with a molecule
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Running unfragmented calculation")
          if (present(driver_config)) then
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
+            call unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, &
                                           driver_config%hessian%temperature, driver_config%hessian%pressure, json_data)
          else
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, json_data=json_data)
+            call unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, json_data=json_data)
          end if
       end if
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(resources, method, calc_type, sys_geom, max_level, &
+   subroutine run_fragmented_calculation(resources, method_config, calc_type, sys_geom, max_level, &
                                      allow_overlapping_fragments, max_intersection_level, bonds, driver_config, json_data)
       !! Handle fragmented calculation (nlevel > 0)
       !!
@@ -234,7 +235,7 @@ contains
       !! and coordinates many-body expansion calculation using hierarchical parallelism.
       !! If allow_overlapping_fragments=true, uses GMBE with intersection correction.
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
-      integer(int32), intent(in) :: method  !! Quantum chemistry method
+      type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       integer, intent(in) :: max_level    !! Maximum fragment level for MBE
@@ -403,11 +404,12 @@ contains
          call logger%info("Running in serial mode (single MPI rank)")
          if (allow_overlapping_fragments) then
             ! GMBE serial processing with PIE coefficients
-            call serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, &
+        call serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method_config, calc_type, &
                                            bonds, json_data)
          else
             ! Standard MBE serial processing
-       call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds, json_data)
+         call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method_config, calc_type, bonds, &
+                                           json_data)
          end if
       else if (resources%mpi_comms%world_comm%leader() .and. resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
@@ -416,23 +418,23 @@ contains
          if (allow_overlapping_fragments) then
             ! GMBE MPI processing - PIE-based approach
             call gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                      node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds, json_data)
+                                      node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
          else
             ! Standard MBE MPI processing
             call global_coordinator(resources, total_fragments, polymers, max_level, &
-                                    node_leader_ranks, num_nodes, sys_geom, calc_type, bonds, json_data)
+                                    node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
          end if
       else if (resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(resources%mpi_comms%world_comm%rank())//": Acting as node coordinator")
          ! Node coordinator works for both MBE and GMBE (receives fragments from global coordinator)
-         call node_coordinator(resources, calc_type)
+         call node_coordinator(resources, method_config, calc_type)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(resources%mpi_comms%world_comm%rank())//": Acting as worker")
          ! Worker processes work for both MBE and GMBE (fragment_type distinguishes them)
-         call node_worker(resources, sys_geom, method, calc_type, bonds)
+         call node_worker(resources, sys_geom, method_config, calc_type, bonds)
       end if
 
       ! Cleanup
