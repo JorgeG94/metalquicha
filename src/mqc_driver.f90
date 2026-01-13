@@ -25,6 +25,8 @@ module mqc_driver
    use mqc_error, only: error_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
    use mqc_json, only: merge_multi_molecule_json
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
+   use mqc_json_writer, only: write_json_output
    implicit none
    private
 
@@ -33,7 +35,7 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(resources, config, sys_geom, bonds, result_out)
+   subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
@@ -44,10 +46,13 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
+      logical, intent(in), optional :: all_ranks_write_json  !! If true, all ranks write JSON (for multi-molecule)
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: i  !! Loop counter
+      type(json_output_data_t) :: json_data  !! Cached output data for centralized JSON writing
+      logical :: should_write_json  !! Whether this rank should write JSON
 
       ! Set XTB solvation options from config (before any calculations)
       if (allocated(config%solvent) .or. config%dielectric > 0.0_dp) then
@@ -116,17 +121,49 @@ contains
 
       if (max_level == 0) then
          call omp_set_num_threads(1)
-         call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
-                                           config%method, config%calc_type, bonds, config, result_out)
+         if (present(result_out)) then
+            ! For dynamics/optimization: return result directly, no JSON output
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
+                                              config%method, config%calc_type, bonds, config, result_out)
+         else
+            ! Normal mode: collect json_data for centralized output
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, &
+                                              config%method, config%calc_type, bonds, config, &
+                                              json_data=json_data)
+         end if
       else
-         call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
-                                         config%allow_overlapping_fragments, &
-                                         config%max_intersection_level, bonds, config)
+         if (present(result_out)) then
+            ! For fragmented calculations with result_out (future use)
+            call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
+                                            config%allow_overlapping_fragments, &
+                                            config%max_intersection_level, bonds, config)
+         else
+            ! Normal mode: collect json_data for centralized output
+            call run_fragmented_calculation(resources, config%method, config%calc_type, sys_geom, max_level, &
+                                            config%allow_overlapping_fragments, &
+                                            config%max_intersection_level, bonds, config, json_data)
+         end if
+      end if
+
+      ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
+      if (.not. present(result_out)) then
+         ! Determine if this rank should write JSON
+         should_write_json = (resources%mpi_comms%world_comm%rank() == 0)
+         if (present(all_ranks_write_json)) then
+            if (all_ranks_write_json) should_write_json = .true.
+         end if
+
+         if (should_write_json) then
+            if (json_data%output_mode /= OUTPUT_MODE_NONE) then
+               call write_json_output(json_data)
+               call json_data%destroy()
+            end if
+         end if
       end if
 
    end subroutine run_calculation
 
-   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config, result_out)
+   subroutine run_unfragmented_calculation(world_comm, sys_geom, method, calc_type, bonds, driver_config, result_out, json_data)
       !! Handle unfragmented calculation (nlevel=0)
       !!
       !! For single-molecule mode: Only rank 0 runs (validates single rank)
@@ -140,6 +177,7 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       ! For Hessian calculations with multiple ranks, use distributed approach
       if (calc_type == CALC_TYPE_HESSIAN .and. world_comm%size() > 1) then
@@ -149,7 +187,7 @@ contains
             call logger%info("  MPI ranks: "//to_char(world_comm%size()))
             call logger%info(" ")
          end if
-         call distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
+         call distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config, json_data)
          return
       end if
 
@@ -164,25 +202,25 @@ contains
          call logger%info(" ")
          if (present(driver_config)) then
             call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
-                                          driver_config%hessian%temperature, driver_config%hessian%pressure)
+                                          driver_config%hessian%temperature, driver_config%hessian%pressure, json_data)
          else
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, json_data=json_data)
          end if
       else if (sys_geom%total_atoms > 0) then
          ! Multi-molecule mode: non-zero rank with a molecule
          call logger%verbose("Rank "//to_char(world_comm%rank())//": Running unfragmented calculation")
          if (present(driver_config)) then
             call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
-                                          driver_config%hessian%temperature, driver_config%hessian%pressure)
+                                          driver_config%hessian%temperature, driver_config%hessian%pressure, json_data)
          else
-            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out)
+            call unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, json_data=json_data)
          end if
       end if
 
    end subroutine run_unfragmented_calculation
 
    subroutine run_fragmented_calculation(resources, method, calc_type, sys_geom, max_level, &
-                                         allow_overlapping_fragments, max_intersection_level, bonds, driver_config)
+                                     allow_overlapping_fragments, max_intersection_level, bonds, driver_config, json_data)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -197,6 +235,7 @@ contains
       integer, intent(in) :: max_intersection_level  !! Maximum k-way intersection depth for GMBE
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(driver_config_t), intent(in) :: driver_config  !! Driver configuration with cutoffs
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
@@ -357,10 +396,11 @@ contains
          call logger%info("Running in serial mode (single MPI rank)")
          if (allow_overlapping_fragments) then
             ! GMBE serial processing with PIE coefficients
-          call serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds)
+            call serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, &
+                                           bonds, json_data)
          else
             ! Standard MBE serial processing
-            call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
+       call serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds, json_data)
          end if
       else if (resources%mpi_comms%world_comm%leader() .and. resources%mpi_comms%node_comm%leader()) then
          ! Global coordinator (rank 0, node leader on node 0)
@@ -369,11 +409,11 @@ contains
          if (allow_overlapping_fragments) then
             ! GMBE MPI processing - PIE-based approach
             call gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                      node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+                                      node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds, json_data)
          else
             ! Standard MBE MPI processing
             call global_coordinator(resources, total_fragments, polymers, max_level, &
-                                    node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+                                    node_leader_ranks, num_nodes, sys_geom, calc_type, bonds, json_data)
          end if
       else if (resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
@@ -545,8 +585,9 @@ contains
                ! Set output filename suffix for this molecule
                call set_molecule_suffix("_"//trim(mol_name))
 
-               ! Run calculation for this molecule
-               call run_calculation(resources, config, sys_geom, mqc_config%molecules(imol)%bonds)
+               ! Run calculation for this molecule (all ranks write JSON in parallel mode)
+               call run_calculation(resources, config, sys_geom, mqc_config%molecules(imol)%bonds, &
+                                    all_ranks_write_json=.true.)
 
                ! Track the JSON filename for later merging
                individual_json_files(imol) = get_output_json_filename()

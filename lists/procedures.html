@@ -858,7 +858,8 @@ This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a h
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td><p>MPI coordinator for PIE-based GMBE calculations
-Distributes PIE terms across MPI ranks and accumulates results</p></td>
+Distributes PIE terms across MPI ranks and accumulates results
+If json_data is present, populates it for centralized JSON output</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/grow_pie_storage.html'>grow_pie_storage</a></td>
@@ -950,6 +951,18 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
                  <td>Function</td>
                  <td><p>Check if character is an uppercase letter (A-Z)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
+                 <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Clean up all allocated memory</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/json_output_data_reset.html'>json_output_data_reset</a></td>
+                 <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Reset all flags and scalar values to defaults</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/map_fragment_to_system_dipole_derivatives.html'>map_fragment_to_system_dipole_derivatives</a></td>
@@ -1298,6 +1311,18 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Parse %xtb section for XTB-specific settings (solvation, etc.)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/populate_unfragmented_json_data.html'>populate_unfragmented_json_data</a></td>
+                 <td><a href='../module/mqc_hessian_distribution_scheme.html'>mqc_hessian_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Populate json_data with basic unfragmented calculation results</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/populate_vibrational_json_data.html'>populate_vibrational_json_data</a></td>
+                 <td><a href='../module/mqc_hessian_distribution_scheme.html'>mqc_hessian_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Populate json_data with vibrational analysis results</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/print_combos.html'>print_combos</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
@@ -1311,13 +1336,6 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
                  <td><p>Print detailed energy breakdown for each fragment
 Shows full energy and deltaE correction for all monomers, dimers, trimers, etc.
 Uses int64 for fragment_count to handle large fragment counts that overflow int32.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/print_detailed_breakdown_json.html'>print_detailed_breakdown_json</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write detailed energy breakdown to results.json file
-Uses json-fortran for clean, maintainable JSON output</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/print_fragment_xyz.html'>print_fragment_xyz</a></td>
@@ -1344,20 +1362,6 @@ Uses json-fortran for clean, maintainable JSON output</p></td>
                  <td><p>Print debug information about GMBE intersections</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/print_gmbe_json.html'>print_gmbe_json</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write GMBE calculation results to output JSON file
-Uses json-fortran for clean, maintainable JSON output</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/print_gmbe_pie_json.html'>print_gmbe_pie_json</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write GMBE PIE calculation results to output JSON file
-Uses json-fortran for clean, maintainable JSON output</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/print_logo.html'>print_logo</a></td>
                  <td><a href='../module/mqc_logo.html'>mqc_logo</a></td>
                  <td>Subroutine</td>
@@ -1382,13 +1386,6 @@ Uses json-fortran for clean, maintainable JSON output</p></td>
                  <td><p>Print thermochemistry results.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/print_unfragmented_json.html'>print_unfragmented_json</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write unfragmented calculation results to output JSON file
-Uses json-fortran for clean, maintainable JSON output</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/print_usage.html'>print_usage</a></td>
                  <td><a href='../module/mqc_cli_parser.html'>mqc_cli_parser</a></td>
                  <td>Subroutine</td>
@@ -1399,20 +1396,6 @@ Uses json-fortran for clean, maintainable JSON output</p></td>
                  <td><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></td>
                  <td>Subroutine</td>
                  <td><p>Print vibrational analysis results in a formatted table.</p><a href="../proc/print_vibrational_analysis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/print_vibrational_json.html'>print_vibrational_json</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write vibrational analysis and thermochemistry results to JSON file
-Wrapper that extracts values from calculation_result_t and calls the implementation</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/print_vibrational_json_mbe.html'>print_vibrational_json_mbe</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Write vibrational analysis and thermochemistry results to JSON file for MBE calculations
-Wrapper that extracts values from mbe_result_t and calls the implementation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/process_intersection_derivatives.html'>process_intersection_derivatives</a></td>
@@ -1572,7 +1555,8 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
                  <td>Subroutine</td>
                  <td><p>Serial GMBE processor using PIE coefficients
 Evaluates each unique atom set once and sums with PIE coefficients
-Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations</p></td>
+Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
+If json_data is present, populates it for centralized JSON output</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/set_molecule_suffix.html'>set_molecule_suffix</a></td>
@@ -1674,11 +1658,34 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
 For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/write_vibrational_json_impl.html'>write_vibrational_json_impl</a></td>
-                 <td><a href='../module/mqc_mbe_io.html'>mqc_mbe_io</a></td>
+                 <td><a href='../proc/write_gmbe_pie_json_impl.html'>write_gmbe_pie_json_impl</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
-                 <td><p>Private implementation for writing vibrational/thermochemistry JSON
-Uses json-fortran library for clean, maintainable JSON output</p></td>
+                 <td><p>Write GMBE PIE calculation results to output JSON file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_json_output.html'>write_json_output</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>THE single entry point for all JSON output</p><a href="../proc/write_json_output.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_mbe_breakdown_json_impl.html'>write_mbe_breakdown_json_impl</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write detailed MBE energy breakdown to JSON file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_unfragmented_json_impl.html'>write_unfragmented_json_impl</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write unfragmented calculation results to output JSON file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_vibrational_json_impl.html'>write_vibrational_json_impl</a></td>
+                 <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write vibrational analysis and thermochemistry results to JSON file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/xtb_calc_energy.html'>xtb_calc_energy</a></td>
@@ -1717,7 +1724,7 @@ Uses json-fortran library for clean, maintainable JSON output</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-12 20:43 +0000             </p>
+ on 2026-01-13 06:20 +0000             </p>
           </div>
         </div>
         <br>

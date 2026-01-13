@@ -1,0 +1,1163 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>write_mbe_breakdown_json_impl &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>write_mbe_breakdown_json_impl
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.0% of total for procedures.">88 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_writer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_writer.f90.html'>mqc_json_writer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">write_mbe_breakdown_json_impl</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-basename~2">basename</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-count_by_level">count_by_level</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-dipole_obj~2">dipole_obj</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-frag_level">frag_level</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-frag_obj">frag_obj</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-fragment_size">fragment_size</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-frags_arr">frags_arr</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-i~7">i</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-indices">indices</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-io_stat~2">io_stat</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-iunit~2">iunit</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-j~4">j</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-json~2">json</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-level_name">level_name</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-level_obj">level_obj</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-levels_arr">levels_arr</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-main_obj~2">main_obj</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-output_file~2">output_file</a>
+            <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#variable-root~2">root</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/write_mbe_breakdown_json_impl.html#src">write_mbe_breakdown_json_impl</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine write_mbe_breakdown_json_impl(data)  
+</h2>
+    
+
+    <p>Write detailed MBE energy breakdown to JSON file</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-data~2"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>data</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_mbe_breakdown_json_impl~~CallsGraph Pages: 1 -->
+<svg id="procwrite_mbe_breakdown_json_implCallsGraph" width="380pt" height="452pt"
+ viewBox="0.00 0.00 380.00 452.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 448)">
+<title>proc~~write_mbe_breakdown_json_impl~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-448 376,-448 376,4 -4,4"/>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node1" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<polygon fill="none" stroke="black" points="187,-234 0,-234 0,-210 187,-210 187,-234"/>
+<text text-anchor="middle" x="93.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_mbe_breakdown_json_impl</text>
+</g>
+<!-- add -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node2" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="324.5,-444 270.5,-444 270.5,-420 324.5,-420 324.5,-444"/>
+<text text-anchor="middle" x="297.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;add -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge1" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#ff0000" d="M99.3,-234.34C113.09,-268.1 156.12,-362.65 223,-411 233.95,-418.91 247.81,-423.86 260.54,-426.94"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="259.92,-430.38 270.42,-429.03 261.37,-423.53 259.92,-430.38"/>
+</g>
+<!-- create_array -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node3" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="337.5,-402 257.5,-402 257.5,-378 337.5,-378 337.5,-402"/>
+<text text-anchor="middle" x="297.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_array -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge2" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#ff0000" d="M101.78,-234.39C119.06,-262.69 165.47,-332.5 223,-369 230.49,-373.75 239.08,-377.45 247.68,-380.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="246.76,-383.71 257.35,-383.24 248.78,-377.01 246.76,-383.71"/>
+</g>
+<!-- create_object -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node4" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="340,-360 255,-360 255,-336 340,-336 340,-360"/>
+<text text-anchor="middle" x="297.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_object -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge3" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#ff0000" d="M106.05,-234.28C127.2,-256.09 174.49,-301.64 223,-327 229.95,-330.63 237.6,-333.7 245.26,-336.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="244.34,-339.66 254.93,-339.29 246.42,-332.98 244.34,-339.66"/>
+</g>
+<!-- destroy -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node5" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="324.5,-318 270.5,-318 270.5,-294 324.5,-294 324.5,-318"/>
+<text text-anchor="middle" x="297.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;destroy -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge4" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff0000" d="M116.25,-234.15C141.39,-247.84 184.27,-270.11 223,-285 235,-289.61 248.44,-293.74 260.52,-297.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="259.71,-300.5 270.28,-299.72 261.53,-293.74 259.71,-300.5"/>
+</g>
+<!-- error -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node6" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="324.5,-276 270.5,-276 270.5,-252 324.5,-252 324.5,-276"/>
+<text text-anchor="middle" x="297.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;error -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge5" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M152.39,-234.04C187.22,-241.28 230.47,-250.27 260.46,-256.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="259.97,-259.98 270.47,-258.59 261.4,-253.13 259.97,-259.98"/>
+</g>
+<!-- info -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node7" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="324.5,-234 270.5,-234 270.5,-210 324.5,-210 324.5,-234"/>
+<text text-anchor="middle" x="297.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;info -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge6" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M187.22,-222C213.01,-222 239.53,-222 259.98,-222"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="260.09,-225.5 270.09,-222 260.09,-218.5 260.09,-225.5"/>
+</g>
+<!-- initialize -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node8" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="326,-192 269,-192 269,-168 326,-168 326,-192"/>
+<text text-anchor="middle" x="297.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;initialize -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge7" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff0000" d="M152.39,-209.96C186.59,-202.85 228.92,-194.05 258.83,-187.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="259.78,-191.21 268.86,-185.75 258.35,-184.36 259.78,-191.21"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node9" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CallsGraph_node9"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="343,-150 252,-150 252,-126 343,-126 343,-150"/>
+<text text-anchor="middle" x="297.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge8" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff0000" d="M116.25,-209.85C141.39,-196.16 184.27,-173.89 223,-159 229.02,-156.69 235.39,-154.5 241.78,-152.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="243.23,-155.68 251.77,-149.41 241.19,-148.99 243.23,-155.68"/>
+</g>
+<!-- proc~get_frag_level_name -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node10" class="node">
+<title>proc~get_frag_level_name</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CallsGraph_node10"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="359.5,-108 235.5,-108 235.5,-84 359.5,-84 359.5,-108"/>
+<text text-anchor="middle" x="297.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge9" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name</title>
+<path fill="none" stroke="#ff0000" d="M106.05,-209.72C127.2,-187.91 174.49,-142.36 223,-117 226.7,-115.06 230.61,-113.29 234.61,-111.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="235.93,-114.9 244.07,-108.12 233.48,-108.34 235.93,-114.9"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node11" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CallsGraph_node11"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="372,-66 223,-66 223,-42 372,-42 372,-66"/>
+<text text-anchor="middle" x="297.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge10" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#ff0000" d="M101.78,-209.61C119.06,-181.31 165.47,-111.5 223,-75 225.8,-73.22 228.76,-71.59 231.81,-70.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="233.43,-73.21 241.2,-66 230.63,-66.79 233.43,-73.21"/>
+</g>
+<!-- warning -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_node12" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="325,-24 270,-24 270,0 325,0 325,-24"/>
+<text text-anchor="middle" x="297.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;warning -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CallsGraph_edge11" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;warning</title>
+<path fill="none" stroke="#ff0000" d="M99.3,-209.66C113.09,-175.9 156.12,-81.35 223,-33 233.78,-25.21 247.38,-20.3 259.94,-17.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="260.69,-20.63 269.72,-15.1 259.21,-13.79 260.69,-20.63"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_mbe_breakdown_json_impl~~CalledByGraph Pages: 1 -->
+<svg id="procwrite_mbe_breakdown_json_implCalledByGraph" width="641pt" height="92pt"
+ viewBox="0.00 0.00 641.00 92.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph" class="graph" transform="scale(0.82 0.82) rotate(0) translate(4 108)">
+<title>proc~~write_mbe_breakdown_json_impl~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 776,-108 776,4 -4,4"/>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node1" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<polygon fill="none" stroke="black" points="772,-64 585,-64 585,-40 772,-40 772,-64"/>
+<text text-anchor="middle" x="678.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_mbe_breakdown_json_impl</text>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node2" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node2"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="549,-64 443,-64 443,-40 549,-40 549,-64"/>
+<text text-anchor="middle" x="496" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge1" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#ff0000" d="M549.21,-52C557.38,-52 566.06,-52 574.9,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="574.93,-55.5 584.93,-52 574.93,-48.5 574.93,-55.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node3" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node3"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
+<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~write_json_output -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge2" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M407.12,-52C415.39,-52 424.13,-52 432.77,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.82,-55.5 442.82,-52 432.82,-48.5 432.82,-55.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node4" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node4"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
+<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge3" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node5" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node5"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge4" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
+</g>
+<!-- program~main -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node6" class="node">
+<title>program~main</title>
+<g id="a_proc~~write_mbe_breakdown_json_impl~~CalledByGraph_node6"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~write_mbe_breakdown_json_impl~~CalledByGraph_edge6" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocwrite_mbe_breakdown_json_implCalledByGraph = svgPanZoom('#procwrite_mbe_breakdown_json_implCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-basename~2"></span>
+              character(len=256),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>basename</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-count_by_level"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>count_by_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dipole_obj~2"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dipole_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_level"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>frag_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_size"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frags_arr"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>frags_arr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~7"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-indices"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-io_stat~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>io_stat</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iunit~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iunit</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~2"></span>
+              type(json_core),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_name"></span>
+              character(len=32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level_name</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level_obj"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>level_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-levels_arr"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>levels_arr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-main_obj~2"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>main_obj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-output_file~2"></span>
+              character(len=256),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>output_file</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~2"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">write_mbe_breakdown_json_impl</span><span class="p">(</span><span class="k">data</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Write detailed MBE energy breakdown to JSON file</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">data</span>
+
+<span class="k">      type</span><span class="p">(</span><span class="n">json_core</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">frag_obj</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dipole_obj</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">count_by_level</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">frag_level</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="n">io_stat</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level_name</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">output_file</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span>
+
+<span class="w">      </span><span class="n">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_output_json_filename</span><span class="p">()</span>
+<span class="w">      </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_basename</span><span class="p">()</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Fragment levels exceed decamers (10-mers). JSON will use generic N-mers notation.&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">(</span><span class="n">real_format</span><span class="o">=</span><span class="n">JSON_REAL_FORMAT</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">total_energy</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! Build levels array</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;levels&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">levels_arr</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">frag_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">max_level</span>
+<span class="w">         </span><span class="n">count_by_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_count</span>
+<span class="w">            </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">frag_level</span><span class="p">)</span><span class="w"> </span><span class="n">count_by_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">count_by_level</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">         </span><span class="k">end do</span>
+
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">count_by_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0_int64</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">levels_arr</span><span class="p">,</span><span class="w"> </span><span class="n">level_obj</span><span class="p">)</span>
+
+<span class="w">            </span><span class="n">level_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_frag_level_name</span><span class="p">(</span><span class="n">frag_level</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;frag_level&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">frag_level</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">level_name</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">count_by_level</span><span class="p">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">sum_by_level</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">sum_by_level</span><span class="p">(</span><span class="n">frag_level</span><span class="p">))</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;fragments&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">level_obj</span><span class="p">,</span><span class="w"> </span><span class="n">frags_arr</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_count</span>
+<span class="w">               </span><span class="n">fragment_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">count</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">frag_level</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frags_arr</span><span class="p">,</span><span class="w"> </span><span class="n">frag_obj</span><span class="p">)</span>
+
+<span class="w">                  </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">fragment_size</span><span class="p">))</span>
+<span class="w">                  </span><span class="n">indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_size</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;indices&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+
+<span class="w">                  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_energies</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">end if</span>
+
+<span class="k">                  if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_distances</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;distance&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_distances</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">end if</span>
+
+<span class="k">                  if</span><span class="w"> </span><span class="p">(</span><span class="n">frag_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">delta_energies</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                     call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">frag_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;delta_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">delta_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">end if</span>
+<span class="k">               end if</span>
+<span class="k">            end do</span>
+<span class="k">         end if</span>
+<span class="k">      end do</span>
+
+<span class="w">      </span><span class="c">! Add dipole if computed</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;dipole&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">dipole_obj</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;magnitude_debye&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">norm2</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">)</span><span class="o">*</span><span class="n">AU_TO_DEBYE</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;gradient_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_hessian</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hessian_frobenius_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="w">      </span><span class="c">! Write to file</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="k">print</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">iunit</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;JSON output written successfully to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
+
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">write_mbe_breakdown_json_impl</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-13 06:20 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -7,7 +7,8 @@ module mqc_mbe
    use pic_mpi_lib, only: comm_t, send, recv, iprobe, MPI_Status, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
    use pic_logger, only: logger => global_logger, verbose_level, debug_level, info_level
    use pic_io, only: to_char
-   use mqc_mbe_io, only: print_detailed_breakdown, print_detailed_breakdown_json, print_vibrational_json_mbe
+   use mqc_mbe_io, only: print_detailed_breakdown
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
@@ -591,7 +592,7 @@ contains
    end subroutine print_mbe_gradient_info
 
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
-                          mbe_result, sys_geom, bonds, world_comm)
+                          mbe_result, sys_geom, bonds, world_comm, json_data)
       !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
       !! This is the core routine that handles all MBE computations.
@@ -599,6 +600,7 @@ contains
       !!   - mbe_result%gradient allocated: compute gradient (requires sys_geom)
       !!   - mbe_result%hessian allocated: compute hessian (requires sys_geom)
       !!   - mbe_result%dipole allocated: compute total dipole moment
+      !! If json_data is present, populates it for centralized JSON output
       use mqc_result_types, only: calculation_result_t, mbe_result_t
       use mqc_config_parser, only: bond_t
 
@@ -612,6 +614,7 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom  !! Required for gradient/hessian
       type(bond_t), intent(in), optional :: bonds(:)             !! Bond info for H-cap handling
       type(comm_t), intent(in), optional :: world_comm           !! MPI communicator for abort
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       ! Local variables
       integer(int64) :: i
@@ -907,20 +910,57 @@ contains
                                                   ir_intensities=ir_intensities, &
                                                   coordinates=sys_geom%coordinates, &
                                                   electronic_energy=mbe_result%total_energy)
-                  ! Write vibrational/thermochemistry JSON
-                  call print_vibrational_json_mbe(mbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result, ir_intensities)
-                  deallocate (ir_intensities)
                else
                   call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                   cart_disp, sys_geom%element_numbers, &
                                                   force_constants_mdyne=fc_mdyne, &
                                                   coordinates=sys_geom%coordinates, &
                                                   electronic_energy=mbe_result%total_energy)
-                  ! Write vibrational/thermochemistry JSON
-                  call print_vibrational_json_mbe(mbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result)
                end if
+
+               ! Populate json_data for vibrational output if present
+               if (present(json_data)) then
+                  json_data%output_mode = OUTPUT_MODE_MBE
+                  json_data%total_energy = mbe_result%total_energy
+                  json_data%has_energy = mbe_result%has_energy
+                  json_data%has_vibrational = .true.
+
+                  ! Copy vibrational data
+                  allocate (json_data%frequencies(n_modes))
+                  allocate (json_data%reduced_masses(n_modes))
+                  allocate (json_data%force_constants(n_modes))
+                  json_data%frequencies = frequencies
+                  json_data%reduced_masses = reduced_masses
+                  json_data%force_constants = fc_mdyne
+                  json_data%thermo = thermo_result
+
+                  if (allocated(ir_intensities)) then
+                     allocate (json_data%ir_intensities(n_modes))
+                     json_data%ir_intensities = ir_intensities
+                     json_data%has_ir_intensities = .true.
+                  end if
+
+                  ! Copy dipole if available
+                  if (mbe_result%has_dipole) then
+                     allocate (json_data%dipole(3))
+                     json_data%dipole = mbe_result%dipole
+                     json_data%has_dipole = .true.
+                  end if
+
+                  ! Copy gradient if available
+                  if (mbe_result%has_gradient) then
+                     allocate (json_data%gradient, source=mbe_result%gradient)
+                     json_data%has_gradient = .true.
+                  end if
+
+                  ! Copy hessian if available
+                  if (mbe_result%has_hessian) then
+                     allocate (json_data%hessian, source=mbe_result%hessian)
+                     json_data%has_hessian = .true.
+                  end if
+               end if
+
+               if (allocated(ir_intensities)) deallocate (ir_intensities)
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
          end block
@@ -945,10 +985,46 @@ contains
          call print_detailed_breakdown(polymers, fragment_count, max_level, energies, delta_energies)
       end if
 
-      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
-      if (.not. compute_hess) then
-         call print_detailed_breakdown_json(polymers, fragment_count, max_level, energies, delta_energies, &
-                                            sum_by_level, mbe_result, results)
+      ! Populate json_data for non-Hessian case if present
+      ! (Hessian case already handled above in the vibrational block)
+      if (present(json_data) .and. .not. compute_hess) then
+         json_data%output_mode = OUTPUT_MODE_MBE
+         json_data%total_energy = mbe_result%total_energy
+         json_data%has_energy = mbe_result%has_energy
+         json_data%max_level = max_level
+         json_data%fragment_count = fragment_count
+
+         ! Copy fragment breakdown data
+         allocate (json_data%polymers(fragment_count, max_level))
+         json_data%polymers = polymers(1:fragment_count, 1:max_level)
+
+         allocate (json_data%fragment_energies(fragment_count))
+         json_data%fragment_energies = energies
+
+         allocate (json_data%delta_energies(fragment_count))
+         json_data%delta_energies = delta_energies
+
+         allocate (json_data%sum_by_level(max_level))
+         json_data%sum_by_level = sum_by_level
+
+         ! Copy fragment distances if available
+         allocate (json_data%fragment_distances(fragment_count))
+         do i = 1_int64, fragment_count
+            json_data%fragment_distances(i) = results(i)%distance
+         end do
+
+         ! Copy dipole if available
+         if (mbe_result%has_dipole) then
+            allocate (json_data%dipole(3))
+            json_data%dipole = mbe_result%dipole
+            json_data%has_dipole = .true.
+         end if
+
+         ! Copy gradient if available
+         if (mbe_result%has_gradient) then
+            allocate (json_data%gradient, source=mbe_result%gradient)
+            json_data%has_gradient = .true.
+         end if
       end if
 
       ! Cleanup

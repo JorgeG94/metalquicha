@@ -1,0 +1,914 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>write_json_output &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>write_json_output
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">25 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_writer.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_writer.f90.html'>mqc_json_writer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">write_json_output</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/write_json_output.html#src">write_json_output</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine write_json_output(output_data)  
+</h2>
+    
+
+    <p>THE single entry point for all JSON output</p>
+<p>Dispatches to the appropriate JSON writer based on output_mode.
+This is the ONLY place in the codebase where JSON files are written.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-output_data"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>output_data</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_json_output~~CallsGraph Pages: 1 -->
+<svg id="procwrite_json_outputCallsGraph" width="522pt" height="452pt"
+ viewBox="0.00 0.00 522.00 452.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_json_output~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 448)">
+<title>proc~~write_json_output~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-448 518,-448 518,4 -4,4"/>
+<!-- proc~write_json_output -->
+<g id="proc~~write_json_output~~CallsGraph_node1" class="node">
+<title>proc~write_json_output</title>
+<polygon fill="none" stroke="black" points="106,-318 0,-318 0,-294 106,-294 106,-318"/>
+<text text-anchor="middle" x="53" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_json_output</text>
+</g>
+<!-- error -->
+<g id="proc~~write_json_output~~CallsGraph_node2" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="466.5,-444 412.5,-444 412.5,-420 466.5,-420 466.5,-444"/>
+<text text-anchor="middle" x="439.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~write_json_output&#45;&gt;error -->
+<g id="proc~~write_json_output~~CallsGraph_edge1" class="edge">
+<title>proc~write_json_output&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M67.23,-318.19C83.56,-332.56 112.77,-356.11 142,-369 230.62,-408.08 345.06,-423.53 402.4,-429.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="402.14,-432.62 412.42,-430.06 402.79,-425.65 402.14,-432.62"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_node3" class="node">
+<title>proc~write_gmbe_pie_json_impl</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node3"><a xlink:href="../proc/write_gmbe_pie_json_impl.html" xlink:title="write_gmbe_pie_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="311.5,-276 159.5,-276 159.5,-252 311.5,-252 311.5,-276"/>
+<text text-anchor="middle" x="235.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_gmbe_pie_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_edge2" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_gmbe_pie_json_impl</title>
+<path fill="none" stroke="#ff0000" d="M104.24,-293.91C116.58,-290.97 129.76,-287.85 142,-285 151.5,-282.79 161.56,-280.47 171.41,-278.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.19,-281.64 181.16,-276 170.63,-274.81 172.19,-281.64"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_node4" class="node">
+<title>proc~write_mbe_breakdown_json_impl</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node4"><a xlink:href="../proc/write_mbe_breakdown_json_impl.html" xlink:title="write_mbe_breakdown_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="329,-234 142,-234 142,-210 329,-210 329,-234"/>
+<text text-anchor="middle" x="235.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_mbe_breakdown_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_edge3" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_mbe_breakdown_json_impl</title>
+<path fill="none" stroke="#ff0000" d="M67.26,-293.88C83.62,-279.58 112.86,-256.09 142,-243 146.76,-240.86 151.76,-238.93 156.86,-237.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.29,-240.41 166.78,-234.07 156.19,-233.73 158.29,-240.41"/>
+</g>
+<!-- proc~write_unfragmented_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_node5" class="node">
+<title>proc~write_unfragmented_json_impl</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node5"><a xlink:href="../proc/write_unfragmented_json_impl.html" xlink:title="write_unfragmented_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="323.5,-360 147.5,-360 147.5,-336 323.5,-336 323.5,-360"/>
+<text text-anchor="middle" x="235.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_unfragmented_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_edge4" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_unfragmented_json_impl</title>
+<path fill="none" stroke="#ff0000" d="M104.24,-318.09C116.58,-321.03 129.76,-324.15 142,-327 151.5,-329.21 161.56,-331.53 171.41,-333.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="170.63,-337.19 181.16,-336 172.19,-330.36 170.63,-337.19"/>
+</g>
+<!-- proc~write_vibrational_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_node6" class="node">
+<title>proc~write_vibrational_json_impl</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node6"><a xlink:href="../proc/write_vibrational_json_impl.html" xlink:title="write_vibrational_json_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="314,-318 157,-318 157,-294 314,-294 314,-318"/>
+<text text-anchor="middle" x="235.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_vibrational_json_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl -->
+<g id="proc~~write_json_output~~CallsGraph_edge5" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_vibrational_json_impl</title>
+<path fill="none" stroke="#ff0000" d="M106.21,-306C118.94,-306 132.91,-306 146.81,-306"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="146.89,-309.5 156.89,-306 146.89,-302.5 146.89,-309.5"/>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;error -->
+<g id="proc~~write_json_output~~CallsGraph_edge10" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#cbff00" d="M311.82,-273.52C318.11,-276.49 323.98,-280.25 329,-285 371.3,-325.03 323.82,-369.82 365,-411 374.87,-420.87 389.04,-426.18 402.31,-429"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="401.74,-432.45 412.19,-430.71 402.93,-425.56 401.74,-432.45"/>
+</g>
+<!-- add -->
+<g id="proc~~write_json_output~~CallsGraph_node7" class="node">
+<title>add</title>
+<polygon fill="#777777" stroke="#777777" points="466.5,-276 412.5,-276 412.5,-252 466.5,-252 466.5,-276"/>
+<text text-anchor="middle" x="439.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;add -->
+<g id="proc~~write_json_output~~CallsGraph_edge6" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#cbff00" d="M311.72,-264C342.54,-264 376.79,-264 401.91,-264"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="402.09,-267.5 412.09,-264 402.09,-260.5 402.09,-267.5"/>
+</g>
+<!-- create_array -->
+<g id="proc~~write_json_output~~CallsGraph_node8" class="node">
+<title>create_array</title>
+<polygon fill="#777777" stroke="#777777" points="479.5,-108 399.5,-108 399.5,-84 479.5,-84 479.5,-108"/>
+<text text-anchor="middle" x="439.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_array</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_array -->
+<g id="proc~~write_json_output~~CallsGraph_edge7" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#cbff00" d="M311.82,-254.48C318.11,-251.51 323.98,-247.75 329,-243 371.3,-202.97 323.82,-158.18 365,-117 371.68,-110.32 380.34,-105.72 389.35,-102.58"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="390.58,-105.87 399.19,-99.71 388.61,-99.15 390.58,-105.87"/>
+</g>
+<!-- create_object -->
+<g id="proc~~write_json_output~~CallsGraph_node9" class="node">
+<title>create_object</title>
+<polygon fill="#777777" stroke="#777777" points="482,-234 397,-234 397,-210 482,-210 482,-234"/>
+<text text-anchor="middle" x="439.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_object</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;create_object -->
+<g id="proc~~write_json_output~~CallsGraph_edge8" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#cbff00" d="M294.39,-251.96C323.56,-245.9 358.65,-238.6 386.9,-232.73"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="387.89,-236.1 396.97,-230.64 386.47,-229.24 387.89,-236.1"/>
+</g>
+<!-- destroy -->
+<g id="proc~~write_json_output~~CallsGraph_node10" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="466.5,-192 412.5,-192 412.5,-168 466.5,-168 466.5,-192"/>
+<text text-anchor="middle" x="439.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;destroy -->
+<g id="proc~~write_json_output~~CallsGraph_edge9" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#cbff00" d="M309.93,-252C316.61,-249.54 323.08,-246.57 329,-243 350.05,-230.3 344.3,-214.27 365,-201 376.28,-193.76 390.1,-188.97 402.7,-185.82"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="403.48,-189.23 412.47,-183.62 401.95,-182.4 403.48,-189.23"/>
+</g>
+<!-- info -->
+<g id="proc~~write_json_output~~CallsGraph_node11" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="466.5,-150 412.5,-150 412.5,-126 466.5,-126 466.5,-150"/>
+<text text-anchor="middle" x="439.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;info -->
+<g id="proc~~write_json_output~~CallsGraph_edge11" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#cbff00" d="M311.67,-253.59C317.91,-250.8 323.81,-247.32 329,-243 360.21,-217 334.52,-185.85 365,-159 375.29,-149.93 389.26,-144.76 402.25,-141.82"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="403.2,-145.21 412.37,-139.91 401.9,-138.33 403.2,-145.21"/>
+</g>
+<!-- initialize -->
+<g id="proc~~write_json_output~~CallsGraph_node12" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="468,-402 411,-402 411,-378 468,-378 468,-402"/>
+<text text-anchor="middle" x="439.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;initialize -->
+<g id="proc~~write_json_output~~CallsGraph_edge12" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#cbff00" d="M311.67,-274.41C317.91,-277.2 323.81,-280.68 329,-285 360.21,-311 334.52,-342.15 365,-369 374.98,-377.79 388.41,-382.92 401.06,-385.9"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="400.46,-389.35 410.95,-387.86 401.83,-382.48 400.46,-389.35"/>
+</g>
+<!-- proc~get_basename -->
+<g id="proc~~write_json_output~~CallsGraph_node13" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node13"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="485,-360 394,-360 394,-336 485,-336 485,-360"/>
+<text text-anchor="middle" x="439.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~write_json_output~~CallsGraph_edge13" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#cbff00" d="M309.93,-276C316.61,-278.46 323.08,-281.43 329,-285 350.05,-297.7 344.3,-313.73 365,-327 370.85,-330.75 377.39,-333.85 384.09,-336.4"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="383.36,-339.85 393.95,-339.77 385.61,-333.23 383.36,-339.85"/>
+</g>
+<!-- proc~get_output_json_filename -->
+<g id="proc~~write_json_output~~CallsGraph_node15" class="node">
+<title>proc~get_output_json_filename</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node15"><a xlink:href="../proc/get_output_json_filename.html" xlink:title="get_output_json_filename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="514,-318 365,-318 365,-294 514,-294 514,-318"/>
+<text text-anchor="middle" x="439.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_output_json_filename</text>
+</a>
+</g>
+</g>
+<!-- proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~write_json_output~~CallsGraph_edge14" class="edge">
+<title>proc~write_gmbe_pie_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#cbff00" d="M294.39,-276.04C318.16,-280.98 345.85,-286.74 370.57,-291.88"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="370.1,-295.35 380.61,-293.96 371.53,-288.5 370.1,-295.35"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;error -->
+<g id="proc~~write_json_output~~CallsGraph_edge19" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#00ff66" d="M317.79,-234.24C321.86,-236.71 325.64,-239.6 329,-243 382.67,-297.32 312.85,-355.22 365,-411 374.61,-421.27 388.86,-426.64 402.26,-429.4"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="401.82,-432.88 412.25,-431.04 402.95,-425.97 401.82,-432.88"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;add -->
+<g id="proc~~write_json_output~~CallsGraph_edge15" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#00ff66" d="M294.39,-234.04C329.22,-241.28 372.47,-250.27 402.46,-256.51"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="401.97,-259.98 412.47,-258.59 403.4,-253.13 401.97,-259.98"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_array -->
+<g id="proc~~write_json_output~~CallsGraph_edge16" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_array</title>
+<path fill="none" stroke="#00ff66" d="M248.05,-209.72C269.2,-187.91 316.49,-142.36 365,-117 372.61,-113.02 381.06,-109.71 389.45,-106.99"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="390.65,-110.29 399.22,-104.06 388.63,-103.58 390.65,-110.29"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;create_object -->
+<g id="proc~~write_json_output~~CallsGraph_edge17" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#00ff66" d="M329.22,-222C348.99,-222 369.18,-222 386.75,-222"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="386.76,-225.5 396.76,-222 386.76,-218.5 386.76,-225.5"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;destroy -->
+<g id="proc~~write_json_output~~CallsGraph_edge18" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#00ff66" d="M294.39,-209.96C329.22,-202.72 372.47,-193.73 402.46,-187.49"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="403.4,-190.87 412.47,-185.41 401.97,-184.02 403.4,-190.87"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;info -->
+<g id="proc~~write_json_output~~CallsGraph_edge20" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#00ff66" d="M258.25,-209.85C283.39,-196.16 326.27,-173.89 365,-159 377,-154.39 390.44,-150.26 402.52,-146.91"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="403.53,-150.26 412.28,-144.28 401.71,-143.5 403.53,-150.26"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;initialize -->
+<g id="proc~~write_json_output~~CallsGraph_edge21" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#00ff66" d="M316.67,-234.02C321.13,-236.52 325.29,-239.49 329,-243 371.3,-283.03 323.82,-327.82 365,-369 374.48,-378.48 387.92,-383.75 400.72,-386.65"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="400.29,-390.13 410.76,-388.51 401.56,-383.25 400.29,-390.13"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~write_json_output~~CallsGraph_edge22" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#00ff66" d="M315.28,-234.13C320.19,-236.59 324.82,-239.52 329,-243 360.21,-269 334.52,-300.15 365,-327 370.55,-331.88 377.16,-335.64 384.11,-338.52"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="383.13,-341.89 393.73,-341.94 385.48,-335.29 383.13,-341.89"/>
+</g>
+<!-- proc~get_frag_level_name -->
+<g id="proc~~write_json_output~~CallsGraph_node14" class="node">
+<title>proc~get_frag_level_name</title>
+<g id="a_proc~~write_json_output~~CallsGraph_node14"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="501.5,-24 377.5,-24 377.5,0 501.5,0 501.5,-24"/>
+<text text-anchor="middle" x="439.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+</a>
+</g>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name -->
+<g id="proc~~write_json_output~~CallsGraph_edge23" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_frag_level_name</title>
+<path fill="none" stroke="#00ff66" d="M241.3,-209.66C255.09,-175.9 298.12,-81.35 365,-33 367.12,-31.47 369.34,-30.05 371.65,-28.73"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="373.48,-31.73 380.88,-24.15 370.36,-25.46 373.48,-31.73"/>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~write_json_output~~CallsGraph_edge24" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#00ff66" d="M309.93,-234C316.61,-236.46 323.08,-239.43 329,-243 350.05,-255.7 344.3,-271.73 365,-285 367.74,-286.76 370.62,-288.37 373.61,-289.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="372.22,-293.06 382.78,-293.9 375.05,-286.66 372.22,-293.06"/>
+</g>
+<!-- warning -->
+<g id="proc~~write_json_output~~CallsGraph_node16" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="467,-66 412,-66 412,-42 467,-42 467,-66"/>
+<text text-anchor="middle" x="439.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~write_mbe_breakdown_json_impl&#45;&gt;warning -->
+<g id="proc~~write_json_output~~CallsGraph_edge25" class="edge">
+<title>proc~write_mbe_breakdown_json_impl&#45;&gt;warning</title>
+<path fill="none" stroke="#00ff66" d="M243.78,-209.61C261.06,-181.31 307.47,-111.5 365,-75 376.03,-68 389.45,-63.28 401.78,-60.12"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="402.85,-63.47 411.81,-57.82 401.28,-56.64 402.85,-63.47"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;error -->
+<g id="proc~~write_json_output~~CallsGraph_edge29" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#0066ff" d="M258.25,-360.15C283.39,-373.84 326.27,-396.11 365,-411 377,-415.61 390.44,-419.74 402.52,-423.09"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="401.71,-426.5 412.28,-425.72 403.53,-419.74 401.71,-426.5"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;add -->
+<g id="proc~~write_json_output~~CallsGraph_edge26" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#0066ff" d="M309.93,-336C316.61,-333.54 323.08,-330.57 329,-327 350.05,-314.3 344.3,-298.27 365,-285 376.28,-277.76 390.1,-272.97 402.7,-269.82"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="403.48,-273.23 412.47,-267.62 401.95,-266.4 403.48,-273.23"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;create_object -->
+<g id="proc~~write_json_output~~CallsGraph_edge27" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#0066ff" d="M315.28,-335.87C320.19,-333.41 324.82,-330.48 329,-327 360.21,-301 334.52,-269.85 365,-243 371.37,-237.39 379.15,-233.27 387.23,-230.25"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="388.34,-233.57 396.79,-227.18 386.2,-226.9 388.34,-233.57"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;destroy -->
+<g id="proc~~write_json_output~~CallsGraph_edge28" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#0066ff" d="M316.67,-335.98C321.13,-333.48 325.29,-330.51 329,-327 371.3,-286.97 323.82,-242.18 365,-201 374.87,-191.13 389.04,-185.82 402.31,-183"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="402.93,-186.44 412.19,-181.29 401.74,-179.55 402.93,-186.44"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;info -->
+<g id="proc~~write_json_output~~CallsGraph_edge30" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#0066ff" d="M317.79,-335.76C321.86,-333.29 325.64,-330.4 329,-327 382.67,-272.68 312.85,-214.78 365,-159 374.61,-148.73 388.86,-143.36 402.26,-140.6"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="402.95,-144.03 412.25,-138.96 401.82,-137.12 402.95,-144.03"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;initialize -->
+<g id="proc~~write_json_output~~CallsGraph_edge31" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#0066ff" d="M294.39,-360.04C328.59,-367.15 370.92,-375.95 400.83,-382.17"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="400.35,-385.64 410.86,-384.25 401.78,-378.79 400.35,-385.64"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~write_json_output~~CallsGraph_edge32" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#0066ff" d="M323.63,-348C344.08,-348 365.31,-348 383.87,-348"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="383.88,-351.5 393.88,-348 383.88,-344.5 383.88,-351.5"/>
+</g>
+<!-- proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~write_json_output~~CallsGraph_edge33" class="edge">
+<title>proc~write_unfragmented_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#0066ff" d="M294.39,-335.96C318.16,-331.02 345.85,-325.26 370.57,-320.12"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="371.53,-323.5 380.61,-318.04 370.1,-316.65 371.53,-323.5"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;error -->
+<g id="proc~~write_json_output~~CallsGraph_edge37" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;error</title>
+<path fill="none" stroke="#cc00ff" d="M314.38,-317.68C319.63,-320.24 324.57,-323.31 329,-327 360.21,-353 334.52,-384.15 365,-411 375.29,-420.07 389.26,-425.24 402.25,-428.18"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="401.9,-431.67 412.37,-430.09 403.2,-424.79 401.9,-431.67"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;add -->
+<g id="proc~~write_json_output~~CallsGraph_edge34" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;add</title>
+<path fill="none" stroke="#cc00ff" d="M294.39,-293.96C329.22,-286.72 372.47,-277.73 402.46,-271.49"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="403.4,-274.87 412.47,-269.41 401.97,-268.02 403.4,-274.87"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;create_object -->
+<g id="proc~~write_json_output~~CallsGraph_edge35" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;create_object</title>
+<path fill="none" stroke="#cc00ff" d="M309.93,-294C316.61,-291.54 323.08,-288.57 329,-285 350.05,-272.3 344.3,-256.27 365,-243 371.68,-238.72 379.24,-235.29 386.92,-232.55"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="388.18,-235.82 396.64,-229.44 386.05,-229.16 388.18,-235.82"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;destroy -->
+<g id="proc~~write_json_output~~CallsGraph_edge36" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;destroy</title>
+<path fill="none" stroke="#cc00ff" d="M314.38,-294.32C319.63,-291.76 324.57,-288.69 329,-285 360.21,-259 334.52,-227.85 365,-201 375.29,-191.93 389.26,-186.76 402.25,-183.82"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="403.2,-187.21 412.37,-181.91 401.9,-180.33 403.2,-187.21"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;info -->
+<g id="proc~~write_json_output~~CallsGraph_edge38" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;info</title>
+<path fill="none" stroke="#cc00ff" d="M314.05,-295.38C319.5,-292.6 324.57,-289.19 329,-285 371.3,-244.97 323.82,-200.18 365,-159 374.87,-149.13 389.04,-143.82 402.31,-141"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="402.93,-144.44 412.19,-139.29 401.74,-137.55 402.93,-144.44"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;initialize -->
+<g id="proc~~write_json_output~~CallsGraph_edge39" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;initialize</title>
+<path fill="none" stroke="#cc00ff" d="M309.93,-318C316.61,-320.46 323.08,-323.43 329,-327 350.05,-339.7 344.3,-355.73 365,-369 375.73,-375.88 388.77,-380.56 400.86,-383.71"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="400.19,-387.15 410.72,-386.02 401.78,-380.34 400.19,-387.15"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_basename -->
+<g id="proc~~write_json_output~~CallsGraph_edge40" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#cc00ff" d="M294.39,-318.04C322.52,-323.89 356.16,-330.88 383.85,-336.64"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="383.27,-340.09 393.77,-338.7 384.69,-333.24 383.27,-340.09"/>
+</g>
+<!-- proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename -->
+<g id="proc~~write_json_output~~CallsGraph_edge41" class="edge">
+<title>proc~write_vibrational_json_impl&#45;&gt;proc~get_output_json_filename</title>
+<path fill="none" stroke="#cc00ff" d="M314.02,-306C327.32,-306 341.19,-306 354.65,-306"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="354.84,-309.5 364.84,-306 354.84,-302.5 354.84,-309.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_json_output~~CalledByGraph Pages: 1 -->
+<svg id="procwrite_json_outputCalledByGraph" width="557pt" height="112pt"
+ viewBox="0.00 0.00 557.00 112.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_json_output~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 108)">
+<title>proc~~write_json_output~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 553,-108 553,4 -4,4"/>
+<!-- proc~write_json_output -->
+<g id="proc~~write_json_output~~CalledByGraph_node1" class="node">
+<title>proc~write_json_output</title>
+<polygon fill="none" stroke="black" points="549,-64 443,-64 443,-40 549,-40 549,-64"/>
+<text text-anchor="middle" x="496" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_json_output</text>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~write_json_output~~CalledByGraph_node2" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~write_json_output~~CalledByGraph_node2"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
+<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~write_json_output -->
+<g id="proc~~write_json_output~~CalledByGraph_edge1" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M407.12,-52C415.39,-52 424.13,-52 432.77,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.82,-55.5 442.82,-52 432.82,-48.5 432.82,-55.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~write_json_output~~CalledByGraph_node3" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~write_json_output~~CalledByGraph_node3"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
+<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_json_output~~CalledByGraph_edge2" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~write_json_output~~CalledByGraph_node4" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~write_json_output~~CalledByGraph_node4"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_json_output~~CalledByGraph_edge3" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
+</g>
+<!-- program~main -->
+<g id="proc~~write_json_output~~CalledByGraph_node5" class="node">
+<title>program~main</title>
+<g id="a_proc~~write_json_output~~CalledByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~write_json_output~~CalledByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~write_json_output~~CalledByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">write_json_output</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! THE single entry point for all JSON output</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Dispatches to the appropriate JSON writer based on output_mode.</span>
+<span class="w">      </span><span class="c">!! This is the ONLY place in the codebase where JSON files are written.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">output_data</span>
+
+<span class="w">      </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">output_data</span><span class="p">%</span><span class="n">output_mode</span><span class="p">)</span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">OUTPUT_MODE_UNFRAGMENTED</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">output_data</span><span class="p">%</span><span class="n">has_vibrational</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">write_vibrational_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            call </span><span class="n">write_unfragmented_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">      case</span><span class="w"> </span><span class="p">(</span><span class="n">OUTPUT_MODE_MBE</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">output_data</span><span class="p">%</span><span class="n">has_vibrational</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">write_vibrational_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            call </span><span class="n">write_mbe_breakdown_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">      case</span><span class="w"> </span><span class="p">(</span><span class="n">OUTPUT_MODE_GMBE_PIE</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">output_data</span><span class="p">%</span><span class="n">has_vibrational</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">write_vibrational_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            call </span><span class="n">write_gmbe_pie_json_impl</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">      case </span><span class="n">default</span>
+<span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unknown output mode in write_json_output&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end select</span>
+
+<span class="k">   end subroutine </span><span class="n">write_json_output</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-01-13 06:20 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

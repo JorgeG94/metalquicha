@@ -10,7 +10,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger, verbose_level, info_level
    use pic_io, only: to_char
-   use mqc_mbe_io, only: print_fragment_xyz, print_unfragmented_json
+   use mqc_mbe_io, only: print_fragment_xyz
    use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use mqc_mbe, only: compute_mbe
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
@@ -29,6 +29,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_method_xtb, only: xtb_method_t
 #endif
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    implicit none
    private
 
@@ -64,7 +65,7 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                           node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+                                           node_leader_ranks, num_nodes, sys_geom, calc_type, bonds, json_data)
          implicit none
          type(resources_t), intent(in) :: resources
          integer(int64), intent(in) :: total_fragments
@@ -73,6 +74,7 @@ module mqc_mbe_fragment_distribution_scheme
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
+         type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine global_coordinator
 
       module subroutine node_coordinator(resources, calc_type)
@@ -81,7 +83,8 @@ module mqc_mbe_fragment_distribution_scheme
          integer(int32), intent(in) :: calc_type
       end subroutine node_coordinator
 
-     module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method, calc_type, bonds)
+      module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
+                                                  method, calc_type, bonds, json_data)
          implicit none
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) :: polymers(:, :), max_level
@@ -89,6 +92,7 @@ module mqc_mbe_fragment_distribution_scheme
          integer(int32), intent(in) :: method
          integer(int32), intent(in) :: calc_type
          type(bond_t), intent(in), optional :: bonds(:)
+         type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine serial_fragment_processor
 
       module subroutine node_worker(resources, sys_geom, method, calc_type, bonds)
@@ -101,7 +105,7 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine node_worker
 
       module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
-                                                 temperature, pressure)
+                                                 temperature, pressure, json_data)
          implicit none
          type(system_geometry_t), intent(in), optional :: sys_geom
          integer(int32), intent(in) :: method
@@ -110,17 +114,19 @@ module mqc_mbe_fragment_distribution_scheme
          type(calculation_result_t), intent(out), optional :: result_out
          real(dp), intent(in), optional :: temperature
          real(dp), intent(in), optional :: pressure
+         type(json_output_data_t), intent(out), optional :: json_data
       end subroutine unfragmented_calculation
 
-      module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config)
+      module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method, driver_config, json_data)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
          integer(int32), intent(in) :: method
          type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
+         type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine distributed_unfragmented_hessian
 
-      module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure)
+      module subroutine hessian_coordinator(world_comm, sys_geom, method, displacement, temperature, pressure, json_data)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
@@ -128,6 +134,7 @@ module mqc_mbe_fragment_distribution_scheme
          real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
          real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
          real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
+         type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine hessian_coordinator
 
       module subroutine hessian_worker(world_comm, sys_geom, method, displacement)
