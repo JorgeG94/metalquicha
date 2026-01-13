@@ -12,6 +12,34 @@ module test_mqc_vibrational_analysis
    ! Tolerance for floating point comparisons
    real(dp), parameter :: tol = 1.0e-8_dp
 
+   ! Threshold for identifying near-zero eigenvalues (trans/rot modes)
+   real(dp), parameter :: near_zero_threshold = 1.0e-6_dp
+
+   ! Tolerance for normalized displacement check
+   real(dp), parameter :: normalization_tol = 1.0e-10_dp
+
+   ! Maximum reasonable frequency value (sanity check for NaN/infinity)
+   real(dp), parameter :: max_reasonable_freq = 1.0e10_dp
+
+   ! Hydrogen atomic mass in amu
+   real(dp), parameter :: mass_hydrogen = 1.008_dp
+
+   ! Test force constant (Hartree/Bohr^2)
+   real(dp), parameter :: test_force_constant = 0.5_dp
+
+   ! Conversion factor: atomic units to mdyne/Angstrom
+   real(dp), parameter :: au_to_mdyne_angstrom = 15.569141_dp
+
+   ! Number of atoms in test systems
+   integer, parameter :: n_atoms_monatomic = 1
+   integer, parameter :: n_atoms_diatomic = 2
+   integer, parameter :: n_atoms_triatomic = 3
+
+   ! Number of Cartesian coordinates (3N)
+   integer, parameter :: n_coords_monatomic = 3*n_atoms_monatomic   ! 3
+   integer, parameter :: n_coords_diatomic = 3*n_atoms_diatomic     ! 6
+   integer, parameter :: n_coords_triatomic = 3*n_atoms_triatomic   ! 9
+
 contains
 
    subroutine collect_mqc_vibrational_analysis_tests(testsuite)
@@ -36,9 +64,9 @@ contains
       !! Test that mass-weighted Hessian preserves symmetry
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6), mw_hessian_ij, mw_hessian_ji
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic), mw_hessian_ij, mw_hessian_ji
       real(dp), allocatable :: mw_hessian(:, :)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       integer :: i, j
 
       ! Create a simple symmetric 2-atom Hessian (H2)
@@ -46,8 +74,8 @@ contains
 
       ! Build a symmetric test Hessian
       hessian = 0.0_dp
-      do i = 1, 6
-         do j = i, 6
+      do i = 1, n_coords_diatomic
+         do j = i, n_coords_diatomic
             hessian(i, j) = real(i + j, dp)*0.1_dp
             hessian(j, i) = hessian(i, j)
          end do
@@ -56,8 +84,8 @@ contains
       call mass_weight_hessian(hessian, element_numbers, mw_hessian)
 
       ! Check symmetry of mass-weighted Hessian
-      do i = 1, 6
-         do j = i + 1, 6
+      do i = 1, n_coords_diatomic
+         do j = i + 1, n_coords_diatomic
             mw_hessian_ij = mw_hessian(i, j)
             mw_hessian_ji = mw_hessian(j, i)
             call check(error, abs(mw_hessian_ij - mw_hessian_ji) < tol, &
@@ -74,20 +102,21 @@ contains
       !! Test mass weighting calculation with known values
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(3, 3)
+      real(dp) :: hessian(n_coords_monatomic, n_coords_monatomic)
       real(dp), allocatable :: mw_hessian(:, :)
-      integer :: element_numbers(1)
+      integer :: element_numbers(n_atoms_monatomic)
       real(dp) :: expected_value, mass_H
+      integer :: i
 
       ! Single hydrogen atom (3x3 Hessian)
       element_numbers = [1]  ! Hydrogen, mass ~1.008 amu
-      mass_H = 1.008_dp
+      mass_H = mass_hydrogen
 
       ! Identity Hessian
       hessian = 0.0_dp
-      hessian(1, 1) = 1.0_dp
-      hessian(2, 2) = 1.0_dp
-      hessian(3, 3) = 1.0_dp
+      do i = 1, n_coords_monatomic
+         hessian(i, i) = 1.0_dp
+      end do
 
       call mass_weight_hessian(hessian, element_numbers, mw_hessian)
 
@@ -113,9 +142,9 @@ contains
       !! Test frequency calculation for a simple diatomic (H2-like)
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       real(dp) :: force_constant
       integer :: n_positive
 
@@ -130,7 +159,7 @@ contains
       !     [-k  0  0  k  0  0]
       !     [ 0 -k  0  0  k  0]
       !     [ 0  0 -k  0  0  k]
-      force_constant = 0.5_dp  ! Hartree/Bohr^2
+      force_constant = test_force_constant
 
       hessian = 0.0_dp
       ! Diagonal blocks
@@ -151,7 +180,7 @@ contains
       call compute_vibrational_frequencies(hessian, element_numbers, frequencies)
 
       ! Should get 6 frequencies
-      call check(error, size(frequencies) == 6, "Should have 6 frequencies for 2 atoms")
+      call check(error, size(frequencies) == n_coords_diatomic, "Should have 6 frequencies for 2 atoms")
       if (allocated(error)) return
 
       ! Count positive (real) frequencies
@@ -163,7 +192,7 @@ contains
       if (allocated(error)) return
 
       ! Check that frequencies are in reasonable range (not NaN or infinity)
-      call check(error, all(abs(frequencies) < 1.0e10_dp), &
+      call check(error, all(abs(frequencies) < max_reasonable_freq), &
                  "Frequencies should be finite")
 
       deallocate (frequencies)
@@ -174,9 +203,9 @@ contains
       !! Test that frequencies are returned in ascending order (eigenvalue order)
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       integer :: i
 
       ! Two carbon atoms (heavier than H)
@@ -184,12 +213,9 @@ contains
 
       ! Simple diagonal Hessian with distinct values
       hessian = 0.0_dp
-      hessian(1, 1) = 0.1_dp
-      hessian(2, 2) = 0.2_dp
-      hessian(3, 3) = 0.3_dp
-      hessian(4, 4) = 0.4_dp
-      hessian(5, 5) = 0.5_dp
-      hessian(6, 6) = 0.6_dp
+      do i = 1, n_coords_diatomic
+         hessian(i, i) = real(i, dp)*0.1_dp
+      end do
 
       call compute_vibrational_frequencies(hessian, element_numbers, frequencies)
 
@@ -208,18 +234,22 @@ contains
       !! Test that negative eigenvalues produce negative (imaginary) frequencies
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(3, 3)
+      real(dp) :: hessian(n_coords_monatomic, n_coords_monatomic)
       real(dp), allocatable :: frequencies(:)
-      integer :: element_numbers(1)
+      integer :: element_numbers(n_atoms_monatomic)
+      ! Test values for diagonal Hessian: one negative, two positive
+      real(dp), parameter :: neg_curvature = -0.1_dp
+      real(dp), parameter :: pos_curvature_1 = 0.2_dp
+      real(dp), parameter :: pos_curvature_2 = 0.3_dp
 
       ! Single atom with one negative eigenvalue (transition state-like)
       element_numbers = [1]  ! Hydrogen
 
       ! Hessian with one negative diagonal (saddle point)
       hessian = 0.0_dp
-      hessian(1, 1) = -0.1_dp  ! Negative curvature
-      hessian(2, 2) = 0.2_dp
-      hessian(3, 3) = 0.3_dp
+      hessian(1, 1) = neg_curvature
+      hessian(2, 2) = pos_curvature_1
+      hessian(3, 3) = pos_curvature_2
 
       call compute_vibrational_frequencies(hessian, element_numbers, frequencies)
 
@@ -244,13 +274,17 @@ contains
       !! Test that translation/rotation projection produces 6 zero eigenvalues for a triatomic
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(9, 9)
-      real(dp) :: coordinates(3, 3)
+      real(dp) :: hessian(n_coords_triatomic, n_coords_triatomic)
+      real(dp) :: coordinates(3, n_atoms_triatomic)
       real(dp), allocatable :: frequencies(:)
       real(dp), allocatable :: eigenvalues(:)
-      integer :: element_numbers(3)
+      integer :: element_numbers(n_atoms_triatomic)
       integer :: n_near_zero
       integer :: i
+      ! Number of trans/rot modes for non-linear molecule
+      integer, parameter :: n_trans_rot_modes = 6
+      ! Number of vibrational modes for triatomic (3N - 6)
+      integer, parameter :: n_vib_modes = n_coords_triatomic - n_trans_rot_modes
 
       ! Water-like molecule: O at origin, two H atoms
       ! Use 3D geometry (not planar) to have all 6 trans/rot modes
@@ -264,7 +298,7 @@ contains
       ! Create an identity Hessian - after projection, 6 eigenvalues should be 0
       ! and 3 should remain as 1.0
       hessian = 0.0_dp
-      do i = 1, 9
+      do i = 1, n_coords_triatomic
          hessian(i, i) = 1.0_dp
       end do
 
@@ -275,21 +309,20 @@ contains
                                            project_trans_rot=.true.)
 
       ! Should get 9 frequencies
-      call check(error, size(frequencies) == 9, "Should have 9 frequencies for 3 atoms")
+      call check(error, size(frequencies) == n_coords_triatomic, "Should have 9 frequencies for 3 atoms")
       if (allocated(error)) return
 
       ! Count near-zero eigenvalues (the 6 projected trans/rot modes)
-      ! Using a threshold of 1e-6 for "near zero"
-      n_near_zero = count(abs(eigenvalues) < 1.0e-6_dp)
+      n_near_zero = count(abs(eigenvalues) < near_zero_threshold)
 
       ! For a non-linear molecule, we expect exactly 6 near-zero eigenvalues
       ! (3 translations + 3 rotations)
-      call check(error, n_near_zero == 6, &
+      call check(error, n_near_zero == n_trans_rot_modes, &
                  "Should have 6 near-zero eigenvalues after projection")
       if (allocated(error)) return
 
       ! The remaining 3 should be positive (vibrational modes)
-      call check(error, count(eigenvalues > 1.0e-6_dp) == 3, &
+      call check(error, count(eigenvalues > near_zero_threshold) == n_vib_modes, &
                  "Should have 3 positive eigenvalues (vibrational modes)")
 
       deallocate (frequencies, eigenvalues)
@@ -300,15 +333,15 @@ contains
       !! Test reduced mass calculation
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:), eigenvalues(:), eigenvectors(:, :)
       real(dp), allocatable :: reduced_masses(:)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       real(dp) :: force_constant
 
       ! Two hydrogen atoms - diatomic
       element_numbers = [1, 1]
-      force_constant = 0.5_dp
+      force_constant = test_force_constant
 
       ! Diatomic Hessian
       hessian = 0.0_dp
@@ -332,7 +365,7 @@ contains
       call compute_reduced_masses(eigenvectors, element_numbers, reduced_masses)
 
       ! Should get 6 reduced masses
-      call check(error, size(reduced_masses) == 6, "Should have 6 reduced masses")
+      call check(error, size(reduced_masses) == n_coords_diatomic, "Should have 6 reduced masses")
       if (allocated(error)) return
 
       ! All reduced masses should be positive
@@ -341,7 +374,8 @@ contains
 
       ! For H2, the vibrational mode reduced mass should be approximately μ = m1*m2/(m1+m2) = 0.504 amu
       ! The stretching mode (highest frequency) should have reduced mass near this value
-      call check(error, reduced_masses(6) < 2.0_dp, &
+      ! Upper bound: reduced mass must be less than mass of a single H2 molecule (2 * 1.008 amu)
+      call check(error, reduced_masses(n_coords_diatomic) < 2.0_dp*mass_hydrogen, &
                  "Stretching mode reduced mass should be less than single atom mass")
 
       deallocate (frequencies, eigenvalues, eigenvectors, reduced_masses)
@@ -352,15 +386,15 @@ contains
       !! Test force constant calculation
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:), eigenvalues(:), eigenvectors(:, :)
       real(dp), allocatable :: reduced_masses(:), force_constants(:), force_constants_mdyne(:)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       real(dp) :: input_k
 
       ! Two hydrogen atoms
       element_numbers = [1, 1]
-      input_k = 0.5_dp  ! Hartree/Bohr^2
+      input_k = test_force_constant
 
       ! Diatomic Hessian
       hessian = 0.0_dp
@@ -386,20 +420,21 @@ contains
                                    force_constants_mdyne)
 
       ! Should get 6 force constants
-      call check(error, size(force_constants) == 6, "Should have 6 force constants")
+      call check(error, size(force_constants) == n_coords_diatomic, "Should have 6 force constants")
       if (allocated(error)) return
 
-      call check(error, size(force_constants_mdyne) == 6, "Should have 6 force constants in mdyne/A")
+      call check(error, size(force_constants_mdyne) == n_coords_diatomic, "Should have 6 force constants in mdyne/A")
       if (allocated(error)) return
 
       ! Force constants should be related to eigenvalues by k = eigenvalue * reduced_mass
       ! The stretching modes should have positive force constants
-      call check(error, force_constants(6) > 0.0_dp, &
+      call check(error, force_constants(n_coords_diatomic) > 0.0_dp, &
                  "Stretching mode force constant should be positive")
       if (allocated(error)) return
 
       ! mdyne/A should be ~ 15.57 times atomic units
-      call check(error, abs(force_constants_mdyne(6) - force_constants(6)*15.569141_dp) < 1.0e-6_dp, &
+      call check(error, abs(force_constants_mdyne(n_coords_diatomic) - &
+                            force_constants(n_coords_diatomic)*au_to_mdyne_angstrom) < near_zero_threshold, &
                  "mdyne/A conversion should be correct")
 
       deallocate (frequencies, eigenvalues, eigenvectors, reduced_masses, force_constants, &
@@ -411,16 +446,16 @@ contains
       !! Test Cartesian displacement calculation
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:), eigenvectors(:, :)
       real(dp), allocatable :: cart_disp(:, :)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       real(dp) :: force_constant, max_disp
       integer :: k
 
       ! Two hydrogen atoms
       element_numbers = [1, 1]
-      force_constant = 0.5_dp
+      force_constant = test_force_constant
 
       ! Diatomic Hessian
       hessian = 0.0_dp
@@ -443,15 +478,15 @@ contains
       call compute_cartesian_displacements(eigenvectors, element_numbers, cart_disp)
 
       ! Should have 6x6 matrix
-      call check(error, size(cart_disp, 1) == 6, "Should have 6 rows in Cartesian displacements")
+      call check(error, size(cart_disp, 1) == n_coords_diatomic, "Should have 6 rows in Cartesian displacements")
       if (allocated(error)) return
-      call check(error, size(cart_disp, 2) == 6, "Should have 6 columns in Cartesian displacements")
+      call check(error, size(cart_disp, 2) == n_coords_diatomic, "Should have 6 columns in Cartesian displacements")
       if (allocated(error)) return
 
       ! Each mode should be normalized so max displacement = 1 (Gaussian convention)
-      do k = 1, 6
+      do k = 1, n_coords_diatomic
          max_disp = maxval(abs(cart_disp(:, k)))
-         call check(error, abs(max_disp - 1.0_dp) < 1.0e-10_dp .or. max_disp < 1.0e-10_dp, &
+         call check(error, abs(max_disp - 1.0_dp) < normalization_tol .or. max_disp < normalization_tol, &
                     "Cartesian displacements should be normalized to max=1")
          if (allocated(error)) return
       end do
@@ -464,11 +499,11 @@ contains
       !! Test the complete vibrational analysis wrapper
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(9, 9)
-      real(dp) :: coordinates(3, 3)
+      real(dp) :: hessian(n_coords_triatomic, n_coords_triatomic)
+      real(dp) :: coordinates(3, n_atoms_triatomic)
       real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
       real(dp), allocatable :: cart_disp(:, :), force_constants_mdyne(:)
-      integer :: element_numbers(3)
+      integer :: element_numbers(n_atoms_triatomic)
       integer :: i
 
       ! Water-like molecule
@@ -481,7 +516,7 @@ contains
 
       ! Identity Hessian for testing
       hessian = 0.0_dp
-      do i = 1, 9
+      do i = 1, n_coords_triatomic
          hessian(i, i) = 1.0_dp
       end do
 
@@ -492,22 +527,22 @@ contains
                                         force_constants_mdyne=force_constants_mdyne)
 
       ! Check all outputs have correct size
-      call check(error, size(frequencies) == 9, "Should have 9 frequencies")
+      call check(error, size(frequencies) == n_coords_triatomic, "Should have 9 frequencies")
       if (allocated(error)) return
 
-      call check(error, size(reduced_masses) == 9, "Should have 9 reduced masses")
+      call check(error, size(reduced_masses) == n_coords_triatomic, "Should have 9 reduced masses")
       if (allocated(error)) return
 
-      call check(error, size(force_constants) == 9, "Should have 9 force constants")
+      call check(error, size(force_constants) == n_coords_triatomic, "Should have 9 force constants")
       if (allocated(error)) return
 
-      call check(error, size(force_constants_mdyne) == 9, "Should have 9 force constants in mdyne/A")
+      call check(error, size(force_constants_mdyne) == n_coords_triatomic, "Should have 9 force constants in mdyne/A")
       if (allocated(error)) return
 
-      call check(error, size(cart_disp, 1) == 9, "Should have 9 rows in Cartesian displacements")
+      call check(error, size(cart_disp, 1) == n_coords_triatomic, "Should have 9 rows in Cartesian displacements")
       if (allocated(error)) return
 
-      call check(error, size(cart_disp, 2) == 9, "Should have 9 columns in Cartesian displacements")
+      call check(error, size(cart_disp, 2) == n_coords_triatomic, "Should have 9 columns in Cartesian displacements")
 
       deallocate (frequencies, reduced_masses, force_constants, cart_disp, force_constants_mdyne)
 
@@ -517,15 +552,15 @@ contains
       !! Test that print_vibrational_analysis runs without errors
       type(error_type), allocatable, intent(out) :: error
 
-      real(dp) :: hessian(6, 6)
+      real(dp) :: hessian(n_coords_diatomic, n_coords_diatomic)
       real(dp), allocatable :: frequencies(:), reduced_masses(:), force_constants(:)
       real(dp), allocatable :: cart_disp(:, :), force_constants_mdyne(:)
-      integer :: element_numbers(2)
+      integer :: element_numbers(n_atoms_diatomic)
       real(dp) :: force_constant
 
       ! Two hydrogen atoms
       element_numbers = [1, 1]
-      force_constant = 0.5_dp
+      force_constant = test_force_constant
 
       ! Diatomic Hessian
       hessian = 0.0_dp
