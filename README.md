@@ -1,4 +1,4 @@
-![License](https://img.shields.io/github/license/JorgeG94/metalquicha?style=for-the-badge)
+[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](https://github.com/JorgeG94/metalquicha/blob/yay/badges/LICENSE)
 ![GitHub Repo stars](https://img.shields.io/github/stars/JorgeG94/metalquicha?style=for-the-badge&logo=github)
 [![Issues](https://img.shields.io/github/issues/JorgeG94/metalquicha?style=for-the-badge)](https://github.com/JorgeG94/metalquicha/issues)
 [![ReadTheDocs](https://img.shields.io/badge/docs-ReadTheDocs-8CA1AF?style=for-the-badge&logo=readthedocs&logoColor=white)](https://metalquicha.readthedocs.io/en/latest/)
