@@ -2,15 +2,16 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
    module subroutine unfragmented_calculation(sys_geom, method, calc_type, bonds, result_out, &
-                                              temperature, pressure)
+                                              temperature, pressure, json_data)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
+      !! If json_data is present, populates it for centralized JSON output
       use mqc_error, only: error_t
       use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
-      use mqc_mbe_io, only: print_vibrational_json
+      use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: method
       integer(int32), intent(in) :: calc_type
@@ -18,6 +19,7 @@ contains
       type(calculation_result_t), intent(out), optional :: result_out
       real(dp), intent(in), optional :: temperature  !! Temperature for thermochemistry (K)
       real(dp), intent(in), optional :: pressure     !! Pressure for thermochemistry (atm)
+      type(json_output_data_t), intent(out), optional :: json_data
 
       type(calculation_result_t) :: result
       integer :: total_atoms
@@ -193,10 +195,6 @@ contains
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
                                                         temperature=temperature, pressure=pressure)
-                        ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
-                        call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
-                                                    thermo_result, ir_intensities)
-                        deallocate (ir_intensities)
                      else
                         call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                         cart_disp, sys_geom%element_numbers, &
@@ -204,10 +202,53 @@ contains
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
                                                         temperature=temperature, pressure=pressure)
-                        ! Write vibrational/thermochemistry JSON (replaces print_unfragmented_json)
-                        call print_vibrational_json(result, frequencies, reduced_masses, fc_mdyne, &
-                                                    thermo_result)
                      end if
+
+                     ! Populate json_data if present (for centralized JSON output)
+                     if (present(json_data)) then
+                        json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+                        json_data%total_energy = result%energy%total()
+                        json_data%has_energy = result%has_energy
+                        json_data%has_vibrational = .true.
+
+                        ! Copy vibrational data
+                        allocate (json_data%frequencies(n_modes))
+                        allocate (json_data%reduced_masses(n_modes))
+                        allocate (json_data%force_constants(n_modes))
+                        json_data%frequencies = frequencies
+                        json_data%reduced_masses = reduced_masses
+                        json_data%force_constants = fc_mdyne
+                        json_data%thermo = thermo_result
+
+                        if (allocated(ir_intensities)) then
+                           allocate (json_data%ir_intensities(n_modes))
+                           json_data%ir_intensities = ir_intensities
+                           json_data%has_ir_intensities = .true.
+                        end if
+
+                        ! Copy dipole if available
+                        if (result%has_dipole) then
+                           allocate (json_data%dipole(3))
+                           json_data%dipole = result%dipole
+                           json_data%has_dipole = .true.
+                        end if
+
+                        ! Copy gradient if available
+                        if (result%has_gradient) then
+                           allocate (json_data%gradient(3, total_atoms))
+                           json_data%gradient = result%gradient
+                           json_data%has_gradient = .true.
+                        end if
+
+                        ! Copy hessian if available
+                        if (result%has_hessian) then
+                           allocate (json_data%hessian(3*total_atoms, 3*total_atoms))
+                           json_data%hessian = result%hessian
+                           json_data%has_hessian = .true.
+                        end if
+                     end if
+
+                     if (allocated(ir_intensities)) deallocate (ir_intensities)
                   end block
                   deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
                end if
@@ -219,15 +260,29 @@ contains
       end block
       call logger%info("============================================")
 
-      ! Return result to caller or write JSON
+      ! Return result to caller or handle json_data
       if (present(result_out)) then
          ! Transfer result to output (for dynamics/optimization)
          result_out = result
       else
-         ! Write JSON and clean up (normal mode)
-         ! Note: If we had a Hessian, the vibrational JSON was already written above
-         if (.not. result%has_hessian) then
-            call print_unfragmented_json(result)
+         ! Populate json_data for non-Hessian case if present
+         ! (Hessian case already handled above in the vibrational block)
+         if (present(json_data) .and. .not. result%has_hessian) then
+            json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
+            json_data%total_energy = result%energy%total()
+            json_data%has_energy = result%has_energy
+
+            if (result%has_dipole) then
+               allocate (json_data%dipole(3))
+               json_data%dipole = result%dipole
+               json_data%has_dipole = .true.
+            end if
+
+            if (result%has_gradient) then
+               allocate (json_data%gradient(3, total_atoms))
+               json_data%gradient = result%gradient
+               json_data%has_gradient = .true.
+            end if
          end if
          call result%destroy()
       end if

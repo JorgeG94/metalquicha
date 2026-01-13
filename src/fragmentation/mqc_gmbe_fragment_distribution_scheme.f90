@@ -18,7 +18,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_config_parser, only: bond_t
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, result_recv, result_irecv, mbe_result_t
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
-   use mqc_mbe_io, only: print_gmbe_json, print_gmbe_pie_json, print_vibrational_json_mbe
+   use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_GMBE_PIE
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    implicit none
@@ -31,10 +31,11 @@ module mqc_gmbe_fragment_distribution_scheme
 
 contains
 
-   subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds)
+   subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method, calc_type, bonds, json_data)
       !! Serial GMBE processor using PIE coefficients
       !! Evaluates each unique atom set once and sums with PIE coefficients
       !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
+      !! If json_data is present, populates it for centralized JSON output
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives
@@ -46,6 +47,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method, calc_type
       type(bond_t), intent(in), optional :: bonds(:)
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(physical_fragment_t) :: phys_frag
       type(calculation_result_t), allocatable :: results(:)
@@ -254,16 +256,37 @@ contains
                end if
                allocate (gmbe_result%hessian, source=total_hessian)
 
-               ! Write vibrational/thermochemistry JSON
-               if (allocated(ir_intensities)) then
-                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result, ir_intensities)
-                  deallocate (ir_intensities)
-               else
-                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result)
+               ! Populate json_data for vibrational output if present
+               if (present(json_data)) then
+                  json_data%output_mode = OUTPUT_MODE_GMBE_PIE
+                  json_data%total_energy = total_energy
+                  json_data%has_energy = .true.
+                  json_data%has_vibrational = .true.
+
+                  allocate (json_data%frequencies(n_modes))
+                  allocate (json_data%reduced_masses(n_modes))
+                  allocate (json_data%force_constants(n_modes))
+                  json_data%frequencies = frequencies
+                  json_data%reduced_masses = reduced_masses
+                  json_data%force_constants = fc_mdyne
+                  json_data%thermo = thermo_result
+
+                  if (allocated(ir_intensities)) then
+                     allocate (json_data%ir_intensities(n_modes))
+                     json_data%ir_intensities = ir_intensities
+                     json_data%has_ir_intensities = .true.
+                  end if
+
+                  if (allocated(total_gradient)) then
+                     allocate (json_data%gradient, source=total_gradient)
+                     json_data%has_gradient = .true.
+                  end if
+
+                  allocate (json_data%hessian, source=total_hessian)
+                  json_data%has_hessian = .true.
                end if
 
+               if (allocated(ir_intensities)) deallocate (ir_intensities)
                call gmbe_result%destroy()
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
@@ -272,10 +295,28 @@ contains
 
       call logger%info(" ")
 
-      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
-      if (calc_type /= CALC_TYPE_HESSIAN) then
-         call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
-                                  total_gradient, total_hessian)
+      ! Populate json_data for non-Hessian case if present
+      if (present(json_data) .and. calc_type /= CALC_TYPE_HESSIAN) then
+         json_data%output_mode = OUTPUT_MODE_GMBE_PIE
+         json_data%total_energy = total_energy
+         json_data%has_energy = .true.
+         json_data%n_pie_terms = n_pie_terms
+
+         ! Copy PIE data
+         allocate (json_data%pie_atom_sets, source=pie_atom_sets(:, 1:n_pie_terms))
+         allocate (json_data%pie_coefficients(n_pie_terms))
+         json_data%pie_coefficients = pie_coefficients(1:n_pie_terms)
+         allocate (json_data%pie_energies(n_pie_terms))
+         json_data%pie_energies = pie_energies
+
+         if (allocated(total_gradient)) then
+            allocate (json_data%gradient, source=total_gradient)
+            json_data%has_gradient = .true.
+         end if
+         if (allocated(total_hessian)) then
+            allocate (json_data%hessian, source=total_hessian)
+            json_data%has_hessian = .true.
+         end if
       end if
 
       deallocate (pie_energies, results)
@@ -289,9 +330,10 @@ contains
    end subroutine serial_gmbe_pie_processor
 
    subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                   node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds)
+                                   node_leader_ranks, num_nodes, sys_geom, method, calc_type, bonds, json_data)
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
+      !! If json_data is present, populates it for centralized JSON output
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives
@@ -305,6 +347,7 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       integer(int32), intent(in) :: method, calc_type
       type(bond_t), intent(in), optional :: bonds(:)
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(timer_type) :: coord_timer
       integer(int64) :: current_term_idx, results_received, term_idx
@@ -670,16 +713,37 @@ contains
                end if
                allocate (gmbe_result%hessian, source=total_hessian)
 
-               ! Write vibrational/thermochemistry JSON
-               if (allocated(ir_intensities)) then
-                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result, ir_intensities)
-                  deallocate (ir_intensities)
-               else
-                  call print_vibrational_json_mbe(gmbe_result, frequencies, reduced_masses, fc_mdyne, &
-                                                  thermo_result)
+               ! Populate json_data for vibrational output if present
+               if (present(json_data)) then
+                  json_data%output_mode = OUTPUT_MODE_GMBE_PIE
+                  json_data%total_energy = total_energy
+                  json_data%has_energy = .true.
+                  json_data%has_vibrational = .true.
+
+                  allocate (json_data%frequencies(n_modes))
+                  allocate (json_data%reduced_masses(n_modes))
+                  allocate (json_data%force_constants(n_modes))
+                  json_data%frequencies = frequencies
+                  json_data%reduced_masses = reduced_masses
+                  json_data%force_constants = fc_mdyne
+                  json_data%thermo = thermo_result
+
+                  if (allocated(ir_intensities)) then
+                     allocate (json_data%ir_intensities(n_modes))
+                     json_data%ir_intensities = ir_intensities
+                     json_data%has_ir_intensities = .true.
+                  end if
+
+                  if (allocated(total_gradient)) then
+                     allocate (json_data%gradient, source=total_gradient)
+                     json_data%has_gradient = .true.
+                  end if
+
+                  allocate (json_data%hessian, source=total_hessian)
+                  json_data%has_hessian = .true.
                end if
 
+               if (allocated(ir_intensities)) deallocate (ir_intensities)
                call gmbe_result%destroy()
                deallocate (frequencies, reduced_masses, force_constants, cart_disp, fc_mdyne)
             end if
@@ -694,16 +758,35 @@ contains
       call logger%info("Final GMBE energy: "//to_char(total_energy)//" Hartree")
       call logger%info(" ")
 
-      ! Write JSON output (skip if we already wrote vibrational JSON for Hessian calculations)
-      if (calc_type /= CALC_TYPE_HESSIAN) then
+      ! Populate json_data for non-Hessian case if present
+      if (present(json_data) .and. calc_type /= CALC_TYPE_HESSIAN) then
          block
             real(dp), allocatable :: pie_energies(:)
             allocate (pie_energies(n_pie_terms))
             do term_idx = 1_int64, n_pie_terms
                pie_energies(term_idx) = results(term_idx)%energy%total()
             end do
-            call print_gmbe_pie_json(pie_atom_sets, pie_coefficients, pie_energies, n_pie_terms, total_energy, &
-                                     total_gradient, total_hessian)
+
+            json_data%output_mode = OUTPUT_MODE_GMBE_PIE
+            json_data%total_energy = total_energy
+            json_data%has_energy = .true.
+            json_data%n_pie_terms = n_pie_terms
+
+            allocate (json_data%pie_atom_sets, source=pie_atom_sets(:, 1:n_pie_terms))
+            allocate (json_data%pie_coefficients(n_pie_terms))
+            json_data%pie_coefficients = pie_coefficients(1:n_pie_terms)
+            allocate (json_data%pie_energies(n_pie_terms))
+            json_data%pie_energies = pie_energies
+
+            if (allocated(total_gradient)) then
+               allocate (json_data%gradient, source=total_gradient)
+               json_data%has_gradient = .true.
+            end if
+            if (allocated(total_hessian)) then
+               allocate (json_data%hessian, source=total_hessian)
+               json_data%has_hessian = .true.
+            end if
+
             deallocate (pie_energies)
          end block
       end if

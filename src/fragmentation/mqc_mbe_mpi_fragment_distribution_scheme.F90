@@ -94,10 +94,11 @@ contains
    end subroutine do_fragment_work
 
    module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds)
+                                        node_leader_ranks, num_nodes, sys_geom, calc_type, bonds, json_data)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
+      use mqc_json_output_types, only: json_output_data_t
       type(resources_t), intent(in) :: resources
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) :: max_level, num_nodes
@@ -105,6 +106,7 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom
       integer(int32), intent(in) :: calc_type
       type(bond_t), intent(in), optional :: bonds(:)
+      type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(timer_type) :: coord_timer
       integer(int64) :: current_fragment, results_received
@@ -302,7 +304,7 @@ contains
          end if
 
          call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, &
-                          sys_geom, bonds, resources%mpi_comms%world_comm)
+                          sys_geom, bonds, resources%mpi_comms%world_comm, json_data)
          call mbe_result%destroy()
 
          call coord_timer%stop()
