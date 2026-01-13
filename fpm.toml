@@ -25,9 +25,11 @@ implicit-typing = false
 implicit-external = false
 source-form = "free"
 
+
 [dependencies]
 pic = { git = "https://github.com/JorgeG94/pic.git", tag = "v0.2.0"}
-pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.1.0"}
+pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", branch = "fix/request"}
+#pic-mpi = { git = "https://github.com/JorgeG94/pic-mpi.git", tag = "v0.1.0"}
 pic-blas = { git = "https://github.com/JorgeG94/pic-blas.git", tag = "v0.2.0"}
 tblite = { git = "https://github.com/tblite/tblite", tag = "v0.5.0"}
 test-drive.git = "https://github.com/JorgeG94/test-drive"
