@@ -58,32 +58,34 @@ contains
       ! Build method_config from driver_config
       method_config%method_type = config%method
       method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
-      method_config%use_cds = config%use_cds
-      method_config%use_shift = config%use_shift
-      method_config%dielectric = config%dielectric
-      method_config%cpcm_nang = config%cpcm_nang
-      method_config%cpcm_rscale = config%cpcm_rscale
-      if (allocated(config%solvent)) method_config%solvent = config%solvent
+
+      ! XTB-specific settings (nested in method_config%xtb)
+      method_config%xtb%use_cds = config%use_cds
+      method_config%xtb%use_shift = config%use_shift
+      method_config%xtb%dielectric = config%dielectric
+      method_config%xtb%cpcm_nang = config%cpcm_nang
+      method_config%xtb%cpcm_rscale = config%cpcm_rscale
+      if (allocated(config%solvent)) method_config%xtb%solvent = config%solvent
       if (allocated(config%solvation_model)) then
-         method_config%solvation_model = config%solvation_model
+         method_config%xtb%solvation_model = config%solvation_model
       else if (allocated(config%solvent) .or. config%dielectric > 0.0_dp) then
-         method_config%solvation_model = 'alpb'  ! Default solvation model
+         method_config%xtb%solvation_model = 'alpb'  ! Default solvation model
       end if
 
       ! Log solvation settings
-      if (method_config%has_solvation()) then
+      if (method_config%xtb%has_solvation()) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
-            if (trim(method_config%solvation_model) == 'cpcm') then
+            if (trim(method_config%xtb%solvation_model) == 'cpcm') then
                if (config%dielectric > 0.0_dp) then
                   call logger%info("XTB solvation enabled: cpcm with dielectric = "//to_char(config%dielectric))
                else
-                  call logger%info("XTB solvation enabled: cpcm with "//trim(method_config%solvent))
+                  call logger%info("XTB solvation enabled: cpcm with "//trim(method_config%xtb%solvent))
                end if
                call logger%info("  CPCM grid points (nang): "//to_char(config%cpcm_nang))
                call logger%info("  CPCM radii scale: "//to_char(config%cpcm_rscale))
             else
-               call logger%info("XTB solvation enabled: "//trim(method_config%solvation_model)//" with "// &
-                                trim(method_config%solvent))
+               call logger%info("XTB solvation enabled: "//trim(method_config%xtb%solvation_model)//" with "// &
+                                trim(method_config%xtb%solvent))
                if (config%use_cds) call logger%info("  CDS (non-polar) terms: enabled")
                if (config%use_shift) call logger%info("  Solution state shift: enabled")
             end if
