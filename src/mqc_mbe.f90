@@ -1208,8 +1208,8 @@ contains
       if (has_intersections) then
          max_level = maxval(intersection_levels)
 
-         allocate (level_energies(2:max_level))
-         allocate (level_counts(2:max_level))
+         allocate (level_energies(max_level))
+         allocate (level_counts(max_level))
          level_energies = 0.0_dp
          level_counts = 0
 

@@ -189,13 +189,13 @@ fragments, managing fragment lists, and performing many-body expansion calculati
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
-                  <li class="list-inline-item"><a href='mqc_fragment_lookup.html'>mqc_fragment_lookup</a></li>
-                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
-                  <li class="list-inline-item">pic_io</li>
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_gmbe_utils.html'>mqc_gmbe_utils</a></li>
                   <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_combinatorics.html'>mqc_combinatorics</a></li>
+                  <li class="list-inline-item"><a href='mqc_fragment_lookup.html'>mqc_fragment_lookup</a></li>
+                  <li class="list-inline-item">pic_io</li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1000,7 +1000,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment~13"></span>
+              <span class="anchor" id="variable-fragment~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1015,7 +1015,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~7"></span>
+              <span class="anchor" id="variable-n~16"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1030,7 +1030,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~17"></span>
+              <span class="anchor" id="variable-sys_geom~37"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1045,7 +1045,7 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~3"></span>
+              <span class="anchor" id="variable-driver_config~6"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1096,7 +1096,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~12"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1111,7 +1111,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
+              <span class="anchor" id="variable-total_fragments~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -1126,7 +1126,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~16"></span>
+              <span class="anchor" id="variable-sys_geom~36"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1141,7 +1141,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~2"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1156,7 +1156,7 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~6"></span>
+              <span class="anchor" id="variable-max_level~13"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1198,7 +1198,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~13"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1213,7 +1213,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~2"></span>
+              <span class="anchor" id="variable-total_fragments~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1228,7 +1228,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~7"></span>
+              <span class="anchor" id="variable-max_level~14"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1271,7 +1271,7 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-13 20:09 +0000             </p>
+ on 2026-01-14 08:09 +0000             </p>
           </div>
         </div>
         <br>
