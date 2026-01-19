@@ -5,7 +5,7 @@ project(
   "metalquicha"
   LANGUAGES Fortran C
   VERSION 0.1.0
-  DESCRIPTION "PIC Chemistry - MBE fragmentation with MPI")
+  DESCRIPTION "A hastily put together fragmentation quantum chemistry program")
 
 set(project_name metalquicha)
 set(main_lib ${project_name})
@@ -51,14 +51,14 @@ if(MQC_ENABLE_TBLITE)
     find_package("tblite" REQUIRED)
   endif()
 else()
-  add_compile_definitions(MQC_WITHOUT_TBLITE)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_TBLITE)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
   find_package(libcint REQUIRED)
   list(APPEND libraries_to_link libcint::cint_fortran)
 else()
-  add_compile_definitions(MQC_WITHOUT_LIBCINT)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_LIBCINT)
 endif()
 
 if(NOT TARGET "jsonfortran::jsonfortran")
@@ -90,7 +90,7 @@ if(MQC_ENABLE_TBLITE)
   list(APPEND libraries_to_link tblite::tblite)
 endif()
 
-target_link_libraries(${main_lib} ${libraries_to_link})
+target_link_libraries(${main_lib} PUBLIC ${libraries_to_link})
 
 # Add json-fortran module directory for Fortran USE statements and ensure
 # jsonfortran is built before metalquicha (for .mod files)
