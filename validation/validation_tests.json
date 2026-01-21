@@ -132,6 +132,14 @@
       "expected_zpe": 0.020123434314,
       "expected_gibbs_correction": 0.001844309467,
       "type": "unfragmented"
+     },
+     {
+      "name": "Hessian + gradient serial gly3 (for MPI testing)",
+      "input": "inputs/hess_gly3_serial.mqc",
+      "expected_energy": -47.0179834905979,
+      "expected_gradient_norm": 0.141432046954180,
+      "expected_hessian_frobenius_norm": 4.07766860495173855E+0,
+      "type": "fragmented"
      }
   ]
 }

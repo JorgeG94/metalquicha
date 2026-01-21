@@ -42,7 +42,7 @@ contains
       !!
       !! Args:
       !!   reference_geom: The reference geometry to perturb
-      !!   displacement: Step size in Bohr (typical: 0.001 Bohr)
+      !!   displacement: Step size in Bohr (typical: 0.005 Bohr)
       !!   forward_geoms: Output array of forward-displaced geometries (size: 3*n_atoms)
       !!   backward_geoms: Output array of backward-displaced geometries (size: 3*n_atoms)
       type(physical_fragment_t), intent(in) :: reference_geom

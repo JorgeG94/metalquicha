@@ -1,0 +1,25 @@
+{
+    "schema": { "name": "mqc-frag", "version": "1.0" },
+    "molecules": [{
+        "xyz": "sample_inputs/gly3.xyz",
+        "molecular_charge": 0,
+        "molecular_multiplicity": 1
+    }],
+  "model": {
+    "method": "XTB-GFN1",
+    "basis": "cc-pVDZ",
+    "aux_basis": "cc-pVDZ-RIFIT"
+  },
+  "keywords":{
+    "scf": {
+      "maxiter": 300,
+      "tolerance": 1e-6
+    }
+  },
+  "system": {
+    "logger":{
+      "level": "Info"
+    }
+  },
+  "driver": "Hessian"
+}
