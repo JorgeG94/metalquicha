@@ -111,7 +111,7 @@ module mqc_config_parser
       real(dp) :: scf_tolerance = 1.0e-6_dp
 
       ! Hessian settings
-      real(dp) :: hessian_displacement = 0.001_dp  !! Finite difference displacement (Bohr)
+      real(dp) :: hessian_displacement = 0.005_dp  !! Finite difference displacement (Bohr)
       real(dp) :: hessian_temperature = 298.15_dp  !! Temperature for thermochemistry (K)
       real(dp) :: hessian_pressure = 1.0_dp        !! Pressure for thermochemistry (atm)
 

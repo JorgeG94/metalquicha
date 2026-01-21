@@ -14,7 +14,7 @@ module mqc_finite_differences
    public :: copy_and_displace_geometry   !! Copy and displace geometry
 
    ! Default displacement step size (Bohr)
-   real(dp), parameter, public :: DEFAULT_DISPLACEMENT = 0.001_dp  !! ~0.01 Angstrom
+   real(dp), parameter, public :: DEFAULT_DISPLACEMENT = 0.005_dp  !! ~0.05 Angstrom
 
    type :: displaced_geometry_t
       !! Container for a single displaced geometry
@@ -42,7 +42,7 @@ contains
       !!
       !! Args:
       !!   reference_geom: The reference geometry to perturb
-      !!   displacement: Step size in Bohr (typical: 0.001 Bohr)
+      !!   displacement: Step size in Bohr (typical: 0.005 Bohr)
       !!   forward_geoms: Output array of forward-displaced geometries (size: 3*n_atoms)
       !!   backward_geoms: Output array of backward-displaced geometries (size: 3*n_atoms)
       type(physical_fragment_t), intent(in) :: reference_geom
