@@ -89,6 +89,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       integer :: n_atoms, n_displacements, n_ranks
       integer :: current_disp, finished_workers, dummy_msg, worker_rank
       integer :: disp_idx, gradient_type  ! gradient_type: 1=forward, 2=backward
+      integer :: forward_received, backward_received  ! Diagnostic counters
       type(MPI_Status) :: status
       logical :: has_pending
       type(request_t) :: req
@@ -130,10 +131,14 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       full_system%multiplicity = sys_geom%multiplicity
       call full_system%compute_nelec()
 
-      ! Allocate storage for all gradients
+      ! Allocate storage for all gradients (initialize to zero for diagnostics)
       allocate (forward_gradients(n_displacements, 3, n_atoms))
       allocate (backward_gradients(n_displacements, 3, n_atoms))
+      forward_gradients = 0.0_dp
+      backward_gradients = 0.0_dp
       allocate (grad_buffer(3, n_atoms))
+      forward_received = 0
+      backward_received = 0
 
       ! Allocate storage for dipoles (for IR intensities)
       allocate (forward_dipoles(n_displacements, 3))
@@ -173,9 +178,11 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
             ! Store gradient and dipole in appropriate arrays
             if (gradient_type == 1) then
                forward_gradients(disp_idx, :, :) = grad_buffer
+               forward_received = forward_received + 1
                if (has_dipole_flag) forward_dipoles(disp_idx, :) = dipole_buffer
             else
                backward_gradients(disp_idx, :, :) = grad_buffer
+               backward_received = backward_received + 1
                if (has_dipole_flag) backward_dipoles(disp_idx, :) = dipole_buffer
             end if
 
@@ -212,6 +219,13 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       deallocate (grad_buffer)
       call coord_timer%stop()
       call logger%info("All gradient calculations completed in "//to_char(coord_timer%get_elapsed_time())//" s")
+
+      ! Verify all gradients were received
+      call logger%info("  Gradients received - Forward: "//to_char(forward_received)//"/"//to_char(n_displacements)// &
+                       "  Backward: "//to_char(backward_received)//"/"//to_char(n_displacements))
+      if (forward_received /= n_displacements .or. backward_received /= n_displacements) then
+         call logger%error("ERROR: Missing gradients! Expected "//to_char(n_displacements)//" each.")
+      end if
 
       ! Assemble Hessian from finite differences
       call logger%info("  Assembling Hessian matrix...")
