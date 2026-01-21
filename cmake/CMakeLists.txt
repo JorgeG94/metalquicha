@@ -113,7 +113,7 @@ if(MQC_ENABLE_WARNINGS)
 endif()
 
 # Coverage build type
-if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   set(CMAKE_Fortran_FLAGS
       "${CMAKE_Fortran_FLAGS} ${FLAGS_COVERAGE}"
       PARENT_SCOPE)

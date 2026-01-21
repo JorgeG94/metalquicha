@@ -148,10 +148,14 @@ install(
 
 print_summary()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
   add_custom_target(
     coverage
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    COMMAND ${CMAKE_CTEST_COMMAND} -R "mqc" --output-on-failure
+    COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
+            run_validation.py
+    COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_SOURCE_DIR}/validation python3
+            run_validation.py --mpi --np 2
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
     COMMAND lcov --directory . --capture --output-file coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'

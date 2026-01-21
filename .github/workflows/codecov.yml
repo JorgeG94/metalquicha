@@ -1,0 +1,60 @@
+name: Codecov
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  codecov:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          miniforge-version: latest
+
+      - name: Install conda environment
+        shell: bash -el {0}
+        run: |
+          conda env create --name mqc --file environment.yml
+          conda install -c conda-forge -n mqc gfortran=14.2.0
+
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
+
+      - name: Configure CMake with coverage
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          export FC=gfortran
+          cmake -DCMAKE_BUILD_TYPE=Coverage-mqc \
+                -DMQC_ENABLE_TBLITE=ON \
+                -B build
+
+      - name: Build
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cmake --build build
+
+      - name: Run coverage
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cd build
+          make coverage
+
+      - name: Upload coverage to codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/coverage_filtered.info
+          flags: unittests
+          name: codecov-metalquicha
+          fail_ci_if_error: true
