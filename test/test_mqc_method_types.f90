@@ -1,6 +1,9 @@
 module test_mqc_method_types
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_method_types
+   use mqc_method_types, only: method_type_from_string, method_type_to_string, &
+                               METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, METHOD_TYPE_DFT, &
+                               METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, METHOD_TYPE_MP2_F12, METHOD_TYPE_CCSD, &
+                               METHOD_TYPE_CCSD_T, METHOD_TYPE_CCSD_F12, METHOD_TYPE_CCSD_T_F12, METHOD_TYPE_UNKNOWN
    use pic_types, only: int32
    implicit none
    private
