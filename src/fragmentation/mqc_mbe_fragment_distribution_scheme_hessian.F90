@@ -10,8 +10,8 @@ contains
       !! from rank 0, compute gradients, and send results back. This provides
       !! better load balancing than static work distribution.
       use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
-                                        finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT, &
-                                        copy_and_displace_geometry
+                                        finite_diff_hessian_from_gradients, copy_and_displace_geometry
+      use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, DEFAULT_PRESSURE
       use mqc_config_adapter, only: driver_config_t
       use mqc_json_output_types, only: json_output_data_t
 
@@ -28,15 +28,15 @@ contains
       my_rank = world_comm%rank()
       n_ranks = world_comm%size()
 
-      ! Use provided settings or defaults
+      ! Use provided settings or centralized defaults
       if (present(driver_config)) then
          displacement = driver_config%hessian%displacement
          temperature = driver_config%hessian%temperature
          pressure = driver_config%hessian%pressure
       else
          displacement = DEFAULT_DISPLACEMENT
-         temperature = 298.15_dp
-         pressure = 1.0_dp
+         temperature = DEFAULT_TEMPERATURE
+         pressure = DEFAULT_PRESSURE
       end if
 
       if (my_rank == 0) then

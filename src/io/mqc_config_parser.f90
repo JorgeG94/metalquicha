@@ -7,6 +7,12 @@ module mqc_config_parser
    use mqc_calc_types, only: calc_type_from_string, CALC_TYPE_ENERGY, CALC_TYPE_UNKNOWN
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
+   use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       DEFAULT_PRESSURE, DEFAULT_AIMD_DT, &
+                                       DEFAULT_AIMD_NSTEPS, DEFAULT_AIMD_TEMPERATURE, &
+                                       DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
+                                       DEFAULT_CPCM_NANG, DEFAULT_CPCM_RSCALE, &
+                                       DEFAULT_FRAG_LEVEL, DEFAULT_MAX_INTERSECTION
    implicit none
    private
 
@@ -78,9 +84,9 @@ module mqc_config_parser
       logical :: use_cds = .true.               !! Include non-polar CDS terms in solvation (not for CPCM)
       logical :: use_shift = .true.             !! Include solution state shift in solvation (not for CPCM)
       ! CPCM-specific settings
-      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
-      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM cavity
-      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM cavity
+      real(dp) :: dielectric = -1.0_dp              !! Direct dielectric constant (-1 = use solvent lookup)
+      integer :: cpcm_nang = DEFAULT_CPCM_NANG      !! Number of angular grid points for CPCM cavity
+      real(dp) :: cpcm_rscale = DEFAULT_CPCM_RSCALE !! Radii scaling factor for CPCM cavity
 
       ! Driver information
       integer(int32) :: calc_type = CALC_TYPE_ENERGY
@@ -107,25 +113,25 @@ module mqc_config_parser
       type(bond_t), allocatable :: bonds(:)
 
       ! SCF settings
-      integer :: scf_maxiter = 300
-      real(dp) :: scf_tolerance = 1.0e-6_dp
+      integer :: scf_maxiter = 300              !! Using 300 (parser-specific, different from DEFAULT_SCF_MAXITER)
+      real(dp) :: scf_tolerance = DEFAULT_SCF_CONV
 
       ! Hessian settings
-      real(dp) :: hessian_displacement = 0.005_dp  !! Finite difference displacement (Bohr)
-      real(dp) :: hessian_temperature = 298.15_dp  !! Temperature for thermochemistry (K)
-      real(dp) :: hessian_pressure = 1.0_dp        !! Pressure for thermochemistry (atm)
+      real(dp) :: hessian_displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
+      real(dp) :: hessian_temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)
+      real(dp) :: hessian_pressure = DEFAULT_PRESSURE          !! Pressure for thermochemistry (atm)
 
       ! AIMD settings
-      real(dp) :: aimd_dt = 1.0_dp                    !! Timestep (femtoseconds)
-      integer :: aimd_nsteps = 0                      !! Number of MD steps (0 = no AIMD)
-      real(dp) :: aimd_initial_temperature = 300.0_dp  !! Initial temperature for velocity init (K)
-      integer :: aimd_output_frequency = 1            !! Write output every N steps
+      real(dp) :: aimd_dt = DEFAULT_AIMD_DT                          !! Timestep (femtoseconds)
+      integer :: aimd_nsteps = DEFAULT_AIMD_NSTEPS                   !! Number of MD steps (0 = no AIMD)
+      real(dp) :: aimd_initial_temperature = DEFAULT_AIMD_TEMPERATURE !! Initial temperature for velocity init (K)
+      integer :: aimd_output_frequency = DEFAULT_AIMD_OUTPUT_FREQ    !! Write output every N steps
 
       ! Fragmentation settings
       character(len=:), allocatable :: frag_method  !! MBE, etc.
-      integer :: frag_level = 1
+      integer :: frag_level = DEFAULT_FRAG_LEVEL
       logical :: allow_overlapping_fragments = .false.
-      integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
+      integer :: max_intersection_level = DEFAULT_MAX_INTERSECTION  !! Maximum k-way intersection depth for GMBE
       character(len=:), allocatable :: embedding
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric

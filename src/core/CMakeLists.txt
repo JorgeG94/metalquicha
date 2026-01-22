@@ -1,6 +1,7 @@
 target_sources(
   ${main_lib}
   PRIVATE # Core modules
+          mqc_calculation_defaults.f90
           mqc_calculation_keywords.f90
           mqc_physical_constants.f90
           mqc_program_limits.f90

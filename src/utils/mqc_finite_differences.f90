@@ -4,6 +4,7 @@ module mqc_finite_differences
    !! numerical derivatives via finite differences (gradients, Hessians, etc.)
    use pic_types, only: dp
    use mqc_physical_fragment, only: physical_fragment_t
+   use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT
    implicit none
    private
 
@@ -12,9 +13,7 @@ module mqc_finite_differences
    public :: finite_diff_hessian_from_gradients  !! Compute Hessian from gradient differences
    public :: finite_diff_dipole_derivatives  !! Compute dipole derivatives from dipole differences
    public :: copy_and_displace_geometry   !! Copy and displace geometry
-
-   ! Default displacement step size (Bohr)
-   real(dp), parameter, public :: DEFAULT_DISPLACEMENT = 0.005_dp  !! ~0.05 Angstrom
+   public :: DEFAULT_DISPLACEMENT  !! Re-export for backward compatibility
 
    type :: displaced_geometry_t
       !! Container for a single displaced geometry

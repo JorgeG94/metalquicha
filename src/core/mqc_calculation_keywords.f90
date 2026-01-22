@@ -3,6 +3,11 @@ module mqc_calculation_keywords
    !! Provides structured keyword types for calculation-specific settings
    !! These types are embedded in driver_config_t to organize keywords by category
    use pic_types, only: dp
+   use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
+                                       DEFAULT_PRESSURE, DEFAULT_SCF_MAXITER, &
+                                       DEFAULT_SCF_CONV, DEFAULT_USE_DIIS, &
+                                       DEFAULT_AIMD_DT, DEFAULT_AIMD_NSTEPS, &
+                                       DEFAULT_AIMD_TEMPERATURE, DEFAULT_AIMD_OUTPUT_FREQ
    implicit none
    private
 
@@ -10,24 +15,24 @@ module mqc_calculation_keywords
 
    type :: hessian_keywords_t
       !! Hessian calculation keywords
-      real(dp) :: displacement = 0.005_dp  !! Finite difference displacement (Bohr)
-      real(dp) :: temperature = 298.15_dp  !! Temperature for thermochemistry (K)
-      real(dp) :: pressure = 1.0_dp        !! Pressure for thermochemistry (atm)
+      real(dp) :: displacement = DEFAULT_DISPLACEMENT  !! Finite difference displacement (Bohr)
+      real(dp) :: temperature = DEFAULT_TEMPERATURE    !! Temperature for thermochemistry (K)
+      real(dp) :: pressure = DEFAULT_PRESSURE          !! Pressure for thermochemistry (atm)
    end type hessian_keywords_t
 
    type :: aimd_keywords_t
       !! Ab initio molecular dynamics keywords
-      real(dp) :: dt = 1.0_dp                    !! Timestep (femtoseconds)
-      integer :: nsteps = 0                      !! Number of MD steps (0 = no AIMD)
-      real(dp) :: initial_temperature = 300.0_dp  !! Initial temperature for velocity init (K)
-      integer :: output_frequency = 1            !! Write output every N steps
+      real(dp) :: dt = DEFAULT_AIMD_DT                       !! Timestep (femtoseconds)
+      integer :: nsteps = DEFAULT_AIMD_NSTEPS                !! Number of MD steps (0 = no AIMD)
+      real(dp) :: initial_temperature = DEFAULT_AIMD_TEMPERATURE  !! Initial temperature for velocity init (K)
+      integer :: output_frequency = DEFAULT_AIMD_OUTPUT_FREQ !! Write output every N steps
    end type aimd_keywords_t
 
    type :: scf_keywords_t
       !! SCF calculation keywords (placeholder for future use)
-      logical :: use_diis = .true.               !! Use DIIS acceleration
-      integer :: max_iterations = 100             !! Maximum SCF iterations
-      real(dp) :: convergence_threshold = 1.0e-6_dp  !! Convergence threshold for SCF
+      logical :: use_diis = DEFAULT_USE_DIIS                   !! Use DIIS acceleration
+      integer :: max_iterations = DEFAULT_SCF_MAXITER          !! Maximum SCF iterations
+      real(dp) :: convergence_threshold = DEFAULT_SCF_CONV     !! Convergence threshold for SCF
    end type scf_keywords_t
 
 end module mqc_calculation_keywords
