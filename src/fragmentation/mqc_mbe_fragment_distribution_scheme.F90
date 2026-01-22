@@ -23,6 +23,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_parser, only: bond_t
    use mqc_config_adapter, only: driver_config_t
+   use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
 
    ! Method API imports
    use mqc_method_base, only: qc_method_t

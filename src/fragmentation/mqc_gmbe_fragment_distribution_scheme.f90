@@ -23,6 +23,7 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_GMBE_PIE
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
+   use mqc_calculation_defaults, only: FRAGMENT_TYPE_ATOMS
    implicit none
    ! Error handling imported where needed
    private
@@ -814,8 +815,8 @@ contains
       integer(int32) :: fragment_type
       type(request_t) :: req(4)
 
-      ! PIE terms always use atom lists (type 1)
-      fragment_type = 1
+      ! PIE terms always use atom lists
+      fragment_type = FRAGMENT_TYPE_ATOMS
 
       ! Extract atom list for this term
       max_atoms = size(pie_atom_sets, 1)
@@ -852,8 +853,8 @@ contains
       integer(int32) :: fragment_type
       type(request_t) :: req(4)
 
-      ! PIE terms always use atom lists (type 1)
-      fragment_type = 1
+      ! PIE terms always use atom lists
+      fragment_type = FRAGMENT_TYPE_ATOMS
 
       ! Extract atom list for this term
       max_atoms = size(pie_atom_sets, 1)

@@ -318,8 +318,8 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
-      ! Standard MBE always uses monomer indices (type 0)
-      fragment_type = 0
+      ! Standard MBE always uses monomer indices
+      fragment_type = FRAGMENT_TYPE_MONOMERS
 
       ! TODO: serialize the data for better performance
       fragment_idx_int64 = int(fragment_idx, kind=int64)
@@ -354,8 +354,8 @@ contains
       allocate (fragment_indices(fragment_size))
       fragment_indices = polymers(fragment_idx, 1:fragment_size)
 
-      ! Standard MBE always uses monomer indices (type 0)
-      fragment_type = 0
+      ! Standard MBE always uses monomer indices
+      fragment_type = FRAGMENT_TYPE_MONOMERS
 
       ! TODO: serialize the data for better performance
       fragment_idx_int64 = int(fragment_idx, kind=int64)

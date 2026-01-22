@@ -18,6 +18,7 @@ module mqc_mbe
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_program_limits, only: MAX_MBE_LEVEL
+   use mqc_gmbe_utils, only: print_gmbe_energy_breakdown, print_gmbe_gradient_info, print_gmbe_intersection_debug
 
    implicit none
    private
@@ -1036,77 +1037,6 @@ contains
 
    end subroutine compute_mbe
 
-   !---------------------------------------------------------------------------
-   ! GMBE Helper subroutines for reducing code duplication
-   !---------------------------------------------------------------------------
-
-   subroutine print_gmbe_energy_breakdown(monomer_energy, n_monomers, level_energies, level_counts, &
-                                          max_level, total_energy, has_intersections)
-      !! Print GMBE energy breakdown using inclusion-exclusion principle
-      real(dp), intent(in) :: monomer_energy
-      integer, intent(in) :: n_monomers
-      real(dp), intent(in), optional :: level_energies(:)
-      integer, intent(in), optional :: level_counts(:)
-      integer, intent(in) :: max_level
-      real(dp), intent(in) :: total_energy
-      logical, intent(in) :: has_intersections
-
-      integer :: k
-      real(dp) :: sign_factor
-      character(len=256) :: line
-
-      if (has_intersections) then
-         call logger%info("GMBE Energy breakdown (Inclusion-Exclusion Principle):")
-         write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "):  ", monomer_energy
-         call logger%info(trim(line))
-
-         do k = 2, max_level
-            if (level_counts(k) > 0) then
-               sign_factor = real((-1)**(k + 1), dp)
-               if (sign_factor > 0.0_dp) then
-                  write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  +", level_energies(k)
-               else
-                  write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  ", level_energies(k)
-               end if
-               call logger%info(trim(line))
-            end if
-         end do
-
-         write (line, '(a,f20.10)') "  Total GMBE:      ", total_energy
-         call logger%info(trim(line))
-      else
-         call logger%info("GMBE Energy breakdown:")
-         write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "): ", monomer_energy
-         call logger%info(trim(line))
-         write (line, '(a,f20.10)') "  Total GMBE:  ", total_energy
-         call logger%info(trim(line))
-      end if
-   end subroutine print_gmbe_energy_breakdown
-
-   subroutine print_gmbe_gradient_info(total_gradient, sys_geom, current_log_level)
-      !! Print GMBE gradient information
-      real(dp), intent(in) :: total_gradient(:, :)
-      type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: current_log_level
-
-      integer :: iatom
-      character(len=256) :: grad_line
-
-      call logger%info("GMBE gradient computation completed")
-      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
-
-      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
-         call logger%info(" ")
-         call logger%info("Total GMBE Gradient (Hartree/Bohr):")
-         do iatom = 1, sys_geom%total_atoms
-            write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
-               total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
-            call logger%info(trim(grad_line))
-         end do
-         call logger%info(" ")
-      end if
-   end subroutine print_gmbe_gradient_info
-
    subroutine compute_gmbe(monomers, n_monomers, monomer_results, &
                            n_intersections, intersection_results, &
                            intersection_sets, intersection_levels, &
@@ -1377,44 +1307,6 @@ contains
 
       if (allocated(current_atoms)) deallocate (current_atoms)
    end subroutine process_intersection_derivatives
-
-   subroutine print_gmbe_intersection_debug(n_intersections, n_monomers, intersection_sets, &
-                                            intersection_levels, intersection_results)
-      !! Print debug information about GMBE intersections
-      use mqc_result_types, only: calculation_result_t
-
-      integer, intent(in) :: n_intersections, n_monomers
-      integer, intent(in) :: intersection_sets(:, :)
-      integer, intent(in) :: intersection_levels(:)
-      type(calculation_result_t), intent(in) :: intersection_results(:)
-
-      integer :: i, j, set_size
-      real(dp) :: sign_factor
-      character(len=512) :: detail_line
-      character(len=256) :: set_str
-
-      if (n_intersections > 0) then
-         call logger%debug("GMBE intersection details:")
-         do i = 1, n_intersections
-            set_str = "("
-            set_size = 0
-            do j = 1, n_monomers
-               if (intersection_sets(j, i) > 0) then
-                  if (set_size > 0) set_str = trim(set_str)//","
-                  write (set_str, '(a,i0)') trim(set_str), intersection_sets(j, i)
-                  set_size = set_size + 1
-               end if
-            end do
-            set_str = trim(set_str)//")"
-
-            sign_factor = real((-1)**(intersection_levels(i) + 1), dp)
-            write (detail_line, '(a,i0,a,i0,a,a,a,f16.8)') &
-               "  Intersection ", i, ": level=", intersection_levels(i), &
-               " fragments=", trim(set_str), " energy=", intersection_results(i)%energy%total()
-            call logger%debug(trim(detail_line))
-         end do
-      end if
-   end subroutine print_gmbe_intersection_debug
 
    subroutine get_monomer_atom_list(sys_geom, monomer_idx, atom_list, n_atoms)
       !! Build 0-indexed atom list for a monomer, handling fixed or variable-sized fragments.
