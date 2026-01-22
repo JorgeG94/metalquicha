@@ -66,15 +66,15 @@ module mqc_many_body_expansion
    !============================================================================
    abstract interface
       subroutine run_serial_sub(this, json_data)
-         implicit none
          import :: many_body_expansion_t, json_output_data_t
+         implicit none
          class(many_body_expansion_t), intent(inout) :: this
          type(json_output_data_t), intent(out), optional :: json_data
       end subroutine run_serial_sub
 
       subroutine run_distributed_sub(this, json_data)
-         implicit none
          import :: many_body_expansion_t, json_output_data_t
+         implicit none
          class(many_body_expansion_t), intent(inout) :: this
          type(json_output_data_t), intent(out), optional :: json_data
       end subroutine run_distributed_sub
