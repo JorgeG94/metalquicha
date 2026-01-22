@@ -1,6 +1,7 @@
 target_sources(
   ${main_lib}
   PRIVATE mqc_mbe.f90
+          mqc_many_body_expansion.f90
           mqc_combinatorics.f90
           mqc_fragment_lookup.f90
           mqc_gmbe_utils.f90
