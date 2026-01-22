@@ -4,10 +4,12 @@ module mqc_gmbe_utils
    !! intersections, and enumerating PIE (Principle of Inclusion-Exclusion) terms
    !! for GMBE calculations with overlapping molecular fragments.
    use pic_types, only: default_int, int32, int64, dp
-   use pic_logger, only: logger => global_logger
+   use pic_logger, only: logger => global_logger, info_level
    use pic_io, only: to_char
    use mqc_combinatorics, only: next_combination, next_combination_init
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_result_types, only: calculation_result_t
    implicit none
    private
 
@@ -16,6 +18,9 @@ module mqc_gmbe_utils
    public :: compute_polymer_atoms           !! Compute atom list for polymer (union of fragments)
    public :: generate_polymer_intersections  !! Generate intersections for polymers
    public :: gmbe_enumerate_pie_terms        !! DFS-based PIE coefficient enumeration
+   public :: print_gmbe_energy_breakdown     !! Print GMBE energy breakdown
+   public :: print_gmbe_gradient_info        !! Print GMBE gradient information
+   public :: print_gmbe_intersection_debug   !! Print debug information about GMBE intersections
 
 contains
 
@@ -197,7 +202,7 @@ contains
 
       integer, allocatable :: current_intersection(:), temp_intersection(:)
       integer :: current_n_intersect, temp_n_intersect
-      integer :: i, j, mono_idx, frag_size
+      integer :: i, mono_idx, frag_size
       logical :: has_intersection
 
       ! Generate combinations using an iterative approach
@@ -845,5 +850,112 @@ contains
          end do
       end do
    end subroutine intersect_atom_lists
+
+   !---------------------------------------------------------------------------
+   ! GMBE Output/Printing subroutines
+   !---------------------------------------------------------------------------
+
+   subroutine print_gmbe_energy_breakdown(monomer_energy, n_monomers, level_energies, level_counts, &
+                                          max_level, total_energy, has_intersections)
+      !! Print GMBE energy breakdown using inclusion-exclusion principle
+      real(dp), intent(in) :: monomer_energy
+      integer, intent(in) :: n_monomers
+      real(dp), intent(in), optional :: level_energies(:)
+      integer, intent(in), optional :: level_counts(:)
+      integer, intent(in) :: max_level
+      real(dp), intent(in) :: total_energy
+      logical, intent(in) :: has_intersections
+
+      integer :: k
+      real(dp) :: sign_factor
+      character(len=256) :: line
+
+      if (has_intersections) then
+         call logger%info("GMBE Energy breakdown (Inclusion-Exclusion Principle):")
+         write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "):  ", monomer_energy
+         call logger%info(trim(line))
+
+         do k = 2, max_level
+            if (level_counts(k) > 0) then
+               sign_factor = real((-1)**(k + 1), dp)
+               if (sign_factor > 0.0_dp) then
+                  write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  +", level_energies(k)
+               else
+                  write (line, '(a,i0,a,i0,a,f20.10)') "  ", k, "-way ∩ (", level_counts(k), "):  ", level_energies(k)
+               end if
+               call logger%info(trim(line))
+            end if
+         end do
+
+         write (line, '(a,f20.10)') "  Total GMBE:      ", total_energy
+         call logger%info(trim(line))
+      else
+         call logger%info("GMBE Energy breakdown:")
+         write (line, '(a,i0,a,f20.10)') "  Monomers (", n_monomers, "): ", monomer_energy
+         call logger%info(trim(line))
+         write (line, '(a,f20.10)') "  Total GMBE:  ", total_energy
+         call logger%info(trim(line))
+      end if
+   end subroutine print_gmbe_energy_breakdown
+
+   subroutine print_gmbe_gradient_info(total_gradient, sys_geom, current_log_level)
+      !! Print GMBE gradient information
+      real(dp), intent(in) :: total_gradient(:, :)
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: current_log_level
+
+      integer :: iatom
+      character(len=256) :: grad_line
+
+      call logger%info("GMBE gradient computation completed")
+      call logger%info("  Total gradient norm: "//to_char(sqrt(sum(total_gradient**2))))
+
+      if (current_log_level >= info_level .and. sys_geom%total_atoms < 100) then
+         call logger%info(" ")
+         call logger%info("Total GMBE Gradient (Hartree/Bohr):")
+         do iatom = 1, sys_geom%total_atoms
+            write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+               total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
+            call logger%info(trim(grad_line))
+         end do
+         call logger%info(" ")
+      end if
+   end subroutine print_gmbe_gradient_info
+
+   subroutine print_gmbe_intersection_debug(n_intersections, n_monomers, intersection_sets, &
+                                            intersection_levels, intersection_results)
+      !! Print debug information about GMBE intersections
+      integer, intent(in) :: n_intersections, n_monomers
+      integer, intent(in) :: intersection_sets(:, :)
+      integer, intent(in) :: intersection_levels(:)
+      type(calculation_result_t), intent(in) :: intersection_results(:)
+
+      integer :: i, j, set_size
+      real(dp) :: sign_factor
+      character(len=512) :: detail_line
+      character(len=256) :: set_str
+
+      if (n_intersections > 0) then
+         call logger%debug("GMBE intersection details:")
+         do i = 1, n_intersections
+            set_str = "("
+            set_size = 0
+            do j = 1, n_monomers
+               if (intersection_sets(j, i) > 0) then
+                  if (set_size > 0) set_str = trim(set_str)//","
+                  write (set_str, '(a,i0)') trim(set_str), intersection_sets(j, i)
+                  set_size = set_size + 1
+               end if
+            end do
+            set_str = trim(set_str)//")"
+
+            sign_factor = real((-1)**(intersection_levels(i) + 1), dp)
+            write (detail_line, '(a,i0,a,i0,a,a,a,f16.8)') &
+               "  Intersection ", i, ": level=", intersection_levels(i), &
+               " fragments=", trim(set_str), " energy=", intersection_results(i)%energy%total()
+            call logger%debug(trim(detail_line))
+         end do
+      end if
+   end subroutine print_gmbe_intersection_debug
 
 end module mqc_gmbe_utils

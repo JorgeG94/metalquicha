@@ -42,4 +42,8 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_FRAG_LEVEL = 1
    integer, parameter, public :: DEFAULT_MAX_INTERSECTION = 999
 
+   ! Fragment type identifiers for MPI communication
+   integer, parameter, public :: FRAGMENT_TYPE_MONOMERS = 0  !! Fragment specified by monomer indices (MBE)
+   integer, parameter, public :: FRAGMENT_TYPE_ATOMS = 1     !! Fragment specified by atom list (GMBE/PIE)
+
 end module mqc_calculation_defaults
