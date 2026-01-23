@@ -13,6 +13,7 @@ module mqc_config_parser
                                        DEFAULT_AIMD_OUTPUT_FREQ, DEFAULT_SCF_CONV, &
                                        DEFAULT_CPCM_NANG, DEFAULT_CPCM_RSCALE, &
                                        DEFAULT_FRAG_LEVEL, DEFAULT_MAX_INTERSECTION
+   use mqc_physical_fragment, only: bond_t
    implicit none
    private
 
@@ -31,14 +32,6 @@ module mqc_config_parser
    contains
       procedure :: destroy => input_fragment_destroy
    end type input_fragment_t
-
-   type :: bond_t
-      !! Bond definition with atom indices, order, and broken status
-      integer :: atom_i = 0
-      integer :: atom_j = 0
-      integer :: order = 1
-      logical :: is_broken = .false.
-   end type bond_t
 
    type :: molecule_t
       !! Single molecule definition with structure, geometry, fragments, and connectivity

@@ -10,12 +10,12 @@ module mqc_physical_fragment
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_elements, only: element_symbol_to_number, element_number_to_symbol, element_mass
    use mqc_cgto, only: molecular_basis_type
-   use mqc_config_parser, only: bond_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_physical_constants, only: BOHR_TO_ANGSTROM, ANGSTROM_TO_BOHR
    implicit none
    private
 
+   public :: bond_t                      !! Bond connectivity type
    public :: physical_fragment_t         !! Single molecular fragment type
    public :: system_geometry_t          !! Complete system geometry type
    public :: initialize_system_geometry  !! System geometry initialization
@@ -28,6 +28,17 @@ module mqc_physical_fragment
    public :: redistribute_cap_dipole_derivatives  !! Redistribute hydrogen cap dipole derivatives to original atoms
    public :: to_angstrom, to_bohr       !! Unit conversion utilities
    public :: calculate_monomer_distance  !! Calculate minimal distance between monomers in a fragment
+
+   type :: bond_t
+      !! Bond definition with atom indices, order, and broken status
+      !!
+      !! Represents a chemical bond in the molecular system, used for
+      !! hydrogen capping when fragments have broken covalent bonds.
+      integer :: atom_i = 0        !! First atom index (0-indexed)
+      integer :: atom_j = 0        !! Second atom index (0-indexed)
+      integer :: order = 1         !! Bond order (1=single, 2=double, 3=triple)
+      logical :: is_broken = .false.  !! Whether this bond crosses fragment boundaries
+   end type bond_t
 
    type :: physical_fragment_t
       !! Physical molecular fragment with atomic coordinates and properties
@@ -81,6 +92,9 @@ module mqc_physical_fragment
       integer, allocatable :: fragment_atoms(:, :)   !! Atom indices for each fragment (max_frag_size, n_monomers), 0-indexed
       integer, allocatable :: fragment_charges(:)    !! Charge for each fragment (n_monomers)
       integer, allocatable :: fragment_multiplicities(:)  !! Multiplicity for each fragment (n_monomers)
+
+      ! Connectivity information for hydrogen capping
+      type(bond_t), allocatable :: bonds(:)  !! Bond connectivity (for H-capping broken bonds)
    contains
       procedure :: destroy => system_destroy  !! Memory cleanup
    end type system_geometry_t
@@ -734,6 +748,7 @@ contains
       if (allocated(this%fragment_atoms)) deallocate (this%fragment_atoms)
       if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
       if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
+      if (allocated(this%bonds)) deallocate (this%bonds)
       this%n_monomers = 0
       this%atoms_per_monomer = 0
       this%total_atoms = 0

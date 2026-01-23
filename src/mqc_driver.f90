@@ -404,7 +404,7 @@ contains
             call expansion%init(method_config, calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
-               allocate (expansion%bonds, source=bonds)
+               allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             expansion%n_pie_terms = n_pie_terms
             if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -423,7 +423,7 @@ contains
             call expansion%init(method_config, calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
-               allocate (expansion%bonds, source=bonds)
+               allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             expansion%total_fragments = total_fragments
             if (resources%mpi_comms%world_comm%rank() == 0) then

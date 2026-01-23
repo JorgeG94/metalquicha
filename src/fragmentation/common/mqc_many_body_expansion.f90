@@ -5,7 +5,6 @@ module mqc_many_body_expansion
    use pic_types, only: int32, int64, dp
    use mqc_method_config, only: method_config_t
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_config_parser, only: bond_t
    use mqc_resources, only: resources_t
    use mqc_config_adapter, only: driver_config_t
    use mqc_json_output_types, only: json_output_data_t
@@ -32,11 +31,9 @@ module mqc_many_body_expansion
       integer(int32) :: calc_type = 0
          !! Calculation type (energy, gradient, hessian)
 
-      ! System geometry and connectivity
+      ! System geometry (includes connectivity via sys_geom%bonds)
       type(system_geometry_t), allocatable :: sys_geom
-         !! System geometry (coordinates, elements, fragments)
-      type(bond_t), allocatable :: bonds(:)
-         !! Bond connectivity information
+         !! System geometry (coordinates, elements, fragments, bonds)
 
       ! MPI configuration (optional - for distributed calculations)
       type(resources_t), pointer :: resources => null()
@@ -154,7 +151,6 @@ contains
          call this%sys_geom%destroy()
          deallocate (this%sys_geom)
       end if
-      if (allocated(this%bonds)) deallocate (this%bonds)
       if (allocated(this%node_leader_ranks)) deallocate (this%node_leader_ranks)
 
       ! Clear pointers (don't deallocate - we don't own these)
@@ -208,7 +204,7 @@ contains
 
       call serial_fragment_processor(this%total_fragments, this%polymers, this%max_level, &
                                      this%sys_geom, this%method_config, this%calc_type, &
-                                     this%bonds, json_data)
+                                     this%sys_geom%bonds, json_data)
    end subroutine mbe_run_serial
 
    subroutine mbe_run_distributed(this, json_data)
@@ -236,7 +232,7 @@ contains
             call global_coordinator(this%resources, this%total_fragments, this%polymers, &
                                     this%max_level, this%node_leader_ranks, this%num_nodes, &
                                     this%sys_geom, this%method_config, this%calc_type, &
-                                    this%bonds, json_data)
+                                    this%sys_geom%bonds, json_data)
          else
             call global_coordinator(this%resources, this%total_fragments, this%polymers, &
                                     this%max_level, this%node_leader_ranks, this%num_nodes, &
@@ -255,7 +251,7 @@ contains
                              ": Acting as worker")
          if (this%has_geometry()) then
             call node_worker(this%resources, this%sys_geom, this%method_config, &
-                             this%calc_type, this%bonds)
+                             this%calc_type, this%sys_geom%bonds)
          else
             call node_worker(this%resources, method_config=this%method_config, &
                              calc_type=this%calc_type)
@@ -305,7 +301,7 @@ contains
 
       call serial_gmbe_pie_processor(this%pie_atom_sets, this%pie_coefficients, &
                                      this%n_pie_terms, this%sys_geom, this%method_config, &
-                                     this%calc_type, this%bonds, json_data)
+                                     this%calc_type, this%sys_geom%bonds, json_data)
    end subroutine gmbe_run_serial
 
    subroutine gmbe_run_distributed(this, json_data)
@@ -333,7 +329,7 @@ contains
          call gmbe_pie_coordinator(this%resources, this%pie_atom_sets, this%pie_coefficients, &
                                    this%n_pie_terms, this%node_leader_ranks, this%num_nodes, &
                                    this%sys_geom, this%method_config, this%calc_type, &
-                                   this%bonds, json_data)
+                                   this%sys_geom%bonds, json_data)
       else if (this%resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
@@ -348,7 +344,7 @@ contains
          ! Note: node_worker works for both MBE and GMBE (fragment_type distinguishes)
          if (this%has_geometry()) then
             call node_worker(this%resources, this%sys_geom, this%method_config, &
-                             this%calc_type, this%bonds)
+                             this%calc_type, this%sys_geom%bonds)
          else
             call node_worker(this%resources, method_config=this%method_config, &
                              calc_type=this%calc_type)
