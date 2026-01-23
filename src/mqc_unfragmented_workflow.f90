@@ -1,8 +1,7 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
-   module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, result_out, &
-                                              temperature, pressure, json_data)
+   module subroutine unfragmented_calculation(sys_geom, config, result_out, json_data)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
@@ -12,12 +11,9 @@ contains
                                           compute_vibrational_analysis, print_vibrational_analysis
       use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
       use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED
-      type(system_geometry_t), intent(in), optional :: sys_geom
-      type(method_config_t), intent(in) :: method_config  !! Method configuration
-      integer(int32), intent(in) :: calc_type
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
       type(calculation_result_t), intent(out), optional :: result_out
-      real(dp), intent(in), optional :: temperature  !! Temperature for thermochemistry (K)
-      real(dp), intent(in), optional :: pressure     !! Pressure for thermochemistry (atm)
       type(json_output_data_t), intent(out), optional :: json_data
 
       type(calculation_result_t) :: result
@@ -25,11 +21,6 @@ contains
       type(physical_fragment_t) :: full_system
       type(error_t) :: error
       integer :: i
-
-      if (.not. present(sys_geom)) then
-         call logger%error("sys_geom required for unfragmented calculation")
-         error stop "Missing geometry in unfragmented_calculation"
-      end if
 
       total_atoms = sys_geom%total_atoms
 
@@ -62,7 +53,7 @@ contains
       end if
 
       ! Process the full system
-      call do_fragment_work(0_int64, result, method_config, phys_frag=full_system, calc_type=calc_type)
+      call do_fragment_work(0_int64, result, config%method_config, phys_frag=full_system, calc_type=config%calc_type)
 
       ! Check for calculation errors
       if (result%has_error) then
@@ -183,7 +174,7 @@ contains
 
                      call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
                                                   frequencies, n_at, n_modes, thermo_result, &
-                                                  temperature=temperature, pressure=pressure)
+                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
 
                      ! Print vibrational analysis to log
                      if (allocated(ir_intensities)) then
@@ -193,14 +184,14 @@ contains
                                                         ir_intensities=ir_intensities, &
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
-                                                        temperature=temperature, pressure=pressure)
+                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
                      else
                         call print_vibrational_analysis(frequencies, reduced_masses, force_constants, &
                                                         cart_disp, sys_geom%element_numbers, &
                                                         force_constants_mdyne=fc_mdyne, &
                                                         coordinates=sys_geom%coordinates, &
                                                         electronic_energy=result%energy%total(), &
-                                                        temperature=temperature, pressure=pressure)
+                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
                      end if
 
                      ! Populate json_data if present (for centralized JSON output)

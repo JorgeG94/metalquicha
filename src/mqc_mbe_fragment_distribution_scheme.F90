@@ -88,44 +88,35 @@ module mqc_mbe_fragment_distribution_scheme
          integer(int32), intent(in) :: calc_type
       end subroutine node_worker
 
-      module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, result_out, &
-                                                 temperature, pressure, json_data)
+      module subroutine unfragmented_calculation(sys_geom, config, result_out, json_data)
          implicit none
-         type(system_geometry_t), intent(in), optional :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         type(system_geometry_t), intent(in) :: sys_geom
+         type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
          type(calculation_result_t), intent(out), optional :: result_out
-         real(dp), intent(in), optional :: temperature
-         real(dp), intent(in), optional :: pressure
          type(json_output_data_t), intent(out), optional :: json_data
       end subroutine unfragmented_calculation
 
-      module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method_config, driver_config, json_data)
+      module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, config, json_data)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
+         type(driver_config_t), intent(in) :: config  !! Driver configuration (includes method_config, calc_type, etc.)
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine distributed_unfragmented_hessian
 
-module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure, json_data)
+      module subroutine hessian_coordinator(world_comm, sys_geom, config, json_data)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
-         real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
-         real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
+         type(driver_config_t), intent(in) :: config  !! Driver configuration
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine hessian_coordinator
 
-      module subroutine hessian_worker(world_comm, sys_geom, method_config, displacement)
+      module subroutine hessian_worker(world_comm, sys_geom, config)
          implicit none
          type(comm_t), intent(in) :: world_comm
          type(system_geometry_t), intent(in) :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+         type(driver_config_t), intent(in) :: config  !! Driver configuration
       end subroutine hessian_worker
 
    end interface

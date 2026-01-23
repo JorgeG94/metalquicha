@@ -8,6 +8,7 @@ module mqc_config_adapter
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
+   use mqc_method_config, only: method_config_t
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -20,24 +21,16 @@ module mqc_config_adapter
    !! Runtime configuration for driver (internal use only)
    type :: driver_config_t
       ! Core calculation settings
-      integer(int32) :: method      !! QC method constant
       integer(int32) :: calc_type   !! Calculation type constant
+
+      ! Method configuration (includes XTB solvation, DFT settings, etc.)
+      type(method_config_t) :: method_config  !! Complete method configuration
 
       ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
-
-      ! XTB solvation settings
-      character(len=:), allocatable :: solvent  !! Solvent name or empty for gas phase
-      character(len=:), allocatable :: solvation_model  !! "alpb" (default), "gbsa", or "cpcm"
-      logical :: use_cds = .true.               !! Include CDS non-polar terms (not for CPCM)
-      logical :: use_shift = .true.             !! Include solution state shift (not for CPCM)
-      ! CPCM-specific settings
-      real(dp) :: dielectric = -1.0_dp          !! Direct dielectric constant (-1 = use solvent lookup)
-      integer :: cpcm_nang = 110                !! Number of angular grid points for CPCM
-      real(dp) :: cpcm_rscale = 1.0_dp          !! Radii scaling factor for CPCM
 
       ! Calculation-specific keywords (structured)
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
@@ -60,8 +53,21 @@ contains
 
       integer :: nfrag_to_use
 
-      ! Copy method and calc_type (already integers)
-      driver_config%method = mqc_config%method
+      ! Build method configuration
+      driver_config%method_config%method_type = mqc_config%method
+      driver_config%method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
+
+      ! Configure XTB solvation settings
+      call driver_config%method_config%xtb%configure( &
+         use_cds=mqc_config%use_cds, &
+         use_shift=mqc_config%use_shift, &
+         dielectric=mqc_config%dielectric, &
+         cpcm_nang=mqc_config%cpcm_nang, &
+         cpcm_rscale=mqc_config%cpcm_rscale, &
+         solvent=mqc_config%solvent, &
+         solvation_model=mqc_config%solvation_model)
+
+      ! Copy calc_type
       driver_config%calc_type = mqc_config%calc_type
 
       ! Determine fragment count
@@ -96,20 +102,6 @@ contains
          allocate (driver_config%fragment_cutoffs(size(mqc_config%fragment_cutoffs)))
          driver_config%fragment_cutoffs = mqc_config%fragment_cutoffs
       end if
-
-      ! Copy XTB solvation settings
-      if (allocated(mqc_config%solvent)) then
-         driver_config%solvent = mqc_config%solvent
-      end if
-      if (allocated(mqc_config%solvation_model)) then
-         driver_config%solvation_model = mqc_config%solvation_model
-      end if
-      driver_config%use_cds = mqc_config%use_cds
-      driver_config%use_shift = mqc_config%use_shift
-      ! Copy CPCM-specific settings
-      driver_config%dielectric = mqc_config%dielectric
-      driver_config%cpcm_nang = mqc_config%cpcm_nang
-      driver_config%cpcm_rscale = mqc_config%cpcm_rscale
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement

@@ -152,10 +152,10 @@
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results~9">results</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-results_received~2">results_received</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-status~8">status</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-term_idx~2">term_idx</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-term_idx~3">term_idx</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_dipole_derivs~2">total_dipole_derivs</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~7">total_energy</a>
-            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~5">total_gradient</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_energy~8">total_energy</a>
+            <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_gradient~6">total_gradient</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-total_hessian~4">total_hessian</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_source~3">worker_source</a>
             <a class="list-group-item" href="../proc/gmbe_pie_coordinator.html#variable-worker_term_map">worker_term_map</a>
@@ -202,11 +202,11 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_resources.html'>mqc_resources</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_logger</li>
                   <li class="list-inline-item"><a href='../module/mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_resources.html'>mqc_resources</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -582,7 +582,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~7"></span>
+              <span class="anchor" id="variable-resources~12"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -597,7 +597,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -612,7 +612,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              <span class="anchor" id="variable-pie_coefficients~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -627,7 +627,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              <span class="anchor" id="variable-n_pie_terms~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -642,7 +642,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~3"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -657,7 +657,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~3"></span>
+              <span class="anchor" id="variable-num_nodes~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -672,7 +672,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~35"></span>
+              <span class="anchor" id="variable-sys_geom~52"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -687,7 +687,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~14"></span>
+              <span class="anchor" id="variable-method_config~13"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -717,7 +717,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~16"></span>
+              <span class="anchor" id="variable-json_data~18"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2248,7 +2248,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-term_idx~2"></span>
+              <span class="anchor" id="variable-term_idx~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2282,7 +2282,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_energy~7"></span>
+              <span class="anchor" id="variable-total_energy~8"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -2299,7 +2299,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_gradient~5"></span>
+              <span class="anchor" id="variable-total_gradient~6"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2872,7 +2872,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-23 03:24 +0000             </p>
+ on 2026-01-23 04:56 +0000             </p>
           </div>
         </div>
         <br>

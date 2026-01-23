@@ -56,6 +56,8 @@ module mqc_method_config
          !! Radii scaling for CPCM
    contains
       procedure :: has_solvation => xtb_has_solvation
+      procedure :: configure => xtb_configure
+      procedure :: get_solvation_info => xtb_get_solvation_info
    end type xtb_config_t
 
    !============================================================================
@@ -260,6 +262,7 @@ module mqc_method_config
 
    contains
       procedure :: reset => config_reset
+      procedure :: log_settings => config_log_settings
    end type method_config_t
 
 contains
@@ -269,6 +272,72 @@ contains
       class(xtb_config_t), intent(in) :: this
       xtb_has_solvation = len_trim(this%solvent) > 0 .or. this%dielectric > 0.0_dp
    end function xtb_has_solvation
+
+   subroutine xtb_configure(this, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale, solvent, solvation_model)
+      !! Configure XTB solvation settings from driver configuration
+      !!
+      !! Sets up all XTB-specific parameters and applies default solvation model
+      !! logic (alpb if solvent or dielectric is specified but no model given).
+      class(xtb_config_t), intent(inout) :: this
+      logical, intent(in) :: use_cds             !! Include CDS non-polar terms
+      logical, intent(in) :: use_shift           !! Include solution state shift
+      real(dp), intent(in) :: dielectric         !! Direct dielectric constant (-1 = use solvent lookup)
+      integer, intent(in) :: cpcm_nang           !! Angular grid points for CPCM
+      real(dp), intent(in) :: cpcm_rscale        !! Radii scaling for CPCM
+      character(len=*), intent(in), optional :: solvent          !! Solvent name
+      character(len=*), intent(in), optional :: solvation_model  !! Solvation model name
+
+      this%use_cds = use_cds
+      this%use_shift = use_shift
+      this%dielectric = dielectric
+      this%cpcm_nang = cpcm_nang
+      this%cpcm_rscale = cpcm_rscale
+
+      if (present(solvent)) this%solvent = solvent
+      if (present(solvation_model)) then
+         this%solvation_model = solvation_model
+      else if (len_trim(this%solvent) > 0 .or. dielectric > 0.0_dp) then
+         this%solvation_model = 'alpb'  ! Default solvation model
+      end if
+   end subroutine xtb_configure
+
+   subroutine xtb_get_solvation_info(this, info_lines, n_lines)
+      !! Get solvation configuration info for logging
+      !!
+      !! Returns array of info strings describing the solvation setup.
+      !! If no solvation is configured, n_lines = 0.
+      use pic_io, only: to_char
+      class(xtb_config_t), intent(in) :: this
+      character(len=128), intent(out) :: info_lines(4)  !! Up to 4 lines of info
+      integer, intent(out) :: n_lines                    !! Number of lines populated
+
+      n_lines = 0
+      info_lines = ''
+
+      if (.not. this%has_solvation()) return
+
+      n_lines = 1
+      if (trim(this%solvation_model) == 'cpcm') then
+         if (this%dielectric > 0.0_dp) then
+            info_lines(1) = "XTB solvation enabled: cpcm with dielectric = "//to_char(this%dielectric)
+         else
+            info_lines(1) = "XTB solvation enabled: cpcm with "//trim(this%solvent)
+         end if
+         n_lines = 3
+         info_lines(2) = "  CPCM grid points (nang): "//to_char(this%cpcm_nang)
+         info_lines(3) = "  CPCM radii scale: "//to_char(this%cpcm_rscale)
+      else
+         info_lines(1) = "XTB solvation enabled: "//trim(this%solvation_model)//" with "//trim(this%solvent)
+         if (this%use_cds) then
+            n_lines = n_lines + 1
+            info_lines(n_lines) = "  CDS (non-polar) terms: enabled"
+         end if
+         if (this%use_shift) then
+            n_lines = n_lines + 1
+            info_lines(n_lines) = "  Solution state shift: enabled"
+         end if
+      end if
+   end subroutine xtb_get_solvation_info
 
    subroutine config_reset(this)
       !! Reset all configuration values to defaults
@@ -354,5 +423,28 @@ contains
       this%f12%use_exponent_fit = .false.
       this%f12%scale_triples = .true.
    end subroutine config_reset
+
+   subroutine config_log_settings(this)
+      !! Log method-specific settings based on method type
+      !!
+      !! Dispatches to appropriate logging based on the configured method.
+      !! This allows the driver to log settings without knowing method details.
+      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+      use pic_logger, only: logger => global_logger
+      class(method_config_t), intent(in) :: this
+
+      character(len=128) :: info_lines(4)
+      integer :: n_lines, i
+
+      ! Log XTB solvation settings if using XTB method
+      select case (this%method_type)
+      case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
+         call this%xtb%get_solvation_info(info_lines, n_lines)
+         do i = 1, n_lines
+            call logger%info(trim(info_lines(i)))
+         end do
+      end select
+
+   end subroutine config_log_settings
 
 end module mqc_method_config

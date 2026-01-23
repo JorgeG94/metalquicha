@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.7% of total for procedures.">158 statements</a>
+                 title=" 1.7% of total for procedures.">159 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,22 +137,25 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-all_node_leader_ranks">all_node_leader_ranks</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-allow_overlapping_fragments~3">allow_overlapping_fragments</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-expansion">expansion</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-global_node_rank">global_node_rank</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-i~75">i</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-j~26">j</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-i~67">i</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-j~25">j</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-max_intersection_level~5">max_intersection_level</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-max_level~13">max_level</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-monomers~9">monomers</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_expected_frags">n_expected_frags</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_pie_terms~6">n_pie_terms</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_pie_terms~3">n_pie_terms</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_primaries~3">n_primaries</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_primaries_i64">n_primaries_i64</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-n_rows">n_rows</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-node_leader_ranks~4">node_leader_ranks</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-num_nodes~4">num_nodes</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_atom_sets~8">pie_atom_sets</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_coefficients~6">pie_coefficients</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-node_leader_ranks">node_leader_ranks</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-num_nodes">num_nodes</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_atom_sets~3">pie_atom_sets</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_coefficients~3">pie_coefficients</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-pie_error">pie_error</a>
-            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-polymers~14">polymers</a>
+            <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-polymers~10">polymers</a>
             <a class="list-group-item" href="../proc/run_fragmented_calculation.html#variable-total_fragments~4">total_fragments</a>
         </div>
       </div>
@@ -189,7 +192,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  subroutine run_fragmented_calculation(resources, method_config, calc_type, sys_geom, max_level, allow_overlapping_fragments, max_intersection_level, bonds, driver_config, json_data)  
+    <h2>private  subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data)  
 </h2>
     
 
@@ -212,7 +215,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~9"></span>
+              <span class="anchor" id="variable-resources~4"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in),</td>
@@ -227,37 +230,22 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~17"></span>
-              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+              <span class="anchor" id="variable-config~23"></span>
+              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>method_config</strong></td>
+            <td><strong>config</strong></td>
             <td>
-                <p>Method configuration</p>
+                <p>Driver configuration (includes method_config, calc_type, etc.)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~16"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>calc_type</strong></td>
-            <td>
-                <p>Calculation type</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sys_geom~44"></span>
+              <span class="anchor" id="variable-sys_geom~39"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -272,52 +260,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_level</strong></td>
-            <td>
-                <p>Maximum fragment level for MBE</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
-              logical,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>allow_overlapping_fragments</strong></td>
-            <td>
-                <p>Use GMBE for overlapping fragments</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_intersection_level~4"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_intersection_level</strong></td>
-            <td>
-                <p>Maximum k-way intersection depth for GMBE</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-bonds~11"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -332,22 +275,7 @@ If allow_overlapping_fragments=true, uses GMBE with intersection correction.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~6"></span>
-              type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>driver_config</strong></td>
-            <td>
-                <p>Driver configuration with cutoffs</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-json_data~19"></span>
+              <span class="anchor" id="variable-json_data~9"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1239,6 +1167,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-allow_overlapping_fragments~3"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_overlapping_fragments</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Use GMBE for overlapping fragments</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-expansion"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
@@ -1273,7 +1218,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~75"></span>
+              <span class="anchor" id="variable-i~67"></span>
               integer,
             </td>
               <td>private</td>
@@ -1290,7 +1235,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~26"></span>
+              <span class="anchor" id="variable-j~25"></span>
               integer,
             </td>
               <td>private</td>
@@ -1303,6 +1248,40 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Loop counters</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_intersection_level~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_intersection_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Maximum k-way intersection depth for GMBE</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~13"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Maximum fragment level for MBE</p>
             </td>
         </tr>
         <tr>
@@ -1341,7 +1320,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~6"></span>
+              <span class="anchor" id="variable-n_pie_terms~3"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1409,7 +1388,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~4"></span>
+              <span class="anchor" id="variable-node_leader_ranks"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1426,7 +1405,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-num_nodes~4"></span>
+              <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
               <td>private</td>
@@ -1443,7 +1422,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~8"></span>
+              <span class="anchor" id="variable-pie_atom_sets~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1460,7 +1439,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_coefficients~6"></span>
+              <span class="anchor" id="variable-pie_coefficients~3"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1494,7 +1473,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
               <td>private,</td>
@@ -1542,23 +1521,22 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_fragmented_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                     </span><span class="n">allow_overlapping_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">run_fragmented_calculation</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Handle fragmented calculation (nlevel &gt; 0)</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Generates fragments, distributes work across MPI processes organized in nodes,</span>
 <span class="w">      </span><span class="c">!! and coordinates many-body expansion calculation using hierarchical parallelism.</span>
 <span class="w">      </span><span class="c">!! If allow_overlapping_fragments=true, uses GMBE with intersection correction.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span><span class="w">  </span><span class="c">!! Resources container (MPI comms, etc.)</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_config</span><span class="w">  </span><span class="c">!! Method configuration</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span><span class="w">  </span><span class="c">!! Calculation type</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">config</span><span class="w">  </span><span class="c">!! Driver configuration (includes method_config, calc_type, etc.)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span><span class="w">  </span><span class="c">!! System geometry and fragment info</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_level</span><span class="w">    </span><span class="c">!! Maximum fragment level for MBE</span>
-<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w">  </span><span class="c">!! Use GMBE for overlapping fragments</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Bond connectivity information</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver_config</span><span class="w">  </span><span class="c">!! Driver configuration with cutoffs</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_data</span><span class="w">  </span><span class="c">!! JSON output data</span>
+
+<span class="w">      </span><span class="c">! Local variables extracted from config for readability</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_level</span><span class="w">    </span><span class="c">!! Maximum fragment level for MBE</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w">  </span><span class="c">!! Use GMBE for overlapping fragments</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_fragments</span><span class="w">  </span><span class="c">!! Total number of fragments generated (int64 to handle large systems)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">  </span><span class="c">!! Fragment composition array (fragment, monomer_indices)</span>
@@ -1581,6 +1559,11 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_coefficients</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! PIE coefficient for each term</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="w">  </span><span class="c">!! Number of unique PIE terms</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_error</span><span class="w">  </span><span class="c">!! Error from PIE enumeration</span>
+
+<span class="w">      </span><span class="c">! Extract values from config for readability</span>
+<span class="w">      </span><span class="n">max_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">nlevel</span>
+<span class="w">      </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">allow_overlapping_fragments</span>
+<span class="w">      </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">max_intersection_level</span>
 
 <span class="w">      </span><span class="c">! Generate fragments</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
@@ -1615,7 +1598,7 @@ large graphs.</div>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">                  </span><span class="c">! Only screen if primaries are n-mers (not for GMBE(1) where primaries are monomers)</span>
 <span class="w">                  </span><span class="n">total_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">n_primaries</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
-<span class="w">                  </span><span class="k">call </span><span class="n">apply_distance_screening</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">apply_distance_screening</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
 <span class="w">                  </span><span class="n">n_primaries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">)</span>
 <span class="w">               </span><span class="k">end if</span>
 
@@ -1669,7 +1652,7 @@ large graphs.</div>
 <span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">monomers</span><span class="p">)</span>
 
 <span class="w">            </span><span class="c">! Apply distance-based screening if cutoffs are provided</span>
-<span class="w">            </span><span class="k">call </span><span class="n">apply_distance_screening</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">apply_distance_screening</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">)</span>
 
 <span class="w">            </span><span class="c">! Sort fragments by size (largest first) for better load balancing</span>
 <span class="w">            </span><span class="c">! TODO: Currently disabled - MBE assembly is now order-independent (uses nested loops),</span>
@@ -1716,7 +1699,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">gmbe_context_t</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">select type</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">type is</span><span class="w"> </span><span class="p">(</span><span class="n">gmbe_context_t</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">expansion</span><span class="p">%</span><span class="n">init</span><span class="p">(</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">expansion</span><span class="p">%</span><span class="n">init</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="p">)</span>
 <span class="w">            </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">bonds</span><span class="p">)</span>
@@ -1735,7 +1718,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_context_t</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">select type</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">)</span>
 <span class="w">         </span><span class="k">type is</span><span class="w"> </span><span class="p">(</span><span class="n">mbe_context_t</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">expansion</span><span class="p">%</span><span class="n">init</span><span class="p">(</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">expansion</span><span class="p">%</span><span class="n">init</span><span class="p">(</span><span class="n">config</span><span class="p">%</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">%</span><span class="n">calc_type</span><span class="p">)</span>
 <span class="w">            </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">sys_geom</span><span class="p">)</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">bonds</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               allocate</span><span class="w"> </span><span class="p">(</span><span class="n">expansion</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">bonds</span><span class="p">)</span>
@@ -1800,7 +1783,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-23 03:24 +0000             </p>
+ on 2026-01-23 04:56 +0000             </p>
           </div>
         </div>
         <br>

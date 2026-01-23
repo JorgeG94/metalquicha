@@ -3,52 +3,30 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_hessian_distribution_scheme
 
 contains
 
-   module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, method_config, driver_config, json_data)
+   module subroutine distributed_unfragmented_hessian(world_comm, sys_geom, config, json_data)
       !! Compute Hessian for unfragmented system using MPI distribution
       !!
       !! Uses a dynamic work queue approach: workers request displacement indices
       !! from rank 0, compute gradients, and send results back. This provides
       !! better load balancing than static work distribution.
-      use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
-                                        finite_diff_hessian_from_gradients, copy_and_displace_geometry
-      use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, DEFAULT_PRESSURE
-      use mqc_config_adapter, only: driver_config_t
       use mqc_json_output_types, only: json_output_data_t
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      type(method_config_t), intent(in) :: method_config  !! Method configuration
-      type(driver_config_t), intent(in), optional :: driver_config  !! Driver configuration
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       integer :: my_rank, n_ranks
-      real(dp) :: displacement
-      real(dp) :: temperature, pressure
 
       my_rank = world_comm%rank()
       n_ranks = world_comm%size()
 
-      ! Use provided settings or centralized defaults
-      if (present(driver_config)) then
-         displacement = driver_config%hessian%displacement
-         temperature = driver_config%hessian%temperature
-         pressure = driver_config%hessian%pressure
-      else
-         displacement = DEFAULT_DISPLACEMENT
-         temperature = DEFAULT_TEMPERATURE
-         pressure = DEFAULT_PRESSURE
-      end if
-
       if (my_rank == 0) then
          ! Rank 0 is the coordinator
-         if (present(json_data)) then
-            call hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure, json_data)
-         else
-            call hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure)
-         end if
+         call hessian_coordinator(world_comm, sys_geom, config, json_data)
       else
          ! Other ranks are workers
-         call hessian_worker(world_comm, sys_geom, method_config, displacement)
+         call hessian_worker(world_comm, sys_geom, config)
       end if
 
       ! Synchronize all ranks before returning
@@ -56,7 +34,7 @@ contains
 
    end subroutine distributed_unfragmented_hessian
 
-module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displacement, temperature, pressure, json_data)
+   module subroutine hessian_coordinator(world_comm, sys_geom, config, json_data)
       !! Coordinator for distributed Hessian calculation
       !! Distributes displacement work and collects gradient results
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, finite_diff_dipole_derivatives
@@ -69,10 +47,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      type(method_config_t), intent(in) :: method_config  !! Method configuration
-      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
-      real(dp), intent(in) :: temperature   !! Temperature for thermochemistry (K)
-      real(dp), intent(in) :: pressure      !! Pressure for thermochemistry (atm)
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(physical_fragment_t) :: full_system
@@ -115,7 +90,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       call logger%info("Distributed unfragmented Hessian calculation")
       call logger%info("  Total atoms: "//to_char(n_atoms))
       call logger%info("  Gradient calculations needed: "//to_char(2*n_displacements))
-      call logger%info("  Finite difference step size: "//to_char(displacement)//" Bohr")
+      call logger%info("  Finite difference step size: "//to_char(config%hessian%displacement)//" Bohr")
       call logger%info("  MPI ranks: "//to_char(n_ranks))
       call logger%info("  Work distribution: Dynamic queue")
       call logger%info("============================================")
@@ -231,13 +206,13 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       call logger%info("  Assembling Hessian matrix...")
       call coord_timer%start()
       call finite_diff_hessian_from_gradients(full_system, forward_gradients, backward_gradients, &
-                                              displacement, hessian)
+                                              config%hessian%displacement, hessian)
       call coord_timer%stop()
       call logger%info("Hessian assembly completed in "//to_char(coord_timer%get_elapsed_time())//" s")
 
       ! Compute energy and gradient at reference geometry
       call logger%info("  Computing reference energy and gradient...")
-      local_config = method_config
+      local_config = config%method_config
       local_config%verbose = is_verbose
       calculator = create_method(local_config)
       call calculator%calc_gradient(full_system, result)
@@ -253,7 +228,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       if (compute_dipole_derivs) then
          call logger%info("  Computing dipole derivatives for IR intensities...")
          call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
-                                             displacement, result%dipole_derivatives)
+                                             config%hessian%displacement, result%dipole_derivatives)
          result%has_dipole_derivatives = .true.
       end if
 
@@ -330,7 +305,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
                n_modes = size(vib_freqs)
                call compute_thermochemistry(sys_geom%coordinates, sys_geom%element_numbers, &
                                             vib_freqs, n_at, n_modes, thermo_result, &
-                                            temperature=temperature, pressure=pressure)
+                                            temperature=config%hessian%temperature, pressure=config%hessian%pressure)
 
                ! Print vibrational analysis to log
                if (allocated(ir_intensities)) then
@@ -340,7 +315,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
                                                   ir_intensities=ir_intensities, &
                                                   coordinates=sys_geom%coordinates, &
                                                   electronic_energy=result%energy%total(), &
-                                                  temperature=temperature, pressure=pressure)
+                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
 
                   ! Populate json_data
                   if (present(json_data)) then
@@ -354,7 +329,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
                                                   force_constants_mdyne=fc_mdyne, &
                                                   coordinates=sys_geom%coordinates, &
                                                   electronic_energy=result%energy%total(), &
-                                                  temperature=temperature, pressure=pressure)
+                                                 temperature=config%hessian%temperature, pressure=config%hessian%pressure)
 
                   ! Populate json_data
                   if (present(json_data)) then
@@ -383,7 +358,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
 
    end subroutine hessian_coordinator
 
-   module subroutine hessian_worker(world_comm, sys_geom, method_config, displacement)
+   module subroutine hessian_worker(world_comm, sys_geom, config)
       !! Worker for distributed Hessian calculation
       !! Requests displacement indices, computes gradients, and sends results back
       use mqc_finite_differences, only: copy_and_displace_geometry
@@ -392,8 +367,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
 
       type(comm_t), intent(in) :: world_comm
       type(system_geometry_t), intent(in) :: sys_geom
-      type(method_config_t), intent(in) :: method_config  !! Method configuration
-      real(dp), intent(in) :: displacement  !! Finite difference displacement (Bohr)
+      type(driver_config_t), intent(in) :: config  !! Driver configuration
 
       type(physical_fragment_t) :: full_system, displaced_geom
       type(calculation_result_t) :: grad_result
@@ -417,7 +391,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
       call full_system%compute_nelec()
 
       ! Create calculator using factory
-      local_config = method_config
+      local_config = config%method_config
       local_config%verbose = .false.
       calculator = create_method(local_config)
 
@@ -436,7 +410,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
          coord = mod(disp_idx - 1, 3) + 1
 
          ! Compute FORWARD gradient
-         call copy_and_displace_geometry(full_system, atom_idx, coord, displacement, displaced_geom)
+         call copy_and_displace_geometry(full_system, atom_idx, coord, config%hessian%displacement, displaced_geom)
          call calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
@@ -465,7 +439,7 @@ module subroutine hessian_coordinator(world_comm, sys_geom, method_config, displ
          call displaced_geom%destroy()
 
          ! Compute BACKWARD gradient
-         call copy_and_displace_geometry(full_system, atom_idx, coord, -displacement, displaced_geom)
+         call copy_and_displace_geometry(full_system, atom_idx, coord, -config%hessian%displacement, displaced_geom)
          call calculator%calc_gradient(displaced_geom, grad_result)
 
          if (grad_result%has_error) then
