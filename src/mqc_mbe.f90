@@ -93,22 +93,19 @@ contains
 
    end function compute_mbe_delta
 
-   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad, bonds, world_comm)
+   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad, world_comm)
       !! Map fragment gradient to system gradient coordinates with hydrogen cap redistribution
       !!
       !! This function rebuilds the fragment to get local→global mappings and cap information,
       !! then redistributes gradients including hydrogen caps to their original atoms.
-      !!
-      !! If bonds are not present, uses the old simple mapping (no caps possible).
+      !! Bond connectivity is accessed via sys_geom%bonds.
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients
-      use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       use pic_logger, only: verbose_level
       real(dp), intent(in) :: frag_grad(:, :)  !! (3, natoms_frag)
       integer, intent(in) :: monomers(:)  !! Monomer indices in fragment
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(inout) :: sys_grad(:, :)  !! (3, total_atoms)
-      type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       type(physical_fragment_t) :: fragment
@@ -131,9 +128,9 @@ contains
          end block
       end if
 
-      if (present(bonds)) then
+      if (allocated(sys_geom%bonds)) then
          ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
             if (present(world_comm)) then
@@ -174,19 +171,18 @@ contains
 
    end subroutine map_fragment_to_system_gradient
 
- subroutine compute_mbe_gradient(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, bonds, world_comm)
+   subroutine compute_mbe_gradient(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, world_comm)
       !! Bottom-up computation of n-body gradient correction
       !! Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
       !! All gradients are in system coordinates, so subtraction is simple
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_result_types, only: calculation_result_t
-      use mqc_config_parser, only: bond_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: fragment(:), n
       type(fragment_lookup_t), intent(in) :: lookup
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
       type(system_geometry_t), intent(in) :: sys_geom
-      type(bond_t), intent(in), optional :: bonds(:)  !! Bond information for caps
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       integer :: subset_size, i
@@ -196,7 +192,7 @@ contains
 
       ! Start with the full n-mer gradient mapped to system coordinates
       call map_fragment_to_system_gradient(results(fragment_idx)%gradient, fragment, &
-                                           sys_geom, delta_gradients(:, :, fragment_idx), bonds, world_comm)
+                                           sys_geom, delta_gradients(:, :, fragment_idx), world_comm)
 
       ! Subtract all proper subsets (size 1 to n-1)
       ! This is EXACTLY like the energy calculation, but for each gradient component
@@ -293,16 +289,15 @@ contains
 
    end subroutine compute_mbe_dipole
 
-   subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess, bonds)
+   subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess)
       !! Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_hessian
-      use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       real(dp), intent(in) :: frag_hess(:, :)  !! (3*natoms_frag, 3*natoms_frag)
       integer, intent(in) :: monomers(:)
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(inout) :: sys_hess(:, :)  !! (3*total_atoms, 3*total_atoms)
-      type(bond_t), intent(in), optional :: bonds(:)
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
@@ -310,9 +305,9 @@ contains
       ! Zero out
       sys_hess = 0.0_dp
 
-      if (present(bonds)) then
+      if (allocated(sys_geom%bonds)) then
          ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
          call redistribute_cap_hessian(fragment, frag_hess, sys_hess)
          call fragment%destroy()
       else
@@ -356,19 +351,18 @@ contains
 
    end subroutine map_fragment_to_system_hessian
 
-   subroutine map_fragment_to_system_dipole_derivatives(frag_dipole_derivs, monomers, sys_geom, sys_dipole_derivs, bonds)
+   subroutine map_fragment_to_system_dipole_derivatives(frag_dipole_derivs, monomers, sys_geom, sys_dipole_derivs)
       !! Map fragment dipole derivatives to system coordinates with hydrogen cap redistribution
       !!
       !! Dipole derivatives have shape (3, 3*N) where each column corresponds to
       !! the derivative of dipole w.r.t. one Cartesian coordinate of one atom.
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_dipole_derivatives
-      use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       real(dp), intent(in) :: frag_dipole_derivs(:, :)  !! (3, 3*natoms_frag)
       integer, intent(in) :: monomers(:)
       type(system_geometry_t), intent(in) :: sys_geom
       real(dp), intent(inout) :: sys_dipole_derivs(:, :)  !! (3, 3*total_atoms)
-      type(bond_t), intent(in), optional :: bonds(:)
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
@@ -376,9 +370,9 @@ contains
       ! Zero out
       sys_dipole_derivs = 0.0_dp
 
-      if (present(bonds)) then
+      if (allocated(sys_geom%bonds)) then
          ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, error, bonds)
+         call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
          call redistribute_cap_dipole_derivatives(fragment, frag_dipole_derivs, sys_dipole_derivs)
          call fragment%destroy()
       else
@@ -411,11 +405,11 @@ contains
 
    end subroutine map_fragment_to_system_dipole_derivatives
 
-   subroutine compute_mbe_hessian(fragment_idx, fragment, lookup, results, delta_hessians, n, sys_geom, bonds)
+   subroutine compute_mbe_hessian(fragment_idx, fragment, lookup, results, delta_hessians, n, sys_geom)
       !! Bottom-up computation of n-body Hessian correction
       !! Mirrors MBE gradient logic but for second derivatives
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_result_types, only: calculation_result_t
-      use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: fragment(:), n
@@ -423,7 +417,6 @@ contains
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_hessians(:, :, :)  !! (3*total_atoms, 3*total_atoms, fragment_count)
       type(system_geometry_t), intent(in) :: sys_geom
-      type(bond_t), intent(in), optional :: bonds(:)
 
       integer :: subset_size, i, hess_dim
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
@@ -434,7 +427,7 @@ contains
 
       ! Start with the full n-mer Hessian mapped to system coordinates
       call map_fragment_to_system_hessian(results(fragment_idx)%hessian, fragment, &
-                                          sys_geom, delta_hessians(:, :, fragment_idx), bonds)
+                                          sys_geom, delta_hessians(:, :, fragment_idx))
 
       ! Subtract all proper subsets (size 1 to n-1)
       do subset_size = 1, n - 1
@@ -462,11 +455,11 @@ contains
 
    end subroutine compute_mbe_hessian
 
-   subroutine compute_mbe_dipole_derivatives(fragment_idx, fragment, lookup, results, delta_dipole_derivs, n, sys_geom, bonds)
+   subroutine compute_mbe_dipole_derivatives(fragment_idx, fragment, lookup, results, delta_dipole_derivs, n, sys_geom)
       !! Bottom-up computation of n-body dipole derivative correction
       !! Mirrors MBE Hessian logic but for dipole derivatives
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_result_types, only: calculation_result_t
-      use mqc_config_parser, only: bond_t
       use mqc_error, only: error_t
       integer(int64), intent(in) :: fragment_idx
       integer, intent(in) :: fragment(:), n
@@ -474,7 +467,6 @@ contains
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
       type(system_geometry_t), intent(in) :: sys_geom
-      type(bond_t), intent(in), optional :: bonds(:)
 
       integer :: subset_size, i
       integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
@@ -483,7 +475,7 @@ contains
 
       ! Start with the full n-mer dipole derivatives mapped to system coordinates
       call map_fragment_to_system_dipole_derivatives(results(fragment_idx)%dipole_derivatives, fragment, &
-                                                     sys_geom, delta_dipole_derivs(:, :, fragment_idx), bonds)
+                                                     sys_geom, delta_dipole_derivs(:, :, fragment_idx))
 
       ! Subtract all proper subsets (size 1 to n-1)
       do subset_size = 1, n - 1
@@ -593,7 +585,7 @@ contains
    end subroutine print_mbe_gradient_info
 
    subroutine compute_mbe(polymers, fragment_count, max_level, results, &
-                          mbe_result, sys_geom, bonds, world_comm, json_data)
+                          mbe_result, sys_geom, world_comm, json_data)
       !! Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole
       !!
       !! This is the core routine that handles all MBE computations.
@@ -602,8 +594,8 @@ contains
       !!   - mbe_result%hessian allocated: compute hessian (requires sys_geom)
       !!   - mbe_result%dipole allocated: compute total dipole moment
       !! If json_data is present, populates it for centralized JSON output
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_result_types, only: calculation_result_t, mbe_result_t
-      use mqc_config_parser, only: bond_t
 
       ! Required arguments
       integer(int64), intent(in) :: fragment_count
@@ -613,7 +605,6 @@ contains
 
       ! Optional arguments
       type(system_geometry_t), intent(in), optional :: sys_geom  !! Required for gradient/hessian
-      type(bond_t), intent(in), optional :: bonds(:)             !! Bond info for H-cap handling
       type(comm_t), intent(in), optional :: world_comm           !! MPI communicator for abort
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
@@ -763,12 +754,12 @@ contains
 
                if (compute_grad) then
                   call map_fragment_to_system_gradient(results(i)%gradient, &
-                                      polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), bonds, world_comm)
+                                             polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), world_comm)
                end if
 
                if (compute_hess) then
                   call map_fragment_to_system_hessian(results(i)%hessian, &
-                                                   polymers(i, 1:fragment_size), sys_geom, delta_hessians(:, :, i), bonds)
+                                                      polymers(i, 1:fragment_size), sys_geom, delta_hessians(:, :, i))
                end if
 
                if (compute_dipole) then
@@ -779,7 +770,7 @@ contains
                if (compute_dipole_derivs) then
                   ! For 1-body, delta dipole derivatives are just the fragment values mapped to system
                   call map_fragment_to_system_dipole_derivatives(results(i)%dipole_derivatives, &
-                                              polymers(i, 1:fragment_size), sys_geom, delta_dipole_derivs(:, :, i), bonds)
+                                                     polymers(i, 1:fragment_size), sys_geom, delta_dipole_derivs(:, :, i))
                end if
 
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
@@ -791,12 +782,12 @@ contains
 
                if (compute_grad) then
                   call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                            results, delta_gradients, fragment_size, sys_geom, bonds, world_comm)
+                                            results, delta_gradients, fragment_size, sys_geom, world_comm)
                end if
 
                if (compute_hess) then
                   call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
-                                           results, delta_hessians, fragment_size, sys_geom, bonds)
+                                           results, delta_hessians, fragment_size, sys_geom)
                end if
 
                if (compute_dipole) then
@@ -806,7 +797,7 @@ contains
 
                if (compute_dipole_derivs) then
                   call compute_mbe_dipole_derivatives(i, polymers(i, 1:fragment_size), lookup, &
-                                                      results, delta_dipole_derivs, fragment_size, sys_geom, bonds)
+                                                      results, delta_dipole_derivs, fragment_size, sys_geom)
                end if
             end if
          end do

@@ -366,7 +366,8 @@ Dipoles are additive vectors in the system frame, no coordinate mapping needed</
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
                  <td><p>Bottom-up computation of n-body dipole derivative correction
-Mirrors MBE Hessian logic but for dipole derivatives</p></td>
+Mirrors MBE Hessian logic but for dipole derivatives
+Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_mbe_gradient.html'>compute_mbe_gradient</a></td>
@@ -374,14 +375,16 @@ Mirrors MBE Hessian logic but for dipole derivatives</p></td>
                  <td>Subroutine</td>
                  <td><p>Bottom-up computation of n-body gradient correction
 Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
-All gradients are in system coordinates, so subtraction is simple</p></td>
+All gradients are in system coordinates, so subtraction is simple
+Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_mbe_hessian.html'>compute_mbe_hessian</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
                  <td><p>Bottom-up computation of n-body Hessian correction
-Mirrors MBE gradient logic but for second derivatives</p></td>
+Mirrors MBE gradient logic but for second derivatives
+Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_moments_of_inertia.html'>compute_moments_of_inertia</a></td>
@@ -915,6 +918,12 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/gmbe_destroy.html'>gmbe_destroy</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Clean up GMBE context</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/gmbe_enumerate_pie_terms.html'>gmbe_enumerate_pie_terms</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
@@ -922,12 +931,31 @@ has_next = .true. if there&rsquo;s a next combination</p></td>
 This implements the GMBE(N) algorithm with inclusion-exclusion principle</p><a href="../proc/gmbe_enumerate_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/gmbe_init.html'>gmbe_init</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Initialize GMBE context with required configuration</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/gmbe_pie_coordinator.html'>gmbe_pie_coordinator</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td><p>MPI coordinator for PIE-based GMBE calculations
 Distributes PIE terms across MPI ranks and accumulates results
-If json_data is present, populates it for centralized JSON output</p></td>
+If json_data is present, populates it for centralized JSON output
+Bond connectivity is accessed via sys_geom%bonds</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/gmbe_run_distributed.html'>gmbe_run_distributed</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run distributed GMBE calculation</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/gmbe_run_serial.html'>gmbe_run_serial</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run serial GMBE calculation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/grow_pie_storage.html'>grow_pie_storage</a></td>
@@ -1048,13 +1076,44 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../proc/map_fragment_to_system_hessian.html'>map_fragment_to_system_hessian</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Subroutine</td>
-                 <td><p>Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution</p></td>
+                 <td><p>Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
+Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mass_weight_hessian.html'>mass_weight_hessian</a></td>
                  <td><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></td>
                  <td>Subroutine</td>
                  <td><p>Apply mass weighting to Hessian matrix.</p><a href="../proc/mass_weight_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_base_destroy.html'>mbe_base_destroy</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Clean up base class resources</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_base_has_geometry.html'>mbe_base_has_geometry</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Function</td>
+                 <td><p>Check if system geometry is available</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_base_has_mpi.html'>mbe_base_has_mpi</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Function</td>
+                 <td><p>Check if MPI resources are available</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_destroy.html'>mbe_destroy</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Clean up MBE context</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_init.html'>mbe_init</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Initialize MBE context with required configuration</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mbe_result_allocate_dipole.html'>mbe_result_allocate_dipole</a></td>
@@ -1085,6 +1144,18 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Reset all values and flags in mbe_result_t</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_run_distributed.html'>mbe_run_distributed</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run distributed MBE calculation</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mbe_run_serial.html'>mbe_run_serial</a></td>
+                 <td><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run serial MBE calculation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mcscf_calc_energy.html'>mcscf_calc_energy</a></td>
@@ -1654,7 +1725,8 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
                  <td><p>Serial GMBE processor using PIE coefficients
 Evaluates each unique atom set once and sums with PIE coefficients
 Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
-If json_data is present, populates it for centralized JSON output</p></td>
+If json_data is present, populates it for centralized JSON output
+Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/set_molecule_suffix.html'>set_molecule_suffix</a></td>
@@ -1821,7 +1893,7 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-22 10:22 +0000             </p>
+ on 2026-01-23 03:24 +0000             </p>
           </div>
         </div>
         <br>

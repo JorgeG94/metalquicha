@@ -190,7 +190,7 @@ contains
 
    end subroutine compute_moments_of_inertia
 
-   subroutine compute_rotational_constants(moments, is_linear, rot_const)
+   pure subroutine compute_rotational_constants(moments, is_linear, rot_const)
       !! Convert moments of inertia to rotational constants in GHz.
       !!
       !! B = h / (8 * pi^2 * I) where I is in SI units.
@@ -263,7 +263,7 @@ contains
 
    end subroutine compute_zpe
 
-   subroutine compute_translational_thermo(total_mass, temperature, pressure, E, S, Cv)
+   pure subroutine compute_translational_thermo(total_mass, temperature, pressure, E, S, Cv)
       !! Compute translational contributions to thermodynamic properties.
       !!
       !! Uses ideal gas partition function (Sackur-Tetrode equation for entropy).
@@ -305,7 +305,7 @@ contains
 
    end subroutine compute_translational_thermo
 
-   subroutine compute_rotational_thermo(moments, temperature, symmetry_number, is_linear, E, S, Cv)
+   pure subroutine compute_rotational_thermo(moments, temperature, symmetry_number, is_linear, E, S, Cv)
       !! Compute rotational contributions to thermodynamic properties.
       !!
       !! Uses rigid rotor approximation (classical limit, high T).
@@ -370,7 +370,7 @@ contains
 
    end subroutine compute_rotational_thermo
 
-   subroutine compute_vibrational_thermo(frequencies, n_freqs, temperature, E, S, Cv)
+   pure subroutine compute_vibrational_thermo(frequencies, n_freqs, temperature, E, S, Cv)
       !! Compute vibrational contributions to thermodynamic properties.
       !!
       !! Uses quantum harmonic oscillator partition function.
@@ -435,7 +435,7 @@ contains
 
    end subroutine compute_vibrational_thermo
 
-   subroutine compute_electronic_entropy(spin_multiplicity, S_elec)
+   pure subroutine compute_electronic_entropy(spin_multiplicity, S_elec)
       !! Compute electronic entropy contribution.
       !!
       !! S_elec = R * ln(2S+1) where 2S+1 is the spin multiplicity.
@@ -447,9 +447,9 @@ contains
 
    end subroutine compute_electronic_entropy
 
-   subroutine compute_partition_functions(total_mass, moments, frequencies, n_freqs, &
-                                          temperature, pressure, sigma, is_linear, &
-                                          q_trans, q_rot, q_vib)
+   pure subroutine compute_partition_functions(total_mass, moments, frequencies, n_freqs, &
+                                               temperature, pressure, sigma, is_linear, &
+                                               q_trans, q_rot, q_vib)
       !! Compute partition functions for translation, rotation, and vibration.
       real(dp), intent(in) :: total_mass        !! Total mass in amu
       real(dp), intent(in) :: moments(3)        !! Principal moments in amu*Angstrom^2

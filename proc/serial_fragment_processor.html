@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.9% of total for procedures.">88 statements</a>
+                 title=" 0.9% of total for procedures.">87 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,16 +137,16 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-calc_type_local~3">calc_type_local</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~4">coord_timer</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~5">current_log_level</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~59">error</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx~2">frag_idx</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~3">coord_timer</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~3">current_log_level</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~24">error</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx">frag_idx</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_indices~5">fragment_indices</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~10">fragment_size</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~17">iatom</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~8">fragment_size</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~15">iatom</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-mbe_result">mbe_result</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-phys_frag~6">phys_frag</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-results~4">results</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-phys_frag~4">phys_frag</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-results~2">results</a>
         </div>
       </div>
     </div>
@@ -182,7 +182,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method_config, calc_type, bonds, json_data)  
+    <h2>module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, method_config, calc_type, json_data)  
     <a href="../interface/serial_fragment_processor.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h2>
         <div class="card mb-4">
@@ -191,9 +191,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -491,7 +491,8 @@ large graphs.</div>
 
 
     <p>Process all fragments serially in single-rank mode
-This is used when running with only 1 MPI rank</p>
+This is used when running with only 1 MPI rank
+Bond connectivity is accessed via sys_geom%bonds</p>
 
 
     <h3>Arguments</h3>
@@ -507,7 +508,7 @@ This is used when running with only 1 MPI rank</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~6"></span>
+              <span class="anchor" id="variable-total_fragments~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -522,7 +523,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~14"></span>
+              <span class="anchor" id="variable-polymers~9"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -537,7 +538,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~12"></span>
+              <span class="anchor" id="variable-max_level~7"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -552,7 +553,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~37"></span>
+              <span class="anchor" id="variable-sys_geom~21"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -567,7 +568,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~19"></span>
+              <span class="anchor" id="variable-method_config~12"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -582,7 +583,7 @@ This is used when running with only 1 MPI rank</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~17"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -591,21 +592,6 @@ This is used when running with only 1 MPI rank</p>
             </td>
             <td>::</td>
             <td><strong>calc_type</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-bonds~17"></span>
-              type(<a href='../type/bond_t.html'>bond_t</a>),
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>bonds</strong>(:)</td>
             <td>
                 
             </td>
@@ -2717,120 +2703,50 @@ large graphs.</div>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~serial_fragment_processor~~CalledByGraph Pages: 1 -->
-<svg id="procserial_fragment_processorCalledByGraph" width="641pt" height="72pt"
- viewBox="0.00 0.00 641.00 72.23" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~serial_fragment_processor~~CalledByGraph" class="graph" transform="scale(0.64 0.64) rotate(0) translate(4 108)">
+<svg id="procserial_fragment_processorCalledByGraph" width="569pt" height="32pt"
+ viewBox="0.00 0.00 569.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~serial_fragment_processor~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
 <title>proc~~serial_fragment_processor~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 990,-108 990,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 565,-28 565,4 -4,4"/>
 <!-- proc~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_node1" class="node">
 <title>proc~serial_fragment_processor</title>
-<polygon fill="none" stroke="black" points="986,-64 832,-64 832,-40 986,-40 986,-64"/>
-<text text-anchor="middle" x="909" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
+<polygon fill="none" stroke="black" points="561,-24 407,-24 407,0 561,0 561,-24"/>
+<text text-anchor="middle" x="484" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">serial_fragment_processor</text>
 </g>
 <!-- interface~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_node2" class="node">
 <title>interface~serial_fragment_processor</title>
 <g id="a_proc~~serial_fragment_processor~~CalledByGraph_node2"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
-<polygon fill="#a7506f" stroke="#a7506f" points="796,-64 642,-64 642,-40 796,-40 796,-64"/>
-<text text-anchor="middle" x="719" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
+<polygon fill="#a7506f" stroke="#a7506f" points="371,-24 217,-24 217,0 371,0 371,-24"/>
+<text text-anchor="middle" x="294" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
 </g>
 </g>
 <!-- interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_edge1" class="edge">
 <title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M796.2,-52C804.52,-52 813.03,-52 821.47,-52"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="821.7,-55.5 831.7,-52 821.7,-48.5 821.7,-55.5"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M371.2,-12C379.52,-12 388.03,-12 396.47,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="396.7,-15.5 406.7,-12 396.7,-8.5 396.7,-15.5"/>
 </g>
-<!-- proc~run_fragmented_calculation -->
+<!-- proc~mbe_run_serial -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_node3" class="node">
-<title>proc~run_fragmented_calculation</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node3"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="606,-64 443,-64 443,-40 606,-40 606,-64"/>
-<text text-anchor="middle" x="524.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+<title>proc~mbe_run_serial</title>
+<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node3"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="181,-24 0,-24 0,0 181,0 181,-24"/>
+<text text-anchor="middle" x="90.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
 </a>
 </g>
 </g>
-<!-- proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor -->
+<!-- proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor -->
 <g id="proc~~serial_fragment_processor~~CalledByGraph_edge2" class="edge">
-<title>proc~run_fragmented_calculation&#45;&gt;interface~serial_fragment_processor</title>
-<path fill="none" stroke="#ff0000" d="M606.02,-52C614.54,-52 623.22,-52 631.8,-52"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="631.8,-55.5 641.8,-52 631.8,-48.5 631.8,-55.5"/>
-</g>
-<!-- proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node4" class="node">
-<title>proc~run_calculation</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node4"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
-<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
-<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
-</a>
-</g>
-</g>
-<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge3" class="edge">
-<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
-<path fill="none" stroke="#ff0000" d="M407.13,-52C415.24,-52 423.94,-52 432.78,-52"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="432.8,-55.5 442.8,-52 432.8,-48.5 432.8,-55.5"/>
-</g>
-<!-- proc~compute_energy_and_forces -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node5" class="node">
-<title>proc~compute_energy_and_forces</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node5"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
-<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
-<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
-</a>
-</g>
-</g>
-<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge4" class="edge">
-<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
-</g>
-<!-- proc~run_multi_molecule_calculations -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node6" class="node">
-<title>proc~run_multi_molecule_calculations</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
-<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
-<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
-</a>
-</g>
-</g>
-<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge5" class="edge">
-<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
-</g>
-<!-- program~main -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_node7" class="node">
-<title>program~main</title>
-<g id="a_proc~~serial_fragment_processor~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
-<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
-</a>
-</g>
-</g>
-<!-- program~main&#45;&gt;proc~run_calculation -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge6" class="edge">
-<title>program~main&#45;&gt;proc~run_calculation</title>
-<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
-</g>
-<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
-<g id="proc~~serial_fragment_processor~~CalledByGraph_edge7" class="edge">
-<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
-<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
+<title>proc~mbe_run_serial&#45;&gt;interface~serial_fragment_processor</title>
+<path fill="none" stroke="#ff0000" d="M181.05,-12C189.57,-12 198.2,-12 206.69,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.95,-15.5 216.95,-12 206.95,-8.5 206.95,-15.5"/>
 </g>
 </g>
 </svg>
-</div>                <script>
-                  var panprocserial_fragment_processorCalledByGraph = svgPanZoom('#procserial_fragment_processorCalledByGraph',
-                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
-                  );
-                </script>          <div>
+</div>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -2945,7 +2861,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~4"></span>
+              <span class="anchor" id="variable-coord_timer~3"></span>
               type(timer_type),
             </td>
               <td>private</td>
@@ -2962,7 +2878,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~5"></span>
+              <span class="anchor" id="variable-current_log_level~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -2979,7 +2895,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~24"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -2996,7 +2912,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frag_idx~2"></span>
+              <span class="anchor" id="variable-frag_idx"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -3030,7 +2946,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~10"></span>
+              <span class="anchor" id="variable-fragment_size~8"></span>
               integer,
             </td>
               <td>private</td>
@@ -3047,7 +2963,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~17"></span>
+              <span class="anchor" id="variable-iatom~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -3081,7 +2997,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-phys_frag~6"></span>
+              <span class="anchor" id="variable-phys_frag~4"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -3098,7 +3014,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
+              <span class="anchor" id="variable-results~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private,</td>
@@ -3130,9 +3046,10 @@ large graphs.</div>
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">module subroutine </span><span class="n">serial_fragment_processor</span><span class="p">(</span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                               </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
+<span class="w">                                               </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Process all fragments serially in single-rank mode</span>
 <span class="w">      </span><span class="c">!! This is used when running with only 1 MPI rank</span>
+<span class="w">      </span><span class="c">!! Bond connectivity is accessed via sys_geom%bonds</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">mbe_result_t</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_json_output_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">json_output_data_t</span>
@@ -3141,7 +3058,6 @@ large graphs.</div>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">method_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">method_config</span><span class="w">  </span><span class="c">!! Method configuration</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">calc_type</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_output_data_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_data</span><span class="w">  </span><span class="c">!! JSON output data</span>
 
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag_idx</span>
@@ -3168,7 +3084,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">(</span><span class="n">fragment_size</span><span class="p">))</span>
 <span class="w">         </span><span class="n">fragment_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">frag_idx</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">fragment_size</span><span class="p">)</span>
 
-<span class="w">         </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
 <span class="w">            </span><span class="k">error stop</span><span class="w"> </span><span class="s2">&quot;Failed to build fragment in serial processing&quot;</span>
@@ -3237,7 +3153,7 @@ large graphs.</div>
 <span class="k">         call </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">allocate_gradient</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 
-<span class="k">      call </span><span class="n">compute_mbe</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
+<span class="k">      call </span><span class="n">compute_mbe</span><span class="p">(</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">total_fragments</span><span class="p">,</span><span class="w"> </span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">mbe_result</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">mbe_result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">coord_timer</span><span class="p">%</span><span class="k">stop</span><span class="p">()</span>
@@ -3269,7 +3185,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-22 10:22 +0000             </p>
+ on 2026-01-23 03:24 +0000             </p>
           </div>
         </div>
         <br>

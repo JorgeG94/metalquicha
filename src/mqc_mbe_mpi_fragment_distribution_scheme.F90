@@ -78,10 +78,11 @@ contains
    end subroutine do_fragment_work
 
    module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                       node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
+                                        node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, json_data)
       !! Global coordinator for distributing fragments to node coordinators
       !! will act as a node coordinator for a single node calculation
       !! Uses int64 for total_fragments to handle large fragment counts that overflow int32.
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_json_output_types, only: json_output_data_t
       type(resources_t), intent(in) :: resources
       integer(int64), intent(in) :: total_fragments
@@ -90,7 +91,6 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(timer_type) :: coord_timer
@@ -289,7 +289,7 @@ contains
          end if
 
          call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, &
-                          sys_geom, bonds, resources%mpi_comms%world_comm, json_data)
+                          sys_geom, resources%mpi_comms%world_comm, json_data)
          call mbe_result%destroy()
 
          call coord_timer%stop()
@@ -492,14 +492,14 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
       end do
    end subroutine node_coordinator
 
-   module subroutine node_worker(resources, sys_geom, method_config, calc_type, bonds)
+   module subroutine node_worker(resources, sys_geom, method_config, calc_type)
       !! Node worker for processing fragments assigned by node coordinator
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_error, only: error_t
       type(resources_t), intent(in) :: resources
       type(system_geometry_t), intent(in), optional :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
 
       integer(int64) :: fragment_idx
       integer(int32) :: fragment_size, dummy_msg
@@ -536,10 +536,10 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
             if (present(sys_geom)) then
                if (fragment_type == 0) then
                   ! Monomer: fragment_indices are monomer indices
-                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, bonds)
+                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, sys_geom%bonds)
                else
                   ! Intersection: fragment_indices are atom indices
-                  call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, error, bonds)
+           call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, error, sys_geom%bonds)
                end if
 
                if (error%has_error()) then

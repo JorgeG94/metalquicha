@@ -1,7 +1,7 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mqc_unfragmented_workflow
    implicit none
 contains
-   module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, &
+   module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, result_out, &
                                               temperature, pressure, json_data)
       !! Run unfragmented calculation on the entire system (nlevel=0)
       !! This is a simple single-process calculation without MPI distribution
@@ -15,7 +15,6 @@ contains
       type(system_geometry_t), intent(in), optional :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
       type(calculation_result_t), intent(out), optional :: result_out
       real(dp), intent(in), optional :: temperature  !! Temperature for thermochemistry (K)
       real(dp), intent(in), optional :: pressure     !! Pressure for thermochemistry (atm)

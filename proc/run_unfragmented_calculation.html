@@ -185,7 +185,7 @@ If result_out is present, returns result instead of writing JSON</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~12"></span>
+              <span class="anchor" id="variable-world_comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~39"></span>
+              <span class="anchor" id="variable-sys_geom~43"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -215,7 +215,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~21"></span>
+              <span class="anchor" id="variable-method_config~16"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -230,7 +230,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~18"></span>
+              <span class="anchor" id="variable-calc_type~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -245,7 +245,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~19"></span>
+              <span class="anchor" id="variable-bonds~10"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(in),</td>
@@ -260,7 +260,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~7"></span>
+              <span class="anchor" id="variable-driver_config~5"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in),</td>
@@ -290,7 +290,7 @@ If result_out is present, returns result instead of writing JSON</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~15"></span>
+              <span class="anchor" id="variable-json_data~18"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2092,19 +2092,19 @@ large graphs.</div>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Calculation type: &quot;</span><span class="o">//</span><span class="n">calc_type_to_string</span><span class="p">(</span><span class="n">calc_type</span><span class="p">))</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">driver_config</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                          </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">temperature</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">pressure</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      else if</span><span class="w"> </span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="w">         </span><span class="c">! Multi-molecule mode: non-zero rank with a molecule</span>
 <span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">verbose</span><span class="p">(</span><span class="s2">&quot;Rank &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">world_comm</span><span class="p">%</span><span class="n">rank</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot;: Running unfragmented calculation&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">driver_config</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                          </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">temperature</span><span class="p">,</span><span class="w"> </span><span class="n">driver_config</span><span class="p">%</span><span class="n">hessian</span><span class="p">%</span><span class="n">pressure</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">unfragmented_calculation</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">result_out</span><span class="p">,</span><span class="w"> </span><span class="n">json_data</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end if</span>
 
@@ -2132,7 +2132,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-01-22 10:22 +0000             </p>
+ on 2026-01-23 03:24 +0000             </p>
           </div>
         </div>
         <br>

@@ -4,9 +4,10 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_serial_fragment_processor
 contains
 
    module subroutine serial_fragment_processor(total_fragments, polymers, max_level, &
-                                               sys_geom, method_config, calc_type, bonds, json_data)
+                                               sys_geom, method_config, calc_type, json_data)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_error, only: error_t
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
@@ -15,7 +16,6 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       integer(int64) :: frag_idx
@@ -42,7 +42,7 @@ contains
          allocate (fragment_indices(fragment_size))
          fragment_indices = polymers(frag_idx, 1:fragment_size)
 
-         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, bonds)
+         call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, sys_geom%bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
             error stop "Failed to build fragment in serial processing"
@@ -111,7 +111,7 @@ contains
          call mbe_result%allocate_gradient(sys_geom%total_atoms)
       end if
 
-      call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, sys_geom, bonds, json_data=json_data)
+      call compute_mbe(polymers, total_fragments, max_level, results, mbe_result, sys_geom, json_data=json_data)
       call mbe_result%destroy()
 
       call coord_timer%stop()

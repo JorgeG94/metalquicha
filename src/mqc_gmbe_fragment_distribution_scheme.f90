@@ -15,7 +15,6 @@ module mqc_gmbe_fragment_distribution_scheme
                            TAG_NODE_SCALAR_RESULT
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list
-   use mqc_config_parser, only: bond_t
    use mqc_result_types, only: calculation_result_t, result_send, result_isend, &
                                result_recv, result_irecv, mbe_result_t
    use mqc_mbe_fragment_distribution_scheme, only: do_fragment_work
@@ -35,11 +34,12 @@ module mqc_gmbe_fragment_distribution_scheme
 contains
 
    subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                        sys_geom, method_config, calc_type, bonds, json_data)
+                                        sys_geom, method_config, calc_type, json_data)
       !! Serial GMBE processor using PIE coefficients
       !! Evaluates each unique atom set once and sums with PIE coefficients
       !! Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
       !! If json_data is present, populates it for centralized JSON output
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN, CALC_TYPE_ENERGY, calc_type_to_string
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives
@@ -51,7 +51,6 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(physical_fragment_t) :: phys_frag
@@ -127,7 +126,7 @@ contains
          atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
          ! Build fragment from atom list
-         call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
+         call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, sys_geom%bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
             error stop "Failed to build intersection fragment"
@@ -335,10 +334,11 @@ contains
    end subroutine serial_gmbe_pie_processor
 
    subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
-                                   node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
+                                   node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, json_data)
       !! MPI coordinator for PIE-based GMBE calculations
       !! Distributes PIE terms across MPI ranks and accumulates results
       !! If json_data is present, populates it for centralized JSON output
+      !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_calc_types, only: CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
       use mqc_physical_fragment, only: redistribute_cap_gradients, redistribute_cap_hessian, &
                                        redistribute_cap_dipole_derivatives
@@ -352,7 +352,6 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
-      type(bond_t), intent(in), optional :: bonds(:)
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type(timer_type) :: coord_timer
@@ -552,7 +551,7 @@ contains
                      atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
                      ! Build fragment to get proper mapping
-                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
+                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, sys_geom%bonds)
                      call redistribute_cap_gradients(phys_frag, results(term_idx)%gradient, term_gradient)
                      call phys_frag%destroy()
                      deallocate (atom_list)
@@ -630,7 +629,7 @@ contains
                      atom_list = pie_atom_sets(1:n_atoms, term_idx)
 
                      ! Build fragment to get proper mapping
-                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, bonds)
+                     call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms, phys_frag, error, sys_geom%bonds)
 
                      ! Redistribute gradient if present
                      if (results(term_idx)%has_gradient) then

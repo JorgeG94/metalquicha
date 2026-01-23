@@ -21,7 +21,6 @@ module mqc_mbe_fragment_distribution_scheme
                                     build_fragment_from_atom_list, to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
-   use mqc_config_parser, only: bond_t
    use mqc_config_adapter, only: driver_config_t
    use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
 
@@ -51,7 +50,7 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                       node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, bonds, json_data)
+                                           node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, json_data)
          implicit none
          type(resources_t), intent(in) :: resources
          integer(int64), intent(in) :: total_fragments
@@ -60,7 +59,6 @@ module mqc_mbe_fragment_distribution_scheme
          type(system_geometry_t), intent(in), optional :: sys_geom
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type
-         type(bond_t), intent(in), optional :: bonds(:)
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine global_coordinator
 
@@ -72,33 +70,30 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine node_coordinator
 
       module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
-                                                  method_config, calc_type, bonds, json_data)
+                                                  method_config, calc_type, json_data)
          implicit none
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) :: polymers(:, :), max_level
          type(system_geometry_t), intent(in) :: sys_geom
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type
-         type(bond_t), intent(in), optional :: bonds(:)
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine serial_fragment_processor
 
-      module subroutine node_worker(resources, sys_geom, method_config, calc_type, bonds)
+      module subroutine node_worker(resources, sys_geom, method_config, calc_type)
          implicit none
          type(resources_t), intent(in) :: resources
          type(system_geometry_t), intent(in), optional :: sys_geom
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type
-         type(bond_t), intent(in), optional :: bonds(:)
       end subroutine node_worker
 
-      module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, bonds, result_out, &
+      module subroutine unfragmented_calculation(sys_geom, method_config, calc_type, result_out, &
                                                  temperature, pressure, json_data)
          implicit none
          type(system_geometry_t), intent(in), optional :: sys_geom
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type
-         type(bond_t), intent(in), optional :: bonds(:)
          type(calculation_result_t), intent(out), optional :: result_out
          real(dp), intent(in), optional :: temperature
          real(dp), intent(in), optional :: pressure
