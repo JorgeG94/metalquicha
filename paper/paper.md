@@ -7,7 +7,7 @@ tags:
   - Fragmentation methods
 authors:
   - name: Jorge Luis Galvez Vallejo
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0003-4744-2087
     equal-contrib: true
     affiliation: "1"
 affiliations:
@@ -21,7 +21,7 @@ bibliography: paper.bib
 
 # Summary
 
-Metalquicha is a Fortran library for massively parallel, fragmented quantum
+Metalquicha is a Fortran program for massively parallel, fragmented quantum
 chemistry calculations with emphasis in modularity, reusability, and ease
 of adoption. It supports the Generalized Many Body Expansion (GMBE) with
 and without overlapping fragments and can compute scalar and matrix-like
@@ -125,6 +125,14 @@ The main bottleneck of the simulation should be obtaining the property of the ch
 system however, for cheap methods such as `xtb`, the final computation of the fragmented
 energy can become a bottleneck if enough fragments are created.
 
+Fragmented features enabled comprise:
+
+- Energies uses GFN1/GFN2
+- Analytical gradients of GFN1/GFN2
+- Hessian matrices via finite differences
+- Vibrational analysis and thermochemistry
+- Solvation energies
+
 ## Documentation
 
 The code is thoroughly documented using [FORD](https://forddocs.readthedocs.io/en/stable/)
@@ -134,7 +142,8 @@ Metalquicha is covered in a read-the-docs [hosted website](https://metalquicha.r
 ## Testing
 
 Automated unit tests and regression tests are run through Github Actions on every push,
-ensuring the code is correct at every code modification.
+ensuring the code is correct at every code modification. Currently, test coverage is at
+82%.
 
 ## Input file format
 
