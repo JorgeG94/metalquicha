@@ -175,7 +175,10 @@ and add external packages as dependencies.
 
 Metalquicha is driven by the `pic` ecosystem, which is a collection of three libraries
 providing standard library like functions, BLAS/LAPACK, and MPI interfaces. [pic](https://github.com/JorgeG94/pic)
-provides functionality such as `sort`, `logger`, `types`, I/O helpers, and timer functionality.
+provides functionality such as `sort`, `logger`, `types`, I/O helpers, and timer functionality. The Fortran
+stdlib project served as inspirtaion for pic, however pic prioritizes compiler portability over
+certain functionality. For example, all code in pic has to build with the GNU, Intel, Cray, Nvidia, AMD, and
+Flang family of compilers.
 
 The [pic-blas](https://github.com/JorgeG94/pic-blas) library provides explicit interfaces to BLAS/LAPACK
 functionality for portability and type safety, plus additional "helpers" which simplify the
