@@ -443,6 +443,8 @@ contains
          do i = 1, n_lines
             call logger%info(trim(info_lines(i)))
          end do
+      case default
+         return
       end select
 
    end subroutine config_log_settings
