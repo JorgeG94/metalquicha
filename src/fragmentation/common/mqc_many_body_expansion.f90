@@ -227,16 +227,7 @@ contains
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
-         if (this%has_geometry()) then
-            call global_coordinator(this%resources, this%total_fragments, this%polymers, &
-                                    this%max_level, this%node_leader_ranks, this%num_nodes, &
-                                    this%sys_geom, this%method_config, this%calc_type, json_data)
-         else
-            call global_coordinator(this%resources, this%total_fragments, this%polymers, &
-                                    this%max_level, this%node_leader_ranks, this%num_nodes, &
-                                    method_config=this%method_config, calc_type=this%calc_type, &
-                                    json_data=json_data)
-         end if
+         call global_coordinator(this, json_data)
       else if (this%resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
