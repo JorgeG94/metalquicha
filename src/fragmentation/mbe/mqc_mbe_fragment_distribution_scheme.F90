@@ -55,11 +55,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine global_coordinator
 
-      module subroutine node_coordinator(resources, method_config, calc_type)
+      module subroutine node_coordinator(ctx)
          implicit none
-         type(resources_t), intent(in) :: resources
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         class(*), intent(in) :: ctx
       end subroutine node_coordinator
 
       module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
@@ -73,12 +71,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine serial_fragment_processor
 
-      module subroutine node_worker(resources, sys_geom, method_config, calc_type)
+      module subroutine node_worker(ctx)
          implicit none
-         type(resources_t), intent(in) :: resources
-         type(system_geometry_t), intent(in), optional :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         class(*), intent(in) :: ctx
       end subroutine node_worker
 
       module subroutine unfragmented_calculation(sys_geom, config, result_out, json_data)

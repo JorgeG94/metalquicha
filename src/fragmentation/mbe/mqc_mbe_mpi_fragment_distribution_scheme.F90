@@ -384,12 +384,26 @@ contains
       deallocate (fragment_indices)
    end subroutine send_fragment_to_worker
 
-   module subroutine node_coordinator(resources, method_config, calc_type)
+   module subroutine node_coordinator(ctx)
       !! Node coordinator for distributing fragments to local workers
       !! Handles work requests and result collection from local workers
-      type(resources_t), intent(in) :: resources
-      type(method_config_t), intent(in) :: method_config  !! Method configuration (passed through to workers)
-      integer(int32), intent(in) :: calc_type
+      use mqc_many_body_expansion, only: many_body_expansion_t
+      class(*), intent(in) :: ctx
+
+      ! Cast to many_body_expansion_t via select type
+      select type (ctx)
+      class is (many_body_expansion_t)
+         call node_coordinator_impl(ctx)
+      class default
+         call logger%error("node_coordinator: expected many_body_expansion_t")
+         call abort_comm(comm_world(), 1)
+      end select
+   end subroutine node_coordinator
+
+   subroutine node_coordinator_impl(ctx)
+      !! Internal implementation of node_coordinator with typed context
+      use mqc_many_body_expansion, only: many_body_expansion_t
+      class(many_body_expansion_t), intent(in) :: ctx
 
       integer(int64) :: fragment_idx
       integer(int32) :: fragment_size, fragment_type, dummy_msg
@@ -400,7 +414,7 @@ contains
       integer(int32) :: local_dummy
 
       ! For tracking worker-fragment mapping and collecting results
-      integer(int64) :: worker_fragment_map(resources%mpi_comms%node_comm%size())
+      integer(int64) :: worker_fragment_map(ctx%resources%mpi_comms%node_comm%size())
       integer(int32) :: worker_source
       type(calculation_result_t) :: worker_result
 
@@ -412,10 +426,10 @@ contains
       dummy_msg = 0
       worker_fragment_map = 0
 
-      do while (finished_workers < resources%mpi_comms%node_comm%size() - 1)
+      do while (finished_workers < ctx%resources%mpi_comms%node_comm%size() - 1)
 
          ! PRIORITY 1: Check for incoming results from local workers
-         call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_result, status)
+         call iprobe(ctx%resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_result, status)
          if (has_result) then
             worker_source = status%MPI_SOURCE
 
@@ -423,11 +437,11 @@ contains
             if (worker_fragment_map(worker_source) == 0) then
                call logger%error("Node coordinator received result from worker "//to_char(worker_source)// &
                                  " but no fragment was assigned!")
-               call abort_comm(resources%mpi_comms%world_comm, 1)
+               call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
             end if
 
             ! Receive result from worker
-            call result_irecv(worker_result, resources%mpi_comms%node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
+         call result_irecv(worker_result, ctx%resources%mpi_comms%node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
             ! Check for calculation errors before forwarding
@@ -435,13 +449,13 @@ contains
                call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
                                  " calculation failed on worker "//to_char(worker_source)//": "// &
                                  worker_result%error%get_message())
-               call abort_comm(resources%mpi_comms%world_comm, 1)
+               call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
             end if
 
             ! Forward results to global coordinator with fragment index
-call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
+call isend(ctx%resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
             call wait(req)
-  call result_isend(worker_result, resources%mpi_comms%world_comm, 0, TAG_NODE_SCALAR_RESULT, req)                ! result
+call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, 0, TAG_NODE_SCALAR_RESULT, req)                ! result
             call wait(req)
 
             ! Clear the mapping
@@ -449,38 +463,38 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
          end if
 
          ! PRIORITY 2: Check for work requests from local workers
-         call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, local_message_pending, status)
+         call iprobe(ctx%resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_REQUEST, local_message_pending, status)
 
          if (local_message_pending) then
             ! Only process work request if this worker doesn't have pending results
             if (worker_fragment_map(status%MPI_SOURCE) == 0) then
-               call irecv(resources%mpi_comms%node_comm, local_dummy, status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
+               call irecv(ctx%resources%mpi_comms%node_comm, local_dummy, status%MPI_SOURCE, TAG_WORKER_REQUEST, req)
                call wait(req)
 
                if (more_fragments) then
-                  call isend(resources%mpi_comms%world_comm, dummy_msg, 0, TAG_NODE_REQUEST, req)
+                  call isend(ctx%resources%mpi_comms%world_comm, dummy_msg, 0, TAG_NODE_REQUEST, req)
                   call wait(req)
-                  call irecv(resources%mpi_comms%world_comm, fragment_idx, 0, MPI_ANY_TAG, req)
+                  call irecv(ctx%resources%mpi_comms%world_comm, fragment_idx, 0, MPI_ANY_TAG, req)
                   call wait(req, global_status)
 
                   if (global_status%MPI_TAG == TAG_NODE_FRAGMENT) then
                      ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
-                     call irecv(resources%mpi_comms%world_comm, fragment_type, 0, TAG_NODE_FRAGMENT, req)
+                     call irecv(ctx%resources%mpi_comms%world_comm, fragment_type, 0, TAG_NODE_FRAGMENT, req)
                      call wait(req)
-                     call irecv(resources%mpi_comms%world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, req)
+                     call irecv(ctx%resources%mpi_comms%world_comm, fragment_size, 0, TAG_NODE_FRAGMENT, req)
                      call wait(req)
                      ! Note: must use blocking recv for allocatable arrays since size is unknown
                      allocate (fragment_indices(fragment_size))
-                     call recv(resources%mpi_comms%world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
+                     call recv(ctx%resources%mpi_comms%world_comm, fragment_indices, 0, TAG_NODE_FRAGMENT, global_status)
 
                      ! Forward to worker
-                     call isend(resources%mpi_comms%node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                  call isend(ctx%resources%mpi_comms%node_comm, fragment_idx, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                     call isend(resources%mpi_comms%node_comm, fragment_type, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                 call isend(ctx%resources%mpi_comms%node_comm, fragment_type, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                     call isend(resources%mpi_comms%node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                 call isend(ctx%resources%mpi_comms%node_comm, fragment_size, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                  call isend(resources%mpi_comms%node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+              call isend(ctx%resources%mpi_comms%node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
 
                      ! Track which fragment was sent to this worker
@@ -488,29 +502,42 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
 
                      deallocate (fragment_indices)
                   else
-                     call isend(resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                     call isend(ctx%resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                      call wait(req)
                      finished_workers = finished_workers + 1
                      more_fragments = .false.
                   end if
                else
-                  call isend(resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
+                  call isend(ctx%resources%mpi_comms%node_comm, -1, status%MPI_SOURCE, TAG_WORKER_FINISH, req)
                   call wait(req)
                   finished_workers = finished_workers + 1
                end if
             end if
          end if
       end do
-   end subroutine node_coordinator
+   end subroutine node_coordinator_impl
 
-   module subroutine node_worker(resources, sys_geom, method_config, calc_type)
+   module subroutine node_worker(ctx)
       !! Node worker for processing fragments assigned by node coordinator
-      !! Bond connectivity is accessed via sys_geom%bonds
+      !! Bond connectivity is accessed via ctx%sys_geom%bonds
+      use mqc_many_body_expansion, only: many_body_expansion_t
+      class(*), intent(in) :: ctx
+
+      ! Cast to many_body_expansion_t via select type
+      select type (ctx)
+      class is (many_body_expansion_t)
+         call node_worker_impl(ctx)
+      class default
+         call logger%error("node_worker: expected many_body_expansion_t")
+         call abort_comm(comm_world(), 1)
+      end select
+   end subroutine node_worker
+
+   subroutine node_worker_impl(ctx)
+      !! Internal implementation of node_worker with typed context
       use mqc_error, only: error_t
-      type(resources_t), intent(in) :: resources
-      type(system_geometry_t), intent(in), optional :: sys_geom
-      type(method_config_t), intent(in) :: method_config  !! Method configuration
-      integer(int32), intent(in) :: calc_type
+      use mqc_many_body_expansion, only: many_body_expansion_t
+      class(many_body_expansion_t), intent(in) :: ctx
 
       integer(int64) :: fragment_idx
       integer(int32) :: fragment_size, dummy_msg
@@ -527,49 +554,49 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
       dummy_msg = 0
 
       do
-         call isend(resources%mpi_comms%node_comm, dummy_msg, 0, TAG_WORKER_REQUEST, req)
+         call isend(ctx%resources%mpi_comms%node_comm, dummy_msg, 0, TAG_WORKER_REQUEST, req)
          call wait(req)
-         call irecv(resources%mpi_comms%node_comm, fragment_idx, 0, MPI_ANY_TAG, req)
+         call irecv(ctx%resources%mpi_comms%node_comm, fragment_idx, 0, MPI_ANY_TAG, req)
          call wait(req, status)
 
          select case (status%MPI_TAG)
          case (TAG_WORKER_FRAGMENT)
             ! Receive fragment type (0 = monomer indices, 1 = intersection atom list)
-            call irecv(resources%mpi_comms%node_comm, fragment_type, 0, TAG_WORKER_FRAGMENT, req)
+            call irecv(ctx%resources%mpi_comms%node_comm, fragment_type, 0, TAG_WORKER_FRAGMENT, req)
             call wait(req)
-            call irecv(resources%mpi_comms%node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, req)
+            call irecv(ctx%resources%mpi_comms%node_comm, fragment_size, 0, TAG_WORKER_FRAGMENT, req)
             call wait(req)
             ! Note: must use blocking recv for allocatable arrays since size is unknown
             allocate (fragment_indices(fragment_size))
-            call recv(resources%mpi_comms%node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
+            call recv(ctx%resources%mpi_comms%node_comm, fragment_indices, 0, TAG_WORKER_FRAGMENT, status)
 
             ! Build physical fragment based on type
-            if (present(sys_geom)) then
+            if (ctx%has_geometry()) then
                if (fragment_type == 0) then
                   ! Monomer: fragment_indices are monomer indices
-                  call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, sys_geom%bonds)
+                  call build_fragment_from_indices(ctx%sys_geom, fragment_indices, phys_frag, error, ctx%sys_geom%bonds)
                else
                   ! Intersection: fragment_indices are atom indices
-           call build_fragment_from_atom_list(sys_geom, fragment_indices, fragment_size, phys_frag, error, sys_geom%bonds)
+   call build_fragment_from_atom_list(ctx%sys_geom, fragment_indices, fragment_size, phys_frag, error, ctx%sys_geom%bonds)
                end if
 
                if (error%has_error()) then
                   call logger%error(error%get_full_trace())
-                  call abort_comm(resources%mpi_comms%world_comm, 1)
+                  call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
                end if
 
                ! Process the chemistry fragment with physical geometry
-          call do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, resources%mpi_comms%world_comm)
+          call do_fragment_work(fragment_idx, result, ctx%method_config, phys_frag, ctx%calc_type, ctx%resources%mpi_comms%world_comm)
 
                call phys_frag%destroy()
             else
                ! Process without physical geometry (old behavior)
-               call do_fragment_work(fragment_idx, result, method_config, &
-                                     calc_type=calc_type, world_comm=resources%mpi_comms%world_comm)
+               call do_fragment_work(fragment_idx, result, ctx%method_config, &
+                                     calc_type=ctx%calc_type, world_comm=ctx%resources%mpi_comms%world_comm)
             end if
 
             ! Send result back to coordinator
-            call result_isend(result, resources%mpi_comms%node_comm, 0, TAG_WORKER_SCALAR_RESULT, req)
+            call result_isend(result, ctx%resources%mpi_comms%node_comm, 0, TAG_WORKER_SCALAR_RESULT, req)
             call wait(req)
 
             ! Clean up result
@@ -581,9 +608,9 @@ call isend(resources%mpi_comms%world_comm, worker_fragment_map(worker_source), 0
             ! Unexpected MPI tag - this should not happen in normal operation
             call logger%error("Worker received unexpected MPI tag: "//to_char(status%MPI_TAG))
             call logger%error("Expected TAG_WORKER_FRAGMENT or TAG_WORKER_FINISH")
-            call abort_comm(resources%mpi_comms%world_comm, 1)
+            call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
          end select
       end do
-   end subroutine node_worker
+   end subroutine node_worker_impl
 
 end submodule mpi_fragment_work_smod
