@@ -1,0 +1,2168 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>node_worker_impl &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>node_worker_impl
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for procedures.">55 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_mbe_mpi_fragment_distribution_scheme.F90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html'>mqc_mbe_mpi_fragment_distribution_scheme.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></li>
+            <li class="breadcrumb-item active" aria-current="page">node_worker_impl</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-dummy_msg~3">dummy_msg</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-error~40">error</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-fragment_idx~7">fragment_idx</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-fragment_indices~4">fragment_indices</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-fragment_size~6">fragment_size</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-fragment_type~4">fragment_type</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-phys_frag~2">phys_frag</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-req~5">req</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-result~6">result</a>
+            <a class="list-group-item" href="../proc/node_worker_impl.html#variable-status~3">status</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/node_worker_impl.html#src">node_worker_impl</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2> subroutine node_worker_impl(ctx)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_many_body_expansion.html'>mqc_many_body_expansion</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~node_worker_impl~~UsesGraph Pages: 1 -->
+<svg id="procnode_worker_implUsesGraph" width="641pt" height="335pt"
+ viewBox="0.00 0.00 641.00 334.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~node_worker_impl~~UsesGraph" class="graph" transform="scale(0.51 0.51) rotate(0) translate(4 651.62)">
+<title>proc~~node_worker_impl~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-651.62 1252,-651.62 1252,4 -4,4"/>
+<!-- proc~node_worker_impl -->
+<g id="proc~~node_worker_impl~~UsesGraph_node1" class="node">
+<title>proc~node_worker_impl</title>
+<polygon fill="none" stroke="black" points="1248,-151.62 1138,-151.62 1138,-127.62 1248,-127.62 1248,-151.62"/>
+<text text-anchor="middle" x="1193" y="-137.22" font-family="Helvetica,sans-Serif" font-size="10.50">node_worker_impl</text>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="180,-54.62 113,-54.62 113,-30.62 180,-30.62 180,-54.62"/>
+<text text-anchor="middle" x="146.5" y="-40.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge1" class="edge">
+<title>proc~node_worker_impl&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1144.71,-127.61C1031.42,-99.51 735.16,-29.92 483,-4.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M481,-4.62C376.79,9.43 253.78,-15.21 190.26,-30.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="189.05,-27.67 180.22,-33.52 190.77,-34.46 189.05,-27.67"/>
+</g>
+<!-- module~mqc_many_body_expansion -->
+<g id="proc~~node_worker_impl~~UsesGraph_node3" class="node">
+<title>module~mqc_many_body_expansion</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node3"><a xlink:href="../module/mqc_many_body_expansion.html" xlink:title="mqc_many_body_expansion">
+<polygon fill="#337ab7" stroke="#337ab7" points="1102,-346.62 940,-346.62 940,-322.62 1102,-322.62 1102,-346.62"/>
+<text text-anchor="middle" x="1021" y="-332.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_many_body_expansion</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;module~mqc_many_body_expansion -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge2" class="edge">
+<title>proc~node_worker_impl&#45;&gt;module~mqc_many_body_expansion</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1181.37,-151.82C1152.8,-184.58 1074.22,-274.72 1039.21,-314.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1036.56,-312.59 1032.63,-322.43 1041.84,-317.19 1036.56,-312.59"/>
+</g>
+<!-- module~mqc_config_adapter -->
+<g id="proc~~node_worker_impl~~UsesGraph_node4" class="node">
+<title>module~mqc_config_adapter</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node4"><a xlink:href="../module/mqc_config_adapter.html" xlink:title="mqc_config_adapter">
+<polygon fill="#337ab7" stroke="#337ab7" points="904,-346.62 783,-346.62 783,-322.62 904,-322.62 904,-346.62"/>
+<text text-anchor="middle" x="843.5" y="-332.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_adapter</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;module~mqc_config_adapter -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge3" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;module~mqc_config_adapter</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M939.95,-334.62C931.41,-334.62 922.76,-334.62 914.34,-334.62"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="914.21,-331.12 904.21,-334.62 914.21,-338.12 914.21,-331.12"/>
+</g>
+<!-- module~mqc_json_output_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_node5" class="node">
+<title>module~mqc_json_output_types</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node5"><a xlink:href="../module/mqc_json_output_types.html" xlink:title="mqc_json_output_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="737.5,-567.62 601.5,-567.62 601.5,-543.62 737.5,-543.62 737.5,-567.62"/>
+<text text-anchor="middle" x="669.5" y="-553.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_json_output_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;module~mqc_json_output_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge4" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;module~mqc_json_output_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M842.5,-595.62C818.81,-603.03 756.3,-585.07 713.54,-570.87"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="714.53,-567.51 703.94,-567.63 712.29,-574.14 714.53,-567.51"/>
+</g>
+<!-- module~mqc_method_config -->
+<g id="proc~~node_worker_impl~~UsesGraph_node6" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node6"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="730,-446.62 609,-446.62 609,-422.62 730,-422.62 730,-446.62"/>
+<text text-anchor="middle" x="669.5" y="-432.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;module~mqc_method_config -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge5" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1017.29,-346.85C1006.14,-393.55 958.9,-559.86 844.5,-595.62"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M842.5,-595.62C803.16,-607.92 719.14,-501.05 685.19,-455.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="687.82,-452.71 679.09,-446.7 682.17,-456.84 687.82,-452.71"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="proc~~node_worker_impl~~UsesGraph_node7" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node7"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="551.5,-149.62 412.5,-149.62 412.5,-125.62 551.5,-125.62 551.5,-149.62"/>
+<text text-anchor="middle" x="482" y="-135.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge6" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1012.79,-322.59C985.23,-277.95 881.33,-121.54 747,-66.62 683.23,-40.56 658.04,-47.01 592,-66.62 557.94,-76.74 524.58,-101.24 503.92,-118.62"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="501.41,-116.16 496.13,-125.34 505.99,-121.45 501.41,-116.16"/>
+</g>
+<!-- module~mqc_resources -->
+<g id="proc~~node_worker_impl~~UsesGraph_node8" class="node">
+<title>module~mqc_resources</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node8"><a xlink:href="../module/mqc_resources.html" xlink:title="mqc_resources">
+<polygon fill="#337ab7" stroke="#337ab7" points="889.5,-647.62 797.5,-647.62 797.5,-623.62 889.5,-623.62 889.5,-647.62"/>
+<text text-anchor="middle" x="843.5" y="-633.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_resources</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;module~mqc_resources -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge7" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;module~mqc_resources</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M1018.15,-346.83C1011.16,-388.96 982.63,-529.98 904,-609.62 900.61,-613.05 896.7,-616.06 892.53,-618.7"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="890.74,-615.68 883.69,-623.59 894.13,-621.81 890.74,-615.68"/>
+</g>
+<!-- pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_node9" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-208.62 0,-208.62 0,-184.62 62,-184.62 62,-208.62"/>
+<text text-anchor="middle" x="31" y="-194.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_many_body_expansion&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge8" class="edge">
+<title>module~mqc_many_body_expansion&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M842.5,-595.62C690,-643.3 641.25,-573.62 483,-595.62"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge12" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M838.66,-322.37C824.56,-279.67 771.1,-136.95 670.5,-80.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M668.5,-80.62C590.76,-37.1 571.65,-13.52 483,-4.62"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_method_config -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge13" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M829.88,-346.66C812.46,-362.72 779.51,-391.14 747,-408.62 739.63,-412.59 731.54,-416.12 723.47,-419.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="722.25,-415.91 714.04,-422.61 724.64,-422.5 722.25,-415.91"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge14" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M668.5,-80.62C614.57,-50.43 542.67,-92.78 506.26,-119.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="503.71,-116.74 497.79,-125.53 507.9,-122.35 503.71,-116.74"/>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge16" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M481,-396.62C440.72,-401.32 341.04,-422 302.5,-434.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M300.5,-434.62C270.07,-444.59 259.85,-439.73 231,-453.62 189.59,-473.57 183.97,-542.59 147.5,-514.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M145.5,-514.62C49.13,-440.74 34.41,-278.21 32.29,-218.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="35.79,-218.64 32.02,-208.74 28.79,-218.83 35.79,-218.64"/>
+</g>
+<!-- module~mqc_calculation_keywords -->
+<g id="proc~~node_worker_impl~~UsesGraph_node10" class="node">
+<title>module~mqc_calculation_keywords</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node10"><a xlink:href="../module/mqc_calculation_keywords.html" xlink:title="mqc_calculation_keywords">
+<polygon fill="#337ab7" stroke="#337ab7" points="747,-286.62 592,-286.62 592,-262.62 747,-262.62 747,-286.62"/>
+<text text-anchor="middle" x="669.5" y="-272.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_keywords</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_calculation_keywords -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge9" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_calculation_keywords</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M807.69,-322.48C780.79,-313.1 743.39,-300.05 714.43,-289.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="715.56,-286.63 704.96,-286.65 713.25,-293.24 715.56,-286.63"/>
+</g>
+<!-- module~mqc_config_parser -->
+<g id="proc~~node_worker_impl~~UsesGraph_node12" class="node">
+<title>module~mqc_config_parser</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node12"><a xlink:href="../module/mqc_config_parser.html" xlink:title="mqc_config_parser">
+<polygon fill="#337ab7" stroke="#337ab7" points="726.5,-225.62 612.5,-225.62 612.5,-201.62 726.5,-201.62 726.5,-225.62"/>
+<text text-anchor="middle" x="669.5" y="-211.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_config_parser</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_config_parser -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge10" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_config_parser</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M829.95,-322.38C812.35,-305.61 778.92,-275.12 747,-253.62 734.3,-245.07 719.54,-236.97 706.4,-230.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="707.69,-227.06 697.17,-225.76 704.58,-233.33 707.69,-227.06"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="proc~~node_worker_impl~~UsesGraph_node13" class="node">
+<title>module~mqc_elements</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node13"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-406.62 256,-406.62 256,-382.62 347,-382.62 347,-406.62"/>
+<text text-anchor="middle" x="301.5" y="-392.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;module~mqc_elements -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge11" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M794.07,-346.66C725.4,-362.87 595.56,-390.42 483,-396.62"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M481,-396.62C439.67,-401.44 392.6,-400.65 357.18,-398.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="357.22,-395.32 347.04,-398.25 356.83,-402.3 357.22,-395.32"/>
+</g>
+<!-- pic_logger -->
+<g id="proc~~node_worker_impl~~UsesGraph_node20" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="335.5,-486.62 267.5,-486.62 267.5,-462.62 335.5,-462.62 335.5,-486.62"/>
+<text text-anchor="middle" x="301.5" y="-472.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_config_adapter&#45;&gt;pic_logger -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge15" class="edge">
+<title>module~mqc_config_adapter&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M837.28,-346.73C825.51,-372.31 794.18,-431.5 747,-455.62 677.91,-490.95 443.45,-482.53 345.77,-477.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="345.83,-473.77 335.65,-476.71 345.44,-480.76 345.83,-473.77"/>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge18" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M618.75,-567.7C581.54,-576.4 529.31,-587.92 483,-595.62"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M481,-595.62C370.97,-613.92 331.69,-665.62 231,-617.62 177.8,-592.27 193.88,-550.98 147.5,-514.62"/>
+</g>
+<!-- module~mqc_thermochemistry -->
+<g id="proc~~node_worker_impl~~UsesGraph_node18" class="node">
+<title>module~mqc_thermochemistry</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node18"><a xlink:href="../module/mqc_thermochemistry.html" xlink:title="mqc_thermochemistry">
+<polygon fill="#337ab7" stroke="#337ab7" points="548.5,-526.62 415.5,-526.62 415.5,-502.62 548.5,-502.62 548.5,-526.62"/>
+<text text-anchor="middle" x="482" y="-512.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_thermochemistry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge17" class="edge">
+<title>module~mqc_json_output_types&#45;&gt;module~mqc_thermochemistry</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M613.85,-543.54C592.99,-538.94 569.03,-533.64 547.36,-528.85"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="548.1,-525.43 537.58,-526.69 546.59,-532.26 548.1,-525.43"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge20" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M609,-424.37C535.31,-413.98 406.75,-403.44 302.5,-434.62"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_node15" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node15"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="540,-366.62 424,-366.62 424,-342.62 540,-342.62 540,-366.62"/>
+<text text-anchor="middle" x="482" y="-352.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge19" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M643.69,-422.58C621.04,-411.71 586.53,-395.52 556,-382.62 546.14,-378.46 535.44,-374.21 525.34,-370.32"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="526.48,-367 515.89,-366.71 523.98,-373.54 526.48,-367"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge23" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M449.59,-125.51C414.33,-112.41 355.15,-91.89 302.5,-80.62"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M300.5,-80.62C262.99,-72.6 220.69,-61.97 190.09,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="190.75,-50.55 180.19,-51.4 188.97,-57.32 190.75,-50.55"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge27" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M300.5,-80.62C234,-66.4 211.8,-60.48 147.5,-82.62"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M145.5,-82.62C98.53,-98.8 62.03,-147.54 44.13,-175.78"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="41.03,-174.14 38.79,-184.49 47,-177.8 41.03,-174.14"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="proc~~node_worker_impl~~UsesGraph_node11" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node11"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="178.5,-208.62 114.5,-208.62 114.5,-184.62 178.5,-184.62 178.5,-208.62"/>
+<text text-anchor="middle" x="146.5" y="-194.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge21" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M451.45,-149.72C429.81,-158.06 399.54,-168.68 372,-174.62 308.96,-188.22 234.13,-193.43 188.76,-195.41"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.56,-191.92 178.71,-195.82 188.85,-198.91 188.56,-191.92"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge22" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M448.44,-149.8C434.03,-156.75 418.1,-166.87 408,-180.62 366.14,-237.63 408.82,-275.24 372,-335.62 361.97,-352.07 345.76,-366.22 331.52,-376.54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="329.21,-373.88 322.98,-382.45 333.2,-379.63 329.21,-373.88"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="proc~~node_worker_impl~~UsesGraph_node14" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node14"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="193,-166.62 100,-166.62 100,-142.62 193,-142.62 193,-166.62"/>
+<text text-anchor="middle" x="146.5" y="-152.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge24" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M424.55,-149.66C389.54,-155.94 343.56,-162.04 302.5,-160.62"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M300.5,-160.62C268.32,-159.51 232.34,-158.11 203.36,-156.94"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="203.15,-153.43 193.02,-156.52 202.87,-160.42 203.15,-153.43"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="proc~~node_worker_impl~~UsesGraph_node17" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node17"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="372,-326.62 231,-326.62 231,-302.62 372,-302.62 372,-326.62"/>
+<text text-anchor="middle" x="301.5" y="-312.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge25" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M450.11,-149.7C435.56,-156.77 419.01,-167.02 408,-180.62 376.18,-219.96 407.12,-252.2 372,-288.62 368.65,-292.09 364.8,-295.1 360.66,-297.71"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="358.94,-294.67 351.84,-302.53 362.29,-300.81 358.94,-294.67"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="proc~~node_worker_impl~~UsesGraph_node19" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node19"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="351,-132.62 252,-132.62 252,-108.62 351,-108.62 351,-132.62"/>
+<text text-anchor="middle" x="301.5" y="-118.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge26" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M412.5,-131.1C395.56,-129.49 377.57,-127.77 361.15,-126.21"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="361.44,-122.72 351.16,-125.26 360.78,-129.69 361.44,-122.72"/>
+</g>
+<!-- module~mqc_mpi_comms -->
+<g id="proc~~node_worker_impl~~UsesGraph_node16" class="node">
+<title>module~mqc_mpi_comms</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node16"><a xlink:href="../module/mqc_mpi_comms.html" xlink:title="mqc_mpi_comms">
+<polygon fill="#337ab7" stroke="#337ab7" points="722.5,-647.62 616.5,-647.62 616.5,-623.62 722.5,-623.62 722.5,-647.62"/>
+<text text-anchor="middle" x="669.5" y="-633.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_comms</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_resources&#45;&gt;module~mqc_mpi_comms -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge28" class="edge">
+<title>module~mqc_resources&#45;&gt;module~mqc_mpi_comms</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M797.31,-635.62C777.64,-635.62 754.25,-635.62 732.96,-635.62"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="732.7,-632.12 722.7,-635.62 732.7,-639.12 732.7,-632.12"/>
+</g>
+<!-- module~mqc_calculation_keywords&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge30" class="edge">
+<title>module~mqc_calculation_keywords&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M591.89,-264.18C516.95,-256.38 400.18,-250.74 302.5,-274.62"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="proc~~node_worker_impl~~UsesGraph_node22" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node22"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="556,-246.62 408,-246.62 408,-222.62 556,-222.62 556,-246.62"/>
+<text text-anchor="middle" x="482" y="-232.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_calculation_keywords&#45;&gt;module~mqc_calculation_defaults -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge29" class="edge">
+<title>module~mqc_calculation_keywords&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M612.84,-262.62C592.67,-258.27 569.69,-253.32 548.73,-248.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="549.45,-245.37 538.94,-246.69 547.97,-252.22 549.45,-245.37"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge31" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff8b00" stroke-dasharray="5,2" d="M114.49,-196.62C101.51,-196.62 86.27,-196.62 72.43,-196.62"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="72.19,-193.12 62.19,-196.62 72.19,-200.12 72.19,-193.12"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge34" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M300.5,-42.62C263.39,-40.24 221.11,-40.46 190.42,-41.16"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="189.98,-37.67 180.07,-41.42 190.16,-44.66 189.98,-37.67"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_physical_fragment -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge37" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M639.11,-201.58C607.45,-188.61 556.93,-167.91 521.98,-153.59"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="523.14,-150.29 512.56,-149.74 520.49,-156.77 523.14,-150.29"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge38" class="edge">
+<title>module~mqc_config_parser&#45;&gt;pic_types</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M657.62,-201.3C638.87,-180.79 598.37,-139.65 556,-116.62 452.87,-60.58 419.63,-50.15 302.5,-42.62"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M300.5,-42.62C211.54,-26.09 172.42,29.84 98,-21.62 47.44,-56.59 35.57,-135.54 32.81,-174.3"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="29.3,-174.34 32.23,-184.53 36.29,-174.74 29.3,-174.34"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_geometry -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge35" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M612.14,-207.19C575.4,-203.15 526.4,-198.08 483,-194.62"/>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M481,-194.62C400.5,-188.21 383.21,-163.42 302.5,-160.62"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_method_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge36" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M641.29,-225.67C626.2,-232.88 607.43,-242.74 592,-253.62 557.08,-278.27 521.71,-313.31 501.1,-334.97"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="498.5,-332.62 494.2,-342.31 503.6,-337.42 498.5,-332.62"/>
+</g>
+<!-- module~mqc_calc_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_node21" class="node">
+<title>module~mqc_calc_types</title>
+<g id="a_proc~~node_worker_impl~~UsesGraph_node21"><a xlink:href="../module/mqc_calc_types.html" xlink:title="mqc_calc_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="195,-250.62 98,-250.62 98,-226.62 195,-226.62 195,-250.62"/>
+<text text-anchor="middle" x="146.5" y="-236.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calc_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calc_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge32" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calc_types</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M481,-194.62C383.45,-190.78 271.09,-210.72 204.86,-225.02"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="204.05,-221.61 195.04,-227.17 205.55,-228.45 204.05,-221.61"/>
+</g>
+<!-- module~mqc_config_parser&#45;&gt;module~mqc_calculation_defaults -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge33" class="edge">
+<title>module~mqc_config_parser&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#e7ff00" stroke-dasharray="5,2" d="M612.34,-219.98C597.82,-221.63 581.87,-223.43 566.29,-225.2"/>
+<polygon fill="#e7ff00" stroke="#e7ff00" points="565.66,-221.74 556.12,-226.35 566.45,-228.7 565.66,-221.74"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge40" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M266.25,-382.61C234.9,-371.27 187.44,-353.28 147.5,-334.62"/>
+</g>
+<!-- pic_ascii -->
+<g id="proc~~node_worker_impl~~UsesGraph_node23" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="175.5,-406.62 117.5,-406.62 117.5,-382.62 175.5,-382.62 175.5,-406.62"/>
+<text text-anchor="middle" x="146.5" y="-392.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge39" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#5cff00" stroke-dasharray="5,2" d="M255.83,-394.62C233.65,-394.62 207.12,-394.62 185.87,-394.62"/>
+<polygon fill="#5cff00" stroke="#5cff00" points="185.59,-391.12 175.59,-394.62 185.59,-398.12 185.59,-391.12"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge41" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff2e" stroke-dasharray="5,2" d="M112.98,-166.66C100.11,-171.42 85.21,-176.93 71.72,-181.93"/>
+<polygon fill="#00ff2e" stroke="#00ff2e" points="70.36,-178.7 62.19,-185.45 72.79,-185.26 70.36,-178.7"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge42" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffb9" stroke-dasharray="5,2" d="M423.93,-363.46C354.94,-371.47 236.97,-376.41 147.5,-334.62"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~node_worker_impl~~UsesGraph_node26" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="518,-647.62 446,-647.62 446,-623.62 518,-623.62 518,-647.62"/>
+<text text-anchor="middle" x="482" y="-633.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_mpi_comms&#45;&gt;pic_mpi_lib -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge43" class="edge">
+<title>module~mqc_mpi_comms&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00b9ff" stroke-dasharray="5,2" d="M616.33,-635.62C588.62,-635.62 554.87,-635.62 528.27,-635.62"/>
+<polygon fill="#00b9ff" stroke="#00b9ff" points="528.08,-632.12 518.08,-635.62 528.08,-639.12 528.08,-632.12"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge44" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#002eff" stroke-dasharray="5,2" d="M273.43,-326.73C241.74,-339.02 188.4,-353.73 147.5,-334.62"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge50" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M415.35,-518.85C324.2,-524.08 168.11,-530.5 147.5,-514.62"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_elements -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge45" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M469.68,-502.38C450.99,-482.78 411.77,-444.19 372,-420.62 365.68,-416.88 358.72,-413.51 351.72,-410.54"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="352.8,-407.2 342.22,-406.73 350.2,-413.7 352.8,-407.2"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge46" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M472.75,-502.25C455.53,-476.83 413.89,-417.48 372,-373.62 357.97,-358.93 340.53,-344.14 326.64,-333.04"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="328.53,-330.08 318.5,-326.64 324.2,-335.58 328.53,-330.08"/>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_logger -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge49" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M427.44,-502.62C401.18,-496.74 369.98,-489.75 345.32,-484.22"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="346.06,-480.8 335.54,-482.03 344.53,-487.63 346.06,-480.8"/>
+</g>
+<!-- pic_io -->
+<g id="proc~~node_worker_impl~~UsesGraph_node24" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="328.5,-566.62 274.5,-566.62 274.5,-542.62 328.5,-542.62 328.5,-566.62"/>
+<text text-anchor="middle" x="301.5" y="-552.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_io -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge47" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_io</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M427.44,-526.63C398.74,-533.06 364.14,-540.81 338.64,-546.53"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="337.65,-543.16 328.66,-548.76 339.18,-549.99 337.65,-543.16"/>
+</g>
+<!-- pic_lapack_interfaces -->
+<g id="proc~~node_worker_impl~~UsesGraph_node25" class="node">
+<title>pic_lapack_interfaces</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="365,-608.62 238,-608.62 238,-584.62 365,-584.62 365,-608.62"/>
+<text text-anchor="middle" x="301.5" y="-594.22" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_lapack_interfaces</text>
+</g>
+<!-- module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge48" class="edge">
+<title>module~mqc_thermochemistry&#45;&gt;pic_lapack_interfaces</title>
+<path fill="none" stroke="#5c00ff" stroke-dasharray="5,2" d="M462.34,-526.72C441.13,-540.08 405.13,-561.55 372,-575.62 367.26,-577.64 362.27,-579.54 357.22,-581.32"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="355.87,-578.09 347.5,-584.59 358.09,-584.72 355.87,-578.09"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge51" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#e700ff" stroke-dasharray="5,2" d="M262.54,-108.51C252.07,-104.61 240.88,-99.92 231,-94.62 213.6,-85.31 211.69,-79.16 195,-68.62 190.23,-65.61 185.09,-62.58 180.01,-59.71"/>
+<polygon fill="#e700ff" stroke="#e700ff" points="181.47,-56.52 171.03,-54.75 178.09,-62.65 181.47,-56.52"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge53" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#e700ff" stroke-dasharray="5,2" d="M269.08,-108.56C231.17,-94.75 169.76,-74.96 147.5,-82.62"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge52" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#e700ff" stroke-dasharray="5,2" d="M251.67,-131.48C236.25,-134.9 219.09,-138.72 203.22,-142.24"/>
+<polygon fill="#e700ff" stroke="#e700ff" points="202.01,-138.92 193.01,-144.51 203.53,-145.76 202.01,-138.92"/>
+</g>
+<!-- module~mqc_calc_types&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge54" class="edge">
+<title>module~mqc_calc_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M112.98,-226.59C100.11,-221.83 85.21,-216.31 71.72,-211.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.79,-207.99 62.19,-207.8 70.36,-214.55 72.79,-207.99"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="proc~~node_worker_impl~~UsesGraph_edge55" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M424.59,-246.68C389.41,-254.34 343.22,-264.67 302.5,-274.62"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M300.5,-274.62C269.39,-282.23 260.95,-282.29 231,-293.62 192.33,-308.25 184.96,-352.12 147.5,-334.62"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M145.5,-334.62C94.05,-310.59 58.14,-250.36 41.86,-217.99"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="44.96,-216.38 37.44,-208.91 38.67,-219.44 44.96,-216.38"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocnode_worker_implUsesGraph = svgPanZoom('#procnode_worker_implUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Internal implementation of node_worker with typed context</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctx~8"></span>
+              class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~node_worker_impl~~CallsGraph Pages: 1 -->
+<svg id="procnode_worker_implCallsGraph" width="641pt" height="359pt"
+ viewBox="0.00 0.00 641.00 359.37" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~node_worker_impl~~CallsGraph" class="graph" transform="scale(0.47 0.47) rotate(0) translate(4 768)">
+<title>proc~~node_worker_impl~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-768 1373,-768 1373,4 -4,4"/>
+<!-- proc~node_worker_impl -->
+<g id="proc~~node_worker_impl~~CallsGraph_node1" class="node">
+<title>proc~node_worker_impl</title>
+<polygon fill="none" stroke="black" points="110,-331 0,-331 0,-307 110,-307 110,-331"/>
+<text text-anchor="middle" x="55" y="-316.6" font-family="Helvetica,sans-Serif" font-size="10.50">node_worker_impl</text>
+</g>
+<!-- abort_comm -->
+<g id="proc~~node_worker_impl~~CallsGraph_node2" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="330,-596 250,-596 250,-572 330,-572 330,-596"/>
+<text text-anchor="middle" x="290" y="-581.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;abort_comm -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge1" class="edge">
+<title>proc~node_worker_impl&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M56.39,-331.06C58.37,-371.31 70.62,-501.84 146,-563 171.88,-584 209.41,-588.86 239.53,-588.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.93,-592.17 249.84,-588.42 239.75,-585.17 239.93,-592.17"/>
+</g>
+<!-- error -->
+<g id="proc~~node_worker_impl~~CallsGraph_node3" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="915.5,-151 861.5,-151 861.5,-127 915.5,-127 915.5,-151"/>
+<text text-anchor="middle" x="888.5" y="-136.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge2" class="edge">
+<title>proc~node_worker_impl&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M79.26,-306.92C97.18,-297.91 122.75,-285.71 146,-277 270.74,-230.25 320.64,-263.97 434,-194 454.07,-181.61 448.58,-164.87 470,-155 537.26,-124 762.85,-132.28 851.4,-136.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="851.32,-140.39 861.5,-137.43 851.7,-133.4 851.32,-140.39"/>
+</g>
+<!-- interface~do_fragment_work -->
+<g id="proc~~node_worker_impl~~CallsGraph_node4" class="node">
+<title>interface~do_fragment_work</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node4"><a xlink:href="../interface/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#a7506f" stroke="#a7506f" points="346,-554 234,-554 234,-530 346,-530 346,-554"/>
+<text text-anchor="middle" x="290" y="-539.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;interface~do_fragment_work -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge3" class="edge">
+<title>proc~node_worker_impl&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M57.64,-331.1C63.04,-366.01 83.67,-467.52 146,-516 167.9,-533.03 197.37,-540.23 223.86,-542.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="223.6,-546.39 233.85,-543.71 224.17,-539.41 223.6,-546.39"/>
+</g>
+<!-- irecv -->
+<g id="proc~~node_worker_impl~~CallsGraph_node5" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="317,-474 263,-474 263,-450 317,-450 317,-474"/>
+<text text-anchor="middle" x="290" y="-459.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;irecv -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge4" class="edge">
+<title>proc~node_worker_impl&#45;&gt;irecv</title>
+<path fill="none" stroke="#ff0000" d="M61.63,-331.33C73.45,-355.72 103.33,-409.99 146,-436 178.38,-455.74 222.02,-461.26 252.55,-462.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="252.67,-465.96 262.76,-462.72 252.85,-458.97 252.67,-465.96"/>
+</g>
+<!-- isend -->
+<g id="proc~~node_worker_impl~~CallsGraph_node6" class="node">
+<title>isend</title>
+<polygon fill="#777777" stroke="#777777" points="630,-108 576,-108 576,-84 630,-84 630,-108"/>
+<text text-anchor="middle" x="603" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;isend -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge5" class="edge">
+<title>proc~node_worker_impl&#45;&gt;isend</title>
+<path fill="none" stroke="#ff0000" d="M61.38,-306.93C72.95,-282.52 102.7,-227.46 146,-202 257.56,-136.39 318.83,-218.03 434,-159 454.42,-148.53 449.83,-132.94 470,-122 499.77,-105.86 538.16,-99.66 565.85,-97.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="566.18,-100.81 575.9,-96.6 565.68,-93.83 566.18,-100.81"/>
+</g>
+<!-- proc~build_fragment_from_atom_list -->
+<g id="proc~~node_worker_impl~~CallsGraph_node7" class="node">
+<title>proc~build_fragment_from_atom_list</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node7"><a xlink:href="../proc/build_fragment_from_atom_list.html" xlink:title="build_fragment_from_atom_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="378.5,-352 201.5,-352 201.5,-328 378.5,-328 378.5,-352"/>
+<text text-anchor="middle" x="290" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~build_fragment_from_atom_list -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge6" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~build_fragment_from_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M110.04,-323.87C134.23,-326.05 163.51,-328.69 191.32,-331.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="191.22,-334.7 201.49,-332.11 191.85,-327.73 191.22,-334.7"/>
+</g>
+<!-- proc~build_fragment_from_indices -->
+<g id="proc~~node_worker_impl~~CallsGraph_node8" class="node">
+<title>proc~build_fragment_from_indices</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node8"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="373,-310 207,-310 207,-286 373,-286 373,-310"/>
+<text text-anchor="middle" x="290" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~build_fragment_from_indices -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge7" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~build_fragment_from_indices</title>
+<path fill="none" stroke="#ff0000" d="M110.04,-314.13C135.78,-311.81 167.28,-308.97 196.65,-306.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="197.29,-309.78 206.93,-305.4 196.66,-302.81 197.29,-309.78"/>
+</g>
+<!-- proc~error_get_full_trace -->
+<g id="proc~~node_worker_impl~~CallsGraph_node9" class="node">
+<title>proc~error_get_full_trace</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node9"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="370.5,-394 209.5,-394 209.5,-370 370.5,-370 370.5,-394"/>
+<text text-anchor="middle" x="290" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~error_get_full_trace -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge8" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~error_get_full_trace</title>
+<path fill="none" stroke="#ff0000" d="M77.13,-331.01C94.94,-340.61 121.39,-353.62 146,-361 163.04,-366.11 181.6,-369.99 199.54,-372.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="199.01,-376.41 209.43,-374.49 200.09,-369.49 199.01,-376.41"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~node_worker_impl~~CallsGraph_node10" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node10"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="672.5,-474 533.5,-474 533.5,-450 672.5,-450 672.5,-474"/>
+<text text-anchor="middle" x="603" y="-459.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~error_has_error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge9" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M64.91,-331.22C79.49,-350.19 110.42,-386.26 146,-403 150.24,-404.99 393.32,-435.77 522.78,-452.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="522.69,-455.57 533.04,-453.35 523.56,-448.63 522.69,-455.57"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_node11" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node11"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="401.5,-24 178.5,-24 178.5,0 401.5,0 401.5,-24"/>
+<text text-anchor="middle" x="290" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge10" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M55.65,-306.83C55.1,-262.25 59.64,-106.61 146,-33 152.87,-27.15 160.63,-22.52 168.9,-18.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="170.36,-22.09 178.42,-15.22 167.83,-15.56 170.36,-22.09"/>
+</g>
+<!-- proc~mbe_base_has_geometry -->
+<g id="proc~~node_worker_impl~~CallsGraph_node12" class="node">
+<title>proc~mbe_base_has_geometry</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node12"><a xlink:href="../proc/mbe_base_has_geometry.html" xlink:title="many_body_expansion_t%mbe_base_has_geometry">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="434,-150 146,-150 146,-126 434,-126 434,-150"/>
+<text text-anchor="middle" x="290" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">many_body_expansion_t%mbe_base_has_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~mbe_base_has_geometry -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge11" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~mbe_base_has_geometry</title>
+<path fill="none" stroke="#ff0000" d="M59.2,-306.93C67.75,-277.25 94.05,-200.48 146,-164 151.35,-160.24 157.09,-156.98 163.07,-154.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="164.85,-157.19 172.66,-150.04 162.09,-150.76 164.85,-157.19"/>
+</g>
+<!-- proc~result_isend -->
+<g id="proc~~node_worker_impl~~CallsGraph_node13" class="node">
+<title>proc~result_isend</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node13"><a xlink:href="../proc/result_isend.html" xlink:title="result_isend">
+<polygon fill="#d9534f" stroke="#d9534f" points="328,-108 252,-108 252,-84 328,-84 328,-108"/>
+<text text-anchor="middle" x="290" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_isend</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~result_isend -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge12" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#ff0000" d="M57.42,-306.75C62.26,-270.93 81.6,-165.83 146,-117 173.01,-96.52 211.33,-91.81 241.5,-91.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="241.73,-95.43 251.8,-92.15 241.88,-88.43 241.73,-95.43"/>
+</g>
+<!-- recv -->
+<g id="proc~~node_worker_impl~~CallsGraph_node14" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="317,-66 263,-66 263,-42 317,-42 317,-66"/>
+<text text-anchor="middle" x="290" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;recv -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge13" class="edge">
+<title>proc~node_worker_impl&#45;&gt;recv</title>
+<path fill="none" stroke="#ff0000" d="M56.39,-306.94C58.37,-266.69 70.62,-136.16 146,-75 175.85,-50.78 221.18,-48.03 252.77,-49.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="252.7,-53.23 262.92,-50.44 253.19,-46.24 252.7,-53.23"/>
+</g>
+<!-- to_char -->
+<g id="proc~~node_worker_impl~~CallsGraph_node15" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1164,-434 1110,-434 1110,-410 1164,-410 1164,-434"/>
+<text text-anchor="middle" x="1137" y="-419.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;to_char -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge14" class="edge">
+<title>proc~node_worker_impl&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M58.37,-331.42C65.23,-363.49 88.43,-448.92 146,-483 202.41,-516.39 677.22,-512.02 736,-483 759.59,-471.35 748.63,-448.1 772,-436 828.23,-406.88 1019.23,-414.75 1099.74,-419.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1099.7,-423.06 1109.89,-420.19 1100.13,-416.08 1099.7,-423.06"/>
+</g>
+<!-- proc~do_fragment_work -->
+<g id="proc~~node_worker_impl~~CallsGraph_node21" class="node">
+<title>proc~do_fragment_work</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node21"><a xlink:href="../proc/do_fragment_work.html" xlink:title="do_fragment_work">
+<polygon fill="#d9534f" stroke="#d9534f" points="659,-554 547,-554 547,-530 659,-530 659,-554"/>
+<text text-anchor="middle" x="603" y="-539.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">do_fragment_work</text>
+</a>
+</g>
+</g>
+<!-- interface~do_fragment_work&#45;&gt;proc~do_fragment_work -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge15" class="edge">
+<title>interface~do_fragment_work&#45;&gt;proc~do_fragment_work</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M346.24,-542C399.48,-542 480.06,-542 536.5,-542"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="536.75,-545.5 546.75,-542 536.75,-538.5 536.75,-545.5"/>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge20" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff24" d="M378.66,-339.38C398.31,-342.75 418.04,-349.25 434,-361 463.78,-382.92 440.77,-413.36 470,-436 485.25,-447.81 504.41,-454.71 523.36,-458.63"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="522.76,-462.08 533.22,-460.42 524.01,-455.19 522.76,-462.08"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_node16" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node16"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="662,-310 544,-310 544,-286 662,-286 662,-310"/>
+<text text-anchor="middle" x="603" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge16" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#00ff24" d="M378.87,-328.13C427.97,-321.5 488.23,-313.36 533.75,-307.22"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="534.37,-310.66 543.82,-305.86 533.44,-303.73 534.37,-310.66"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~node_worker_impl~~CallsGraph_node19" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node19"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="671.5,-230 534.5,-230 534.5,-206 671.5,-206 671.5,-230"/>
+<text text-anchor="middle" x="603" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge17" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#00ff24" d="M378.53,-337.18C397.66,-333.88 417.19,-328.27 434,-319 455.53,-307.13 450.3,-291.71 470,-277 495.35,-258.08 527.73,-243.49 554.08,-233.55"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="555.3,-236.83 563.48,-230.1 552.89,-230.26 555.3,-236.83"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_node20" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node20"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="667,-394 539,-394 539,-370 667,-370 667,-394"/>
+<text text-anchor="middle" x="603" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge18" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#00ff24" d="M378.87,-351.87C426.13,-358.25 483.74,-366.03 528.58,-372.09"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="528.15,-375.56 538.53,-373.43 529.09,-368.62 528.15,-375.56"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~node_worker_impl~~CallsGraph_node22" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node22"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="965.5,-352 811.5,-352 811.5,-328 965.5,-328 965.5,-352"/>
+<text text-anchor="middle" x="888.5" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge19" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#00ff24" d="M378.53,-342.82C397.66,-346.12 417.19,-351.73 434,-361 455.53,-372.87 447.66,-392.73 470,-403 577.41,-452.4 628.59,-452.4 736,-403 758.34,-392.73 750.68,-373.24 772,-361 781.04,-355.81 791.08,-351.86 801.36,-348.85"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="802.48,-352.18 811.26,-346.25 800.7,-345.41 802.48,-352.18"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~node_worker_impl~~CallsGraph_node23" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node23"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="736,-352 470,-352 470,-328 736,-328 736,-352"/>
+<text text-anchor="middle" x="603" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge21" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#00ff24" d="M378.87,-340C404.07,-340 432.21,-340 459.78,-340"/>
+<polygon fill="#00ff24" stroke="#00ff24" points="459.91,-343.5 469.91,-340 459.91,-336.5 459.91,-343.5"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~error_has_error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge27" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff91" d="M373.06,-295.97C394.64,-299 416.7,-305.69 434,-319 466.19,-343.77 441.5,-374.06 470,-403 490.22,-423.54 518.86,-437.52 544.3,-446.7"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="543.27,-450.05 553.87,-449.99 545.55,-443.43 543.27,-450.05"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge22" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#00ff91" d="M373.12,-298C423.08,-298 486.16,-298 533.44,-298"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="533.58,-301.5 543.58,-298 533.58,-294.5 533.58,-301.5"/>
+</g>
+<!-- proc~calculate_monomer_distance -->
+<g id="proc~~node_worker_impl~~CallsGraph_node18" class="node">
+<title>proc~calculate_monomer_distance</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node18"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="687.5,-188 518.5,-188 518.5,-164 687.5,-164 687.5,-188"/>
+<text text-anchor="middle" x="603" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge23" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance</title>
+<path fill="none" stroke="#00ff91" d="M323.13,-285.95C353.11,-273.97 398.43,-253.96 434,-230 452,-217.87 450.45,-206.44 470,-197 481.91,-191.25 495.05,-187.02 508.29,-183.92"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="509.37,-187.27 518.42,-181.76 507.91,-180.42 509.37,-187.27"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge24" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#00ff91" d="M327.05,-285.98C362.99,-274.27 419.91,-256.46 470,-244 487.5,-239.65 506.45,-235.56 524.38,-231.96"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="525.09,-235.39 534.23,-230.02 523.74,-228.52 525.09,-235.39"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge25" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#00ff91" d="M373.29,-299.97C394.06,-303.13 415.65,-308.88 434,-319 455.53,-330.87 448.54,-349 470,-361 487.76,-370.93 508.84,-376.52 528.88,-379.58"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="528.55,-383.07 538.93,-380.93 529.48,-376.13 528.55,-383.07"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~error_add_context -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge26" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#00ff91" d="M325.97,-285.96C403.87,-261.29 595.82,-212.53 736,-277 758.34,-287.27 750.68,-306.76 772,-319 781.04,-324.19 791.08,-328.14 801.36,-331.15"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="800.7,-334.59 811.26,-333.75 802.48,-327.82 800.7,-334.59"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge28" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#00ff91" d="M373.12,-309.09C413.02,-314.48 461.29,-321 503.19,-326.66"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="502.76,-330.13 513.14,-328 503.7,-323.19 502.76,-330.13"/>
+</g>
+<!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge29" class="edge">
+<title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ffff" d="M370.59,-389.52C391.81,-393.37 414.3,-399.19 434,-408 452.5,-416.27 451.56,-427.59 470,-436 486.59,-443.56 505.33,-448.93 523.37,-452.74"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="522.81,-456.2 533.3,-454.7 524.17,-449.33 522.81,-456.2"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_node17" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node17"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="717.5,-24 488.5,-24 488.5,0 717.5,0 717.5,-24"/>
+<text text-anchor="middle" x="603" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge30" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#0024ff" d="M401.52,-12C426.41,-12 452.99,-12 478.38,-12"/>
+<polygon fill="#0024ff" stroke="#0024ff" points="478.42,-15.5 488.42,-12 478.42,-8.5 478.42,-15.5"/>
+</g>
+<!-- proc~result_isend&#45;&gt;isend -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge31" class="edge">
+<title>proc~result_isend&#45;&gt;isend</title>
+<path fill="none" stroke="#b600ff" d="M328.2,-96C388.28,-96 505.94,-96 565.54,-96"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="565.62,-99.5 575.62,-96 565.62,-92.5 565.62,-99.5"/>
+</g>
+<!-- send -->
+<g id="proc~~node_worker_impl~~CallsGraph_node24" class="node">
+<title>send</title>
+<polygon fill="#777777" stroke="#777777" points="630,-66 576,-66 576,-42 630,-42 630,-66"/>
+<text text-anchor="middle" x="603" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send</text>
+</g>
+<!-- proc~result_isend&#45;&gt;send -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge32" class="edge">
+<title>proc~result_isend&#45;&gt;send</title>
+<path fill="none" stroke="#b600ff" d="M328.2,-90.98C388.28,-82.86 505.94,-66.97 565.54,-58.92"/>
+<polygon fill="#b600ff" stroke="#b600ff" points="566.18,-62.37 575.62,-57.56 565.24,-55.43 566.18,-62.37"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_node29" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node29"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1005,-24 772,-24 772,0 1005,0 1005,-24"/>
+<text text-anchor="middle" x="888.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge33" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffaa00" d="M717.68,-12C732.2,-12 747.12,-12 761.82,-12"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="761.95,-15.5 771.95,-12 761.95,-8.5 761.95,-15.5"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~node_worker_impl~~CallsGraph_node36" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node36"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1176.5,-221 1097.5,-221 1097.5,-197 1176.5,-197 1176.5,-221"/>
+<text text-anchor="middle" x="1137" y="-206.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge34" class="edge">
+<title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#aaff00" d="M687.71,-181.19C800.13,-188.17 996.25,-200.33 1087.16,-205.97"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="1086.99,-209.47 1097.19,-206.59 1087.43,-202.48 1086.99,-209.47"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge35" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff00" d="M671.72,-209.99C692.53,-206.79 715.38,-202.52 736,-197 776.75,-186.09 821.68,-168.09 851.95,-155.03"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="853.47,-158.19 861.24,-150.98 850.67,-151.77 853.47,-158.19"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge38" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff00" d="M671.84,-228.14C702.44,-232.7 739.03,-238.14 772,-243 823.77,-250.63 965.54,-242.63 1005,-277 1048.27,-314.69 999.12,-361.76 1041,-401 1056.57,-415.59 1079.9,-420.89 1099.54,-422.52"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1099.53,-426.03 1109.71,-423.08 1099.92,-419.04 1099.53,-426.03"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~node_worker_impl~~CallsGraph_node32" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node32"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1218.5,-321 1055.5,-321 1055.5,-297 1218.5,-297 1218.5,-321"/>
+<text text-anchor="middle" x="1137" y="-306.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge36" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff00" d="M671.65,-214.37C752.44,-211.86 890.97,-213.34 1005,-244 1043,-254.22 1082.99,-275.88 1108.65,-291.39"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1107.07,-294.53 1117.42,-296.8 1110.74,-288.57 1107.07,-294.53"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~node_worker_impl~~CallsGraph_node34" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node34"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="941,-310 836,-310 836,-286 941,-286 941,-310"/>
+<text text-anchor="middle" x="888.5" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge37" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff00" d="M671.68,-225.12C692.92,-228.97 716.02,-234.89 736,-244 754.44,-252.41 753.67,-263.34 772,-272 788.78,-279.92 808.09,-285.49 826.06,-289.38"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="825.38,-292.82 835.88,-291.37 826.77,-285.96 825.38,-292.82"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;to_char -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge49" class="edge">
+<title>proc~do_fragment_work&#45;&gt;to_char</title>
+<path fill="none" stroke="#00a9ff" d="M659.18,-538.59C683.86,-535.23 712.59,-528.69 736,-516 756.17,-505.06 751.62,-489.54 772,-479 800.87,-464.07 1013.39,-436.91 1099.71,-426.36"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="1100.33,-429.81 1109.83,-425.13 1099.48,-422.86 1100.33,-429.81"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~error_add_context -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge46" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#00a9ff" d="M656.42,-529.91C683.64,-521.12 715.42,-506.52 736,-483 773.22,-440.45 729.94,-398.78 772,-361 780.5,-353.36 790.82,-348.06 801.75,-344.45"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="802.82,-347.78 811.49,-341.68 800.91,-341.05 802.82,-347.78"/>
+</g>
+<!-- calc_energy -->
+<g id="proc~~node_worker_impl~~CallsGraph_node25" class="node">
+<title>calc_energy</title>
+<polygon fill="#777777" stroke="#777777" points="927,-596 850,-596 850,-572 927,-572 927,-596"/>
+<text text-anchor="middle" x="888.5" y="-581.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_energy</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;calc_energy -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge39" class="edge">
+<title>proc~do_fragment_work&#45;&gt;calc_energy</title>
+<path fill="none" stroke="#00a9ff" d="M659.33,-550.2C711.84,-557.98 789.92,-569.54 839.76,-576.93"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="839.54,-580.43 849.95,-578.44 840.57,-573.51 839.54,-580.43"/>
+</g>
+<!-- calc_gradient -->
+<g id="proc~~node_worker_impl~~CallsGraph_node26" class="node">
+<title>calc_gradient</title>
+<polygon fill="#777777" stroke="#777777" points="931,-554 846,-554 846,-530 931,-530 931,-554"/>
+<text text-anchor="middle" x="888.5" y="-539.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_gradient</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;calc_gradient -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge40" class="edge">
+<title>proc~do_fragment_work&#45;&gt;calc_gradient</title>
+<path fill="none" stroke="#00a9ff" d="M659.33,-542C710.33,-542 785.47,-542 835.41,-542"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="835.67,-545.5 845.67,-542 835.66,-538.5 835.67,-545.5"/>
+</g>
+<!-- calc_hessian -->
+<g id="proc~~node_worker_impl~~CallsGraph_node27" class="node">
+<title>calc_hessian</title>
+<polygon fill="#777777" stroke="#777777" points="928.5,-512 848.5,-512 848.5,-488 928.5,-488 928.5,-512"/>
+<text text-anchor="middle" x="888.5" y="-497.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_hessian</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;calc_hessian -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge41" class="edge">
+<title>proc~do_fragment_work&#45;&gt;calc_hessian</title>
+<path fill="none" stroke="#00a9ff" d="M659.33,-533.8C711.34,-526.1 788.45,-514.67 838.35,-507.28"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="838.88,-510.74 848.26,-505.81 837.85,-503.82 838.88,-510.74"/>
+</g>
+<!-- configuration -->
+<g id="proc~~node_worker_impl~~CallsGraph_node28" class="node">
+<title>configuration</title>
+<polygon fill="#777777" stroke="#777777" points="930.5,-764 846.5,-764 846.5,-740 930.5,-740 930.5,-764"/>
+<text text-anchor="middle" x="888.5" y="-749.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;configuration -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge42" class="edge">
+<title>proc~do_fragment_work&#45;&gt;configuration</title>
+<path fill="none" stroke="#00a9ff" d="M610.82,-554.23C630.65,-588.52 692.01,-686.05 772,-731 791.39,-741.9 815.24,-747.32 836.22,-749.96"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="835.94,-753.45 846.26,-751.04 836.69,-746.49 835.94,-753.45"/>
+</g>
+<!-- proc~calc_type_to_string -->
+<g id="proc~~node_worker_impl~~CallsGraph_node30" class="node">
+<title>proc~calc_type_to_string</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node30"><a xlink:href="../proc/calc_type_to_string.html" xlink:title="calc_type_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="945.5,-722 831.5,-722 831.5,-698 945.5,-698 945.5,-722"/>
+<text text-anchor="middle" x="888.5" y="-707.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_type_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~calc_type_to_string -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge43" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~calc_type_to_string</title>
+<path fill="none" stroke="#00a9ff" d="M613.86,-554.32C637.65,-583.13 701.48,-654.99 772,-689 787.13,-696.29 804.48,-701.07 821.06,-704.19"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="820.81,-707.7 831.26,-705.93 821.99,-700.8 820.81,-707.7"/>
+</g>
+<!-- proc~create_method -->
+<g id="proc~~node_worker_impl~~CallsGraph_node31" class="node">
+<title>proc~create_method</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node31"><a xlink:href="../proc/create_method.html" xlink:title="create_method">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="935,-680 842,-680 842,-656 935,-656 935,-680"/>
+<text text-anchor="middle" x="888.5" y="-665.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">create_method</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~create_method -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge44" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~create_method</title>
+<path fill="none" stroke="#00a9ff" d="M619.14,-554.28C647.37,-576.51 710.73,-623.29 772,-647 790.94,-654.33 812.63,-659.13 832.06,-662.27"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="831.58,-665.74 841.99,-663.76 832.62,-658.81 831.58,-665.74"/>
+</g>
+<!-- proc~energy_reset -->
+<g id="proc~~node_worker_impl~~CallsGraph_node33" class="node">
+<title>proc~energy_reset</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node33"><a xlink:href="../proc/energy_reset.html" xlink:title="energy_t%energy_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="957.5,-638 819.5,-638 819.5,-614 957.5,-614 957.5,-638"/>
+<text text-anchor="middle" x="888.5" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~energy_reset -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge45" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~energy_reset</title>
+<path fill="none" stroke="#00a9ff" d="M631.44,-554.03C664.29,-568.02 721.25,-590.99 772,-605 783.94,-608.29 796.71,-611.21 809.26,-613.74"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="808.77,-617.21 819.25,-615.68 810.1,-610.33 808.77,-617.21"/>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~error_set -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge47" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00a9ff" d="M658.75,-529.95C685.78,-521.26 716.67,-506.75 736,-483 783.11,-425.13 718.29,-370.8 772,-319 786.24,-305.27 806.29,-298.93 825.7,-296.35"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="826.16,-299.82 835.75,-295.33 825.45,-292.86 826.16,-299.82"/>
+</g>
+<!-- proc~print_fragment_xyz -->
+<g id="proc~~node_worker_impl~~CallsGraph_node35" class="node">
+<title>proc~print_fragment_xyz</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node35"><a xlink:href="../proc/print_fragment_xyz.html" xlink:title="print_fragment_xyz">
+<polygon fill="#d9534f" stroke="#d9534f" points="946,-394 831,-394 831,-370 946,-370 946,-394"/>
+<text text-anchor="middle" x="888.5" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_fragment_xyz</text>
+</a>
+</g>
+</g>
+<!-- proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge48" class="edge">
+<title>proc~do_fragment_work&#45;&gt;proc~print_fragment_xyz</title>
+<path fill="none" stroke="#00a9ff" d="M640.39,-529.99C668.04,-519.89 706.26,-503.77 736,-483 754.81,-469.86 753.77,-459.93 772,-446 796.76,-427.08 827.8,-410.2 851.46,-398.54"/>
+<polygon fill="#00a9ff" stroke="#00a9ff" points="852.99,-401.69 860.46,-394.17 849.94,-395.39 852.99,-401.69"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_node38" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node38"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1208,-24 1066,-24 1066,0 1208,0 1208,-24"/>
+<text text-anchor="middle" x="1137" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge50" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#00ff00" d="M1005.17,-12C1022.2,-12 1039.43,-12 1055.54,-12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1055.96,-15.5 1065.96,-12 1055.96,-8.5 1055.96,-15.5"/>
+</g>
+<!-- proc~factory_create -->
+<g id="proc~~node_worker_impl~~CallsGraph_node39" class="node">
+<title>proc~factory_create</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node39"><a xlink:href="../proc/factory_create.html" xlink:title="method_factory_t%factory_create">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1233,-680 1041,-680 1041,-656 1233,-656 1233,-680"/>
+<text text-anchor="middle" x="1137" y="-665.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_factory_t%factory_create</text>
+</a>
+</g>
+</g>
+<!-- proc~create_method&#45;&gt;proc~factory_create -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge51" class="edge">
+<title>proc~create_method&#45;&gt;proc~factory_create</title>
+<path fill="none" stroke="#00ffff" d="M935.29,-668C962.16,-668 997.3,-668 1030.66,-668"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1030.94,-671.5 1040.94,-668 1030.94,-664.5 1030.94,-671.5"/>
+</g>
+<!-- proc~mp2_reset -->
+<g id="proc~~node_worker_impl~~CallsGraph_node40" class="node">
+<title>proc~mp2_reset</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node40"><a xlink:href="../proc/mp2_reset.html" xlink:title="mp2_energy_t%mp2_reset">
+<polygon fill="#d9534f" stroke="#d9534f" points="1214,-638 1060,-638 1060,-614 1214,-614 1214,-638"/>
+<text text-anchor="middle" x="1137" y="-623.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_reset</text>
+</a>
+</g>
+</g>
+<!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge52" class="edge">
+<title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
+<path fill="none" stroke="#0000ff" d="M957.51,-626C986.06,-626 1019.6,-626 1049.85,-626"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1049.97,-629.5 1059.97,-626 1049.97,-622.5 1049.97,-629.5"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;to_char -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge56" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff00ff" d="M946.05,-391.18C993.39,-398.86 1059.5,-409.59 1099.94,-416.15"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1099.46,-419.62 1109.89,-417.76 1100.58,-412.71 1099.46,-419.62"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge54" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#ff00ff" d="M946.12,-374.01C965.03,-370.73 986.09,-366.41 1005,-361 1038.17,-351.5 1074.53,-336.7 1100.52,-325.31"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1102.22,-328.38 1109.94,-321.13 1099.38,-321.98 1102.22,-328.38"/>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;proc~to_angstrom -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge55" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#ff00ff" d="M946.29,-381.97C966.48,-379.45 988.32,-373.58 1005,-361 1033.88,-339.22 1018.6,-316.41 1041,-288 1060.29,-263.53 1088.27,-241.4 1108.87,-226.83"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1110.98,-229.63 1117.21,-221.06 1106.99,-223.87 1110.98,-229.63"/>
+</g>
+<!-- info -->
+<g id="proc~~node_worker_impl~~CallsGraph_node37" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="1164,-392 1110,-392 1110,-368 1164,-368 1164,-392"/>
+<text text-anchor="middle" x="1137" y="-377.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~print_fragment_xyz&#45;&gt;info -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge53" class="edge">
+<title>proc~print_fragment_xyz&#45;&gt;info</title>
+<path fill="none" stroke="#ff00ff" d="M946.05,-381.54C993.29,-381.16 1059.22,-380.62 1099.69,-380.29"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="1099.92,-383.79 1109.89,-380.21 1099.86,-376.79 1099.92,-383.79"/>
+</g>
+<!-- proc~configure_dft -->
+<g id="proc~~node_worker_impl~~CallsGraph_node41" class="node">
+<title>proc~configure_dft</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node41"><a xlink:href="../proc/configure_dft.html" xlink:title="configure_dft">
+<polygon fill="#d9534f" stroke="#d9534f" points="1360,-743 1278,-743 1278,-719 1360,-719 1360,-743"/>
+<text text-anchor="middle" x="1319" y="-728.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_dft</text>
+</a>
+</g>
+</g>
+<!-- proc~factory_create&#45;&gt;proc~configure_dft -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge57" class="edge">
+<title>proc~factory_create&#45;&gt;proc~configure_dft</title>
+<path fill="none" stroke="#00ffff" d="M1172.71,-680.15C1201.56,-690.25 1242.79,-704.68 1273.97,-715.59"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1273.11,-719 1283.71,-719 1275.42,-712.39 1273.11,-719"/>
+</g>
+<!-- proc~configure_hf -->
+<g id="proc~~node_worker_impl~~CallsGraph_node42" class="node">
+<title>proc~configure_hf</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node42"><a xlink:href="../proc/configure_hf.html" xlink:title="configure_hf">
+<polygon fill="#d9534f" stroke="#d9534f" points="1358.5,-701 1279.5,-701 1279.5,-677 1358.5,-677 1358.5,-701"/>
+<text text-anchor="middle" x="1319" y="-686.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_hf</text>
+</a>
+</g>
+</g>
+<!-- proc~factory_create&#45;&gt;proc~configure_hf -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge58" class="edge">
+<title>proc~factory_create&#45;&gt;proc~configure_hf</title>
+<path fill="none" stroke="#00ffff" d="M1233.01,-679.08C1245.56,-680.55 1257.98,-682 1269.29,-683.32"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1269,-686.81 1279.34,-684.49 1269.81,-679.85 1269,-686.81"/>
+</g>
+<!-- proc~configure_mcscf -->
+<g id="proc~~node_worker_impl~~CallsGraph_node43" class="node">
+<title>proc~configure_mcscf</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node43"><a xlink:href="../proc/configure_mcscf.html" xlink:title="configure_mcscf">
+<polygon fill="#d9534f" stroke="#d9534f" points="1369,-659 1269,-659 1269,-635 1369,-635 1369,-659"/>
+<text text-anchor="middle" x="1319" y="-644.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_mcscf</text>
+</a>
+</g>
+</g>
+<!-- proc~factory_create&#45;&gt;proc~configure_mcscf -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge59" class="edge">
+<title>proc~factory_create&#45;&gt;proc~configure_mcscf</title>
+<path fill="none" stroke="#00ffff" d="M1233.01,-656.92C1241.68,-655.9 1250.3,-654.9 1258.52,-653.94"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1259.19,-657.39 1268.71,-652.75 1258.38,-650.43 1259.19,-657.39"/>
+</g>
+<!-- proc~configure_xtb -->
+<g id="proc~~node_worker_impl~~CallsGraph_node44" class="node">
+<title>proc~configure_xtb</title>
+<g id="a_proc~~node_worker_impl~~CallsGraph_node44"><a xlink:href="../proc/configure_xtb.html" xlink:title="configure_xtb">
+<polygon fill="#d9534f" stroke="#d9534f" points="1361.5,-617 1276.5,-617 1276.5,-593 1361.5,-593 1361.5,-617"/>
+<text text-anchor="middle" x="1319" y="-602.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configure_xtb</text>
+</a>
+</g>
+</g>
+<!-- proc~factory_create&#45;&gt;proc~configure_xtb -->
+<g id="proc~~node_worker_impl~~CallsGraph_edge60" class="edge">
+<title>proc~factory_create&#45;&gt;proc~configure_xtb</title>
+<path fill="none" stroke="#00ffff" d="M1204.97,-655.95C1214.52,-653.44 1224.11,-650.48 1233,-647 1250.25,-640.25 1252.46,-634.33 1269,-626 1272.15,-624.41 1275.46,-622.83 1278.79,-621.29"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="1280.5,-624.36 1288.19,-617.08 1277.63,-617.97 1280.5,-624.36"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocnode_worker_implCallsGraph = svgPanZoom('#procnode_worker_implCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~node_worker_impl~~CalledByGraph Pages: 1 -->
+<svg id="procnode_worker_implCalledByGraph" width="613pt" height="74pt"
+ viewBox="0.00 0.00 613.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~node_worker_impl~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~node_worker_impl~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 609,-70 609,4 -4,4"/>
+<!-- proc~node_worker_impl -->
+<g id="proc~~node_worker_impl~~CalledByGraph_node1" class="node">
+<title>proc~node_worker_impl</title>
+<polygon fill="none" stroke="black" points="605,-45 495,-45 495,-21 605,-21 605,-45"/>
+<text text-anchor="middle" x="550" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">node_worker_impl</text>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~node_worker_impl~~CalledByGraph_node2" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~node_worker_impl~~CalledByGraph_node2"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="459,-45 377,-45 377,-21 459,-21 459,-45"/>
+<text text-anchor="middle" x="418" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~node_worker_impl -->
+<g id="proc~~node_worker_impl~~CalledByGraph_edge1" class="edge">
+<title>proc~node_worker&#45;&gt;proc~node_worker_impl</title>
+<path fill="none" stroke="#ff0000" d="M459.07,-33C467.22,-33 475.98,-33 484.73,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="484.96,-36.5 494.96,-33 484.96,-29.5 484.96,-36.5"/>
+</g>
+<!-- interface~node_worker -->
+<g id="proc~~node_worker_impl~~CalledByGraph_node3" class="node">
+<title>interface~node_worker</title>
+<g id="a_proc~~node_worker_impl~~CalledByGraph_node3"><a xlink:href="../interface/node_worker.html" xlink:title="node_worker">
+<polygon fill="#a7506f" stroke="#a7506f" points="341,-45 259,-45 259,-21 341,-21 341,-45"/>
+<text text-anchor="middle" x="300" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- interface~node_worker&#45;&gt;proc~node_worker -->
+<g id="proc~~node_worker_impl~~CalledByGraph_edge2" class="edge">
+<title>interface~node_worker&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M341.25,-33C349.43,-33 358.14,-33 366.63,-33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="366.83,-36.5 376.83,-33 366.83,-29.5 366.83,-36.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~node_worker_impl~~CalledByGraph_node4" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~node_worker_impl~~CalledByGraph_node4"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-66 0,-66 0,-42 223,-42 223,-66"/>
+<text text-anchor="middle" x="111.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;interface~node_worker -->
+<g id="proc~~node_worker_impl~~CalledByGraph_edge3" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;interface~node_worker</title>
+<path fill="none" stroke="#ff0000" d="M219.1,-42C229.29,-40.85 239.27,-39.73 248.53,-38.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249.11,-42.14 258.66,-37.54 248.33,-35.18 249.11,-42.14"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~node_worker_impl~~CalledByGraph_node5" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~node_worker_impl~~CalledByGraph_node5"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="216,-24 7,-24 7,0 216,0 216,-24"/>
+<text text-anchor="middle" x="111.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~node_worker -->
+<g id="proc~~node_worker_impl~~CalledByGraph_edge4" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~node_worker</title>
+<path fill="none" stroke="#ff0000" d="M216.11,-23.67C227.31,-24.93 238.31,-26.17 248.45,-27.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="248.35,-30.82 258.68,-28.46 249.13,-23.86 248.35,-30.82"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dummy_msg~3"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dummy_msg</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~40"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_idx~7"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_indices~4"></span>
+              integer(kind=int32),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragment_indices</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_size~6"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_size</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_type~4"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment_type</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>0 = monomer (indices), 1 = intersection (atom list)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-phys_frag~2"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>phys_frag</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-req~5"></span>
+              type(request_t),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>req</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~6"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-status~3"></span>
+              type(MPI_Status),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">node_worker_impl</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Internal implementation of node_worker with typed context</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_many_body_expansion</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">many_body_expansion_t</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">many_body_expansion_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ctx</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_type</span><span class="w">  </span><span class="c">!! 0 = monomer (indices), 1 = intersection (atom list)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<span class="k">      type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">phys_frag</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="c">! MPI request handles for non-blocking operations</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
+
+<span class="w">      </span><span class="n">dummy_msg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="k">do</span>
+<span class="k">         call </span><span class="n">isend</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">irecv</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_TAG</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+
+<span class="w">         </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">%</span><span class="n">MPI_TAG</span><span class="p">)</span>
+<span class="w">         </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! Receive fragment type (0 = monomer indices, 1 = intersection atom list)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">irecv</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">irecv</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="c">! Note: must use blocking recv for allocatable arrays since size is unknown</span>
+<span class="w">            </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">(</span><span class="n">fragment_size</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Build physical fragment based on type</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">has_geometry</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">                  </span><span class="c">! Monomer: fragment_indices are monomer indices</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">build_fragment_from_indices</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">               </span><span class="k">else</span>
+<span class="w">                  </span><span class="c">! Intersection: fragment_indices are atom indices</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">build_fragment_from_atom_list</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                     </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+
+<span class="w">               </span><span class="c">! Process the chemistry fragment with physical geometry</span>
+<span class="w">               </span><span class="k">call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="n">phys_frag</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                     </span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">)</span>
+
+<span class="w">               </span><span class="k">call </span><span class="n">phys_frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">            </span><span class="k">else</span>
+<span class="w">               </span><span class="c">! Process without physical geometry (old behavior)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">do_fragment_work</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">method_config</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                     </span><span class="n">calc_type</span><span class="o">=</span><span class="n">ctx</span><span class="p">%</span><span class="n">calc_type</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="o">=</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="w">            </span><span class="c">! Send result back to coordinator</span>
+<span class="w">            </span><span class="k">call </span><span class="n">result_isend</span><span class="p">(</span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_SCALAR_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<span class="w">            </span><span class="c">! Clean up result</span>
+<span class="w">            </span><span class="k">call result</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">)</span>
+<span class="w">         </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="n">TAG_WORKER_FINISH</span><span class="p">)</span>
+<span class="w">            </span><span class="k">exit</span>
+<span class="k">         case </span><span class="n">default</span>
+<span class="w">            </span><span class="c">! Unexpected MPI tag - this should not happen in normal operation</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Worker received unexpected MPI tag: &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">status</span><span class="p">%</span><span class="n">MPI_TAG</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Expected TAG_WORKER_FRAGMENT or TAG_WORKER_FINISH&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end select</span>
+<span class="k">      end do</span>
+<span class="k">   end subroutine </span><span class="n">node_worker_impl</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-17 21:45 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

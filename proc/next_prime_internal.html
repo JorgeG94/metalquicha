@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/next_prime_internal.html#variable-i~12">i</a>
+            <a class="list-group-item" href="../proc/next_prime_internal.html#variable-i~16">i</a>
             <a class="list-group-item" href="../proc/next_prime_internal.html#variable-is_prime">is_prime</a>
         </div>
       </div>
@@ -193,7 +193,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~4"></span>
+              <span class="anchor" id="variable-n~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -284,20 +284,20 @@
 <path fill="none" stroke="#ff0000" d="M469.14,-33C477.2,-33 485.84,-33 494.58,-33"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="494.86,-36.5 504.86,-33 494.86,-29.5 494.86,-36.5"/>
 </g>
-<!-- proc~global_coordinator -->
+<!-- proc~global_coordinator_impl -->
 <g id="proc~~next_prime_internal~~CalledByGraph_node5" class="node">
-<title>proc~global_coordinator</title>
-<g id="a_proc~~next_prime_internal~~CalledByGraph_node5"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#d9534f" stroke="#d9534f" points="323.5,-66 210.5,-66 210.5,-42 323.5,-42 323.5,-66"/>
-<text text-anchor="middle" x="267" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~next_prime_internal~~CalledByGraph_node5"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="338,-66 196,-66 196,-42 338,-42 338,-66"/>
+<text text-anchor="middle" x="267" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
 </a>
 </g>
 </g>
-<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~compute_mbe -->
 <g id="proc~~next_prime_internal~~CalledByGraph_edge4" class="edge">
-<title>proc~global_coordinator&#45;&gt;proc~compute_mbe</title>
-<path fill="none" stroke="#ff0000" d="M323.7,-46.48C338.71,-44.45 354.92,-42.26 369.82,-40.25"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="370.45,-43.7 379.89,-38.89 369.51,-36.76 370.45,-43.7"/>
+<title>proc~global_coordinator_impl&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#ff0000" d="M338.02,-44.54C348.66,-43.11 359.49,-41.64 369.72,-40.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="370.26,-43.72 379.71,-38.91 369.33,-36.78 370.26,-43.72"/>
 </g>
 <!-- proc~serial_fragment_processor -->
 <g id="proc~~next_prime_internal~~CalledByGraph_node6" class="node">
@@ -314,25 +314,10 @@
 <path fill="none" stroke="#ff0000" d="M344.38,-22.32C352.92,-23.47 361.47,-24.62 369.64,-25.73"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="369.36,-29.22 379.74,-27.09 370.3,-22.28 369.36,-29.22"/>
 </g>
-<!-- interface~global_coordinator -->
-<g id="proc~~next_prime_internal~~CalledByGraph_node7" class="node">
-<title>interface~global_coordinator</title>
-<g id="a_proc~~next_prime_internal~~CalledByGraph_node7"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#a7506f" stroke="#a7506f" points="133.5,-66 20.5,-66 20.5,-42 133.5,-42 133.5,-66"/>
-<text text-anchor="middle" x="77" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
-</a>
-</g>
-</g>
-<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
-<g id="proc~~next_prime_internal~~CalledByGraph_edge6" class="edge">
-<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M133.64,-54C154.58,-54 178.58,-54 200.35,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="200.5,-57.5 210.5,-54 200.5,-50.5 200.5,-57.5"/>
-</g>
 <!-- interface~serial_fragment_processor -->
-<g id="proc~~next_prime_internal~~CalledByGraph_node8" class="node">
+<g id="proc~~next_prime_internal~~CalledByGraph_node7" class="node">
 <title>interface~serial_fragment_processor</title>
-<g id="a_proc~~next_prime_internal~~CalledByGraph_node8"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<g id="a_proc~~next_prime_internal~~CalledByGraph_node7"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
 <polygon fill="#a7506f" stroke="#a7506f" points="154,-24 0,-24 0,0 154,0 154,-24"/>
 <text text-anchor="middle" x="77" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
@@ -343,6 +328,21 @@
 <title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
 <path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M154.2,-12C162.52,-12 171.03,-12 179.47,-12"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="179.7,-15.5 189.7,-12 179.7,-8.5 179.7,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~next_prime_internal~~CalledByGraph_node8" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~next_prime_internal~~CalledByGraph_node8"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="133.5,-66 20.5,-66 20.5,-42 133.5,-42 133.5,-66"/>
+<text text-anchor="middle" x="77" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~next_prime_internal~~CalledByGraph_edge6" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M133.64,-54C149.94,-54 168.08,-54 185.59,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="185.8,-57.5 195.8,-54 185.8,-50.5 185.8,-57.5"/>
 </g>
 </g>
 </svg>
@@ -448,7 +448,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~12"></span>
+              <span class="anchor" id="variable-i~16"></span>
               integer,
             </td>
               <td>private</td>
@@ -540,7 +540,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-10 04:12 +0000             </p>
+ on 2026-02-17 21:45 +0000             </p>
           </div>
         </div>
         <br>

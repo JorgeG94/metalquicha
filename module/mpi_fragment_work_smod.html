@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.4% of total for modules and submodules.">386 statements</a>
+                 title=" 3.7% of total for modules and submodules.">413 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -146,6 +146,9 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-global_coordinator_impl">global_coordinator_impl</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_coordinator_impl">node_coordinator_impl</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_worker_impl">node_worker_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_to_node">send_fragment_to_node</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_to_worker">send_fragment_to_worker</a>
         </div>
@@ -1724,6 +1727,141 @@ large graphs.</div>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-global_coordinator_impl"></span> <h3> subroutine <a href='../proc/global_coordinator_impl.html'>global_coordinator_impl</a>(ctx, json_data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Internal implementation of global_coordinator with typed context</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctx~4"></span>
+              type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_data~3"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_data</strong></td>
+            <td>
+<p>JSON output data</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-node_coordinator_impl"></span> <h3> subroutine <a href='../proc/node_coordinator_impl.html'>node_coordinator_impl</a>(ctx)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Internal implementation of node_coordinator with typed context</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctx~6"></span>
+              class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-node_worker_impl"></span> <h3> subroutine <a href='../proc/node_worker_impl.html'>node_worker_impl</a>(ctx)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Internal implementation of node_worker with typed context</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctx~8"></span>
+              class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctx</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-send_fragment_to_node"></span> <h3> subroutine <a href='../proc/send_fragment_to_node.html'>send_fragment_to_node</a>(world_comm, fragment_idx, polymers, dest_rank)  
 </h3></div>
     <div class="card-body">
@@ -1759,7 +1897,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~3"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1774,7 +1912,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~2"></span>
+              <span class="anchor" id="variable-polymers~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1845,7 +1983,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-fragment_idx~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1860,7 +1998,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~3"></span>
+              <span class="anchor" id="variable-polymers~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1922,7 +2060,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx"></span>
+              <span class="anchor" id="variable-fragment_idx~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -1937,7 +2075,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~4"></span>
+              <span class="anchor" id="variable-result~5"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1952,7 +2090,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2018,7 +2156,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-global_coordinator"></span> <h3>module subroutine <a href='../proc/global_coordinator.html'>global_coordinator</a>(resources, total_fragments, polymers, max_level, node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, json_data)  
+    <div class="card-header codesum"><span class="anchor" id="proc-global_coordinator"></span> <h3>module subroutine <a href='../proc/global_coordinator.html'>global_coordinator</a>(ctx, json_data)  
     <a href="../interface/global_coordinator.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h3></div>
     <div class="card-body">
@@ -2026,7 +2164,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
   <p>Global coordinator for distributing fragments to node coordinators
 will act as a node coordinator for a single node calculation
 Uses int64 for total_fragments to handle large fragment counts that overflow int32.
-Bond connectivity is accessed via sys_geom%bonds</p>
+Bond connectivity is accessed via ctx%sys_geom%bonds</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2041,142 +2179,22 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
-              type(<a href='../type/resources_t.html'>resources_t</a>),
+              <span class="anchor" id="variable-ctx~3"></span>
+              class(*),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>resources</strong></td>
+            <td><strong>ctx</strong></td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>total_fragments</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_level"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_level</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>node_leader_ranks</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-num_nodes"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>num_nodes</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sys_geom~6"></span>
-              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>sys_geom</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-method_config~3"></span>
-              type(<a href='../type/method_config_t.html'>method_config_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>method_config</strong></td>
-            <td>
-<p>Method configuration</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>calc_type</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-json_data"></span>
+              <span class="anchor" id="variable-json_data~2"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2197,7 +2215,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-node_coordinator"></span> <h3>module subroutine <a href='../proc/node_coordinator.html'>node_coordinator</a>(resources, method_config, calc_type)  
+    <div class="card-header codesum"><span class="anchor" id="proc-node_coordinator"></span> <h3>module subroutine <a href='../proc/node_coordinator.html'>node_coordinator</a>(ctx)  
     <a href="../interface/node_coordinator.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h3></div>
     <div class="card-body">
@@ -2218,45 +2236,15 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~2"></span>
-              type(<a href='../type/resources_t.html'>resources_t</a>),
+              <span class="anchor" id="variable-ctx~5"></span>
+              class(*),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>resources</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-method_config~4"></span>
-              type(<a href='../type/method_config_t.html'>method_config_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>method_config</strong></td>
-            <td>
-<p>Method configuration (passed through to workers)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-calc_type~4"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>calc_type</strong></td>
+            <td><strong>ctx</strong></td>
             <td>
 
             </td>
@@ -2269,13 +2257,13 @@ Handles work requests and result collection from local workers</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-node_worker"></span> <h3>module subroutine <a href='../proc/node_worker.html'>node_worker</a>(resources, sys_geom, method_config, calc_type)  
+    <div class="card-header codesum"><span class="anchor" id="proc-node_worker"></span> <h3>module subroutine <a href='../proc/node_worker.html'>node_worker</a>(ctx)  
     <a href="../interface/node_worker.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h3></div>
     <div class="card-body">
           
   <p>Node worker for processing fragments assigned by node coordinator
-Bond connectivity is accessed via sys_geom%bonds</p>
+Bond connectivity is accessed via ctx%sys_geom%bonds</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2290,60 +2278,15 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
-              type(<a href='../type/resources_t.html'>resources_t</a>),
+              <span class="anchor" id="variable-ctx~7"></span>
+              class(*),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>resources</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sys_geom~7"></span>
-              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
-            </td>
-<td>intent(in),</td>
-              <td>optional</td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>sys_geom</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-method_config~5"></span>
-              type(<a href='../type/method_config_t.html'>method_config_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>method_config</strong></td>
-            <td>
-<p>Method configuration</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>calc_type</strong></td>
+            <td><strong>ctx</strong></td>
             <td>
 
             </td>
@@ -2376,7 +2319,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-10 04:12 +0000             </p>
+ on 2026-02-17 21:45 +0000             </p>
           </div>
         </div>
         <br>

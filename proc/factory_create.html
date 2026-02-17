@@ -185,7 +185,7 @@ config%method_type and configures it from the nested config.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~9"></span>
+              <span class="anchor" id="variable-this~43"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -200,7 +200,7 @@ config%method_type and configures it from the nested config.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~9"></span>
+              <span class="anchor" id="variable-config~27"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -218,7 +218,7 @@ config%method_type and configures it from the nested config.</p>
 
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-method"></span>
+          <span class="anchor" id="variable-method~3"></span>
           class(<a href='../type/qc_method_t.html'>qc_method_t</a>), allocatable
         </small>
       </h3>
@@ -579,19 +579,19 @@ large graphs.</div>
 <path fill="none" stroke="#0000ff" d="M430.13,-12C443.42,-12 456.69,-12 468.92,-12"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="468.92,-15.5 478.92,-12 468.92,-8.5 468.92,-15.5"/>
 </g>
-<!-- proc~node_worker -->
+<!-- proc~node_worker_impl -->
 <g id="proc~~factory_create~~CalledByGraph_node10" class="node">
-<title>proc~node_worker</title>
-<g id="a_proc~~factory_create~~CalledByGraph_node10"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
-<polygon fill="#d9534f" stroke="#d9534f" points="372.5,-192 290.5,-192 290.5,-168 372.5,-168 372.5,-192"/>
-<text text-anchor="middle" x="331.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+<title>proc~node_worker_impl</title>
+<g id="a_proc~~factory_create~~CalledByGraph_node10"><a xlink:href="../proc/node_worker_impl.html" xlink:title="node_worker_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="386.5,-192 276.5,-192 276.5,-168 386.5,-168 386.5,-192"/>
+<text text-anchor="middle" x="331.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker_impl</text>
 </a>
 </g>
 </g>
-<!-- proc~node_worker&#45;&gt;interface~do_fragment_work -->
+<!-- proc~node_worker_impl&#45;&gt;interface~do_fragment_work -->
 <g id="proc~~factory_create~~CalledByGraph_edge8" class="edge">
-<title>proc~node_worker&#45;&gt;interface~do_fragment_work</title>
-<path fill="none" stroke="#ff0000" d="M372.89,-174.76C390.85,-171.56 411.96,-166.58 430,-159 456.88,-147.71 484.32,-128.66 502.85,-114.46"/>
+<title>proc~node_worker_impl&#45;&gt;interface~do_fragment_work</title>
+<path fill="none" stroke="#ff0000" d="M386.73,-172.04C401.12,-168.93 416.43,-164.7 430,-159 456.88,-147.71 484.32,-128.66 502.85,-114.46"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="505.23,-117.04 510.95,-108.13 500.92,-111.53 505.23,-117.04"/>
 </g>
 <!-- proc~serial_fragment_processor -->
@@ -654,25 +654,10 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M197.13,-12C205.63,-12 214.25,-12 222.83,-12"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="222.85,-15.5 232.85,-12 222.85,-8.5 222.85,-15.5"/>
 </g>
-<!-- interface~node_worker -->
-<g id="proc~~factory_create~~CalledByGraph_node15" class="node">
-<title>interface~node_worker</title>
-<g id="a_proc~~factory_create~~CalledByGraph_node15"><a xlink:href="../interface/node_worker.html" xlink:title="node_worker">
-<polygon fill="#a7506f" stroke="#a7506f" points="139.5,-192 57.5,-192 57.5,-168 139.5,-168 139.5,-192"/>
-<text text-anchor="middle" x="98.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
-</a>
-</g>
-</g>
-<!-- interface~node_worker&#45;&gt;proc~node_worker -->
-<g id="proc~~factory_create~~CalledByGraph_edge15" class="edge">
-<title>interface~node_worker&#45;&gt;proc~node_worker</title>
-<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M139.74,-180C178.79,-180 238.17,-180 280.29,-180"/>
-<polygon fill="#cbff00" stroke="#cbff00" points="280.34,-183.5 290.34,-180 280.34,-176.5 280.34,-183.5"/>
-</g>
 <!-- interface~serial_fragment_processor -->
-<g id="proc~~factory_create~~CalledByGraph_node16" class="node">
+<g id="proc~~factory_create~~CalledByGraph_node15" class="node">
 <title>interface~serial_fragment_processor</title>
-<g id="a_proc~~factory_create~~CalledByGraph_node16"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<g id="a_proc~~factory_create~~CalledByGraph_node15"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
 <polygon fill="#a7506f" stroke="#a7506f" points="175.5,-150 21.5,-150 21.5,-126 175.5,-126 175.5,-150"/>
 <text text-anchor="middle" x="98.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
@@ -685,9 +670,9 @@ large graphs.</div>
 <polygon fill="#00ff66" stroke="#00ff66" points="244.3,-141.5 254.3,-138 244.3,-134.5 244.3,-141.5"/>
 </g>
 <!-- interface~unfragmented_calculation -->
-<g id="proc~~factory_create~~CalledByGraph_node17" class="node">
+<g id="proc~~factory_create~~CalledByGraph_node16" class="node">
 <title>interface~unfragmented_calculation</title>
-<g id="a_proc~~factory_create~~CalledByGraph_node17"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
+<g id="a_proc~~factory_create~~CalledByGraph_node16"><a xlink:href="../interface/unfragmented_calculation.html" xlink:title="unfragmented_calculation">
 <polygon fill="#a7506f" stroke="#a7506f" points="175,-66 22,-66 22,-42 175,-42 175,-66"/>
 <text text-anchor="middle" x="98.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unfragmented_calculation</text>
 </a>
@@ -700,9 +685,9 @@ large graphs.</div>
 <polygon fill="#cc00ff" stroke="#cc00ff" points="244.69,-57.5 254.69,-54 244.69,-50.5 244.69,-57.5"/>
 </g>
 <!-- proc~gmbe_run_serial -->
-<g id="proc~~factory_create~~CalledByGraph_node18" class="node">
+<g id="proc~~factory_create~~CalledByGraph_node17" class="node">
 <title>proc~gmbe_run_serial</title>
-<g id="a_proc~~factory_create~~CalledByGraph_node18"><a xlink:href="../proc/gmbe_run_serial.html" xlink:title="gmbe_context_t%gmbe_run_serial">
+<g id="a_proc~~factory_create~~CalledByGraph_node17"><a xlink:href="../proc/gmbe_run_serial.html" xlink:title="gmbe_context_t%gmbe_run_serial">
 <polygon fill="#d9534f" stroke="#d9534f" points="196,-108 1,-108 1,-84 196,-84 196,-108"/>
 <text text-anchor="middle" x="98.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_serial</text>
 </a>
@@ -713,6 +698,21 @@ large graphs.</div>
 <title>proc~gmbe_run_serial&#45;&gt;proc~serial_gmbe_pie_processor</title>
 <path fill="none" stroke="#0066ff" d="M196.13,-96C211.5,-96 227.32,-96 242.48,-96"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="242.85,-99.5 252.85,-96 242.85,-92.5 242.85,-99.5"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~factory_create~~CalledByGraph_node18" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~factory_create~~CalledByGraph_node18"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="139.5,-192 57.5,-192 57.5,-168 139.5,-168 139.5,-192"/>
+<text text-anchor="middle" x="98.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~node_worker_impl -->
+<g id="proc~~factory_create~~CalledByGraph_edge15" class="edge">
+<title>proc~node_worker&#45;&gt;proc~node_worker_impl</title>
+<path fill="none" stroke="#cbff00" d="M139.74,-180C174.65,-180 225.82,-180 266.38,-180"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="266.44,-183.5 276.44,-180 266.44,-176.5 266.44,-183.5"/>
 </g>
 </g>
 </svg>
@@ -873,7 +873,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-10 04:12 +0000             </p>
+ on 2026-02-17 21:45 +0000             </p>
           </div>
         </div>
         <br>

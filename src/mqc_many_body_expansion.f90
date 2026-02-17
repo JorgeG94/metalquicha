@@ -227,32 +227,18 @@ contains
          ! Global coordinator (rank 0, node leader on node 0)
          call omp_set_num_threads(omp_get_max_threads())
          call logger%verbose("Rank 0: Acting as global coordinator")
-         if (this%has_geometry()) then
-            call global_coordinator(this%resources, this%total_fragments, this%polymers, &
-                                    this%max_level, this%node_leader_ranks, this%num_nodes, &
-                                    this%sys_geom, this%method_config, this%calc_type, json_data)
-         else
-            call global_coordinator(this%resources, this%total_fragments, this%polymers, &
-                                    this%max_level, this%node_leader_ranks, this%num_nodes, &
-                                    method_config=this%method_config, calc_type=this%calc_type, &
-                                    json_data=json_data)
-         end if
+         call global_coordinator(this, json_data)
       else if (this%resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
                              ": Acting as node coordinator")
-         call node_coordinator(this%resources, this%method_config, this%calc_type)
+         call node_coordinator(this)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
                              ": Acting as worker")
-         if (this%has_geometry()) then
-            call node_worker(this%resources, this%sys_geom, this%method_config, this%calc_type)
-         else
-            call node_worker(this%resources, method_config=this%method_config, &
-                             calc_type=this%calc_type)
-         end if
+         call node_worker(this)
       end if
    end subroutine mbe_run_distributed
 
@@ -331,19 +317,14 @@ contains
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
                              ": Acting as node coordinator")
          ! Note: node_coordinator works for both MBE and GMBE
-         call node_coordinator(this%resources, this%method_config, this%calc_type)
+         call node_coordinator(this)
       else
          ! Worker
          call omp_set_num_threads(1)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
                              ": Acting as worker")
          ! Note: node_worker works for both MBE and GMBE (fragment_type distinguishes)
-         if (this%has_geometry()) then
-            call node_worker(this%resources, this%sys_geom, this%method_config, this%calc_type)
-         else
-            call node_worker(this%resources, method_config=this%method_config, &
-                             calc_type=this%calc_type)
-         end if
+         call node_worker(this)
       end if
    end subroutine gmbe_run_distributed
 

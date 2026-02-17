@@ -136,13 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-i~37">i</a>
-            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-iatom~6">iatom</a>
+            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-i~29">i</a>
+            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-iatom~4">iatom</a>
             <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-icoord">icoord</a>
             <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-inv_sqrt_mass">inv_sqrt_mass</a>
-            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-j~11">j</a>
+            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-j~7">j</a>
             <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-mass~2">mass</a>
-            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-n_atoms~7">n_atoms</a>
+            <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-n_atoms~6">n_atoms</a>
             <a class="list-group-item" href="../proc/mass_weight_hessian.html#variable-n_coords~2">n_coords</a>
         </div>
       </div>
@@ -202,7 +202,7 @@ Each atom contributes 3 coordinates (x, y, z).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~6"></span>
+              <span class="anchor" id="variable-hessian~4"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -217,7 +217,7 @@ Each atom contributes 3 coordinates (x, y, z).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_numbers~5"></span>
+              <span class="anchor" id="variable-element_numbers~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -568,20 +568,20 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" d="M430.34,-222C455.86,-222 482.86,-222 506.61,-222"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="506.92,-225.5 516.92,-222 506.92,-218.5 506.92,-225.5"/>
 </g>
-<!-- proc~global_coordinator -->
+<!-- proc~global_coordinator_impl -->
 <g id="proc~~mass_weight_hessian~~CalledByGraph_node13" class="node">
-<title>proc~global_coordinator</title>
-<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node13"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#d9534f" stroke="#d9534f" points="634,-66 521,-66 521,-42 634,-42 634,-66"/>
-<text text-anchor="middle" x="577.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node13"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="648.5,-66 506.5,-66 506.5,-42 648.5,-42 648.5,-66"/>
+<text text-anchor="middle" x="577.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
 </a>
 </g>
 </g>
-<!-- proc~global_coordinator&#45;&gt;proc~compute_mbe -->
+<!-- proc~global_coordinator_impl&#45;&gt;proc~compute_mbe -->
 <g id="proc~~mass_weight_hessian~~CalledByGraph_edge15" class="edge">
-<title>proc~global_coordinator&#45;&gt;proc~compute_mbe</title>
-<path fill="none" stroke="#00ffff" d="M634.16,-43.56C669.18,-37 714.15,-28.57 748.8,-22.07"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="749.55,-25.49 758.73,-20.21 748.26,-18.61 749.55,-25.49"/>
+<title>proc~global_coordinator_impl&#45;&gt;proc~compute_mbe</title>
+<path fill="none" stroke="#00ffff" d="M642.69,-41.96C676.29,-35.67 716.95,-28.04 748.85,-22.06"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="749.69,-25.46 758.88,-20.18 748.4,-18.58 749.69,-25.46"/>
 </g>
 <!-- proc~gmbe_run_distributed -->
 <g id="proc~~mass_weight_hessian~~CalledByGraph_node14" class="node">
@@ -658,25 +658,10 @@ large graphs.</div>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M197.13,-222C205.63,-222 214.25,-222 222.83,-222"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="222.85,-225.5 232.85,-222 222.85,-218.5 222.85,-225.5"/>
 </g>
-<!-- interface~global_coordinator -->
-<g id="proc~~mass_weight_hessian~~CalledByGraph_node19" class="node">
-<title>interface~global_coordinator</title>
-<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node19"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
-<polygon fill="#a7506f" stroke="#a7506f" points="388,-66 275,-66 275,-42 388,-42 388,-66"/>
-<text text-anchor="middle" x="331.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
-</a>
-</g>
-</g>
-<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
-<g id="proc~~mass_weight_hessian~~CalledByGraph_edge20" class="edge">
-<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
-<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M388.17,-54C424.58,-54 472.32,-54 510.62,-54"/>
-<polygon fill="#ffff00" stroke="#ffff00" points="510.64,-57.5 520.64,-54 510.64,-50.5 510.64,-57.5"/>
-</g>
 <!-- interface~serial_fragment_processor -->
-<g id="proc~~mass_weight_hessian~~CalledByGraph_node20" class="node">
+<g id="proc~~mass_weight_hessian~~CalledByGraph_node19" class="node">
 <title>interface~serial_fragment_processor</title>
-<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node20"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
+<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node19"><a xlink:href="../interface/serial_fragment_processor.html" xlink:title="serial_fragment_processor">
 <polygon fill="#a7506f" stroke="#a7506f" points="408.5,-24 254.5,-24 254.5,0 408.5,0 408.5,-24"/>
 <text text-anchor="middle" x="331.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">serial_fragment_processor</text>
 </a>
@@ -687,6 +672,21 @@ large graphs.</div>
 <title>interface~serial_fragment_processor&#45;&gt;proc~serial_fragment_processor</title>
 <path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M408.7,-12C434.61,-12 463.75,-12 490.39,-12"/>
 <polygon fill="#ff00ff" stroke="#ff00ff" points="490.46,-15.5 500.46,-12 490.46,-8.5 490.46,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~mass_weight_hessian~~CalledByGraph_node20" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~mass_weight_hessian~~CalledByGraph_node20"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="388,-66 275,-66 275,-42 388,-42 388,-66"/>
+<text text-anchor="middle" x="331.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~mass_weight_hessian~~CalledByGraph_edge20" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ffff00" d="M388.17,-54C420.05,-54 460.6,-54 495.91,-54"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="496.2,-57.5 506.2,-54 496.2,-50.5 496.2,-57.5"/>
 </g>
 <!-- proc~run_calculation -->
 <g id="proc~~mass_weight_hessian~~CalledByGraph_node21" class="node">
@@ -807,7 +807,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~37"></span>
+              <span class="anchor" id="variable-i~29"></span>
               integer,
             </td>
               <td>private</td>
@@ -824,7 +824,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~6"></span>
+              <span class="anchor" id="variable-iatom~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -875,7 +875,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~11"></span>
+              <span class="anchor" id="variable-j~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -909,7 +909,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~7"></span>
+              <span class="anchor" id="variable-n_atoms~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -1021,7 +1021,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-10 04:12 +0000             </p>
+ on 2026-02-17 21:45 +0000             </p>
           </div>
         </div>
         <br>
