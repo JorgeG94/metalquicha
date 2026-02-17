@@ -577,7 +577,8 @@ call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, 0, TAG_NODE
                   call build_fragment_from_indices(ctx%sys_geom, fragment_indices, phys_frag, error, ctx%sys_geom%bonds)
                else
                   ! Intersection: fragment_indices are atom indices
-   call build_fragment_from_atom_list(ctx%sys_geom, fragment_indices, fragment_size, phys_frag, error, ctx%sys_geom%bonds)
+                  call build_fragment_from_atom_list(ctx%sys_geom, fragment_indices, fragment_size, &
+                                                     phys_frag, error, ctx%sys_geom%bonds)
                end if
 
                if (error%has_error()) then
@@ -586,7 +587,8 @@ call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, 0, TAG_NODE
                end if
 
                ! Process the chemistry fragment with physical geometry
-          call do_fragment_work(fragment_idx, result, ctx%method_config, phys_frag, ctx%calc_type, ctx%resources%mpi_comms%world_comm)
+               call do_fragment_work(fragment_idx, result, ctx%method_config, phys_frag, ctx%calc_type, &
+                                     ctx%resources%mpi_comms%world_comm)
 
                call phys_frag%destroy()
             else
