@@ -33,6 +33,12 @@ module mqc_mbe_fragment_distribution_scheme
    implicit none
    private
 
+   type :: fragment_queue_t
+      integer(int64), allocatable :: ids(:)
+      integer(int64) :: head = 1
+      integer(int64) :: count = 0
+   end type fragment_queue_t
+
    ! Public interface - method_config is passed explicitly to all routines
    public :: do_fragment_work, global_coordinator, node_coordinator
    public :: serial_fragment_processor
