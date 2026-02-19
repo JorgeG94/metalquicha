@@ -269,7 +269,8 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
         require_only_keys(
             fd,
             {"method", "allow_overlapping_fragments", "level", "embedding",
-             "cutoff_method", "distance_metric", "cutoffs"},
+             "cutoff_method", "distance_metric", "cutoffs",
+             "global_groups", "nodes_per_group"},
             "keywords.fragmentation",
         )
 
@@ -283,6 +284,25 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
 
         if level <= 0:
             die("keywords.fragmentation.level must be > 0")
+
+        global_groups = None
+        nodes_per_group = None
+        if "global_groups" in fd:
+            gg = fd.get("global_groups")
+            if not isinstance(gg, int):
+                die("keywords.fragmentation.global_groups must be int")
+            if gg < 1:
+                die("keywords.fragmentation.global_groups must be >= 1")
+            global_groups = gg
+        if "nodes_per_group" in fd:
+            npg = fd.get("nodes_per_group")
+            if not isinstance(npg, int):
+                die("keywords.fragmentation.nodes_per_group must be int")
+            if npg < 1:
+                die("keywords.fragmentation.nodes_per_group must be >= 1")
+            nodes_per_group = npg
+        if global_groups is not None and nodes_per_group is not None:
+            die("keywords.fragmentation: only one of global_groups or nodes_per_group may be set")
 
         cutoffs = None
         if "cutoffs" in fd:
@@ -336,6 +356,8 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
             cutoff_method=cutoff_method,
             distance_metric=distance_metric,
             cutoffs=cutoffs,
+            global_groups=global_groups,
+            nodes_per_group=nodes_per_group,
         )
 
     xtb = None

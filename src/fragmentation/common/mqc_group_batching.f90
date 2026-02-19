@@ -146,13 +146,14 @@ contains
       end do
    end subroutine handle_node_results_to_batch
 
-   subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count)
+ subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)
       type(comm_t), intent(in) :: world_comm
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
       integer(int64), intent(in) :: total_items
       type(timer_type), intent(in) :: coord_timer
       integer, intent(inout) :: group_done_count
+      character(len=*), intent(in), optional :: label
 
       integer(int32) :: batch_count
       integer(int64), allocatable :: batch_ids(:)
@@ -160,6 +161,13 @@ contains
       logical :: has_pending
       type(request_t) :: req
       integer :: i, dummy_msg
+      character(len=32) :: item_label
+
+      if (present(label)) then
+         item_label = label
+      else
+         item_label = "item"
+      end if
 
       do
          call iprobe(world_comm, MPI_ANY_SOURCE, TAG_GROUP_RESULT, has_pending, status)
@@ -176,7 +184,7 @@ contains
             call wait(req)
 
             if (results(batch_ids(i))%has_error) then
-               call logger%error("Item "//to_char(batch_ids(i))//" calculation failed: "// &
+               call logger%error(trim(item_label)//" "//to_char(batch_ids(i))//" calculation failed: "// &
                                  results(batch_ids(i))%error%get_message())
                call abort_comm(world_comm, 1)
             end if
@@ -185,7 +193,7 @@ contains
             if (mod(results_received, max(1_int64, total_items/10_int64)) == 0 .or. &
                 results_received == total_items) then
                call logger%info("  Processed "//to_char(results_received)//"/"// &
-                                to_char(total_items)//" items ["// &
+                                to_char(total_items)//" "//trim(item_label)//"s ["// &
                                 to_char(coord_timer%get_elapsed_time())//" s]")
             end if
          end do

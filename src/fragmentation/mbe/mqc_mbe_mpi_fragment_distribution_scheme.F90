@@ -328,6 +328,7 @@ contains
          integer(int64) :: idx
 
          if (size(group0_fragment_ids) > 0) then
+            ! Queue stores local indices (1..N) into group0_fragment_ids/polymers.
             allocate (temp_ids(size(group0_fragment_ids)))
             do idx = 1_int64, size(group0_fragment_ids, kind=int64)
                temp_ids(idx) = idx
@@ -345,7 +346,7 @@ contains
 
          ! PRIORITY 1: Receive batched results from group globals
          call handle_group_results(ctx%resources%mpi_comms%world_comm, results, results_received, &
-                                   ctx%total_fragments, coord_timer, group_done_count)
+                                   ctx%total_fragments, coord_timer, group_done_count, "fragment")
 
          ! PRIORITY 2: Check for incoming results from local workers
          if (ctx%resources%mpi_comms%node_comm%size() > 1) then
@@ -682,6 +683,7 @@ contains
       call receive_group_assignment_matrix(ctx%resources%mpi_comms%world_comm, group_fragment_ids, group_polymers)
 
       if (size(group_fragment_ids) > 0) then
+         ! Queue stores local indices (1..N) into group_fragment_ids/group_polymers.
          allocate (temp_ids(size(group_fragment_ids)))
          do idx = 1_int64, size(group_fragment_ids, kind=int64)
             temp_ids(idx) = idx

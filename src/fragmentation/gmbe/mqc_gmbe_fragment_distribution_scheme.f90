@@ -435,6 +435,7 @@ contains
       group0_node_count = group_node_counts(1)
 
       ! Partition PIE terms into group shards (chunked round-robin)
+      ! Atom sets are stored as (max_atoms, n_terms) and sharded by columns.
       allocate (group_counts(global_groups))
       group_counts = 0_int64
       if (n_pie_terms > 0_int64) then
@@ -498,6 +499,7 @@ contains
          integer(int64) :: idx
 
          if (size(group0_term_ids) > 0) then
+            ! Queue stores local indices (1..N) into group0_term_ids/group0_atom_sets.
             allocate (temp_ids(size(group0_term_ids)))
             do idx = 1_int64, size(group0_term_ids, kind=int64)
                temp_ids(idx) = idx
@@ -515,7 +517,7 @@ contains
 
          ! PRIORITY 1: Receive batched results from group globals
          call handle_group_results(resources%mpi_comms%world_comm, results, results_received, &
-                                   n_pie_terms, coord_timer, group_done_count)
+                                   n_pie_terms, coord_timer, group_done_count, "PIE term")
 
          ! PRIORITY 2: Check for incoming results from local workers
          call handle_local_worker_results(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)
@@ -1080,6 +1082,7 @@ contains
       call receive_group_assignment_matrix(resources%mpi_comms%world_comm, group_term_ids, group_atom_sets)
 
       if (size(group_term_ids) > 0) then
+         ! Queue stores local indices (1..N) into group_term_ids/group_atom_sets.
          allocate (temp_ids(size(group_term_ids)))
          do idx = 1_int64, size(group_term_ids, kind=int64)
             temp_ids(idx) = idx
