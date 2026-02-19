@@ -513,7 +513,7 @@ contains
       end block
 
       call coord_timer%start()
-      do while (group_done_count < global_groups)
+      do while (group_done_count < global_groups .or. results_received < n_pie_terms)
 
          ! PRIORITY 1: Receive batched results from group globals
          call handle_group_results(resources%mpi_comms%world_comm, results, results_received, &
