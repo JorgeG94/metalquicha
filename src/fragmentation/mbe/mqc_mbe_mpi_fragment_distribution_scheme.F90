@@ -633,7 +633,8 @@ contains
 
          call irecv(ctx%resources%mpi_comms%world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
          call wait(req)
-         call result_irecv(results(fragment_idx), ctx%resources%mpi_comms%world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
+         call result_irecv(results(fragment_idx), ctx%resources%mpi_comms%world_comm, status%MPI_SOURCE, &
+                           TAG_NODE_SCALAR_RESULT, req)
          call wait(req)
 
          if (results(fragment_idx)%has_error) then
@@ -869,7 +870,7 @@ contains
             call isend(ctx%resources%mpi_comms%world_comm, worker_fragment_map(worker_source), &
                        group_leader_rank, TAG_NODE_SCALAR_RESULT, req)  ! fragment_idx
             call wait(req)
-call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leader_rank, TAG_NODE_SCALAR_RESULT, req) ! result
+call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leader_rank, TAG_NODE_SCALAR_RESULT, req)  ! result
             call wait(req)
 
             ! Clear the mapping

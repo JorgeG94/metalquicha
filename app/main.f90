@@ -16,6 +16,7 @@ program main
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_io_helpers, only: set_output_json_filename, ends_with
    use mqc_logo, only: print_logo
+   use mqc_version, only: print_version
    use pic_timer, only: timer_type
    use mqc_error, only: error_t
    use pic_knowledge, only: get_knowledge
@@ -59,6 +60,16 @@ program main
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
       input_file = trim(input_file)
+
+      if (input_file == "--version") then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call print_version()
+         end if
+         call resources%mpi_comms%world_comm%finalize()
+         call resources%mpi_comms%node_comm%finalize()
+         call pic_mpi_finalize()
+         stop
+      end if
 
       call set_output_json_filename(input_file)
       ! Validate file extension
