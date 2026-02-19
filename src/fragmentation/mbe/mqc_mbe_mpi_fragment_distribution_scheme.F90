@@ -1,50 +1,12 @@
 submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
    use mqc_error, only: ERROR_VALIDATION, ERROR_GENERIC
+   use mqc_work_queue, only: queue_t, queue_init_from_list, queue_pop, queue_is_empty, queue_destroy
+   use mqc_group_batching, only: flush_group_results, handle_local_worker_results_to_batch, &
+                                 handle_node_results_to_batch, handle_group_results
+   use mqc_group_shard_io, only: send_group_assignment_matrix, receive_group_assignment_matrix
    implicit none
 
 contains
-
-   subroutine queue_init_from_list(queue, ids)
-      !! Initialize queue from a list of fragment indices.
-      type(fragment_queue_t), intent(out) :: queue
-      integer(int64), intent(in) :: ids(:)
-
-      queue%count = size(ids, kind=int64)
-      if (queue%count > 0) then
-         allocate (queue%ids(queue%count))
-         queue%ids = ids
-      end if
-      queue%head = 1_int64
-   end subroutine queue_init_from_list
-
-   subroutine queue_pop(queue, fragment_idx, has_item)
-      !! Pop the next fragment index from the queue.
-      type(fragment_queue_t), intent(inout) :: queue
-      integer(int64), intent(out) :: fragment_idx
-      logical, intent(out) :: has_item
-
-      if (queue%head > queue%count) then
-         fragment_idx = -1_int64
-         has_item = .false.
-         return
-      end if
-
-      fragment_idx = queue%ids(queue%head)
-      queue%head = queue%head + 1_int64
-      has_item = .true.
-   end subroutine queue_pop
-
-   subroutine queue_destroy(queue)
-      type(fragment_queue_t), intent(inout) :: queue
-      if (allocated(queue%ids)) deallocate (queue%ids)
-      queue%head = 1_int64
-      queue%count = 0_int64
-   end subroutine queue_destroy
-
-   pure logical function queue_is_empty(queue)
-      type(fragment_queue_t), intent(in) :: queue
-      queue_is_empty = (queue%head > queue%count)
-   end function queue_is_empty
 
    subroutine build_fragment_payload(fragment_idx, polymers, fragment_type, fragment_size, fragment_indices)
       !! Build fragment payload arrays for a given fragment index.
@@ -255,7 +217,7 @@ contains
       ! Storage for results
       type(calculation_result_t), allocatable :: results(:)
       integer(int64) :: worker_fragment_map(ctx%resources%mpi_comms%node_comm%size())
-      type(fragment_queue_t) :: group0_queue
+      type(queue_t) :: group0_queue
       integer(int64), allocatable :: group0_fragment_ids(:)
       integer, allocatable :: group0_polymers(:, :)
 
@@ -346,8 +308,8 @@ contains
                allocate (group0_polymers(0, n_cols))
             end if
          else if (group_leader_by_group(i) > 0) then
-            call send_group_assignment(ctx%resources%mpi_comms%world_comm, group_leader_by_group(i), &
-                                       group_shards(i)%fragment_ids, group_shards(i)%polymers)
+            call send_group_assignment_matrix(ctx%resources%mpi_comms%world_comm, group_leader_by_group(i), &
+                                              group_shards(i)%fragment_ids, group_shards(i)%polymers)
          end if
          if (allocated(group_shards(i)%fragment_ids)) deallocate (group_shards(i)%fragment_ids)
          if (allocated(group_shards(i)%polymers)) deallocate (group_shards(i)%polymers)
@@ -382,7 +344,8 @@ contains
       do while (group_done_count < ctx%global_groups)
 
          ! PRIORITY 1: Receive batched results from group globals
-         call handle_group_results(ctx, results, results_received, coord_timer, group_done_count)
+         call handle_group_results(ctx%resources%mpi_comms%world_comm, results, results_received, &
+                                   ctx%total_fragments, coord_timer, group_done_count)
 
          ! PRIORITY 2: Check for incoming results from local workers
          if (ctx%resources%mpi_comms%node_comm%size() > 1) then
@@ -471,7 +434,7 @@ contains
       !! Handle a single pending node coordinator request, if any.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(in) :: ctx
-      type(fragment_queue_t), intent(inout) :: fragment_queue
+      type(queue_t), intent(inout) :: fragment_queue
       integer, intent(inout) :: finished_nodes
 
       integer :: request_source, dummy_msg
@@ -497,133 +460,11 @@ contains
       end if
    end subroutine handle_node_requests
 
-   subroutine send_group_assignment(world_comm, dest_rank, fragment_ids, polymers)
-      !! Send fragment shard assignment + polymer rows to group global.
-      type(comm_t), intent(in) :: world_comm
-      integer, intent(in) :: dest_rank
-      integer(int64), intent(in) :: fragment_ids(:)
-      integer, intent(in) :: polymers(:, :)
-
-      integer(int64) :: n_local
-      integer(int32) :: n_cols
-      integer, allocatable :: polymer_buf(:)
-      type(request_t) :: req(4)
-
-      n_local = size(fragment_ids, kind=int64)
-      n_cols = size(polymers, 2)
-
-      call isend(world_comm, n_local, dest_rank, TAG_GROUP_ASSIGN, req(1))
-      call isend(world_comm, fragment_ids, dest_rank, TAG_GROUP_ASSIGN, req(2))
-      call isend(world_comm, n_cols, dest_rank, TAG_GROUP_POLYMERS, req(3))
-      if (n_local > 0_int64 .and. n_cols > 0) then
-         allocate (polymer_buf(n_local*n_cols))
-         polymer_buf = reshape(polymers, [n_local*n_cols])
-      else
-         allocate (polymer_buf(0))
-      end if
-      call isend(world_comm, polymer_buf, dest_rank, TAG_GROUP_POLYMERS, req(4))
-
-      call wait(req(1))
-      call wait(req(2))
-      call wait(req(3))
-      call wait(req(4))
-      deallocate (polymer_buf)
-   end subroutine send_group_assignment
-
-   subroutine receive_group_assignment(world_comm, fragment_ids, polymers)
-      !! Receive fragment shard assignment + polymer rows from super-global.
-      type(comm_t), intent(in) :: world_comm
-      integer(int64), allocatable, intent(out) :: fragment_ids(:)
-      integer, allocatable, intent(out) :: polymers(:, :)
-
-      integer(int64) :: n_local
-      integer(int32) :: n_cols
-      integer, allocatable :: polymer_buf(:)
-      type(MPI_Status) :: status
-      type(request_t) :: req
-
-      call irecv(world_comm, n_local, 0, TAG_GROUP_ASSIGN, req)
-      call wait(req)
-      allocate (fragment_ids(n_local))
-      call recv(world_comm, fragment_ids, 0, TAG_GROUP_ASSIGN, status)
-
-      call irecv(world_comm, n_cols, 0, TAG_GROUP_POLYMERS, req)
-      call wait(req)
-      allocate (polymers(n_local, n_cols))
-      if (n_local > 0_int64 .and. n_cols > 0) then
-         allocate (polymer_buf(n_local*n_cols))
-         call recv(world_comm, polymer_buf, 0, TAG_GROUP_POLYMERS, status)
-         polymers = reshape(polymer_buf, [int(n_local), n_cols])
-         deallocate (polymer_buf)
-      else
-         allocate (polymer_buf(0))
-         call recv(world_comm, polymer_buf, 0, TAG_GROUP_POLYMERS, status)
-         deallocate (polymer_buf)
-      end if
-   end subroutine receive_group_assignment
-
-   subroutine handle_group_results(ctx, results, results_received, coord_timer, group_done_count)
-      !! Drain results from group globals and update tracking state.
-      use mqc_many_body_expansion, only: mbe_context_t
-      type(mbe_context_t), intent(in) :: ctx
-      type(calculation_result_t), intent(inout) :: results(:)
-      integer(int64), intent(inout) :: results_received
-      type(timer_type), intent(in) :: coord_timer
-      integer, intent(inout) :: group_done_count
-
-      integer(int32) :: batch_count
-      integer(int64), allocatable :: batch_ids(:)
-      type(MPI_Status) :: status
-      logical :: has_pending
-      type(request_t) :: req
-      integer :: i, dummy_msg
-
-      do
-         call iprobe(ctx%resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_GROUP_RESULT, has_pending, status)
-         if (.not. has_pending) exit
-
-         call irecv(ctx%resources%mpi_comms%world_comm, batch_count, status%MPI_SOURCE, TAG_GROUP_RESULT, req)
-         call wait(req)
-         if (batch_count <= 0) cycle
-
-         allocate (batch_ids(batch_count))
-         call recv(ctx%resources%mpi_comms%world_comm, batch_ids, status%MPI_SOURCE, TAG_GROUP_RESULT, status)
-         do i = 1, batch_count
-            call result_irecv(results(batch_ids(i)), ctx%resources%mpi_comms%world_comm, status%MPI_SOURCE, &
-                              TAG_GROUP_RESULT, req)
-            call wait(req)
-
-            if (results(batch_ids(i))%has_error) then
-               call logger%error("Fragment "//to_char(batch_ids(i))//" calculation failed: "// &
-                                 results(batch_ids(i))%error%get_message())
-               call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
-            end if
-
-            results_received = results_received + 1
-            if (mod(results_received, max(1_int64, ctx%total_fragments/10)) == 0 .or. &
-                results_received == ctx%total_fragments) then
-               call logger%info("  Processed "//to_char(results_received)//"/"// &
-                                to_char(ctx%total_fragments)//" fragments ["// &
-                                to_char(coord_timer%get_elapsed_time())//" s]")
-            end if
-         end do
-         deallocate (batch_ids)
-      end do
-
-      do
-         call iprobe(ctx%resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_GROUP_DONE, has_pending, status)
-         if (.not. has_pending) exit
-         call irecv(ctx%resources%mpi_comms%world_comm, dummy_msg, status%MPI_SOURCE, TAG_GROUP_DONE, req)
-         call wait(req)
-         group_done_count = group_done_count + 1
-      end do
-   end subroutine handle_group_results
-
    subroutine handle_group_node_requests(ctx, fragment_queue, group_fragment_ids, group_polymers, finished_nodes)
       !! Handle a single pending node coordinator request for a group shard, if any.
       use mqc_many_body_expansion, only: many_body_expansion_t
       class(many_body_expansion_t), intent(in) :: ctx
-      type(fragment_queue_t), intent(inout) :: fragment_queue
+      type(queue_t), intent(inout) :: fragment_queue
       integer(int64), intent(in) :: group_fragment_ids(:)
       integer, intent(in) :: group_polymers(:, :)
       integer, intent(inout) :: finished_nodes
@@ -658,7 +499,7 @@ contains
       !! Handle a single pending local worker request for a group shard, if any.
       use mqc_many_body_expansion, only: many_body_expansion_t
       class(many_body_expansion_t), intent(in) :: ctx
-      type(fragment_queue_t), intent(inout) :: fragment_queue
+      type(queue_t), intent(inout) :: fragment_queue
       integer(int64), intent(in) :: group_fragment_ids(:)
       integer, intent(in) :: group_polymers(:, :)
       integer(int64), intent(inout) :: worker_fragment_map(:)
@@ -695,7 +536,7 @@ contains
       !! Handle a single pending local worker request, if any.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(in) :: ctx
-      type(fragment_queue_t), intent(inout) :: fragment_queue
+      type(queue_t), intent(inout) :: fragment_queue
       integer(int64), intent(inout) :: worker_fragment_map(:)
       integer, intent(inout) :: local_finished_workers
 
@@ -772,135 +613,6 @@ contains
       end do
    end subroutine handle_local_worker_results
 
-   subroutine append_result_to_batch(fragment_idx, result, batch_count, batch_ids, batch_results)
-      integer(int64), intent(in) :: fragment_idx
-      type(calculation_result_t), intent(in) :: result
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      batch_count = batch_count + 1
-      batch_ids(batch_count) = fragment_idx
-      batch_results(batch_count) = result
-   end subroutine append_result_to_batch
-
-   subroutine flush_group_results(world_comm, batch_count, batch_ids, batch_results)
-      type(comm_t), intent(in) :: world_comm
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      type(request_t) :: req
-      integer :: i
-
-      if (batch_count <= 0) return
-
-      call isend(world_comm, batch_count, 0, TAG_GROUP_RESULT, req)
-      call wait(req)
-      call isend(world_comm, batch_ids(1:batch_count), 0, TAG_GROUP_RESULT, req)
-      call wait(req)
-      do i = 1, batch_count
-         call result_isend(batch_results(i), world_comm, 0, TAG_GROUP_RESULT, req)
-         call wait(req)
-         call batch_results(i)%destroy()
-      end do
-      batch_count = 0
-   end subroutine flush_group_results
-
-   subroutine handle_local_worker_results_to_batch(ctx, worker_fragment_map, batch_count, batch_ids, batch_results)
-      !! Drain local worker results and append to batch.
-      use mqc_many_body_expansion, only: many_body_expansion_t
-      class(many_body_expansion_t), intent(in) :: ctx
-      integer(int64), intent(inout) :: worker_fragment_map(:)
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      type(MPI_Status) :: local_status
-      logical :: has_pending
-      integer :: worker_source
-      type(request_t) :: req
-      type(calculation_result_t) :: worker_result
-      integer(int64) :: fragment_idx
-
-      do
-       call iprobe(ctx%resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
-         if (.not. has_pending) exit
-
-         worker_source = local_status%MPI_SOURCE
-
-         if (worker_fragment_map(worker_source) == 0) then
-            call logger%error("Received result from worker "//to_char(worker_source)// &
-                              " but no fragment was assigned!")
-            call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
-         end if
-
-         call result_irecv(worker_result, ctx%resources%mpi_comms%node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
-         call wait(req)
-
-         if (worker_result%has_error) then
-            call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
-                              " calculation failed: "// &
-                              worker_result%error%get_message())
-            call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
-         end if
-
-         fragment_idx = worker_fragment_map(worker_source)
-         worker_fragment_map(worker_source) = 0
-
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
-         end if
-
-         call append_result_to_batch(fragment_idx, worker_result, batch_count, batch_ids, batch_results)
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
-         end if
-         call worker_result%destroy()
-      end do
-   end subroutine handle_local_worker_results_to_batch
-
-   subroutine handle_node_results_to_batch(ctx, batch_count, batch_ids, batch_results)
-      !! Drain node coordinator results and append to batch.
-      use mqc_many_body_expansion, only: many_body_expansion_t
-      class(many_body_expansion_t), intent(in) :: ctx
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      integer(int64) :: fragment_idx
-      type(MPI_Status) :: status
-      logical :: has_pending
-      type(request_t) :: req
-      type(calculation_result_t) :: node_result
-
-      do
-         call iprobe(ctx%resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
-         if (.not. has_pending) exit
-
-         call irecv(ctx%resources%mpi_comms%world_comm, fragment_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
-         call wait(req)
-        call result_irecv(node_result, ctx%resources%mpi_comms%world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
-         call wait(req)
-
-         if (node_result%has_error) then
-            call logger%error("Fragment "//to_char(fragment_idx)//" calculation failed: "// &
-                              node_result%error%get_message())
-            call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
-         end if
-
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
-         end if
-
-         call append_result_to_batch(fragment_idx, node_result, batch_count, batch_ids, batch_results)
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
-         end if
-         call node_result%destroy()
-      end do
-   end subroutine handle_node_results_to_batch
-
    subroutine handle_node_results(ctx, results, results_received, coord_timer)
       !! Drain results from remote node coordinators and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
@@ -946,7 +658,7 @@ contains
 
       integer(int64), allocatable :: group_fragment_ids(:)
       integer, allocatable :: group_polymers(:, :)
-      type(fragment_queue_t) :: group_queue
+      type(queue_t) :: group_queue
       integer(int64), allocatable :: temp_ids(:)
       integer(int64) :: idx
       integer(int32) :: batch_count
@@ -967,7 +679,7 @@ contains
       end if
       group_node_count = count(ctx%group_ids == group_id)
 
-      call receive_group_assignment(ctx%resources%mpi_comms%world_comm, group_fragment_ids, group_polymers)
+      call receive_group_assignment_matrix(ctx%resources%mpi_comms%world_comm, group_fragment_ids, group_polymers)
 
       if (size(group_fragment_ids) > 0) then
          allocate (temp_ids(size(group_fragment_ids)))
@@ -991,11 +703,11 @@ contains
 
       do while (finished_nodes < group_node_count)
 
-         if (ctx%resources%mpi_comms%node_comm%size() > 1) then
-            call handle_local_worker_results_to_batch(ctx, worker_fragment_map, batch_count, batch_ids, batch_results)
-         end if
+         call handle_local_worker_results_to_batch(ctx%resources%mpi_comms%node_comm, &
+                                                   ctx%resources%mpi_comms%world_comm, &
+                                                   worker_fragment_map, batch_count, batch_ids, batch_results)
 
-         call handle_node_results_to_batch(ctx, batch_count, batch_ids, batch_results)
+         call handle_node_results_to_batch(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
 
          call handle_group_node_requests(ctx, group_queue, group_fragment_ids, group_polymers, finished_nodes)
 

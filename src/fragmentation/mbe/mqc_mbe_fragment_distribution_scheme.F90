@@ -24,6 +24,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_adapter, only: driver_config_t
    use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
+   use mqc_work_queue, only: queue_t
    use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
 
    ! Method API imports
@@ -34,12 +35,6 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    implicit none
    private
-
-   type :: fragment_queue_t
-      integer(int64), allocatable :: ids(:)
-      integer(int64) :: head = 1
-      integer(int64) :: count = 0
-   end type fragment_queue_t
 
    ! Public interface - method_config is passed explicitly to all routines
    public :: do_fragment_work, global_coordinator, node_coordinator

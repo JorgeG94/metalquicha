@@ -1,9 +1,14 @@
 # Common types and utilities
 target_sources(
   ${main_lib}
-  PRIVATE common/mqc_physical_fragment.f90 common/mqc_fragment_lookup.f90
-          common/mqc_combinatorics.f90 common/mqc_frag_utils.f90
-          common/mqc_many_body_expansion.f90)
+  PRIVATE common/mqc_physical_fragment.f90
+          common/mqc_fragment_lookup.f90
+          common/mqc_combinatorics.f90
+          common/mqc_frag_utils.f90
+          common/mqc_many_body_expansion.f90
+          common/mqc_work_queue.f90
+          common/mqc_group_shard_io.f90
+          common/mqc_group_batching.f90)
 
 # Standard MBE
 target_sources(

@@ -25,6 +25,10 @@ module mqc_gmbe_fragment_distribution_scheme
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_calculation_defaults, only: FRAGMENT_TYPE_ATOMS
    use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
+   use mqc_work_queue, only: queue_t, queue_init_from_list, queue_pop, queue_is_empty
+   use mqc_group_shard_io, only: send_group_assignment_matrix, receive_group_assignment_matrix
+   use mqc_group_batching, only: flush_group_results, handle_local_worker_results_to_batch, &
+                                 handle_node_results_to_batch, handle_group_results
    implicit none
    ! Error handling imported where needed
    private
@@ -34,46 +38,7 @@ module mqc_gmbe_fragment_distribution_scheme
    public :: gmbe_pie_coordinator  !! PIE-based MPI coordinator
    public :: gmbe_group_global_coordinator
 
-   type :: term_queue_t
-      integer(int64), allocatable :: ids(:)
-      integer(int64) :: head = 1
-      integer(int64) :: count = 0
-   end type term_queue_t
-
 contains
-
-   subroutine queue_init_from_list(queue, ids)
-      type(term_queue_t), intent(out) :: queue
-      integer(int64), intent(in) :: ids(:)
-
-      queue%count = size(ids, kind=int64)
-      if (queue%count > 0) then
-         allocate (queue%ids(queue%count))
-         queue%ids = ids
-      end if
-      queue%head = 1_int64
-   end subroutine queue_init_from_list
-
-   subroutine queue_pop(queue, item_idx, has_item)
-      type(term_queue_t), intent(inout) :: queue
-      integer(int64), intent(out) :: item_idx
-      logical, intent(out) :: has_item
-
-      if (queue%head > queue%count) then
-         item_idx = -1_int64
-         has_item = .false.
-         return
-      end if
-
-      item_idx = queue%ids(queue%head)
-      queue%head = queue%head + 1_int64
-      has_item = .true.
-   end subroutine queue_pop
-
-   pure logical function queue_is_empty(queue)
-      type(term_queue_t), intent(in) :: queue
-      queue_is_empty = (queue%head > queue%count)
-   end function queue_is_empty
 
    subroutine serial_gmbe_pie_processor(pie_atom_sets, pie_coefficients, n_pie_terms, &
                                         sys_geom, method_config, calc_type, json_data)
@@ -418,7 +383,7 @@ contains
       ! Storage for results
       type(calculation_result_t), allocatable :: results(:)
       integer(int64) :: worker_term_map(resources%mpi_comms%node_comm%size())
-      type(term_queue_t) :: group0_queue
+      type(queue_t) :: group0_queue
       integer(int64), allocatable :: group0_term_ids(:)
       integer, allocatable :: group0_atom_sets(:, :)
 
@@ -513,8 +478,8 @@ contains
                allocate (group0_atom_sets(max_atoms, 0))
             end if
          else if (group_leader_by_group(i) > 0) then
-            call send_group_assignment_gmbe(resources%mpi_comms%world_comm, group_leader_by_group(i), &
-                                            group_shards(i)%term_ids, group_shards(i)%atom_sets)
+            call send_group_assignment_matrix(resources%mpi_comms%world_comm, group_leader_by_group(i), &
+                                              group_shards(i)%term_ids, group_shards(i)%atom_sets)
          end if
          if (allocated(group_shards(i)%term_ids)) deallocate (group_shards(i)%term_ids)
          if (allocated(group_shards(i)%atom_sets)) deallocate (group_shards(i)%atom_sets)
@@ -549,7 +514,8 @@ contains
       do while (group_done_count < global_groups)
 
          ! PRIORITY 1: Receive batched results from group globals
-         call handle_group_results(resources, results, results_received, coord_timer, n_pie_terms, group_done_count)
+         call handle_group_results(resources%mpi_comms%world_comm, results, results_received, &
+                                   n_pie_terms, coord_timer, group_done_count)
 
          ! PRIORITY 2: Check for incoming results from local workers
          call handle_local_worker_results(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)
@@ -883,73 +849,6 @@ contains
 
    end subroutine gmbe_pie_coordinator
 
-   subroutine send_group_assignment_gmbe(world_comm, dest_rank, term_ids, atom_sets)
-      !! Send PIE term shard to group global.
-      type(comm_t), intent(in) :: world_comm
-      integer, intent(in) :: dest_rank
-      integer(int64), intent(in) :: term_ids(:)
-      integer, intent(in) :: atom_sets(:, :)
-
-      integer(int64) :: n_local
-      integer(int32) :: n_cols
-      integer, allocatable :: atom_buf(:)
-      type(request_t) :: req(4)
-
-      n_local = size(term_ids, kind=int64)
-      n_cols = size(atom_sets, 1)
-
-      call isend(world_comm, n_local, dest_rank, TAG_GROUP_ASSIGN, req(1))
-      call isend(world_comm, term_ids, dest_rank, TAG_GROUP_ASSIGN, req(2))
-      call isend(world_comm, n_cols, dest_rank, TAG_GROUP_POLYMERS, req(3))
-
-      if (n_local > 0_int64 .and. n_cols > 0) then
-         allocate (atom_buf(n_local*n_cols))
-         atom_buf = reshape(atom_sets, [n_local*n_cols])
-      else
-         allocate (atom_buf(0))
-      end if
-      call isend(world_comm, atom_buf, dest_rank, TAG_GROUP_POLYMERS, req(4))
-
-      call wait(req(1))
-      call wait(req(2))
-      call wait(req(3))
-      call wait(req(4))
-      deallocate (atom_buf)
-   end subroutine send_group_assignment_gmbe
-
-   subroutine receive_group_assignment_gmbe(world_comm, term_ids, atom_sets)
-      !! Receive PIE term shard from super-global.
-      type(comm_t), intent(in) :: world_comm
-      integer(int64), allocatable, intent(out) :: term_ids(:)
-      integer, allocatable, intent(out) :: atom_sets(:, :)
-
-      integer(int64) :: n_local
-      integer(int32) :: n_cols
-      integer, allocatable :: atom_buf(:)
-      type(MPI_Status) :: status
-      type(request_t) :: req
-
-      call irecv(world_comm, n_local, 0, TAG_GROUP_ASSIGN, req)
-      call wait(req)
-      allocate (term_ids(n_local))
-      call recv(world_comm, term_ids, 0, TAG_GROUP_ASSIGN, status)
-
-      call irecv(world_comm, n_cols, 0, TAG_GROUP_POLYMERS, req)
-      call wait(req)
-      allocate (atom_sets(n_cols, int(n_local)))
-
-      if (n_local > 0_int64 .and. n_cols > 0) then
-         allocate (atom_buf(n_local*n_cols))
-         call recv(world_comm, atom_buf, 0, TAG_GROUP_POLYMERS, status)
-         atom_sets = reshape(atom_buf, [n_cols, int(n_local)])
-         deallocate (atom_buf)
-      else
-         allocate (atom_buf(0))
-         call recv(world_comm, atom_buf, 0, TAG_GROUP_POLYMERS, status)
-         deallocate (atom_buf)
-      end if
-   end subroutine receive_group_assignment_gmbe
-
    subroutine send_pie_term_payload(comm, tag, term_idx, atom_row, dest_rank)
       !! Send PIE term atom list from a row.
       type(comm_t), intent(in) :: comm
@@ -988,63 +887,6 @@ contains
 
       deallocate (atom_list)
    end subroutine send_pie_term_payload
-
-   subroutine handle_group_results(resources, results, results_received, coord_timer, n_pie_terms, group_done_count)
-      use mqc_resources, only: resources_t
-      type(resources_t), intent(in) :: resources
-      type(calculation_result_t), intent(inout) :: results(:)
-      integer(int64), intent(inout) :: results_received
-      type(timer_type), intent(in) :: coord_timer
-      integer(int64), intent(in) :: n_pie_terms
-      integer, intent(inout) :: group_done_count
-
-      integer(int32) :: batch_count
-      integer(int64), allocatable :: batch_ids(:)
-      type(MPI_Status) :: status
-      logical :: has_pending
-      type(request_t) :: req
-      integer :: i, dummy_msg
-
-      do
-         call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_GROUP_RESULT, has_pending, status)
-         if (.not. has_pending) exit
-
-         call irecv(resources%mpi_comms%world_comm, batch_count, status%MPI_SOURCE, TAG_GROUP_RESULT, req)
-         call wait(req)
-         if (batch_count <= 0) cycle
-
-         allocate (batch_ids(batch_count))
-         call recv(resources%mpi_comms%world_comm, batch_ids, status%MPI_SOURCE, TAG_GROUP_RESULT, status)
-         do i = 1, batch_count
-            call result_irecv(results(batch_ids(i)), resources%mpi_comms%world_comm, status%MPI_SOURCE, &
-                              TAG_GROUP_RESULT, req)
-            call wait(req)
-
-            if (results(batch_ids(i))%has_error) then
-               call logger%error("PIE term "//to_char(batch_ids(i))//" calculation failed: "// &
-                                 results(batch_ids(i))%error%get_message())
-               call abort_comm(resources%mpi_comms%world_comm, 1)
-            end if
-
-            results_received = results_received + 1
-            if (mod(results_received, max(1_int64, n_pie_terms/10_int64)) == 0 .or. &
-                results_received == n_pie_terms) then
-               call logger%info("  Processed "//to_char(results_received)//"/"// &
-                                to_char(n_pie_terms)//" PIE terms ["// &
-                                to_char(coord_timer%get_elapsed_time())//" s]")
-            end if
-         end do
-         deallocate (batch_ids)
-      end do
-
-      do
-         call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_GROUP_DONE, has_pending, status)
-         if (.not. has_pending) exit
-         call irecv(resources%mpi_comms%world_comm, dummy_msg, status%MPI_SOURCE, TAG_GROUP_DONE, req)
-         call wait(req)
-         group_done_count = group_done_count + 1
-      end do
-   end subroutine handle_group_results
 
    subroutine handle_local_worker_results(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)
       use mqc_resources, only: resources_t
@@ -1136,7 +978,7 @@ contains
    subroutine handle_group_node_requests(resources, term_queue, term_ids, atom_sets, finished_nodes)
       use mqc_resources, only: resources_t
       type(resources_t), intent(in) :: resources
-      type(term_queue_t), intent(inout) :: term_queue
+      type(queue_t), intent(inout) :: term_queue
       integer(int64), intent(in) :: term_ids(:)
       integer, intent(in) :: atom_sets(:, :)
       integer, intent(inout) :: finished_nodes
@@ -1170,7 +1012,7 @@ contains
                                                  worker_term_map, local_finished_workers)
       use mqc_resources, only: resources_t
       type(resources_t), intent(in) :: resources
-      type(term_queue_t), intent(inout) :: term_queue
+      type(queue_t), intent(inout) :: term_queue
       integer(int64), intent(in) :: term_ids(:)
       integer, intent(in) :: atom_sets(:, :)
       integer(int64), intent(inout) :: worker_term_map(:)
@@ -1203,136 +1045,6 @@ contains
       end if
    end subroutine handle_local_worker_requests_group
 
-   subroutine append_result_to_batch(term_idx, result, batch_count, batch_ids, batch_results)
-      integer(int64), intent(in) :: term_idx
-      type(calculation_result_t), intent(in) :: result
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      batch_count = batch_count + 1
-      batch_ids(batch_count) = term_idx
-      batch_results(batch_count) = result
-   end subroutine append_result_to_batch
-
-   subroutine flush_group_results(resources, batch_count, batch_ids, batch_results)
-      use mqc_resources, only: resources_t
-      type(resources_t), intent(in) :: resources
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      type(request_t) :: req
-      integer :: i
-
-      if (batch_count <= 0) return
-
-      call isend(resources%mpi_comms%world_comm, batch_count, 0, TAG_GROUP_RESULT, req)
-      call wait(req)
-      call isend(resources%mpi_comms%world_comm, batch_ids(1:batch_count), 0, TAG_GROUP_RESULT, req)
-      call wait(req)
-      do i = 1, batch_count
-         call result_isend(batch_results(i), resources%mpi_comms%world_comm, 0, TAG_GROUP_RESULT, req)
-         call wait(req)
-         call batch_results(i)%destroy()
-      end do
-      batch_count = 0
-   end subroutine flush_group_results
-
-   subroutine handle_local_worker_results_to_batch(resources, worker_term_map, batch_count, batch_ids, batch_results)
-      use mqc_resources, only: resources_t
-      type(resources_t), intent(in) :: resources
-      integer(int64), intent(inout) :: worker_term_map(:)
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      type(MPI_Status) :: local_status
-      logical :: has_pending
-      integer :: worker_source
-      type(request_t) :: req
-      type(calculation_result_t) :: worker_result
-      integer(int64) :: term_idx
-
-      if (resources%mpi_comms%node_comm%size() <= 1) return
-
-      do
-         call iprobe(resources%mpi_comms%node_comm, MPI_ANY_SOURCE, TAG_WORKER_SCALAR_RESULT, has_pending, local_status)
-         if (.not. has_pending) exit
-
-         worker_source = local_status%MPI_SOURCE
-
-         if (worker_term_map(worker_source) == 0) then
-            call logger%error("Received result from worker "//to_char(worker_source)// &
-                              " but no term was assigned!")
-            call abort_comm(resources%mpi_comms%world_comm, 1)
-         end if
-
-         call result_irecv(worker_result, resources%mpi_comms%node_comm, worker_source, TAG_WORKER_SCALAR_RESULT, req)
-         call wait(req)
-
-         if (worker_result%has_error) then
-            call logger%error("PIE term "//to_char(worker_term_map(worker_source))// &
-                              " calculation failed: "// &
-                              worker_result%error%get_message())
-            call abort_comm(resources%mpi_comms%world_comm, 1)
-         end if
-
-         term_idx = worker_term_map(worker_source)
-         worker_term_map(worker_source) = 0
-
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(resources, batch_count, batch_ids, batch_results)
-         end if
-
-         call append_result_to_batch(term_idx, worker_result, batch_count, batch_ids, batch_results)
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(resources, batch_count, batch_ids, batch_results)
-         end if
-         call worker_result%destroy()
-      end do
-   end subroutine handle_local_worker_results_to_batch
-
-   subroutine handle_node_results_to_batch(resources, batch_count, batch_ids, batch_results)
-      use mqc_resources, only: resources_t
-      type(resources_t), intent(in) :: resources
-      integer(int32), intent(inout) :: batch_count
-      integer(int64), intent(inout) :: batch_ids(:)
-      type(calculation_result_t), intent(inout) :: batch_results(:)
-
-      integer(int64) :: term_idx
-      type(MPI_Status) :: status
-      logical :: has_pending
-      type(request_t) :: req
-      type(calculation_result_t) :: node_result
-
-      do
-         call iprobe(resources%mpi_comms%world_comm, MPI_ANY_SOURCE, TAG_NODE_SCALAR_RESULT, has_pending, status)
-         if (.not. has_pending) exit
-
-         call irecv(resources%mpi_comms%world_comm, term_idx, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
-         call wait(req)
-         call result_irecv(node_result, resources%mpi_comms%world_comm, status%MPI_SOURCE, TAG_NODE_SCALAR_RESULT, req)
-         call wait(req)
-
-         if (node_result%has_error) then
-            call logger%error("PIE term "//to_char(term_idx)//" calculation failed: "// &
-                              node_result%error%get_message())
-            call abort_comm(resources%mpi_comms%world_comm, 1)
-         end if
-
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(resources, batch_count, batch_ids, batch_results)
-         end if
-
-         call append_result_to_batch(term_idx, node_result, batch_count, batch_ids, batch_results)
-         if (batch_count >= size(batch_ids)) then
-            call flush_group_results(resources, batch_count, batch_ids, batch_results)
-         end if
-         call node_result%destroy()
-      end do
-   end subroutine handle_node_results_to_batch
-
    subroutine gmbe_group_global_coordinator(resources, node_leader_ranks, group_ids)
       use mqc_resources, only: resources_t
       type(resources_t), intent(in) :: resources
@@ -1341,7 +1053,7 @@ contains
 
       integer(int64), allocatable :: group_term_ids(:)
       integer, allocatable :: group_atom_sets(:, :)
-      type(term_queue_t) :: group_queue
+      type(queue_t) :: group_queue
       integer(int64), allocatable :: temp_ids(:)
       integer(int64) :: idx
       integer(int32) :: batch_count
@@ -1365,7 +1077,7 @@ contains
       end do
       group_node_count = count(group_ids == group_id)
 
-      call receive_group_assignment_gmbe(resources%mpi_comms%world_comm, group_term_ids, group_atom_sets)
+      call receive_group_assignment_matrix(resources%mpi_comms%world_comm, group_term_ids, group_atom_sets)
 
       if (size(group_term_ids) > 0) then
          allocate (temp_ids(size(group_term_ids)))
@@ -1389,8 +1101,10 @@ contains
 
       do while (finished_nodes < group_node_count)
 
-         call handle_local_worker_results_to_batch(resources, worker_term_map, batch_count, batch_ids, batch_results)
-         call handle_node_results_to_batch(resources, batch_count, batch_ids, batch_results)
+         call handle_local_worker_results_to_batch(resources%mpi_comms%node_comm, &
+                                                   resources%mpi_comms%world_comm, &
+                                                   worker_term_map, batch_count, batch_ids, batch_results)
+         call handle_node_results_to_batch(resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
 
          call handle_group_node_requests(resources, group_queue, group_term_ids, group_atom_sets, finished_nodes)
 
@@ -1410,11 +1124,11 @@ contains
          end if
 
          if (batch_count >= GROUP_RESULT_BATCH_SIZE) then
-            call flush_group_results(resources, batch_count, batch_ids, batch_results)
+            call flush_group_results(resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
          end if
       end do
 
-      call flush_group_results(resources, batch_count, batch_ids, batch_results)
+      call flush_group_results(resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
 
       call isend(resources%mpi_comms%world_comm, 0, 0, TAG_GROUP_DONE, req)
       call wait(req)
