@@ -29,4 +29,14 @@ module mqc_mpi_tags
    integer(default_int), parameter, public :: TAG_NODE_MATRIX_RESULT = 304
       !! Node coordinator sends matrix results to global coordinator
 
+   ! Group-global communication tags (multi-global coordinator design)
+   integer(default_int), parameter, public :: TAG_GROUP_ASSIGN = 400
+      !! Super-global assigns fragment shard to group global
+   integer(default_int), parameter, public :: TAG_GROUP_POLYMERS = 401
+      !! Super-global sends polymer rows to group global
+   integer(default_int), parameter, public :: TAG_GROUP_RESULT = 402
+      !! Group global forwards batched results to super-global
+   integer(default_int), parameter, public :: TAG_GROUP_DONE = 403
+      !! Group global signals completion to super-global
+
 end module mqc_mpi_tags
