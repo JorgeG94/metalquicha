@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.1% of total for derived types.</p>Including implementation: 12 statements,  0.6% of total for derived types.">12 statements</a>
+                 title="<p> 2.3% of total for derived types.</p>Including implementation: 14 statements,  0.7% of total for derived types.">14 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,15 +137,17 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/driver_config_t.html#variable-aimd">aimd</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-allow_overlapping_fragments~2">allow_overlapping_fragments</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~10">calc_type</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_cutoffs~2">fragment_cutoffs</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian~7">hessian</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-max_intersection_level~2">max_intersection_level</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-method_config~7">method_config</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-allow_overlapping_fragments">allow_overlapping_fragments</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-calc_type~8">calc_type</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-fragment_cutoffs">fragment_cutoffs</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-global_groups~3">global_groups</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-hessian~6">hessian</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-max_intersection_level~3">max_intersection_level</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-method_config~8">method_config</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-nlevel~3">nlevel</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-nodes_per_group~2">nodes_per_group</a>
             <a class="list-group-item" href="../type/driver_config_t.html#variable-scf">scf</a>
-            <a class="list-group-item" href="../type/driver_config_t.html#variable-skip_json_output~2">skip_json_output</a>
+            <a class="list-group-item" href="../type/driver_config_t.html#variable-skip_json_output">skip_json_output</a>
         </div>
       </div>
     </div>
@@ -589,7 +591,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_overlapping_fragments~2"></span>
+              <span class="anchor" id="variable-allow_overlapping_fragments"></span>
               logical,
             </td>
               <td>public</td>
@@ -606,7 +608,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~10"></span>
+              <span class="anchor" id="variable-calc_type~8"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -623,7 +625,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_cutoffs~2"></span>
+              <span class="anchor" id="variable-fragment_cutoffs"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -640,7 +642,24 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~7"></span>
+              <span class="anchor" id="variable-global_groups~3"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>global_groups</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hessian~6"></span>
               type(<a href='hessian_keywords_t.html'>hessian_keywords_t</a>),
             </td>
               <td>public</td>
@@ -657,7 +676,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_intersection_level~2"></span>
+              <span class="anchor" id="variable-max_intersection_level~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -674,7 +693,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~7"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -708,6 +727,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-nodes_per_group~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nodes_per_group</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-scf"></span>
               type(<a href='scf_keywords_t.html'>scf_keywords_t</a>),
             </td>
@@ -725,7 +761,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-skip_json_output~2"></span>
+              <span class="anchor" id="variable-skip_json_output"></span>
               logical,
             </td>
               <td>public</td>
@@ -763,6 +799,8 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_overlapping_fragments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">  </span><span class="c">!! Enable GMBE for overlapping fragments</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_intersection_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">999</span><span class="w">  </span><span class="c">!! Maximum k-way intersection depth for GMBE (default: no limit)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_cutoffs</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Distance cutoffs for n-mer screening (Angstrom)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">global_groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nodes_per_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 
 <span class="w">      </span><span class="c">! Calculation-specific keywords (structured)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">hessian_keywords_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">hessian</span><span class="w">  </span><span class="c">!! Hessian calculation keywords</span>
@@ -794,7 +832,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-17 21:45 +0000             </p>
+ on 2026-02-20 03:53 +0000             </p>
           </div>
         </div>
         <br>

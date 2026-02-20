@@ -1,0 +1,992 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>handle_local_worker_requests_group &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>handle_local_worker_requests_group
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">29 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_fragment_distribution_scheme.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">handle_local_worker_requests_group</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-has_item~3">has_item</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-has_pending~10">has_pending</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-local_dummy~4">local_dummy</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-local_idx~4">local_idx</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-local_status~5">local_status</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-req~19">req</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#variable-term_idx~7">term_idx</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/handle_local_worker_requests_group~2.html#src">handle_local_worker_requests_group</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine handle_local_worker_requests_group(resources, term_queue, term_ids, atom_sets, worker_term_map, local_finished_workers)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_resources.html'>mqc_resources</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~handle_local_worker_requests_group~2~~UsesGraph Pages: 1 -->
+<svg id="prochandle_local_worker_requests_group2UsesGraph" width="594pt" height="32pt"
+ viewBox="0.00 0.00 594.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~handle_local_worker_requests_group~2~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 590,-28 590,4 -4,4"/>
+<!-- proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_node1" class="node">
+<title>proc~handle_local_worker_requests_group~2</title>
+<polygon fill="none" stroke="black" points="586,-24 378,-24 378,0 586,0 586,-24"/>
+<text text-anchor="middle" x="482" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">handle_local_worker_requests_group</text>
+</g>
+<!-- module~mqc_resources -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_node2" class="node">
+<title>module~mqc_resources</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~UsesGraph_node2"><a xlink:href="../module/mqc_resources.html" xlink:title="mqc_resources">
+<polygon fill="#337ab7" stroke="#337ab7" points="342,-24 250,-24 250,0 342,0 342,-24"/>
+<text text-anchor="middle" x="296" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_resources</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;module~mqc_resources -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_edge1" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;module~mqc_resources</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M377.97,-12C369.2,-12 360.56,-12 352.38,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="352.29,-8.5 342.29,-12 352.29,-15.5 352.29,-8.5"/>
+</g>
+<!-- module~mqc_mpi_comms -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_node3" class="node">
+<title>module~mqc_mpi_comms</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~UsesGraph_node3"><a xlink:href="../module/mqc_mpi_comms.html" xlink:title="mqc_mpi_comms">
+<polygon fill="#337ab7" stroke="#337ab7" points="214,-24 108,-24 108,0 214,0 214,-24"/>
+<text text-anchor="middle" x="161" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mpi_comms</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_resources&#45;&gt;module~mqc_mpi_comms -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_edge2" class="edge">
+<title>module~mqc_resources&#45;&gt;module~mqc_mpi_comms</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.97,-12C241.74,-12 233.01,-12 224.38,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="224.33,-8.5 214.33,-12 224.33,-15.5 224.33,-8.5"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_node4" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="72,-24 0,-24 0,0 72,0 72,-24"/>
+<text text-anchor="middle" x="36" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_mpi_comms&#45;&gt;pic_mpi_lib -->
+<g id="proc~~handle_local_worker_requests_group~2~~UsesGraph_edge3" class="edge">
+<title>module~mqc_mpi_comms&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M107.84,-12C99.37,-12 90.65,-12 82.36,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="82.13,-8.5 72.13,-12 82.13,-15.5 82.13,-8.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-resources~7"></span>
+              type(<a href='../type/resources_t.html'>resources_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>resources</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_queue~2"></span>
+              type(<a href='../type/queue_t.html'>queue_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_queue</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_ids~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_ids</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_sets~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_sets</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-worker_term_map~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>worker_term_map</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_finished_workers~6"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_finished_workers</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~handle_local_worker_requests_group~2~~CallsGraph Pages: 1 -->
+<svg id="prochandle_local_worker_requests_group2CallsGraph" width="481pt" height="196pt"
+ viewBox="0.00 0.00 481.00 196.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 192)">
+<title>proc~~handle_local_worker_requests_group~2~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-192 477,-192 477,4 -4,4"/>
+<!-- proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node1" class="node">
+<title>proc~handle_local_worker_requests_group~2</title>
+<polygon fill="none" stroke="black" points="208,-106 0,-106 0,-82 208,-82 208,-106"/>
+<text text-anchor="middle" x="104" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50">handle_local_worker_requests_group</text>
+</g>
+<!-- iprobe -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node2" class="node">
+<title>iprobe</title>
+<polygon fill="#777777" stroke="#777777" points="340.5,-188 286.5,-188 286.5,-164 340.5,-164 340.5,-188"/>
+<text text-anchor="middle" x="313.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;iprobe -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge1" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;iprobe</title>
+<path fill="none" stroke="#ff0000" d="M130.25,-106.14C157.83,-119.15 203.48,-139.96 244,-155 254.43,-158.87 265.93,-162.6 276.48,-165.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="275.66,-169.22 286.24,-168.73 277.66,-162.51 275.66,-169.22"/>
+</g>
+<!-- irecv -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node3" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="340.5,-146 286.5,-146 286.5,-122 340.5,-122 340.5,-146"/>
+<text text-anchor="middle" x="313.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;irecv -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge2" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;irecv</title>
+<path fill="none" stroke="#ff0000" d="M167.26,-106C202.92,-112.88 246.42,-121.26 276.47,-127.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="276.02,-130.53 286.5,-128.99 277.34,-123.66 276.02,-130.53"/>
+</g>
+<!-- isend -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node4" class="node">
+<title>isend</title>
+<polygon fill="#777777" stroke="#777777" points="473,-65 419,-65 419,-41 473,-41 473,-65"/>
+<text text-anchor="middle" x="446" y="-50.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;isend -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge3" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;isend</title>
+<path fill="none" stroke="#ff0000" d="M208.23,-93.62C260.98,-91.75 325.92,-86.84 383,-75 391.68,-73.2 400.8,-70.47 409.29,-67.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="410.7,-70.75 418.9,-64.04 408.31,-64.17 410.7,-70.75"/>
+</g>
+<!-- proc~queue_pop -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node5" class="node">
+<title>proc~queue_pop</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~CallsGraph_node5"><a xlink:href="../proc/queue_pop.html" xlink:title="queue_pop">
+<polygon fill="#d9534f" stroke="#d9534f" points="349.5,-66 277.5,-66 277.5,-42 349.5,-42 349.5,-66"/>
+<text text-anchor="middle" x="313.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">queue_pop</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;proc~queue_pop -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge4" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M167.26,-82C199.51,-75.78 238.16,-68.33 267.48,-62.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="268.28,-66.09 277.44,-60.76 266.95,-59.22 268.28,-66.09"/>
+</g>
+<!-- proc~send_pie_term_payload -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_node6" class="node">
+<title>proc~send_pie_term_payload</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~CallsGraph_node6"><a xlink:href="../proc/send_pie_term_payload.html" xlink:title="send_pie_term_payload">
+<polygon fill="#d9534f" stroke="#d9534f" points="383,-24 244,-24 244,0 383,0 383,-24"/>
+<text text-anchor="middle" x="313.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_pie_term_payload</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;proc~send_pie_term_payload -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge5" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;proc~send_pie_term_payload</title>
+<path fill="none" stroke="#ff0000" d="M130.25,-81.86C157.83,-68.85 203.48,-48.04 244,-33 249.45,-30.98 255.2,-28.99 260.95,-27.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="262.13,-30.39 270.58,-24.01 259.99,-23.73 262.13,-30.39"/>
+</g>
+<!-- proc~send_pie_term_payload&#45;&gt;isend -->
+<g id="proc~~handle_local_worker_requests_group~2~~CallsGraph_edge6" class="edge">
+<title>proc~send_pie_term_payload&#45;&gt;isend</title>
+<path fill="none" stroke="#cc00ff" d="M354.01,-24.01C363.51,-26.92 373.63,-30.05 383,-33 391.45,-35.66 400.54,-38.56 409.08,-41.31"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="408.19,-44.71 418.78,-44.45 410.34,-38.04 408.19,-44.71"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~handle_local_worker_requests_group~2~~CalledByGraph Pages: 1 -->
+<svg id="prochandle_local_worker_requests_group2CalledByGraph" width="641pt" height="68pt"
+ viewBox="0.00 0.00 641.00 68.15" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph" class="graph" transform="scale(0.92 0.92) rotate(0) translate(4 70)">
+<title>proc~~handle_local_worker_requests_group~2~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 692,-70 692,4 -4,4"/>
+<!-- proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_node1" class="node">
+<title>proc~handle_local_worker_requests_group~2</title>
+<polygon fill="none" stroke="black" points="688,-45 480,-45 480,-21 688,-21 688,-45"/>
+<text text-anchor="middle" x="584" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">handle_local_worker_requests_group</text>
+</g>
+<!-- proc~gmbe_group_global_coordinator -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_node2" class="node">
+<title>proc~gmbe_group_global_coordinator</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~CalledByGraph_node2"><a xlink:href="../proc/gmbe_group_global_coordinator.html" xlink:title="gmbe_group_global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="444,-66 259,-66 259,-42 444,-42 444,-66"/>
+<text text-anchor="middle" x="351.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_group_global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_edge1" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<path fill="none" stroke="#ff0000" d="M444.26,-45.64C452.65,-44.88 461.22,-44.09 469.77,-43.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="470.15,-46.8 479.79,-42.4 469.51,-39.82 470.15,-46.8"/>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_node3" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="418,-24 285,-24 285,0 418,0 418,-24"/>
+<text text-anchor="middle" x="351.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_edge2" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<path fill="none" stroke="#ff0000" d="M418.24,-17.99C434.26,-19.45 451.85,-21.05 469.4,-22.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="469.43,-26.17 479.71,-23.59 470.07,-19.2 469.43,-26.17"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_node4" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~handle_local_worker_requests_group~2~~CalledByGraph_node4"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-45 0,-45 0,-21 223,-21 223,-45"/>
+<text text-anchor="middle" x="111.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_edge3" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M223.14,-42.76C231.6,-43.51 240.11,-44.26 248.51,-45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="248.42,-48.51 258.69,-45.9 249.03,-41.53 248.42,-48.51"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~handle_local_worker_requests_group~2~~CalledByGraph_edge4" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#00ffff" d="M223.14,-23.24C240.63,-21.69 258.36,-20.13 274.82,-18.68"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="275.23,-22.16 284.88,-17.79 274.62,-15.18 275.23,-22.16"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprochandle_local_worker_requests_group2CalledByGraph = svgPanZoom('#prochandle_local_worker_requests_group2CalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_item~3"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_item</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_pending~10"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_pending</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_dummy~4"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_dummy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_idx~4"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_status~5"></span>
+              type(MPI_Status),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>local_status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-req~19"></span>
+              type(request_t),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>req</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_idx~7"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_idx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">handle_local_worker_requests_group</span><span class="p">(</span><span class="n">resources</span><span class="p">,</span><span class="w"> </span><span class="n">term_queue</span><span class="p">,</span><span class="w"> </span><span class="n">term_ids</span><span class="p">,</span><span class="w"> </span><span class="n">atom_sets</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                 </span><span class="n">worker_term_map</span><span class="p">,</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="p">)</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_resources</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">resources_t</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">resources_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">resources</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">queue_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_queue</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_ids</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">worker_term_map</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_finished_workers</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_idx</span><span class="p">,</span><span class="w"> </span><span class="n">term_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_dummy</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_status</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">has_item</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">worker_term_map</span><span class="p">(</span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">irecv</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">local_dummy</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_REQUEST</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">queue_pop</span><span class="p">(</span><span class="n">term_queue</span><span class="p">,</span><span class="w"> </span><span class="n">local_idx</span><span class="p">,</span><span class="w"> </span><span class="n">has_item</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">has_item</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">term_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term_ids</span><span class="p">(</span><span class="n">local_idx</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">send_pie_term_payload</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">term_idx</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="n">local_idx</span><span class="p">),</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span>
+<span class="w">         </span><span class="n">worker_term_map</span><span class="p">(</span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">term_idx</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         call </span><span class="n">isend</span><span class="p">(</span><span class="n">resources</span><span class="p">%</span><span class="n">mpi_comms</span><span class="p">%</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">local_status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FINISH</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_finished_workers</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">   end subroutine </span><span class="n">handle_local_worker_requests_group</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-20 03:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

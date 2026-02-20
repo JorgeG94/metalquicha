@@ -1,0 +1,683 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>queue_pop &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>queue_pop
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">13 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_work_queue.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_work_queue.f90.html'>mqc_work_queue.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_work_queue.html'>mqc_work_queue</a></li>
+            <li class="breadcrumb-item active" aria-current="page">queue_pop</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/queue_pop.html#src">queue_pop</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine queue_pop(queue, item_idx, has_item)  
+</h2>
+    
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-queue~2"></span>
+              type(<a href='../type/queue_t.html'>queue_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>queue</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-item_idx"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>item_idx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_item"></span>
+              logical,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_item</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~queue_pop~~CalledByGraph Pages: 1 -->
+<svg id="procqueue_popCalledByGraph" width="641pt" height="129pt"
+ viewBox="0.00 0.00 641.00 129.48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~queue_pop~~CalledByGraph" class="graph" transform="scale(0.54 0.54) rotate(0) translate(4 238)">
+<title>proc~~queue_pop~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-238 1194,-238 1194,4 -4,4"/>
+<!-- proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_node1" class="node">
+<title>proc~queue_pop</title>
+<polygon fill="none" stroke="black" points="1190,-129 1118,-129 1118,-105 1190,-105 1190,-129"/>
+<text text-anchor="middle" x="1154" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50">queue_pop</text>
+</g>
+<!-- proc~handle_group_node_requests -->
+<g id="proc~~queue_pop~~CalledByGraph_node2" class="node">
+<title>proc~handle_group_node_requests</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node2"><a xlink:href="../proc/handle_group_node_requests.html" xlink:title="handle_group_node_requests">
+<polygon fill="#d9534f" stroke="#d9534f" points="1062,-234 894,-234 894,-210 1062,-210 1062,-234"/>
+<text text-anchor="middle" x="978" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_group_node_requests</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_group_node_requests&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge1" class="edge">
+<title>proc~handle_group_node_requests&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1062.1,-210.23C1069.06,-207.72 1075.8,-204.68 1082,-201 1107.83,-185.69 1128.72,-157.49 1140.99,-138.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1144.11,-139.61 1146.31,-129.25 1138.13,-135.98 1144.11,-139.61"/>
+</g>
+<!-- proc~handle_group_node_requests~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_node3" class="node">
+<title>proc~handle_group_node_requests~2</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node3"><a xlink:href="../proc/handle_group_node_requests~2.html" xlink:title="handle_group_node_requests">
+<polygon fill="#d9534f" stroke="#d9534f" points="1062,-66 894,-66 894,-42 1062,-42 1062,-66"/>
+<text text-anchor="middle" x="978" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_group_node_requests</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_group_node_requests~2&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge2" class="edge">
+<title>proc~handle_group_node_requests~2&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1053.28,-66.04C1063.09,-68.53 1072.89,-71.49 1082,-75 1098.07,-81.19 1114.71,-90.83 1127.84,-99.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1126.05,-102.33 1136.31,-104.95 1129.92,-96.5 1126.05,-102.33"/>
+</g>
+<!-- proc~handle_local_worker_requests -->
+<g id="proc~~queue_pop~~CalledByGraph_node4" class="node">
+<title>proc~handle_local_worker_requests</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node4"><a xlink:href="../proc/handle_local_worker_requests.html" xlink:title="handle_local_worker_requests">
+<polygon fill="#d9534f" stroke="#d9534f" points="1064,-150 892,-150 892,-126 1064,-126 1064,-150"/>
+<text text-anchor="middle" x="978" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge3" class="edge">
+<title>proc~handle_local_worker_requests&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1064.22,-127.72C1079.16,-125.91 1094.18,-124.1 1107.5,-122.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1108.28,-125.92 1117.79,-121.25 1107.44,-118.97 1108.28,-125.92"/>
+</g>
+<!-- proc~handle_local_worker_requests_group -->
+<g id="proc~~queue_pop~~CalledByGraph_node5" class="node">
+<title>proc~handle_local_worker_requests_group</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node5"><a xlink:href="../proc/handle_local_worker_requests_group.html" xlink:title="handle_local_worker_requests_group">
+<polygon fill="#d9534f" stroke="#d9534f" points="1082,-192 874,-192 874,-168 1082,-168 1082,-192"/>
+<text text-anchor="middle" x="978" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests_group</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests_group&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge4" class="edge">
+<title>proc~handle_local_worker_requests_group&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1053.28,-167.96C1063.09,-165.47 1072.89,-162.51 1082,-159 1098.07,-152.81 1114.71,-143.17 1127.84,-134.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1129.92,-137.5 1136.31,-129.05 1126.05,-131.67 1129.92,-137.5"/>
+</g>
+<!-- proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_node6" class="node">
+<title>proc~handle_local_worker_requests_group~2</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node6"><a xlink:href="../proc/handle_local_worker_requests_group~2.html" xlink:title="handle_local_worker_requests_group">
+<polygon fill="#d9534f" stroke="#d9534f" points="1082,-108 874,-108 874,-84 1082,-84 1082,-108"/>
+<text text-anchor="middle" x="978" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests_group</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_requests_group~2&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge5" class="edge">
+<title>proc~handle_local_worker_requests_group~2&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1078.45,-108C1088.63,-109.23 1098.57,-110.43 1107.71,-111.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1107.31,-115.01 1117.66,-112.73 1108.15,-108.06 1107.31,-115.01"/>
+</g>
+<!-- proc~handle_node_requests -->
+<g id="proc~~queue_pop~~CalledByGraph_node7" class="node">
+<title>proc~handle_node_requests</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node7"><a xlink:href="../proc/handle_node_requests.html" xlink:title="handle_node_requests">
+<polygon fill="#d9534f" stroke="#d9534f" points="1044,-24 912,-24 912,0 1044,0 1044,-24"/>
+<text text-anchor="middle" x="978" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_requests</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_node_requests&#45;&gt;proc~queue_pop -->
+<g id="proc~~queue_pop~~CalledByGraph_edge6" class="edge">
+<title>proc~handle_node_requests&#45;&gt;proc~queue_pop</title>
+<path fill="none" stroke="#ff0000" d="M1044.08,-18.44C1057.24,-21.58 1070.54,-26.21 1082,-33 1107.83,-48.31 1128.72,-76.51 1140.99,-95.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1138.13,-98.02 1146.31,-104.75 1144.11,-94.39 1138.13,-98.02"/>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_node8" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node8"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="816.5,-234 674.5,-234 674.5,-210 816.5,-210 816.5,-234"/>
+<text text-anchor="middle" x="745.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
+<g id="proc~~queue_pop~~CalledByGraph_edge7" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
+<path fill="none" stroke="#ff0000" d="M816.6,-222C837.73,-222 861.27,-222 883.66,-222"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="883.86,-225.5 893.86,-222 883.86,-218.5 883.86,-225.5"/>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
+<g id="proc~~queue_pop~~CalledByGraph_edge11" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
+<path fill="none" stroke="#00ffff" d="M812.55,-209.96C840.16,-204.93 872.41,-199.06 900.99,-193.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="901.73,-197.27 910.94,-192.04 900.47,-190.39 901.73,-197.27"/>
+</g>
+<!-- proc~gmbe_group_global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node9" class="node">
+<title>proc~gmbe_group_global_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node9"><a xlink:href="../proc/gmbe_group_global_coordinator.html" xlink:title="gmbe_group_global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="838,-108 653,-108 653,-84 838,-84 838,-108"/>
+<text text-anchor="middle" x="745.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_group_global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_group_node_requests~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_edge9" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_group_node_requests~2</title>
+<path fill="none" stroke="#ffff00" d="M812.55,-83.96C840.16,-78.93 872.41,-73.06 900.99,-67.85"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="901.73,-71.27 910.94,-66.04 900.47,-64.39 901.73,-71.27"/>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_edge13" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<path fill="none" stroke="#0000ff" d="M838.26,-96C846.65,-96 855.22,-96 863.77,-96"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="863.79,-99.5 873.79,-96 863.79,-92.5 863.79,-99.5"/>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node10" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node10"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="812,-66 679,-66 679,-42 812,-42 812,-66"/>
+<text text-anchor="middle" x="745.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~handle_group_node_requests~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_edge10" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~handle_group_node_requests~2</title>
+<path fill="none" stroke="#ffff00" d="M812.24,-54C834.48,-54 859.76,-54 883.72,-54"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="883.89,-57.5 893.89,-54 883.89,-50.5 883.89,-57.5"/>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2 -->
+<g id="proc~~queue_pop~~CalledByGraph_edge14" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~handle_local_worker_requests_group~2</title>
+<path fill="none" stroke="#0000ff" d="M812.24,-65.98C839.86,-71.01 872.16,-76.9 900.8,-82.12"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="900.3,-85.58 910.77,-83.93 901.56,-78.7 900.3,-85.58"/>
+</g>
+<!-- proc~group_global_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_node11" class="node">
+<title>proc~group_global_coordinator_impl</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node11"><a xlink:href="../proc/group_global_coordinator_impl.html" xlink:title="group_global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="834.5,-192 656.5,-192 656.5,-168 834.5,-168 834.5,-192"/>
+<text text-anchor="middle" x="745.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">group_global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
+<g id="proc~~queue_pop~~CalledByGraph_edge8" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
+<path fill="none" stroke="#ff0000" d="M812.55,-192.04C840.16,-197.07 872.41,-202.94 900.99,-208.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="900.47,-211.61 910.94,-209.96 901.73,-204.73 900.47,-211.61"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
+<g id="proc~~queue_pop~~CalledByGraph_edge12" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
+<path fill="none" stroke="#00ffff" d="M834.63,-180C844.16,-180 853.94,-180 863.72,-180"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="863.88,-183.5 873.88,-180 863.88,-176.5 863.88,-183.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node12" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node12"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="562,-234 449,-234 449,-210 562,-210 562,-234"/>
+<text text-anchor="middle" x="505.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_edge15" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M562,-222C592.37,-222 630.55,-222 664.13,-222"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="664.39,-225.5 674.39,-222 664.39,-218.5 664.39,-225.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~queue_pop~~CalledByGraph_node13" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node13"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="617,-87 394,-87 394,-63 617,-63 617,-87"/>
+<text text-anchor="middle" x="505.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_edge16" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator</title>
+<path fill="none" stroke="#7fff00" d="M617.14,-84.76C625.6,-85.51 634.11,-86.26 642.51,-87"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="642.42,-90.51 652.69,-87.9 643.03,-83.53 642.42,-90.51"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_edge17" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#00ffff" d="M617.14,-65.24C634.63,-63.69 652.36,-62.13 668.82,-60.68"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="669.23,-64.16 678.88,-59.79 668.62,-57.18 669.23,-64.16"/>
+</g>
+<!-- proc~node_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_node14" class="node">
+<title>proc~node_coordinator_impl</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node14"><a xlink:href="../proc/node_coordinator_impl.html" xlink:title="node_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="573.5,-192 437.5,-192 437.5,-168 573.5,-168 573.5,-192"/>
+<text text-anchor="middle" x="505.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_edge18" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl</title>
+<path fill="none" stroke="#7f00ff" d="M573.75,-180C596.12,-180 621.52,-180 645.77,-180"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="646.07,-183.5 656.07,-180 646.07,-176.5 646.07,-183.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node15" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node15"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="358,-234 245,-234 245,-210 358,-210 358,-234"/>
+<text text-anchor="middle" x="301.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_edge19" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M358.23,-222C383.18,-222 412.78,-222 438.8,-222"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="438.95,-225.5 448.95,-222 438.95,-218.5 438.95,-225.5"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node16" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node16"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="355,-192 248,-192 248,-168 355,-168 355,-192"/>
+<text text-anchor="middle" x="301.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~node_coordinator_impl -->
+<g id="proc~~queue_pop~~CalledByGraph_edge20" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~node_coordinator_impl</title>
+<path fill="none" stroke="#0000ff" d="M355.05,-180C377.04,-180 403.05,-180 427.15,-180"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="427.35,-183.5 437.35,-180 427.35,-176.5 427.35,-183.5"/>
+</g>
+<!-- interface~node_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_node17" class="node">
+<title>interface~node_coordinator</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node17"><a xlink:href="../interface/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="158,-192 51,-192 51,-168 158,-168 158,-192"/>
+<text text-anchor="middle" x="104.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~node_coordinator&#45;&gt;proc~node_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_edge22" class="edge">
+<title>interface~node_coordinator&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M158.01,-180C182.61,-180 212.1,-180 237.85,-180"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="237.89,-183.5 247.89,-180 237.89,-176.5 237.89,-183.5"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~queue_pop~~CalledByGraph_node18" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~queue_pop~~CalledByGraph_node18"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="209,-234 0,-234 0,-210 209,-210 209,-234"/>
+<text text-anchor="middle" x="104.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~global_coordinator -->
+<g id="proc~~queue_pop~~CalledByGraph_edge21" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M209.28,-222C217.91,-222 226.48,-222 234.71,-222"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.93,-225.5 244.93,-222 234.93,-218.5 234.93,-225.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocqueue_popCalledByGraph = svgPanZoom('#procqueue_popCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">queue_pop</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span><span class="w"> </span><span class="n">item_idx</span><span class="p">,</span><span class="w"> </span><span class="n">has_item</span><span class="p">)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">queue_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">queue</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">item_idx</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_item</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">queue</span><span class="p">%</span><span class="n">head</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">queue</span><span class="p">%</span><span class="nb">count</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">item_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1_int64</span>
+<span class="w">         </span><span class="n">has_item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">item_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">queue</span><span class="p">%</span><span class="n">ids</span><span class="p">(</span><span class="n">queue</span><span class="p">%</span><span class="n">head</span><span class="p">)</span>
+<span class="w">      </span><span class="n">queue</span><span class="p">%</span><span class="n">head</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">queue</span><span class="p">%</span><span class="n">head</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">      </span><span class="n">has_item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">queue_pop</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-20 03:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

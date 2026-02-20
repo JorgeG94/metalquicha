@@ -1,0 +1,556 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>append_result_to_batch &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>append_result_to_batch
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">10 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_group_batching.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_group_batching.f90.html'>mqc_group_batching.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></li>
+            <li class="breadcrumb-item active" aria-current="page">append_result_to_batch</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/append_result_to_batch.html#src">append_result_to_batch</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine append_result_to_batch(item_idx, result, batch_count, batch_ids, batch_results)  
+</h2>
+    
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-item_idx~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>item_idx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~13"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_count~3"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_count</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_ids~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_ids</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_results~3"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~append_result_to_batch~~CalledByGraph Pages: 1 -->
+<svg id="procappend_result_to_batchCalledByGraph" width="641pt" height="41pt"
+ viewBox="0.00 0.00 641.00 40.82" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~append_result_to_batch~~CalledByGraph" class="graph" transform="scale(0.55 0.55) rotate(0) translate(4 70)">
+<title>proc~~append_result_to_batch~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1158,-70 1158,4 -4,4"/>
+<!-- proc~append_result_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node1" class="node">
+<title>proc~append_result_to_batch</title>
+<polygon fill="none" stroke="black" points="1154,-45 1015,-45 1015,-21 1154,-21 1154,-45"/>
+<text text-anchor="middle" x="1084.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">append_result_to_batch</text>
+</g>
+<!-- proc~handle_local_worker_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node2" class="node">
+<title>proc~handle_local_worker_results_to_batch</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node2"><a xlink:href="../proc/handle_local_worker_results_to_batch.html" xlink:title="handle_local_worker_results_to_batch">
+<polygon fill="#d9534f" stroke="#d9534f" points="979,-66 766,-66 766,-42 979,-42 979,-66"/>
+<text text-anchor="middle" x="872.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_results_to_batch</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_local_worker_results_to_batch&#45;&gt;proc~append_result_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge1" class="edge">
+<title>proc~handle_local_worker_results_to_batch&#45;&gt;proc~append_result_to_batch</title>
+<path fill="none" stroke="#ff0000" d="M979.12,-43.44C987.76,-42.57 996.39,-41.71 1004.79,-40.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1005.29,-44.34 1014.89,-39.86 1004.6,-37.37 1005.29,-44.34"/>
+</g>
+<!-- proc~handle_node_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node3" class="node">
+<title>proc~handle_node_results_to_batch</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node3"><a xlink:href="../proc/handle_node_results_to_batch.html" xlink:title="handle_node_results_to_batch">
+<polygon fill="#d9534f" stroke="#d9534f" points="958.5,-24 786.5,-24 786.5,0 958.5,0 958.5,-24"/>
+<text text-anchor="middle" x="872.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_results_to_batch</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_node_results_to_batch&#45;&gt;proc~append_result_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge2" class="edge">
+<title>proc~handle_node_results_to_batch&#45;&gt;proc~append_result_to_batch</title>
+<path fill="none" stroke="#ff0000" d="M958.61,-20.51C973.76,-22.03 989.49,-23.6 1004.46,-25.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1004.39,-28.61 1014.69,-26.12 1005.08,-21.64 1004.39,-28.61"/>
+</g>
+<!-- proc~gmbe_group_global_coordinator -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node4" class="node">
+<title>proc~gmbe_group_global_coordinator</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node4"><a xlink:href="../proc/gmbe_group_global_coordinator.html" xlink:title="gmbe_group_global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="730,-66 545,-66 545,-42 730,-42 730,-66"/>
+<text text-anchor="middle" x="637.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_group_global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge3" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_results_to_batch</title>
+<path fill="none" stroke="#ff0000" d="M730.25,-54C738.67,-54 747.28,-54 755.87,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="755.95,-57.5 765.95,-54 755.95,-50.5 755.95,-57.5"/>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_node_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge5" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_node_results_to_batch</title>
+<path fill="none" stroke="#00ffff" d="M705.27,-41.96C733.18,-36.93 765.77,-31.06 794.67,-25.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="795.5,-29.26 804.72,-24.04 794.26,-22.37 795.5,-29.26"/>
+</g>
+<!-- proc~group_global_coordinator_impl -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node5" class="node">
+<title>proc~group_global_coordinator_impl</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node5"><a xlink:href="../proc/group_global_coordinator_impl.html" xlink:title="group_global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="726.5,-24 548.5,-24 548.5,0 726.5,0 726.5,-24"/>
+<text text-anchor="middle" x="637.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">group_global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge4" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_results_to_batch</title>
+<path fill="none" stroke="#ff0000" d="M705.27,-24.04C733.18,-29.07 765.77,-34.94 794.67,-40.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="794.26,-43.63 804.72,-41.96 795.5,-36.74 794.26,-43.63"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_node_results_to_batch -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge6" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_node_results_to_batch</title>
+<path fill="none" stroke="#00ffff" d="M726.59,-12C742.81,-12 759.81,-12 776.23,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="776.37,-15.5 786.37,-12 776.37,-8.5 776.37,-15.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node6" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node6"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="509,-66 286,-66 286,-42 509,-42 509,-66"/>
+<text text-anchor="middle" x="397.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge7" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M509.14,-54C517.6,-54 526.11,-54 534.51,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="534.69,-57.5 544.69,-54 534.69,-50.5 534.69,-57.5"/>
+</g>
+<!-- proc~node_coordinator_impl -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node7" class="node">
+<title>proc~node_coordinator_impl</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node7"><a xlink:href="../proc/node_coordinator_impl.html" xlink:title="node_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="465.5,-24 329.5,-24 329.5,0 465.5,0 465.5,-24"/>
+<text text-anchor="middle" x="397.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge8" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M465.75,-12C488.12,-12 513.52,-12 537.77,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="538.07,-15.5 548.07,-12 538.07,-8.5 538.07,-15.5"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node8" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node8"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="250,-24 143,-24 143,0 250,0 250,-24"/>
+<text text-anchor="middle" x="196.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~node_coordinator_impl -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge9" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~node_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M250.05,-12C271.21,-12 296.05,-12 319.21,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="319.36,-15.5 329.36,-12 319.36,-8.5 319.36,-15.5"/>
+</g>
+<!-- interface~node_coordinator -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_node9" class="node">
+<title>interface~node_coordinator</title>
+<g id="a_proc~~append_result_to_batch~~CalledByGraph_node9"><a xlink:href="../interface/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="107,-24 0,-24 0,0 107,0 107,-24"/>
+<text text-anchor="middle" x="53.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~node_coordinator&#45;&gt;proc~node_coordinator -->
+<g id="proc~~append_result_to_batch~~CalledByGraph_edge10" class="edge">
+<title>interface~node_coordinator&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M107,-12C115.44,-12 124.26,-12 132.9,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="132.95,-15.5 142.95,-12 132.95,-8.5 132.95,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocappend_result_to_batchCalledByGraph = svgPanZoom('#procappend_result_to_batchCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">append_result_to_batch</span><span class="p">(</span><span class="n">item_idx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">batch_count</span><span class="p">,</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">,</span><span class="w"> </span><span class="n">batch_results</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">item_idx</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<span class="k">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch_count</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch_results</span><span class="p">(:)</span>
+
+<span class="w">      </span><span class="n">batch_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">batch_ids</span><span class="p">(</span><span class="n">batch_count</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">item_idx</span>
+<span class="w">      </span><span class="n">batch_results</span><span class="p">(</span><span class="n">batch_count</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span>
+<span class="k">   end subroutine </span><span class="n">append_result_to_batch</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-20 03:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

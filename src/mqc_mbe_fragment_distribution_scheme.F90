@@ -16,13 +16,16 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
-                           TAG_NODE_SCALAR_RESULT
+                           TAG_NODE_SCALAR_RESULT, &
+                           TAG_GROUP_ASSIGN, TAG_GROUP_POLYMERS, TAG_GROUP_RESULT, TAG_GROUP_DONE
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list, to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_adapter, only: driver_config_t
    use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
+   use mqc_work_queue, only: queue_t
+   use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
 
    ! Method API imports
    use mqc_method_base, only: qc_method_t

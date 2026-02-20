@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.6% of total for derived types.</p>Including implementation: 35 statements,  1.9% of total for derived types.">15 statements</a>
+                 title="<p> 3.2% of total for derived types.</p>Including implementation: 43 statements,  2.3% of total for derived types.">19 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,13 +136,17 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-calc_type~5">calc_type</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-driver_config">driver_config</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-method_config~2">method_config</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-calc_type~3">calc_type</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-driver_config~2">driver_config</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-global_groups">global_groups</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_ids">group_ids</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-group_leader_ranks">group_leader_ranks</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-method_config~3">method_config</a>
             <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-node_leader_ranks">node_leader_ranks</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-nodes_per_group">nodes_per_group</a>
             <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-num_nodes">num_nodes</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-resources">resources</a>
-            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-sys_geom~3">sys_geom</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-resources~2">resources</a>
+            <a class="list-group-item" href="../type/many_body_expansion_t.html#variable-sys_geom~22">sys_geom</a>
         </div>
       </div>
     </div>
@@ -675,7 +679,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~3"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -692,7 +696,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~2"></span>
               type(<a href='driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -709,7 +713,58 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-global_groups"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>global_groups</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                <p>Number of global groups (multi-global coordinator)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_ids"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>group_ids</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Group id for each node leader (index matches node_leader_ranks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_leader_ranks"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>group_leader_ranks</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Group leader world rank for each node leader (index matches node_leader_ranks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method_config~3"></span>
               type(<a href='method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -743,6 +798,23 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-nodes_per_group"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nodes_per_group</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Nodes per group (optional config override)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-num_nodes"></span>
               integer,
             </td>
@@ -760,7 +832,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -777,7 +849,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -1138,6 +1210,14 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! Ranks of processes that lead each compute node</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">         </span><span class="c">!! Number of compute nodes</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">global_groups</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">         </span><span class="c">!! Number of global groups (multi-global coordinator)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nodes_per_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="c">!! Nodes per group (optional config override)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">group_leader_ranks</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Group leader world rank for each node leader (index matches node_leader_ranks)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">group_ids</span><span class="p">(:)</span>
+<span class="w">         </span><span class="c">!! Group id for each node leader (index matches node_leader_ranks)</span>
 
 <span class="w">      </span><span class="c">! Driver configuration (for Hessian parameters, etc.)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">driver_config_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">driver_config</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">null</span><span class="p">()</span>
@@ -1175,7 +1255,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-17 21:45 +0000             </p>
+ on 2026-02-20 03:53 +0000             </p>
           </div>
         </div>
         <br>

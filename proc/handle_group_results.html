@@ -1,0 +1,1009 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>handle_group_results &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>handle_group_results
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.4% of total for procedures.">50 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_group_batching.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_group_batching.f90.html'>mqc_group_batching.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></li>
+            <li class="breadcrumb-item active" aria-current="page">handle_group_results</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-batch_count~7">batch_count</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-batch_ids~7">batch_ids</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-dummy_msg~6">dummy_msg</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-has_pending~13">has_pending</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-i~47">i</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-item_label">item_label</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-req~26">req</a>
+            <a class="list-group-item" href="../proc/handle_group_results.html#variable-status~10">status</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/handle_group_results.html#src">handle_group_results</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)  
+</h2>
+    
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~16"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results~14"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results_received~11"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results_received</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_items"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_items</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer~8"></span>
+              type(timer_type),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_timer</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_done_count~3"></span>
+              integer,
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>group_done_count</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-label"></span>
+              character(len=*),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>label</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~handle_group_results~~CallsGraph Pages: 1 -->
+<svg id="prochandle_group_resultsCallsGraph" width="419pt" height="402pt"
+ viewBox="0.00 0.00 419.00 402.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~handle_group_results~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 398)">
+<title>proc~~handle_group_results~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-398 415,-398 415,4 -4,4"/>
+<!-- proc~handle_group_results -->
+<g id="proc~~handle_group_results~~CallsGraph_node1" class="node">
+<title>proc~handle_group_results</title>
+<polygon fill="none" stroke="black" points="125,-206 0,-206 0,-182 125,-182 125,-206"/>
+<text text-anchor="middle" x="62.5" y="-191.6" font-family="Helvetica,sans-Serif" font-size="10.50">handle_group_results</text>
+</g>
+<!-- abort_comm -->
+<g id="proc~~handle_group_results~~CallsGraph_node2" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="281,-394 201,-394 201,-370 281,-370 281,-394"/>
+<text text-anchor="middle" x="241" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;abort_comm -->
+<g id="proc~~handle_group_results~~CallsGraph_edge1" class="edge">
+<title>proc~handle_group_results&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M67.05,-206.28C76.67,-237.29 106.26,-319.29 161,-361 169.73,-367.65 180.39,-372.2 191.03,-375.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="190.17,-378.7 200.73,-377.78 191.9,-371.92 190.17,-378.7"/>
+</g>
+<!-- error -->
+<g id="proc~~handle_group_results~~CallsGraph_node3" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="268,-352 214,-352 214,-328 268,-328 268,-352"/>
+<text text-anchor="middle" x="241" y="-337.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;error -->
+<g id="proc~~handle_group_results~~CallsGraph_edge2" class="edge">
+<title>proc~handle_group_results&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M69.44,-206.09C82.41,-231.2 115.77,-289.1 161,-319 173.67,-327.38 189.55,-332.42 203.75,-335.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.24,-338.92 213.72,-337.32 204.54,-332.04 203.24,-338.92"/>
+</g>
+<!-- get_elapsed_time -->
+<g id="proc~~handle_group_results~~CallsGraph_node4" class="node">
+<title>get_elapsed_time</title>
+<polygon fill="#777777" stroke="#777777" points="294,-310 188,-310 188,-286 294,-286 294,-310"/>
+<text text-anchor="middle" x="241" y="-295.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;get_elapsed_time -->
+<g id="proc~~handle_group_results~~CallsGraph_edge3" class="edge">
+<title>proc~handle_group_results&#45;&gt;get_elapsed_time</title>
+<path fill="none" stroke="#ff0000" d="M74.25,-206.09C91,-224.2 125.16,-258.23 161,-277 166.32,-279.78 172.03,-282.22 177.87,-284.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="177.16,-287.81 187.76,-287.65 179.38,-281.17 177.16,-287.81"/>
+</g>
+<!-- info -->
+<g id="proc~~handle_group_results~~CallsGraph_node5" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="268,-268 214,-268 214,-244 268,-244 268,-268"/>
+<text text-anchor="middle" x="241" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;info -->
+<g id="proc~~handle_group_results~~CallsGraph_edge4" class="edge">
+<title>proc~handle_group_results&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M89.6,-206.14C109.02,-214.88 136.32,-226.58 161,-235 174.81,-239.71 190.26,-244.03 203.82,-247.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.2,-250.96 213.75,-249.99 204.9,-244.17 203.2,-250.96"/>
+</g>
+<!-- iprobe -->
+<g id="proc~~handle_group_results~~CallsGraph_node6" class="node">
+<title>iprobe</title>
+<polygon fill="#777777" stroke="#777777" points="268,-226 214,-226 214,-202 268,-202 268,-226"/>
+<text text-anchor="middle" x="241" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iprobe</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;iprobe -->
+<g id="proc~~handle_group_results~~CallsGraph_edge5" class="edge">
+<title>proc~handle_group_results&#45;&gt;iprobe</title>
+<path fill="none" stroke="#ff0000" d="M125.23,-201C151.49,-203.97 181.21,-207.34 203.82,-209.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.66,-213.4 213.99,-211.05 204.44,-206.45 203.66,-213.4"/>
+</g>
+<!-- irecv -->
+<g id="proc~~handle_group_results~~CallsGraph_node7" class="node">
+<title>irecv</title>
+<polygon fill="#777777" stroke="#777777" points="411,-156 357,-156 357,-132 411,-132 411,-156"/>
+<text text-anchor="middle" x="384" y="-141.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">irecv</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;irecv -->
+<g id="proc~~handle_group_results~~CallsGraph_edge6" class="edge">
+<title>proc~handle_group_results&#45;&gt;irecv</title>
+<path fill="none" stroke="#ff0000" d="M125.22,-185.1C177.43,-177.46 254.19,-165.98 321,-155 329.36,-153.63 338.34,-152.08 346.8,-150.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="347.55,-154 356.78,-148.8 346.32,-147.11 347.55,-154"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~handle_group_results~~CallsGraph_node8" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~handle_group_results~~CallsGraph_node8"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="321,-146 161,-146 161,-122 321,-122 321,-146"/>
+<text text-anchor="middle" x="241" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_group_results&#45;&gt;proc~error_get_message -->
+<g id="proc~~handle_group_results~~CallsGraph_edge7" class="edge">
+<title>proc~handle_group_results&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M97.74,-181.89C116.41,-175.33 139.95,-167.13 161,-160 171.47,-156.45 182.74,-152.7 193.4,-149.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.57,-152.48 202.98,-146.03 192.39,-145.83 194.57,-152.48"/>
+</g>
+<!-- proc~result_irecv -->
+<g id="proc~~handle_group_results~~CallsGraph_node9" class="node">
+<title>proc~result_irecv</title>
+<g id="a_proc~~handle_group_results~~CallsGraph_node9"><a xlink:href="../proc/result_irecv.html" xlink:title="result_irecv">
+<polygon fill="#d9534f" stroke="#d9534f" points="277.5,-104 204.5,-104 204.5,-80 277.5,-80 277.5,-104"/>
+<text text-anchor="middle" x="241" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_irecv</text>
+</a>
+</g>
+</g>
+<!-- proc~handle_group_results&#45;&gt;proc~result_irecv -->
+<g id="proc~~handle_group_results~~CallsGraph_edge8" class="edge">
+<title>proc~handle_group_results&#45;&gt;proc~result_irecv</title>
+<path fill="none" stroke="#ff0000" d="M74.59,-181.92C91.52,-164.2 125.61,-131.27 161,-113 171.34,-107.66 183.16,-103.59 194.45,-100.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.34,-103.91 204.18,-98.07 193.63,-97.12 195.34,-103.91"/>
+</g>
+<!-- recv -->
+<g id="proc~~handle_group_results~~CallsGraph_node10" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="411,-84 357,-84 357,-60 411,-60 411,-84"/>
+<text text-anchor="middle" x="384" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;recv -->
+<g id="proc~~handle_group_results~~CallsGraph_edge9" class="edge">
+<title>proc~handle_group_results&#45;&gt;recv</title>
+<path fill="none" stroke="#ff0000" d="M68.59,-181.93C80.34,-155.83 112.18,-94.6 161,-71 221,-41.99 301.24,-52.63 346.99,-62.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="346.23,-66 356.76,-64.82 347.79,-59.18 346.23,-66"/>
+</g>
+<!-- to_char -->
+<g id="proc~~handle_group_results~~CallsGraph_node11" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="268,-24 214,-24 214,0 268,0 268,-24"/>
+<text text-anchor="middle" x="241" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~handle_group_results&#45;&gt;to_char -->
+<g id="proc~~handle_group_results~~CallsGraph_edge10" class="edge">
+<title>proc~handle_group_results&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M67.75,-181.85C78.57,-152.66 109.98,-78.01 161,-38 173.25,-28.39 189.2,-22.27 203.55,-18.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="204.75,-21.7 213.65,-15.95 203.11,-14.9 204.75,-21.7"/>
+</g>
+<!-- proc~result_irecv&#45;&gt;irecv -->
+<g id="proc~~handle_group_results~~CallsGraph_edge11" class="edge">
+<title>proc~result_irecv&#45;&gt;irecv</title>
+<path fill="none" stroke="#3200ff" d="M277.88,-99.89C291.57,-103.33 307.2,-107.78 321,-113 331.58,-117 342.74,-122.24 352.64,-127.27"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="351.19,-130.47 361.68,-131.99 354.43,-124.26 351.19,-130.47"/>
+</g>
+<!-- proc~result_irecv&#45;&gt;recv -->
+<g id="proc~~handle_group_results~~CallsGraph_edge12" class="edge">
+<title>proc~result_irecv&#45;&gt;recv</title>
+<path fill="none" stroke="#3200ff" d="M277.58,-86.95C298.75,-83.95 325.55,-80.15 346.83,-77.13"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="347.37,-80.59 356.78,-75.72 346.39,-73.66 347.37,-80.59"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~handle_group_results~~CalledByGraph Pages: 1 -->
+<svg id="prochandle_group_resultsCalledByGraph" width="641pt" height="49pt"
+ viewBox="0.00 0.00 641.00 49.21" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~handle_group_results~~CalledByGraph" class="graph" transform="scale(0.66 0.66) rotate(0) translate(4 70)">
+<title>proc~~handle_group_results~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 960,-70 960,4 -4,4"/>
+<!-- proc~handle_group_results -->
+<g id="proc~~handle_group_results~~CalledByGraph_node1" class="node">
+<title>proc~handle_group_results</title>
+<polygon fill="none" stroke="black" points="956,-45 831,-45 831,-21 956,-21 956,-45"/>
+<text text-anchor="middle" x="893.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">handle_group_results</text>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~handle_group_results~~CalledByGraph_node2" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node2"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="795,-66 653,-66 653,-42 795,-42 795,-66"/>
+<text text-anchor="middle" x="724" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_group_results -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge1" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_group_results</title>
+<path fill="none" stroke="#ff0000" d="M795.06,-45.22C803.63,-44.14 812.4,-43.04 820.99,-41.97"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="821.49,-45.43 830.97,-40.71 820.61,-38.49 821.49,-45.43"/>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_node3" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="790.5,-24 657.5,-24 657.5,0 790.5,0 790.5,-24"/>
+<text text-anchor="middle" x="724" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~handle_group_results -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge2" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~handle_group_results</title>
+<path fill="none" stroke="#ff0000" d="M790.72,-20.24C800.52,-21.47 810.66,-22.74 820.57,-23.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="820.44,-27.49 830.8,-25.26 821.31,-20.55 820.44,-27.49"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_node4" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="562,-66 449,-66 449,-42 562,-42 562,-66"/>
+<text text-anchor="middle" x="505.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge3" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M562.25,-54C586.7,-54 615.85,-54 642.57,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="642.68,-57.5 652.68,-54 642.68,-50.5 642.68,-57.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~handle_group_results~~CalledByGraph_node5" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node5"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="617,-24 394,-24 394,0 617,0 617,-24"/>
+<text text-anchor="middle" x="505.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge4" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#00ffff" d="M617.29,-12C627.48,-12 637.64,-12 647.41,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="647.44,-15.5 657.44,-12 647.44,-8.5 647.44,-15.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_node6" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node6"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="358,-66 245,-66 245,-42 358,-42 358,-66"/>
+<text text-anchor="middle" x="301.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge5" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M358.23,-54C383.18,-54 412.78,-54 438.8,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="438.95,-57.5 448.95,-54 438.95,-50.5 438.95,-57.5"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~handle_group_results~~CalledByGraph_node7" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~handle_group_results~~CalledByGraph_node7"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="209,-66 0,-66 0,-42 209,-42 209,-66"/>
+<text text-anchor="middle" x="104.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~global_coordinator -->
+<g id="proc~~handle_group_results~~CalledByGraph_edge6" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M209.28,-54C217.91,-54 226.48,-54 234.71,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.93,-57.5 244.93,-54 234.93,-50.5 234.93,-57.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprochandle_group_resultsCalledByGraph = svgPanZoom('#prochandle_group_resultsCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_count~7"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>batch_count</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch_ids~7"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>batch_ids</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dummy_msg~6"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dummy_msg</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_pending~13"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_pending</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~47"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-item_label"></span>
+              character(len=32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>item_label</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-req~26"></span>
+              type(request_t),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>req</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-status~10"></span>
+              type(MPI_Status),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w"> </span><span class="k">subroutine </span><span class="n">handle_group_results</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="n">total_items</span><span class="p">,</span><span class="w"> </span><span class="n">coord_timer</span><span class="p">,</span><span class="w"> </span><span class="n">group_done_count</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results_received</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_items</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">timer_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coord_timer</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">group_done_count</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">label</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch_count</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">MPI_Status</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_pending</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">item_label</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">label</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">item_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">label</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         </span><span class="n">item_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;item&quot;</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      do</span>
+<span class="k">         call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+
+<span class="k">         call </span><span class="n">irecv</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">batch_count</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_count</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="k">         allocate</span><span class="w"> </span><span class="p">(</span><span class="n">batch_ids</span><span class="p">(</span><span class="n">batch_count</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">recv</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">batch_count</span>
+<span class="w">            </span><span class="k">call </span><span class="n">result_irecv</span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">batch_ids</span><span class="p">(</span><span class="n">i</span><span class="p">)),</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_RESULT</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">batch_ids</span><span class="p">(</span><span class="n">i</span><span class="p">))%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">item_label</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">batch_ids</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">//</span><span class="s2">&quot; calculation failed: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="n">results</span><span class="p">(</span><span class="n">batch_ids</span><span class="p">(</span><span class="n">i</span><span class="p">))%</span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">())</span>
+<span class="w">               </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+
+<span class="k">            </span><span class="n">results_received</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results_received</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">mod</span><span class="p">(</span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">total_items</span><span class="o">/</span><span class="mi">10_int64</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                </span><span class="n">results_received</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">total_items</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Processed &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">results_received</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;/&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="n">to_char</span><span class="p">(</span><span class="n">total_items</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">item_label</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;s [&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                </span><span class="n">to_char</span><span class="p">(</span><span class="n">coord_timer</span><span class="p">%</span><span class="n">get_elapsed_time</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot; s]&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">         end do</span>
+<span class="k">         deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">batch_ids</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      do</span>
+<span class="k">         call </span><span class="n">iprobe</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_DONE</span><span class="p">,</span><span class="w"> </span><span class="n">has_pending</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_pending</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+<span class="k">         call </span><span class="n">irecv</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_msg</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">%</span><span class="n">MPI_SOURCE</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_GROUP_DONE</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+<span class="w">         </span><span class="n">group_done_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group_done_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">   end subroutine </span><span class="n">handle_group_results</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-20 03:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

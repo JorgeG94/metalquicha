@@ -223,6 +223,26 @@ contains
                config%cutoff_method = trim(value)
             case ('distance_metric')
                config%distance_metric = trim(value)
+            case ('global_groups')
+               read (value, *, iostat=io_stat) config%global_groups
+               if (io_stat /= 0) then
+                  call error%set(ERROR_PARSE, "Invalid global_groups value: "//trim(value))
+                  return
+               end if
+               if (config%global_groups < 1) then
+                  call error%set(ERROR_VALIDATION, "global_groups must be >= 1")
+                  return
+               end if
+            case ('nodes_per_group')
+               read (value, *, iostat=io_stat) config%nodes_per_group
+               if (io_stat /= 0) then
+                  call error%set(ERROR_PARSE, "Invalid nodes_per_group value: "//trim(value))
+                  return
+               end if
+               if (config%nodes_per_group < 1) then
+                  call error%set(ERROR_VALIDATION, "nodes_per_group must be >= 1")
+                  return
+               end if
             case default
                call error%set(ERROR_PARSE, "Unknown key in %fragmentation section: "//trim(key))
                return

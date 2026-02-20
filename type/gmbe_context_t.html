@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.7% of total for derived types.</p>Including implementation: 80 statements,  4.3% of total for derived types.">10 statements</a>
+                 title="<p> 1.7% of total for derived types.</p>Including implementation: 100 statements,  5.3% of total for derived types.">10 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,16 +136,20 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-calc_type~5">calc_type</a>
-            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-driver_config">driver_config</a>
-            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-method_config~2">method_config</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-calc_type~3">calc_type</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-driver_config~2">driver_config</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-global_groups">global_groups</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-group_ids">group_ids</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-group_leader_ranks">group_leader_ranks</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-method_config~3">method_config</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#variable-n_pie_terms~2">n_pie_terms</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#variable-node_leader_ranks">node_leader_ranks</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-nodes_per_group">nodes_per_group</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#variable-num_nodes">num_nodes</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#variable-pie_atom_sets~2">pie_atom_sets</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#variable-pie_coefficients~2">pie_coefficients</a>
-            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-resources">resources</a>
-            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-sys_geom~3">sys_geom</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-resources~2">resources</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#variable-sys_geom~22">sys_geom</a>
         </div>
       </div>
     </div>
@@ -172,11 +176,11 @@
       </a>
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-destroy~8">destroy</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-destroy~2">destroy</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-destroy_base">destroy_base</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-has_geometry">has_geometry</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-has_mpi">has_mpi</a>
-            <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-init~4">init</a>
+            <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-init~2">init</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-run_distributed~3">run_distributed</a>
             <a class="list-group-item" href="../type/gmbe_context_t.html#boundprocedure-run_serial~3">run_serial</a>
         </div>
@@ -590,7 +594,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~5"></span>
+              <span class="anchor" id="variable-calc_type~3"></span>
               integer(kind=int32),
             </td>
               <td>public</td>
@@ -607,7 +611,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config"></span>
+              <span class="anchor" id="variable-driver_config~2"></span>
               type(<a href='driver_config_t.html'>driver_config_t</a>),
             </td>
               <td>public,</td>
@@ -624,7 +628,58 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-global_groups"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>global_groups</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                <p>Number of global groups (multi-global coordinator)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_ids"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>group_ids</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Group id for each node leader (index matches node_leader_ranks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_leader_ranks"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>group_leader_ranks</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Group leader world rank for each node leader (index matches node_leader_ranks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method_config~3"></span>
               type(<a href='method_config_t.html'>method_config_t</a>),
             </td>
               <td>public</td>
@@ -671,6 +726,23 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Ranks of processes that lead each compute node</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nodes_per_group"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nodes_per_group</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Nodes per group (optional config override)</p>
             </td>
         </tr>
         <tr>
@@ -726,7 +798,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~2"></span>
               type(<a href='resources_t.html'>resources_t</a>),
             </td>
               <td>public,</td>
@@ -743,7 +815,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~3"></span>
+              <span class="anchor" id="variable-sys_geom~22"></span>
               type(<a href='system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public,</td>
@@ -771,7 +843,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-destroy~8"></span>
+      <span class="anchor" id="boundprocedure-destroy~2"></span>
       <h3>
           procedure, public ::
   <strong>destroy</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_destroy.html'>gmbe_destroy</a>
@@ -997,7 +1069,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-init~4"></span>
+      <span class="anchor" id="boundprocedure-init~2"></span>
       <h3>
           procedure, public ::
   <strong>init</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/gmbe_init.html'>gmbe_init</a>
@@ -1262,7 +1334,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-17 21:45 +0000             </p>
+ on 2026-02-20 03:53 +0000             </p>
           </div>
         </div>
         <br>

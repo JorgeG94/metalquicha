@@ -1,0 +1,500 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>queue_destroy &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>queue_destroy
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">6 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_work_queue.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_work_queue.f90.html'>mqc_work_queue.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_work_queue.html'>mqc_work_queue</a></li>
+            <li class="breadcrumb-item active" aria-current="page">queue_destroy</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/queue_destroy.html#src">queue_destroy</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine queue_destroy(queue)  
+</h2>
+    
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-queue~4"></span>
+              type(<a href='../type/queue_t.html'>queue_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>queue</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~queue_destroy~~CalledByGraph Pages: 1 -->
+<svg id="procqueue_destroyCalledByGraph" width="641pt" height="46pt"
+ viewBox="0.00 0.00 641.00 45.52" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~queue_destroy~~CalledByGraph" class="graph" transform="scale(0.62 0.62) rotate(0) translate(4 70)">
+<title>proc~~queue_destroy~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1038,-70 1038,4 -4,4"/>
+<!-- proc~queue_destroy -->
+<g id="proc~~queue_destroy~~CalledByGraph_node1" class="node">
+<title>proc~queue_destroy</title>
+<polygon fill="none" stroke="black" points="1034,-45 943,-45 943,-21 1034,-21 1034,-45"/>
+<text text-anchor="middle" x="988.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">queue_destroy</text>
+</g>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_node2" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node2"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="889,-66 747,-66 747,-42 889,-42 889,-66"/>
+<text text-anchor="middle" x="818" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~queue_destroy -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge1" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~queue_destroy</title>
+<path fill="none" stroke="#ff0000" d="M889.48,-45.22C903.86,-43.42 918.78,-41.56 932.51,-39.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="933.27,-43.29 942.76,-38.58 932.4,-36.34 933.27,-43.29"/>
+</g>
+<!-- proc~group_global_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_node3" class="node">
+<title>proc~group_global_coordinator_impl</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node3"><a xlink:href="../proc/group_global_coordinator_impl.html" xlink:title="group_global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="907,-24 729,-24 729,0 907,0 907,-24"/>
+<text text-anchor="middle" x="818" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">group_global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~queue_destroy -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge2" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~queue_destroy</title>
+<path fill="none" stroke="#ff0000" d="M907.2,-22.99C915.82,-24.07 924.39,-25.13 932.54,-26.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="932.25,-29.64 942.61,-27.41 933.12,-22.7 932.25,-29.64"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_node4" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="521,-66 408,-66 408,-42 521,-42 521,-66"/>
+<text text-anchor="middle" x="464.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge3" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M521.2,-54C579.17,-54 670.53,-54 736.38,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="736.72,-57.5 746.72,-54 736.72,-50.5 736.72,-57.5"/>
+</g>
+<!-- proc~node_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_node5" class="node">
+<title>proc~node_coordinator_impl</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node5"><a xlink:href="../proc/node_coordinator_impl.html" xlink:title="node_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="693,-24 557,-24 557,0 693,0 693,-24"/>
+<text text-anchor="middle" x="625" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge4" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M693.07,-12C701.41,-12 710.08,-12 718.77,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="718.97,-15.5 728.97,-12 718.97,-8.5 718.97,-15.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_node6" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node6"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="372,-66 259,-66 259,-42 372,-42 372,-66"/>
+<text text-anchor="middle" x="315.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge5" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M372.07,-54C380.49,-54 389.24,-54 397.84,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="397.85,-57.5 407.85,-54 397.85,-50.5 397.85,-57.5"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_node7" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node7"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="518,-24 411,-24 411,0 518,0 518,-24"/>
+<text text-anchor="middle" x="464.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~node_coordinator_impl -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge6" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~node_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M518.28,-12C527.43,-12 537.12,-12 546.77,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="546.79,-15.5 556.79,-12 546.79,-8.5 546.79,-15.5"/>
+</g>
+<!-- interface~node_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_node8" class="node">
+<title>interface~node_coordinator</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node8"><a xlink:href="../interface/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="369,-24 262,-24 262,0 369,0 369,-24"/>
+<text text-anchor="middle" x="315.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~node_coordinator&#45;&gt;proc~node_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge8" class="edge">
+<title>interface~node_coordinator&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M369.16,-12C379.29,-12 390,-12 400.42,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="400.72,-15.5 410.72,-12 400.72,-8.5 400.72,-15.5"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~queue_destroy~~CalledByGraph_node9" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node9"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="216,-66 7,-66 7,-42 216,-42 216,-66"/>
+<text text-anchor="middle" x="111.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~global_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge7" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M216.16,-54C227.21,-54 238.21,-54 248.64,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="248.86,-57.5 258.86,-54 248.86,-50.5 248.86,-57.5"/>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~node_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge10" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~node_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M178.02,-41.97C192.84,-39.13 208.48,-36.05 223,-33 233.03,-30.9 243.66,-28.56 253.98,-26.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="254.78,-29.64 263.76,-24.01 253.23,-22.81 254.78,-29.64"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~queue_destroy~~CalledByGraph_node10" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~queue_destroy~~CalledByGraph_node10"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-24 0,-24 0,0 223,0 223,-24"/>
+<text text-anchor="middle" x="111.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;interface~node_coordinator -->
+<g id="proc~~queue_destroy~~CalledByGraph_edge9" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;interface~node_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M223.25,-12C233,-12 242.62,-12 251.76,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="251.85,-15.5 261.85,-12 251.85,-8.5 251.85,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocqueue_destroyCalledByGraph = svgPanZoom('#procqueue_destroyCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">queue_destroy</span><span class="p">(</span><span class="n">queue</span><span class="p">)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">queue_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">queue</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">queue</span><span class="p">%</span><span class="n">ids</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">queue</span><span class="p">%</span><span class="n">ids</span><span class="p">)</span>
+<span class="w">      </span><span class="n">queue</span><span class="p">%</span><span class="n">head</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">      </span><span class="n">queue</span><span class="p">%</span><span class="nb">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">queue_destroy</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-02-20 03:53 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
