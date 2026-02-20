@@ -18,8 +18,9 @@ contains
 
       integer(int64) :: n_rows
       integer(int32) :: n_cols
-      integer, allocatable :: buf(:)
-      type(request_t) :: req(4)
+      integer :: row
+      integer, allocatable :: row_buf(:)
+      type(request_t) :: req(3)
 
       n_rows = size(ids, kind=int64)
       n_cols = size(matrix, 2)
@@ -28,19 +29,19 @@ contains
       call isend(world_comm, ids, dest_rank, TAG_GROUP_ASSIGN, req(2))
       call isend(world_comm, n_cols, dest_rank, TAG_GROUP_POLYMERS, req(3))
 
-      if (n_rows > 0_int64 .and. n_cols > 0) then
-         allocate (buf(n_rows*n_cols))
-         buf = reshape(matrix, [n_rows*n_cols])
-      else
-         allocate (buf(0))
-      end if
-      call isend(world_comm, buf, dest_rank, TAG_GROUP_POLYMERS, req(4))
-
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
-      call wait(req(4))
-      deallocate (buf)
+
+      if (n_rows > 0_int64 .and. n_cols > 0) then
+         allocate (row_buf(n_cols))
+         do row = 1, int(n_rows)
+            row_buf = matrix(row, :)
+            call isend(world_comm, row_buf, dest_rank, TAG_GROUP_POLYMERS, req(1))
+            call wait(req(1))
+         end do
+         deallocate (row_buf)
+      end if
    end subroutine send_group_assignment_matrix
 
    subroutine receive_group_assignment_matrix(world_comm, ids, matrix)
@@ -50,7 +51,8 @@ contains
 
       integer(int64) :: n_rows
       integer(int32) :: n_cols
-      integer, allocatable :: buf(:)
+      integer :: row
+      integer, allocatable :: row_buf(:)
       type(MPI_Status) :: status
       type(request_t) :: req
 
@@ -64,14 +66,12 @@ contains
       allocate (matrix(int(n_rows), n_cols))
 
       if (n_rows > 0_int64 .and. n_cols > 0) then
-         allocate (buf(n_rows*n_cols))
-         call recv(world_comm, buf, 0, TAG_GROUP_POLYMERS, status)
-         matrix = reshape(buf, [int(n_rows), n_cols])
-         deallocate (buf)
-      else
-         allocate (buf(0))
-         call recv(world_comm, buf, 0, TAG_GROUP_POLYMERS, status)
-         deallocate (buf)
+         allocate (row_buf(n_cols))
+         do row = 1, int(n_rows)
+            call recv(world_comm, row_buf, 0, TAG_GROUP_POLYMERS, status)
+            matrix(row, :) = row_buf
+         end do
+         deallocate (row_buf)
       end if
    end subroutine receive_group_assignment_matrix
 

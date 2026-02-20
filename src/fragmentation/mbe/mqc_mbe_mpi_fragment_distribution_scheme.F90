@@ -8,38 +8,6 @@ submodule(mqc_mbe_fragment_distribution_scheme) mpi_fragment_work_smod
 
 contains
 
-   subroutine build_fragment_payload(fragment_idx, polymers, fragment_type, fragment_size, fragment_indices)
-      !! Build fragment payload arrays for a given fragment index.
-      !! Caller owns the returned fragment_indices and must deallocate it.
-      integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: polymers(:, :)
-      integer(int32), intent(out) :: fragment_type
-      integer(int32), intent(out) :: fragment_size
-      integer, allocatable, intent(out) :: fragment_indices(:)
-
-      fragment_size = count(polymers(fragment_idx, :) > 0)
-      allocate (fragment_indices(fragment_size))
-      fragment_indices = polymers(fragment_idx, 1:fragment_size)
-
-      ! Standard MBE always uses monomer indices
-      fragment_type = FRAGMENT_TYPE_MONOMERS
-   end subroutine build_fragment_payload
-
-   subroutine build_fragment_payload_from_row(polymer_row, fragment_type, fragment_size, fragment_indices)
-      !! Build fragment payload arrays for a given polymer row.
-      !! Caller owns the returned fragment_indices and must deallocate it.
-      integer, intent(in) :: polymer_row(:)
-      integer(int32), intent(out) :: fragment_type
-      integer(int32), intent(out) :: fragment_size
-      integer, allocatable, intent(out) :: fragment_indices(:)
-
-      fragment_size = count(polymer_row > 0)
-      allocate (fragment_indices(fragment_size))
-      fragment_indices = polymer_row(1:fragment_size)
-
-      fragment_type = FRAGMENT_TYPE_MONOMERS
-   end subroutine build_fragment_payload_from_row
-
    subroutine send_fragment_payload(comm, tag, fragment_idx, polymers, dest_rank)
       !! Send fragment payload over the specified communicator/tag.
       !! Uses int64 for fragment_idx to handle large fragment indices.
@@ -49,24 +17,32 @@ contains
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymers(:, :)
       integer(int32) :: fragment_size, fragment_type
-      integer, allocatable :: fragment_indices(:)
+      integer :: fragment_indices(size(polymers, 2))
       type(request_t) :: req(4)
       integer(int64) :: fragment_idx_int64
+      integer(int32) :: i
 
-      call build_fragment_payload(fragment_idx, polymers, fragment_type, fragment_size, fragment_indices)
+      fragment_size = count(polymers(fragment_idx, :) > 0)
+      do i = 1, fragment_size
+         fragment_indices(i) = polymers(fragment_idx, i)
+      end do
+
+      fragment_type = FRAGMENT_TYPE_MONOMERS
 
       fragment_idx_int64 = int(fragment_idx, kind=int64)
       call isend(comm, fragment_idx_int64, dest_rank, tag, req(1))
       call isend(comm, fragment_type, dest_rank, tag, req(2))
       call isend(comm, fragment_size, dest_rank, tag, req(3))
-      call isend(comm, fragment_indices, dest_rank, tag, req(4))
+      if (fragment_size > 0) then
+         call isend(comm, fragment_indices(1:fragment_size), dest_rank, tag, req(4))
+      else
+         call isend(comm, fragment_indices(1:0), dest_rank, tag, req(4))
+      end if
 
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
       call wait(req(4))
-
-      deallocate (fragment_indices)
    end subroutine send_fragment_payload
 
    subroutine send_fragment_payload_from_row(comm, tag, fragment_idx, polymer_row, dest_rank)
@@ -77,24 +53,31 @@ contains
       integer, intent(in) :: dest_rank
       integer, intent(in) :: polymer_row(:)
       integer(int32) :: fragment_size, fragment_type
-      integer, allocatable :: fragment_indices(:)
+      integer :: fragment_indices(size(polymer_row))
       type(request_t) :: req(4)
       integer(int64) :: fragment_idx_int64
 
-      call build_fragment_payload_from_row(polymer_row, fragment_type, fragment_size, fragment_indices)
+      fragment_size = count(polymer_row > 0)
+      if (fragment_size > 0) then
+         fragment_indices(1:fragment_size) = polymer_row(1:fragment_size)
+      end if
+
+      fragment_type = FRAGMENT_TYPE_MONOMERS
 
       fragment_idx_int64 = int(fragment_idx, kind=int64)
       call isend(comm, fragment_idx_int64, dest_rank, tag, req(1))
       call isend(comm, fragment_type, dest_rank, tag, req(2))
       call isend(comm, fragment_size, dest_rank, tag, req(3))
-      call isend(comm, fragment_indices, dest_rank, tag, req(4))
+      if (fragment_size > 0) then
+         call isend(comm, fragment_indices(1:fragment_size), dest_rank, tag, req(4))
+      else
+         call isend(comm, fragment_indices(1:0), dest_rank, tag, req(4))
+      end if
 
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
       call wait(req(4))
-
-      deallocate (fragment_indices)
    end subroutine send_fragment_payload_from_row
 
    module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm)
@@ -881,6 +864,7 @@ call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leade
 
             ! Clear the mapping
             worker_fragment_map(worker_source) = 0
+            call worker_result%destroy()
          end if
 
          ! PRIORITY 2: Check for work requests from local workers

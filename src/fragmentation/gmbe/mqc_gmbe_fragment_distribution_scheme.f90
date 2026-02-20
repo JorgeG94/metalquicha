@@ -860,7 +860,6 @@ contains
       integer, intent(in) :: dest_rank
 
       integer :: n_atoms, max_atoms
-      integer, allocatable :: atom_list(:)
       integer(int32) :: fragment_type
       type(request_t) :: req(4)
 
@@ -872,22 +871,20 @@ contains
          n_atoms = n_atoms + 1
       end do
 
-      allocate (atom_list(n_atoms))
-      if (n_atoms > 0) then
-         atom_list = atom_row(1:n_atoms)
-      end if
-
       call isend(comm, term_idx, dest_rank, tag, req(1))
       call isend(comm, fragment_type, dest_rank, tag, req(2))
       call isend(comm, n_atoms, dest_rank, tag, req(3))
-      call isend(comm, atom_list, dest_rank, tag, req(4))
+      if (n_atoms > 0) then
+         call isend(comm, atom_row(1:n_atoms), dest_rank, tag, req(4))
+      else
+         call isend(comm, atom_row(1:0), dest_rank, tag, req(4))
+      end if
 
       call wait(req(1))
       call wait(req(2))
       call wait(req(3))
       call wait(req(4))
 
-      deallocate (atom_list)
    end subroutine send_pie_term_payload
 
    subroutine handle_local_worker_results(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)
