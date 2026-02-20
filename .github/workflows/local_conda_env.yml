@@ -1,6 +1,10 @@
 name: Build MQC using local conda env (MPI, OpenMP, BLAS)
 
-on: [push]
+on:
+  push:
+    branches-ignore:
+      - feat/paper
+
 
 jobs:
   cmake-build:
