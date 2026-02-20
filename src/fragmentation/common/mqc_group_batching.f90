@@ -56,7 +56,7 @@ contains
    end subroutine flush_group_results
 
    subroutine handle_local_worker_results_to_batch(node_comm, world_comm, worker_map, batch_count, batch_ids, batch_results, &
-                                                    results_received)
+                                                   results_received)
       !! Drain pending local worker results and append them to the outbound batch.
       type(comm_t), intent(in) :: node_comm
       type(comm_t), intent(in) :: world_comm
@@ -155,7 +155,7 @@ contains
       end do
    end subroutine handle_node_results_to_batch
 
-   subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)
+ subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)
       !! Receive grouped result batches on rank 0 and update global progress counters.
       type(comm_t), intent(in) :: world_comm
       type(calculation_result_t), intent(inout) :: results(:)
