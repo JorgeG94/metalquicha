@@ -10,6 +10,7 @@ module mqc_group_shard_io
 
 contains
 
+   !! Send shard-assignment ids and polymer matrix to a destination rank.
    subroutine send_group_assignment_matrix(world_comm, dest_rank, ids, matrix)
       type(comm_t), intent(in) :: world_comm
       integer, intent(in) :: dest_rank
@@ -43,6 +44,7 @@ contains
       deallocate (buf)
    end subroutine send_group_assignment_matrix
 
+   !! Receive shard-assignment ids and polymer matrix from rank 0.
    subroutine receive_group_assignment_matrix(world_comm, ids, matrix)
       type(comm_t), intent(in) :: world_comm
       integer(int64), allocatable, intent(out) :: ids(:)
