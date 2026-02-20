@@ -60,6 +60,7 @@ addtest(mqc_vibrational_analysis)
 addtest(mqc_thermochemistry)
 addtest(mqc_method_types)
 addtest(mqc_method_placeholders)
+addtest(mqc_work_queue)
 
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)

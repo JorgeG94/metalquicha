@@ -42,6 +42,14 @@ module mqc_many_body_expansion
          !! Ranks of processes that lead each compute node
       integer :: num_nodes = 1
          !! Number of compute nodes
+      integer :: global_groups = 1
+         !! Number of global groups (multi-global coordinator)
+      integer :: nodes_per_group = 0
+         !! Nodes per group (optional config override)
+      integer, allocatable :: group_leader_ranks(:)
+         !! Group leader world rank for each node leader (index matches node_leader_ranks)
+      integer, allocatable :: group_ids(:)
+         !! Group id for each node leader (index matches node_leader_ranks)
 
       ! Driver configuration (for Hessian parameters, etc.)
       type(driver_config_t), pointer :: driver_config => null()
@@ -152,6 +160,8 @@ contains
          deallocate (this%sys_geom)
       end if
       if (allocated(this%node_leader_ranks)) deallocate (this%node_leader_ranks)
+      if (allocated(this%group_leader_ranks)) deallocate (this%group_leader_ranks)
+      if (allocated(this%group_ids)) deallocate (this%group_ids)
 
       ! Clear pointers (don't deallocate - we don't own these)
       this%resources => null()
@@ -160,6 +170,8 @@ contains
       ! Reset scalars
       this%num_nodes = 1
       this%calc_type = 0
+      this%global_groups = 1
+      this%nodes_per_group = 0
    end subroutine mbe_base_destroy
 
    !============================================================================
@@ -289,7 +301,7 @@ contains
 
    subroutine gmbe_run_distributed(this, json_data)
       !! Run distributed GMBE calculation
-      use mqc_gmbe_fragment_distribution_scheme, only: gmbe_pie_coordinator
+      use mqc_gmbe_fragment_distribution_scheme, only: gmbe_pie_coordinator, gmbe_group_global_coordinator
       use mqc_mbe_fragment_distribution_scheme, only: node_coordinator, node_worker
       use pic_logger, only: logger => global_logger
       use pic_io, only: to_char
@@ -311,13 +323,30 @@ contains
          call logger%verbose("Rank 0: Acting as GMBE PIE coordinator")
          call gmbe_pie_coordinator(this%resources, this%pie_atom_sets, this%pie_coefficients, &
                                    this%n_pie_terms, this%node_leader_ranks, this%num_nodes, &
+                                   this%group_leader_ranks, this%group_ids, this%global_groups, &
                                    this%sys_geom, this%method_config, this%calc_type, json_data)
       else if (this%resources%mpi_comms%node_comm%leader()) then
          ! Node coordinator (node leader on other nodes)
          call logger%verbose("Rank "//to_char(this%resources%mpi_comms%world_comm%rank())// &
                              ": Acting as node coordinator")
-         ! Note: node_coordinator works for both MBE and GMBE
-         call node_coordinator(this)
+         block
+            integer :: i, group_leader_rank
+            group_leader_rank = 0
+            if (allocated(this%node_leader_ranks) .and. allocated(this%group_leader_ranks)) then
+               do i = 1, size(this%node_leader_ranks)
+                  if (this%node_leader_ranks(i) == this%resources%mpi_comms%world_comm%rank()) then
+                     group_leader_rank = this%group_leader_ranks(i)
+                     exit
+                  end if
+               end do
+            end if
+            if (group_leader_rank == this%resources%mpi_comms%world_comm%rank()) then
+               call gmbe_group_global_coordinator(this%resources, this%node_leader_ranks, this%group_ids)
+            else
+               ! Note: node_coordinator works for both MBE and GMBE
+               call node_coordinator(this)
+            end if
+         end block
       else
          ! Worker
          call omp_set_num_threads(1)

@@ -37,6 +37,12 @@
       "type": "fragmented"
     },
     {
+      "name": "Water prism MBE (1 group)",
+      "input": "inputs/prism_global_groups1.mqc",
+      "expected_energy": -34.6736678571,
+      "type": "fragmented"
+    },
+    {
       "name": "Water 20-mer isomer MBE",
       "input": "inputs/w20_isomer.mqc",
       "expected_energy": -115.6850246841,
