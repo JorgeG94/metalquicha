@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-has_pending~11">has_pending</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-has_pending~12">has_pending</a>
             <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-item_idx~3">item_idx</a>
             <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-local_status~6">local_status</a>
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-req~24">req</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-req~28">req</a>
             <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_result~2">worker_result</a>
             <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_source~4">worker_source</a>
         </div>
@@ -181,6 +181,7 @@
 </h2>
     
 
+    <p>Drain pending local worker results and append them to the outbound batch.</p>
 
 
     <h3>Arguments</h3>
@@ -196,7 +197,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
+              <span class="anchor" id="variable-node_comm~4"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -211,7 +212,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~14"></span>
+              <span class="anchor" id="variable-world_comm~15"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -907,7 +908,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_pending~11"></span>
+              <span class="anchor" id="variable-has_pending~12"></span>
               logical,
             </td>
               <td>private</td>
@@ -958,7 +959,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~24"></span>
+              <span class="anchor" id="variable-req~28"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1023,8 +1024,9 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w"> </span><span class="k">subroutine </span><span class="n">handle_local_worker_results_to_batch</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">worker_map</span><span class="p">,</span><span class="w"> </span><span class="n">batch_count</span><span class="p">,</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">,</span><span class="w"> </span><span class="n">batch_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">handle_local_worker_results_to_batch</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">worker_map</span><span class="p">,</span><span class="w"> </span><span class="n">batch_count</span><span class="p">,</span><span class="w"> </span><span class="n">batch_ids</span><span class="p">,</span><span class="w"> </span><span class="n">batch_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                                   </span><span class="n">results_received</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Drain pending local worker results and append them to the outbound batch.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node_comm</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">worker_map</span><span class="p">(:)</span>
@@ -1102,7 +1104,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 03:53 +0000             </p>
+ on 2026-02-20 06:49 +0000             </p>
           </div>
         </div>
         <br>

@@ -19,6 +19,7 @@ module mqc_group_batching
 contains
 
    subroutine append_result_to_batch(item_idx, result, batch_count, batch_ids, batch_results)
+      !! Append a completed fragment result to the current outbound batch.
       integer(int64), intent(in) :: item_idx
       type(calculation_result_t), intent(in) :: result
       integer(int32), intent(inout) :: batch_count
@@ -31,6 +32,7 @@ contains
    end subroutine append_result_to_batch
 
    subroutine flush_group_results(world_comm, batch_count, batch_ids, batch_results)
+      !! Send all currently batched results to rank 0 and reset the batch.
       type(comm_t), intent(in) :: world_comm
       integer(int32), intent(inout) :: batch_count
       integer(int64), intent(inout) :: batch_ids(:)
@@ -53,8 +55,9 @@ contains
       batch_count = 0
    end subroutine flush_group_results
 
- subroutine handle_local_worker_results_to_batch(node_comm, world_comm, worker_map, batch_count, batch_ids, batch_results, &
+   subroutine handle_local_worker_results_to_batch(node_comm, world_comm, worker_map, batch_count, batch_ids, batch_results, &
                                                    results_received)
+      !! Drain pending local worker results and append them to the outbound batch.
       type(comm_t), intent(in) :: node_comm
       type(comm_t), intent(in) :: world_comm
       integer(int64), intent(inout) :: worker_map(:)
@@ -111,6 +114,7 @@ contains
    end subroutine handle_local_worker_results_to_batch
 
    subroutine handle_node_results_to_batch(world_comm, batch_count, batch_ids, batch_results, results_received)
+      !! Drain pending node-level results and append them to the outbound batch.
       type(comm_t), intent(in) :: world_comm
       integer(int32), intent(inout) :: batch_count
       integer(int64), intent(inout) :: batch_ids(:)
@@ -152,6 +156,7 @@ contains
    end subroutine handle_node_results_to_batch
 
  subroutine handle_group_results(world_comm, results, results_received, total_items, coord_timer, group_done_count, label)
+      !! Receive grouped result batches on rank 0 and update global progress counters.
       type(comm_t), intent(in) :: world_comm
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
