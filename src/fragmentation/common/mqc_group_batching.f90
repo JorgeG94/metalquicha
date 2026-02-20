@@ -53,13 +53,15 @@ contains
       batch_count = 0
    end subroutine flush_group_results
 
- subroutine handle_local_worker_results_to_batch(node_comm, world_comm, worker_map, batch_count, batch_ids, batch_results)
+ subroutine handle_local_worker_results_to_batch(node_comm, world_comm, worker_map, batch_count, batch_ids, batch_results, &
+                                                   results_received)
       type(comm_t), intent(in) :: node_comm
       type(comm_t), intent(in) :: world_comm
       integer(int64), intent(inout) :: worker_map(:)
       integer(int32), intent(inout) :: batch_count
       integer(int64), intent(inout) :: batch_ids(:)
       type(calculation_result_t), intent(inout) :: batch_results(:)
+      integer(int64), intent(inout), optional :: results_received
 
       type(MPI_Status) :: local_status
       logical :: has_pending
@@ -100,6 +102,7 @@ contains
          end if
 
          call append_result_to_batch(item_idx, worker_result, batch_count, batch_ids, batch_results)
+         if (present(results_received)) results_received = results_received + 1_int64
          if (batch_count >= size(batch_ids)) then
             call flush_group_results(world_comm, batch_count, batch_ids, batch_results)
          end if
@@ -107,11 +110,12 @@ contains
       end do
    end subroutine handle_local_worker_results_to_batch
 
-   subroutine handle_node_results_to_batch(world_comm, batch_count, batch_ids, batch_results)
+   subroutine handle_node_results_to_batch(world_comm, batch_count, batch_ids, batch_results, results_received)
       type(comm_t), intent(in) :: world_comm
       integer(int32), intent(inout) :: batch_count
       integer(int64), intent(inout) :: batch_ids(:)
       type(calculation_result_t), intent(inout) :: batch_results(:)
+      integer(int64), intent(inout), optional :: results_received
 
       integer(int64) :: item_idx
       type(MPI_Status) :: status
@@ -139,6 +143,7 @@ contains
          end if
 
          call append_result_to_batch(item_idx, node_result, batch_count, batch_ids, batch_results)
+         if (present(results_received)) results_received = results_received + 1_int64
          if (batch_count >= size(batch_ids)) then
             call flush_group_results(world_comm, batch_count, batch_ids, batch_results)
          end if

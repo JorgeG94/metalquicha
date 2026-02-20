@@ -1061,6 +1061,8 @@ contains
       integer(int32) :: batch_count
       integer(int64), allocatable :: batch_ids(:)
       type(calculation_result_t), allocatable :: batch_results(:)
+      integer(int64) :: results_received
+      integer(int64) :: total_group_terms
       integer(int64) :: worker_term_map(resources%mpi_comms%node_comm%size())
       integer :: finished_nodes
       integer :: local_finished_workers
@@ -1097,17 +1099,21 @@ contains
       batch_count = 0
       allocate (batch_ids(GROUP_RESULT_BATCH_SIZE))
       allocate (batch_results(GROUP_RESULT_BATCH_SIZE))
+      results_received = 0_int64
+      total_group_terms = int(size(group_term_ids, kind=int64), int64)
       worker_term_map = 0
       finished_nodes = 0
       local_finished_workers = 0
       local_node_done = 0
 
-      do while (finished_nodes < group_node_count)
+      do while (finished_nodes < group_node_count .or. results_received < total_group_terms)
 
          call handle_local_worker_results_to_batch(resources%mpi_comms%node_comm, &
                                                    resources%mpi_comms%world_comm, &
-                                                   worker_term_map, batch_count, batch_ids, batch_results)
-         call handle_node_results_to_batch(resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
+                                                   worker_term_map, batch_count, batch_ids, batch_results, &
+                                                   results_received)
+         call handle_node_results_to_batch(resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results, &
+                                           results_received)
 
          call handle_group_node_requests(resources, group_queue, group_term_ids, group_atom_sets, finished_nodes)
 

@@ -666,6 +666,8 @@ contains
       integer(int32) :: batch_count
       integer(int64), allocatable :: batch_ids(:)
       type(calculation_result_t), allocatable :: batch_results(:)
+      integer(int64) :: results_received
+      integer(int64) :: total_group_fragments
       integer :: finished_nodes
       integer :: local_finished_workers
       integer :: group_node_count
@@ -699,18 +701,22 @@ contains
       batch_count = 0
       allocate (batch_ids(GROUP_RESULT_BATCH_SIZE))
       allocate (batch_results(GROUP_RESULT_BATCH_SIZE))
+      results_received = 0_int64
+      total_group_fragments = int(size(group_fragment_ids, kind=int64), int64)
       finished_nodes = 0
       local_finished_workers = 0
       local_node_done = 0
       worker_fragment_map = 0
 
-      do while (finished_nodes < group_node_count)
+      do while (finished_nodes < group_node_count .or. results_received < total_group_fragments)
 
          call handle_local_worker_results_to_batch(ctx%resources%mpi_comms%node_comm, &
                                                    ctx%resources%mpi_comms%world_comm, &
-                                                   worker_fragment_map, batch_count, batch_ids, batch_results)
+                                                   worker_fragment_map, batch_count, batch_ids, batch_results, &
+                                                   results_received)
 
-         call handle_node_results_to_batch(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results)
+         call handle_node_results_to_batch(ctx%resources%mpi_comms%world_comm, batch_count, batch_ids, batch_results, &
+                                           results_received)
 
          call handle_group_node_requests(ctx, group_queue, group_fragment_ids, group_polymers, finished_nodes)
 
