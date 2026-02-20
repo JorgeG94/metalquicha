@@ -203,7 +203,18 @@ contains
                   end if
                end if
             case ('allow_overlapping_fragments')
-               config%allow_overlapping_fragments = (trim(value) == 'true')
+               block
+                  character(len=len_trim(value)) :: lower_val
+                  integer :: k
+                  lower_val = trim(adjustl(value))
+                  do k = 1, len(lower_val)
+                     if (lower_val(k:k) >= 'A' .and. lower_val(k:k) <= 'Z') then
+                        lower_val(k:k) = achar(iachar(lower_val(k:k)) + 32)
+                     end if
+                  end do
+                  config%allow_overlapping_fragments = (lower_val == 'true' .or. lower_val == '.true.' .or. &
+                                                        lower_val == '1' .or. lower_val == 'yes')
+               end block
             case ('max_intersection_level')
                read (value, *, iostat=io_stat) config%max_intersection_level
                if (io_stat == 0) then

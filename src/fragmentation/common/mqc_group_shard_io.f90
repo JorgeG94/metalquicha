@@ -1,7 +1,7 @@
 !! Helpers for sending/receiving group shard assignments
 module mqc_group_shard_io
    use pic_types, only: int32, int64
-   use pic_mpi_lib, only: comm_t, isend, irecv, recv, wait, request_t, MPI_Status
+   use pic_mpi_lib, only: comm_t, isend, irecv, recv, wait, request_t, MPI_Status, abort_comm
    use mqc_mpi_tags, only: TAG_GROUP_ASSIGN, TAG_GROUP_POLYMERS
    implicit none
    private
@@ -63,6 +63,9 @@ contains
 
       call irecv(world_comm, n_cols, 0, TAG_GROUP_POLYMERS, req)
       call wait(req)
+      if (n_rows > int(huge(0), int64)) then
+         call abort_comm(world_comm, 1)
+      end if
       allocate (matrix(int(n_rows), n_cols))
 
       if (n_rows > 0_int64 .and. n_cols > 0) then

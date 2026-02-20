@@ -383,8 +383,12 @@ contains
       end do
 
       if (resources%mpi_comms%world_comm%rank() == 0 .and. num_nodes > 1) then
-         call logger%info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group="// &
-                          to_char(nodes_per_group)//")")
+         if (nodes_per_group > 0) then
+            call logger%info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group="// &
+                             to_char(nodes_per_group)//")")
+         else
+            call logger%info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group=auto)")
+         end if
       end if
 
       ! Build polymorphic expansion context
