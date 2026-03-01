@@ -171,25 +171,6 @@ In CMake this is achieved via `FetchContent_Declare` and `MakeAvailable`, allowi
 for seamless access to other CMake projects. This allows Metalquicha to be easily extendable
 and add external packages as dependencies.
 
-## The PIC ecosystem
-
-Metalquicha is driven by the `pic` ecosystem, which is a collection of three libraries
-providing standard library like functions, BLAS/LAPACK, and MPI interfaces. [pic](https://github.com/JorgeG94/pic)
-provides functionality such as `sort`, `logger`, `types`, I/O helpers, and timer functionality. The Fortran
-stdlib project served as inspirtaion for pic, however pic prioritizes compiler portability over
-certain functionality. For example, all code in pic has to build with the GNU, Intel, Cray, Nvidia, AMD, and
-Flang family of compilers.
-
-The [pic-blas](https://github.com/JorgeG94/pic-blas) library provides explicit interfaces to BLAS/LAPACK
-functionality for portability and type safety, plus additional "helpers" which simplify the
-calling of BLAS/LAPACK functions.
-
-The [pic-mpi](https://github.com/JorgeG94/pic-mpi) library provides an abstraction layer to
-the MPI implementation, either through the `mpi` or the `mpi_f08` modules with the exact
-same API. This provides Metalquicha access to both mpi backends. The reason behind this
-is that the `mpi_f08` module is not always instrumented for profilers and debuggers, leading
-to "empty" MPI profiles. The default is the `mpi_f08` module.
-
 
 # Acknowledgements
 
