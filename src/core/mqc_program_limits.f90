@@ -14,6 +14,9 @@ module mqc_program_limits
    !> Higher orders require factorial growth in fragment combinations
    integer, parameter, public :: MAX_MBE_LEVEL = 10
 
+   !> Group-global result batching size for MPI MBE (multi-global coordinator)
+   integer, parameter, public :: GROUP_RESULT_BATCH_SIZE = 256
+
    !---------------------------------------------------------------------------
    ! Numerical Differentiation Defaults
    !---------------------------------------------------------------------------

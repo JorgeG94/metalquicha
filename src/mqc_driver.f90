@@ -195,6 +195,12 @@ contains
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
       integer, allocatable :: node_leader_ranks(:)  !! Ranks of processes that lead each node
+      integer :: global_groups  !! Number of global groups for multi-global coordinator
+      integer :: nodes_per_group  !! Nodes per group (optional override)
+      integer :: group_size  !! Nodes per group after resolving config
+      integer :: group_id, group_start
+      integer, allocatable :: group_leader_ranks(:)  !! Group leader rank for each node leader
+      integer, allocatable :: group_ids(:)  !! Group id for each node leader
       integer, allocatable :: monomers(:)     !! Temporary monomer list for fragment generation
       integer(int64) :: n_expected_frags  !! Expected number of fragments based on combinatorics (int64 to handle large systems)
       integer(int64) :: n_rows      !! Number of rows needed for polymers array (int64 to handle large systems)
@@ -345,6 +351,42 @@ contains
       end do
       deallocate (all_node_leader_ranks)
 
+      global_groups = config%global_groups
+      nodes_per_group = config%nodes_per_group
+
+      if (global_groups > 0 .and. nodes_per_group > 0) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            call logger%error("Both global_groups and nodes_per_group are set; only one may be specified")
+         end if
+         call abort_comm(resources%mpi_comms%world_comm, 1)
+      end if
+
+      if (nodes_per_group > 0) then
+         group_size = nodes_per_group
+         global_groups = (num_nodes + group_size - 1)/group_size
+      else if (global_groups > 0) then
+         if (global_groups > num_nodes) global_groups = num_nodes
+         group_size = (num_nodes + global_groups - 1)/global_groups
+      else
+         global_groups = 1
+         group_size = num_nodes
+      end if
+
+      allocate (group_leader_ranks(num_nodes))
+      allocate (group_ids(num_nodes))
+      do i = 1, num_nodes
+         group_id = min((i - 1)/group_size + 1, global_groups)
+         group_ids(i) = group_id
+         group_start = (group_id - 1)*group_size + 1
+         if (group_start > num_nodes) group_start = num_nodes
+         group_leader_ranks(i) = node_leader_ranks(group_start)
+      end do
+
+      if (resources%mpi_comms%world_comm%rank() == 0 .and. num_nodes > 1) then
+         call logger%info("Multi-global groups: "//to_char(global_groups)//" (nodes_per_group="// &
+                          to_char(nodes_per_group)//")")
+      end if
+
       ! Build polymorphic expansion context
       if (allow_overlapping_fragments) then
          ! GMBE: allocate gmbe_context_t
@@ -364,6 +406,10 @@ contains
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
+            expansion%global_groups = global_groups
+            expansion%nodes_per_group = nodes_per_group
+            expansion%group_leader_ranks = group_leader_ranks
+            expansion%group_ids = group_ids
          end select
       else
          ! Standard MBE: allocate mbe_context_t
@@ -383,6 +429,10 @@ contains
             expansion%resources => resources
             expansion%node_leader_ranks = node_leader_ranks
             expansion%num_nodes = num_nodes
+            expansion%global_groups = global_groups
+            expansion%nodes_per_group = nodes_per_group
+            expansion%group_leader_ranks = group_leader_ranks
+            expansion%group_ids = group_ids
          end select
       end if
 
@@ -407,6 +457,8 @@ contains
       if (resources%mpi_comms%world_comm%rank() == 0) then
          if (allocated(polymers)) deallocate (polymers)
          if (allocated(node_leader_ranks)) deallocate (node_leader_ranks)
+         if (allocated(group_leader_ranks)) deallocate (group_leader_ranks)
+         if (allocated(group_ids)) deallocate (group_ids)
          if (allocated(pie_atom_sets)) deallocate (pie_atom_sets)
          if (allocated(pie_coefficients)) deallocate (pie_coefficients)
       end if

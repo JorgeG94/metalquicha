@@ -31,6 +31,8 @@ module mqc_config_adapter
       logical :: allow_overlapping_fragments = .false.  !! Enable GMBE for overlapping fragments
       integer :: max_intersection_level = 999  !! Maximum k-way intersection depth for GMBE (default: no limit)
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs for n-mer screening (Angstrom)
+      integer :: global_groups = 0
+      integer :: nodes_per_group = 0
 
       ! Calculation-specific keywords (structured)
       type(hessian_keywords_t) :: hessian  !! Hessian calculation keywords
@@ -102,6 +104,9 @@ contains
          allocate (driver_config%fragment_cutoffs(size(mqc_config%fragment_cutoffs)))
          driver_config%fragment_cutoffs = mqc_config%fragment_cutoffs
       end if
+
+      driver_config%global_groups = mqc_config%global_groups
+      driver_config%nodes_per_group = mqc_config%nodes_per_group
 
       ! Set calculation-specific keywords
       driver_config%hessian%displacement = mqc_config%hessian_displacement

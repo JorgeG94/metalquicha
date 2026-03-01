@@ -132,6 +132,8 @@ module mqc_config_parser
       character(len=:), allocatable :: cutoff_method
       character(len=:), allocatable :: distance_metric
       real(dp), allocatable :: fragment_cutoffs(:)  !! Distance cutoffs indexed by n-mer level (2=dimer, 3=trimer, etc.)
+      integer :: global_groups = 0
+      integer :: nodes_per_group = 0
 
       ! Logger settings (kept for compatibility)
       character(len=:), allocatable :: log_level

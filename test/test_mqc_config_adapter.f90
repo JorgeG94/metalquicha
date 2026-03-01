@@ -1,7 +1,9 @@
 module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_config_parser, only: input_fragment_t
-   use mqc_config_adapter, only: check_fragment_overlap
+   use mqc_config_parser, only: input_fragment_t, mqc_config_t
+   use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t
+   use mqc_method_types, only: METHOD_TYPE_GFN2
+   use mqc_calc_types, only: CALC_TYPE_ENERGY
    use mqc_error, only: error_t
    implicit none
    private
@@ -17,7 +19,9 @@ contains
       testsuite = [ &
                   new_unittest("no_overlap_detection", test_no_overlap), &
                   new_unittest("overlap_detection", test_overlap_detected), &
-                  new_unittest("single_fragment_no_overlap", test_single_fragment) &
+                  new_unittest("single_fragment_no_overlap", test_single_fragment), &
+                  new_unittest("driver_global_groups", test_driver_global_groups), &
+                  new_unittest("driver_nodes_per_group", test_driver_nodes_per_group) &
                   ]
    end subroutine collect_mqc_config_adapter_tests
 
@@ -117,6 +121,46 @@ contains
       call fragments(1)%destroy()
       deallocate (fragments)
    end subroutine test_single_fragment
+
+   subroutine test_driver_global_groups(error)
+      !! Test global_groups is copied into driver_config
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+      config%global_groups = 2
+      config%nodes_per_group = 0
+
+      call config_to_driver(config, driver_config)
+
+      call check(error, driver_config%global_groups, 2, "global_groups should be copied")
+      if (allocated(error)) return
+
+      call check(error, driver_config%nodes_per_group, 0, "nodes_per_group should default to 0")
+   end subroutine test_driver_global_groups
+
+   subroutine test_driver_nodes_per_group(error)
+      !! Test nodes_per_group is copied into driver_config
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver_config
+
+      config%method = METHOD_TYPE_GFN2
+      config%calc_type = CALC_TYPE_ENERGY
+      config%nfrag = 0
+      config%global_groups = 0
+      config%nodes_per_group = 4
+
+      call config_to_driver(config, driver_config)
+
+      call check(error, driver_config%nodes_per_group, 4, "nodes_per_group should be copied")
+      if (allocated(error)) return
+
+      call check(error, driver_config%global_groups, 0, "global_groups should default to 0")
+   end subroutine test_driver_nodes_per_group
 
 end module test_mqc_config_adapter
 

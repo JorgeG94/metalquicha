@@ -236,6 +236,10 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"embedding = {fk.embedding}\n")
         buf.write(f"cutoff_method = {fk.cutoff_method}\n")
         buf.write(f"distance_metric = {fk.distance_metric}\n")
+        if fk.global_groups is not None:
+            buf.write(f"global_groups = {fk.global_groups}\n")
+        if fk.nodes_per_group is not None:
+            buf.write(f"nodes_per_group = {fk.nodes_per_group}\n")
 
         if fk.cutoffs is not None:
             buf.write("\n%cutoffs\n")

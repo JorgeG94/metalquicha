@@ -133,6 +133,8 @@ class Fragmentation:
     cutoff_method: str
     distance_metric: str
     cutoffs: Optional[FragCutoffs]
+    global_groups: Optional[int] = None
+    nodes_per_group: Optional[int] = None
 
 
 @dataclass

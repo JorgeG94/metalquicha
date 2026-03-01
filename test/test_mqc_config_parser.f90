@@ -29,6 +29,9 @@ program test_mqc_config_parser
                new_unittest("parse_aimd_section", test_parse_aimd_section), &
                new_unittest("parse_fragmentation_section", test_parse_fragmentation_section), &
                new_unittest("parse_fragmentation_cutoffs", test_parse_fragmentation_cutoffs), &
+               new_unittest("parse_fragmentation_global_groups", test_parse_fragmentation_global_groups), &
+               new_unittest("parse_fragmentation_nodes_per_group", test_parse_fragmentation_nodes_per_group), &
+               new_unittest("error_invalid_global_groups", test_error_invalid_global_groups), &
                new_unittest("parse_xtb_solvation", test_parse_xtb_solvation), &
                new_unittest("error_missing_schema", test_error_missing_schema), &
                new_unittest("error_missing_geometry", test_error_missing_geometry) &
@@ -899,6 +902,175 @@ contains
       close (unit, status='delete')
 
    end subroutine test_parse_xtb_solvation
+
+   subroutine test_parse_fragmentation_global_groups(error)
+      !! Test parsing global_groups in %fragmentation section
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      integer :: unit
+      character(len=*), parameter :: test_file = "test_frag_global_groups.mqc"
+
+      open (newunit=unit, file=test_file, status='replace', action='write')
+      write (unit, '(A)') '%schema'
+      write (unit, '(A)') 'name = mqc-frag'
+      write (unit, '(A)') 'version = 1.0'
+      write (unit, '(A)') 'index_base = 0'
+      write (unit, '(A)') 'units = angstrom'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%model'
+      write (unit, '(A)') 'method = XTB-GFN2'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%driver'
+      write (unit, '(A)') 'type = Energy'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%structure'
+      write (unit, '(A)') 'charge = 0'
+      write (unit, '(A)') 'multiplicity = 1'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%geometry'
+      write (unit, '(A)') '1'
+      write (unit, '(A)') ''
+      write (unit, '(A)') 'H 0.0 0.0 0.0'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%fragmentation'
+      write (unit, '(A)') 'method = MBE'
+      write (unit, '(A)') 'level = 2'
+      write (unit, '(A)') 'global_groups = 3'
+      write (unit, '(A)') 'end'
+      close (unit)
+
+      call read_mqc_file(test_file, config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
+      if (allocated(error)) return
+
+      call check(error, config%global_groups, 3, "global_groups should be 3")
+      if (allocated(error)) return
+
+      call config%destroy()
+      open (newunit=unit, file=test_file, status='old', action='read')
+      close (unit, status='delete')
+   end subroutine test_parse_fragmentation_global_groups
+
+   subroutine test_parse_fragmentation_nodes_per_group(error)
+      !! Test parsing nodes_per_group in %fragmentation section
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      integer :: unit
+      character(len=*), parameter :: test_file = "test_frag_nodes_per_group.mqc"
+
+      open (newunit=unit, file=test_file, status='replace', action='write')
+      write (unit, '(A)') '%schema'
+      write (unit, '(A)') 'name = mqc-frag'
+      write (unit, '(A)') 'version = 1.0'
+      write (unit, '(A)') 'index_base = 0'
+      write (unit, '(A)') 'units = angstrom'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%model'
+      write (unit, '(A)') 'method = XTB-GFN2'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%driver'
+      write (unit, '(A)') 'type = Energy'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%structure'
+      write (unit, '(A)') 'charge = 0'
+      write (unit, '(A)') 'multiplicity = 1'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%geometry'
+      write (unit, '(A)') '1'
+      write (unit, '(A)') ''
+      write (unit, '(A)') 'H 0.0 0.0 0.0'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%fragmentation'
+      write (unit, '(A)') 'method = MBE'
+      write (unit, '(A)') 'level = 2'
+      write (unit, '(A)') 'nodes_per_group = 4'
+      write (unit, '(A)') 'end'
+      close (unit)
+
+      call read_mqc_file(test_file, config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), "Parser should succeed")
+      if (allocated(error)) return
+
+      call check(error, config%nodes_per_group, 4, "nodes_per_group should be 4")
+      if (allocated(error)) return
+
+      call config%destroy()
+      open (newunit=unit, file=test_file, status='old', action='read')
+      close (unit, status='delete')
+   end subroutine test_parse_fragmentation_nodes_per_group
+
+   subroutine test_error_invalid_global_groups(error)
+      !! Test invalid global_groups value is rejected
+      type(error_type), allocatable, intent(out) :: error
+
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      integer :: unit
+      character(len=*), parameter :: test_file = "test_frag_invalid_global_groups.mqc"
+
+      open (newunit=unit, file=test_file, status='replace', action='write')
+      write (unit, '(A)') '%schema'
+      write (unit, '(A)') 'name = mqc-frag'
+      write (unit, '(A)') 'version = 1.0'
+      write (unit, '(A)') 'index_base = 0'
+      write (unit, '(A)') 'units = angstrom'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%model'
+      write (unit, '(A)') 'method = XTB-GFN2'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%driver'
+      write (unit, '(A)') 'type = Energy'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%structure'
+      write (unit, '(A)') 'charge = 0'
+      write (unit, '(A)') 'multiplicity = 1'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%geometry'
+      write (unit, '(A)') '1'
+      write (unit, '(A)') ''
+      write (unit, '(A)') 'H 0.0 0.0 0.0'
+      write (unit, '(A)') 'end'
+      write (unit, '(A)') ''
+      write (unit, '(A)') '%fragmentation'
+      write (unit, '(A)') 'method = MBE'
+      write (unit, '(A)') 'level = 2'
+      write (unit, '(A)') 'global_groups = 0'
+      write (unit, '(A)') 'end'
+      close (unit)
+
+      call read_mqc_file(test_file, config, parse_error)
+
+      call check(error, parse_error%has_error(), "Invalid global_groups should error")
+      if (allocated(error)) return
+
+      call check(error, index(parse_error%get_message(), "global_groups") > 0, &
+                 "Error message should mention global_groups")
+      if (allocated(error)) return
+
+      call config%destroy()
+      open (newunit=unit, file=test_file, status='old', action='read')
+      close (unit, status='delete')
+   end subroutine test_error_invalid_global_groups
 
    subroutine test_error_missing_schema(error)
       !! Test error handling when schema section is missing

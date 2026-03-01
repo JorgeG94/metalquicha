@@ -13,6 +13,11 @@ module test_mqc_physical_fragment
    ! Tolerance for floating point comparisons
    real(dp), parameter :: tol = 1.0e-8_dp
 
+   ! Test file paths - use /tmp/ to avoid working directory issues with FPM
+   character(len=*), parameter :: TEST_WATER_MONOMER = "/tmp/test_water_monomer.xyz"
+   character(len=*), parameter :: TEST_WATER_TRIMER = "/tmp/test_water_trimer.xyz"
+   character(len=*), parameter :: TEST_MISMATCHED = "/tmp/test_mismatched.xyz"
+
 contains
 
    !> Collect all exported unit tests
@@ -76,7 +81,7 @@ contains
       call create_test_water_trimer()
 
       ! Initialize system geometry
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -133,13 +138,13 @@ contains
       call create_mismatched_monomer()
 
       ! Initialize system geometry - should fail
-      call initialize_system_geometry("test_water_trimer.xyz", "test_mismatched.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_MISMATCHED, &
                                       sys_geom, parse_error)
 
       call check(error, parse_error%has_error(), "Should fail with mismatched monomer size")
 
       call cleanup_test_files()
-      call delete_file("test_mismatched.xyz")
+      call delete_file(TEST_MISMATCHED)
    end subroutine test_initialize_system_invalid
 
    subroutine test_build_fragment_single(error)
@@ -152,7 +157,7 @@ contains
 
       call create_test_water_trimer()
 
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -191,7 +196,7 @@ contains
 
       call create_test_water_trimer()
 
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -299,7 +304,7 @@ contains
 
       ! Create test system: 2 monomers, 3 atoms each
       call create_test_water_trimer()
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -359,7 +364,7 @@ contains
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -404,7 +409,7 @@ contains
       character(len=:), allocatable :: errmsg
 
       call create_test_water_trimer()
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -450,7 +455,7 @@ contains
       real(dp) :: replaced_atom_coords(3), cap_coords(3)
 
       call create_test_water_trimer()
-      call initialize_system_geometry("test_water_trimer.xyz", "test_water_monomer.xyz", &
+      call initialize_system_geometry(TEST_WATER_TRIMER, TEST_WATER_MONOMER, &
                                       sys_geom, parse_error)
 
       if (parse_error%has_error()) then
@@ -498,7 +503,7 @@ contains
    subroutine create_test_water_monomer()
       integer :: unit
 
-      open (newunit=unit, file="test_water_monomer.xyz", status="replace", action="write")
+      open (newunit=unit, file=TEST_WATER_MONOMER, status="replace", action="write")
       write (unit, '(a)') "3"
       write (unit, '(a)') "Water monomer"
       write (unit, '(a)') "O  0.0  0.0  0.0"
@@ -512,7 +517,7 @@ contains
 
       call create_test_water_monomer()
 
-      open (newunit=unit, file="test_water_trimer.xyz", status="replace", action="write")
+      open (newunit=unit, file=TEST_WATER_TRIMER, status="replace", action="write")
       write (unit, '(a)') "9"
       write (unit, '(a)') "Water trimer"
       ! First water
@@ -533,7 +538,7 @@ contains
    subroutine create_mismatched_monomer()
       integer :: unit
 
-      open (newunit=unit, file="test_mismatched.xyz", status="replace", action="write")
+      open (newunit=unit, file=TEST_MISMATCHED, status="replace", action="write")
       write (unit, '(a)') "4"
       write (unit, '(a)') "Mismatched monomer"
       write (unit, '(a)') "O  0.0  0.0  0.0"
@@ -544,8 +549,8 @@ contains
    end subroutine create_mismatched_monomer
 
    subroutine cleanup_test_files()
-      call delete_file("test_water_monomer.xyz")
-      call delete_file("test_water_trimer.xyz")
+      call delete_file(TEST_WATER_MONOMER)
+      call delete_file(TEST_WATER_TRIMER)
    end subroutine cleanup_test_files
 
    subroutine delete_file(filename)

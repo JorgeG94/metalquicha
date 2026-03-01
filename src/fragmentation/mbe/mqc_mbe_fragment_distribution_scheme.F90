@@ -6,7 +6,7 @@ module mqc_mbe_fragment_distribution_scheme
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm, pic_dot
    use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, wait, iprobe, MPI_Status, &
-                          request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
+                          request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm, comm_world
    use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger, verbose_level, info_level
    use pic_io, only: to_char
@@ -16,13 +16,16 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
-                           TAG_NODE_SCALAR_RESULT
+                           TAG_NODE_SCALAR_RESULT, &
+                           TAG_GROUP_ASSIGN, TAG_GROUP_POLYMERS, TAG_GROUP_RESULT, TAG_GROUP_DONE
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
                                     build_fragment_from_atom_list, to_angstrom, check_duplicate_atoms
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_adapter, only: driver_config_t
    use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
+   use mqc_work_queue, only: queue_t
+   use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
 
    ! Method API imports
    use mqc_method_base, only: qc_method_t
@@ -49,24 +52,15 @@ module mqc_mbe_fragment_distribution_scheme
          type(comm_t), intent(in), optional :: world_comm
       end subroutine do_fragment_work
 
-      module subroutine global_coordinator(resources, total_fragments, polymers, max_level, &
-                                           node_leader_ranks, num_nodes, sys_geom, method_config, calc_type, json_data)
+      module subroutine global_coordinator(ctx, json_data)
          implicit none
-         type(resources_t), intent(in) :: resources
-         integer(int64), intent(in) :: total_fragments
-         integer, intent(in) :: max_level, num_nodes
-         integer, intent(in) :: polymers(:, :), node_leader_ranks(:)
-         type(system_geometry_t), intent(in), optional :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         class(*), intent(in) :: ctx
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine global_coordinator
 
-      module subroutine node_coordinator(resources, method_config, calc_type)
+      module subroutine node_coordinator(ctx)
          implicit none
-         type(resources_t), intent(in) :: resources
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         class(*), intent(in) :: ctx
       end subroutine node_coordinator
 
       module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
@@ -80,12 +74,9 @@ module mqc_mbe_fragment_distribution_scheme
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine serial_fragment_processor
 
-      module subroutine node_worker(resources, sys_geom, method_config, calc_type)
+      module subroutine node_worker(ctx)
          implicit none
-         type(resources_t), intent(in) :: resources
-         type(system_geometry_t), intent(in), optional :: sys_geom
-         type(method_config_t), intent(in) :: method_config  !! Method configuration
-         integer(int32), intent(in) :: calc_type
+         class(*), intent(in) :: ctx
       end subroutine node_worker
 
       module subroutine unfragmented_calculation(sys_geom, config, result_out, json_data)
