@@ -37,14 +37,14 @@ materials [@gordon_fragmentation_2012]. Fragmentation methods offer a way to add
 and additionally expose a naively parallel problem, i.e. all fragments
 can be computed independently of each other.
 
-The Fortran programming language has been extensively used in the quanutm
-chemistry community, a number of legacy packages and new ones exist in the
+The Fortran programming language has been extensively used in the quantum
+chemistry community, a number of legacy and new packages exist in the
 literature [@zahariev_general_2023; @apra_nwchem_2020; @manathunga_quantum_2023; @bannwarth_extended_2021; @mironov_openqp_2024]. However, there is no modern Fortran package that leverages the
 use of fragmenation techniques to access massively parallel architectures.
 
 Additionally, fragmentation has been historically underexplored due to the
-software complexity of implementing fragmentation routines in existing
-packages. This is mostly because fragmentation needs to be implemented
+complexity of implementing fragmentation routines into existing
+packages. This is mostly because fragmentation should be implemented
 at the very top level of a software package in order to fully leverage
 the parallelism offered by it. Currently, only four packages in the literature
 support fragmentation natively[@zahariev_general_2023; @galvez_vallejo_toward_2023; @takami_open-architecture_2007; @broderick_span_2025] - the rest, offer fragmentatin capabilities
@@ -52,7 +52,7 @@ through file based interfaces, which can be difficult to scale beyond a
 couple processes.
 
 Metalquicha, offers a Fortran based fragmentation framework that is able
-to bind to external quanutm chemistry engines, provided a C like interface
+to bind to external quanutm chemistry engines, provided a C interface
 is available to compute the core physical properties required. This aims to
 simplify the adoption of fragmentation routines by allowing existing quantum
 chemistry programs to write interfaces such as `calculate_quantity` where
@@ -91,7 +91,7 @@ that can be extended to support multiple types of methodologies. This allows
 Metalquicha to be easily extended to replace `xtb` with a Restricted Hartree-Fock
 (RHF) method, Density Functional Theory (DFT), among others.
 
-The aim of Metalquicha is to incentivize development of quanutm chemistry methods
+The aim of Metalquicha is to incentivize development of quantum chemistry methods
 as a library-first API type design, providing high level interfaces to complex
 methodologies. This will have two main effects: reusability of complex algorithms
 and adaptability into frameworks, such as Metalquicha. A new calculator simply
