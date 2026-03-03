@@ -40,19 +40,19 @@ can be computed independently of each other.
 The Fortran programming language has been extensively used in the quantum
 chemistry community, a number of legacy and new packages exist in the
 literature [@zahariev_general_2023; @apra_nwchem_2020; @manathunga_quantum_2023; @bannwarth_extended_2021; @mironov_openqp_2024]. However, there is no modern Fortran package that leverages the
-use of fragmenation techniques to access massively parallel architectures.
+use of fragmentation techniques to access massively parallel architectures.
 
 Additionally, fragmentation has been historically underexplored due to the
 complexity of implementing fragmentation routines into existing
 packages. This is mostly because fragmentation should be implemented
 at the very top level of a software package in order to fully leverage
 the parallelism offered by it. Currently, only four packages in the literature
-support fragmentation natively[@zahariev_general_2023; @galvez_vallejo_toward_2023; @takami_open-architecture_2007; @broderick_span_2025] - the rest, offer fragmentatin capabilities
+support fragmentation natively[@zahariev_general_2023; @galvez_vallejo_toward_2023; @takami_open-architecture_2007; @broderick_span_2025] - the rest, offer fragmentation capabilities
 through file based interfaces, which can be difficult to scale beyond a
 couple processes.
 
 Metalquicha, offers a Fortran based fragmentation framework that is able
-to bind to external quanutm chemistry engines, provided a C interface
+to bind to external quantum chemistry engines, provided a C interface
 is available to compute the core physical properties required. This aims to
 simplify the adoption of fragmentation routines by allowing existing quantum
 chemistry programs to write interfaces such as `calculate_quantity` where
@@ -62,9 +62,9 @@ frameworks.
 
 Metalquicha addresses the following community needs:
 
-- Fortran based programs have been scared into adopting C++ for modernisation, Metalquicha aims to showcase that Fortran can still be used for massively parallel  quanutm chemistry applications
+- Fortran based programs have been scared into adopting C++ for modernisation, Metalquicha aims to showcase that Fortran can still be used for massively parallel  quantum chemistry applications
 - A permissive licensed, reusable software that can be extended freely
-- A modern modular fragmentation framework that can accommodate any type of quanutm chemistry method
+- A modern modular fragmentation framework that can accommodate any type of quantum chemistry method
 
 Additionally, Metalquicha uses modern Fortran language features such as native
 documentation through the Ford project and the use of the [Fortran package manager](https://fpm.fortran-lang.org/) (FPM)
@@ -81,7 +81,7 @@ covalently bound fragments using either overlapping fragments or hydrogen caps.
 At the core of the fragment distribution scheme is the `node_worker` subroutine which
 assigns a specific task to a process. In most cases, this is the calculation of
 a property, such as the energy, gradient, or hessian matrix of a molecule. A
-figure of the overall MPI distribution scheme is show here:
+figure of the overall MPI distribution scheme is shown here:
 
 ![Fragment distribution scheme.\label{fig:gc}](Global_coordinator.png)
 
@@ -153,7 +153,7 @@ and a python program to translate the json to the `mqc` format for Fortran consu
 
 ## Build system
 
-As mentioned ealier, Metalquicha uses CMake and the FPM as coexisting build systems. The FPM
+As mentioned earlier, Metalquicha uses CMake and the FPM as coexisting build systems. The FPM
 provides a powerful framework for including external dependencies, simply by ensuring they
 have an `fpm.toml` file and them being included as:
 
