@@ -104,9 +104,12 @@ needs to extend the `qc_method_t`:
       !! Defines the required interface for energy and gradient calculations
       !! that must be implemented by all concrete method types (XTB, HF, etc.).
    contains
-      procedure(calc_energy_interface), deferred :: calc_energy    !! Energy calculation interface
-      procedure(calc_gradient_interface), deferred :: calc_gradient  !! Gradient calculation interface
-      procedure(calc_hessian_interface), deferred :: calc_hessian  !! Hessian calculation interface
+      procedure(calc_energy_interface), &
+         deferred :: calc_energy    !! Energy calculation interface
+      procedure(calc_gradient_interface), &
+         deferred :: calc_gradient  !! Gradient calculation interface
+      procedure(calc_hessian_interface), &
+         deferred :: calc_hessian  !! Hessian calculation interface
    end type qc_method_t
 ```
 

@@ -3,8 +3,12 @@ name: Codecov
 on:
   push:
     branches: ["*"]
+    branches-ignore:
+      - feat/paper
   pull_request:
     branches: ["*"]
+    branches-ignore:
+      - feat/paper
   workflow_dispatch:
 
 jobs:
