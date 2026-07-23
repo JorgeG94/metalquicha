@@ -24,6 +24,8 @@ module mqc_cuest_context
                     cuestParametersDestroy, cuestSetMathMode, &
                     CUEST_HANDLE_PARAMETERS, CUEST_NATIVE_FP64_MATH_MODE
    use cuda_runtime, only: cudaSetDevice, cudaGetDeviceCount
+   use pic_logger, only: logger => global_logger
+   use pic_io, only: to_char
    implicit none
    private
 
@@ -150,6 +152,13 @@ contains
       if (error%has_error()) return
 
       this%initialized = .true.
+
+      ! Say which device this rank took. Without it a misbinding -- every rank
+      ! piling onto GPU 0 -- looks exactly like a slow run, and that is an
+      ! expensive thing to diagnose after the fact.
+      call logger%info("cuEST: node-local rank "//to_char(local_rank)// &
+                       " bound to GPU "//to_char(this%device_id)// &
+                       " of "//to_char(int(device_count)))
    end subroutine context_create
 
    subroutine context_destroy(this)
