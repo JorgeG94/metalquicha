@@ -103,6 +103,13 @@ find_package(
 
 add_subdirectory(src)
 
+# The cuEST backend lives outside src/ on purpose: the fpm build globs all of
+# src/, and fpm cannot link the cuEST binary library, so fpm builds the
+# CPU/xTB path only. CMake adds the backend explicitly here.
+if(MQC_ENABLE_CUEST)
+  add_subdirectory(cuest_backend)
+endif()
+
 if(MQC_ENABLE_TESTING)
   add_subdirectory(test)
 endif()

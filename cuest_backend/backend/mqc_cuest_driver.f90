@@ -24,47 +24,14 @@ module mqc_cuest_driver
                             SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC
    use mqc_cuest_atomic_guess, only: build_sac_guess
    use mqc_cuest_gradient, only: compute_scf_gradient
+   use mqc_cuest_iface, only: cuest_scf_settings_t
    implicit none
    private
 
-   public :: cuest_scf_settings_t  !! Everything a cuEST SCF needs to run
    public :: run_cuest_scf         !! Fragment -> converged result
 
-   type :: cuest_scf_settings_t
-      !! Method-independent description of one cuEST SCF calculation
-      character(len=32) :: basis_set = 'sto-3g'
-         !! Orbital basis set name
-      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
-         !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
-      character(len=32) :: functional = ''
-         !! Exchange-correlation functional; empty means Hartree-Fock
-      logical :: spherical = .true.
-         !! Pure (spherical) vs Cartesian angular functions
-      logical :: verbose = .false.
-         !! Print the SCF iteration table
-      character(len=16) :: guess = 'gwh'
-         !! Initial guess: 'core', 'gwh' or 'sac'. A core guess ignores
-         !! electron repulsion entirely and can converge a radical onto an
-         !! excited state; GWH is the safe default; SAC converges free atoms
-         !! first and starts closest of the three.
-      integer :: device_rank = 0
-         !! Node-local MPI rank. Decides which GPU this rank binds to; leaving
-         !! it at zero in a multi-rank run puts every rank on device 0.
-      logical :: unrestricted = .false.
-         !! Force UHF/UKS even for a closed shell. With equal alpha and beta
-         !! occupations and the same guess for both spins, this must reproduce
-         !! the restricted energy exactly, which is how the unrestricted
-         !! factors are checked.
-
-      integer :: max_iter = 100
-      real(dp) :: energy_tol = 1.0e-8_dp
-      real(dp) :: density_tol = 1.0e-6_dp
-      logical :: use_diis = .true.
-      integer :: diis_size = 8
-
-      integer :: radial_points = 75    !! XC grid radial points per atom
-      integer :: angular_points = 302  !! XC grid Lebedev order
-   end type cuest_scf_settings_t
+! cuest_scf_settings_t now lives in mqc_cuest_iface (src/), so the method
+   ! files can reach it without pulling the backend into the fpm build.
 
 contains
 

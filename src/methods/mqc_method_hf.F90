@@ -2,7 +2,7 @@
 module mqc_method_hf
    !! Closed-shell Hartree-Fock.
    !!
-   !! When built with MQC_WITH_CUEST the integrals come from NVIDIA cuEST on
+   !! With the cuEST backend (CMake, MQC_ENABLE_CUEST=ON) the integrals come
    !! the GPU and the SCF runs in `mqc_cuest_scf`. Because cuEST offers no
    !! conventional four-index ERI path, J and K are always density-fitted, so
    !! an auxiliary (JKFIT) basis is required alongside the orbital basis.
@@ -16,9 +16,8 @@ module mqc_method_hf
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
-#ifdef MQC_WITH_CUEST
-   use mqc_cuest_driver, only: cuest_scf_settings_t, run_cuest_scf
-#endif
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_cuest_bridge, only: run_cuest_scf
    implicit none
    private
 
@@ -71,18 +70,10 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-#ifdef MQC_WITH_CUEST
-      call hf_energy_cuest(this, fragment, result, want_gradient=.false.)
-#else
-      call result%error%set(ERROR_VALIDATION, &
-                            "Hartree-Fock requires an integral backend; rebuild with "// &
-                            "MQC_ENABLE_CUEST=ON")
-      result%has_error = .true.
-#endif
+      call hf_run(this, fragment, result, want_gradient=.false.)
    end subroutine hf_calc_energy
 
-#ifdef MQC_WITH_CUEST
-   subroutine hf_energy_cuest(this, fragment, result, want_gradient)
+   subroutine hf_run(this, fragment, result, want_gradient)
       !! Run a density-fitted RHF calculation through cuEST
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
@@ -106,8 +97,7 @@ contains
       settings%diis_size = this%options%diis_size
 
       call run_cuest_scf(settings, fragment, result, want_gradient)
-   end subroutine hf_energy_cuest
-#endif
+   end subroutine hf_run
 
    subroutine hf_calc_gradient(this, fragment, result)
       !! Calculate energy gradient using Hartree-Fock method
@@ -115,14 +105,7 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-#ifdef MQC_WITH_CUEST
-      call hf_energy_cuest(this, fragment, result, want_gradient=.true.)
-#else
-      call result%error%set(ERROR_VALIDATION, &
-                            "Hartree-Fock requires an integral backend; rebuild with "// &
-                            "MQC_ENABLE_CUEST=ON")
-      result%has_error = .true.
-#endif
+      call hf_run(this, fragment, result, want_gradient=.true.)
    end subroutine hf_calc_gradient
 
    subroutine hf_calc_hessian(this, fragment, result)

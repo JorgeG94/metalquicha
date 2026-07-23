@@ -13,7 +13,8 @@ program check_gradient
    use pic_types, only: dp
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
-   use mqc_cuest_driver, only: cuest_scf_settings_t, run_cuest_scf
+   use mqc_cuest_iface, only: cuest_scf_settings_t
+   use mqc_cuest_bridge, only: run_cuest_scf
    implicit none
 
    type(cuest_scf_settings_t) :: settings

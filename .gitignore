@@ -49,3 +49,8 @@ output_*.json
 
 # Out-of-source build directories
 build*/
+
+# profiling / scratch
+*.nsys-rep
+*.sqlite
+fail.txt

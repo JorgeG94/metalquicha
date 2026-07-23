@@ -52,7 +52,13 @@ FC=mpifort CC=mpicc cmake -B build \
 cmake --build build -j
 ```
 
-The Fortran bindings come from the vendored copy under `src/cuest_bindings/`.
+The cuEST backend is a CMake-only feature. The fpm build (`fpm build`) globs
+`src/` and cannot link the cuEST binary library, so the backend lives in
+`cuest_backend/` outside `src/` where fpm never sees it; fpm builds the CPU/xTB
+path only. The HF and DFT methods fall back to a clear "needs an integral
+backend" error when built without `MQC_WITH_CUEST`.
+
+The Fortran bindings come from the vendored copy under `cuest_backend/bindings/`.
 To pull them from upstream instead:
 
 ```bash
@@ -267,31 +273,33 @@ overbinding the hydrogen bonds relative to HF is expected GGA behaviour. A water
 ## Architecture
 
 ```
-src/cuest_bindings/            # Generated bindings -- do not hand-edit
-├── cuest.f90                  # 129 functions, 289 enums, 2 workspace types
-├── cuest_helpers.f90          # Typed wrappers over the void*+size_t API
-├── cuda_runtime.f90           # CUDA runtime, compiler-agnostic
-└── cuda_helpers.f90           # Error decoding, typed array copies
-
-src/methods/cuest/
-├── mqc_cuest_runtime.f90      # Status -> error_t, workspaces, device memory
-├── mqc_cuest_context.f90      # Per-rank handle, GPU binding, scratch pools
-├── mqc_cuest_basis.f90        # molecular_basis_type -> cuEST AO shells
-├── mqc_cuest_grid.f90         # Treutler-Ahlrichs M4 radial x Lebedev angular
-├── mqc_cuest_functionals.f90  # Functional name -> cuEST identifier
-├── mqc_cuest_integrals.f90    # Per-molecule objects; S/T/V, J, K, Vxc, derivatives
-├── mqc_cuest_scf.f90          # Closed-shell SCF: orthogonalization, DIIS, energy
-├── mqc_cuest_gradient.f90     # Gradient assembly from the derivative APIs
-└── mqc_cuest_driver.f90       # physical_fragment_t -> converged result
+cuest_backend/                 # kept out of src/ so fpm never builds it
+  bindings/                    # generated bindings -- do not hand-edit
+    cuest.f90                  #   129 functions, 289 enums, 2 workspace types
+    cuest_helpers.f90          #   typed wrappers over the void*+size_t API
+    cuda_runtime.f90           #   CUDA runtime, compiler-agnostic
+    cuda_helpers.f90           #   error decoding, typed array copies
+  backend/
+    mqc_cuest_runtime.f90      #   status -> error_t, workspaces, device memory
+    mqc_cuest_context.f90      #   per-rank handle, GPU binding, scratch pools
+    mqc_cuest_basis.f90        #   molecular_basis_type -> cuEST AO shells
+    mqc_cuest_grid.f90         #   Treutler-Ahlrichs M4 radial x Lebedev angular
+    mqc_cuest_functionals.f90  #   functional name -> cuEST identifier
+    mqc_cuest_atomic_guess.f90 #   free-atom SAC guess
+    mqc_cuest_integrals.f90    #   per-molecule objects; S/T/V, J, K, Vxc, dipole, derivatives
+    mqc_cuest_scf.f90          #   RHF/UHF/RKS/UKS SCF: orthogonalization, DIIS, energy
+    mqc_cuest_gradient.f90     #   gradient assembly from the derivative APIs
+    mqc_cuest_driver.f90       #   physical_fragment_t -> converged result
 
 src/basis/
-├── mqc_gbs_reader.f90         # Gaussian94 (.gbs) reader
-└── mqc_basis_normalization.f90   # Shell contraction normalization
+    mqc_gbs_reader.f90         # Gaussian94 (.gbs) reader
+    mqc_json_basis_reader.f90  # Basis Set Exchange JSON reader
+    mqc_basis_normalization.f90  # shell contraction normalization
 
 src/methods/
-├── mqc_method_hf.F90          # Hartree-Fock, cuEST-backed
-├── mqc_method_dft.F90         # Kohn-Sham, cuEST-backed
-└── mqc_semi_numerical_hessian.f90  # Method-agnostic finite-difference Hessian
+    mqc_method_hf.F90          # Hartree-Fock, cuEST-backed (guarded by MQC_WITH_CUEST)
+    mqc_method_dft.F90         # Kohn-Sham, cuEST-backed (guarded by MQC_WITH_CUEST)
+    mqc_semi_numerical_hessian.f90  # method-agnostic finite-difference Hessian
 
 validation/
 ├── run_cuest_validation.sh    # Energy references, HF + DFT

@@ -45,7 +45,8 @@ addtest(mqc_config_roundtrip)
 
 # Only meaningful with the cuEST backend compiled in.
 if(MQC_ENABLE_CUEST)
-  addtest(mqc_cuest_spin)
+  addtestpp(mqc_cuest_spin)
+  target_compile_definitions(test_mqc_cuest_spin PRIVATE MQC_WITH_CUEST)
 endif()
 addtest(mqc_basis_file_reader)
 addtest(mqc_basis_utils)

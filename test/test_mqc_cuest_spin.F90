@@ -1,3 +1,4 @@
+#ifdef MQC_WITH_CUEST
 module test_mqc_cuest_spin
    !! Unit tests for the open-shell occupation arithmetic.
    !!
@@ -114,3 +115,13 @@ program tester_mqc_cuest_spin
       error stop
    end if
 end program tester_mqc_cuest_spin
+
+#else
+program tester_mqc_cuest_spin
+   !! The cuEST backend is not part of the fpm build, so the open-shell
+   !! occupation test it exercises is a no-op here. It runs in full under the
+   !! CMake build, which is where the cuEST backend is compiled.
+   implicit none
+   write (*, '(A)') "# mqc_cuest_spin: skipped (cuEST backend not built)"
+end program tester_mqc_cuest_spin
+#endif
