@@ -22,7 +22,6 @@ add_subdirectory(cmake)
 include(demo_status)
 
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
-option(MQC_ENABLE_LIBCINT "Link to libcint for ERI computations" OFF)
 option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
@@ -35,7 +34,6 @@ set_property(CACHE MQC_CUEST_BINDINGS PROPERTY STRINGS vendored fetch)
 set(MQC_CUEST_BINDINGS_TAG
     "main"
     CACHE STRING "Git tag/branch of mod_cuest when MQC_CUEST_BINDINGS=fetch")
-mark_as_advanced(MQC_ENABLE_LIBCINT)
 
 add_library(${main_lib} STATIC)
 set_target_properties(${main_lib} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -66,13 +64,6 @@ if(MQC_ENABLE_TBLITE)
   endif()
 else()
   target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_TBLITE)
-endif()
-
-if(MQC_ENABLE_LIBCINT)
-  find_package(libcint REQUIRED)
-  list(APPEND libraries_to_link libcint::cint_fortran)
-else()
-  target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_LIBCINT)
 endif()
 
 # NVIDIA cuEST -- GPU integrals behind the HF/DFT methods.

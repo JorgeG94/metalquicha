@@ -8,9 +8,6 @@ add_subdirectory(methods)
 add_subdirectory(parallel)
 add_subdirectory(utils)
 add_subdirectory(vibrational)
-if(MQC_ENABLE_LIBCINT)
-  add_subdirectory(libcint_interface)
-endif()
 # The cuEST/CUDA bindings must compile before anything that USEs them. They can
 # come from the vendored copy under cuest_bindings/, or be fetched from the
 # upstream mod_cuest repository -- the sources are identical either way, since
