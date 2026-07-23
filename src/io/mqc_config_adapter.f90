@@ -137,6 +137,8 @@ contains
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
+      if (allocated(mqc_config%scf_guess)) &
+         driver_config%method_config%scf%guess = mqc_config%scf_guess
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output

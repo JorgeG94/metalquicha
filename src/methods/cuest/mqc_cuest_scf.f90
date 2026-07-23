@@ -132,6 +132,82 @@ contains
       end select
    end subroutine build_guess_fock
 
+   subroutine sac_guess_fock(system, core_hamiltonian, guess_alpha, guess_beta, &
+                             unrestricted, fock_a, fock_b, error)
+      !! First Fock matrix from superposed atomic coefficients
+      !!
+      !! The guess coefficients carry the summed atomic occupations, which is
+      !! generally not the molecule's own electron count -- they are only ever
+      !! used to build this matrix, never occupied.
+      !!
+      !! Restricted case: with C_all the alpha and beta blocks side by side,
+      !! D_total = C_all C_all^T, and since K is linear in the density,
+      !! K[C_all] = K[D_total]. The restricted Fock wants -1/2 K[D_total],
+      !! hence the explicit half. The XC side wants a coefficient matrix whose
+      !! implied density is D_total under its own D = 2 C C^T convention, so
+      !! C_all is scaled by 1/sqrt(2).
+      type(cuest_system_t), intent(inout) :: system
+      real(dp), intent(in) :: core_hamiltonian(:, :)
+      real(dp), intent(in) :: guess_alpha(:, :), guess_beta(:, :)
+      logical, intent(in) :: unrestricted
+      real(dp), intent(inout) :: fock_a(:, :), fock_b(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: density_a(:, :), density_b(:, :), density_total(:, :)
+      real(dp), allocatable :: coulomb(:, :), exch_a(:, :), exch_b(:, :)
+      real(dp), allocatable :: vxc_a(:, :), vxc_b(:, :), combined(:, :)
+      real(dp) :: xc_energy
+      integer :: n_ao, n_a, n_b
+
+      n_ao = size(core_hamiltonian, 1)
+      n_a = size(guess_alpha, 2)
+      n_b = size(guess_beta, 2)
+
+      allocate (density_a(n_ao, n_ao), density_b(n_ao, n_ao), density_total(n_ao, n_ao))
+      allocate (coulomb(n_ao, n_ao), exch_a(n_ao, n_ao), exch_b(n_ao, n_ao))
+      allocate (vxc_a(n_ao, n_ao), vxc_b(n_ao, n_ao))
+
+      call pic_gemm(guess_alpha, guess_alpha, density_a, transb='T', alpha=1.0_dp, beta=0.0_dp)
+      call pic_gemm(guess_beta, guess_beta, density_b, transb='T', alpha=1.0_dp, beta=0.0_dp)
+      density_total = density_a + density_b
+
+      call system%compute_coulomb(density_total, coulomb, error)
+      vxc_a = 0.0_dp
+      vxc_b = 0.0_dp
+      exch_a = 0.0_dp
+      exch_b = 0.0_dp
+
+      if (unrestricted) then
+         if (system%needs_exchange) then
+            call system%compute_exchange(guess_alpha, exch_a, error, n_occupied=n_a)
+            call system%compute_exchange(guess_beta, exch_b, error, n_occupied=n_b)
+         end if
+         if (system%has_xc) then
+            call system%compute_xc_uks(guess_alpha, guess_beta, xc_energy, vxc_a, vxc_b, error)
+         end if
+         if (error%has_error()) return
+         fock_a = core_hamiltonian + coulomb - exch_a + vxc_a
+         fock_b = core_hamiltonian + coulomb - exch_b + vxc_b
+      else
+         allocate (combined(n_ao, n_a + n_b))
+         combined(:, 1:n_a) = guess_alpha
+         combined(:, n_a + 1:n_a + n_b) = guess_beta
+         if (system%needs_exchange) then
+            call system%compute_exchange(combined, exch_a, error, n_occupied=n_a + n_b)
+         end if
+         if (system%has_xc) then
+            combined = combined/sqrt(2.0_dp)
+            call system%compute_xc(combined, xc_energy, vxc_a, error)
+         end if
+         deallocate (combined)
+         if (error%has_error()) return
+         fock_a = core_hamiltonian + coulomb - 0.5_dp*exch_a + vxc_a
+         fock_b = fock_a
+      end if
+
+      deallocate (density_a, density_b, density_total, coulomb, exch_a, exch_b, vxc_a, vxc_b)
+   end subroutine sac_guess_fock
+
    subroutine build_orthogonalizer(overlap, transform, n_mo, error)
       !! Canonical orthogonalizer X = U s^(-1/2), with near-null modes dropped
       !!
@@ -259,7 +335,8 @@ contains
 
    subroutine run_rhf_scf(system, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
-                          use_diis, diis_size, verbose, result, error, guess)
+                          use_diis, diis_size, verbose, result, error, guess, &
+                          guess_alpha, guess_beta)
       !! Drive a closed-shell RHF calculation to convergence
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects for this molecule
       integer, intent(in) :: atomic_numbers(:)        !! Z per atom
@@ -274,8 +351,11 @@ contains
       type(scf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: guess   !! SCF_GUESS_*, default GWH
+      real(dp), intent(in), optional :: guess_alpha(:, :), guess_beta(:, :)
+         !! Superposed atomic coefficients, when guess is SCF_GUESS_SAC
 
       integer :: guess_type
+      real(dp), allocatable :: fock_scratch(:, :)
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
       real(dp), allocatable :: core_hamiltonian(:, :), fock(:, :), density(:, :)
       real(dp), allocatable :: coulomb(:, :), exchange(:, :), xc_potential(:, :)
@@ -332,7 +412,15 @@ contains
 
       ! ---- core guess ------------------------------------------------------
       allocate (fock(n_ao, n_ao))
-      call build_guess_fock(guess_type, core_hamiltonian, overlap, fock)
+      if (guess_type == SCF_GUESS_SAC .and. present(guess_alpha) .and. present(guess_beta)) then
+         allocate (fock_scratch(n_ao, n_ao))
+         call sac_guess_fock(system, core_hamiltonian, guess_alpha, guess_beta, &
+                             .false., fock, fock_scratch, error)
+         deallocate (fock_scratch)
+         if (error%has_error()) return
+      else
+         call build_guess_fock(guess_type, core_hamiltonian, overlap, fock)
+      end if
       call diagonalize_fock(fock, transform, orbitals, orbital_energies, error)
       if (error%has_error()) return
 
@@ -524,7 +612,8 @@ contains
 
    subroutine run_uks_scf(system, atomic_numbers, coordinates, n_electrons, multiplicity, &
                           max_iterations, energy_tolerance, density_tolerance, &
-                          use_diis, diis_size, verbose, result, error, guess)
+                          use_diis, diis_size, verbose, result, error, guess, &
+                          guess_alpha, guess_beta)
       !! Drive an unrestricted (open-shell) SCF to convergence
       !!
       !! Spin conventions, matching what cuEST's density-fitted routines expect:
@@ -551,6 +640,8 @@ contains
       type(scf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: guess   !! SCF_GUESS_*, default GWH
+      real(dp), intent(in), optional :: guess_alpha(:, :), guess_beta(:, :)
+         !! Superposed atomic coefficients, when guess is SCF_GUESS_SAC
 
       integer :: guess_type
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
@@ -602,8 +693,14 @@ contains
       result%nuclear_repulsion = nuclear_repulsion_energy(atomic_numbers, coordinates)
 
       allocate (fock_a(n_ao, n_ao), fock_b(n_ao, n_ao))
-      call build_guess_fock(guess_type, core_hamiltonian, overlap, fock_a)
-      fock_b = fock_a
+      if (guess_type == SCF_GUESS_SAC .and. present(guess_alpha) .and. present(guess_beta)) then
+         call sac_guess_fock(system, core_hamiltonian, guess_alpha, guess_beta, &
+                             .true., fock_a, fock_b, error)
+         if (error%has_error()) return
+      else
+         call build_guess_fock(guess_type, core_hamiltonian, overlap, fock_a)
+         fock_b = fock_a
+      end if
       call diagonalize_fock(fock_a, transform, orbitals_a, energies_a, error)
       call diagonalize_fock(fock_b, transform, orbitals_b, energies_b, error)
       if (error%has_error()) return

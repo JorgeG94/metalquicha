@@ -38,6 +38,8 @@ module mqc_method_hf
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
+      character(len=16) :: guess = 'gwh'
+         !! Initial guess: 'core', 'gwh' or 'sac'
 
       ! SCF settings (from shared scf_config_t)
       integer :: max_iter = 100
@@ -96,6 +98,7 @@ contains
       settings%verbose = this%options%verbose
       settings%device_rank = this%options%device_rank
       settings%unrestricted = this%options%unrestricted
+      settings%guess = this%options%guess
       settings%max_iter = this%options%max_iter
       settings%energy_tol = this%options%conv_tol
       settings%density_tol = this%options%density_tol

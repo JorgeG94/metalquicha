@@ -20,7 +20,9 @@ module mqc_cuest_driver
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_functionals, only: functional_name_to_id
-   use mqc_cuest_scf, only: scf_result_t, run_rhf_scf, run_uks_scf, spin_occupations
+   use mqc_cuest_scf, only: scf_result_t, run_rhf_scf, run_uks_scf, spin_occupations, &
+                            SCF_GUESS_CORE, SCF_GUESS_GWH, SCF_GUESS_SAC
+   use mqc_cuest_atomic_guess, only: build_sac_guess
    use mqc_cuest_gradient, only: compute_scf_gradient
    implicit none
    private
@@ -40,6 +42,11 @@ module mqc_cuest_driver
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
+      character(len=16) :: guess = 'gwh'
+         !! Initial guess: 'core', 'gwh' or 'sac'. A core guess ignores
+         !! electron repulsion entirely and can converge a radical onto an
+         !! excited state; GWH is the safe default; SAC converges free atoms
+         !! first and starts closest of the three.
       integer :: device_rank = 0
          !! Node-local MPI rank. Decides which GPU this rank binds to; leaving
          !! it at zero in a multi-rank run puts every rank on device 0.
@@ -79,6 +86,9 @@ contains
       type(molecular_basis_type) :: orbital_basis, auxiliary_basis
       type(error_t) :: error
       real(dp), allocatable :: gradient(:, :)
+      real(dp), allocatable :: guess_alpha(:, :), guess_beta(:, :)
+      type(molecular_basis_type), allocatable :: atom_bases(:), atom_aux_bases(:)
+      integer :: guess_type, n_guess_columns
       character(len=8), allocatable :: element_symbols(:)
       integer :: iatom, functional_id, n_alpha, n_beta
       logical :: need_gradient, unrestricted, occupations_ok
@@ -127,6 +137,16 @@ contains
          return
       end if
 
+      ! ---- which initial guess? ---------------------------------------------
+      select case (trim(settings%guess))
+      case ('core')
+         guess_type = SCF_GUESS_CORE
+      case ('sac')
+         guess_type = SCF_GUESS_SAC
+      case default
+         guess_type = SCF_GUESS_GWH
+      end select
+
       ! ---- restricted or unrestricted? --------------------------------------
       !
       ! An odd electron count forces unrestricted regardless of what the input
@@ -141,30 +161,70 @@ contains
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
 
+      ! ---- superposed atomic guess, if asked for ----------------------------
+      !
+      ! Built before the molecular system so its width is known: the guess
+      ! carries the summed atomic occupations, usually more columns than the
+      ! molecule has electrons, and the device pools must be sized for that up
+      ! front rather than grown later under a live system.
+      n_guess_columns = 0
+      if (guess_type == SCF_GUESS_SAC) then
+         call build_atom_bases(settings, element_symbols, atom_bases, atom_aux_bases, error)
+         if (.not. error%has_error()) then
+            call build_sac_guess(context, fragment%element_numbers, orbital_basis, &
+                                 auxiliary_basis, settings%spherical, functional_id, &
+                                 settings%radial_points, settings%angular_points, &
+                                 atom_bases, atom_aux_bases, guess_alpha, guess_beta, error)
+         end if
+         if (error%has_error()) then
+            call record_failure(result, error)
+            return
+         end if
+         n_guess_columns = size(guess_alpha, 2) + size(guess_beta, 2)
+      end if
+
       ! ---- build, solve, tear down ------------------------------------------
       if (unrestricted) then
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             n_alpha, functional_id, settings%radial_points, &
-                            settings%angular_points, error, n_occ_beta=n_beta)
+                            settings%angular_points, error, n_occ_beta=n_beta, &
+                            n_guess_columns=n_guess_columns)
       else
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             fragment%nelec/2, functional_id, settings%radial_points, &
-                            settings%angular_points, error)
+                            settings%angular_points, error, &
+                            n_guess_columns=n_guess_columns)
       end if
 
       if (.not. error%has_error()) then
          if (unrestricted) then
-            call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
-                             fragment%nelec, fragment%multiplicity, settings%max_iter, &
-                             settings%energy_tol, settings%density_tol, settings%use_diis, &
-                             settings%diis_size, settings%verbose, scf, error)
+            if (guess_type == SCF_GUESS_SAC) then
+               call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
+                                fragment%nelec, fragment%multiplicity, settings%max_iter, &
+                                settings%energy_tol, settings%density_tol, settings%use_diis, &
+                                settings%diis_size, settings%verbose, scf, error, &
+                                guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta)
+            else
+               call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
+                                fragment%nelec, fragment%multiplicity, settings%max_iter, &
+                                settings%energy_tol, settings%density_tol, settings%use_diis, &
+                                settings%diis_size, settings%verbose, scf, error, guess=guess_type)
+            end if
          else
-            call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
-                             fragment%nelec, settings%max_iter, settings%energy_tol, &
-                             settings%density_tol, settings%use_diis, settings%diis_size, &
-                             settings%verbose, scf, error)
+            if (guess_type == SCF_GUESS_SAC) then
+               call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+                                fragment%nelec, settings%max_iter, settings%energy_tol, &
+                                settings%density_tol, settings%use_diis, settings%diis_size, &
+                                settings%verbose, scf, error, guess=guess_type, &
+                                guess_alpha=guess_alpha, guess_beta=guess_beta)
+            else
+               call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+                                fragment%nelec, settings%max_iter, settings%energy_tol, &
+                                settings%density_tol, settings%use_diis, settings%diis_size, &
+                                settings%verbose, scf, error, guess=guess_type)
+            end if
          end if
       end if
 
@@ -190,6 +250,27 @@ contains
          result%has_gradient = .true.
       end if
    end subroutine run_cuest_scf
+
+   subroutine build_atom_bases(settings, element_symbols, atom_bases, atom_aux_bases, error)
+      !! One-atom orbital and auxiliary bases, for the free-atom guess runs
+      type(cuest_scf_settings_t), intent(in) :: settings
+      character(len=*), intent(in) :: element_symbols(:)
+      type(molecular_basis_type), allocatable, intent(out) :: atom_bases(:), atom_aux_bases(:)
+      type(error_t), intent(inout) :: error
+
+      integer :: iatom, n_atoms
+
+      n_atoms = size(element_symbols)
+      allocate (atom_bases(n_atoms), atom_aux_bases(n_atoms))
+      do iatom = 1, n_atoms
+         call load_basis(settings%basis_set, element_symbols(iatom:iatom), &
+                         atom_bases(iatom), error)
+         if (error%has_error()) return
+         call load_basis(settings%aux_basis_set, element_symbols(iatom:iatom), &
+                         atom_aux_bases(iatom), error)
+         if (error%has_error()) return
+      end do
+   end subroutine build_atom_bases
 
    subroutine load_basis(basis_name, element_symbols, mol_basis, error)
       !! Locate and parse a basis set for the atoms of a fragment

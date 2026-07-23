@@ -188,7 +188,7 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
     scf = None
     if "scf" in d:
         sd = req_type(d["scf"], dict, "keywords.scf")
-        require_only_keys(sd, {"maxiter", "tolerance", "unrestricted"}, "keywords.scf")
+        require_only_keys(sd, {"maxiter", "tolerance", "unrestricted", "guess"}, "keywords.scf")
         maxiter = req_type(sd.get("maxiter"), int, "keywords.scf.maxiter")
         tol = sd.get("tolerance")
         if not isinstance(tol, (int, float)):
@@ -200,7 +200,8 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
         unrestricted = sd.get("unrestricted")
         if unrestricted is not None and not isinstance(unrestricted, bool):
             die("keywords.scf.unrestricted must be a boolean")
-        scf = SCF(maxiter=maxiter, tolerance=float(tol), unrestricted=unrestricted)
+        guess = opt_type(sd.get("guess"), str, "keywords.scf.guess")
+        scf = SCF(maxiter=maxiter, tolerance=float(tol), unrestricted=unrestricted, guess=guess)
 
     hessian = None
     if "hessian" in d:

@@ -171,6 +171,8 @@ contains
             read (value, *, iostat=io_stat) config%scf_tolerance
          case ('unrestricted')
             config%scf_unrestricted = (trim(value) == 'true')
+         case ('guess')
+            config%scf_guess = trim(value)
          case default
             call error%set(ERROR_PARSE, "Unknown key in %scf section: "//trim(key))
             return

@@ -27,6 +27,8 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      character(len=16) :: guess = 'gwh'
+         !! Initial guess: 'core', 'gwh' or 'sac'
       logical :: unrestricted = .false.
          !! Force an unrestricted (UHF/UKS) treatment even for a closed shell.
          !! Needed for broken-symmetry singlets, and the cleanest check that

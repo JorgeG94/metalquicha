@@ -134,6 +134,11 @@ separate configuration.
 
 - An unknown functional name errors with the full list of accepted names rather
   than falling back to a default.
+- `guess` in `%scf` selects the starting point: `core`, `gwh` (default) or
+  `sac`. A core guess ignores electron repulsion entirely and can converge a
+  radical onto an excited state -- see the open-shell section. `sac` converges
+  each distinct element as a free atom first, caching the result for the
+  lifetime of the process.
 - Open shell is automatic: `multiplicity /= 1`, or an odd electron count,
   selects UHF/UKS. `<S^2>` is reported so spin contamination is visible.
 - `Hessian` costs 6N gradient evaluations, each a full SCF.

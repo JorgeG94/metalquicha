@@ -100,6 +100,7 @@ class SCF:
     maxiter: int
     tolerance: float
     unrestricted: Optional[bool] = None
+    guess: Optional[str] = None
 
 
 @dataclass
