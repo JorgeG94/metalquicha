@@ -245,6 +245,10 @@ module mqc_method_config
          !! Basis set name (HF, DFT, MCSCF)
       logical :: use_spherical = .true.
          !! Spherical vs Cartesian basis functions
+      integer :: device_rank = 0
+         !! Node-local MPI rank, used to spread ranks across the GPUs on a
+         !! node. Zero is correct for a serial run; a fragmented run must set
+         !! the real value or every rank binds to device 0.
 
       !----- Shared configurations -----
       type(scf_config_t) :: scf

@@ -38,6 +38,9 @@ module mqc_cuest_driver
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
+      integer :: device_rank = 0
+         !! Node-local MPI rank. Decides which GPU this rank binds to; leaving
+         !! it at zero in a multi-rank run puts every rank on device 0.
 
       integer :: max_iter = 100
       real(dp) :: energy_tol = 1.0e-8_dp
@@ -107,10 +110,11 @@ contains
 
       ! ---- per-rank handle and device scratch -------------------------------
       !
-      ! Passing 0 as the node-local rank is correct for a serial run. The
-      ! fragmented path will need the real node-local rank so that several
-      ! ranks on one node spread across the available GPUs.
-      call get_cuest_context(0, context, error)
+      ! One handle and one set of scratch pools per rank, reused by every
+      ! fragment this rank evaluates. The node-local rank spreads ranks across
+      ! the GPUs on the node; it is ignored after the first call, since the
+      ! context is created once and then shared.
+      call get_cuest_context(settings%device_rank, context, error)
       if (error%has_error()) then
          call record_failure(result, error)
          return

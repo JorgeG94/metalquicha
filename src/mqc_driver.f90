@@ -547,7 +547,8 @@ contains
             end if
 
             ! Convert to driver configuration for this molecule
-            call config_to_driver(mqc_config, config, molecule_index=imol)
+            call config_to_driver(mqc_config, config, molecule_index=imol, &
+                                  node_rank=resources%mpi_comms%node_comm%rank())
 
             ! Convert geometry for this molecule
             call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)
@@ -596,7 +597,8 @@ contains
                call logger%info("--------------------------------------------")
 
                ! Convert to driver configuration for this molecule
-               call config_to_driver(mqc_config, config, molecule_index=imol)
+               call config_to_driver(mqc_config, config, molecule_index=imol, &
+                                  node_rank=resources%mpi_comms%node_comm%rank())
 
                ! Convert geometry for this molecule
                call config_to_system_geometry(mqc_config, sys_geom, error, molecule_index=imol)

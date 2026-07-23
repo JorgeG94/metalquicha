@@ -110,7 +110,8 @@ program main
    ! Handle single vs multiple molecules
    if (mqc_config%nmol == 0) then
       ! Single molecule mode (backward compatible)
-      call config_to_driver(mqc_config, config)
+      call config_to_driver(mqc_config, config, &
+                            node_rank=resources%mpi_comms%node_comm%rank())
       call config_to_system_geometry(mqc_config, sys_geom, error)
       if (error%has_error()) then
          if (resources%mpi_comms%world_comm%rank() == 0) then

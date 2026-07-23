@@ -45,19 +45,23 @@ module mqc_config_adapter
 
 contains
 
-   subroutine config_to_driver(mqc_config, driver_config, molecule_index)
+   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank)
       !! Convert mqc_config_t to minimal driver_config_t
       !! Extracts only the fields needed by the driver
       !! If molecule_index is provided, uses that molecule's fragment count
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(out) :: driver_config
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
+      integer, intent(in), optional :: node_rank  !! Node-local MPI rank, for GPU binding
 
       integer :: nfrag_to_use
 
       ! Build method configuration
       driver_config%method_config%method_type = mqc_config%method
       driver_config%method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
+
+      ! Node-local rank, so several ranks on one node land on distinct GPUs.
+      if (present(node_rank)) driver_config%method_config%device_rank = node_rank
 
       ! Basis sets. Ignored by the semi-empirical methods, required by HF/DFT.
       ! The auxiliary set is not optional for the cuEST backend: J and K are

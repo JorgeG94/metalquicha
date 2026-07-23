@@ -33,6 +33,8 @@ module mqc_method_hf
          !! Use spherical (true) or Cartesian (false) basis
       logical :: verbose = .false.
          !! Print SCF iterations
+      integer :: device_rank = 0
+         !! Node-local MPI rank, for spreading ranks across a node's GPUs
 
       ! SCF settings (from shared scf_config_t)
       integer :: max_iter = 100
@@ -89,6 +91,7 @@ contains
       settings%functional = ''        ! empty selects pure Hartree-Fock
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
+      settings%device_rank = this%options%device_rank
       settings%max_iter = this%options%max_iter
       settings%energy_tol = this%options%conv_tol
       settings%density_tol = this%options%density_tol

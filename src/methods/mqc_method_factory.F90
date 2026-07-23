@@ -136,6 +136,7 @@ contains
       m%options%basis_set = config%basis_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
+      m%options%device_rank = config%device_rank
 
       ! SCF settings from shared config%scf
       m%options%aux_basis_set = config%scf%aux_basis_set
@@ -155,6 +156,7 @@ contains
       m%options%basis_set = config%basis_set
       m%options%spherical = config%use_spherical
       m%options%verbose = config%verbose
+      m%options%device_rank = config%device_rank
 
       ! SCF settings from shared config%scf
       m%options%max_iter = config%scf%max_iter
