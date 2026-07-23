@@ -199,6 +199,24 @@ Six near-zero modes (translations and rotations) plus three real vibrations. The
 8–10% overestimate is what Hartree-Fock does — no correlation, harmonic
 approximation — and the standard ~0.90 scaling factor recovers experiment.
 
+### Open shell
+
+OH radical, def2-SVP, doublet:
+
+| | energy (Ha) | `<S^2>` |
+|---|---|---|
+| UHF | -75.325060 | 0.7548 (exact 0.75) |
+
+Implied D_e(H-OH) of 86.5 kcal/mol against an experimental ~125 -- the right
+size for Hartree-Fock, which underbinds.
+
+This one is also a cautionary tale about initial guesses. With a core guess the
+same calculation converges tidily, with a respectable `<S^2>` of 0.7584, to
+-75.167485 -- which is 4.29 eV higher, against OH's experimental A2Sigma+ <-
+X2Pi gap of 4.05 eV. A wrong occupation can be perfectly self-consistent, so
+the SCF settles onto the excited state and reports success. GWH fixes the
+sigma/pi ordering and lands on the ground state.
+
 ### Fragmented
 
 Water hexamer, MBE(2), 21 subsystems on one rank:
