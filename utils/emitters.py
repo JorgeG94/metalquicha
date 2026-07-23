@@ -155,6 +155,8 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"basis = {inp.model.basis}\n")
     if inp.model.aux_basis is not None:
         buf.write(f"aux_basis = {inp.model.aux_basis}\n")
+    if inp.model.functional is not None:
+        buf.write(f"functional = {inp.model.functional}\n")
     buf.write("end  ! model\n\n")
 
     # %driver

@@ -59,6 +59,20 @@ contains
       driver_config%method_config%method_type = mqc_config%method
       driver_config%method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
 
+      ! Basis sets. Ignored by the semi-empirical methods, required by HF/DFT.
+      ! The auxiliary set is not optional for the cuEST backend: J and K are
+      ! always density-fitted there, so leaving it unset would fail at run time
+      ! rather than silently fall back.
+      if (allocated(mqc_config%basis)) then
+         driver_config%method_config%basis_set = mqc_config%basis
+      end if
+      if (allocated(mqc_config%aux_basis)) then
+         driver_config%method_config%scf%aux_basis_set = mqc_config%aux_basis
+      end if
+      if (allocated(mqc_config%functional)) then
+         driver_config%method_config%dft%functional = mqc_config%functional
+      end if
+
       ! Configure XTB solvation settings
       call driver_config%method_config%xtb%configure( &
          use_cds=mqc_config%use_cds, &

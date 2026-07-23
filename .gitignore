@@ -46,3 +46,6 @@ build/*
 *.mqc
 validation_logs/
 output_*.json
+
+# Out-of-source build directories
+build*/

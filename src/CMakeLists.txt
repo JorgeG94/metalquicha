@@ -11,6 +11,10 @@ add_subdirectory(vibrational)
 if(MQC_ENABLE_LIBCINT)
   add_subdirectory(libcint_interface)
 endif()
+# Vendored cuEST/CUDA bindings must compile before anything that USEs them.
+if(MQC_ENABLE_CUEST)
+  add_subdirectory(cuest_bindings)
+endif()
 
 target_sources(${main_lib} PRIVATE mqc_calc_types.f90 mqc_method_types.f90
                                    mqc_driver.f90)

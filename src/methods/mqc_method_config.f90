@@ -27,6 +27,10 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
+         !! Auxiliary (JKFIT) basis for the density-fitted J and K.
+         !! Required, not optional, for the cuEST backend: cuEST exposes no
+         !! conventional four-index ERI path, so J/K are always fitted.
    end type scf_config_t
 
    !============================================================================
@@ -429,20 +433,46 @@ contains
       !!
       !! Dispatches to appropriate logging based on the configured method.
       !! This allows the driver to log settings without knowing method details.
-      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
+                                  METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, method_type_to_string
       use pic_logger, only: logger => global_logger
       class(method_config_t), intent(in) :: this
 
       character(len=128) :: info_lines(4)
       integer :: n_lines, i
 
-      ! Log XTB solvation settings if using XTB method
       select case (this%method_type)
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
+         ! Semi-empirical: no basis to report, but solvation matters
          call this%xtb%get_solvation_info(info_lines, n_lines)
          do i = 1, n_lines
             call logger%info(trim(info_lines(i)))
          end do
+
+      case (METHOD_TYPE_HF, METHOD_TYPE_DFT, METHOD_TYPE_MCSCF)
+         ! Which basis a run actually used is the first thing anyone needs when
+         ! comparing two energies, so report it rather than leaving it implicit.
+         call logger%info("Method settings:")
+         call logger%info("  Method:          "//trim(method_type_to_string(this%method_type)))
+         if (this%method_type == METHOD_TYPE_DFT) then
+            call logger%info("  Functional:      "//trim(this%dft%functional))
+         end if
+         call logger%info("  Basis set:       "//trim(this%basis_set))
+         call logger%info("  Auxiliary basis: "//trim(this%scf%aux_basis_set))
+         if (this%use_spherical) then
+            call logger%info("  Angular form:    spherical (pure)")
+         else
+            call logger%info("  Angular form:    Cartesian")
+         end if
+         if (this%method_type == METHOD_TYPE_DFT) then
+            block
+               character(len=64) :: grid_line
+               write (grid_line, '(a,i0,a,i0)') "  XC grid:         ", &
+                  this%dft%radial_points, " radial x ", this%dft%angular_points
+               call logger%info(trim(grid_line))
+            end block
+         end if
+
       case default
          return
       end select

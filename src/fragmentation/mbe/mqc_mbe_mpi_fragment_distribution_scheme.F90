@@ -136,7 +136,10 @@ contains
          local_config%verbose = is_verbose
 
          ! Create calculator using factory
-         calculator = create_method(local_config)
+         ! allocate(..., source=) rather than plain assignment: see the note in
+         ! mqc_method_factory -- gfortran 13.2.0 segfaults on intrinsic
+         ! assignment from a polymorphic allocatable function result.
+         allocate (calculator, source=create_method(local_config))
 
          ! Run the calculation using polymorphic dispatch
          select case (calc_type_local)

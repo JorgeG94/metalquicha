@@ -48,27 +48,47 @@ contains
       type(method_config_t), intent(in) :: config
       class(qc_method_t), allocatable :: method
 
+      ! Each branch configures a CONCRETE local and then source-allocates the
+      ! polymorphic result from it. The more natural
+      !     allocate(<type> :: method); call configure_x(method, config)
+      ! passes a polymorphic allocatable function result to a CLASS(..),
+      ! INTENT(INOUT) dummy, which gfortran 13.2.0 miscompiles: the callee
+      ! updates a temporary and every assignment is silently discarded, so the
+      ! method comes back holding its defaults. Concrete dummies avoid the
+      ! problem entirely and need no SELECT TYPE.
       select case (config%method_type)
 #ifndef MQC_WITHOUT_TBLITE
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
-         allocate (xtb_method_t :: method)
-         call configure_xtb(method, config)
+         block
+            type(xtb_method_t) :: xtb
+            call configure_xtb(xtb, config)
+            allocate (method, source=xtb)
+         end block
 #else
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
          error stop "XTB methods require tblite library (MQC_ENABLE_TBLITE)"
 #endif
 
       case (METHOD_TYPE_HF)
-         allocate (hf_method_t :: method)
-         call configure_hf(method, config)
+         block
+            type(hf_method_t) :: hf
+            call configure_hf(hf, config)
+            allocate (method, source=hf)
+         end block
 
       case (METHOD_TYPE_DFT)
-         allocate (dft_method_t :: method)
-         call configure_dft(method, config)
+         block
+            type(dft_method_t) :: dft
+            call configure_dft(dft, config)
+            allocate (method, source=dft)
+         end block
 
       case (METHOD_TYPE_MCSCF)
-         allocate (mcscf_method_t :: method)
-         call configure_mcscf(method, config)
+         block
+            type(mcscf_method_t) :: mcscf
+            call configure_mcscf(mcscf, config)
+            allocate (method, source=mcscf)
+         end block
 
       case default
          error stop "Unknown method type in method_factory_t%create"
@@ -76,133 +96,128 @@ contains
    end function factory_create
 
 #ifndef MQC_WITHOUT_TBLITE
-   subroutine configure_xtb(method, config)
+   subroutine configure_xtb(m, config)
       !! Configure an XTB method instance from config%xtb
-      class(qc_method_t), intent(inout) :: method
+      type(xtb_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      select type (m => method)
-      type is (xtb_method_t)
-         ! Core settings
-         m%variant = method_type_to_string(config%method_type)
-         m%verbose = config%verbose
-         m%accuracy = real(config%xtb%accuracy, wp)
+      ! Core settings
+      m%variant = method_type_to_string(config%method_type)
+      m%verbose = config%verbose
+      m%accuracy = real(config%xtb%accuracy, wp)
 
-         ! Electronic temperature (convert K to Hartree)
-         ! kt = T * k_B, where k_B = 3.166808578545117e-06 Hartree/K
-         m%kt = real(config%xtb%electronic_temp, wp)*3.166808578545117e-06_wp
+      ! Electronic temperature (convert K to Hartree)
+      ! kt = T * k_B, where k_B = 3.166808578545117e-06 Hartree/K
+      m%kt = real(config%xtb%electronic_temp, wp)*3.166808578545117e-06_wp
 
-         ! Solvation settings from config%xtb
-         if (config%xtb%has_solvation()) then
-            m%solvent = trim(config%xtb%solvent)
-            if (len_trim(config%xtb%solvation_model) > 0) then
-               m%solvation_model = trim(config%xtb%solvation_model)
-            else
-               m%solvation_model = "alpb"  ! Default
-            end if
-            m%use_cds = config%xtb%use_cds
-            m%use_shift = config%xtb%use_shift
-            m%dielectric = real(config%xtb%dielectric, wp)
-            m%cpcm_nang = config%xtb%cpcm_nang
-            m%cpcm_rscale = real(config%xtb%cpcm_rscale, wp)
+      ! Solvation settings from config%xtb
+      if (config%xtb%has_solvation()) then
+         m%solvent = trim(config%xtb%solvent)
+         if (len_trim(config%xtb%solvation_model) > 0) then
+            m%solvation_model = trim(config%xtb%solvation_model)
+         else
+            m%solvation_model = "alpb"  ! Default
          end if
-      end select
+         m%use_cds = config%xtb%use_cds
+         m%use_shift = config%xtb%use_shift
+         m%dielectric = real(config%xtb%dielectric, wp)
+         m%cpcm_nang = config%xtb%cpcm_nang
+         m%cpcm_rscale = real(config%xtb%cpcm_rscale, wp)
+      end if
    end subroutine configure_xtb
 #endif
 
-   subroutine configure_hf(method, config)
+   subroutine configure_hf(m, config)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)
-      class(qc_method_t), intent(inout) :: method
+      type(hf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      select type (m => method)
-      type is (hf_method_t)
-         ! Common settings
-         m%options%basis_set = config%basis_set
-         m%options%spherical = config%use_spherical
-         m%options%verbose = config%verbose
+      ! Common settings
+      m%options%basis_set = config%basis_set
+      m%options%spherical = config%use_spherical
+      m%options%verbose = config%verbose
 
-         ! SCF settings from shared config%scf
-         m%options%max_iter = config%scf%max_iter
-         m%options%conv_tol = config%scf%energy_convergence
-         m%options%density_tol = config%scf%density_convergence
-         m%options%use_diis = config%scf%use_diis
-         m%options%diis_size = config%scf%diis_size
-      end select
+      ! SCF settings from shared config%scf
+      m%options%aux_basis_set = config%scf%aux_basis_set
+      m%options%max_iter = config%scf%max_iter
+      m%options%conv_tol = config%scf%energy_convergence
+      m%options%density_tol = config%scf%density_convergence
+      m%options%use_diis = config%scf%use_diis
+      m%options%diis_size = config%scf%diis_size
    end subroutine configure_hf
 
-   subroutine configure_dft(method, config)
+   subroutine configure_dft(m, config)
       !! Configure a DFT method instance from config%scf (shared) and config%dft (DFT-specific)
-      class(qc_method_t), intent(inout) :: method
+      type(dft_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      select type (m => method)
-      type is (dft_method_t)
-         ! Common settings
-         m%options%basis_set = config%basis_set
-         m%options%spherical = config%use_spherical
-         m%options%verbose = config%verbose
+      ! Common settings
+      m%options%basis_set = config%basis_set
+      m%options%spherical = config%use_spherical
+      m%options%verbose = config%verbose
 
-         ! SCF settings from shared config%scf
-         m%options%max_iter = config%scf%max_iter
-         m%options%energy_tol = config%scf%energy_convergence
-         m%options%density_tol = config%scf%density_convergence
-         m%options%use_diis = config%scf%use_diis
-         m%options%diis_size = config%scf%diis_size
+      ! SCF settings from shared config%scf
+      m%options%max_iter = config%scf%max_iter
+      m%options%energy_tol = config%scf%energy_convergence
+      m%options%density_tol = config%scf%density_convergence
+      m%options%use_diis = config%scf%use_diis
+      m%options%diis_size = config%scf%diis_size
 
-         ! DFT-specific from config%dft
-         m%options%functional = config%dft%functional
-         m%options%grid_type = config%dft%grid_type
-         m%options%radial_points = config%dft%radial_points
-         m%options%angular_points = config%dft%angular_points
+      ! DFT-specific from config%dft
+      m%options%functional = config%dft%functional
+      m%options%grid_type = config%dft%grid_type
+      m%options%radial_points = config%dft%radial_points
+      m%options%angular_points = config%dft%angular_points
 
-         ! Density fitting
-         m%options%use_density_fitting = config%dft%use_density_fitting
+      ! Density fitting. The auxiliary basis normally comes from the shared
+      ! SCF settings, which is what the %model `aux_basis` keyword fills; a
+      ! DFT-specific override wins only when it was actually set.
+      m%options%use_density_fitting = config%dft%use_density_fitting
+      if (len_trim(config%dft%aux_basis_set) > 0) then
          m%options%aux_basis_set = config%dft%aux_basis_set
+      else
+         m%options%aux_basis_set = config%scf%aux_basis_set
+      end if
 
-         ! Dispersion
-         m%options%use_dispersion = config%dft%use_dispersion
-         m%options%dispersion_type = config%dft%dispersion_type
-      end select
+      ! Dispersion
+      m%options%use_dispersion = config%dft%use_dispersion
+      m%options%dispersion_type = config%dft%dispersion_type
    end subroutine configure_dft
 
-   subroutine configure_mcscf(method, config)
+   subroutine configure_mcscf(m, config)
       !! Configure a MCSCF method instance from config%mcscf
-      class(qc_method_t), intent(inout) :: method
+      type(mcscf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
 
-      select type (m => method)
-      type is (mcscf_method_t)
-         ! Common settings
-         m%options%basis_set = config%basis_set
-         m%options%spherical = config%use_spherical
-         m%options%verbose = config%verbose
+      ! Common settings
+      m%options%basis_set = config%basis_set
+      m%options%spherical = config%use_spherical
+      m%options%verbose = config%verbose
 
-         ! Active space from config%mcscf
-         m%options%n_active_electrons = config%mcscf%n_active_electrons
-         m%options%n_active_orbitals = config%mcscf%n_active_orbitals
-         m%options%n_inactive_orbitals = config%mcscf%n_inactive_orbitals
+      ! Active space from config%mcscf
+      m%options%n_active_electrons = config%mcscf%n_active_electrons
+      m%options%n_active_orbitals = config%mcscf%n_active_orbitals
+      m%options%n_inactive_orbitals = config%mcscf%n_inactive_orbitals
 
-         ! State averaging
-         m%options%n_states = config%mcscf%n_states
-         if (allocated(config%mcscf%state_weights)) then
-            if (allocated(m%options%state_weights)) deallocate (m%options%state_weights)
-            allocate (m%options%state_weights(size(config%mcscf%state_weights)))
-            m%options%state_weights = config%mcscf%state_weights
-         end if
+      ! State averaging
+      m%options%n_states = config%mcscf%n_states
+      if (allocated(config%mcscf%state_weights)) then
+         if (allocated(m%options%state_weights)) deallocate (m%options%state_weights)
+         allocate (m%options%state_weights(size(config%mcscf%state_weights)))
+         m%options%state_weights = config%mcscf%state_weights
+      end if
 
-         ! Convergence
-         m%options%max_macro_iter = config%mcscf%max_macro_iter
-         m%options%max_micro_iter = config%mcscf%max_micro_iter
-         m%options%orbital_tol = config%mcscf%orbital_convergence
-         m%options%ci_tol = config%mcscf%ci_convergence
+      ! Convergence
+      m%options%max_macro_iter = config%mcscf%max_macro_iter
+      m%options%max_micro_iter = config%mcscf%max_micro_iter
+      m%options%orbital_tol = config%mcscf%orbital_convergence
+      m%options%ci_tol = config%mcscf%ci_convergence
 
-         ! PT2 corrections
-         m%options%use_pt2 = config%mcscf%use_pt2
-         m%options%pt2_type = config%mcscf%pt2_type
-         m%options%ipea_shift = config%mcscf%ipea_shift
-         m%options%imaginary_shift = config%mcscf%imaginary_shift
-      end select
+      ! PT2 corrections
+      m%options%use_pt2 = config%mcscf%use_pt2
+      m%options%pt2_type = config%mcscf%pt2_type
+      m%options%ipea_shift = config%mcscf%ipea_shift
+      m%options%imaginary_shift = config%mcscf%imaginary_shift
    end subroutine configure_mcscf
 
    function create_method(config) result(method)
@@ -216,7 +231,14 @@ contains
 
       type(method_factory_t) :: factory
 
-      method = factory%create(config)
+      ! NOTE: intentionally allocate(..., source=) rather than the more natural
+      ! `method = factory%create(config)`. gfortran 13.2.0 miscompiles intrinsic
+      ! assignment from a CLASS(...), ALLOCATABLE *function result*: the result's
+      ! _vptr is not set up, so the assignment jumps through a null pointer and
+      ! segfaults. ALLOCATE with SOURCE= is equivalent here and is correct on
+      ! every compiler. Reproduced with a 25-line standalone test; do not
+      ! "simplify" this back.
+      allocate (method, source=factory%create(config))
    end function create_method
 
 end module mqc_method_factory

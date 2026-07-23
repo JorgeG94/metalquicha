@@ -24,6 +24,10 @@ include(demo_status)
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
 option(MQC_ENABLE_LIBCINT "Link to libcint for ERI computations" OFF)
 option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
+option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
+set(CUEST_ROOT
+    ""
+    CACHE PATH "Root of the unpacked libcuest-<ver>-archive (needs lib/)")
 mark_as_advanced(MQC_ENABLE_LIBCINT)
 
 add_library(${main_lib} STATIC)
@@ -62,6 +66,31 @@ if(MQC_ENABLE_LIBCINT)
   list(APPEND libraries_to_link libcint::cint_fortran)
 else()
   target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_LIBCINT)
+endif()
+
+# NVIDIA cuEST -- GPU integrals behind the HF/DFT methods.
+#
+# Only the shared library is needed to build: the Fortran bindings under
+# src/cuest_bindings are pre-generated and vendored, so the cuEST headers are
+# not required here. Linking libcuest.so by full path makes CMake set the
+# rpath for us.
+#
+# Runtime note: cuEST ships GPU code for sm_80 and newer only. It compiles and
+# links anywhere, but on an older card (Volta/V100, e.g. the Gadi login node)
+# cuestCreate returns CUEST_STATUS_UNSUPPORTED_ARCHITECTURE.
+if(MQC_ENABLE_CUEST)
+  if(NOT CUEST_ROOT)
+    message(FATAL_ERROR "MQC_ENABLE_CUEST=ON requires -DCUEST_ROOT=<cuest archive>")
+  endif()
+  find_library(
+    CUEST_LIBRARY
+    NAMES cuest
+    PATHS "${CUEST_ROOT}/lib"
+    NO_DEFAULT_PATH REQUIRED)
+  find_package(CUDAToolkit REQUIRED)
+  list(APPEND libraries_to_link ${CUEST_LIBRARY} CUDA::cudart)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CUEST)
+  message(STATUS "cuEST enabled: ${CUEST_LIBRARY}")
 endif()
 
 if(NOT TARGET "jsonfortran::jsonfortran")

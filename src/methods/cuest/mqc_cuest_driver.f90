@@ -1,0 +1,177 @@
+!! Fragment-level entry point for cuEST-backed SCF calculations
+module mqc_cuest_driver
+   !! One place where a `physical_fragment_t` becomes a converged SCF result.
+   !!
+   !! Hartree-Fock and Kohn-Sham differ only in whether a functional is named,
+   !! so both methods funnel through here rather than each carrying its own
+   !! copy of the basis loading, context acquisition and teardown.
+   use pic_types, only: dp
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_cgto, only: molecular_basis_type
+   use mqc_elements, only: element_number_to_symbol
+   use mqc_basis_utils, only: find_basis_file, BASIS_FORMAT_GBS, BASIS_FORMAT_GAMESS
+   use mqc_basis_reader, only: build_molecular_basis
+   use mqc_basis_file_reader, only: basis_file_t, open_basis_file
+   use mqc_gbs_reader, only: build_molecular_basis_gbs
+   use mqc_physical_fragment, only: physical_fragment_t
+   use mqc_result_types, only: calculation_result_t
+   use mqc_cuest_context, only: cuest_context_t, get_cuest_context
+   use mqc_cuest_integrals, only: cuest_system_t
+   use mqc_cuest_functionals, only: functional_name_to_id
+   use mqc_cuest_scf, only: scf_result_t, run_rhf_scf
+   implicit none
+   private
+
+   public :: cuest_scf_settings_t  !! Everything a cuEST SCF needs to run
+   public :: run_cuest_scf         !! Fragment -> converged result
+
+   type :: cuest_scf_settings_t
+      !! Method-independent description of one cuEST SCF calculation
+      character(len=32) :: basis_set = 'sto-3g'
+         !! Orbital basis set name
+      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
+         !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
+      character(len=32) :: functional = ''
+         !! Exchange-correlation functional; empty means Hartree-Fock
+      logical :: spherical = .true.
+         !! Pure (spherical) vs Cartesian angular functions
+      logical :: verbose = .false.
+         !! Print the SCF iteration table
+
+      integer :: max_iter = 100
+      real(dp) :: energy_tol = 1.0e-8_dp
+      real(dp) :: density_tol = 1.0e-6_dp
+      logical :: use_diis = .true.
+      integer :: diis_size = 8
+
+      integer :: radial_points = 75    !! XC grid radial points per atom
+      integer :: angular_points = 302  !! XC grid Lebedev order
+   end type cuest_scf_settings_t
+
+contains
+
+   subroutine run_cuest_scf(settings, fragment, result)
+      !! Run a closed-shell cuEST SCF for one fragment
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(inout) :: result
+
+      type(cuest_context_t), pointer :: context
+      type(cuest_system_t) :: system
+      type(scf_result_t) :: scf
+      type(molecular_basis_type) :: orbital_basis, auxiliary_basis
+      type(error_t) :: error
+      character(len=8), allocatable :: element_symbols(:)
+      integer :: iatom, functional_id
+
+      ! ---- which functional, if any ----------------------------------------
+      if (len_trim(settings%functional) == 0) then
+         functional_id = -1   ! pure Hartree-Fock, no XC plan
+      else
+         call functional_name_to_id(settings%functional, functional_id, error)
+         if (error%has_error()) then
+            call record_failure(result, error)
+            return
+         end if
+      end if
+
+      ! ---- basis sets -------------------------------------------------------
+      allocate (element_symbols(fragment%n_atoms))
+      do iatom = 1, fragment%n_atoms
+         element_symbols(iatom) = element_number_to_symbol(fragment%element_numbers(iatom))
+      end do
+
+      call load_basis(settings%basis_set, element_symbols, orbital_basis, error)
+      if (error%has_error()) then
+         call record_failure(result, error)
+         return
+      end if
+
+      call load_basis(settings%aux_basis_set, element_symbols, auxiliary_basis, error)
+      if (error%has_error()) then
+         call record_failure(result, error)
+         return
+      end if
+
+      ! ---- per-rank handle and device scratch -------------------------------
+      !
+      ! Passing 0 as the node-local rank is correct for a serial run. The
+      ! fragmented path will need the real node-local rank so that several
+      ! ranks on one node spread across the available GPUs.
+      call get_cuest_context(0, context, error)
+      if (error%has_error()) then
+         call record_failure(result, error)
+         return
+      end if
+
+      ! ---- build, solve, tear down ------------------------------------------
+      call system%create(context, fragment%element_numbers, fragment%coordinates, &
+                         orbital_basis, auxiliary_basis, settings%spherical, &
+                         fragment%nelec/2, functional_id, settings%radial_points, &
+                         settings%angular_points, error)
+
+      if (.not. error%has_error()) then
+         call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+                          fragment%nelec, settings%max_iter, settings%energy_tol, &
+                          settings%density_tol, settings%use_diis, settings%diis_size, &
+                          settings%verbose, scf, error)
+      end if
+
+      call system%destroy()
+      call orbital_basis%destroy()
+      call auxiliary_basis%destroy()
+
+      if (error%has_error()) then
+         call record_failure(result, error)
+         return
+      end if
+
+      result%energy%scf = scf%total_energy
+      result%has_energy = .true.
+   end subroutine run_cuest_scf
+
+   subroutine load_basis(basis_name, element_symbols, mol_basis, error)
+      !! Locate and parse a basis set for the atoms of a fragment
+      !!
+      !! `.gbs` (Gaussian94) is preferred and `.txt` (GAMESS $DATA) accepted;
+      !! `find_basis_file` decides which by what is actually on disk.
+      character(len=*), intent(in) :: basis_name
+      character(len=*), intent(in) :: element_symbols(:)
+      type(molecular_basis_type), intent(out) :: mol_basis
+      type(error_t), intent(out) :: error
+
+      character(len=:), allocatable :: basis_path
+      type(basis_file_t) :: basis_file
+      integer :: basis_format
+
+      if (len_trim(basis_name) == 0) then
+         call error%set(ERROR_VALIDATION, "No basis set specified")
+         return
+      end if
+
+      call find_basis_file(basis_name, basis_path, error, basis_format)
+      if (error%has_error()) return
+
+      select case (basis_format)
+      case (BASIS_FORMAT_GBS)
+         call build_molecular_basis_gbs(basis_path, element_symbols, mol_basis, error)
+      case (BASIS_FORMAT_GAMESS)
+         call open_basis_file(basis_file, basis_path, error)
+         if (error%has_error()) return
+         call build_molecular_basis(basis_file%data_section, element_symbols, mol_basis, error)
+      case default
+         call error%set(ERROR_VALIDATION, "Unrecognized basis file format for "//trim(basis_name))
+      end select
+   end subroutine load_basis
+
+   subroutine record_failure(result, error)
+      !! Mark a calculation as failed, carrying the diagnostic with it
+      type(calculation_result_t), intent(inout) :: result
+      type(error_t), intent(in) :: error
+
+      result%error = error
+      result%has_error = .true.
+      result%has_energy = .false.
+   end subroutine record_failure
+
+end module mqc_cuest_driver

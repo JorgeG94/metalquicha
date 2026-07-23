@@ -87,6 +87,8 @@ contains
             config%basis = trim(value)
          case ('aux_basis')
             config%aux_basis = trim(value)
+         case ('functional')
+            config%functional = trim(value)
          case default
             call error%set(ERROR_PARSE, "Unknown key in %model section: "//trim(key))
             return

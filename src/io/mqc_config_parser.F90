@@ -73,6 +73,8 @@ module mqc_config_parser
       integer(int32) :: method = METHOD_TYPE_GFN2
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
+      character(len=:), allocatable :: functional
+         !! XC functional name, only meaningful when method = dft
 
       ! XTB solvation settings
       character(len=:), allocatable :: solvent  !! Solvent name (e.g., "water", "ethanol") or empty for gas phase
@@ -489,6 +491,7 @@ contains
       if (allocated(this%units)) deallocate (this%units)
       if (allocated(this%basis)) deallocate (this%basis)
       if (allocated(this%aux_basis)) deallocate (this%aux_basis)
+      if (allocated(this%functional)) deallocate (this%functional)
       if (allocated(this%log_level)) deallocate (this%log_level)
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)

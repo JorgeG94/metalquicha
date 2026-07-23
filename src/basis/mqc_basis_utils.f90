@@ -13,6 +13,10 @@ module mqc_basis_utils
    public :: normalize_basis_name
    public :: find_basis_file
 
+   integer, parameter, public :: BASIS_FORMAT_UNKNOWN = 0  !! No format determined
+   integer, parameter, public :: BASIS_FORMAT_GAMESS = 1   !! GAMESS $DATA, `.txt`
+   integer, parameter, public :: BASIS_FORMAT_GBS = 2      !! Gaussian94, `.gbs`
+
 contains
 
    pure function normalize_basis_name(basis_name) result(normalized)
@@ -74,37 +78,46 @@ contains
       normalized = trim(buffer(1:out_pos))
    end function normalize_basis_name
 
-   subroutine find_basis_file(basis_name, filename, error)
+   subroutine find_basis_file(basis_name, filename, error, basis_format)
       !! Find basis set file using normalized name
       !!
       !! Search strategy:
       !!   1. Normalize the basis name (e.g., 6-31G* -> 6-31Gs)
-      !!   2. Look for basis_sets/{normalized}.txt
-      !!   3. If not found, return error
+      !!   2. Look for basis_sets/{normalized}.gbs  (Gaussian94)
+      !!   3. Fall back to basis_sets/{normalized}.txt  (GAMESS $DATA)
+      !!   4. If neither exists, return error
       !!
-      !! This is a simple, straightforward approach that assumes
-      !! the JSON/mqc input provides the correct basis set name.
+      !! `.gbs` is tried first because it is what the Basis Set Exchange serves
+      !! for both orbital and JKFIT auxiliary sets, and what the cuEST
+      !! reference samples consume.
       character(len=*), intent(in) :: basis_name
       character(len=:), allocatable, intent(out) :: filename
       type(error_t), intent(out) :: error
+      integer, intent(out), optional :: basis_format  !! Which BASIS_FORMAT_* was found
 
       character(len=:), allocatable :: normalized
-      logical :: file_exists
-      character(len=512) :: filepath
+      logical :: gbs_exists, gamess_exists
+      character(len=512) :: gbs_path, gamess_path
 
-      ! Normalize the basis name
       normalized = normalize_basis_name(basis_name)
 
-      ! Construct file path: basis_sets/{normalized}.txt
-      filepath = "basis_sets/"//trim(normalized)//".txt"
+      gbs_path = "basis_sets/"//trim(normalized)//".gbs"
+      gamess_path = "basis_sets/"//trim(normalized)//".txt"
 
-      ! Check if file exists
-      inquire (file=trim(filepath), exist=file_exists)
+      inquire (file=trim(gbs_path), exist=gbs_exists)
+      inquire (file=trim(gamess_path), exist=gamess_exists)
 
-      if (file_exists) then
-         filename = trim(filepath)
+      if (present(basis_format)) basis_format = BASIS_FORMAT_UNKNOWN
+
+      if (gbs_exists) then
+         filename = trim(gbs_path)
+         if (present(basis_format)) basis_format = BASIS_FORMAT_GBS
+      else if (gamess_exists) then
+         filename = trim(gamess_path)
+         if (present(basis_format)) basis_format = BASIS_FORMAT_GAMESS
       else
-         call error%set(ERROR_IO, "Basis set file not found: "//trim(filepath)// &
+         call error%set(ERROR_IO, "Basis set file not found: tried "// &
+                        trim(gbs_path)//" and "//trim(gamess_path)// &
                         " (from basis name: "//trim(basis_name)//")")
       end if
 

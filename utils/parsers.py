@@ -97,12 +97,13 @@ def _parse_schema(obj: Any) -> SchemaTag:
 
 def _parse_model(d: Dict[str, Any]) -> Model:
     """Parse model section."""
-    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
+    require_only_keys(d, {"method", "basis", "aux_basis", "functional"}, "model")
     method = req_type(d.get("method"), str, "model.method")
     basis = opt_type(d.get("basis"), str, "model.basis")
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
+    functional = opt_type(d.get("functional"), str, "model.functional")
 
-    return Model(method=method, basis=basis, aux_basis=aux)
+    return Model(method=method, basis=basis, aux_basis=aux, functional=functional)
 
 
 def _parse_xtb_keywords(d: Dict[str, Any]) -> XTB:

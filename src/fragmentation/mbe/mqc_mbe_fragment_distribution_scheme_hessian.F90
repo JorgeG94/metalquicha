@@ -214,7 +214,10 @@ contains
       call logger%info("  Computing reference energy and gradient...")
       local_config = config%method_config
       local_config%verbose = is_verbose
-      calculator = create_method(local_config)
+      ! allocate(..., source=) rather than plain assignment: see the note in
+      ! mqc_method_factory -- gfortran 13.2.0 segfaults on intrinsic
+      ! assignment from a polymorphic allocatable function result.
+      allocate (calculator, source=create_method(local_config))
       call calculator%calc_gradient(full_system, result)
       deallocate (calculator)
 
@@ -393,7 +396,10 @@ contains
       ! Create calculator using factory
       local_config = config%method_config
       local_config%verbose = .false.
-      calculator = create_method(local_config)
+      ! allocate(..., source=) rather than plain assignment: see the note in
+      ! mqc_method_factory -- gfortran 13.2.0 segfaults on intrinsic
+      ! assignment from a polymorphic allocatable function result.
+      allocate (calculator, source=create_method(local_config))
 
       dummy_msg = 0
       do

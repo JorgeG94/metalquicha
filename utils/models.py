@@ -80,6 +80,7 @@ class Model:
     method: str
     basis: Optional[str] = None
     aux_basis: Optional[str] = None
+    functional: Optional[str] = None
 
 
 @dataclass
