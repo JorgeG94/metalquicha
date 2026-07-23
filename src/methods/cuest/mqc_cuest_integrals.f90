@@ -176,7 +176,7 @@ contains
 
    subroutine system_create(this, context, atomic_numbers, coordinates, mol_basis, &
                             aux_mol_basis, use_spherical, n_occ, functional_id, &
-                            n_radial, n_angular, error, n_occ_beta)
+                            n_radial, n_angular, error, n_occ_beta, n_guess_columns)
       !! Build every cuEST object needed for one molecule
       !!
       !! Coordinates are in Bohr, matching metalquicha's internal units and
@@ -199,8 +199,14 @@ contains
       integer, intent(in), optional :: n_occ_beta
          !! Beta occupied count. Present means unrestricted, and `n_occ` is
          !! then the alpha count rather than the doubly occupied count.
+      integer, intent(in), optional :: n_guess_columns
+         !! Widest coefficient matrix that will be passed in. A superposition
+         !! guess carries the summed atomic occupations, which usually exceeds
+         !! the molecule's own count. Sizing here matters: growing a pool later
+         !! would reallocate it and invalidate the pointers already borrowed.
 
       integer :: iatom, n_atoms
+      integer(c_int64_t) :: widest
 
       n_atoms = size(atomic_numbers)
       this%handle = context%handle
@@ -290,7 +296,9 @@ contains
       this%d_charge_gradient = context%scratch_charge_gradient%ptr
 
       if (this%n_occ > 0) then
-         call context%scratch_c_occ%ensure(this%n_ao*this%n_occ, &
+         widest = this%n_occ
+         if (present(n_guess_columns)) widest = max(widest, int(n_guess_columns, c_int64_t))
+         call context%scratch_c_occ%ensure(this%n_ao*widest, &
                                            "occupied MO coefficients", error)
          if (error%has_error()) then
             call error%add_context("mqc_cuest_integrals:create")
@@ -302,7 +310,9 @@ contains
       if (this%unrestricted) then
          ! The DF derivative wants the two coefficient matrices concatenated,
          ! so the beta buffer is sized to hold both back to back.
-         call context%scratch_c_occ_beta%ensure(this%n_ao*(this%n_occ + this%n_occ_beta), &
+         widest = this%n_occ + this%n_occ_beta
+         if (present(n_guess_columns)) widest = max(widest, 2_c_int64_t*int(n_guess_columns, c_int64_t))
+         call context%scratch_c_occ_beta%ensure(this%n_ao*widest, &
                                                 "beta occupied MO coefficients", error)
          call context%scratch_result_beta%ensure(this%n_ao*this%n_ao, "beta result matrix", error)
          if (error%has_error()) then

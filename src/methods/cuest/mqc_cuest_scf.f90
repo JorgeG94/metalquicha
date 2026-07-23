@@ -40,6 +40,13 @@ module mqc_cuest_scf
    public :: run_uks_scf    !! Drive an unrestricted (open-shell) SCF
    public :: spin_occupations  !! Electron count + multiplicity -> alpha/beta counts
 
+   integer, parameter, public :: SCF_GUESS_CORE = 0  !! F = H
+   integer, parameter, public :: SCF_GUESS_GWH = 1   !! Generalized Wolfsberg-Helmholz
+   integer, parameter, public :: SCF_GUESS_SAC = 2   !! Superposition of atomic coefficients
+
+   real(dp), parameter :: GWH_K = 1.75_dp
+      !! The Wolfsberg-Helmholz constant. 1.75 is the value in universal use.
+
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
       !! Overlap eigenvalues below this are dropped from the orbital space
 
@@ -87,6 +94,43 @@ contains
          end do
       end do
    end function nuclear_repulsion_energy
+
+   subroutine build_guess_fock(guess, core_hamiltonian, overlap, guess_fock)
+      !! Initial Fock matrix for the first diagonalization
+      !!
+      !! The core guess (F = H) ignores all electron repulsion, which leaves
+      !! the orbital ordering badly wrong -- on a radical that can put the hole
+      !! in the wrong orbital and converge tidily onto an excited state.
+      !!
+      !! GWH scales the off-diagonal elements by the overlap:
+      !!
+      !!   F_ij = 1/2 K S_ij (H_ii + H_jj),   F_ii = H_ii
+      !!
+      !! which is a crude stand-in for the screening the core guess omits, and
+      !! costs nothing beyond matrices already in hand.
+      integer, intent(in) :: guess
+      real(dp), intent(in) :: core_hamiltonian(:, :), overlap(:, :)
+      real(dp), intent(out) :: guess_fock(:, :)
+
+      integer :: i, j, n
+
+      n = size(core_hamiltonian, 1)
+      select case (guess)
+      case (SCF_GUESS_GWH)
+         do j = 1, n
+            do i = 1, n
+               if (i == j) then
+                  guess_fock(i, j) = core_hamiltonian(i, j)
+               else
+                  guess_fock(i, j) = 0.5_dp*GWH_K*overlap(i, j) &
+                                     *(core_hamiltonian(i, i) + core_hamiltonian(j, j))
+               end if
+            end do
+         end do
+      case default
+         guess_fock = core_hamiltonian
+      end select
+   end subroutine build_guess_fock
 
    subroutine build_orthogonalizer(overlap, transform, n_mo, error)
       !! Canonical orthogonalizer X = U s^(-1/2), with near-null modes dropped
@@ -215,7 +259,7 @@ contains
 
    subroutine run_rhf_scf(system, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
-                          use_diis, diis_size, verbose, result, error)
+                          use_diis, diis_size, verbose, result, error, guess)
       !! Drive a closed-shell RHF calculation to convergence
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects for this molecule
       integer, intent(in) :: atomic_numbers(:)        !! Z per atom
@@ -229,7 +273,9 @@ contains
       logical, intent(in) :: verbose                  !! Print the iteration table
       type(scf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: guess   !! SCF_GUESS_*, default GWH
 
+      integer :: guess_type
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
       real(dp), allocatable :: core_hamiltonian(:, :), fock(:, :), density(:, :)
       real(dp), allocatable :: coulomb(:, :), exchange(:, :), xc_potential(:, :)
@@ -242,6 +288,9 @@ contains
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy
       logical :: diis_ok
+
+      guess_type = SCF_GUESS_GWH
+      if (present(guess)) guess_type = guess
 
       n_ao = int(system%n_ao)
       n_occ = n_electrons/2
@@ -283,7 +332,7 @@ contains
 
       ! ---- core guess ------------------------------------------------------
       allocate (fock(n_ao, n_ao))
-      fock = core_hamiltonian
+      call build_guess_fock(guess_type, core_hamiltonian, overlap, fock)
       call diagonalize_fock(fock, transform, orbitals, orbital_energies, error)
       if (error%has_error()) return
 
@@ -475,7 +524,7 @@ contains
 
    subroutine run_uks_scf(system, atomic_numbers, coordinates, n_electrons, multiplicity, &
                           max_iterations, energy_tolerance, density_tolerance, &
-                          use_diis, diis_size, verbose, result, error)
+                          use_diis, diis_size, verbose, result, error, guess)
       !! Drive an unrestricted (open-shell) SCF to convergence
       !!
       !! Spin conventions, matching what cuEST's density-fitted routines expect:
@@ -501,7 +550,9 @@ contains
       logical, intent(in) :: verbose
       type(scf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: guess   !! SCF_GUESS_*, default GWH
 
+      integer :: guess_type
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
       real(dp), allocatable :: core_hamiltonian(:, :), transform(:, :)
       real(dp), allocatable :: fock_a(:, :), fock_b(:, :)
@@ -517,6 +568,9 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration, n_stored, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
       logical :: diis_ok, occupations_ok
+
+      guess_type = SCF_GUESS_GWH
+      if (present(guess)) guess_type = guess
 
       n_ao = int(system%n_ao)
       call spin_occupations(n_electrons, multiplicity, n_alpha, n_beta, occupations_ok)
@@ -548,8 +602,8 @@ contains
       result%nuclear_repulsion = nuclear_repulsion_energy(atomic_numbers, coordinates)
 
       allocate (fock_a(n_ao, n_ao), fock_b(n_ao, n_ao))
-      fock_a = core_hamiltonian
-      fock_b = core_hamiltonian
+      call build_guess_fock(guess_type, core_hamiltonian, overlap, fock_a)
+      fock_b = fock_a
       call diagonalize_fock(fock_a, transform, orbitals_a, energies_a, error)
       call diagonalize_fock(fock_b, transform, orbitals_b, energies_b, error)
       if (error%has_error()) return

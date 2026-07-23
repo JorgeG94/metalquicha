@@ -11,5 +11,6 @@ target_sources(
           mqc_cuest_functionals.f90
           mqc_cuest_integrals.f90
           mqc_cuest_scf.f90
+          mqc_cuest_atomic_guess.f90
           mqc_cuest_gradient.f90
           mqc_cuest_driver.f90)
