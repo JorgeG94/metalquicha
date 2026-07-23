@@ -984,7 +984,7 @@ contains
       if (.not. error%has_error()) then
          call cuest_status_check(cuestDFSymmetricExchangeCompute(this%handle, this%df_plan, &
                                                                  params, variable_buffer, &
-                                                                 temporary_ws, this%n_occ, &
+                                                                 temporary_ws, occupancy, &
                                                                  this%d_c_occ, this%d_result), &
                                  "cuestDFSymmetricExchangeCompute", error)
       end if
