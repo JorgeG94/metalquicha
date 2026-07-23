@@ -706,6 +706,10 @@ contains
       if (error%has_error()) return
 
       allocate (occ_a(n_ao, max(n_alpha, 1)), occ_b(n_ao, max(n_beta, 1)))
+      ! An unoccupied channel is passed on as a zero column, so it must be
+      ! zero rather than whatever was on the stack.
+      occ_a = 0.0_dp
+      occ_b = 0.0_dp
       allocate (density_a(n_ao, n_ao), density_b(n_ao, n_ao), density_total(n_ao, n_ao))
       call set_spin_density(orbitals_a, n_alpha, occ_a, density_a)
       call set_spin_density(orbitals_b, n_beta, occ_b, density_b)

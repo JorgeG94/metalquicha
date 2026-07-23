@@ -135,10 +135,8 @@ separate configuration.
 - An unknown functional name errors with the full list of accepted names rather
   than falling back to a default.
 - `guess` in `%scf` selects the starting point: `core`, `gwh` (default) or
-  `sac`. A core guess ignores electron repulsion entirely and can converge a
-  radical onto an excited state -- see the open-shell section. `sac` converges
-  each distinct element as a free atom first, caching the result for the
-  lifetime of the process.
+  `sac`. See the guess comparison below -- the default is GWH on measured
+  evidence, not by assumption.
 - Open shell is automatic: `multiplicity /= 1`, or an odd electron count,
   selects UHF/UKS. `<S^2>` is reported so spin contamination is visible.
 - `Hessian` costs 6N gradient evaluations, each a full SCF.
@@ -225,6 +223,29 @@ same calculation converges tidily, with a respectable `<S^2>` of 0.7584, to
 X2Pi gap of 4.05 eV. A wrong occupation can be perfectly self-consistent, so
 the SCF settles onto the excited state and reports success. GWH fixes the
 sigma/pi ordering and lands on the ground state.
+
+### Initial guesses
+
+`./validation/run_guess_comparison.sh`, iterations to convergence:
+
+| system | core | GWH | SAC |
+|---|---|---|---|
+| HF/def2-SVP water | 12 | 10 | 10 |
+| PBE/def2-SVP water | 10 | 10 | 10 |
+| UHF/def2-SVP OH | 13* | 12 | 12 |
+| UHF/def2-SVP O2 | 11 | 10 | 14 |
+
+Energies agree across guesses to ~1e-11 everywhere except the starred cell:
+with a core guess OH converges to a *different solution* 4.29 eV higher, the
+A2Sigma+ excited state. That is the one case where the guess changes the answer
+rather than the route to it.
+
+GWH is the default because these numbers say so. It costs nothing beyond
+matrices already in hand and is never worse than core. SAC, despite converging
+every free atom first, matched GWH on water and OH and was *worse* on O2 --
+superposing two high-spin oxygen atoms (four unpaired electrons) is a poor
+starting point for a molecule with two. A more expensive guess is not
+automatically a better one.
 
 ### Fragmented
 

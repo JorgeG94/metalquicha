@@ -546,6 +546,7 @@ contains
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params
       integer(c_int) :: status
+      integer(c_int64_t) :: beta_occupancy
       real(dp), allocatable :: flat(:)
       real(dp), target :: energy
 
@@ -559,8 +560,15 @@ contains
       call copy_to_device(this%d_c_occ, flat, "alpha occupied MOs (XC)", error)
       deallocate (flat)
 
-      allocate (flat(size(c_occ_beta)))
-      flat = reshape(c_occ_beta, [size(c_occ_beta)])
+      ! cuEST requires numOccupiedBeta > 0, but a system can legitimately have
+      ! no beta electrons -- a hydrogen atom, for one, which is exactly what an
+      ! atomic guess has to solve. Passing a single all-zero column gives a
+      ! beta density of zero, which is the correct physics, through an argument
+      ! the library will accept.
+      beta_occupancy = max(this%n_occ_beta, 1_c_int64_t)
+      allocate (flat(this%n_ao*beta_occupancy))
+      flat = 0.0_dp
+      if (this%n_occ_beta > 0) flat = reshape(c_occ_beta, [size(c_occ_beta)])
       call copy_to_device(this%d_c_occ_beta, flat, "beta occupied MOs (XC)", error)
       deallocate (flat)
       if (error%has_error()) return
@@ -577,7 +585,7 @@ contains
       call cuest_status_check(cuestXCPotentialUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
                                                                       params, variable_buffer, &
                                                                       temporary_desc, this%n_occ, &
-                                                                      this%n_occ_beta, this%d_c_occ, &
+                                                                      beta_occupancy, this%d_c_occ, &
                                                                       this%d_c_occ_beta, c_loc(energy), &
                                                                       this%d_result, this%d_result_beta), &
                               "cuestXCPotentialUKSComputeWorkspaceQuery", error)
@@ -585,7 +593,7 @@ contains
       if (.not. error%has_error()) then
          call cuest_status_check(cuestXCPotentialUKSCompute(this%handle, this%xc_plan, params, &
                                                             variable_buffer, temporary_ws, &
-                                                            this%n_occ, this%n_occ_beta, &
+                                                            this%n_occ, beta_occupancy, &
                                                             this%d_c_occ, this%d_c_occ_beta, &
                                                             c_loc(energy), this%d_result, &
                                                             this%d_result_beta), &
@@ -1469,6 +1477,7 @@ contains
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params
       integer(c_int) :: status
+      integer(c_int64_t) :: beta_occupancy
       real(dp), allocatable :: flat(:)
 
       gradient = 0.0_dp
@@ -1479,8 +1488,11 @@ contains
       call copy_to_device(this%d_c_occ, flat, "alpha occupied MOs (XC gradient)", error)
       deallocate (flat)
 
-      allocate (flat(size(c_occ_beta)))
-      flat = reshape(c_occ_beta, [size(c_occ_beta)])
+      ! See compute_xc_uks: an empty beta channel goes in as one zero column.
+      beta_occupancy = max(this%n_occ_beta, 1_c_int64_t)
+      allocate (flat(this%n_ao*beta_occupancy))
+      flat = 0.0_dp
+      if (this%n_occ_beta > 0) flat = reshape(c_occ_beta, [size(c_occ_beta)])
       call copy_to_device(this%d_c_occ_beta, flat, "beta occupied MOs (XC gradient)", error)
       deallocate (flat)
       if (error%has_error()) return
@@ -1496,14 +1508,14 @@ contains
       call cuest_status_check(cuestXCDerivativeUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
                                                                        params, variable_buffer, &
                                                                        temporary_desc, this%n_occ, &
-                                                                       this%n_occ_beta, this%d_c_occ, &
+                                                                       beta_occupancy, this%d_c_occ, &
                                                                        this%d_c_occ_beta, this%d_gradient), &
                               "cuestXCDerivativeUKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestXCDerivativeUKSCompute(this%handle, this%xc_plan, params, &
                                                              variable_buffer, temporary_ws, &
-                                                             this%n_occ, this%n_occ_beta, &
+                                                             this%n_occ, beta_occupancy, &
                                                              this%d_c_occ, this%d_c_occ_beta, &
                                                              this%d_gradient), &
                                  "cuestXCDerivativeUKSCompute", error)
