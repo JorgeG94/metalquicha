@@ -41,6 +41,11 @@ module mqc_cuest_driver
       integer :: device_rank = 0
          !! Node-local MPI rank. Decides which GPU this rank binds to; leaving
          !! it at zero in a multi-rank run puts every rank on device 0.
+      logical :: unrestricted = .false.
+         !! Force UHF/UKS even for a closed shell. With equal alpha and beta
+         !! occupations and the same guess for both spins, this must reproduce
+         !! the restricted energy exactly, which is how the unrestricted
+         !! factors are checked.
 
       integer :: max_iter = 100
       real(dp) :: energy_tol = 1.0e-8_dp
@@ -131,7 +136,8 @@ contains
          call record_failure(result, error)
          return
       end if
-      unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0)
+      unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
+                     .or. settings%unrestricted
 
       ! ---- build, solve, tear down ------------------------------------------
       if (unrestricted) then

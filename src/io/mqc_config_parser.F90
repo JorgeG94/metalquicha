@@ -74,6 +74,8 @@ module mqc_config_parser
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
       character(len=:), allocatable :: functional
+      logical :: scf_unrestricted = .false.
+         !! Force UHF/UKS even when the shell is closed
          !! XC functional name, only meaningful when method = dft
 
       ! XTB solvation settings

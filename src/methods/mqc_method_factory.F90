@@ -140,6 +140,7 @@ contains
 
       ! SCF settings from shared config%scf
       m%options%aux_basis_set = config%scf%aux_basis_set
+      m%options%unrestricted = config%scf%unrestricted
       m%options%max_iter = config%scf%max_iter
       m%options%conv_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
@@ -159,6 +160,7 @@ contains
       m%options%device_rank = config%device_rank
 
       ! SCF settings from shared config%scf
+      m%options%unrestricted = config%scf%unrestricted
       m%options%max_iter = config%scf%max_iter
       m%options%energy_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence

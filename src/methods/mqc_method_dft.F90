@@ -46,6 +46,8 @@ module mqc_method_dft
          !! Print SCF iterations
       integer :: device_rank = 0
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
+      logical :: unrestricted = .false.
+         !! Force UHF/UKS even for a closed shell
 
       ! Grid settings
       character(len=16) :: grid_type = 'medium'
@@ -130,6 +132,7 @@ contains
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
       settings%device_rank = this%options%device_rank
+      settings%unrestricted = this%options%unrestricted
       settings%max_iter = this%options%max_iter
       settings%energy_tol = this%options%energy_tol
       settings%density_tol = this%options%density_tol

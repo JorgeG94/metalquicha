@@ -99,6 +99,7 @@ class SCF:
     """SCF convergence settings."""
     maxiter: int
     tolerance: float
+    unrestricted: Optional[bool] = None
 
 
 @dataclass

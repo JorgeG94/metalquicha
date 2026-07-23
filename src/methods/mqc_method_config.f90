@@ -27,6 +27,10 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      logical :: unrestricted = .false.
+         !! Force an unrestricted (UHF/UKS) treatment even for a closed shell.
+         !! Needed for broken-symmetry singlets, and the cleanest check that
+         !! the unrestricted code reduces to the restricted result.
       character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
          !! Auxiliary (JKFIT) basis for the density-fitted J and K.
          !! Required, not optional, for the cuEST backend: cuEST exposes no
