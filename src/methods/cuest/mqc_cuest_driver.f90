@@ -18,7 +18,7 @@ module mqc_cuest_driver
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_functionals, only: functional_name_to_id
-   use mqc_cuest_scf, only: scf_result_t, run_rhf_scf
+   use mqc_cuest_scf, only: scf_result_t, run_rhf_scf, run_uks_scf, spin_occupations
    use mqc_cuest_gradient, only: compute_scf_gradient
    implicit none
    private
@@ -73,8 +73,8 @@ contains
       type(error_t) :: error
       real(dp), allocatable :: gradient(:, :)
       character(len=8), allocatable :: element_symbols(:)
-      integer :: iatom, functional_id
-      logical :: need_gradient
+      integer :: iatom, functional_id, n_alpha, n_beta
+      logical :: need_gradient, unrestricted, occupations_ok
 
       need_gradient = .false.
       if (present(want_gradient)) need_gradient = want_gradient
@@ -120,17 +120,44 @@ contains
          return
       end if
 
+      ! ---- restricted or unrestricted? --------------------------------------
+      !
+      ! An odd electron count forces unrestricted regardless of what the input
+      ! claims, so a mis-stated multiplicity fails as a validation error rather
+      ! than silently halving an odd number of electrons.
+      call spin_occupations(fragment%nelec, fragment%multiplicity, n_alpha, n_beta, occupations_ok)
+      if (.not. occupations_ok) then
+         call error%set(ERROR_VALIDATION, "Electron count and multiplicity are inconsistent")
+         call record_failure(result, error)
+         return
+      end if
+      unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0)
+
       ! ---- build, solve, tear down ------------------------------------------
-      call system%create(context, fragment%element_numbers, fragment%coordinates, &
-                         orbital_basis, auxiliary_basis, settings%spherical, &
-                         fragment%nelec/2, functional_id, settings%radial_points, &
-                         settings%angular_points, error)
+      if (unrestricted) then
+         call system%create(context, fragment%element_numbers, fragment%coordinates, &
+                            orbital_basis, auxiliary_basis, settings%spherical, &
+                            n_alpha, functional_id, settings%radial_points, &
+                            settings%angular_points, error, n_occ_beta=n_beta)
+      else
+         call system%create(context, fragment%element_numbers, fragment%coordinates, &
+                            orbital_basis, auxiliary_basis, settings%spherical, &
+                            fragment%nelec/2, functional_id, settings%radial_points, &
+                            settings%angular_points, error)
+      end if
 
       if (.not. error%has_error()) then
-         call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
-                          fragment%nelec, settings%max_iter, settings%energy_tol, &
-                          settings%density_tol, settings%use_diis, settings%diis_size, &
-                          settings%verbose, scf, error)
+         if (unrestricted) then
+            call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
+                             fragment%nelec, fragment%multiplicity, settings%max_iter, &
+                             settings%energy_tol, settings%density_tol, settings%use_diis, &
+                             settings%diis_size, settings%verbose, scf, error)
+         else
+            call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+                             fragment%nelec, settings%max_iter, settings%energy_tol, &
+                             settings%density_tol, settings%use_diis, settings%diis_size, &
+                             settings%verbose, scf, error)
+         end if
       end if
 
       if (need_gradient .and. .not. error%has_error()) then

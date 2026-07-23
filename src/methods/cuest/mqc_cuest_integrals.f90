@@ -64,6 +64,10 @@ module mqc_cuest_integrals
                     cuestXCIntPlanCreate, cuestXCIntPlanCreateWorkspaceQuery, &
                     cuestXCIntPlanDestroy, &
                     cuestXCPotentialRKSCompute, cuestXCPotentialRKSComputeWorkspaceQuery, &
+                    cuestXCPotentialUKSCompute, cuestXCPotentialUKSComputeWorkspaceQuery, &
+                    cuestXCDerivativeUKSCompute, cuestXCDerivativeUKSComputeWorkspaceQuery, &
+                    CUEST_XCPOTENTIALUKSCOMPUTE_PARAMETERS, &
+                    CUEST_XCDERIVATIVEUKSCOMPUTE_PARAMETERS, &
                     cuestOverlapDerivativeCompute, cuestOverlapDerivativeComputeWorkspaceQuery, &
                     cuestKineticDerivativeCompute, cuestKineticDerivativeComputeWorkspaceQuery, &
                     cuestPotentialDerivativeCompute, cuestPotentialDerivativeComputeWorkspaceQuery, &
@@ -111,7 +115,12 @@ module mqc_cuest_integrals
       ! Dimensions
       integer(c_int64_t) :: n_atoms = 0  !! Atoms in this molecule
       integer(c_int64_t) :: n_ao = 0     !! AO basis functions
-      integer(c_int64_t) :: n_occ = 0    !! Doubly occupied orbitals
+      integer(c_int64_t) :: n_occ = 0    !! Doubly occupied orbitals (RKS)
+      integer(c_int64_t) :: n_occ_beta = 0
+         !! Beta occupied orbitals. Unrestricted when this is >= 0 and
+         !! `unrestricted` is set; n_occ then means the alpha count.
+      logical :: unrestricted = .false.
+         !! Whether the device buffers for a second spin channel exist
 
       real(dp) :: exchange_fraction = 1.0_dp
          !! Fraction of full-range exact exchange baked into the DF plan.
@@ -138,7 +147,9 @@ module mqc_cuest_integrals
       type(c_ptr) :: xyz_device = c_null_ptr
       type(c_ptr) :: charges_device = c_null_ptr
       type(c_ptr) :: d_matrix = c_null_ptr  !! Density
-      type(c_ptr) :: d_c_occ = c_null_ptr   !! Occupied MO coefficients
+      type(c_ptr) :: d_c_occ = c_null_ptr   !! Occupied MO coefficients (alpha)
+      type(c_ptr) :: d_c_occ_beta = c_null_ptr   !! Beta occupied MOs (UKS)
+      type(c_ptr) :: d_result_beta = c_null_ptr  !! Second output matrix (UKS)
       type(c_ptr) :: d_result = c_null_ptr  !! Whichever matrix is being built
       type(c_ptr) :: d_gradient = c_null_ptr        !! natom x 3 gradient output
       type(c_ptr) :: d_charge_gradient = c_null_ptr !! Hellmann-Feynman half
@@ -151,18 +162,21 @@ module mqc_cuest_integrals
       procedure :: compute_coulomb => system_compute_coulomb
       procedure :: compute_exchange => system_compute_exchange
       procedure :: compute_xc => system_compute_xc
+      procedure :: compute_xc_uks => system_compute_xc_uks
       procedure :: gradient_overlap => system_gradient_overlap
       procedure :: gradient_kinetic => system_gradient_kinetic
       procedure :: gradient_potential => system_gradient_potential
       procedure :: gradient_two_electron => system_gradient_two_electron
       procedure :: gradient_xc => system_gradient_xc
+      procedure :: gradient_two_electron_uks => system_gradient_two_electron_uks
+      procedure :: gradient_xc_uks => system_gradient_xc_uks
    end type cuest_system_t
 
 contains
 
    subroutine system_create(this, context, atomic_numbers, coordinates, mol_basis, &
                             aux_mol_basis, use_spherical, n_occ, functional_id, &
-                            n_radial, n_angular, error)
+                            n_radial, n_angular, error, n_occ_beta)
       !! Build every cuEST object needed for one molecule
       !!
       !! Coordinates are in Bohr, matching metalquicha's internal units and
@@ -182,6 +196,9 @@ contains
       integer, intent(in) :: n_radial                          !! Radial grid points (DFT only)
       integer, intent(in) :: n_angular                         !! Angular grid points (DFT only)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_occ_beta
+         !! Beta occupied count. Present means unrestricted, and `n_occ` is
+         !! then the alpha count rather than the doubly occupied count.
 
       integer :: iatom, n_atoms
 
@@ -189,6 +206,8 @@ contains
       this%handle = context%handle
       this%n_atoms = int(n_atoms, c_int64_t)
       this%n_occ = int(n_occ, c_int64_t)
+      this%unrestricted = present(n_occ_beta)
+      if (this%unrestricted) this%n_occ_beta = int(n_occ_beta, c_int64_t)
       this%has_xc = (functional_id >= 0)
 
       if (size(coordinates, 2) /= n_atoms) then
@@ -278,6 +297,20 @@ contains
             return
          end if
          this%d_c_occ = context%scratch_c_occ%ptr
+      end if
+
+      if (this%unrestricted) then
+         ! The DF derivative wants the two coefficient matrices concatenated,
+         ! so the beta buffer is sized to hold both back to back.
+         call context%scratch_c_occ_beta%ensure(this%n_ao*(this%n_occ + this%n_occ_beta), &
+                                                "beta occupied MO coefficients", error)
+         call context%scratch_result_beta%ensure(this%n_ao*this%n_ao, "beta result matrix", error)
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_integrals:create")
+            return
+         end if
+         this%d_c_occ_beta = context%scratch_c_occ_beta%ptr
+         this%d_result_beta = context%scratch_result_beta%ptr
       end if
    end subroutine system_create
 
@@ -487,6 +520,95 @@ contains
       status = cuestParametersDestroy(CUEST_DFINTPLAN_PARAMETERS, plan_params)
       call cuest_status_check(status, "cuestParametersDestroy(DF plan)", error)
    end subroutine build_df_plan
+
+   subroutine system_compute_xc_uks(this, c_occ_alpha, c_occ_beta, xc_energy, &
+                                    vxc_alpha, vxc_beta, error)
+      !! Spin-resolved exchange-correlation energy and potentials
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ_alpha(:, :)   !! (n_ao, n_occ_alpha)
+      real(dp), intent(in) :: c_occ_beta(:, :)    !! (n_ao, n_occ_beta)
+      real(dp), intent(out) :: xc_energy          !! Exc, Hartree
+      real(dp), intent(out) :: vxc_alpha(:, :)    !! (n_ao, n_ao)
+      real(dp), intent(out) :: vxc_beta(:, :)     !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+      real(dp), allocatable :: flat(:)
+      real(dp), target :: energy
+
+      xc_energy = 0.0_dp
+      vxc_alpha = 0.0_dp
+      vxc_beta = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc) return
+
+      allocate (flat(size(c_occ_alpha)))
+      flat = reshape(c_occ_alpha, [size(c_occ_alpha)])
+      call copy_to_device(this%d_c_occ, flat, "alpha occupied MOs (XC)", error)
+      deallocate (flat)
+
+      allocate (flat(size(c_occ_beta)))
+      flat = reshape(c_occ_beta, [size(c_occ_beta)])
+      call copy_to_device(this%d_c_occ_beta, flat, "beta occupied MOs (XC)", error)
+      deallocate (flat)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_XCPOTENTIALUKSCOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(UKS XC potential)", error)
+      if (error%has_error()) return
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+      energy = 0.0_dp
+
+      call cuest_status_check(cuestXCPotentialUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
+                                                                      params, variable_buffer, &
+                                                                      temporary_desc, this%n_occ, &
+                                                                      this%n_occ_beta, this%d_c_occ, &
+                                                                      this%d_c_occ_beta, c_loc(energy), &
+                                                                      this%d_result, this%d_result_beta), &
+                              "cuestXCPotentialUKSComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestXCPotentialUKSCompute(this%handle, this%xc_plan, params, &
+                                                            variable_buffer, temporary_ws, &
+                                                            this%n_occ, this%n_occ_beta, &
+                                                            this%d_c_occ, this%d_c_occ_beta, &
+                                                            c_loc(energy), this%d_result, &
+                                                            this%d_result_beta), &
+                                 "cuestXCPotentialUKSCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_XCPOTENTIALUKSCOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(UKS XC potential)", error)
+
+      call fetch_matrix(this, vxc_alpha, "Vxc alpha", error)
+      call fetch_named_matrix(this, this%d_result_beta, vxc_beta, "Vxc beta", error)
+      if (.not. error%has_error()) xc_energy = energy
+   end subroutine system_compute_xc_uks
+
+   subroutine fetch_named_matrix(this, device_ptr, matrix, label, error)
+      !! Copy an n_ao x n_ao matrix back from an explicitly named device buffer
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: device_ptr
+      real(dp), intent(out) :: matrix(:, :)
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat(:)
+
+      matrix = 0.0_dp
+      if (error%has_error()) return
+
+      allocate (flat(this%n_ao*this%n_ao))
+      call copy_to_host(flat, device_ptr, label, error)
+      if (.not. error%has_error()) matrix = reshape(flat, [int(this%n_ao), int(this%n_ao)])
+      deallocate (flat)
+   end subroutine fetch_named_matrix
 
    subroutine build_xc_plan(this, atomic_numbers, functional_id, n_radial, n_angular, error)
       !! Build the molecular quadrature grid and the XC integral plan
@@ -808,12 +930,17 @@ contains
       call fetch_matrix(this, coulomb, "J", error)
    end subroutine system_compute_coulomb
 
-   subroutine system_compute_exchange(this, c_occ, exchange, error)
+   subroutine system_compute_exchange(this, c_occ, exchange, error, n_occupied)
       !! Density-fitted exchange matrix K from occupied MO coefficients
+      !!
+      !! `n_occupied` overrides the stored count, which is what the two spin
+      !! channels of an unrestricted calculation need.
       class(cuest_system_t), intent(inout) :: this
       real(dp), intent(in) :: c_occ(:, :)      !! (n_ao, n_occ)
       real(dp), intent(out) :: exchange(:, :)  !! (n_ao, n_ao)
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_occupied
+      integer(c_int64_t) :: occupancy
 
       type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
       type(cuestWorkspace_t) :: temporary_ws
@@ -823,7 +950,10 @@ contains
 
       if (error%has_error()) return
 
-      if (this%n_occ <= 0) then
+      occupancy = this%n_occ
+      if (present(n_occupied)) occupancy = int(n_occupied, c_int64_t)
+
+      if (occupancy <= 0) then
          exchange = 0.0_dp
          return
       end if
@@ -847,7 +977,7 @@ contains
                                                                            this%df_plan, params, &
                                                                            variable_buffer, &
                                                                            temporary_desc, &
-                                                                           this%n_occ, this%d_c_occ, &
+                                                                           occupancy, this%d_c_occ, &
                                                                            this%d_result), &
                               "cuestDFSymmetricExchangeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
@@ -1224,6 +1354,158 @@ contains
       call fetch_gradient(this, gradient, "dExc/dR", error)
    end subroutine system_gradient_xc
 
+   subroutine system_gradient_two_electron_uks(this, total_density, c_occ_alpha, c_occ_beta, &
+                                               gradient, error)
+      !! Density-fitted Coulomb + exchange derivative, unrestricted
+      !!
+      !! cuEST wants the two coefficient matrices concatenated, an occupancy
+      !! per matrix, and -- from the header's own UKS worked example --
+      !! densityScale = 0.5 with the TOTAL density, coefficientScale = -0.5.
+      !! That is the same E_JK as the restricted case written for two spin
+      !! channels, which is the check that the factors are right.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: total_density(:, :)  !! D^a + D^b, no factor 2
+      real(dp), intent(in) :: c_occ_alpha(:, :), c_occ_beta(:, :)
+      real(dp), intent(out) :: gradient(:, :)      !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      real(dp), parameter :: UKS_DENSITY_SCALE = 0.5_dp
+      real(dp), parameter :: UKS_EXCHANGE_SCALE = -0.5_dp
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, coefficient_ptr
+      integer(c_int) :: status
+      integer(c_int64_t) :: occupancies(2), n_matrices
+      real(dp) :: coefficient_scale
+      real(dp), allocatable :: flat(:)
+      integer :: n_a, n_b
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      n_a = int(this%n_occ)
+      n_b = int(this%n_occ_beta)
+
+      call stage_matrix(this, total_density, "total density (UKS JK gradient)", error)
+      if (error%has_error()) return
+
+      if (this%needs_exchange) then
+         ! Concatenated: alpha columns then beta columns, in one buffer.
+         allocate (flat(this%n_ao*(n_a + n_b)))
+         flat(1:this%n_ao*n_a) = reshape(c_occ_alpha(:, 1:n_a), [this%n_ao*n_a])
+         if (n_b > 0) then
+            flat(this%n_ao*n_a + 1:) = reshape(c_occ_beta(:, 1:n_b), [this%n_ao*n_b])
+         end if
+         call copy_to_device(this%d_c_occ_beta, flat, "concatenated occupied MOs", error)
+         deallocate (flat)
+         if (error%has_error()) return
+
+         n_matrices = 2_c_int64_t
+         occupancies(1) = this%n_occ
+         occupancies(2) = this%n_occ_beta
+         coefficient_ptr = this%d_c_occ_beta
+         coefficient_scale = UKS_EXCHANGE_SCALE
+      else
+         n_matrices = 0_c_int64_t
+         occupancies = 0_c_int64_t
+         coefficient_ptr = c_null_ptr
+         coefficient_scale = 0.0_dp
+      end if
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(DF derivative, UKS)", error)
+      if (error%has_error()) return
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      call cuest_status_check(cuestDFSymmetricDerivativeComputeWorkspaceQuery(this%handle, this%df_plan, &
+                                                                             params, variable_buffer, &
+                                                                             temporary_desc, UKS_DENSITY_SCALE, &
+                                                                             this%d_matrix, coefficient_scale, &
+                                                                             n_matrices, occupancies, &
+                                                                             coefficient_ptr, this%d_gradient), &
+                              "cuestDFSymmetricDerivativeComputeWorkspaceQuery(UKS)", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestDFSymmetricDerivativeCompute(this%handle, this%df_plan, params, &
+                                                                   variable_buffer, temporary_ws, &
+                                                                   UKS_DENSITY_SCALE, this%d_matrix, &
+                                                                   coefficient_scale, n_matrices, &
+                                                                   occupancies, coefficient_ptr, &
+                                                                   this%d_gradient), &
+                                 "cuestDFSymmetricDerivativeCompute(UKS)", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(DF derivative, UKS)", error)
+
+      call fetch_gradient(this, gradient, "dE_JK/dR (UKS)", error)
+   end subroutine system_gradient_two_electron_uks
+
+   subroutine system_gradient_xc_uks(this, c_occ_alpha, c_occ_beta, gradient, error)
+      !! Spin-resolved exchange-correlation derivative
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ_alpha(:, :), c_occ_beta(:, :)
+      real(dp), intent(out) :: gradient(:, :)  !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+      real(dp), allocatable :: flat(:)
+
+      gradient = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc) return
+
+      allocate (flat(size(c_occ_alpha)))
+      flat = reshape(c_occ_alpha, [size(c_occ_alpha)])
+      call copy_to_device(this%d_c_occ, flat, "alpha occupied MOs (XC gradient)", error)
+      deallocate (flat)
+
+      allocate (flat(size(c_occ_beta)))
+      flat = reshape(c_occ_beta, [size(c_occ_beta)])
+      call copy_to_device(this%d_c_occ_beta, flat, "beta occupied MOs (XC gradient)", error)
+      deallocate (flat)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_XCDERIVATIVEUKSCOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(UKS XC derivative)", error)
+      if (error%has_error()) return
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      call cuest_status_check(cuestXCDerivativeUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
+                                                                       params, variable_buffer, &
+                                                                       temporary_desc, this%n_occ, &
+                                                                       this%n_occ_beta, this%d_c_occ, &
+                                                                       this%d_c_occ_beta, this%d_gradient), &
+                              "cuestXCDerivativeUKSComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestXCDerivativeUKSCompute(this%handle, this%xc_plan, params, &
+                                                             variable_buffer, temporary_ws, &
+                                                             this%n_occ, this%n_occ_beta, &
+                                                             this%d_c_occ, this%d_c_occ_beta, &
+                                                             this%d_gradient), &
+                                 "cuestXCDerivativeUKSCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_XCDERIVATIVEUKSCOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(UKS XC derivative)", error)
+
+      call fetch_gradient(this, gradient, "dExc/dR (UKS)", error)
+   end subroutine system_gradient_xc_uks
+
    subroutine stage_matrix(this, matrix, label, error)
       !! Copy an n_ao x n_ao host matrix into the shared device input buffer
       class(cuest_system_t), intent(inout) :: this
@@ -1269,6 +1551,8 @@ contains
       ! Borrowed from the context's pools -- drop the references, do not free.
       this%d_matrix = c_null_ptr
       this%d_c_occ = c_null_ptr
+      this%d_c_occ_beta = c_null_ptr
+      this%d_result_beta = c_null_ptr
       this%d_result = c_null_ptr
       this%d_gradient = c_null_ptr
       this%d_charge_gradient = c_null_ptr

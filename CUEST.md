@@ -14,9 +14,9 @@ evaluated on the GPU.
 
 ## Features
 
-- **Full SCF**: closed-shell RHF and RKS with density fitting (RI-JK)
+- **Full SCF**: RHF/RKS closed-shell and UHF/UKS open-shell, with density fitting (RI-JK)
 - **DIIS**: commutator (FDS−SDF) DIIS in the orthogonal basis, configurable subspace
-- **Gradients**: analytic, assembled from all five cuEST derivative APIs
+- **Gradients**: analytic, assembled from all five cuEST derivative APIs, restricted and unrestricted
 - **Hessians**: central differences of the analytic gradients, plus frequencies and thermochemistry
 - **Fragmented**: energies and gradients through MBE/GMBE, one GPU context per rank
 - **Functionals**: 20 built-ins — SVWN5, BLYP, PBE, M06-L, r2SCAN, B97, B3LYP, B3LYP1, PBE0, M06, M06-2X, HSE06, CAM-B3LYP, LC-ωPBE, LC-ωPBEh, ωB97X, ωB97X-V, B97M-V, ωB97M-V, HF
@@ -121,7 +121,8 @@ separate configuration.
 
 - An unknown functional name errors with the full list of accepted names rather
   than falling back to a default.
-- Closed-shell only. An odd electron count errors rather than guessing.
+- Open shell is automatic: `multiplicity /= 1`, or an odd electron count,
+  selects UHF/UKS. `<S^2>` is reported so spin contamination is visible.
 - `Hessian` costs 6N gradient evaluations, each a full SCF.
 - Requesting empirical dispersion errors; it is not implemented.
 - Each MPI rank binds to `mod(node_local_rank, device_count)` and logs which
@@ -281,9 +282,28 @@ relaxation. cuEST's DF derivative differentiates `E_JK = s_D E_J[D] + s_C E_K[C]
 and for closed-shell RKS wants the **half** density with `s_D = 2`, `s_C = -1`,
 not the total density the SCF carries.
 
+### Open shell
+
+Unrestricted follows cuEST's own spin conventions:
+
+```
+D^a = C_a C_a^T,  D^b = C_b C_b^T,  D^t = D^a + D^b   (no factor 2)
+F^a = H + J[D^t] - K[C_a] + Vxc_a
+E   = tr(D^t H) + 1/2 tr(D^t J) - 1/2 (tr(D^a K_a) + tr(D^b K_b)) + Exc
+```
+
+which reduce to the restricted expressions when `D^a = D^b = D/2` — the check
+that the factors are right. DIIS stacks the two spin commutators into one error
+vector. The DF derivative takes the two coefficient matrices concatenated with
+`densityScale = 0.5` and `coefficientScale = -0.5`, against the restricted
+case's half density with `densityScale = 2`.
+
+The initial guess is the core Hamiltonian for both spins; the differing alpha
+and beta occupations are what break the symmetry. A converged atomic guess
+would both cut iterations and help difficult radicals.
+
 ## Not implemented
 
-- Open shell (UKS). Odd electron counts error rather than guessing.
 - Empirical dispersion. Requesting it errors rather than silently omitting it.
 - Dipoles, and therefore IR intensities alongside a Hessian. cuEST has the
   multipole entry points; they are not called.

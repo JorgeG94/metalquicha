@@ -60,7 +60,9 @@ module mqc_cuest_context
       ! matrix buffers need not be.
       type(device_pool_t) :: scratch_density  !! Density / MO coefficient input
       type(device_pool_t) :: scratch_result   !! Matrix being built
-      type(device_pool_t) :: scratch_c_occ    !! Occupied MO coefficients
+      type(device_pool_t) :: scratch_c_occ    !! Occupied MO coefficients (alpha)
+      type(device_pool_t) :: scratch_c_occ_beta  !! Beta occupied MOs (UKS)
+      type(device_pool_t) :: scratch_result_beta !! Second output matrix (UKS)
       type(device_pool_t) :: scratch_xyz      !! Atom coordinates
       type(device_pool_t) :: scratch_charges  !! Nuclear charges
       type(device_pool_t) :: scratch_gradient !! natom x 3 gradient output
@@ -169,6 +171,8 @@ contains
       call this%scratch_density%release()
       call this%scratch_result%release()
       call this%scratch_c_occ%release()
+      call this%scratch_c_occ_beta%release()
+      call this%scratch_result_beta%release()
       call this%scratch_xyz%release()
       call this%scratch_charges%release()
       call this%scratch_gradient%release()

@@ -63,15 +63,27 @@ contains
       end do
    end subroutine nuclear_repulsion_gradient
 
-   subroutine energy_weighted_density(occupied, orbital_energies, n_occ, weighted)
-      !! W = 2 sum_i eps_i C_ui C_vi, the Pulay-term density
+   subroutine energy_weighted_density(occupied, orbital_energies, n_occ, weighted, occupancy)
+      !! W = f sum_i eps_i C_ui C_vi, the Pulay-term density
+      !!
+      !! `occupancy` is the electrons per orbital: 2 for a restricted
+      !! calculation (the default), 1 for one spin channel of an unrestricted
+      !! one, where the caller sums the two channels.
       real(dp), intent(in) :: occupied(:, :)         !! C_occ, (n_ao, n_occ)
       real(dp), intent(in) :: orbital_energies(:)    !! eps, at least n_occ long
       integer, intent(in) :: n_occ
       real(dp), intent(inout) :: weighted(:, :)      !! (n_ao, n_ao)
+      real(dp), intent(in), optional :: occupancy
 
       real(dp), allocatable :: scaled(:, :)
+      real(dp) :: factor
       integer :: i
+
+      factor = 2.0_dp
+      if (present(occupancy)) factor = occupancy
+
+      weighted = 0.0_dp
+      if (n_occ <= 0) return
 
       allocate (scaled(size(occupied, 1), n_occ))
       do i = 1, n_occ
@@ -79,7 +91,7 @@ contains
       end do
 
       call pic_gemm(scaled, occupied(:, 1:n_occ), weighted, transb='T', &
-                    alpha=2.0_dp, beta=0.0_dp)
+                    alpha=factor, beta=0.0_dp)
       deallocate (scaled)
    end subroutine energy_weighted_density
 
@@ -93,6 +105,7 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: term(:, :), weighted(:, :), half_density(:, :)
+      real(dp), allocatable :: weighted_beta(:, :)
       integer :: n_atoms, n_ao
 
       n_atoms = size(atomic_numbers)
@@ -112,20 +125,43 @@ contains
       if (.not. error%has_error()) gradient = gradient + term
 
       ! ---- Pulay term, which enters with a minus sign -----------------------
-      call energy_weighted_density(scf%occupied, scf%orbital_energies, scf%n_occupied, weighted)
+      !
+      ! Unrestricted needs both spin channels, each with one electron per
+      ! orbital rather than two.
+      if (scf%unrestricted) then
+         allocate (weighted_beta(n_ao, n_ao))
+         call energy_weighted_density(scf%occupied, scf%orbital_energies, &
+                                      scf%n_occupied, weighted, occupancy=1.0_dp)
+         call energy_weighted_density(scf%occupied_beta, scf%orbital_energies_beta, &
+                                      scf%n_occupied_beta, weighted_beta, occupancy=1.0_dp)
+         weighted = weighted + weighted_beta
+         deallocate (weighted_beta)
+      else
+         call energy_weighted_density(scf%occupied, scf%orbital_energies, scf%n_occupied, weighted)
+      end if
       call system%gradient_overlap(weighted, term, error)
       if (.not. error%has_error()) gradient = gradient - term
 
       ! ---- two-electron ------------------------------------------------------
-      !
-      ! cuEST's DF derivative wants the HALF density with densityScale = 2,
-      ! not the total density the SCF carries around.
-      half_density = 0.5_dp*scf%density
-      call system%gradient_two_electron(half_density, scf%occupied, term, error)
+      if (scf%unrestricted) then
+         ! The unrestricted call takes the TOTAL density with densityScale 0.5,
+         ! where the restricted one takes the half density with scale 2.
+         call system%gradient_two_electron_uks(scf%density, scf%occupied, scf%occupied_beta, &
+                                               term, error)
+      else
+         ! cuEST's DF derivative wants the HALF density with densityScale = 2,
+         ! not the total density the SCF carries around.
+         half_density = 0.5_dp*scf%density
+         call system%gradient_two_electron(half_density, scf%occupied, term, error)
+      end if
       if (.not. error%has_error()) gradient = gradient + term
 
       ! ---- exchange-correlation (no-op for Hartree-Fock) --------------------
-      call system%gradient_xc(scf%occupied, term, error)
+      if (scf%unrestricted) then
+         call system%gradient_xc_uks(scf%occupied, scf%occupied_beta, term, error)
+      else
+         call system%gradient_xc(scf%occupied, term, error)
+      end if
       if (.not. error%has_error()) gradient = gradient + term
 
       deallocate (term, weighted, half_density)

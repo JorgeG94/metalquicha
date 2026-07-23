@@ -41,6 +41,11 @@ addtest(mqc_xyz_reader_detailed)
 addtest(mqc_basis_reader)
 addtest(mqc_gbs_reader)
 addtest(mqc_config_roundtrip)
+
+# Only meaningful with the cuEST backend compiled in.
+if(MQC_ENABLE_CUEST)
+  addtest(mqc_cuest_spin)
+endif()
 addtest(mqc_basis_file_reader)
 addtest(mqc_basis_utils)
 addtest(mqc_elements)

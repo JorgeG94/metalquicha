@@ -37,6 +37,8 @@ module mqc_cuest_scf
 
    public :: scf_result_t   !! Converged SCF quantities
    public :: run_rhf_scf    !! Drive a closed-shell SCF to convergence
+   public :: run_uks_scf    !! Drive an unrestricted (open-shell) SCF
+   public :: spin_occupations  !! Electron count + multiplicity -> alpha/beta counts
 
    real(dp), parameter :: LINEAR_DEPENDENCE_TOL = 1.0e-7_dp
       !! Overlap eigenvalues below this are dropped from the orbital space
@@ -53,6 +55,16 @@ module mqc_cuest_scf
       real(dp), allocatable :: density(:, :)        !! Total density (n_ao, n_ao)
       real(dp), allocatable :: occupied(:, :)       !! Occupied MOs (n_ao, n_occ)
       integer :: n_occupied = 0                     !! Doubly occupied orbital count
+
+      ! Unrestricted results. `occupied`/`density` above hold the alpha channel
+      ! and the TOTAL density respectively when `unrestricted` is set, so the
+      ! restricted consumers keep working unchanged.
+      logical :: unrestricted = .false.
+      real(dp), allocatable :: occupied_beta(:, :)
+      real(dp), allocatable :: orbital_energies_beta(:)
+      real(dp), allocatable :: density_beta(:, :)   !! Beta density alone
+      integer :: n_occupied_beta = 0
+      real(dp) :: spin_squared = 0.0_dp             !! <S^2>, for spin contamination
    end type scf_result_t
 
 contains
@@ -236,7 +248,8 @@ contains
 
       if (mod(n_electrons, 2) /= 0) then
          call error%set(ERROR_VALIDATION, &
-                        "cuEST SCF: open-shell systems are not supported yet (odd electron count)")
+                        "cuEST RHF: odd electron count -- this is the restricted path; "// &
+                        "an open-shell system should have reached run_uks_scf")
          return
       end if
       if (n_occ > n_ao) then
@@ -408,5 +421,326 @@ contains
          call error%set(ERROR_VALIDATION, "cuEST SCF did not converge in the iteration limit")
       end if
    end subroutine run_rhf_scf
+
+
+   pure subroutine spin_occupations(n_electrons, multiplicity, n_alpha, n_beta, ok)
+      !! Alpha and beta occupations from the electron count and multiplicity
+      !!
+      !! n_alpha - n_beta = multiplicity - 1 and n_alpha + n_beta = n_electrons,
+      !! so both are fixed. `ok` is false when the two are inconsistent -- an
+      !! even electron count with an even multiplicity, for instance.
+      integer, intent(in) :: n_electrons, multiplicity
+      integer, intent(out) :: n_alpha, n_beta
+      logical, intent(out) :: ok
+
+      integer :: unpaired
+
+      unpaired = multiplicity - 1
+      ok = (multiplicity >= 1) .and. (unpaired <= n_electrons) .and. &
+           (mod(n_electrons - unpaired, 2) == 0)
+      if (.not. ok) then
+         n_alpha = 0
+         n_beta = 0
+         return
+      end if
+      n_beta = (n_electrons - unpaired)/2
+      n_alpha = n_beta + unpaired
+   end subroutine spin_occupations
+
+   function spin_contamination(occ_alpha, occ_beta, overlap, n_alpha, n_beta) result(s_squared)
+      !! <S^2> for a UHF/UKS determinant
+      !!
+      !!   <S^2> = S_z(S_z+1) + n_beta - sum_ij |<phi_i^a|phi_j^b>|^2
+      !!
+      !! The exact value for a pure spin state is S_z(S_z+1); the excess is
+      !! spin contamination, and reporting it is the cheapest way to notice
+      !! that an open-shell answer is not describing the state intended.
+      real(dp), intent(in) :: occ_alpha(:, :), occ_beta(:, :), overlap(:, :)
+      integer, intent(in) :: n_alpha, n_beta
+      real(dp) :: s_squared
+
+      real(dp), allocatable :: scratch(:, :), mo_overlap(:, :)
+      real(dp) :: sz
+
+      sz = 0.5_dp*real(n_alpha - n_beta, dp)
+      s_squared = sz*(sz + 1.0_dp) + real(n_beta, dp)
+      if (n_alpha == 0 .or. n_beta == 0) return
+
+      allocate (scratch(size(overlap, 1), n_beta), mo_overlap(n_alpha, n_beta))
+      call pic_gemm(overlap, occ_beta(:, 1:n_beta), scratch)
+      call pic_gemm(occ_alpha(:, 1:n_alpha), scratch, mo_overlap, transa='T')
+      s_squared = s_squared - sum(mo_overlap**2)
+      deallocate (scratch, mo_overlap)
+   end function spin_contamination
+
+   subroutine run_uks_scf(system, atomic_numbers, coordinates, n_electrons, multiplicity, &
+                          max_iterations, energy_tolerance, density_tolerance, &
+                          use_diis, diis_size, verbose, result, error)
+      !! Drive an unrestricted (open-shell) SCF to convergence
+      !!
+      !! Spin conventions, matching what cuEST's density-fitted routines expect:
+      !!
+      !!   D^a = C_a C_a^T,  D^b = C_b C_b^T,  D^t = D^a + D^b   (no factor 2)
+      !!   F^a = H + J[D^t] - K[C_a] + Vxc_a
+      !!   E   = tr(D^t H) + 1/2 tr(D^t J) - 1/2 (tr(D^a K_a) + tr(D^b K_b)) + Exc
+      !!
+      !! These reduce to the restricted expressions when D^a = D^b = D/2, which
+      !! is the check that the factors are right.
+      !!
+      !! DIIS uses the two spin commutators stacked into one error vector, so a
+      !! single extrapolation drives both channels.
+      type(cuest_system_t), intent(inout) :: system
+      integer, intent(in) :: atomic_numbers(:)
+      real(dp), intent(in) :: coordinates(:, :)
+      integer, intent(in) :: n_electrons
+      integer, intent(in) :: multiplicity
+      integer, intent(in) :: max_iterations
+      real(dp), intent(in) :: energy_tolerance, density_tolerance
+      logical, intent(in) :: use_diis
+      integer, intent(in) :: diis_size
+      logical, intent(in) :: verbose
+      type(scf_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
+      real(dp), allocatable :: core_hamiltonian(:, :), transform(:, :)
+      real(dp), allocatable :: fock_a(:, :), fock_b(:, :)
+      real(dp), allocatable :: density_a(:, :), density_b(:, :), density_total(:, :)
+      real(dp), allocatable :: coulomb(:, :), exchange_a(:, :), exchange_b(:, :)
+      real(dp), allocatable :: vxc_a(:, :), vxc_b(:, :)
+      real(dp), allocatable :: orbitals_a(:, :), orbitals_b(:, :)
+      real(dp), allocatable :: energies_a(:), energies_b(:)
+      real(dp), allocatable :: occ_a(:, :), occ_b(:, :)
+      real(dp), allocatable :: err_a(:, :), err_b(:, :), scratch(:, :), ortho_scratch(:, :)
+      real(dp), allocatable :: fock_history(:, :, :, :), error_history(:, :, :, :)
+      real(dp), allocatable :: b_matrix(:, :), diis_coefficients(:)
+      integer :: n_ao, n_mo, n_alpha, n_beta, iteration, n_stored, i, j
+      real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
+      logical :: diis_ok, occupations_ok
+
+      n_ao = int(system%n_ao)
+      call spin_occupations(n_electrons, multiplicity, n_alpha, n_beta, occupations_ok)
+      if (.not. occupations_ok) then
+         call error%set(ERROR_VALIDATION, "cuEST UKS: electron count and multiplicity are inconsistent")
+         return
+      end if
+
+      allocate (overlap(n_ao, n_ao), kinetic(n_ao, n_ao), potential(n_ao, n_ao))
+      call system%compute_overlap(overlap, error)
+      call system%compute_kinetic(kinetic, error)
+      call system%compute_potential(potential, error)
+      if (error%has_error()) then
+         call error%add_context("mqc_cuest_scf:one-electron integrals (UKS)")
+         return
+      end if
+
+      allocate (core_hamiltonian(n_ao, n_ao))
+      core_hamiltonian = kinetic + potential
+
+      call build_orthogonalizer(overlap, transform, n_mo, error)
+      if (error%has_error()) return
+      if (n_alpha > n_mo) then
+         call error%set(ERROR_VALIDATION, &
+                        "cuEST UKS: linear dependence left too few orbitals for the alpha electrons")
+         return
+      end if
+
+      result%nuclear_repulsion = nuclear_repulsion_energy(atomic_numbers, coordinates)
+
+      allocate (fock_a(n_ao, n_ao), fock_b(n_ao, n_ao))
+      fock_a = core_hamiltonian
+      fock_b = core_hamiltonian
+      call diagonalize_fock(fock_a, transform, orbitals_a, energies_a, error)
+      call diagonalize_fock(fock_b, transform, orbitals_b, energies_b, error)
+      if (error%has_error()) return
+
+      allocate (occ_a(n_ao, max(n_alpha, 1)), occ_b(n_ao, max(n_beta, 1)))
+      allocate (density_a(n_ao, n_ao), density_b(n_ao, n_ao), density_total(n_ao, n_ao))
+      call set_spin_density(orbitals_a, n_alpha, occ_a, density_a)
+      call set_spin_density(orbitals_b, n_beta, occ_b, density_b)
+      density_total = density_a + density_b
+
+      allocate (coulomb(n_ao, n_ao), exchange_a(n_ao, n_ao), exchange_b(n_ao, n_ao))
+      allocate (vxc_a(n_ao, n_ao), vxc_b(n_ao, n_ao))
+      allocate (err_a(n_ao, n_ao), err_b(n_ao, n_ao))
+      allocate (scratch(n_ao, n_ao), ortho_scratch(n_ao, n_mo))
+      if (use_diis) then
+         ! Index 1 of the leading dimension is alpha, index 2 beta: one DIIS
+         ! problem spanning both channels.
+         allocate (fock_history(n_ao, n_ao, 2, diis_size))
+         allocate (error_history(n_mo, n_mo, 2, diis_size))
+      end if
+      xc_energy = 0.0_dp
+      previous_energy = 0.0_dp
+      n_stored = 0
+      result%converged = .false.
+
+      if (verbose) then
+         if (system%has_xc) then
+            write (*, '(A)') "  cuEST UKS (density-fitted J/K, grid XC)"
+         else
+            write (*, '(A)') "  cuEST UHF (density-fitted J/K)"
+         end if
+         write (*, '(A,I0,A,I0,A,I0,A,I0)') "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
+            "   n_alpha = ", n_alpha, "   n_beta = ", n_beta
+         write (*, '(A)') "    iter            energy (Ha)          dE        DIIS error"
+      end if
+
+      do iteration = 1, max_iterations
+         call system%compute_coulomb(density_total, coulomb, error)
+
+         if (system%needs_exchange) then
+            call system%compute_exchange(occ_a(:, 1:n_alpha), exchange_a, error, n_occupied=n_alpha)
+            if (n_beta > 0) then
+               call system%compute_exchange(occ_b(:, 1:n_beta), exchange_b, error, n_occupied=n_beta)
+            else
+               exchange_b = 0.0_dp
+            end if
+         else
+            exchange_a = 0.0_dp
+            exchange_b = 0.0_dp
+         end if
+
+         if (system%has_xc) then
+            call system%compute_xc_uks(occ_a(:, 1:n_alpha), occ_b(:, 1:max(n_beta, 1)), &
+                                       xc_energy, vxc_a, vxc_b, error)
+         else
+            vxc_a = 0.0_dp
+            vxc_b = 0.0_dp
+            xc_energy = 0.0_dp
+         end if
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_scf:Fock build (UKS)")
+            return
+         end if
+
+         fock_a = core_hamiltonian + coulomb - exchange_a + vxc_a
+         fock_b = core_hamiltonian + coulomb - exchange_b + vxc_b
+
+         electronic_energy = sum(density_total*core_hamiltonian) &
+                             + 0.5_dp*sum(density_total*coulomb) &
+                             - 0.5_dp*(sum(density_a*exchange_a) + sum(density_b*exchange_b)) &
+                             + xc_energy
+         energy_change = electronic_energy - previous_energy
+         previous_energy = electronic_energy
+
+         call commutator_error(fock_a, density_a, overlap, transform, scratch, ortho_scratch, err_a)
+         call commutator_error(fock_b, density_b, overlap, transform, scratch, ortho_scratch, err_b)
+         error_norm = sqrt(sum(err_a(1:n_mo, 1:n_mo)**2) + sum(err_b(1:n_mo, 1:n_mo)**2))
+
+         if (verbose) then
+            write (*, '(A,I5,F24.12,2ES14.4)') "    ", iteration, &
+               electronic_energy + result%nuclear_repulsion, energy_change, error_norm
+         end if
+
+         if (iteration > 1 .and. abs(energy_change) < energy_tolerance &
+             .and. error_norm < density_tolerance) then
+            result%converged = .true.
+            result%iterations = iteration
+            exit
+         end if
+
+         if (use_diis) then
+            if (n_stored < diis_size) then
+               n_stored = n_stored + 1
+            else
+               fock_history(:, :, :, 1:diis_size - 1) = fock_history(:, :, :, 2:diis_size)
+               error_history(:, :, :, 1:diis_size - 1) = error_history(:, :, :, 2:diis_size)
+            end if
+            fock_history(:, :, 1, n_stored) = fock_a
+            fock_history(:, :, 2, n_stored) = fock_b
+            error_history(:, :, 1, n_stored) = err_a(1:n_mo, 1:n_mo)
+            error_history(:, :, 2, n_stored) = err_b(1:n_mo, 1:n_mo)
+
+            if (n_stored > 1) then
+               allocate (b_matrix(n_stored + 1, n_stored + 1))
+               b_matrix = -1.0_dp
+               b_matrix(n_stored + 1, n_stored + 1) = 0.0_dp
+               do i = 1, n_stored
+                  do j = 1, n_stored
+                     b_matrix(i, j) = sum(error_history(:, :, :, i)*error_history(:, :, :, j))
+                  end do
+               end do
+               call solve_diis(b_matrix, diis_coefficients, diis_ok)
+               if (diis_ok) then
+                  fock_a = 0.0_dp
+                  fock_b = 0.0_dp
+                  do i = 1, n_stored
+                     fock_a = fock_a + diis_coefficients(i)*fock_history(:, :, 1, i)
+                     fock_b = fock_b + diis_coefficients(i)*fock_history(:, :, 2, i)
+                  end do
+               end if
+               deallocate (b_matrix, diis_coefficients)
+            end if
+         end if
+
+         deallocate (orbitals_a, energies_a, orbitals_b, energies_b)
+         call diagonalize_fock(fock_a, transform, orbitals_a, energies_a, error)
+         call diagonalize_fock(fock_b, transform, orbitals_b, energies_b, error)
+         if (error%has_error()) return
+
+         call set_spin_density(orbitals_a, n_alpha, occ_a, density_a)
+         call set_spin_density(orbitals_b, n_beta, occ_b, density_b)
+         density_total = density_a + density_b
+      end do
+
+      if (.not. result%converged) result%iterations = max_iterations
+
+      result%unrestricted = .true.
+      result%electronic_energy = electronic_energy
+      result%xc_energy = xc_energy
+      result%total_energy = electronic_energy + result%nuclear_repulsion
+      result%orbital_energies = energies_a
+      result%orbital_energies_beta = energies_b
+      result%density = density_total
+      result%density_beta = density_b
+      result%occupied = occ_a(:, 1:max(n_alpha, 1))
+      result%occupied_beta = occ_b(:, 1:max(n_beta, 1))
+      result%n_occupied = n_alpha
+      result%n_occupied_beta = n_beta
+      result%spin_squared = spin_contamination(occ_a, occ_b, overlap, n_alpha, n_beta)
+
+      if (verbose) then
+         write (*, '(A,F12.6,A,F12.6,A)') "    <S^2> = ", result%spin_squared, &
+            "   (exact ", 0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
+      end if
+
+      if (.not. result%converged) then
+         call error%set(ERROR_VALIDATION, "cuEST UKS did not converge in the iteration limit")
+      end if
+   end subroutine run_uks_scf
+
+   subroutine set_spin_density(orbitals, n_occ, occupied, density)
+      !! Take the lowest n_occ orbitals of one spin and form D = C C^T
+      real(dp), intent(in) :: orbitals(:, :)
+      integer, intent(in) :: n_occ
+      real(dp), intent(inout) :: occupied(:, :)
+      real(dp), intent(inout) :: density(:, :)
+
+      density = 0.0_dp
+      if (n_occ <= 0) return
+      occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
+      ! One electron per spin orbital, so no factor of two here.
+      call pic_gemm(occupied(:, 1:n_occ), occupied(:, 1:n_occ), density, &
+                    transb='T', alpha=1.0_dp, beta=0.0_dp)
+   end subroutine set_spin_density
+
+   subroutine commutator_error(fock, density, overlap, transform, scratch, ortho_scratch, err)
+      !! X^T (FDS - SDF) X, the DIIS error for one spin channel
+      real(dp), intent(in) :: fock(:, :), density(:, :), overlap(:, :), transform(:, :)
+      real(dp), intent(inout) :: scratch(:, :), ortho_scratch(:, :)
+      real(dp), intent(inout) :: err(:, :)
+
+      integer :: n_mo
+
+      n_mo = size(transform, 2)
+      call pic_gemm(density, overlap, scratch)
+      call pic_gemm(fock, scratch, err)
+      call pic_gemm(density, fock, scratch)
+      call pic_gemm(overlap, scratch, err, alpha=-1.0_dp, beta=1.0_dp)
+
+      call pic_gemm(err, transform, ortho_scratch)
+      call pic_gemm(transform, ortho_scratch, err(1:n_mo, 1:n_mo), transa='T')
+   end subroutine commutator_error
 
 end module mqc_cuest_scf
