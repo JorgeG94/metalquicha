@@ -65,18 +65,31 @@ runs, so configure on a login node.
 
 ### 3. Basis sets
 
-`.gbs` (Gaussian94) is preferred, `.txt` (GAMESS `$DATA`) still works;
-`find_basis_file` picks by what is on disk. Provenance for the bundled sets is in
-`basis_sets/PROVENANCE.md`.
+Three formats are read, and `find_basis_file` takes the first that exists:
+`.json` (Basis Set Exchange), then `.gbs` (Gaussian94), then `.txt` (GAMESS
+`$DATA`). Provenance for the bundled sets is in `basis_sets/PROVENANCE.md`.
 
-Download `.gbs` files from the Basis Set Exchange **with `uncontract_spdf=1`** —
-many sets (STO-3G, 6-31G, cc-pVDZ) ship combined `SP` shells, which neither this
-reader nor cuEST's own helper supports:
+**JSON is the one to use.** It keeps a combined shell's coefficient sets
+separate, so an `SP` shell splits cleanly into an S and a P sharing exponents:
+
+```json
+"angular_momentum": [0, 1],
+"exponents":    ["...", "...", "..."],
+"coefficients": [[s...], [p...]]
+```
+
+Gaussian94 cannot express that, so `.gbs` files must be downloaded pre-split
+with `uncontract_spdf=1` or the reader rejects them. JSON also carries ECP data
+in the same file.
 
 ```bash
-curl "https://www.basissetexchange.org/api/basis/<name>/format/gaussian94/?elements=H,C,N,O&uncontract_spdf=1" \
-    -o basis_sets/<name>.gbs
+curl "https://www.basissetexchange.org/api/basis/<name>/format/json/?elements=H,C,N,O" \
+    -o basis_sets/<name>.json
 ```
+
+The two readers are cross-checked against each other in the test suite: parsing
+def2-SVP from `.json` and from `.gbs` must give identical exponents and
+coefficients to 1e-10.
 
 Orbital ↔ auxiliary pairings used by the validation inputs:
 

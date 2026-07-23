@@ -9,10 +9,12 @@ module mqc_cuest_driver
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
    use mqc_elements, only: element_number_to_symbol
-   use mqc_basis_utils, only: find_basis_file, BASIS_FORMAT_GBS, BASIS_FORMAT_GAMESS
+   use mqc_basis_utils, only: find_basis_file, BASIS_FORMAT_GBS, BASIS_FORMAT_GAMESS, &
+                              BASIS_FORMAT_JSON
    use mqc_basis_reader, only: build_molecular_basis
    use mqc_basis_file_reader, only: basis_file_t, open_basis_file
    use mqc_gbs_reader, only: build_molecular_basis_gbs
+   use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
@@ -212,6 +214,8 @@ contains
       if (error%has_error()) return
 
       select case (basis_format)
+      case (BASIS_FORMAT_JSON)
+         call build_molecular_basis_json(basis_path, element_symbols, mol_basis, error)
       case (BASIS_FORMAT_GBS)
          call build_molecular_basis_gbs(basis_path, element_symbols, mol_basis, error)
       case (BASIS_FORMAT_GAMESS)

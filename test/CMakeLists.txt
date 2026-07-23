@@ -40,6 +40,7 @@ addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
 addtest(mqc_basis_reader)
 addtest(mqc_gbs_reader)
+addtest(mqc_json_basis_reader)
 addtest(mqc_config_roundtrip)
 
 # Only meaningful with the cuEST backend compiled in.
