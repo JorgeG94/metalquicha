@@ -245,6 +245,13 @@ contains
       result%energy%scf = scf%total_energy
       result%has_energy = .true.
 
+      ! The dipole is what IR intensities are built from: the Hessian path
+      ! collects it at every displacement and differences it.
+      if (scf%has_dipole) then
+         result%dipole = scf%dipole
+         result%has_dipole = .true.
+      end if
+
       if (need_gradient) then
          call move_alloc(gradient, result%gradient)
          result%has_gradient = .true.

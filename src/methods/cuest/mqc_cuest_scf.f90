@@ -72,6 +72,8 @@ module mqc_cuest_scf
       real(dp), allocatable :: density_beta(:, :)   !! Beta density alone
       integer :: n_occupied_beta = 0
       real(dp) :: spin_squared = 0.0_dp             !! <S^2>, for spin contamination
+      real(dp) :: dipole(3) = 0.0_dp                !! Electric dipole, a.u.
+      logical :: has_dipole = .false.
    end type scf_result_t
 
 contains
@@ -547,6 +549,8 @@ contains
       result%electronic_energy = electronic_energy
       result%xc_energy = xc_energy
       result%total_energy = electronic_energy + result%nuclear_repulsion
+      call system%compute_dipole(density, result%dipole, error)
+      result%has_dipole = .not. error%has_error()
       result%orbital_energies = orbital_energies
       result%density = density
       ! The gradient needs the occupied orbitals and their energies to form
@@ -842,6 +846,8 @@ contains
       if (.not. result%converged) result%iterations = max_iterations
 
       result%unrestricted = .true.
+      call system%compute_dipole(density_total, result%dipole, error)
+      result%has_dipole = .not. error%has_error()
       result%electronic_energy = electronic_energy
       result%xc_energy = xc_energy
       result%total_energy = electronic_energy + result%nuclear_repulsion

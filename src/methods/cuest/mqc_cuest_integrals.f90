@@ -25,7 +25,7 @@ module mqc_cuest_integrals
    !! symmetric, so that is a no-op. The one non-symmetric array, the occupied
    !! MO coefficients, is stored `(n_ao, n_occ)` here, whose column-major
    !! layout is byte-identical to the row-major `(n_occ, n_ao)` cuEST wants.
-   use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, &
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int32_t, c_int64_t, &
                                           c_size_t, c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -47,6 +47,8 @@ module mqc_cuest_integrals
                     cuestOverlapCompute, cuestOverlapComputeWorkspaceQuery, &
                     cuestKineticCompute, cuestKineticComputeWorkspaceQuery, &
                     cuestPotentialCompute, cuestPotentialComputeWorkspaceQuery, &
+                    cuestMultipoleCompute, cuestMultipoleComputeWorkspaceQuery, &
+                    CUEST_MULTIPOLECOMPUTE_PARAMETERS, &
                     cuestDFCoulombCompute, cuestDFCoulombComputeWorkspaceQuery, &
                     cuestDFSymmetricExchangeCompute, &
                     cuestDFSymmetricExchangeComputeWorkspaceQuery, &
@@ -162,6 +164,7 @@ module mqc_cuest_integrals
       procedure :: compute_coulomb => system_compute_coulomb
       procedure :: compute_exchange => system_compute_exchange
       procedure :: compute_xc => system_compute_xc
+      procedure :: compute_dipole => system_compute_dipole
       procedure :: compute_xc_uks => system_compute_xc_uks
       procedure :: gradient_overlap => system_gradient_overlap
       procedure :: gradient_kinetic => system_gradient_kinetic
@@ -792,6 +795,88 @@ contains
       call fetch_matrix(this, xc_potential, "Vxc", error)
       if (.not. error%has_error()) xc_energy = energy
    end subroutine system_compute_xc
+
+   subroutine system_compute_dipole(this, density, dipole, error)
+      !! Electric dipole moment, in atomic units (electron-Bohr)
+      !!
+      !!   mu = sum_A Z_A (R_A - O)  -  sum_uv D_uv <u| r - O |v>
+      !!
+      !! The electronic term is negative because the electron charge is. The
+      !! origin O is the centre of nuclear charge, which makes the result
+      !! origin-independent for a neutral system and at least well defined for
+      !! a charged one. Note that dmu/dR -- what IR intensities actually need
+      !! -- is origin-independent only for a neutral system.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)   !! Total density, (n_ao, n_ao)
+      real(dp), intent(out) :: dipole(3)      !! mu_x, mu_y, mu_z
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+      integer(c_int32_t), target :: multipole_order(3)
+      real(dp), target :: origin(3)
+      real(dp), allocatable :: component(:, :)
+      real(dp) :: total_charge
+      integer :: icomp, iatom
+
+      dipole = 0.0_dp
+      if (error%has_error()) return
+
+      ! Centre of nuclear charge. charges_host holds -Z, hence the negation.
+      total_charge = -sum(this%charges_host)
+      origin = 0.0_dp
+      if (total_charge > 0.0_dp) then
+         do iatom = 1, int(this%n_atoms)
+            origin = origin - this%charges_host(iatom) &
+                     *this%xyz_host(3*(iatom - 1) + 1:3*iatom)
+         end do
+         origin = origin/total_charge
+      end if
+
+      ! Nuclear term.
+      do iatom = 1, int(this%n_atoms)
+         dipole = dipole - this%charges_host(iatom) &
+                  *(this%xyz_host(3*(iatom - 1) + 1:3*iatom) - origin)
+      end do
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_MULTIPOLECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(multipole)", error)
+      if (error%has_error()) return
+
+      allocate (component(int(this%n_ao), int(this%n_ao)))
+      do icomp = 1, 3
+         ! Exponents of x^l y^m z^n: (1,0,0), (0,1,0), (0,0,1).
+         multipole_order = 0_c_int32_t
+         multipole_order(icomp) = 1_c_int32_t
+
+         call cuest_status_check(cuestMultipoleComputeWorkspaceQuery(this%handle, this%oe_plan, &
+                                                                    params, temporary_desc, &
+                                                                    multipole_order, c_loc(origin), &
+                                                                    this%d_result), &
+                                 "cuestMultipoleComputeWorkspaceQuery", error)
+         if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+         if (.not. error%has_error()) then
+            call cuest_status_check(cuestMultipoleCompute(this%handle, this%oe_plan, params, &
+                                                          temporary_ws, multipole_order, &
+                                                          c_loc(origin), this%d_result), &
+                                    "cuestMultipoleCompute", error)
+         end if
+         call workspace_free(temporary_ws)
+         if (error%has_error()) exit
+
+         call fetch_matrix(this, component, "multipole", error)
+         if (error%has_error()) exit
+         dipole(icomp) = dipole(icomp) - sum(density*component)
+      end do
+      deallocate (component)
+
+      status = cuestParametersDestroy(CUEST_MULTIPOLECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(multipole)", error)
+      if (error%has_error()) dipole = 0.0_dp
+   end subroutine system_compute_dipole
 
    subroutine system_compute_overlap(this, overlap, error)
       !! Overlap matrix S

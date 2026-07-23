@@ -17,7 +17,7 @@ evaluated on the GPU.
 - **Full SCF**: RHF/RKS closed-shell and UHF/UKS open-shell, with density fitting (RI-JK)
 - **DIIS**: commutator (FDS−SDF) DIIS in the orthogonal basis, configurable subspace
 - **Gradients**: analytic, assembled from all five cuEST derivative APIs, restricted and unrestricted
-- **Hessians**: central differences of the analytic gradients, plus frequencies and thermochemistry
+- **Hessians**: central differences of the analytic gradients, plus frequencies, IR intensities and thermochemistry
 - **Fragmented**: energies and gradients through MBE/GMBE, one GPU context per rank
 - **Functionals**: 20 built-ins — SVWN5, BLYP, PBE, M06-L, r2SCAN, B97, B3LYP, B3LYP1, PBE0, M06, M06-2X, HSE06, CAM-B3LYP, LC-ωPBE, LC-ωPBEh, ωB97X, ωB97X-V, B97M-V, ωB97M-V, HF
 - **Hybrids without hardcoding**: exact-exchange fractions are queried from cuEST's XC plan, never tabulated here
@@ -363,11 +363,37 @@ The initial guess is the core Hamiltonian for both spins; the differing alpha
 and beta occupations are what break the symmetry. A converged atomic guess
 would both cut iterations and help difficult radicals.
 
+### Towards Raman
+
+Raman activities need `dalpha/dR`, a third derivative `d3E/dF2dR`. Two routes,
+and the pieces for both are now partly in place:
+
+* **Semi-numerical.** Get `alpha` from the *first* derivative of the dipole with
+  respect to an applied field, `alpha_ij = dmu_i/dF_j` -- six SCFs for the whole
+  tensor, since each returns all three components of mu, against roughly
+  nineteen if the energy were differentiated twice. Then finite-difference
+  `alpha` over nuclear displacements exactly as the Hessian does. A finite field
+  means `H(F) = H_core - F.mu`, and the dipole integrals for that come from the
+  same `cuestMultipoleCompute` used above. Works for every functional.
+* **Analytic (CPHF).** `cuestDFMOIntegralsCompute` returns the three-index DF
+  tensor in the MO basis, so `(ia|jb)` is one contraction away and the orbital
+  Hessian can be built explicitly and solved with LAPACK -- 95 unknowns for
+  water/def2-SVP, no iterative solver needed at fragment sizes. This gives
+  `alpha` without any field-strength tradeoff.
+
+  For DFT it stops there: cuEST exposes the XC *potential* but never the kernel
+  `f_xc`. The user-functional path (`cuestXCNonsymmetricDensityCompute` plus
+  `cuestXCPotentialCompute`) makes it possible, at the cost of hand-writing
+  second functional derivatives per functional. So analytic covers
+  Hartree-Fock and the exact-exchange part of hybrids; the XC part needs the
+  semi-numerical route.
+
+Either way `dalpha/dR` is taken numerically; doing that analytically needs a
+second, geometric response solve on top.
+
 ## Not implemented
 
 - Empirical dispersion. Requesting it errors rather than silently omitting it.
-- Dipoles, and therefore IR intensities alongside a Hessian. cuEST has the
-  multipole entry points; they are not called.
 - ECPs, PCM. cuEST supports both; neither is wired up.
 
 Multi-rank GPU binding is implemented and logged, but has not yet been exercised

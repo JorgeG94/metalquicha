@@ -26,7 +26,8 @@ module mqc_semi_numerical_hessian
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_GENERIC
    use mqc_finite_differences, only: generate_perturbed_geometries, displaced_geometry_t, &
-                                     finite_diff_hessian_from_gradients, DEFAULT_DISPLACEMENT
+                                     finite_diff_hessian_from_gradients, &
+                                     finite_diff_dipole_derivatives, DEFAULT_DISPLACEMENT
    implicit none
    private
 
@@ -43,10 +44,11 @@ contains
 
       type(displaced_geometry_t), allocatable :: forward_geoms(:), backward_geoms(:)
       real(dp), allocatable :: forward_gradients(:, :, :), backward_gradients(:, :, :)
+      real(dp), allocatable :: forward_dipoles(:, :), backward_dipoles(:, :)
       type(calculation_result_t) :: point
       real(dp) :: displacement
       integer :: n_atoms, n_displacements, i
-      logical :: is_verbose
+      logical :: is_verbose, have_dipoles
 
       is_verbose = .false.
       if (present(verbose)) is_verbose = verbose
@@ -65,6 +67,12 @@ contains
       call generate_perturbed_geometries(fragment, displacement, forward_geoms, backward_geoms)
       allocate (forward_gradients(n_displacements, 3, n_atoms))
       allocate (backward_gradients(n_displacements, 3, n_atoms))
+      ! The same displacements give dmu/dR, and so IR intensities, for nothing
+      ! beyond storing the dipole each method already returns.
+      allocate (forward_dipoles(n_displacements, 3), backward_dipoles(n_displacements, 3))
+      forward_dipoles = 0.0_dp
+      backward_dipoles = 0.0_dp
+      have_dipoles = .true.
 
       do i = 1, n_displacements
          call method%calc_gradient(forward_geoms(i)%geometry, point)
@@ -73,6 +81,11 @@ contains
             return
          end if
          forward_gradients(i, :, :) = point%gradient
+         if (point%has_dipole) then
+            forward_dipoles(i, :) = point%dipole
+         else
+            have_dipoles = .false.
+         end if
          call point%destroy()
 
          call method%calc_gradient(backward_geoms(i)%geometry, point)
@@ -81,6 +94,11 @@ contains
             return
          end if
          backward_gradients(i, :, :) = point%gradient
+         if (point%has_dipole) then
+            backward_dipoles(i, :) = point%dipole
+         else
+            have_dipoles = .false.
+         end if
          call point%destroy()
       end do
 
@@ -106,9 +124,17 @@ contains
       end if
       call point%destroy()
 
-      ! No dipole derivatives: the cuEST backend does not compute dipoles yet,
-      ! so IR intensities are unavailable rather than silently zero.
-      result%has_dipole_derivatives = .false.
+      ! Dipole derivatives, hence IR intensities, whenever every displacement
+      ! returned a dipole. A method that does not supply one leaves them
+      ! absent rather than silently zero.
+      if (have_dipoles) then
+         call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
+                                             displacement, result%dipole_derivatives)
+         result%has_dipole_derivatives = .true.
+      else
+         result%has_dipole_derivatives = .false.
+      end if
+      deallocate (forward_dipoles, backward_dipoles)
 
       if (is_verbose) call logger%info("  Hessian assembled")
    end subroutine finite_difference_hessian
