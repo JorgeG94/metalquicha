@@ -19,6 +19,7 @@ module mqc_cuest_driver
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_functionals, only: functional_name_to_id
    use mqc_cuest_scf, only: scf_result_t, run_rhf_scf
+   use mqc_cuest_gradient, only: compute_scf_gradient
    implicit none
    private
 
@@ -50,19 +51,30 @@ module mqc_cuest_driver
 
 contains
 
-   subroutine run_cuest_scf(settings, fragment, result)
+   subroutine run_cuest_scf(settings, fragment, result, want_gradient)
       !! Run a closed-shell cuEST SCF for one fragment
+      !!
+      !! With `want_gradient`, the analytic nuclear gradient is evaluated from
+      !! the converged density before the cuEST objects are torn down -- they
+      !! describe this geometry and this basis, so reusing them is both
+      !! cheaper and safer than rebuilding.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
+      logical, intent(in), optional :: want_gradient
 
       type(cuest_context_t), pointer :: context
       type(cuest_system_t) :: system
       type(scf_result_t) :: scf
       type(molecular_basis_type) :: orbital_basis, auxiliary_basis
       type(error_t) :: error
+      real(dp), allocatable :: gradient(:, :)
       character(len=8), allocatable :: element_symbols(:)
       integer :: iatom, functional_id
+      logical :: need_gradient
+
+      need_gradient = .false.
+      if (present(want_gradient)) need_gradient = want_gradient
 
       ! ---- which functional, if any ----------------------------------------
       if (len_trim(settings%functional) == 0) then
@@ -117,6 +129,11 @@ contains
                           settings%verbose, scf, error)
       end if
 
+      if (need_gradient .and. .not. error%has_error()) then
+         call compute_scf_gradient(system, fragment%element_numbers, fragment%coordinates, &
+                                   scf, gradient, error)
+      end if
+
       call system%destroy()
       call orbital_basis%destroy()
       call auxiliary_basis%destroy()
@@ -128,6 +145,11 @@ contains
 
       result%energy%scf = scf%total_energy
       result%has_energy = .true.
+
+      if (need_gradient) then
+         call move_alloc(gradient, result%gradient)
+         result%has_gradient = .true.
+      end if
    end subroutine run_cuest_scf
 
    subroutine load_basis(basis_name, element_symbols, mol_basis, error)

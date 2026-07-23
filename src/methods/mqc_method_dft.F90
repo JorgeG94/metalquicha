@@ -92,6 +92,22 @@ contains
       type(calculation_result_t), intent(out) :: result
 
 #ifdef MQC_WITH_CUEST
+      call dft_run(this, fragment, result, want_gradient=.false.)
+#else
+      call result%error%set(ERROR_VALIDATION, &
+                            "DFT requires an integral backend; rebuild with MQC_ENABLE_CUEST=ON")
+      result%has_error = .true.
+#endif
+   end subroutine dft_calc_energy
+
+#ifdef MQC_WITH_CUEST
+   subroutine dft_run(this, fragment, result, want_gradient)
+      !! Run a density-fitted Kohn-Sham calculation through cuEST
+      class(dft_method_t), intent(in) :: this
+      type(physical_fragment_t), intent(in) :: fragment
+      type(calculation_result_t), intent(inout) :: result
+      logical, intent(in) :: want_gradient
+
       type(cuest_scf_settings_t) :: settings
 
       if (this%options%use_dispersion) then
@@ -118,13 +134,9 @@ contains
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
 
-      call run_cuest_scf(settings, fragment, result)
-#else
-      call result%error%set(ERROR_VALIDATION, &
-                            "DFT requires an integral backend; rebuild with MQC_ENABLE_CUEST=ON")
-      result%has_error = .true.
+      call run_cuest_scf(settings, fragment, result, want_gradient)
+   end subroutine dft_run
 #endif
-   end subroutine dft_calc_energy
 
    subroutine dft_calc_gradient(this, fragment, result)
       !! Calculate energy gradient using Kohn-Sham DFT
@@ -132,13 +144,13 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      ! Analytic KS gradients need the cuEST *DerivativeCompute entry points,
-      ! an energy-weighted density and the XC grid response; not wired up yet.
-      call this%calc_energy(fragment, result)
-      if (result%has_error) return
-
-      call result%error%set(ERROR_VALIDATION, "DFT gradients are not implemented yet")
+#ifdef MQC_WITH_CUEST
+      call dft_run(this, fragment, result, want_gradient=.true.)
+#else
+      call result%error%set(ERROR_VALIDATION, &
+                            "DFT requires an integral backend; rebuild with MQC_ENABLE_CUEST=ON")
       result%has_error = .true.
+#endif
    end subroutine dft_calc_gradient
 
    subroutine dft_calc_hessian(this, fragment, result)

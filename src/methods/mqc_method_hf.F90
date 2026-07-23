@@ -65,7 +65,7 @@ contains
       type(calculation_result_t), intent(out) :: result
 
 #ifdef MQC_WITH_CUEST
-      call hf_energy_cuest(this, fragment, result)
+      call hf_energy_cuest(this, fragment, result, want_gradient=.false.)
 #else
       call result%error%set(ERROR_VALIDATION, &
                             "Hartree-Fock requires an integral backend; rebuild with "// &
@@ -75,11 +75,12 @@ contains
    end subroutine hf_calc_energy
 
 #ifdef MQC_WITH_CUEST
-   subroutine hf_energy_cuest(this, fragment, result)
+   subroutine hf_energy_cuest(this, fragment, result, want_gradient)
       !! Run a density-fitted RHF calculation through cuEST
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(inout) :: result
+      logical, intent(in) :: want_gradient
 
       type(cuest_scf_settings_t) :: settings
 
@@ -94,7 +95,7 @@ contains
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
 
-      call run_cuest_scf(settings, fragment, result)
+      call run_cuest_scf(settings, fragment, result, want_gradient)
    end subroutine hf_energy_cuest
 #endif
 
@@ -104,14 +105,14 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      ! Analytic HF gradients need the cuEST *DerivativeCompute entry points
-      ! plus an energy-weighted density; not wired up yet.
-      call this%calc_energy(fragment, result)
-      if (result%has_error) return
-
+#ifdef MQC_WITH_CUEST
+      call hf_energy_cuest(this, fragment, result, want_gradient=.true.)
+#else
       call result%error%set(ERROR_VALIDATION, &
-                            "Hartree-Fock gradients are not implemented yet")
+                            "Hartree-Fock requires an integral backend; rebuild with "// &
+                            "MQC_ENABLE_CUEST=ON")
       result%has_error = .true.
+#endif
    end subroutine hf_calc_gradient
 
    subroutine null_hessian(this, fragment, result)

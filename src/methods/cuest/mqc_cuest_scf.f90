@@ -51,6 +51,8 @@ module mqc_cuest_scf
       logical :: converged = .false.          !! Whether both criteria were met
       real(dp), allocatable :: orbital_energies(:)  !! Eigenvalues, Hartree
       real(dp), allocatable :: density(:, :)        !! Total density (n_ao, n_ao)
+      real(dp), allocatable :: occupied(:, :)       !! Occupied MOs (n_ao, n_occ)
+      integer :: n_occupied = 0                     !! Doubly occupied orbital count
    end type scf_result_t
 
 contains
@@ -397,6 +399,10 @@ contains
       result%total_energy = electronic_energy + result%nuclear_repulsion
       result%orbital_energies = orbital_energies
       result%density = density
+      ! The gradient needs the occupied orbitals and their energies to form
+      ! the energy-weighted density, so hand them back rather than recomputing.
+      result%occupied = occupied(:, 1:n_occ)
+      result%n_occupied = n_occ
 
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "cuEST SCF did not converge in the iteration limit")

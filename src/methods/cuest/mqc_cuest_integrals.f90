@@ -64,6 +64,17 @@ module mqc_cuest_integrals
                     cuestXCIntPlanCreate, cuestXCIntPlanCreateWorkspaceQuery, &
                     cuestXCIntPlanDestroy, &
                     cuestXCPotentialRKSCompute, cuestXCPotentialRKSComputeWorkspaceQuery, &
+                    cuestOverlapDerivativeCompute, cuestOverlapDerivativeComputeWorkspaceQuery, &
+                    cuestKineticDerivativeCompute, cuestKineticDerivativeComputeWorkspaceQuery, &
+                    cuestPotentialDerivativeCompute, cuestPotentialDerivativeComputeWorkspaceQuery, &
+                    cuestDFSymmetricDerivativeCompute, &
+                    cuestDFSymmetricDerivativeComputeWorkspaceQuery, &
+                    cuestXCDerivativeRKSCompute, cuestXCDerivativeRKSComputeWorkspaceQuery, &
+                    CUEST_OVERLAPDERIVATIVECOMPUTE_PARAMETERS, &
+                    CUEST_KINETICDERIVATIVECOMPUTE_PARAMETERS, &
+                    CUEST_POTENTIALDERIVATIVECOMPUTE_PARAMETERS, &
+                    CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, &
+                    CUEST_XCDERIVATIVERKSCOMPUTE_PARAMETERS, &
                     CUEST_MOLECULARGRID_PARAMETERS, CUEST_XCINTPLAN_PARAMETERS, &
                     CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, &
                     CUEST_XCINTPLAN, CUEST_XCINTPLAN_EXCHANGE_SCALE, &
@@ -129,6 +140,8 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_matrix = c_null_ptr  !! Density
       type(c_ptr) :: d_c_occ = c_null_ptr   !! Occupied MO coefficients
       type(c_ptr) :: d_result = c_null_ptr  !! Whichever matrix is being built
+      type(c_ptr) :: d_gradient = c_null_ptr        !! natom x 3 gradient output
+      type(c_ptr) :: d_charge_gradient = c_null_ptr !! Hellmann-Feynman half
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy
@@ -138,6 +151,11 @@ module mqc_cuest_integrals
       procedure :: compute_coulomb => system_compute_coulomb
       procedure :: compute_exchange => system_compute_exchange
       procedure :: compute_xc => system_compute_xc
+      procedure :: gradient_overlap => system_gradient_overlap
+      procedure :: gradient_kinetic => system_gradient_kinetic
+      procedure :: gradient_potential => system_gradient_potential
+      procedure :: gradient_two_electron => system_gradient_two_electron
+      procedure :: gradient_xc => system_gradient_xc
    end type cuest_system_t
 
 contains
@@ -242,6 +260,15 @@ contains
       end if
       this%d_matrix = context%scratch_density%ptr
       this%d_result = context%scratch_result%ptr
+
+      call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
+      call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)
+      if (error%has_error()) then
+         call error%add_context("mqc_cuest_integrals:create")
+         return
+      end if
+      this%d_gradient = context%scratch_gradient%ptr
+      this%d_charge_gradient = context%scratch_charge_gradient%ptr
 
       if (this%n_occ > 0) then
          call context%scratch_c_occ%ensure(this%n_ao*this%n_occ, &
@@ -866,6 +893,371 @@ contains
       deallocate (flat)
    end subroutine fetch_matrix
 
+   ! ==========================================================================
+   !  Nuclear derivatives
+   !
+   !  cuEST never exposes raw derivative integrals: the contraction with a
+   !  density (or with occupied orbitals) happens inside the call and the
+   !  result is a natom x 3 gradient. Every one of these OVERWRITES its output
+   !  buffer rather than accumulating, so the caller sums the contributions.
+   ! ==========================================================================
+
+   subroutine fetch_gradient(this, gradient, label, error)
+      !! Synchronize and pull an natom x 3 gradient back to the host
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(out) :: gradient(:, :)   !! (3, n_atoms)
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat(:)
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      call device_sync(label, error)
+      if (error%has_error()) return
+
+      allocate (flat(3*this%n_atoms))
+      call copy_to_host(flat, this%d_gradient, label, error)
+      if (.not. error%has_error()) then
+         ! cuEST lays the gradient out atom-major (natom x 3 row-major), which
+         ! is byte-identical to a Fortran (3, natom) array.
+         gradient = reshape(flat, [3, int(this%n_atoms)])
+      else
+         gradient = 0.0_dp
+      end if
+      deallocate (flat)
+   end subroutine fetch_gradient
+
+   subroutine system_gradient_overlap(this, weighted_density, gradient, error)
+      !! Overlap (Pulay) derivative contracted with a matrix
+      !!
+      !! Pass the energy-weighted density; the caller subtracts the result,
+      !! since the Pulay term enters the gradient with a minus sign.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: weighted_density(:, :)  !! (n_ao, n_ao)
+      real(dp), intent(out) :: gradient(:, :)         !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      call stage_matrix(this, weighted_density, "energy-weighted density", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_OVERLAPDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(overlap derivative)", error)
+      if (error%has_error()) return
+
+      call cuest_status_check(cuestOverlapDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
+                                                                         params, temporary_desc, &
+                                                                         this%d_matrix, this%d_gradient), &
+                              "cuestOverlapDerivativeComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestOverlapDerivativeCompute(this%handle, this%oe_plan, params, &
+                                                               temporary_ws, this%d_matrix, &
+                                                               this%d_gradient), &
+                                 "cuestOverlapDerivativeCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_OVERLAPDERIVATIVECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(overlap derivative)", error)
+
+      call fetch_gradient(this, gradient, "dS/dR", error)
+   end subroutine system_gradient_overlap
+
+   subroutine system_gradient_kinetic(this, density, gradient, error)
+      !! Kinetic energy derivative contracted with the total density
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)    !! (n_ao, n_ao)
+      real(dp), intent(out) :: gradient(:, :)  !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      call stage_matrix(this, density, "density (kinetic gradient)", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_KINETICDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(kinetic derivative)", error)
+      if (error%has_error()) return
+
+      call cuest_status_check(cuestKineticDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
+                                                                         params, temporary_desc, &
+                                                                         this%d_matrix, this%d_gradient), &
+                              "cuestKineticDerivativeComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestKineticDerivativeCompute(this%handle, this%oe_plan, params, &
+                                                               temporary_ws, this%d_matrix, &
+                                                               this%d_gradient), &
+                                 "cuestKineticDerivativeCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_KINETICDERIVATIVECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(kinetic derivative)", error)
+
+      call fetch_gradient(this, gradient, "dT/dR", error)
+   end subroutine system_gradient_kinetic
+
+   subroutine system_gradient_potential(this, density, gradient, error)
+      !! Nuclear attraction derivative, both basis-centre and Hellmann-Feynman
+      !!
+      !! The two pieces are returned separately -- the derivative with respect
+      !! to the AO centres and the derivative with respect to the nuclear
+      !! positions themselves -- and both belong in the total gradient.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)    !! (n_ao, n_ao)
+      real(dp), intent(out) :: gradient(:, :)  !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+      real(dp), allocatable :: charge_gradient(:, :)
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      call stage_matrix(this, density, "density (potential gradient)", error)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_POTENTIALDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(potential derivative)", error)
+      if (error%has_error()) return
+
+      call cuest_status_check(cuestPotentialDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
+                                                                           params, temporary_desc, &
+                                                                           this%n_atoms, this%xyz_device, &
+                                                                           this%charges_device, this%d_matrix, &
+                                                                           this%d_gradient, &
+                                                                           this%d_charge_gradient), &
+                              "cuestPotentialDerivativeComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPotentialDerivativeCompute(this%handle, this%oe_plan, params, &
+                                                                 temporary_ws, this%n_atoms, &
+                                                                 this%xyz_device, this%charges_device, &
+                                                                 this%d_matrix, this%d_gradient, &
+                                                                 this%d_charge_gradient), &
+                                 "cuestPotentialDerivativeCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_POTENTIALDERIVATIVECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(potential derivative)", error)
+
+      call fetch_gradient(this, gradient, "dV/dR (basis)", error)
+      if (error%has_error()) return
+
+      ! Pull the Hellmann-Feynman half from its own buffer and add it in.
+      allocate (charge_gradient(3, this%n_atoms))
+      call fetch_named_gradient(this, this%d_charge_gradient, charge_gradient, &
+                                "dV/dR (charges)", error)
+      if (.not. error%has_error()) gradient = gradient + charge_gradient
+      deallocate (charge_gradient)
+   end subroutine system_gradient_potential
+
+   subroutine system_gradient_two_electron(this, half_density, c_occ, gradient, error)
+      !! Density-fitted Coulomb + exchange derivative
+      !!
+      !! cuEST defines E_JK = s_D E_J[D] + s_C E_K[C] and differentiates that.
+      !! For closed-shell RKS the intended convention -- straight from the
+      !! header -- is D = sum_i C_i C_i (the HALF density, not the total one
+      !! the SCF carries), s_D = 2 and s_C = -1.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: half_density(:, :)  !! (n_ao, n_ao), = D_total/2
+      real(dp), intent(in) :: c_occ(:, :)         !! (n_ao, n_occ)
+      real(dp), intent(out) :: gradient(:, :)     !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      real(dp), parameter :: DENSITY_SCALE = 2.0_dp
+      real(dp), parameter :: RKS_EXCHANGE_SCALE = -1.0_dp
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, coefficient_ptr
+      integer(c_int) :: status
+      integer(c_int64_t) :: occupancies(1)
+      integer(c_int64_t) :: n_matrices
+      real(dp) :: coefficient_scale
+      real(dp), allocatable :: flat(:)
+
+      if (error%has_error()) then
+         gradient = 0.0_dp
+         return
+      end if
+
+      call stage_matrix(this, half_density, "half density (JK gradient)", error)
+      if (error%has_error()) return
+
+      ! A pure functional has no exchange term; the header allows passing zero
+      ! coefficient matrices in that case.
+      if (this%needs_exchange) then
+         allocate (flat(size(c_occ)))
+         flat = reshape(c_occ, [size(c_occ)])
+         call copy_to_device(this%d_c_occ, flat, "occupied MOs (JK gradient)", error)
+         deallocate (flat)
+         if (error%has_error()) return
+         n_matrices = 1_c_int64_t
+         occupancies(1) = this%n_occ
+         coefficient_ptr = this%d_c_occ
+         coefficient_scale = RKS_EXCHANGE_SCALE
+      else
+         n_matrices = 0_c_int64_t
+         occupancies(1) = 0_c_int64_t
+         coefficient_ptr = c_null_ptr
+         coefficient_scale = 0.0_dp
+      end if
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(DF derivative)", error)
+      if (error%has_error()) return
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      call cuest_status_check(cuestDFSymmetricDerivativeComputeWorkspaceQuery(this%handle, this%df_plan, &
+                                                                             params, variable_buffer, &
+                                                                             temporary_desc, DENSITY_SCALE, &
+                                                                             this%d_matrix, coefficient_scale, &
+                                                                             n_matrices, occupancies, &
+                                                                             coefficient_ptr, this%d_gradient), &
+                              "cuestDFSymmetricDerivativeComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestDFSymmetricDerivativeCompute(this%handle, this%df_plan, params, &
+                                                                   variable_buffer, temporary_ws, &
+                                                                   DENSITY_SCALE, this%d_matrix, &
+                                                                   coefficient_scale, n_matrices, &
+                                                                   occupancies, coefficient_ptr, &
+                                                                   this%d_gradient), &
+                                 "cuestDFSymmetricDerivativeCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_DFSYMMETRICDERIVATIVECOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(DF derivative)", error)
+
+      call fetch_gradient(this, gradient, "dE_JK/dR", error)
+   end subroutine system_gradient_two_electron
+
+   subroutine system_gradient_xc(this, c_occ, gradient, error)
+      !! Exchange-correlation derivative at fixed grid
+      !!
+      !! Complete for cuEST's built-in functionals: the grid-weight (Becke
+      !! partition) terms are included here. The separate
+      !! cuestXCGridDerivativeCompute serves the user-supplied-functional
+      !! path, where the caller evaluates the XC energy density itself.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ(:, :)      !! (n_ao, n_occ)
+      real(dp), intent(out) :: gradient(:, :)  !! (3, n_atoms)
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params
+      integer(c_int) :: status
+      real(dp), allocatable :: flat(:)
+
+      gradient = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc) return
+
+      allocate (flat(size(c_occ)))
+      flat = reshape(c_occ, [size(c_occ)])
+      call copy_to_device(this%d_c_occ, flat, "occupied MOs (XC gradient)", error)
+      deallocate (flat)
+      if (error%has_error()) return
+
+      params = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_XCDERIVATIVERKSCOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(RKS XC derivative)", error)
+      if (error%has_error()) return
+
+      variable_buffer%hostBufferSizeInBytes = 0_c_size_t
+      variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
+
+      call cuest_status_check(cuestXCDerivativeRKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
+                                                                       params, variable_buffer, &
+                                                                       temporary_desc, this%n_occ, &
+                                                                       this%d_c_occ, this%d_gradient), &
+                              "cuestXCDerivativeRKSComputeWorkspaceQuery", error)
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestXCDerivativeRKSCompute(this%handle, this%xc_plan, params, &
+                                                             variable_buffer, temporary_ws, this%n_occ, &
+                                                             this%d_c_occ, this%d_gradient), &
+                                 "cuestXCDerivativeRKSCompute", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      status = cuestParametersDestroy(CUEST_XCDERIVATIVERKSCOMPUTE_PARAMETERS, params)
+      call cuest_status_check(status, "cuestParametersDestroy(RKS XC derivative)", error)
+
+      call fetch_gradient(this, gradient, "dExc/dR", error)
+   end subroutine system_gradient_xc
+
+   subroutine stage_matrix(this, matrix, label, error)
+      !! Copy an n_ao x n_ao host matrix into the shared device input buffer
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: matrix(:, :)
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat(:)
+
+      allocate (flat(size(matrix)))
+      flat = reshape(matrix, [size(matrix)])
+      call copy_to_device(this%d_matrix, flat, label, error)
+      deallocate (flat)
+   end subroutine stage_matrix
+
+   subroutine fetch_named_gradient(this, device_ptr, gradient, label, error)
+      !! Pull an natom x 3 gradient from an explicitly named device buffer
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: device_ptr
+      real(dp), intent(out) :: gradient(:, :)
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat(:)
+
+      gradient = 0.0_dp
+      if (error%has_error()) return
+
+      allocate (flat(3*this%n_atoms))
+      call copy_to_host(flat, device_ptr, label, error)
+      if (.not. error%has_error()) gradient = reshape(flat, [3, int(this%n_atoms)])
+      deallocate (flat)
+   end subroutine fetch_named_gradient
+
    subroutine system_destroy(this)
       !! Release every cuEST object and device buffer, in reverse creation order
       !!
@@ -878,6 +1270,8 @@ contains
       this%d_matrix = c_null_ptr
       this%d_c_occ = c_null_ptr
       this%d_result = c_null_ptr
+      this%d_gradient = c_null_ptr
+      this%d_charge_gradient = c_null_ptr
       this%xyz_device = c_null_ptr
       this%charges_device = c_null_ptr
 

@@ -61,6 +61,8 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_c_occ    !! Occupied MO coefficients
       type(device_pool_t) :: scratch_xyz      !! Atom coordinates
       type(device_pool_t) :: scratch_charges  !! Nuclear charges
+      type(device_pool_t) :: scratch_gradient !! natom x 3 gradient output
+      type(device_pool_t) :: scratch_charge_gradient !! Hellmann-Feynman half
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -160,6 +162,8 @@ contains
       call this%scratch_c_occ%release()
       call this%scratch_xyz%release()
       call this%scratch_charges%release()
+      call this%scratch_gradient%release()
+      call this%scratch_charge_gradient%release()
 
       if (c_associated(this%handle)) status = cuestDestroy(this%handle)
       this%handle = c_null_ptr

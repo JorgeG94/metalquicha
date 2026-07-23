@@ -128,6 +128,14 @@ add_dependencies(${main_lib} jsonfortran)
 
 add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
 
+# Finite-difference check on the analytic gradient. Not a ctest case: it needs
+# a GPU of sm_80 or newer, so it cannot run in CI or on a login node.
+if(MQC_ENABLE_CUEST)
+  add_executable(check_gradient ${PROJECT_SOURCE_DIR}/validation/check_gradient.f90)
+  target_include_directories(check_gradient PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_gradient PRIVATE ${main_lib})
+endif()
+
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})
 
