@@ -1,7 +1,7 @@
 target_sources(
   ${main_lib}
   PRIVATE # Method implementations
-          mqc_method_base.f90 mqc_method_config.f90 mqc_method_hf.F90
+          mqc_method_base.f90 mqc_semi_numerical_hessian.f90 mqc_method_config.f90 mqc_method_hf.F90
           mqc_method_dft.F90 mqc_method_mcscf.f90)
 
 if(MQC_ENABLE_TBLITE)

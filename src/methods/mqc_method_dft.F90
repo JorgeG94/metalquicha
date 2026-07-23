@@ -19,6 +19,7 @@ module mqc_method_dft
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_semi_numerical_hessian, only: finite_difference_hessian
 #ifdef MQC_WITH_CUEST
    use mqc_cuest_driver, only: cuest_scf_settings_t, run_cuest_scf
 #endif
@@ -157,13 +158,12 @@ contains
    end subroutine dft_calc_gradient
 
    subroutine dft_calc_hessian(this, fragment, result)
-      !! Placeholder for Hessian calculation
+      !! Hessian by central differences of the analytic gradients
       class(dft_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      call result%error%set(ERROR_VALIDATION, "DFT Hessians are not implemented yet")
-      result%has_error = .true.
+      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose)
    end subroutine dft_calc_hessian
 
 end module mqc_method_dft

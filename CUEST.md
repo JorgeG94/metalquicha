@@ -15,9 +15,20 @@ FC=mpifort CC=mpicc cmake -B build \
 cmake --build build -j
 ```
 
-Only the cuEST shared library is needed: the Fortran bindings under
-`src/cuest_bindings/` are pre-generated and vendored, so the headers are not
-required to build.
+Only the cuEST shared library is needed: the Fortran bindings are
+pre-generated, so the headers are not required to build.
+
+The bindings come from the vendored copy under `src/cuest_bindings/` by
+default. To pull them from upstream instead:
+
+```sh
+cmake -B build -DMQC_CUEST_BINDINGS=fetch -DMQC_CUEST_BINDINGS_TAG=main ...
+```
+
+which clones [mod_cuest](https://github.com/JorgeG94/mod_cuest) at configure
+time. The sources are identical either way -- the vendored copy is a straight
+copy of them. Fetching needs network access when CMake runs, so configure on a
+login node.
 
 **cuEST ships GPU code for sm_80 and newer only.** It compiles and links
 anywhere, but on an older card -- including the Gadi login node's V100 --
@@ -35,8 +46,13 @@ functional = pbe         ! dft only
 end
 ```
 
-`driver type = Gradient` gives analytic gradients. Everything works fragmented:
-set `%fragmentation` as usual and each subsystem is evaluated on the GPU.
+`driver type = Gradient` gives analytic gradients, and `type = Hessian` gives a
+Hessian from central differences of those gradients -- semi-numerical, so only
+one derivative is taken numerically and the accuracy is far better than
+differencing energies twice. It costs 6N gradient evaluations, i.e. 6N SCFs.
+
+Everything works fragmented: set `%fragmentation` as usual and each subsystem
+is evaluated on the GPU.
 
 Twenty functionals are available (SVWN5, BLYP, PBE, M06-L, r2SCAN, B97, B3LYP,
 PBE0, M06, M06-2X, HSE06, CAM-B3LYP, LC-wPBE, wB97X, wB97X-V, B97M-V, wB97M-V,
@@ -139,10 +155,10 @@ density the SCF carries; the finite-difference check exists largely to catch tha
 ## Not implemented
 
 - Open shell (UKS). Odd electron counts error out rather than guessing.
-- Hessians. Finite-differencing the analytic gradient is the obvious route, and
-  metalquicha already distributes displacements across ranks.
 - Empirical dispersion. Requesting it errors rather than silently omitting it.
 - ECPs, PCM. cuEST supports both; neither is wired up.
+- Dipoles, and therefore IR intensities alongside a Hessian. cuEST has the
+  multipole entry points; they are not called.
 
 Multi-rank GPU binding is implemented -- each rank binds to
 `mod(node_local_rank, device_count)` and logs which device it took -- but has

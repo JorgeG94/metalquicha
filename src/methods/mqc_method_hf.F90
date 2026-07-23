@@ -15,6 +15,7 @@ module mqc_method_hf
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_semi_numerical_hessian, only: finite_difference_hessian
 #ifdef MQC_WITH_CUEST
    use mqc_cuest_driver, only: cuest_scf_settings_t, run_cuest_scf
 #endif
@@ -55,7 +56,7 @@ module mqc_method_hf
    contains
       procedure :: calc_energy => hf_calc_energy
       procedure :: calc_gradient => hf_calc_gradient
-      procedure :: calc_hessian => null_hessian  !! Placeholder for Hessian calculation
+      procedure :: calc_hessian => hf_calc_hessian
    end type hf_method_t
 
 contains
@@ -118,15 +119,13 @@ contains
 #endif
    end subroutine hf_calc_gradient
 
-   subroutine null_hessian(this, fragment, result)
-      !! Placeholder for Hessian calculation
+   subroutine hf_calc_hessian(this, fragment, result)
+      !! Hessian by central differences of the analytic gradients
       class(hf_method_t), intent(in) :: this
       type(physical_fragment_t), intent(in) :: fragment
       type(calculation_result_t), intent(out) :: result
 
-      call result%error%set(ERROR_VALIDATION, &
-                            "Hartree-Fock Hessians are not implemented yet")
-      result%has_error = .true.
-   end subroutine null_hessian
+      call finite_difference_hessian(this, fragment, result, verbose=this%options%verbose)
+   end subroutine hf_calc_hessian
 
 end module mqc_method_hf

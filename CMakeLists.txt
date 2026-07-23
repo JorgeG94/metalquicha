@@ -28,6 +28,13 @@ option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
     CACHE PATH "Root of the unpacked libcuest-<ver>-archive (needs lib/)")
+set(MQC_CUEST_BINDINGS
+    "vendored"
+    CACHE STRING "Where the cuEST Fortran bindings come from: vendored | fetch")
+set_property(CACHE MQC_CUEST_BINDINGS PROPERTY STRINGS vendored fetch)
+set(MQC_CUEST_BINDINGS_TAG
+    "main"
+    CACHE STRING "Git tag/branch of mod_cuest when MQC_CUEST_BINDINGS=fetch")
 mark_as_advanced(MQC_ENABLE_LIBCINT)
 
 add_library(${main_lib} STATIC)
