@@ -25,7 +25,7 @@ if [ ! -x "$MQC" ]; then
     exit 1
 fi
 
-INPUTS="hf_water_sto-3g hf_water_cc-pvdz hf_water_def2-svp uhf_oh
+INPUTS="hf_water_sto-3g hf_water_cc-pvdz hf_water_def2-svp uhf_oh uhf_o2
         dft_water_svwn5 dft_water_pbe dft_water_b3lyp dft_water_pbe0"
 for name in $INPUTS; do
     python3 mqc_prep.py "validation/inputs/$name.json" > /dev/null || exit 1
@@ -48,6 +48,7 @@ run_one "HF/cc-pVDZ"     hf_water_cc-pvdz  "-76.027"
 run_one "HF/def2-SVP"    hf_water_def2-svp "-75.961"
 echo "--- Open shell -------------------------------------------------------"
 run_one "UHF/def2-SVP OH"  uhf_oh            "-75.325"
+run_one "UHF/def2-SVP O2"  uhf_o2            "-149.490"
 echo "--- DFT: functional ladder, def2-SVP ---------------------------------"
 run_one "SVWN5/def2-SVP"  dft_water_svwn5  "-75.795"
 run_one "PBE/def2-SVP"    dft_water_pbe    "-76.272"

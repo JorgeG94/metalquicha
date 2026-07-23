@@ -201,14 +201,18 @@ approximation — and the standard ~0.90 scaling factor recovers experiment.
 
 ### Open shell
 
-OH radical, def2-SVP, doublet:
+UHF/def2-SVP:
 
-| | energy (Ha) | `<S^2>` |
-|---|---|---|
-| UHF | -75.325060 | 0.7548 (exact 0.75) |
+| system | multiplicity | energy (Ha) | `<S^2>` (exact) |
+|---|---|---|---|
+| OH radical | 2 | -75.325060 | 0.7548 (0.75) |
+| O2 | 3 | -149.490204 | 2.0338 (2.00) |
 
-Implied D_e(H-OH) of 86.5 kcal/mol against an experimental ~125 -- the right
-size for Hartree-Fock, which underbinds.
+OH implies D_e(H-OH) = 86.5 kcal/mol against an experimental ~125, the right
+size for Hartree-Fock underbinding. O2 implies ~1 eV against an experimental
+5.2 eV, which is Hartree-Fock's best-known failure: O2 has multireference
+character a single determinant cannot capture. Reproducing a known failure
+correctly is as much a check as reproducing a known success.
 
 This one is also a cautionary tale about initial guesses. With a core guess the
 same calculation converges tidily, with a respectable `<S^2>` of 0.7584, to
