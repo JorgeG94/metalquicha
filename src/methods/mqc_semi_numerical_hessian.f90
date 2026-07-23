@@ -122,6 +122,10 @@ contains
          result%gradient = point%gradient
          result%has_gradient = .true.
       end if
+      if (point%has_dipole) then
+         result%dipole = point%dipole
+         result%has_dipole = .true.
+      end if
       call point%destroy()
 
       ! Dipole derivatives, hence IR intensities, whenever every displacement
@@ -131,6 +135,7 @@ contains
          call finite_diff_dipole_derivatives(n_atoms, forward_dipoles, backward_dipoles, &
                                              displacement, result%dipole_derivatives)
          result%has_dipole_derivatives = .true.
+         call report_translational_sum_rule(result%dipole_derivatives, fragment%charge, is_verbose)
       else
          result%has_dipole_derivatives = .false.
       end if
@@ -138,6 +143,60 @@ contains
 
       if (is_verbose) call logger%info("  Hessian assembled")
    end subroutine finite_difference_hessian
+
+   subroutine report_translational_sum_rule(dipole_derivatives, charge, verbose)
+      !! Check the translational sum rule on the dipole derivatives
+      !!
+      !!   sum_A  d(mu_k)/d(R_{A,k'})  =  Q * delta_{k,k'}
+      !!
+      !! Rigid translation of the whole molecule shifts every nucleus and the
+      !! whole electron cloud together, so the dipole changes only by Q times
+      !! the shift -- zero for a neutral system. It is a reference-free test of
+      !! the dipole derivatives: a violation means dmu/dR is wrong, and shows up
+      !! as spurious IR intensity on the translational modes.
+      real(dp), intent(in) :: dipole_derivatives(:, :)  !! (3, 3*n_atoms)
+      integer, intent(in) :: charge
+      logical, intent(in) :: verbose
+
+      real(dp) :: sums(3, 3), residual
+      integer :: n_atoms, iatom, k, kp
+      character(len=96) :: line
+
+      n_atoms = size(dipole_derivatives, 2)/3
+      sums = 0.0_dp
+      do iatom = 1, n_atoms
+         do kp = 1, 3
+            do k = 1, 3
+               sums(k, kp) = sums(k, kp) + dipole_derivatives(k, 3*(iatom - 1) + kp)
+            end do
+         end do
+      end do
+
+      ! Expected: charge on the diagonal, zero off it. Total nuclear charge and
+      ! electron count balance to `charge` (in atomic units the dipole gradient
+      ! sum rule uses the total molecular charge).
+      residual = 0.0_dp
+      do kp = 1, 3
+         do k = 1, 3
+            if (k == kp) then
+               residual = max(residual, abs(sums(k, kp) - real(charge, dp)))
+            else
+               residual = max(residual, abs(sums(k, kp)))
+            end if
+         end do
+      end do
+
+      if (residual > 1.0e-4_dp) then
+         write (line, '(a,es10.2,a)') &
+            "IR: dipole-derivative translational sum rule off by ", residual, &
+            " a.u. -- intensities may be unreliable"
+         call logger%warning(trim(line))
+      else if (verbose) then
+         write (line, '(a,es10.2,a)') &
+            "IR: dipole-derivative translational sum rule satisfied to ", residual, " a.u."
+         call logger%info(trim(line))
+      end if
+   end subroutine report_translational_sum_rule
 
    subroutine fail(result, point, direction, index)
       !! Propagate a failed displacement outward with enough context to locate it
