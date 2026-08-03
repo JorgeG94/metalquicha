@@ -194,7 +194,7 @@ contains
       call system%destroy()
 
       if (error%has_error()) then
-         call error%add_context("atomic guess: free atom Z=" // trim(int_to_string(atomic_number)))
+         call error%add_context("atomic guess: free atom Z="//trim(int_to_string(atomic_number)))
          return
       end if
 

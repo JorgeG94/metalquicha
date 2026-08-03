@@ -70,15 +70,16 @@ endif()
 #
 # Only the shared library is needed to build: the Fortran bindings under
 # src/cuest_bindings are pre-generated and vendored, so the cuEST headers are
-# not required here. Linking libcuest.so by full path makes CMake set the
-# rpath for us.
+# not required here. Linking libcuest.so by full path makes CMake set the rpath
+# for us.
 #
 # Runtime note: cuEST ships GPU code for sm_80 and newer only. It compiles and
 # links anywhere, but on an older card (Volta/V100, e.g. the Gadi login node)
 # cuestCreate returns CUEST_STATUS_UNSUPPORTED_ARCHITECTURE.
 if(MQC_ENABLE_CUEST)
   if(NOT CUEST_ROOT)
-    message(FATAL_ERROR "MQC_ENABLE_CUEST=ON requires -DCUEST_ROOT=<cuest archive>")
+    message(
+      FATAL_ERROR "MQC_ENABLE_CUEST=ON requires -DCUEST_ROOT=<cuest archive>")
   endif()
   find_library(
     CUEST_LIBRARY
@@ -104,8 +105,8 @@ find_package(
 add_subdirectory(src)
 
 # The cuEST backend lives outside src/ on purpose: the fpm build globs all of
-# src/, and fpm cannot link the cuEST binary library, so fpm builds the
-# CPU/xTB path only. CMake adds the backend explicitly here.
+# src/, and fpm cannot link the cuEST binary library, so fpm builds the CPU/xTB
+# path only. CMake adds the backend explicitly here.
 if(MQC_ENABLE_CUEST)
   add_subdirectory(cuest_backend)
 endif()
@@ -133,11 +134,13 @@ add_dependencies(${main_lib} jsonfortran)
 
 add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
 
-# Finite-difference check on the analytic gradient. Not a ctest case: it needs
-# a GPU of sm_80 or newer, so it cannot run in CI or on a login node.
+# Finite-difference check on the analytic gradient. Not a ctest case: it needs a
+# GPU of sm_80 or newer, so it cannot run in CI or on a login node.
 if(MQC_ENABLE_CUEST)
-  add_executable(check_gradient ${PROJECT_SOURCE_DIR}/validation/check_gradient.f90)
-  target_include_directories(check_gradient PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  add_executable(check_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_gradient.f90)
+  target_include_directories(check_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_gradient PRIVATE ${main_lib})
 endif()
 

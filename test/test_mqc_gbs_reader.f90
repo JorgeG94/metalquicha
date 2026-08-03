@@ -82,7 +82,7 @@ contains
       call read_gbs_element(TEST_FILE, "H", atom_basis, parse_error)
       call remove_test_file()
 
-      call check(error, .not. parse_error%has_error(), "parsing H should succeed")
+      call check(error,.not. parse_error%has_error(), "parsing H should succeed")
       if (allocated(error)) return
 
       call check(error, atom_basis%nshells, 3, "H should have 3 shells (2S + 1P)")
@@ -115,7 +115,7 @@ contains
       call read_gbs_element(TEST_FILE, "O", atom_basis, parse_error)
       call remove_test_file()
 
-      call check(error, .not. parse_error%has_error(), "parsing O should succeed")
+      call check(error,.not. parse_error%has_error(), "parsing O should succeed")
       if (allocated(error)) return
 
       call check(error, atom_basis%nshells, 2, "O should have 2 shells")
@@ -154,7 +154,7 @@ contains
       call build_molecular_basis_gbs(TEST_FILE, symbols, mol_basis, parse_error)
       call remove_test_file()
 
-      call check(error, .not. parse_error%has_error(), "building water basis should succeed")
+      call check(error,.not. parse_error%has_error(), "building water basis should succeed")
       if (allocated(error)) return
 
       call check(error, mol_basis%nelements, 3, "one basis entry per atom")
@@ -187,7 +187,7 @@ contains
 
       call normalized_coefficients(0, exponents, coefficients, 1.0_dp, normalized, norm_error)
 
-      call check(error, .not. norm_error%has_error(), "s-shell normalization should succeed")
+      call check(error,.not. norm_error%has_error(), "s-shell normalization should succeed")
       if (allocated(error)) return
 
       expected = (2.0_dp*exponents(1)/PI)**0.75_dp
@@ -209,7 +209,7 @@ contains
 
       call normalized_coefficients(1, exponents, coefficients, 1.0_dp, normalized, norm_error)
 
-      call check(error, .not. norm_error%has_error(), "p-shell normalization should succeed")
+      call check(error,.not. norm_error%has_error(), "p-shell normalization should succeed")
       if (allocated(error)) return
 
       expected = 2.0_dp*sqrt(exponents(1))*(2.0_dp*exponents(1)/PI)**0.75_dp

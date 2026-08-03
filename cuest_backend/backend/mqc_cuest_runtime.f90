@@ -11,8 +11,8 @@ module mqc_cuest_runtime
    !! *persistent* workspace must outlive the object it created; the
    !! *temporary* one can be freed immediately afterwards.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, &
-                                          c_size_t, c_intptr_t, c_double, c_loc, &
-                                          c_associated
+                                                                             c_size_t, c_intptr_t, c_double, c_loc, &
+                                                                             c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, CUEST_STATUS_SUCCESS

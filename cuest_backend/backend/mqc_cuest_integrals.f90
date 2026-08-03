@@ -26,7 +26,7 @@ module mqc_cuest_integrals
    !! MO coefficients, is stored `(n_ao, n_occ)` here, whose column-major
    !! layout is byte-identical to the row-major `(n_occ, n_ao)` cuEST wants.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int32_t, c_int64_t, &
-                                          c_size_t, c_double, c_loc, c_associated
+                                                                             c_size_t, c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
@@ -357,10 +357,10 @@ contains
       end if
 
       call cuest_status_check(cuestAOBasisCreateWorkspaceQuery(this%handle, shell_set%n_atoms, &
-                                                              shell_set%n_shells_per_atom, &
-                                                              shell_set%shells, basis_params, &
-                                                              persistent_desc, temporary_desc, &
-                                                              basis_handle), &
+                                                               shell_set%n_shells_per_atom, &
+                                                               shell_set%shells, basis_params, &
+                                                               persistent_desc, temporary_desc, &
+                                                               basis_handle), &
                               "cuestAOBasisCreateWorkspaceQuery("//trim(label)//")", error)
       if (.not. error%has_error()) then
          if (is_auxiliary) then
@@ -419,11 +419,11 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestAOPairListCreateWorkspaceQuery(this%handle, this%basis, &
-                                                                 this%n_atoms, c_loc(xyz), &
-                                                                 PAIR_LIST_THRESHOLD, &
-                                                                 pair_list_params, &
-                                                                 persistent_desc, temporary_desc, &
-                                                                 this%pair_list), &
+                                                                  this%n_atoms, c_loc(xyz), &
+                                                                  PAIR_LIST_THRESHOLD, &
+                                                                  pair_list_params, &
+                                                                  persistent_desc, temporary_desc, &
+                                                                  this%pair_list), &
                               "cuestAOPairListCreateWorkspaceQuery", error)
       if (.not. error%has_error()) then
          call workspace_alloc(this%ws_pair_list, persistent_desc, error)
@@ -459,9 +459,9 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestOEIntPlanCreateWorkspaceQuery(this%handle, this%basis, &
-                                                                this%pair_list, plan_params, &
-                                                                persistent_desc, temporary_desc, &
-                                                                this%oe_plan), &
+                                                                 this%pair_list, plan_params, &
+                                                                 persistent_desc, temporary_desc, &
+                                                                 this%oe_plan), &
                               "cuestOEIntPlanCreateWorkspaceQuery", error)
       if (.not. error%has_error()) then
          call workspace_alloc(this%ws_oe_plan, persistent_desc, error)
@@ -513,9 +513,9 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestDFIntPlanCreateWorkspaceQuery(this%handle, this%basis, &
-                                                                this%aux_basis, this%pair_list, &
-                                                                plan_params, persistent_desc, &
-                                                                temporary_desc, this%df_plan), &
+                                                                 this%aux_basis, this%pair_list, &
+                                                                 plan_params, persistent_desc, &
+                                                                 temporary_desc, this%df_plan), &
                               "cuestDFIntPlanCreateWorkspaceQuery", error)
       if (.not. error%has_error()) then
          call workspace_alloc(this%ws_df_plan, persistent_desc, error)
@@ -586,11 +586,11 @@ contains
       energy = 0.0_dp
 
       call cuest_status_check(cuestXCPotentialUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
-                                                                      params, variable_buffer, &
-                                                                      temporary_desc, this%n_occ, &
-                                                                      beta_occupancy, this%d_c_occ, &
-                                                                      this%d_c_occ_beta, c_loc(energy), &
-                                                                      this%d_result, this%d_result_beta), &
+                                                                       params, variable_buffer, &
+                                                                       temporary_desc, this%n_occ, &
+                                                                       beta_occupancy, this%d_c_occ, &
+                                                                       this%d_c_occ_beta, c_loc(energy), &
+                                                                       this%d_result, this%d_result_beta), &
                               "cuestXCPotentialUKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -663,11 +663,11 @@ contains
                               "cuestParametersCreate(molecular grid)", error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestMolecularGridCreateWorkspaceQuery(this%handle, &
-                                                                       this%n_atoms, &
-                                                                       grid_set%grids, c_loc(xyz), &
-                                                                       grid_params, persistent_desc, &
-                                                                       temporary_desc, &
-                                                                       this%molecular_grid), &
+                                                                        this%n_atoms, &
+                                                                        grid_set%grids, c_loc(xyz), &
+                                                                        grid_params, persistent_desc, &
+                                                                        temporary_desc, &
+                                                                        this%molecular_grid), &
                                  "cuestMolecularGridCreateWorkspaceQuery", error)
       end if
       if (.not. error%has_error()) then
@@ -696,10 +696,10 @@ contains
                               "cuestParametersCreate(XC plan)", error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestXCIntPlanCreateWorkspaceQuery(this%handle, this%basis, &
-                                                                   this%molecular_grid, &
-                                                                   functional_id, plan_params, &
-                                                                   persistent_desc, temporary_desc, &
-                                                                   this%xc_plan), &
+                                                                    this%molecular_grid, &
+                                                                    functional_id, plan_params, &
+                                                                    persistent_desc, temporary_desc, &
+                                                                    this%xc_plan), &
                                  "cuestXCIntPlanCreateWorkspaceQuery", error)
       end if
       if (.not. error%has_error()) then
@@ -708,9 +708,9 @@ contains
       end if
       if (.not. error%has_error()) then
          call cuest_status_check(cuestXCIntPlanCreate(this%handle, this%basis, &
-                                                       this%molecular_grid, functional_id, &
-                                                       plan_params, this%ws_xc_plan, &
-                                                       temporary_ws, this%xc_plan), &
+                                                      this%molecular_grid, functional_id, &
+                                                      plan_params, this%ws_xc_plan, &
+                                                      temporary_ws, this%xc_plan), &
                                  "cuestXCIntPlanCreate", error)
       end if
       call workspace_free(temporary_ws)
@@ -774,10 +774,10 @@ contains
       ! Unlike every other output here, the energy is a HOST scalar.
       energy = 0.0_dp
       call cuest_status_check(cuestXCPotentialRKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
-                                                                      params, variable_buffer, &
-                                                                      temporary_desc, this%n_occ, &
-                                                                      this%d_c_occ, c_loc(energy), &
-                                                                      this%d_result), &
+                                                                       params, variable_buffer, &
+                                                                       temporary_desc, this%n_occ, &
+                                                                       this%d_c_occ, c_loc(energy), &
+                                                                       this%d_result), &
                               "cuestXCPotentialRKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -853,9 +853,9 @@ contains
          multipole_order(icomp) = 1_c_int32_t
 
          call cuest_status_check(cuestMultipoleComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                                    params, temporary_desc, &
-                                                                    multipole_order, c_loc(origin), &
-                                                                    this%d_result), &
+                                                                     params, temporary_desc, &
+                                                                     multipole_order, c_loc(origin), &
+                                                                     this%d_result), &
                                  "cuestMultipoleComputeWorkspaceQuery", error)
          if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
          if (.not. error%has_error()) then
@@ -897,8 +897,8 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestOverlapComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                               params, temporary_desc, &
-                                                               this%d_result), &
+                                                                params, temporary_desc, &
+                                                                this%d_result), &
                               "cuestOverlapComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -933,8 +933,8 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestKineticComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                               params, temporary_desc, &
-                                                               this%d_result), &
+                                                                params, temporary_desc, &
+                                                                this%d_result), &
                               "cuestKineticComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -969,9 +969,9 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestPotentialComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                                 params, temporary_desc, &
-                                                                 this%n_atoms, this%xyz_device, &
-                                                                 this%charges_device, this%d_result), &
+                                                                  params, temporary_desc, &
+                                                                  this%n_atoms, this%xyz_device, &
+                                                                  this%charges_device, this%d_result), &
                               "cuestPotentialComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1016,8 +1016,8 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestDFCoulombComputeWorkspaceQuery(this%handle, this%df_plan, &
-                                                                 params, temporary_desc, &
-                                                                 this%d_matrix, this%d_result), &
+                                                                  params, temporary_desc, &
+                                                                  this%d_matrix, this%d_result), &
                               "cuestDFCoulombComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1077,11 +1077,11 @@ contains
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
       call cuest_status_check(cuestDFSymmetricExchangeComputeWorkspaceQuery(this%handle, &
-                                                                           this%df_plan, params, &
-                                                                           variable_buffer, &
-                                                                           temporary_desc, &
-                                                                           occupancy, this%d_c_occ, &
-                                                                           this%d_result), &
+                                                                            this%df_plan, params, &
+                                                                            variable_buffer, &
+                                                                            temporary_desc, &
+                                                                            occupancy, this%d_c_occ, &
+                                                                            this%d_result), &
                               "cuestDFSymmetricExchangeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1193,8 +1193,8 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestOverlapDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                                         params, temporary_desc, &
-                                                                         this%d_matrix, this%d_gradient), &
+                                                                          params, temporary_desc, &
+                                                                          this%d_matrix, this%d_gradient), &
                               "cuestOverlapDerivativeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1237,8 +1237,8 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestKineticDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                                         params, temporary_desc, &
-                                                                         this%d_matrix, this%d_gradient), &
+                                                                          params, temporary_desc, &
+                                                                          this%d_matrix, this%d_gradient), &
                               "cuestKineticDerivativeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1286,11 +1286,11 @@ contains
       if (error%has_error()) return
 
       call cuest_status_check(cuestPotentialDerivativeComputeWorkspaceQuery(this%handle, this%oe_plan, &
-                                                                           params, temporary_desc, &
-                                                                           this%n_atoms, this%xyz_device, &
-                                                                           this%charges_device, this%d_matrix, &
-                                                                           this%d_gradient, &
-                                                                           this%d_charge_gradient), &
+                                                                            params, temporary_desc, &
+                                                                            this%n_atoms, this%xyz_device, &
+                                                                            this%charges_device, this%d_matrix, &
+                                                                            this%d_gradient, &
+                                                                            this%d_charge_gradient), &
                               "cuestPotentialDerivativeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1378,11 +1378,11 @@ contains
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
       call cuest_status_check(cuestDFSymmetricDerivativeComputeWorkspaceQuery(this%handle, this%df_plan, &
-                                                                             params, variable_buffer, &
-                                                                             temporary_desc, DENSITY_SCALE, &
-                                                                             this%d_matrix, coefficient_scale, &
-                                                                             n_matrices, occupancies, &
-                                                                             coefficient_ptr, this%d_gradient), &
+                                                                              params, variable_buffer, &
+                                                                              temporary_desc, DENSITY_SCALE, &
+                                                                              this%d_matrix, coefficient_scale, &
+                                                                              n_matrices, occupancies, &
+                                                                              coefficient_ptr, this%d_gradient), &
                               "cuestDFSymmetricDerivativeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1438,9 +1438,9 @@ contains
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
       call cuest_status_check(cuestXCDerivativeRKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
-                                                                       params, variable_buffer, &
-                                                                       temporary_desc, this%n_occ, &
-                                                                       this%d_c_occ, this%d_gradient), &
+                                                                        params, variable_buffer, &
+                                                                        temporary_desc, this%n_occ, &
+                                                                        this%d_c_occ, this%d_gradient), &
                               "cuestXCDerivativeRKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1527,11 +1527,11 @@ contains
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
       call cuest_status_check(cuestDFSymmetricDerivativeComputeWorkspaceQuery(this%handle, this%df_plan, &
-                                                                             params, variable_buffer, &
-                                                                             temporary_desc, UKS_DENSITY_SCALE, &
-                                                                             this%d_matrix, coefficient_scale, &
-                                                                             n_matrices, occupancies, &
-                                                                             coefficient_ptr, this%d_gradient), &
+                                                                              params, variable_buffer, &
+                                                                              temporary_desc, UKS_DENSITY_SCALE, &
+                                                                              this%d_matrix, coefficient_scale, &
+                                                                              n_matrices, occupancies, &
+                                                                              coefficient_ptr, this%d_gradient), &
                               "cuestDFSymmetricDerivativeComputeWorkspaceQuery(UKS)", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
@@ -1591,10 +1591,10 @@ contains
       variable_buffer%deviceBufferSizeInBytes = DF_EXCHANGE_BUFFER_BYTES
 
       call cuest_status_check(cuestXCDerivativeUKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
-                                                                       params, variable_buffer, &
-                                                                       temporary_desc, this%n_occ, &
-                                                                       beta_occupancy, this%d_c_occ, &
-                                                                       this%d_c_occ_beta, this%d_gradient), &
+                                                                        params, variable_buffer, &
+                                                                        temporary_desc, this%n_occ, &
+                                                                        beta_occupancy, this%d_c_occ, &
+                                                                        this%d_c_occ_beta, this%d_gradient), &
                               "cuestXCDerivativeUKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then

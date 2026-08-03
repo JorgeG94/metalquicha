@@ -94,7 +94,7 @@ contains
                  "HF gradients are unimplemented and must report an error")
       if (allocated(error)) return
 
-      call check(error, .not. result%has_gradient, &
+      call check(error,.not. result%has_gradient, &
                  "An unimplemented HF gradient must not claim to have one")
 
       call fragment%destroy()
@@ -169,7 +169,7 @@ contains
                  "DFT gradients are unimplemented and must report an error")
       if (allocated(error)) return
 
-      call check(error, .not. result%has_gradient, &
+      call check(error,.not. result%has_gradient, &
                  "An unimplemented DFT gradient must not claim to have one")
 
       call fragment%destroy()
@@ -191,7 +191,7 @@ contains
                  "DFT Hessians are unimplemented and must report an error")
       if (allocated(error)) return
 
-      call check(error, .not. result%has_hessian, &
+      call check(error,.not. result%has_hessian, &
                  "An unimplemented DFT Hessian must not claim to have one")
 
       call fragment%destroy()

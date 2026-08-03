@@ -18,7 +18,7 @@ module mqc_cuest_grid
    !! Host/device note: radial nodes, radial weights and the angular-point
    !! counts are all CPU arrays, unlike most cuEST buffers.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, &
-                                          c_double, c_loc, c_associated
+                                                                             c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_cuest_runtime, only: cuest_status_check

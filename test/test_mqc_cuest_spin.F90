@@ -80,15 +80,15 @@ contains
       logical :: ok
 
       call spin_occupations(10, 2, n_alpha, n_beta, ok)
-      call check(error, .not. ok, "10 electrons cannot be a doublet")
+      call check(error,.not. ok, "10 electrons cannot be a doublet")
       if (allocated(error)) return
 
       call spin_occupations(9, 1, n_alpha, n_beta, ok)
-      call check(error, .not. ok, "9 electrons cannot be a singlet")
+      call check(error,.not. ok, "9 electrons cannot be a singlet")
       if (allocated(error)) return
 
       call spin_occupations(2, 5, n_alpha, n_beta, ok)
-      call check(error, .not. ok, "more unpaired electrons than electrons must be rejected")
+      call check(error,.not. ok, "more unpaired electrons than electrons must be rejected")
    end subroutine test_inconsistent
 
 end module test_mqc_cuest_spin

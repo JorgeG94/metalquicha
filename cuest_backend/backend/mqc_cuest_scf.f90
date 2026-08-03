@@ -563,7 +563,6 @@ contains
       end if
    end subroutine run_rhf_scf
 
-
    pure subroutine spin_occupations(n_electrons, multiplicity, n_alpha, n_beta, ok)
       !! Alpha and beta occupations from the electron count and multiplicity
       !!

@@ -8,7 +8,7 @@ module mqc_cuest_basis
    !! the mapping is direct. Contraction coefficients are normalized on the way
    !! through -- basis files store unnormalized ones.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int32_t, &
-                                          c_int64_t, c_double, c_loc, c_associated
+                                                                             c_int64_t, c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type

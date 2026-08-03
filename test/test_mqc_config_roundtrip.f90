@@ -99,7 +99,7 @@ contains
       call read_mqc_file(SCRATCH_FILE, config, parse_error)
       call remove_input()
 
-      call check(error, .not. parse_error%has_error(), "input should parse")
+      call check(error,.not. parse_error%has_error(), "input should parse")
       if (allocated(error)) return
 
       ! Hop 1: parser -> mqc_config_t
@@ -143,7 +143,7 @@ contains
       call read_mqc_file(SCRATCH_FILE, config, parse_error)
       call remove_input()
 
-      call check(error, .not. parse_error%has_error(), "input should parse")
+      call check(error,.not. parse_error%has_error(), "input should parse")
       if (allocated(error)) return
 
       call check(error, allocated(config%functional), "functional must survive parsing")

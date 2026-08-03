@@ -103,7 +103,7 @@ contains
       integer :: iprim
 
       call read_json_basis_element("../basis_sets/sto-3g.json", "O", basis, parse_error)
-      call check(error, .not. parse_error%has_error(), "sto-3g.json must parse: "// &
+      call check(error,.not. parse_error%has_error(), "sto-3g.json must parse: "// &
                  trim(parse_error%get_message()))
       if (allocated(error)) return
 

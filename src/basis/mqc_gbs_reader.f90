@@ -27,7 +27,7 @@ module mqc_gbs_reader
    integer, parameter :: MAX_LINE = 512  !! Longest .gbs line we accept
 
    character(len=1), parameter :: SHELL_SYMBOLS(0:6) = &
-      [character(len=1) :: 'S', 'P', 'D', 'F', 'G', 'H', 'I']
+                                  [character(len=1) :: 'S', 'P', 'D', 'F', 'G', 'H', 'I']
       !! Angular momentum symbols, indexed by L
 
 contains
