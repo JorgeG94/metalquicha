@@ -29,9 +29,9 @@ module mqc_method_dft
 
    type :: dft_options_t
       !! DFT calculation options
-      character(len=32) :: basis_set = 'sto-3g'
+      character(len=32) :: basis_set = "sto-3g"
          !! Basis set name
-      character(len=32) :: functional = 'b3lyp'
+      character(len=32) :: functional = "b3lyp"
          !! Exchange-correlation functional
       integer :: max_iter = 100
          !! Maximum SCF iterations
@@ -47,11 +47,11 @@ module mqc_method_dft
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
-      character(len=16) :: guess = 'gwh'
+      character(len=16) :: guess = "gwh"
          !! Initial guess: 'core', 'gwh' or 'sac'
 
       ! Grid settings
-      character(len=16) :: grid_type = 'medium'
+      character(len=16) :: grid_type = "medium"
          !! Integration grid quality
       integer :: radial_points = 75
          !! Number of radial grid points per atom
@@ -61,13 +61,13 @@ module mqc_method_dft
       ! Density fitting
       logical :: use_density_fitting = .false.
          !! Use RI-J approximation
-      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
+      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis. Required by the cuEST backend.
 
       ! Dispersion correction
       logical :: use_dispersion = .false.
          !! Add empirical dispersion correction
-      character(len=8) :: dispersion_type = 'd3bj'
+      character(len=8) :: dispersion_type = "d3bj"
          !! Dispersion type: "d3", "d3bj", "d4"
 
       ! DIIS acceleration

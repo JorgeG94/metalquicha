@@ -38,7 +38,7 @@ contains
       character(len=:), allocatable :: key
       character(len=12) :: buffer
 
-      write (buffer, '(I0)') value
+      write (buffer, "(I0)") value
       key = trim(buffer)
    end function integer_to_key
 
@@ -84,7 +84,7 @@ contains
       end if
 
       ! ---- how many shells, and how many after splitting? -------------------
-      call json%info('elements.'//element_key//'.electron_shells', found=found, n_children=n_shells_json)
+      call json%info("elements."//element_key//".electron_shells", found=found, n_children=n_shells_json)
       if (.not. found .or. n_shells_json <= 0) then
          call error%set(ERROR_PARSE, "Element "//trim(element_symbol)// &
                         " not found in JSON basis file "//trim(json_path))
@@ -115,13 +115,13 @@ contains
          call shell_angular_momenta(json, element_key, ishell, angular_momenta, found)
          if (.not. found) cycle
 
-         shell_path = 'elements.'//element_key//'.electron_shells('//integer_to_key(ishell)//')'
+         shell_path = "elements."//element_key//".electron_shells("//integer_to_key(ishell)//")"
 
          ! Values are read one at a time by indexed path. BSE stores them as
          ! strings to preserve every digit, and json-fortran's scalar string
          ! accessor is the portable way to reach them; basis sets are small
          ! enough that the extra lookups do not matter.
-         call json%info(shell_path//'.exponents', found=found, n_children=n_prim)
+         call json%info(shell_path//".exponents", found=found, n_children=n_prim)
          if (.not. found .or. n_prim <= 0) then
             call error%set(ERROR_PARSE, "Shell without exponents in "//trim(json_path))
             call json%destroy()
@@ -134,7 +134,7 @@ contains
             call atom_basis%shells(shell_index)%allocate_arrays(n_prim)
 
             do iprim = 1, n_prim
-               call json%get(shell_path//'.exponents('//integer_to_key(iprim)//')', &
+               call json%get(shell_path//".exponents("//integer_to_key(iprim)//")", &
                              value_text, found)
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Missing exponent in "//trim(json_path))
@@ -150,8 +150,8 @@ contains
                end if
                atom_basis%shells(shell_index)%exponents(iprim) = value
 
-               call json%get(shell_path//'.coefficients('//integer_to_key(imom)//')('// &
-                             integer_to_key(iprim)//')', value_text, found)
+               call json%get(shell_path//".coefficients("//integer_to_key(imom)//")("// &
+                             integer_to_key(iprim)//")", value_text, found)
                if (.not. found) then
                   call error%set(ERROR_PARSE, "Coefficient set does not match the "// &
                                  "exponent count in "//trim(json_path))
@@ -184,8 +184,8 @@ contains
       character(len=:), allocatable :: path
       character(len=12) :: index_text
 
-      write (index_text, '(I0)') ishell
-      path = 'elements.'//element_key//'.electron_shells('//trim(index_text)//').angular_momentum'
+      write (index_text, "(I0)") ishell
+      path = "elements."//element_key//".electron_shells("//trim(index_text)//").angular_momentum"
       call json%get(path, angular_momenta, found)
    end subroutine shell_angular_momenta
 

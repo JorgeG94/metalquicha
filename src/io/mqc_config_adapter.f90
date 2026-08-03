@@ -137,8 +137,9 @@ contains
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
-      if (allocated(mqc_config%scf_guess)) &
+      if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess
+      end if
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output
@@ -161,7 +162,7 @@ contains
       ! Determine units
       use_angstrom = .true.
       if (allocated(mqc_config%units)) then
-         if (trim(mqc_config%units) == 'bohr') then
+         if (trim(mqc_config%units) == "bohr") then
             use_angstrom = .false.
          end if
       end if
@@ -378,19 +379,19 @@ contains
       integer :: level_int
 
       select case (trim(adjustl(level_string)))
-      case ('debug', 'Debug', 'DEBUG')
+      case ("debug", "Debug", "DEBUG")
          level_int = debug_level
-      case ('verbose', 'Verbose', 'VERBOSE')
+      case ("verbose", "Verbose", "VERBOSE")
          level_int = verbose_level
-      case ('info', 'Info', 'INFO')
+      case ("info", "Info", "INFO")
          level_int = info_level
-      case ('performance', 'Performance', 'PERFORMANCE')
+      case ("performance", "Performance", "PERFORMANCE")
          level_int = performance_level
-      case ('warning', 'Warning', 'WARNING')
+      case ("warning", "Warning", "WARNING")
          level_int = warning_level
-      case ('error', 'Error', 'ERROR')
+      case ("error", "Error", "ERROR")
          level_int = error_level
-      case ('knowledge', 'Knowledge', 'KNOWLEDGE')
+      case ("knowledge", "Knowledge", "KNOWLEDGE")
          level_int = knowledge_level
       case default
          ! Default to info level if unknown

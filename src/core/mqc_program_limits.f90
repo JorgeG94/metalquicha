@@ -37,7 +37,7 @@ module mqc_program_limits
 
    !> JSON output format for real numbers (scientific notation)
    !> Valid values: 'G', 'E', 'EN', 'ES' (json-fortran uses machine precision)
-   character(len=*), parameter, public :: JSON_REAL_FORMAT = 'ES'
+   character(len=*), parameter, public :: JSON_REAL_FORMAT = "ES"
 
    !---------------------------------------------------------------------------
    ! Geometry/Structure Limits

@@ -61,7 +61,7 @@ contains
       ! Convert to lowercase for case-insensitive comparison
       lower_str = trim(adjustl(method_str))
       do i = 1, len(lower_str)
-         if (lower_str(i:i) >= 'A' .and. lower_str(i:i) <= 'Z') then
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
             lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
          end if
       end do
@@ -69,35 +69,35 @@ contains
       ! Match against known types
       select case (lower_str)
          ! Semi-empirical
-      case ('gfn1', 'gfn1-xtb')
+      case ("gfn1", "gfn1-xtb")
          method_type = METHOD_TYPE_GFN1
-      case ('gfn2', 'gfn2-xtb')
+      case ("gfn2", "gfn2-xtb")
          method_type = METHOD_TYPE_GFN2
 
          ! SCF methods
-      case ('hf', 'rhf', 'uhf', 'hartree-fock')
+      case ("hf", "rhf", "uhf", "hartree-fock")
          method_type = METHOD_TYPE_HF
-      case ('dft', 'ks', 'kohn-sham')
+      case ("dft", "ks", "kohn-sham")
          method_type = METHOD_TYPE_DFT
 
          ! Multi-reference
-      case ('mcscf', 'casscf', 'casci')
+      case ("mcscf", "casscf", "casci")
          method_type = METHOD_TYPE_MCSCF
 
          ! Perturbation theory
-      case ('mp2', 'ri-mp2', 'df-mp2', 'scs-mp2', 'sos-mp2')
+      case ("mp2", "ri-mp2", "df-mp2", "scs-mp2", "sos-mp2")
          method_type = METHOD_TYPE_MP2
-      case ('mp2-f12', 'ri-mp2-f12', 'df-mp2-f12')
+      case ("mp2-f12", "ri-mp2-f12", "df-mp2-f12")
          method_type = METHOD_TYPE_MP2_F12
 
          ! Coupled cluster
-      case ('ccsd', 'ri-ccsd', 'df-ccsd')
+      case ("ccsd", "ri-ccsd", "df-ccsd")
          method_type = METHOD_TYPE_CCSD
-      case ('ccsd(t)', 'ri-ccsd(t)', 'df-ccsd(t)')
+      case ("ccsd(t)", "ri-ccsd(t)", "df-ccsd(t)")
          method_type = METHOD_TYPE_CCSD_T
-      case ('ccsd-f12', 'ri-ccsd-f12')
+      case ("ccsd-f12", "ri-ccsd-f12")
          method_type = METHOD_TYPE_CCSD_F12
-      case ('ccsd(t)-f12', 'ri-ccsd(t)-f12')
+      case ("ccsd(t)-f12", "ri-ccsd(t)-f12")
          method_type = METHOD_TYPE_CCSD_T_F12
 
       case default

@@ -187,12 +187,12 @@ contains
       end do
 
       if (residual > 1.0e-4_dp) then
-         write (line, '(a,es10.2,a)') &
+         write (line, "(a,es10.2,a)") &
             "IR: dipole-derivative translational sum rule off by ", residual, &
             " a.u. -- intensities may be unreliable"
          call logger%warning(trim(line))
       else if (verbose) then
-         write (line, '(a,es10.2,a)') &
+         write (line, "(a,es10.2,a)") &
             "IR: dipole-derivative translational sum rule satisfied to ", residual, " a.u."
          call logger%info(trim(line))
       end if

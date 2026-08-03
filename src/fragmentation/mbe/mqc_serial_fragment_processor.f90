@@ -64,16 +64,16 @@ contains
                block
                   character(len=512) :: debug_line
                   integer :: iatom_local
-                  write (debug_line, '(a,i0,a,*(i0,1x))') "Fragment ", frag_idx, " monomers: ", fragment_indices
+                  write (debug_line, "(a,i0,a,*(i0,1x))") "Fragment ", frag_idx, " monomers: ", fragment_indices
                   call logger%verbose(trim(debug_line))
-                  write (debug_line, '(a,f25.15)') "  Energy: ", results(frag_idx)%energy%total()
+                  write (debug_line, "(a,f25.15)") "  Energy: ", results(frag_idx)%energy%total()
                   call logger%verbose(trim(debug_line))
-                  write (debug_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(results(frag_idx)%gradient**2))
+                  write (debug_line, "(a,f25.15)") "  Gradient norm: ", sqrt(sum(results(frag_idx)%gradient**2))
                   call logger%verbose(trim(debug_line))
                   if (size(results(frag_idx)%gradient, 2) <= 20) then
                      call logger%verbose("  Fragment gradient:")
                      do iatom_local = 1, size(results(frag_idx)%gradient, 2)
-                        write (debug_line, '(a,i3,a,3f20.12)') "    Atom ", iatom_local, ": ", &
+                        write (debug_line, "(a,i3,a,3f20.12)") "    Atom ", iatom_local, ": ", &
                            results(frag_idx)%gradient(1, iatom_local), &
                            results(frag_idx)%gradient(2, iatom_local), &
                            results(frag_idx)%gradient(3, iatom_local)

@@ -111,10 +111,10 @@ program test_mqc_hessian_finite_diff
    if (test_passed) then
       print *, "ALL TESTS PASSED"
       stop 0
-   else
-      print *, "SOME TESTS FAILED"
-      stop 1
    end if
+
+   print *, "SOME TESTS FAILED"
+   stop 1
 
 contains
 

@@ -162,8 +162,8 @@ contains
       character(len=*), intent(in) :: filename
       integer :: unit
       open (newunit=unit, file=filename, status="replace", action="write")
-      write (unit, '(a)') "$DATA"
-      write (unit, '(a)') "$END"
+      write (unit, "(a)") "$DATA"
+      write (unit, "(a)") "$END"
       close (unit)
    end subroutine create_test_basis_file
 
@@ -197,7 +197,7 @@ program tester
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 

@@ -111,7 +111,7 @@ program tester_mqc_cuest_spin
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_cuest_spin
@@ -122,6 +122,6 @@ program tester_mqc_cuest_spin
    !! occupation test it exercises is a no-op here. It runs in full under the
    !! CMake build, which is where the cuEST backend is compiled.
    implicit none
-   write (*, '(A)') "# mqc_cuest_spin: skipped (cuEST backend not built)"
+   write (*, "(A)") "# mqc_cuest_spin: skipped (cuEST backend not built)"
 end program tester_mqc_cuest_spin
 #endif

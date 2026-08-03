@@ -32,7 +32,7 @@ contains
       character(len=MAX_LINE_LEN) :: line, key, value
       integer :: io_stat, eq_pos
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %structure section")
             return
@@ -40,20 +40,20 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos == 0) cycle
 
          key = adjustl(line(1:eq_pos - 1))
          value = adjustl(line(eq_pos + 1:))
 
          select case (trim(key))
-         case ('charge')
+         case ("charge")
             read (value, *, iostat=io_stat) charge
-         case ('multiplicity')
+         case ("multiplicity")
             read (value, *, iostat=io_stat) multiplicity
          case default
             call error%set(ERROR_PARSE, "Unknown key in %structure section: "//trim(key))
@@ -74,7 +74,7 @@ contains
       integer :: io_stat, natoms, i
       real(dp) :: x, y, z
       ! Read number of atoms
-      read (unit, '(A)', iostat=io_stat) line
+      read (unit, "(A)", iostat=io_stat) line
       if (io_stat /= 0) then
          call error%set(ERROR_PARSE, "Error reading natoms in %geometry section")
          return
@@ -89,7 +89,7 @@ contains
       geom%natoms = natoms
 
       ! Read blank line (comment line in XYZ format)
-      read (unit, '(A)', iostat=io_stat) line
+      read (unit, "(A)", iostat=io_stat) line
       if (io_stat /= 0) then
          call error%set(ERROR_PARSE, "Error reading comment line in %geometry section")
          return
@@ -103,14 +103,14 @@ contains
 
       ! Read coordinates
       do i = 1, natoms
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_PARSE, "Error reading geometry coordinates")
             return
          end if
 
          line = adjustl(line)
-         if (trim(strip_comment(line)) == 'end') then
+         if (trim(strip_comment(line)) == "end") then
             call error%set(ERROR_PARSE, "Unexpected 'end' while reading geometry")
             return
          end if
@@ -128,14 +128,14 @@ contains
       end do
 
       ! Read 'end' marker
-      read (unit, '(A)', iostat=io_stat) line
+      read (unit, "(A)", iostat=io_stat) line
       if (io_stat /= 0) then
          call error%set(ERROR_VALIDATION, "Missing 'end' in %geometry section")
          return
       end if
 
       line = adjustl(line)
-      if (trim(strip_comment(line)) /= 'end') then
+      if (trim(strip_comment(line)) /= "end") then
          call error%set(ERROR_PARSE, "Expected 'end' after geometry coordinates")
          return
       end if

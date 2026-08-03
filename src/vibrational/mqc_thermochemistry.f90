@@ -174,7 +174,7 @@ contains
 
       ! Diagonalize to get principal moments
       principal_axes = inertia_tensor
-      call pic_syev(principal_axes, moments, 'V', 'U', info)
+      call pic_syev(principal_axes, moments, "V", "U", info)
 
       if (info /= 0) then
          call logger%warning("Failed to diagonalize inertia tensor, info = "// &
@@ -657,16 +657,16 @@ contains
       call logger%info(" ")
 
       ! Setup section - simple list
-      write (line, '(A,F10.4,A)') "  Temperature:       ", result%temperature, " K"
+      write (line, "(A,F10.4,A)") "  Temperature:       ", result%temperature, " K"
       call logger%info(trim(line))
-      write (line, '(A,F10.4,A)') "  Pressure:          ", result%pressure, " atm"
+      write (line, "(A,F10.4,A)") "  Pressure:          ", result%pressure, " atm"
       call logger%info(trim(line))
-      write (line, '(A,F10.4,A)') "  Molecular mass:    ", result%total_mass, " amu"
+      write (line, "(A,F10.4,A)") "  Molecular mass:    ", result%total_mass, " amu"
       call logger%info(trim(line))
-      write (line, '(A,I6)') "  Vibrational modes: ", result%n_real_freqs
+      write (line, "(A,I6)") "  Vibrational modes: ", result%n_real_freqs
       call logger%info(trim(line))
       if (result%n_imag_freqs > 0) then
-         write (line, '(A,I6,A)') "  Imaginary freqs:   ", result%n_imag_freqs, " (skipped)"
+         write (line, "(A,I6,A)") "  Imaginary freqs:   ", result%n_imag_freqs, " (skipped)"
          call logger%info(trim(line))
       end if
       if (result%is_linear) then
@@ -674,7 +674,7 @@ contains
       else
          call logger%info("  Linear molecule:   no")
       end if
-      write (line, '(A,I6)') "  Symmetry number:   ", result%symmetry_number
+      write (line, "(A,I6)") "  Symmetry number:   ", result%symmetry_number
       call logger%info(trim(line))
       call logger%info(" ")
 
@@ -682,30 +682,30 @@ contains
       call logger%info("  temp (K)       q        H(cal/mol)  Cp(cal/K/mol)  S(cal/K/mol)  S(J/K/mol)")
       call logger%info("  -------------------------------------------------------------------------")
 
-      write (line, '(F8.2,A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
+      write (line, "(F8.2,A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          result%temperature, "  VIB", result%q_vib, H_vib_cal, result%Cv_vib, &
          result%S_vib, result%S_vib*CAL_TO_J
       call logger%info(trim(line))
 
-      write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
+      write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          ROT", result%q_rot, H_rot_cal, result%Cv_rot, &
          result%S_rot, result%S_rot*CAL_TO_J
       call logger%info(trim(line))
 
-      write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
+      write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          INT", result%q_rot*result%q_vib, H_vib_cal + H_rot_cal, &
          result%Cv_vib + result%Cv_rot, result%S_vib + result%S_rot, &
          (result%S_vib + result%S_rot)*CAL_TO_J
       call logger%info(trim(line))
 
       ! For TR, report Cp = Cv + R (constant pressure heat capacity for ideal gas)
-      write (line, '(A,ES10.3,F12.3,F14.3,F14.3,F12.3)') &
+      write (line, "(A,ES10.3,F12.3,F14.3,F14.3,F12.3)") &
          "          TR ", result%q_trans, H_trans_cal, result%Cv_trans + R_CALMOLK, &
          result%S_trans, result%S_trans*CAL_TO_J
       call logger%info(trim(line))
 
       call logger%info("  -------------------------------------------------------------------------")
-      write (line, '(A,F12.3,F14.3,F14.3,F12.3)') &
+      write (line, "(A,F12.3,F14.3,F14.3,F12.3)") &
          "          TOT           ", H_total_cal, Cv_total, S_total, S_total_J
       call logger%info(trim(line))
 
@@ -715,28 +715,28 @@ contains
       call logger%info(" ")
       call logger%info("Thermal Corrections (Hartree)")
       call logger%info("-----------------------------")
-      write (line, '(A,F18.12)') "  Zero-point energy:              ", result%zpe_hartree
+      write (line, "(A,F18.12)") "  Zero-point energy:              ", result%zpe_hartree
       call logger%info(trim(line))
-      write (line, '(A,F18.12)') "  Thermal correction to Energy:   ", result%thermal_correction_energy
+      write (line, "(A,F18.12)") "  Thermal correction to Energy:   ", result%thermal_correction_energy
       call logger%info(trim(line))
-      write (line, '(A,F18.12)') "  Thermal correction to Enthalpy: ", result%thermal_correction_enthalpy
+      write (line, "(A,F18.12)") "  Thermal correction to Enthalpy: ", result%thermal_correction_enthalpy
       call logger%info(trim(line))
-      write (line, '(A,F18.12)') "  Thermal correction to Gibbs:    ", result%thermal_correction_gibbs
+      write (line, "(A,F18.12)") "  Thermal correction to Gibbs:    ", result%thermal_correction_gibbs
       call logger%info(trim(line))
       call logger%info(" ")
 
       ! Final totals
       call logger%info("Total Energies (Hartree)")
       call logger%info("------------------------")
-      write (line, '(A,F20.12)') "  Electronic energy:            ", total_energy
+      write (line, "(A,F20.12)") "  Electronic energy:            ", total_energy
       call logger%info(trim(line))
-      write (line, '(A,F20.12)') "  Electronic + ZPE:             ", total_energy + result%zpe_hartree
+      write (line, "(A,F20.12)") "  Electronic + ZPE:             ", total_energy + result%zpe_hartree
       call logger%info(trim(line))
-      write (line, '(A,F20.12)') "  Electronic + thermal (E):     ", total_energy + result%thermal_correction_energy
+      write (line, "(A,F20.12)") "  Electronic + thermal (E):     ", total_energy + result%thermal_correction_energy
       call logger%info(trim(line))
-      write (line, '(A,F20.12)') "  Electronic + thermal (H):     ", total_enthalpy
+      write (line, "(A,F20.12)") "  Electronic + thermal (H):     ", total_enthalpy
       call logger%info(trim(line))
-      write (line, '(A,F20.12)') "  Electronic + thermal (G):     ", total_free_energy
+      write (line, "(A,F20.12)") "  Electronic + thermal (G):     ", total_free_energy
       call logger%info(trim(line))
       call logger%info(" ")
 

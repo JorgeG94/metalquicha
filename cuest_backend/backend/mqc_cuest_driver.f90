@@ -106,9 +106,9 @@ contains
 
       ! ---- which initial guess? ---------------------------------------------
       select case (trim(settings%guess))
-      case ('core')
+      case ("core")
          guess_type = SCF_GUESS_CORE
-      case ('sac')
+      case ("sac")
          guess_type = SCF_GUESS_SAC
       case default
          guess_type = SCF_GUESS_GWH

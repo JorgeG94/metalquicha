@@ -128,9 +128,9 @@ contains
       do i = 1_int64, count
          do j = 1, max_len
             if (out_array(i, j) == 0) exit
-            write (*, '(I0)', advance='no') out_array(i, j)
+            write (*, "(I0)", advance="no") out_array(i, j)
             if (j < max_len .and. out_array(i, j + 1) /= 0) then
-               write (*, '(A)', advance='no') ":"
+               write (*, "(A)", advance="no") ":"
             end if
          end do
          write (*, *)  ! newline

@@ -61,9 +61,9 @@ contains
          if (present(result_out)) then
             result_out = result
             return
-         else
-            error stop "Unfragmented calculation failed"
          end if
+
+         error stop "Unfragmented calculation failed"
       end if
 
       call logger%info("============================================")
@@ -73,18 +73,18 @@ contains
          integer :: current_log_level, iatom, i, j
          real(dp) :: hess_norm
 
-         write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
+         write (result_line, "(a,f25.15)") "  Final energy: ", result%energy%total()
          call logger%info(trim(result_line))
 
          if (result%has_dipole) then
-            write (result_line, '(a,3f15.8)') "  Dipole (e*Bohr): ", result%dipole
+            write (result_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", result%dipole
             call logger%info(trim(result_line))
-            write (result_line, '(a,f15.8)') "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
+            write (result_line, "(a,f15.8)") "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
             call logger%info(trim(result_line))
          end if
 
          if (result%has_gradient) then
-            write (result_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(result%gradient**2))
+            write (result_line, "(a,f25.15)") "  Gradient norm: ", sqrt(sum(result%gradient**2))
             call logger%info(trim(result_line))
 
             ! Print full gradient if verbose and system is small
@@ -93,7 +93,7 @@ contains
                call logger%info(" ")
                call logger%info("Gradient (Hartree/Bohr):")
                do iatom = 1, total_atoms
-                  write (result_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                  write (result_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                      result%gradient(1, iatom), result%gradient(2, iatom), result%gradient(3, iatom)
                   call logger%info(trim(result_line))
                end do
@@ -104,7 +104,7 @@ contains
          if (result%has_hessian) then
             ! Compute Frobenius norm of Hessian
             hess_norm = sqrt(sum(result%hessian**2))
-            write (result_line, '(a,f25.15)') "  Hessian Frobenius norm: ", hess_norm
+            write (result_line, "(a,f25.15)") "  Hessian Frobenius norm: ", hess_norm
             call logger%info(trim(result_line))
 
             ! Print full Hessian if verbose and system is small
@@ -113,7 +113,7 @@ contains
                call logger%info(" ")
                call logger%info("Hessian matrix (Hartree/Bohr^2):")
                do i = 1, 3*total_atoms
-                  write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*total_atoms)
+                  write (result_line, "(a,i5,a,999f15.8)") "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*total_atoms)
                   call logger%info(trim(result_line))
                end do
                call logger%info(" ")
@@ -138,7 +138,7 @@ contains
                      call logger%info(" ")
                      call logger%info("Mass-weighted Hessian after trans/rot projection (a.u.):")
                      do ii = 1, 3*total_atoms
-                        write (result_line, '(a,i5,a,999f15.8)') "  Row ", ii, ": ", &
+                        write (result_line, "(a,i5,a,999f15.8)") "  Row ", ii, ": ", &
                            (projected_hessian(ii, jj), jj=1, 3*total_atoms)
                         call logger%info(trim(result_line))
                      end do

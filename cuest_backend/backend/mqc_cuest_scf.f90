@@ -169,8 +169,8 @@ contains
       allocate (coulomb(n_ao, n_ao), exch_a(n_ao, n_ao), exch_b(n_ao, n_ao))
       allocate (vxc_a(n_ao, n_ao), vxc_b(n_ao, n_ao))
 
-      call pic_gemm(guess_alpha, guess_alpha, density_a, transb='T', alpha=1.0_dp, beta=0.0_dp)
-      call pic_gemm(guess_beta, guess_beta, density_b, transb='T', alpha=1.0_dp, beta=0.0_dp)
+      call pic_gemm(guess_alpha, guess_alpha, density_a, transb="T", alpha=1.0_dp, beta=0.0_dp)
+      call pic_gemm(guess_beta, guess_beta, density_b, transb="T", alpha=1.0_dp, beta=0.0_dp)
       density_total = density_a + density_b
 
       call system%compute_coulomb(density_total, coulomb, error)
@@ -228,7 +228,7 @@ contains
       allocate (eigenvectors(n_ao, n_ao), eigenvalues(n_ao))
       eigenvectors = overlap
 
-      call pic_syev(eigenvectors, eigenvalues, jobz='V', uplo='U', info=info)
+      call pic_syev(eigenvectors, eigenvalues, jobz="V", uplo="U", info=info)
       if (info /= 0) then
          call error%set(ERROR_VALIDATION, "SCF: overlap matrix diagonalization failed")
          return
@@ -267,9 +267,9 @@ contains
 
       ! F' = X^T F X
       call pic_gemm(fock, transform, scratch)
-      call pic_gemm(transform, scratch, fock_ortho, transa='T')
+      call pic_gemm(transform, scratch, fock_ortho, transa="T")
 
-      call pic_syev(fock_ortho, energies, jobz='V', uplo='U', info=info)
+      call pic_syev(fock_ortho, energies, jobz="V", uplo="U", info=info)
       if (info /= 0) then
          call error%set(ERROR_VALIDATION, "SCF: Fock matrix diagonalization failed")
          return
@@ -285,7 +285,7 @@ contains
       real(dp), intent(in) :: occupied(:, :)     !! C_occ, (n_ao, n_occ)
       real(dp), intent(inout) :: density(:, :)   !! D, (n_ao, n_ao)
 
-      call pic_gemm(occupied, occupied, density, transb='T', alpha=2.0_dp, beta=0.0_dp)
+      call pic_gemm(occupied, occupied, density, transb="T", alpha=2.0_dp, beta=0.0_dp)
    end subroutine build_density
 
    subroutine solve_diis(b_matrix, coefficients, ok)
@@ -445,13 +445,13 @@ contains
 
       if (verbose) then
          if (system%has_xc) then
-            write (*, '(A)') "  cuEST RKS (density-fitted J/K, grid XC)"
+            write (*, "(A)") "  cuEST RKS (density-fitted J/K, grid XC)"
          else
-            write (*, '(A)') "  cuEST RHF (density-fitted J/K)"
+            write (*, "(A)") "  cuEST RHF (density-fitted J/K)"
          end if
-         write (*, '(A,I0,A,I0,A,I0)') "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
+         write (*, "(A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
             "   n_occ = ", n_occ
-         write (*, '(A)') "    iter            energy (Ha)          dE        DIIS error"
+         write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
       ! ---- SCF iterations --------------------------------------------------
@@ -488,11 +488,11 @@ contains
          call pic_gemm(overlap, scratch, diis_error, alpha=-1.0_dp, beta=1.0_dp)
 
          call pic_gemm(diis_error, transform, ortho_scratch)
-         call pic_gemm(transform, ortho_scratch, error_ortho, transa='T')
+         call pic_gemm(transform, ortho_scratch, error_ortho, transa="T")
          error_norm = sqrt(sum(error_ortho**2))
 
          if (verbose) then
-            write (*, '(A,I5,F24.12,2ES14.4)') "    ", iteration, &
+            write (*, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
                electronic_energy + result%nuclear_repulsion, energy_change, error_norm
          end if
 
@@ -608,7 +608,7 @@ contains
 
       allocate (scratch(size(overlap, 1), n_beta), mo_overlap(n_alpha, n_beta))
       call pic_gemm(overlap, occ_beta(:, 1:n_beta), scratch)
-      call pic_gemm(occ_alpha(:, 1:n_alpha), scratch, mo_overlap, transa='T')
+      call pic_gemm(occ_alpha(:, 1:n_alpha), scratch, mo_overlap, transa="T")
       s_squared = s_squared - sum(mo_overlap**2)
       deallocate (scratch, mo_overlap)
    end function spin_contamination
@@ -735,13 +735,13 @@ contains
 
       if (verbose) then
          if (system%has_xc) then
-            write (*, '(A)') "  cuEST UKS (density-fitted J/K, grid XC)"
+            write (*, "(A)") "  cuEST UKS (density-fitted J/K, grid XC)"
          else
-            write (*, '(A)') "  cuEST UHF (density-fitted J/K)"
+            write (*, "(A)") "  cuEST UHF (density-fitted J/K)"
          end if
-         write (*, '(A,I0,A,I0,A,I0,A,I0)') "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
+         write (*, "(A,I0,A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
             "   n_alpha = ", n_alpha, "   n_beta = ", n_beta
-         write (*, '(A)') "    iter            energy (Ha)          dE        DIIS error"
+         write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
       do iteration = 1, max_iterations
@@ -787,7 +787,7 @@ contains
          error_norm = sqrt(sum(err_a(1:n_mo, 1:n_mo)**2) + sum(err_b(1:n_mo, 1:n_mo)**2))
 
          if (verbose) then
-            write (*, '(A,I5,F24.12,2ES14.4)') "    ", iteration, &
+            write (*, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
                electronic_energy + result%nuclear_repulsion, energy_change, error_norm
          end if
 
@@ -861,7 +861,7 @@ contains
       result%spin_squared = spin_contamination(occ_a, occ_b, overlap, n_alpha, n_beta)
 
       if (verbose) then
-         write (*, '(A,F12.6,A,F12.6,A)') "    <S^2> = ", result%spin_squared, &
+         write (*, "(A,F12.6,A,F12.6,A)") "    <S^2> = ", result%spin_squared, &
             "   (exact ", 0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
       end if
 
@@ -882,7 +882,7 @@ contains
       occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
       ! One electron per spin orbital, so no factor of two here.
       call pic_gemm(occupied(:, 1:n_occ), occupied(:, 1:n_occ), density, &
-                    transb='T', alpha=1.0_dp, beta=0.0_dp)
+                    transb="T", alpha=1.0_dp, beta=0.0_dp)
    end subroutine set_spin_density
 
    subroutine commutator_error(fock, density, overlap, transform, scratch, ortho_scratch, err)
@@ -900,7 +900,7 @@ contains
       call pic_gemm(overlap, scratch, err, alpha=-1.0_dp, beta=1.0_dp)
 
       call pic_gemm(err, transform, ortho_scratch)
-      call pic_gemm(transform, ortho_scratch, err(1:n_mo, 1:n_mo), transa='T')
+      call pic_gemm(transform, ortho_scratch, err(1:n_mo, 1:n_mo), transa="T")
    end subroutine commutator_error
 
 end module mqc_cuest_scf

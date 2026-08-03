@@ -83,7 +83,7 @@ contains
       integer(c_int), intent(in) :: code
       character(*), intent(in) :: what
       if (code /= cudaSuccess) then
-         write (*, '(A,A,A,I0,A,A,A,A)') "CUDA FAILED: ", what, &
+         write (*, "(A,A,A,I0,A,A,A,A)") "CUDA FAILED: ", what, &
             " (code ", code, ", ", cuda_error_name(code), "): ", &
             cuda_error_string(code)
          error stop 1
@@ -205,11 +205,11 @@ contains
       type(cudaDeviceProp) :: prop
       ist = cudaGetDeviceCount(ndev)
       call cuda_check(ist, "cudaGetDeviceCount")
-      write (*, '(A,I0,A)') "CUDA devices visible: ", ndev
+      write (*, "(A,I0,A)") "CUDA devices visible: ", ndev
       do i = 0, ndev - 1
          ist = cudaGetDeviceProperties(prop, i)
          call cuda_check(ist, "cudaGetDeviceProperties")
-         write (*, '(2X,A,I0,A,A,A,I0,A,F6.1,A)') &
+         write (*, "(2X,A,I0,A,A,A,I0,A,F6.1,A)") &
             "[", i, "] ", cuda_device_name(prop), &
             "  sm_", cuda_capability(prop), &
             "  ", real(prop%totalGlobalMem)/1024.0**3, " GiB"

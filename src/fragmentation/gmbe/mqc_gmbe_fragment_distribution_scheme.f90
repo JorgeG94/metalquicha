@@ -211,7 +211,7 @@ contains
             do iatom = 1, sys_geom%total_atoms
                block
                   character(len=256) :: grad_line
-                  write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                  write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                      total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
                   call logger%info(trim(grad_line))
                end block
@@ -624,7 +624,7 @@ contains
                do iatom = 1, sys_geom%total_atoms
                   block
                      character(len=256) :: grad_line
-                     write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                     write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                         total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
                      call logger%info(trim(grad_line))
                   end block

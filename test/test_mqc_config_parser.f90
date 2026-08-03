@@ -40,11 +40,11 @@ program test_mqc_config_parser
    call run_testsuite(testsuite, error%code, error%message)
 
    if (error%has_error()) then
-      write (*, '(A)') "Test suite failed: "//error%get_message()
+      write (*, "(A)") "Test suite failed: "//error%get_message()
       stop 1
-   else
-      write (*, '(A)') "All tests passed!"
    end if
+
+   write (*, "(A)") "All tests passed!"
 
 contains
 
@@ -58,33 +58,33 @@ contains
       character(len=*), parameter :: test_file = "test_minimal.mqc"
 
       ! Create minimal test file
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Energy'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -132,8 +132,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_minimal
 
@@ -147,56 +147,56 @@ contains
       character(len=*), parameter :: test_file = "test_fragments.mqc"
 
       ! Create test file with fragments
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Gradient'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 1'
-      write (unit, '(A)') 'multiplicity = 2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '4'
-      write (unit, '(A)') 'Water dimer'
-      write (unit, '(A)') 'O 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 1.0 0.0 0.0'
-      write (unit, '(A)') 'O 3.0 0.0 0.0'
-      write (unit, '(A)') 'H 4.0 0.0 0.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragments'
-      write (unit, '(A)') 'nfrag = 2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragment'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') '%indices'
-      write (unit, '(A)') '0 1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragment'
-      write (unit, '(A)') 'charge = 1'
-      write (unit, '(A)') 'multiplicity = 2'
-      write (unit, '(A)') '%indices'
-      write (unit, '(A)') '2 3'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Gradient"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 1"
+      write (unit, "(A)") "multiplicity = 2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "4"
+      write (unit, "(A)") "Water dimer"
+      write (unit, "(A)") "O 0.0 0.0 0.0"
+      write (unit, "(A)") "H 1.0 0.0 0.0"
+      write (unit, "(A)") "O 3.0 0.0 0.0"
+      write (unit, "(A)") "H 4.0 0.0 0.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragments"
+      write (unit, "(A)") "nfrag = 2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragment"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "%indices"
+      write (unit, "(A)") "0 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragment"
+      write (unit, "(A)") "charge = 1"
+      write (unit, "(A)") "multiplicity = 2"
+      write (unit, "(A)") "%indices"
+      write (unit, "(A)") "2 3"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -239,8 +239,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_with_fragments
 
@@ -254,28 +254,28 @@ contains
       character(len=*), parameter :: test_file = "test_connectivity.mqc"
 
       ! Create test file with connectivity
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%connectivity'
-      write (unit, '(A)') 'nbonds = 1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '0 1 1 broken'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'nbroken = 1'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%connectivity"
+      write (unit, "(A)") "nbonds = 1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "0 1 1 broken"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "nbroken = 1"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -303,8 +303,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_with_connectivity
 
@@ -318,19 +318,19 @@ contains
       character(len=*), parameter :: test_file = "test_no_fragments.mqc"
 
       ! Create test file without fragments
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -343,8 +343,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_no_fragments
 
@@ -358,23 +358,23 @@ contains
       character(len=*), parameter :: test_file = "test_method.mqc"
 
       ! Create test file
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -387,8 +387,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_method_xtb
 
@@ -402,23 +402,23 @@ contains
       character(len=*), parameter :: test_file = "test_system.mqc"
 
       ! Create test file with %system section
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%system'
-      write (unit, '(A)') 'log_level = verbose'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%system"
+      write (unit, "(A)") "log_level = verbose"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -434,8 +434,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_system_log_level
 
@@ -449,56 +449,56 @@ contains
       character(len=*), parameter :: test_file = "test_comments.mqc"
 
       ! Create test file with comments after 'end' keywords
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end  ! schema'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end  ! model'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Energy'
-      write (unit, '(A)') 'end  ! driver'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') 'end  ! structure'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '3'
-      write (unit, '(A)') 'Water molecule'
-      write (unit, '(A)') 'O 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 1.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.0 1.0 0.0'
-      write (unit, '(A)') 'end  ! geometry'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragments'
-      write (unit, '(A)') 'nfrag = 1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragment'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') '%indices'
-      write (unit, '(A)') '0 1 2'
-      write (unit, '(A)') 'end  ! indices'
-      write (unit, '(A)') 'end  ! fragment'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'end  ! fragments'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%connectivity'
-      write (unit, '(A)') 'nbonds = 2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '0 1 1 preserved'
-      write (unit, '(A)') '0 2 1 preserved'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'nbroken = 0'
-      write (unit, '(A)') 'end  ! connectivity'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end  ! schema"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end  ! model"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end  ! driver"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end  ! structure"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "3"
+      write (unit, "(A)") "Water molecule"
+      write (unit, "(A)") "O 0.0 0.0 0.0"
+      write (unit, "(A)") "H 1.0 0.0 0.0"
+      write (unit, "(A)") "H 0.0 1.0 0.0"
+      write (unit, "(A)") "end  ! geometry"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragments"
+      write (unit, "(A)") "nfrag = 1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragment"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "%indices"
+      write (unit, "(A)") "0 1 2"
+      write (unit, "(A)") "end  ! indices"
+      write (unit, "(A)") "end  ! fragment"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "end  ! fragments"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%connectivity"
+      write (unit, "(A)") "nbonds = 2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "0 1 1 preserved"
+      write (unit, "(A)") "0 2 1 preserved"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "nbroken = 0"
+      write (unit, "(A)") "end  ! connectivity"
       close (unit)
 
       ! Parse file
@@ -529,8 +529,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_with_comments
 
@@ -544,30 +544,30 @@ contains
       character(len=*), parameter :: test_file = "test_hessian.mqc"
 
       ! Create test file with %hessian section
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Hessian'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%hessian'
-      write (unit, '(A)') 'displacement = 0.005'
-      write (unit, '(A)') 'temperature = 300.0'
-      write (unit, '(A)') 'pressure = 1.5'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Hessian"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%hessian"
+      write (unit, "(A)") "displacement = 0.005"
+      write (unit, "(A)") "temperature = 300.0"
+      write (unit, "(A)") "pressure = 1.5"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -592,8 +592,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_hessian_section
 
@@ -607,19 +607,19 @@ contains
       character(len=*), parameter :: test_file = "test_hessian_defaults.mqc"
 
       ! Create test file without %hessian section
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -641,8 +641,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_hessian_defaults
 
@@ -656,27 +656,27 @@ contains
       character(len=*), parameter :: test_file = "test_aimd.mqc"
 
       ! Create test file with %aimd section
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%aimd'
-      write (unit, '(A)') 'dt = 0.5'
-      write (unit, '(A)') 'nsteps = 1000'
-      write (unit, '(A)') 'initial_temperature = 350.0'
-      write (unit, '(A)') 'output_frequency = 10'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%aimd"
+      write (unit, "(A)") "dt = 0.5"
+      write (unit, "(A)") "nsteps = 1000"
+      write (unit, "(A)") "initial_temperature = 350.0"
+      write (unit, "(A)") "output_frequency = 10"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -700,8 +700,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_aimd_section
 
@@ -715,28 +715,28 @@ contains
       character(len=*), parameter :: test_file = "test_fragmentation.mqc"
 
       ! Create test file with %fragmentation section
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragmentation'
-      write (unit, '(A)') 'method = MBE'
-      write (unit, '(A)') 'level = 3'
-      write (unit, '(A)') 'allow_overlapping_fragments = true'
-      write (unit, '(A)') 'max_intersection_level = 5'
-      write (unit, '(A)') 'embedding = none'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragmentation"
+      write (unit, "(A)") "method = MBE"
+      write (unit, "(A)") "level = 3"
+      write (unit, "(A)") "allow_overlapping_fragments = true"
+      write (unit, "(A)") "max_intersection_level = 5"
+      write (unit, "(A)") "embedding = none"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -762,8 +762,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_fragmentation_section
 
@@ -777,28 +777,28 @@ contains
       character(len=*), parameter :: test_file = "test_cutoffs.mqc"
 
       ! Create test file with %fragmentation and %cutoffs
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragmentation'
-      write (unit, '(A)') 'level = 3'
-      write (unit, '(A)') '%cutoffs'
-      write (unit, '(A)') '2 = 10.0'
-      write (unit, '(A)') '3 = 8.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '2'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.7 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragmentation"
+      write (unit, "(A)") "level = 3"
+      write (unit, "(A)") "%cutoffs"
+      write (unit, "(A)") "2 = 10.0"
+      write (unit, "(A)") "3 = 8.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "2"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "H 0.7 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -822,8 +822,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_fragmentation_cutoffs
 
@@ -837,35 +837,35 @@ contains
       character(len=*), parameter :: test_file = "test_xtb_solvation.mqc"
 
       ! Create test file with %xtb solvation settings
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%xtb'
-      write (unit, '(A)') 'solvent = water'
-      write (unit, '(A)') 'solvation_model = cpcm'
-      write (unit, '(A)') 'use_cds = false'
-      write (unit, '(A)') 'use_shift = false'
-      write (unit, '(A)') 'dielectric = 80.0'
-      write (unit, '(A)') 'cpcm_nang = 230'
-      write (unit, '(A)') 'cpcm_rscale = 1.2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '3'
-      write (unit, '(A)') 'Water'
-      write (unit, '(A)') 'O 0.0 0.0 0.0'
-      write (unit, '(A)') 'H 1.0 0.0 0.0'
-      write (unit, '(A)') 'H 0.0 1.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%xtb"
+      write (unit, "(A)") "solvent = water"
+      write (unit, "(A)") "solvation_model = cpcm"
+      write (unit, "(A)") "use_cds = false"
+      write (unit, "(A)") "use_shift = false"
+      write (unit, "(A)") "dielectric = 80.0"
+      write (unit, "(A)") "cpcm_nang = 230"
+      write (unit, "(A)") "cpcm_rscale = 1.2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "3"
+      write (unit, "(A)") "Water"
+      write (unit, "(A)") "O 0.0 0.0 0.0"
+      write (unit, "(A)") "H 1.0 0.0 0.0"
+      write (unit, "(A)") "H 0.0 1.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -898,8 +898,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_parse_xtb_solvation
 
@@ -912,38 +912,38 @@ contains
       integer :: unit
       character(len=*), parameter :: test_file = "test_frag_global_groups.mqc"
 
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Energy'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragmentation'
-      write (unit, '(A)') 'method = MBE'
-      write (unit, '(A)') 'level = 2'
-      write (unit, '(A)') 'global_groups = 3'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragmentation"
+      write (unit, "(A)") "method = MBE"
+      write (unit, "(A)") "level = 2"
+      write (unit, "(A)") "global_groups = 3"
+      write (unit, "(A)") "end"
       close (unit)
 
       call read_mqc_file(test_file, config, parse_error)
@@ -955,8 +955,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
    end subroutine test_parse_fragmentation_global_groups
 
    subroutine test_parse_fragmentation_nodes_per_group(error)
@@ -968,38 +968,38 @@ contains
       integer :: unit
       character(len=*), parameter :: test_file = "test_frag_nodes_per_group.mqc"
 
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Energy'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragmentation'
-      write (unit, '(A)') 'method = MBE'
-      write (unit, '(A)') 'level = 2'
-      write (unit, '(A)') 'nodes_per_group = 4'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragmentation"
+      write (unit, "(A)") "method = MBE"
+      write (unit, "(A)") "level = 2"
+      write (unit, "(A)") "nodes_per_group = 4"
+      write (unit, "(A)") "end"
       close (unit)
 
       call read_mqc_file(test_file, config, parse_error)
@@ -1011,8 +1011,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
    end subroutine test_parse_fragmentation_nodes_per_group
 
    subroutine test_error_invalid_global_groups(error)
@@ -1024,38 +1024,38 @@ contains
       integer :: unit
       character(len=*), parameter :: test_file = "test_frag_invalid_global_groups.mqc"
 
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%model'
-      write (unit, '(A)') 'method = XTB-GFN2'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%driver'
-      write (unit, '(A)') 'type = Energy'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%structure'
-      write (unit, '(A)') 'charge = 0'
-      write (unit, '(A)') 'multiplicity = 1'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
-      write (unit, '(A)') ''
-      write (unit, '(A)') '%fragmentation'
-      write (unit, '(A)') 'method = MBE'
-      write (unit, '(A)') 'level = 2'
-      write (unit, '(A)') 'global_groups = 0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = XTB-GFN2"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%fragmentation"
+      write (unit, "(A)") "method = MBE"
+      write (unit, "(A)") "level = 2"
+      write (unit, "(A)") "global_groups = 0"
+      write (unit, "(A)") "end"
       close (unit)
 
       call read_mqc_file(test_file, config, parse_error)
@@ -1068,8 +1068,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
    end subroutine test_error_invalid_global_groups
 
    subroutine test_error_missing_schema(error)
@@ -1082,12 +1082,12 @@ contains
       character(len=*), parameter :: test_file = "test_missing_schema.mqc"
 
       ! Create test file without schema
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%geometry'
-      write (unit, '(A)') '1'
-      write (unit, '(A)') ''
-      write (unit, '(A)') 'H 0.0 0.0 0.0'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "H 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -1097,8 +1097,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_error_missing_schema
 
@@ -1112,13 +1112,13 @@ contains
       character(len=*), parameter :: test_file = "test_missing_geometry.mqc"
 
       ! Create test file without geometry
-      open (newunit=unit, file=test_file, status='replace', action='write')
-      write (unit, '(A)') '%schema'
-      write (unit, '(A)') 'name = mqc-frag'
-      write (unit, '(A)') 'version = 1.0'
-      write (unit, '(A)') 'index_base = 0'
-      write (unit, '(A)') 'units = angstrom'
-      write (unit, '(A)') 'end'
+      open (newunit=unit, file=test_file, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = mqc-frag"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
       close (unit)
 
       ! Parse file
@@ -1128,8 +1128,8 @@ contains
       if (allocated(error)) return
 
       call config%destroy()
-      open (newunit=unit, file=test_file, status='old', action='read')
-      close (unit, status='delete')
+      open (newunit=unit, file=test_file, status="old", action="read")
+      close (unit, status="delete")
 
    end subroutine test_error_missing_geometry
 
@@ -1147,14 +1147,14 @@ contains
       failed = 0
 
       do i = 1, size(tests)
-         write (*, '(A,I0,A,I0,A)', advance='no') "Running test ", i, "/", size(tests), ": "
-         write (*, '(A)', advance='no') trim(tests(i)%name)//"..."
+         write (*, "(A,I0,A,I0,A)", advance="no") "Running test ", i, "/", size(tests), ": "
+         write (*, "(A)", advance="no") trim(tests(i)%name)//"..."
 
          call tests(i)%test(error)
 
          if (allocated(error)) then
-            write (*, '(A)') " FAILED"
-            write (*, '(A)') "  Error: "//error%message
+            write (*, "(A)") " FAILED"
+            write (*, "(A)") "  Error: "//error%message
             failed = failed + 1
             stat = 1
             if (.not. allocated(errmsg)) then
@@ -1162,14 +1162,14 @@ contains
             end if
             deallocate (error)
          else
-            write (*, '(A)') " PASSED"
+            write (*, "(A)") " PASSED"
             passed = passed + 1
          end if
       end do
 
-      write (*, '(/,A,I0,A,I0,A)') "Tests passed: ", passed, "/", size(tests), ""
+      write (*, "(/,A,I0,A,I0,A)") "Tests passed: ", passed, "/", size(tests), ""
       if (failed > 0) then
-         write (*, '(A,I0)') "Tests failed: ", failed
+         write (*, "(A,I0)") "Tests failed: ", failed
       end if
 
    end subroutine run_testsuite

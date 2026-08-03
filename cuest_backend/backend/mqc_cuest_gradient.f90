@@ -90,7 +90,7 @@ contains
          scaled(:, i) = occupied(:, i)*orbital_energies(i)
       end do
 
-      call pic_gemm(scaled, occupied(:, 1:n_occ), weighted, transb='T', &
+      call pic_gemm(scaled, occupied(:, 1:n_occ), weighted, transb="T", &
                     alpha=factor, beta=0.0_dp)
       deallocate (scaled)
    end subroutine energy_weighted_density

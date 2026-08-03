@@ -45,35 +45,35 @@ contains
       character(len=*), intent(in) :: extra_model  !! e.g. "functional = pbe0"
       integer :: unit
 
-      open (newunit=unit, file=SCRATCH_FILE, status='replace', action='write')
-      write (unit, '(A)') "%schema"
-      write (unit, '(A)') "name = roundtrip"
-      write (unit, '(A)') "version = 1.0"
-      write (unit, '(A)') "index_base = 0"
-      write (unit, '(A)') "units = angstrom"
-      write (unit, '(A)') "end"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "%model"
-      write (unit, '(A)') "method = "//method
-      write (unit, '(A)') "basis = cc-pvdz"
-      write (unit, '(A)') "aux_basis = def2-universal-jkfit"
-      if (len_trim(extra_model) > 0) write (unit, '(A)') extra_model
-      write (unit, '(A)') "end"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "%driver"
-      write (unit, '(A)') "type = Energy"
-      write (unit, '(A)') "end"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "%structure"
-      write (unit, '(A)') "charge = 0"
-      write (unit, '(A)') "multiplicity = 1"
-      write (unit, '(A)') "end"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "%geometry"
-      write (unit, '(A)') "1"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "He 0.0 0.0 0.0"
-      write (unit, '(A)') "end"
+      open (newunit=unit, file=SCRATCH_FILE, status="replace", action="write")
+      write (unit, "(A)") "%schema"
+      write (unit, "(A)") "name = roundtrip"
+      write (unit, "(A)") "version = 1.0"
+      write (unit, "(A)") "index_base = 0"
+      write (unit, "(A)") "units = angstrom"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%model"
+      write (unit, "(A)") "method = "//method
+      write (unit, "(A)") "basis = cc-pvdz"
+      write (unit, "(A)") "aux_basis = def2-universal-jkfit"
+      if (len_trim(extra_model) > 0) write (unit, "(A)") extra_model
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%driver"
+      write (unit, "(A)") "type = Energy"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%structure"
+      write (unit, "(A)") "charge = 0"
+      write (unit, "(A)") "multiplicity = 1"
+      write (unit, "(A)") "end"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "%geometry"
+      write (unit, "(A)") "1"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "He 0.0 0.0 0.0"
+      write (unit, "(A)") "end"
       close (unit)
    end subroutine write_input
 
@@ -83,8 +83,8 @@ contains
 
       inquire (file=SCRATCH_FILE, exist=exists)
       if (.not. exists) return
-      open (newunit=unit, file=SCRATCH_FILE, status='old')
-      close (unit, status='delete')
+      open (newunit=unit, file=SCRATCH_FILE, status="old")
+      close (unit, status="delete")
    end subroutine remove_input
 
    subroutine test_hf_roundtrip(error)
@@ -195,7 +195,7 @@ program tester_mqc_config_roundtrip
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_config_roundtrip

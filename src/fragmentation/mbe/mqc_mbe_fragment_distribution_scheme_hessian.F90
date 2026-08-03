@@ -244,24 +244,24 @@ contains
       ! Print results
       call logger%info("============================================")
       call logger%info("Distributed Hessian calculation completed")
-      write (result_line, '(a,f25.15)') "  Final energy: ", result%energy%total()
+      write (result_line, "(a,f25.15)") "  Final energy: ", result%energy%total()
       call logger%info(trim(result_line))
 
       if (result%has_gradient) then
-         write (result_line, '(a,f25.15)') "  Gradient norm: ", sqrt(sum(result%gradient**2))
+         write (result_line, "(a,f25.15)") "  Gradient norm: ", sqrt(sum(result%gradient**2))
          call logger%info(trim(result_line))
       end if
 
       if (result%has_hessian) then
          hess_norm = sqrt(sum(result%hessian**2))
-         write (result_line, '(a,f25.15)') "  Hessian Frobenius norm: ", hess_norm
+         write (result_line, "(a,f25.15)") "  Hessian Frobenius norm: ", hess_norm
          call logger%info(trim(result_line))
 
          if (is_verbose .and. n_atoms < 20) then
             call logger%info(" ")
             call logger%info("Hessian matrix (Hartree/Bohr^2):")
             do i = 1, 3*n_atoms
-               write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*n_atoms)
+               write (result_line, "(a,i5,a,999f15.8)") "  Row ", i, ": ", (result%hessian(i, j), j=1, 3*n_atoms)
                call logger%info(trim(result_line))
             end do
             call logger%info(" ")
@@ -270,7 +270,7 @@ contains
             if (allocated(projected_hessian)) then
                call logger%info("Mass-weighted Hessian after trans/rot projection (a.u.):")
                do i = 1, 3*n_atoms
-                  write (result_line, '(a,i5,a,999f15.8)') "  Row ", i, ": ", (projected_hessian(i, j), j=1, 3*n_atoms)
+                  write (result_line, "(a,i5,a,999f15.8)") "  Row ", i, ": ", (projected_hessian(i, j), j=1, 3*n_atoms)
                   call logger%info(trim(result_line))
                end do
                call logger%info(" ")

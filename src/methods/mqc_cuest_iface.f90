@@ -18,17 +18,17 @@ module mqc_cuest_iface
 
    type :: cuest_scf_settings_t
       !! Method-independent description of one cuEST SCF calculation
-      character(len=32) :: basis_set = 'sto-3g'
+      character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
-      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
+      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
-      character(len=32) :: functional = ''
+      character(len=32) :: functional = ""
          !! Exchange-correlation functional; empty means Hartree-Fock
       logical :: spherical = .true.
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
-      character(len=16) :: guess = 'gwh'
+      character(len=16) :: guess = "gwh"
          !! Initial guess: 'core', 'gwh' or 'sac'
       integer :: device_rank = 0
          !! Node-local MPI rank; decides which GPU this rank binds to

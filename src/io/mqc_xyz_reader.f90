@@ -45,8 +45,8 @@ contains
       allocate (character(len=file_size) :: file_contents)
 
       ! Open and read entire file as stream
-      open (newunit=unit, file=filename, status='old', action='read', &
-            access='stream', form='unformatted', iostat=io_stat)
+      open (newunit=unit, file=filename, status="old", action="read", &
+            access="stream", form="unformatted", iostat=io_stat)
       if (io_stat /= 0) then
          call error%set(ERROR_IO, "Error opening file: "//trim(filename))
          return
@@ -139,7 +139,7 @@ contains
       character(len=:), allocatable :: str
       character(len=20) :: buffer
 
-      write (buffer, '(I0)') i
+      write (buffer, "(I0)") i
       str = trim(adjustl(buffer))
    end function int_to_string
 

@@ -41,7 +41,7 @@ contains
          level_name = "decamers"
       case default
          ! For levels > 10, use generic format
-         write (level_name, '(i0,a)') frag_level, "-mers"
+         write (level_name, "(i0,a)") frag_level, "-mers"
       end select
    end function get_frag_level_name
 
@@ -61,7 +61,7 @@ contains
       do i = 1, phys_frag%n_atoms
          symbol = element_number_to_symbol(phys_frag%element_numbers(i))
          ! Convert from Bohr back to Angstroms for printing
-         write (coord_line, '(a2,3f15.8)') symbol, to_angstrom(phys_frag%coordinates(1:3, i))
+         write (coord_line, "(a2,3f15.8)") symbol, to_angstrom(phys_frag%coordinates(1:3, i))
          call logger%info(trim(coord_line))
       end do
       call logger%info("=========================================")
@@ -105,10 +105,10 @@ contains
                character(len=256) :: header
                character(len=32) :: level_name
                level_name = get_frag_level_name(frag_level)
-               write (header, '(a,a,i0,a)') trim(level_name), " (", count_by_level, " fragments):"
+               write (header, "(a,a,i0,a)") trim(level_name), " (", count_by_level, " fragments):"
                ! Capitalize first letter
                if (len_trim(level_name) > 0) then
-                  if (level_name(1:1) >= 'a' .and. level_name(1:1) <= 'z') then
+                  if (level_name(1:1) >= "a" .and. level_name(1:1) <= "z") then
                      header(1:1) = achar(iachar(header(1:1)) - 32)
                   end if
                end if
@@ -123,18 +123,18 @@ contains
                   fragment_str = "["
                   do j = 1, fragment_size
                      if (j > 1) then
-                        write (fragment_str, '(a,a,i0)') trim(fragment_str), ",", polymers(i, j)
+                        write (fragment_str, "(a,a,i0)") trim(fragment_str), ",", polymers(i, j)
                      else
-                        write (fragment_str, '(a,i0)') trim(fragment_str), polymers(i, j)
+                        write (fragment_str, "(a,i0)") trim(fragment_str), polymers(i, j)
                      end if
                   end do
-                  write (fragment_str, '(a,a)') trim(fragment_str), "]"
+                  write (fragment_str, "(a,a)") trim(fragment_str), "]"
 
                   if (frag_level == 1) then
-                     write (energy_line, '(a,a,f20.10)') &
+                     write (energy_line, "(a,a,f20.10)") &
                         "  Fragment ", trim(adjustl(fragment_str)), energies(i)
                   else
-                     write (energy_line, '(a,a,f20.10,a,f20.10)') &
+                     write (energy_line, "(a,a,f20.10,a,f20.10)") &
                         "  Fragment ", trim(adjustl(fragment_str)), energies(i), &
                         "   deltaE: ", delta_energies(i)
                   end if

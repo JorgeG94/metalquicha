@@ -44,7 +44,7 @@ contains
 
       do i = 1, len(string)
          code = iachar(string(i:i))
-         if (code >= iachar('A') .and. code <= iachar('Z')) then
+         if (code >= iachar("A") .and. code <= iachar("Z")) then
             lower(i:i) = achar(code + 32)
          else
             lower(i:i) = string(i:i)
@@ -68,45 +68,45 @@ contains
       functional_id = -1
 
       select case (trim(key))
-      case ('hf', 'hartree-fock')
+      case ("hf", "hartree-fock")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_HF
-      case ('b3lyp', 'b3lyp5')
+      case ("b3lyp", "b3lyp5")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_B3LYP5
-      case ('b3lyp1')
+      case ("b3lyp1")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_B3LYP1
-      case ('b97')
+      case ("b97")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_B97
-      case ('blyp')
+      case ("blyp")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_BLYP
-      case ('m06-l', 'm06l')
+      case ("m06-l", "m06l")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_M06L
-      case ('pbe')
+      case ("pbe")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_PBE
-      case ('pbe0')
+      case ("pbe0")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_PBE0
-      case ('r2scan')
+      case ("r2scan")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_R2SCAN
-      case ('svwn5', 'lda', 'svwn')
+      case ("svwn5", "lda", "svwn")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_SVWN5
-      case ('b97m-v', 'b97mv')
+      case ("b97m-v", "b97mv")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_B97MV
-      case ('lc-wpbe', 'lcwpbe')
+      case ("lc-wpbe", "lcwpbe")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_LCWPBE
-      case ('wb97x')
+      case ("wb97x")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97X
-      case ('wb97x-v', 'wb97xv')
+      case ("wb97x-v", "wb97xv")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97XV
-      case ('wb97m-v', 'wb97mv')
+      case ("wb97m-v", "wb97mv")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_WB97MV
-      case ('lc-wpbeh', 'lcwpbeh')
+      case ("lc-wpbeh", "lcwpbeh")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_LCWPBEH
-      case ('cam-b3lyp', 'camb3lyp')
+      case ("cam-b3lyp", "camb3lyp")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_CAMB3LYP
-      case ('hse06')
+      case ("hse06")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_HSE06
-      case ('m06')
+      case ("m06")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_M06
-      case ('m06-2x', 'm062x')
+      case ("m06-2x", "m062x")
          functional_id = CUEST_XCINTPLAN_PARAMETERS_FUNCTIONAL_M062X
       case default
          call error%set(ERROR_VALIDATION, "Unsupported functional '"//trim(name)// &

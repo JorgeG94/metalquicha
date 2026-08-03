@@ -69,10 +69,10 @@ contains
                   use pic_io, only: to_char
                   character(len=512) :: error_msg
                   integer :: j
-                  write (error_msg, '(a,i0,a,*(i0,1x))') "Subset not found! Fragment idx=", fragment_idx, &
+                  write (error_msg, "(a,i0,a,*(i0,1x))") "Subset not found! Fragment idx=", fragment_idx, &
                      " seeking subset: ", (subset(j), j=1, subset_size)
                   call logger%error(trim(error_msg))
-                  write (error_msg, '(a,*(i0,1x))') "  Full fragment: ", (fragment(j), j=1, n)
+                  write (error_msg, "(a,*(i0,1x))") "  Full fragment: ", (fragment(j), j=1, n)
                   call logger%error(trim(error_msg))
                   if (present(world_comm)) then
                      call abort_comm(world_comm, 1)
@@ -121,9 +121,9 @@ contains
       if (current_log_level >= debug_level) then
          block
             character(len=256) :: debug_msg
-            write (debug_msg, '(a,i0,a,*(i0,1x))') "  Mapping fragment with ", size(monomers), " monomers: ", monomers
+            write (debug_msg, "(a,i0,a,*(i0,1x))") "  Mapping fragment with ", size(monomers), " monomers: ", monomers
             call logger%debug(trim(debug_msg))
-            write (debug_msg, '(a,i0,a)') "  Fragment has ", size(frag_grad, 2), " atoms"
+            write (debug_msg, "(a,i0,a)") "  Fragment has ", size(frag_grad, 2), " atoms"
             call logger%debug(trim(debug_msg))
          end block
       end if
@@ -157,7 +157,7 @@ contains
                if (current_log_level >= debug_level .and. i_atom == 1) then
                   block
                      character(len=256) :: debug_msg
-                     write (debug_msg, '(a,i0,a,i0,a,i0)') &
+                     write (debug_msg, "(a,i0,a,i0,a,i0)") &
                         "    Monomer ", monomers(i_mon), ": frag atoms ", &
                         frag_atom_idx, " -> sys atom ", sys_atom_idx
                      call logger%debug(trim(debug_msg))
@@ -552,11 +552,11 @@ contains
       call logger%info("MBE Energy breakdown:")
       do nlevel = 1, max_level
          if (abs(sum_by_level(nlevel)) > 1e-15_dp) then
-            write (energy_line, '(a,i0,a,f20.10)') "  ", nlevel, "-body:  ", sum_by_level(nlevel)
+            write (energy_line, "(a,i0,a,f20.10)") "  ", nlevel, "-body:  ", sum_by_level(nlevel)
             call logger%info(trim(energy_line))
          end if
       end do
-      write (energy_line, '(a,f20.10)') "  Total:   ", total_energy
+      write (energy_line, "(a,f20.10)") "  Total:   ", total_energy
       call logger%info(trim(energy_line))
    end subroutine print_mbe_energy_breakdown
 
@@ -576,7 +576,7 @@ contains
          call logger%info(" ")
          call logger%info("Total MBE Gradient (Hartree/Bohr):")
          do iatom = 1, sys_geom%total_atoms
-            write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+            write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
             call logger%info(trim(grad_line))
          end do
@@ -965,9 +965,9 @@ contains
             real(dp) :: dipole_magnitude
             dipole_magnitude = norm2(mbe_result%dipole)*2.541746_dp  ! Convert e*Bohr to Debye
             call logger%info("MBE Dipole moment:")
-            write (dipole_line, '(a,3f15.8)') "  Dipole (e*Bohr): ", mbe_result%dipole
+            write (dipole_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", mbe_result%dipole
             call logger%info(trim(dipole_line))
-            write (dipole_line, '(a,f15.8)') "  Dipole magnitude (Debye): ", dipole_magnitude
+            write (dipole_line, "(a,f15.8)") "  Dipole magnitude (Debye): ", dipole_magnitude
             call logger%info(trim(dipole_line))
          end block
       end if

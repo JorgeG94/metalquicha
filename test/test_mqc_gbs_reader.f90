@@ -36,28 +36,28 @@ contains
       !! Write a two-element Gaussian94 file mirroring the def2-SVP layout
       integer :: unit
 
-      open (newunit=unit, file=TEST_FILE, status='replace', action='write')
-      write (unit, '(A)') "spherical"
-      write (unit, '(A)') ""
-      write (unit, '(A)') "! a comment line that must be ignored"
-      write (unit, '(A)') "****"
-      write (unit, '(A)') "H     0"
-      write (unit, '(A)') "S    3   1.00"
-      write (unit, '(A)') "     13.0107010              0.19682158D-01"
-      write (unit, '(A)') "      1.9622572              0.13796524"
-      write (unit, '(A)') "      0.44453796             0.47831935"
-      write (unit, '(A)') "S    1   1.00"
-      write (unit, '(A)') "      0.12194962             1.0000000"
-      write (unit, '(A)') "P    1   1.00"
-      write (unit, '(A)') "      0.8000000              1.0000000"
-      write (unit, '(A)') "****"
-      write (unit, '(A)') "O     0"
-      write (unit, '(A)') "S    2   1.00"
-      write (unit, '(A)') "   2266.1767785             -0.53431809926D-02"
-      write (unit, '(A)') "    340.87010191            -0.39890039230D-01"
-      write (unit, '(A)') "P    1   1.00"
-      write (unit, '(A)') "      0.2700058226            1.0000000"
-      write (unit, '(A)') "****"
+      open (newunit=unit, file=TEST_FILE, status="replace", action="write")
+      write (unit, "(A)") "spherical"
+      write (unit, "(A)") ""
+      write (unit, "(A)") "! a comment line that must be ignored"
+      write (unit, "(A)") "****"
+      write (unit, "(A)") "H     0"
+      write (unit, "(A)") "S    3   1.00"
+      write (unit, "(A)") "     13.0107010              0.19682158D-01"
+      write (unit, "(A)") "      1.9622572              0.13796524"
+      write (unit, "(A)") "      0.44453796             0.47831935"
+      write (unit, "(A)") "S    1   1.00"
+      write (unit, "(A)") "      0.12194962             1.0000000"
+      write (unit, "(A)") "P    1   1.00"
+      write (unit, "(A)") "      0.8000000              1.0000000"
+      write (unit, "(A)") "****"
+      write (unit, "(A)") "O     0"
+      write (unit, "(A)") "S    2   1.00"
+      write (unit, "(A)") "   2266.1767785             -0.53431809926D-02"
+      write (unit, "(A)") "    340.87010191            -0.39890039230D-01"
+      write (unit, "(A)") "P    1   1.00"
+      write (unit, "(A)") "      0.2700058226            1.0000000"
+      write (unit, "(A)") "****"
       close (unit)
    end subroutine write_test_file
 
@@ -68,8 +68,8 @@ contains
 
       inquire (file=TEST_FILE, exist=exists)
       if (.not. exists) return
-      open (newunit=unit, file=TEST_FILE, status='old')
-      close (unit, status='delete')
+      open (newunit=unit, file=TEST_FILE, status="old")
+      close (unit, status="delete")
    end subroutine remove_test_file
 
    subroutine test_parse_hydrogen(error)
@@ -240,7 +240,7 @@ program tester_mqc_gbs_reader
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_gbs_reader

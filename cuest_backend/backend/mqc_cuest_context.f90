@@ -31,7 +31,7 @@ module mqc_cuest_context
 
    public :: cuest_context_t        !! Per-rank cuEST handle
    public :: get_cuest_context      !! Lazily initialized process-wide context
-   public :: finalize_cuest_context !! Release the process-wide context
+   public :: finalize_cuest_context  !! Release the process-wide context
 
    type :: device_pool_t
       !! A device buffer that grows to a high-water mark and is never shrunk
@@ -62,11 +62,11 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_result   !! Matrix being built
       type(device_pool_t) :: scratch_c_occ    !! Occupied MO coefficients (alpha)
       type(device_pool_t) :: scratch_c_occ_beta  !! Beta occupied MOs (UKS)
-      type(device_pool_t) :: scratch_result_beta !! Second output matrix (UKS)
+      type(device_pool_t) :: scratch_result_beta  !! Second output matrix (UKS)
       type(device_pool_t) :: scratch_xyz      !! Atom coordinates
       type(device_pool_t) :: scratch_charges  !! Nuclear charges
-      type(device_pool_t) :: scratch_gradient !! natom x 3 gradient output
-      type(device_pool_t) :: scratch_charge_gradient !! Hellmann-Feynman half
+      type(device_pool_t) :: scratch_gradient  !! natom x 3 gradient output
+      type(device_pool_t) :: scratch_charge_gradient  !! Hellmann-Feynman half
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch

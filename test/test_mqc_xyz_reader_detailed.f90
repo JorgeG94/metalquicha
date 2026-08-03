@@ -34,7 +34,7 @@ contains
 
       type(geometry_type) :: geom
       type(error_t) :: parse_error
-      character(len=*), parameter :: minimal_xyz = "1"//new_line('a')//""//new_line('a')//"H 0 0 0"
+      character(len=*), parameter :: minimal_xyz = "1"//new_line("a")//""//new_line("a")//"H 0 0 0"
 
       write (*, *) "DEBUG: Testing minimal XYZ: '", minimal_xyz, "'"
       write (*, *) "DEBUG: Length of minimal_xyz: ", len(minimal_xyz)
@@ -82,8 +82,8 @@ contains
 
       type(geometry_type) :: geom
       type(error_t) :: parse_error
-      character(len=*), parameter :: spaced_xyz = " 1 "//new_line('a')// &
-                                     "  Test  "//new_line('a')// &
+      character(len=*), parameter :: spaced_xyz = " 1 "//new_line("a")// &
+                                     "  Test  "//new_line("a")// &
                                      "  H   0.0   0.0   0.0  "
 
       call read_xyz_string(spaced_xyz, geom, parse_error)
@@ -107,9 +107,9 @@ contains
 
       type(geometry_type) :: geom
       type(error_t) :: parse_error
-      character(len=*), parameter :: debug_xyz = "2"//new_line('a')// &
-                                     "Debug test"//new_line('a')// &
-                                     "H 0.0 0.0 0.0"//new_line('a')// &
+      character(len=*), parameter :: debug_xyz = "2"//new_line("a")// &
+                                     "Debug test"//new_line("a")// &
+                                     "H 0.0 0.0 0.0"//new_line("a")// &
                                      "He 1.0 0.0 0.0"
 
       write (*, *) "DEBUG: Input string length: ", len(debug_xyz)
@@ -175,12 +175,12 @@ contains
       character(len=:), allocatable :: test_str
       integer :: i
 
-      test_str = "1"//new_line('a')//"test"//new_line('a')//"H 0 0 0"
+      test_str = "1"//new_line("a")//"test"//new_line("a")//"H 0 0 0"
 
       write (*, *) "DEBUG: Constructed string length: ", len(test_str)
       write (*, *) "DEBUG: String bytes:"
       do i = 1, len(test_str)
-         write (*, '(A,I0,A,I0,A,A)') "  [", i, "] = ", ichar(test_str(i:i)), " '", test_str(i:i), "'"
+         write (*, "(A,I0,A,I0,A,A)") "  [", i, "] = ", ichar(test_str(i:i)), " '", test_str(i:i), "'"
       end do
 
       call check(error, len(test_str) > 5, "String should have reasonable length")
@@ -227,10 +227,10 @@ contains
 
       ! Test the exact case from the failing test
       character(len=*), parameter :: water_xyz = &
-                                     "3"//new_line('a')// &
-                                     "Water molecule"//new_line('a')// &
-                                     "O    0.000000    0.000000    0.119262"//new_line('a')// &
-                                     "H    0.000000    0.763239   -0.477047"//new_line('a')// &
+                                     "3"//new_line("a")// &
+                                     "Water molecule"//new_line("a")// &
+                                     "O    0.000000    0.000000    0.119262"//new_line("a")// &
+                                     "H    0.000000    0.763239   -0.477047"//new_line("a")// &
                                      "H    0.000000   -0.763239   -0.477047"
 
       write (*, *) "DEBUG: Testing original failing case"
@@ -278,7 +278,7 @@ program tester_mqc_xyz_reader_detailed
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_xyz_reader_detailed

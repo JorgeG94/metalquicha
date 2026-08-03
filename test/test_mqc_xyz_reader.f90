@@ -30,10 +30,10 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
       character(len=*), parameter :: test_xyz = &
-                                     "3"//new_line('a')// &
-                                     "Water molecule"//new_line('a')// &
-                                     "O    0.000000    0.000000    0.119262"//new_line('a')// &
-                                     "H    0.000000    0.763239   -0.477047"//new_line('a')// &
+                                     "3"//new_line("a")// &
+                                     "Water molecule"//new_line("a")// &
+                                     "O    0.000000    0.000000    0.119262"//new_line("a")// &
+                                     "H    0.000000    0.763239   -0.477047"//new_line("a")// &
                                      "H    0.000000   -0.763239   -0.477047"
 
       call read_xyz_string(test_xyz, geom, parse_error)
@@ -62,8 +62,8 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
 
-      call read_xyz_string("1"//new_line('a')// &
-                           "Single carbon atom"//new_line('a')// &
+      call read_xyz_string("1"//new_line("a")// &
+                           "Single carbon atom"//new_line("a")// &
                            "C  1.0  2.0  3.0", geom, parse_error)
 
       call check(error,.not. parse_error%has_error(), "read_xyz_string should succeed for single atom")
@@ -87,9 +87,9 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
 
-      call read_xyz_string("2"//new_line('a')// &
-                           new_line('a')// &
-                           "He  0.0  0.0  0.0"//new_line('a')// &
+      call read_xyz_string("2"//new_line("a")// &
+                           new_line("a")// &
+                           "He  0.0  0.0  0.0"//new_line("a")// &
                            "Ne  5.0  0.0  0.0", geom, parse_error)
 
       call check(error,.not. parse_error%has_error(), "read_xyz_string should handle empty comment")
@@ -106,8 +106,8 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
 
-      call read_xyz_string("3"//new_line('a')// &
-                           "Should fail"//new_line('a')// &
+      call read_xyz_string("3"//new_line("a")// &
+                           "Should fail"//new_line("a")// &
                            "H  0.0  0.0  0.0", geom, parse_error)
 
       call check(error, parse_error%has_error(), "Should detect insufficient lines")
@@ -119,7 +119,7 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
 
-      call read_xyz_string("not_a_number"//new_line('a')// &
+      call read_xyz_string("not_a_number"//new_line("a")// &
                            "Comment", geom, parse_error)
 
       call check(error, parse_error%has_error(), "Should detect invalid atom count")
@@ -131,8 +131,8 @@ contains
       type(geometry_type) :: geom
       type(error_t) :: parse_error
 
-      call read_xyz_string("1"//new_line('a')// &
-                           "Test"//new_line('a')// &
+      call read_xyz_string("1"//new_line("a")// &
+                           "Test"//new_line("a")// &
                            "C  1.0  invalid  3.0", geom, parse_error)
 
       call check(error, parse_error%has_error(), "Should detect malformed coordinates")
@@ -162,7 +162,7 @@ program tester_mqc_xyz_reader
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_xyz_reader

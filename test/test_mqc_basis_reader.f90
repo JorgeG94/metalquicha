@@ -10,17 +10,17 @@ module test_mqc_basis_reader
    public :: collect_mqc_basis_reader_tests
 
    character(len=*), parameter :: test_basis = &
-                                  "$DATA"//new_line('a')// &
-                                  ""//new_line('a')// &
-                                  "HYDROGEN"//new_line('a')// &
-                                  "S 2"//new_line('a')// &
-                                  "1 1.0 2.0"//new_line('a')// &
-                                  "2 1.0 2.0"//new_line('a')// &
-                                  ""//new_line('a')// &
-                                  "L 2"//new_line('a')// &
-                                  "1 1.0 2.0 3.0"//new_line('a')// &
-                                  "2 4.0 5.0 6.0"//new_line('a')// &
-                                  ""//new_line('a')// &
+                                  "$DATA"//new_line("a")// &
+                                  ""//new_line("a")// &
+                                  "HYDROGEN"//new_line("a")// &
+                                  "S 2"//new_line("a")// &
+                                  "1 1.0 2.0"//new_line("a")// &
+                                  "2 1.0 2.0"//new_line("a")// &
+                                  ""//new_line("a")// &
+                                  "L 2"//new_line("a")// &
+                                  "1 1.0 2.0 3.0"//new_line("a")// &
+                                  "2 4.0 5.0 6.0"//new_line("a")// &
+                                  ""//new_line("a")// &
                                   "$END"
 
 contains
@@ -157,24 +157,24 @@ contains
       character(len=1) :: ang_char
 
       ang_char = ang_mom_int_to_char(0)
-      call check(error, ang_char, 'S', "ang_mom 0 should be S")
+      call check(error, ang_char, "S", "ang_mom 0 should be S")
       if (allocated(error)) return
 
       ang_char = ang_mom_int_to_char(1)
-      call check(error, ang_char, 'P', "ang_mom 1 should be P")
+      call check(error, ang_char, "P", "ang_mom 1 should be P")
       if (allocated(error)) return
 
       ang_char = ang_mom_int_to_char(2)
-      call check(error, ang_char, 'D', "ang_mom 2 should be D")
+      call check(error, ang_char, "D", "ang_mom 2 should be D")
       if (allocated(error)) return
 
       ang_char = ang_mom_int_to_char(3)
-      call check(error, ang_char, 'F', "ang_mom 3 should be F")
+      call check(error, ang_char, "F", "ang_mom 3 should be F")
       if (allocated(error)) return
 
       ! -1 is used internally for L shells but ang_mom_int_to_char returns '?' for unknown
       ang_char = ang_mom_int_to_char(-1)
-      call check(error, ang_char, '?', "ang_mom -1 should return '?' (unknown)")
+      call check(error, ang_char, "?", "ang_mom -1 should return '?' (unknown)")
       if (allocated(error)) return
    end subroutine test_ang_mom_conversions
 
@@ -201,7 +201,7 @@ program tester_mqc_basis_reader
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 end program tester_mqc_basis_reader

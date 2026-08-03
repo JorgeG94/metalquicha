@@ -73,7 +73,7 @@ program main
 
       call set_output_json_filename(input_file)
       ! Validate file extension
-      if (.not. ends_with(input_file, '.mqc')) then
+      if (.not. ends_with(input_file, ".mqc")) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
             call logger%error("Invalid input file extension. Expected .mqc")
          end if

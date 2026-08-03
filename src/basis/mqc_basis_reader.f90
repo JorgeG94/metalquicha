@@ -34,21 +34,21 @@ contains
       integer :: ang_mom  !! Corresponding integer value
 
       select case (ang_mom_char)
-      case ('S')
+      case ("S")
          ang_mom = 0
-      case ('P')
+      case ("P")
          ang_mom = 1
-      case ('D')
+      case ("D")
          ang_mom = 2
-      case ('F')
+      case ("F")
          ang_mom = 3
-      case ('G')
+      case ("G")
          ang_mom = 4
-      case ('H')
+      case ("H")
          ang_mom = 5
-      case ('I')
+      case ("I")
          ang_mom = 6
-      case ('L')
+      case ("L")
          ang_mom = -1  ! Special case: L shells are split into S+P
       case default
          ang_mom = -1
@@ -65,21 +65,21 @@ contains
 
       select case (ang_mom)
       case (0)
-         ang_mom_char = 'S'
+         ang_mom_char = "S"
       case (1)
-         ang_mom_char = 'P'
+         ang_mom_char = "P"
       case (2)
-         ang_mom_char = 'D'
+         ang_mom_char = "D"
       case (3)
-         ang_mom_char = 'F'
+         ang_mom_char = "F"
       case (4)
-         ang_mom_char = 'G'
+         ang_mom_char = "G"
       case (5)
-         ang_mom_char = 'H'
+         ang_mom_char = "H"
       case (6)
-         ang_mom_char = 'I'
+         ang_mom_char = "I"
       case default
-         ang_mom_char = '?'
+         ang_mom_char = "?"
       end select
    end function ang_mom_int_to_char
 
@@ -115,7 +115,7 @@ contains
       if (trimmed_len == 0) then
          res = .true.
       else
-         res = (line(1:1) == '$')
+         res = (line(1:1) == "$")
       end if
    end function is_blank_or_control
 
@@ -131,7 +131,7 @@ contains
       end if
 
       first_char = line(1:1)
-      res = (first_char >= '0' .and. first_char <= '9')
+      res = (first_char >= "0" .and. first_char <= "9")
    end function is_function_line
 
    pure function is_shell_header(line) result(res)
@@ -146,7 +146,7 @@ contains
 
       first_char = line(1:1)
 
-      if (.not. any(first_char == ['S', 'P', 'D', 'F', 'G', 'H', 'I', 'L'])) return
+      if (.not. any(first_char == ["S", "P", "D", "F", "G", "H", "I", "L"])) return
 
       read (line(2:), *, iostat=ios) dummy
       res = (ios == 0)
@@ -226,7 +226,7 @@ contains
                ang_mom = line(1:1)
 
                ! L shells become 2 shells (S + P)
-               if (ang_mom == 'L') then
+               if (ang_mom == "L") then
                   nshells = nshells + 2
                else
                   nshells = nshells + 1
@@ -261,12 +261,12 @@ contains
       integer :: newline_pos
 
       if (line_start > len(string)) then
-         line = ''
+         line = ""
          line_end = 0
          return
       end if
 
-      newline_pos = index(string(line_start:), new_line('a'))
+      newline_pos = index(string(line_start:), new_line("a"))
 
       if (newline_pos == 0) then
          ! Last line (no newline at end)
@@ -382,7 +382,7 @@ contains
                   return
                end if
 
-               if (ang_mom == 'L') then
+               if (ang_mom == "L") then
                   ! L shell: create two shells (S and P)
                   reading_l_shell = .true.
 

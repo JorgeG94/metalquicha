@@ -27,7 +27,7 @@ module mqc_gbs_reader
    integer, parameter :: MAX_LINE = 512  !! Longest .gbs line we accept
 
    character(len=1), parameter :: SHELL_SYMBOLS(0:6) = &
-                                  [character(len=1) :: 'S', 'P', 'D', 'F', 'G', 'H', 'I']
+                                  [character(len=1) :: "S", "P", "D", "F", "G", "H", "I"]
       !! Angular momentum symbols, indexed by L
 
 contains
@@ -40,7 +40,7 @@ contains
 
       do i = 1, len(string)
          code = iachar(string(i:i))
-         if (code >= iachar('a') .and. code <= iachar('z')) then
+         if (code >= iachar("a") .and. code <= iachar("z")) then
             upper(i:i) = achar(code - 32)
          else
             upper(i:i) = string(i:i)
@@ -76,7 +76,7 @@ contains
       n_words = 0
       in_word = .false.
       do i = 1, len_trim(line)
-         if (line(i:i) == ' ' .or. line(i:i) == achar(9)) then
+         if (line(i:i) == " " .or. line(i:i) == achar(9)) then
             in_word = .false.
          else if (.not. in_word) then
             in_word = .true.
@@ -91,17 +91,17 @@ contains
       character(len=len(line)) :: token
       integer :: i, j
 
-      token = ''
+      token = ""
       i = 1
       do while (i <= len_trim(line))
-         if (line(i:i) /= ' ' .and. line(i:i) /= achar(9)) exit
+         if (line(i:i) /= " " .and. line(i:i) /= achar(9)) exit
          i = i + 1
       end do
       if (i > len_trim(line)) return
 
       j = i
       do while (j <= len_trim(line))
-         if (line(j:j) == ' ' .or. line(j:j) == achar(9)) exit
+         if (line(j:j) == " " .or. line(j:j) == achar(9)) exit
          j = j + 1
       end do
       token = line(i:j - 1)
@@ -115,7 +115,7 @@ contains
 
       trimmed = adjustl(line)
       skip = (len_trim(trimmed) == 0)
-      if (.not. skip) skip = (trimmed(1:1) == '!')
+      if (.not. skip) skip = (trimmed(1:1) == "!")
    end function is_skippable
 
    subroutine read_gbs_element(gbs_path, element_symbol, atom_basis, error)
@@ -137,7 +137,7 @@ contains
 
       wanted = upcase(adjustl(element_symbol))
 
-      open (newunit=unit, file=gbs_path, status='old', action='read', iostat=iostat)
+      open (newunit=unit, file=gbs_path, status="old", action="read", iostat=iostat)
       if (iostat /= 0) then
          call error%set(ERROR_IO, "Unable to open GBS basis file: "//trim(gbs_path))
          return
@@ -149,7 +149,7 @@ contains
       found_block = .false.
       n_to_skip = 0
       do
-         read (unit, '(A)', iostat=iostat) line
+         read (unit, "(A)", iostat=iostat) line
          if (iostat /= 0) exit
          if (is_skippable(line)) cycle
 
@@ -205,7 +205,7 @@ contains
       found_block = .false.
       n_prim_to_parse = 0
       do
-         read (unit, '(A)', iostat=iostat) line
+         read (unit, "(A)", iostat=iostat) line
          if (iostat /= 0) exit
          if (is_skippable(line)) cycle
 

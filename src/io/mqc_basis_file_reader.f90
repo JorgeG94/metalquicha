@@ -37,8 +37,8 @@ contains
       allocate (character(len=file_size) :: basis_file%full_content)
 
       ! Open and read entire file
-      open (newunit=unit, file=filename, status='old', action='read', &
-            access='stream', form='unformatted', iostat=iostat)
+      open (newunit=unit, file=filename, status="old", action="read", &
+            access="stream", form="unformatted", iostat=iostat)
       if (iostat /= 0) then
          call error%set(ERROR_IO, "Error opening file: "//filename)
          return
@@ -85,11 +85,11 @@ contains
       search_element = uppercase(trim(element))
 
       ! Find the element name (it appears on its own line)
-      start_pos = index(basis_file%data_section, new_line('a')//trim(search_element)//new_line('a'))
+      start_pos = index(basis_file%data_section, new_line("a")//trim(search_element)//new_line("a"))
 
       if (start_pos == 0) then
          ! Try without leading newline (might be first element after $DATA)
-         if (index(basis_file%data_section, trim(search_element)//new_line('a')) == 1) then
+         if (index(basis_file%data_section, trim(search_element)//new_line("a")) == 1) then
             start_pos = 1
          else
             call error%set(ERROR_VALIDATION, "Element not found in basis set file: "//element)
@@ -109,7 +109,7 @@ contains
 
       i = start_pos + len(search_element) + 1
       do while (i < len(basis_file%data_section))
-         if (basis_file%data_section(i:i) == new_line('a')) then
+         if (basis_file%data_section(i:i) == new_line("a")) then
             at_line_start = .true.
             i = i + 1
             cycle
@@ -145,8 +145,8 @@ contains
       integer :: ic
 
       ic = iachar(c)
-      is_alpha = (ic >= iachar('A') .and. ic <= iachar('Z')) .or. &
-                 (ic >= iachar('a') .and. ic <= iachar('z'))
+      is_alpha = (ic >= iachar("A") .and. ic <= iachar("Z")) .or. &
+                 (ic >= iachar("a") .and. ic <= iachar("z"))
    end function is_letter
 
    pure function uppercase(str) result(upper)
@@ -160,7 +160,7 @@ contains
 
       do i = 1, len(str)
          ic = iachar(str(i:i))
-         if (ic >= iachar('a') .and. ic <= iachar('z')) then
+         if (ic >= iachar("a") .and. ic <= iachar("z")) then
             upper(i:i) = achar(ic - 32)
          end if
       end do
@@ -173,7 +173,7 @@ contains
       integer :: ic
 
       ic = iachar(c)
-      is_upper = (ic >= iachar('A') .and. ic <= iachar('Z'))
+      is_upper = (ic >= iachar("A") .and. ic <= iachar("Z"))
    end function is_uppercase_letter
 
    !> Compare two strings after trimming and adjusting (removing leading/trailing whitespace)

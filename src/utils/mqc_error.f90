@@ -119,7 +119,7 @@ contains
       end if
 
       ! Build error message
-      write (buffer, '(A,I0,A)') "Error ", this%code, ": "
+      write (buffer, "(A,I0,A)") "Error ", this%code, ": "
       pos = len_trim(buffer) + 1
 
       if (allocated(this%message)) then
@@ -129,11 +129,11 @@ contains
 
       ! Add stack trace if available
       if (this%stack_depth > 0) then
-         buffer(pos:) = new_line('a')//"Call stack (most recent first):"
+         buffer(pos:) = new_line("a")//"Call stack (most recent first):"
          pos = len_trim(buffer) + 1
 
          do i = this%stack_depth, 1, -1
-            write (buffer(pos:), '(A,I0,A)') new_line('a')//"  [", i, "] "
+            write (buffer(pos:), "(A,I0,A)") new_line("a")//"  [", i, "] "
             pos = len_trim(buffer) + 1
             buffer(pos:) = trim(this%call_stack(i))
             pos = len_trim(buffer) + 1
@@ -156,19 +156,19 @@ contains
       if (.not. this%has_error()) return
 
       ! Print error message
-      write (out_unit, '(A,I0,A)', advance='no') "Error ", this%code, ": "
+      write (out_unit, "(A,I0,A)", advance="no") "Error ", this%code, ": "
       if (allocated(this%message)) then
-         write (out_unit, '(A)') trim(this%message)
+         write (out_unit, "(A)") trim(this%message)
       else
-         write (out_unit, '(A)') "(no message)"
+         write (out_unit, "(A)") "(no message)"
       end if
 
       ! Print stack trace if available
       if (this%stack_depth > 0) then
-         write (out_unit, '(A)') "Call stack (most recent first):"
+         write (out_unit, "(A)") "Call stack (most recent first):"
          do i = this%stack_depth, 1, -1
-            write (out_unit, '(A,I0,A)', advance='no') "  [", i, "] "
-            write (out_unit, '(A)') trim(this%call_stack(i))
+            write (out_unit, "(A,I0,A)", advance="no") "  [", i, "] "
+            write (out_unit, "(A)") trim(this%call_stack(i))
          end do
       end if
    end subroutine error_print_trace

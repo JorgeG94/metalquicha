@@ -25,7 +25,7 @@ program check_gradient
    integer :: iatom, ixyz, n_atoms, n_arg
    character(len=32) :: functional
 
-   functional = ''
+   functional = ""
    n_arg = command_argument_count()
    if (n_arg >= 1) call get_command_argument(1, functional)
 
@@ -34,8 +34,8 @@ program check_gradient
    call build_water(fragment)
    n_atoms = fragment%n_atoms
 
-   settings%basis_set = 'def2-svp'
-   settings%aux_basis_set = 'def2-universal-jkfit'
+   settings%basis_set = "def2-svp"
+   settings%aux_basis_set = "def2-universal-jkfit"
    settings%functional = functional
    ! The gradient inherits roughly the square root of the density error, and
    ! the finite differences need energies far tighter than the step size, so
@@ -45,21 +45,21 @@ program check_gradient
    settings%max_iter = 200
 
    if (len_trim(functional) == 0) then
-      write (*, '(A)') "Gradient check: Hartree-Fock / def2-SVP / water"
+      write (*, "(A)") "Gradient check: Hartree-Fock / def2-SVP / water"
    else
-      write (*, '(A,A,A)') "Gradient check: ", trim(functional), " / def2-SVP / water"
+      write (*, "(A,A,A)") "Gradient check: ", trim(functional), " / def2-SVP / water"
    end if
-   write (*, '(A,ES9.2,A)') "  finite-difference step: ", step, " Bohr (central)"
+   write (*, "(A,ES9.2,A)") "  finite-difference step: ", step, " Bohr (central)"
 
    ! ---- analytic ----------------------------------------------------------
    call run_cuest_scf(settings, fragment, result, want_gradient=.true.)
    if (result%has_error) then
-      write (*, '(A)') "FAILED: "//result%error%get_message()
+      write (*, "(A)") "FAILED: "//result%error%get_message()
       error stop 1
    end if
    allocate (analytic(3, n_atoms))
    analytic = result%gradient
-   write (*, '(A,F20.12)') "  energy: ", result%energy%scf
+   write (*, "(A,F20.12)") "  energy: ", result%energy%scf
 
    ! ---- central differences ------------------------------------------------
    allocate (numeric(3, n_atoms))
@@ -75,11 +75,11 @@ program check_gradient
    end do
 
    ! ---- report --------------------------------------------------------------
-   write (*, '(A)') ""
-   write (*, '(A)') "  atom  cmp        analytic          finite-diff         difference"
+   write (*, "(A)") ""
+   write (*, "(A)") "  atom  cmp        analytic          finite-diff         difference"
    do iatom = 1, n_atoms
       do ixyz = 1, 3
-         write (*, '(2X,I4,3X,I2,3X,3F20.12)') iatom, ixyz, &
+         write (*, "(2X,I4,3X,I2,3X,3F20.12)") iatom, ixyz, &
             analytic(ixyz, iatom), numeric(ixyz, iatom), &
             analytic(ixyz, iatom) - numeric(ixyz, iatom)
       end do
@@ -87,10 +87,10 @@ program check_gradient
 
    max_dev = maxval(abs(analytic - numeric))
    rms = sqrt(sum((analytic - numeric)**2)/real(3*n_atoms, dp))
-   write (*, '(A)') ""
-   write (*, '(A,ES12.4,A)') "  max |analytic - numeric| : ", max_dev, " Ha/Bohr"
-   write (*, '(A,ES12.4,A)') "  rms deviation            : ", rms, " Ha/Bohr"
-   write (*, '(A,ES12.4,A)') "  gradient norm            : ", sqrt(sum(analytic**2)), " Ha/Bohr"
+   write (*, "(A)") ""
+   write (*, "(A,ES12.4,A)") "  max |analytic - numeric| : ", max_dev, " Ha/Bohr"
+   write (*, "(A,ES12.4,A)") "  rms deviation            : ", rms, " Ha/Bohr"
+   write (*, "(A,ES12.4,A)") "  gradient norm            : ", sqrt(sum(analytic**2)), " Ha/Bohr"
 
 contains
 
@@ -102,7 +102,7 @@ contains
 
       call run_cuest_scf(settings, fragment, point)
       if (point%has_error) then
-         write (*, '(A)') "displaced point FAILED: "//point%error%get_message()
+         write (*, "(A)") "displaced point FAILED: "//point%error%get_message()
          error stop 1
       end if
       energy = point%energy%scf

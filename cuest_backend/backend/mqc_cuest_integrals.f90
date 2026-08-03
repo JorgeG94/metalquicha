@@ -154,7 +154,7 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_result_beta = c_null_ptr  !! Second output matrix (UKS)
       type(c_ptr) :: d_result = c_null_ptr  !! Whichever matrix is being built
       type(c_ptr) :: d_gradient = c_null_ptr        !! natom x 3 gradient output
-      type(c_ptr) :: d_charge_gradient = c_null_ptr !! Hellmann-Feynman half
+      type(c_ptr) :: d_charge_gradient = c_null_ptr  !! Hellmann-Feynman half
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy

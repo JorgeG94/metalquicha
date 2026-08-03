@@ -47,25 +47,25 @@ contains
 
       do i = 1, len_trim(basis_name)
          select case (basis_name(i:i))
-         case ('*')
+         case ("*")
             ! Star becomes 's'
             out_pos = out_pos + 1
-            buffer(out_pos:out_pos) = 's'
+            buffer(out_pos:out_pos) = "s"
 
-         case ('+')
+         case ("+")
             ! Plus becomes 'p'
             out_pos = out_pos + 1
-            buffer(out_pos:out_pos) = 'p'
+            buffer(out_pos:out_pos) = "p"
 
-         case ('(')
+         case ("(")
             ! Start of parentheses - we'll extract contents
             in_parens = .true.
 
-         case (')')
+         case (")")
             ! End of parentheses
             in_parens = .false.
 
-         case (',', ' ')
+         case (",", " ")
             ! Skip commas and spaces (inside or outside parentheses)
             continue
 

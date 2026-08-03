@@ -25,9 +25,9 @@ module mqc_method_hf
 
    type :: hf_options_t
       !! Hartree-Fock calculation options
-      character(len=32) :: basis_set = 'sto-3g'
+      character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
-      character(len=32) :: aux_basis_set = 'def2-universal-jkfit'
+      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
@@ -37,7 +37,7 @@ module mqc_method_hf
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
-      character(len=16) :: guess = 'gwh'
+      character(len=16) :: guess = "gwh"
          !! Initial guess: 'core', 'gwh' or 'sac'
 
       ! SCF settings (from shared scf_config_t)
@@ -84,7 +84,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
-      settings%functional = ''        ! empty selects pure Hartree-Fock
+      settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
       settings%device_rank = this%options%device_rank

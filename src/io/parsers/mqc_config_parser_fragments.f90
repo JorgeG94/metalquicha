@@ -37,7 +37,7 @@ contains
 
       ! First pass: read nfrag
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %fragments section")
             return
@@ -45,16 +45,16 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos > 0) then
             key = adjustl(line(1:eq_pos - 1))
             value = adjustl(line(eq_pos + 1:))
 
-            if (trim(key) == 'nfrag') then
+            if (trim(key) == "nfrag") then
                read (value, *, iostat=io_stat) nfrag_local
                if (io_stat /= 0) then
                   call error%set(ERROR_PARSE, "Invalid nfrag value")
@@ -77,16 +77,16 @@ contains
       ! Parse individual fragments
       ifrag = 0
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) exit
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         if (trim(line) == '%fragment') then
+         if (trim(line) == "%fragment") then
             ifrag = ifrag + 1
             if (ifrag > nfrag) then
                call error%set(ERROR_PARSE, "More fragments than declared nfrag")
@@ -101,7 +101,7 @@ contains
       end do
 
       if (ifrag /= nfrag) then
-         write (msg, '(A,I0,A,I0)') "Expected ", nfrag, " fragments, found ", ifrag
+         write (msg, "(A,I0,A,I0)") "Expected ", nfrag, " fragments, found ", ifrag
          call error%set(ERROR_PARSE, trim(msg))
          return
       end if
@@ -119,7 +119,7 @@ contains
       in_indices = .false.
 
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %fragment")
             return
@@ -127,18 +127,18 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') then
+         if (trim(strip_comment(line)) == "end") then
             if (in_indices) then
                in_indices = .false.
                cycle
-            else
-               exit
             end if
+
+            exit
          end if
 
-         if (trim(line) == '%indices') then
+         if (trim(line) == "%indices") then
             in_indices = .true.
             cycle
          end if
@@ -151,15 +151,15 @@ contains
                return
             end if
          else
-            eq_pos = index(line, '=')
+            eq_pos = index(line, "=")
             if (eq_pos > 0) then
                key = adjustl(line(1:eq_pos - 1))
                value = adjustl(line(eq_pos + 1:))
 
                select case (trim(key))
-               case ('charge')
+               case ("charge")
                   read (value, *, iostat=io_stat) fragment%charge
-               case ('multiplicity')
+               case ("multiplicity")
                   read (value, *, iostat=io_stat) fragment%multiplicity
                case default
                   call error%set(ERROR_PARSE, "Unknown key in fragment properties: "//trim(key))
@@ -188,7 +188,7 @@ contains
          if (io_stat /= 0) exit
          count = count + 1
          ! Remove the read integer from temp_line
-         pos = scan(temp_line, ' ')
+         pos = scan(temp_line, " ")
          if (pos == 0) exit
          temp_line = adjustl(temp_line(pos:))
       end do
@@ -233,7 +233,7 @@ contains
 
       ! First pass: read nbonds
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %connectivity section")
             return
@@ -241,16 +241,16 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos > 0) then
             key = adjustl(line(1:eq_pos - 1))
             value = adjustl(line(eq_pos + 1:))
 
-            if (trim(key) == 'nbonds') then
+            if (trim(key) == "nbonds") then
                read (value, *, iostat=io_stat) nbonds_local
                if (io_stat /= 0) then
                   call error%set(ERROR_PARSE, "Invalid nbonds value")
@@ -273,25 +273,25 @@ contains
       ! Read bonds
       ibond = 0
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) exit
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
          ! Check for key=value pairs (like nbroken=9)
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos > 0) then
             key = adjustl(line(1:eq_pos - 1))
             value = adjustl(line(eq_pos + 1:))
-            if (trim(key) == 'nbroken') then
+            if (trim(key) == "nbroken") then
                read (value, *, iostat=io_stat) nbroken
             end if
             cycle
          end if
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
          ! Parse bond line: atom_i atom_j order broken/preserved
          read (line, *, iostat=io_stat) atom_i, atom_j, order, status_str
@@ -309,7 +309,7 @@ contains
          bonds(ibond)%atom_i = atom_i
          bonds(ibond)%atom_j = atom_j
          bonds(ibond)%order = order
-         bonds(ibond)%is_broken = (trim(status_str) == 'broken')
+         bonds(ibond)%is_broken = (trim(status_str) == "broken")
       end do
 
    end subroutine parse_connectivity_generic

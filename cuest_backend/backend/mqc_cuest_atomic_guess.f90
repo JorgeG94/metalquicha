@@ -50,7 +50,7 @@ module mqc_cuest_atomic_guess
 
    type(atomic_solution_t), save :: cache(MAX_CACHED)
    integer, save :: n_cached = 0
-   character(len=64), save :: cache_basis = ''
+   character(len=64), save :: cache_basis = ""
    integer, save :: cache_functional = -99
    logical, save :: cache_spherical = .true.
 
@@ -124,7 +124,7 @@ contains
          cache(i)%valid = .false.
       end do
       n_cached = 0
-      cache_basis = ''
+      cache_basis = ""
       cache_functional = -99
    end subroutine clear_atomic_cache
 
@@ -212,7 +212,7 @@ contains
       integer, intent(in) :: value
       character(len=12) :: text
 
-      write (text, '(I0)') value
+      write (text, "(I0)") value
    end function int_to_string
 
    subroutine build_sac_guess(context, atomic_numbers, mol_basis, aux_basis, use_spherical, &
