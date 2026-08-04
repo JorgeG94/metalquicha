@@ -30,6 +30,7 @@ module mqc_cuest_scf
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
+   use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_integrals, only: cuest_system_t
    implicit none
@@ -370,6 +371,8 @@ contains
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy
       logical :: diis_ok
+      real(dp) :: homo, lumo
+      character(len=256) :: result_line
 
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
@@ -556,7 +559,15 @@ contains
       ! The gradient needs the occupied orbitals and their energies to form
       ! the energy-weighted density, so hand them back rather than recomputing.
       result%occupied = occupied(:, 1:n_occ)
-      result%n_occupied = n_occ
+      result%n_occupied = n_occ      
+      
+      homo = orbital_energies(n_occ)
+      lumo = orbital_energies(n_occ + 1)
+      
+      if (verbose) then
+         write(result_line,'("  HOMO: ",f15.6,", LUMO: ",f15.6)') homo, lumo
+         call logger%info(trim(result_line))
+      end if
 
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "cuEST SCF did not converge in the iteration limit")
@@ -662,6 +673,9 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration, n_stored, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
       logical :: diis_ok, occupations_ok
+
+      real(dp) :: homo_alpha, lumo_alpha, homo_beta, lumo_beta
+      character(len=256) :: result_line
 
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
@@ -860,9 +874,18 @@ contains
       result%n_occupied_beta = n_beta
       result%spin_squared = spin_contamination(occ_a, occ_b, overlap, n_alpha, n_beta)
 
+      homo_alpha = result%orbital_energies(n_alpha)
+      lumo_alpha = result%orbital_energies(n_alpha + 1)
+      homo_beta = result%orbital_energies_beta(n_beta)
+      lumo_beta = result%orbital_energies_beta(n_beta + 1)
+
       if (verbose) then
          write (*, "(A,F12.6,A,F12.6,A)") "    <S^2> = ", result%spin_squared, &
             "   (exact ", 0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
+         write(result_line,'("  HOMO alpha: ",f15.6,", LUMO alpha: ",f15.6)') homo_alpha, lumo_alpha
+         call logger%info(trim(result_line))
+         write(result_line,'("  HOMO beta: ",f15.6,", LUMO beta: ",f15.6)') homo_beta, lumo_beta
+         call logger%info(trim(result_line))
       end if
 
       if (.not. result%converged) then
