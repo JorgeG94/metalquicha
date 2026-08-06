@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>send_fragment_to_worker &ndash; metalquicha</title>
+    <title>slot_of_age &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,8 +83,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>send_fragment_to_worker
-      <small>Subroutine</small>
+    <h1>slot_of_age
+      <small>Function</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">7 statements</a>
+                 title=" 0.0% of total for procedures.">6 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_mbe_mpi_fragment_distribution_scheme.F90"> Source File</a>
+              <a href="../src/mqc_diis.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html'>mqc_mbe_mpi_fragment_distribution_scheme.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></li>
-            <li class="breadcrumb-item active" aria-current="page">send_fragment_to_worker</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_diis.f90.html'>mqc_diis.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_diis.html'>mqc_diis</a></li>
+            <li class="breadcrumb-item active" aria-current="page">slot_of_age</li>
           </ol>
         </nav>
       </div>
@@ -151,7 +151,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/send_fragment_to_worker.html#src">send_fragment_to_worker</a>
+        <a class="list-group-item" href="../proc/slot_of_age.html#src">slot_of_age</a>
       </div>
     </div>
 
@@ -161,12 +161,11 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine send_fragment_to_worker(node_comm, fragment_idx, polymers, dest_rank)  
+    <h2>private pure function slot_of_age(this, age) result(slot)  
 </h2>
     
 
-    <p>Send fragment data to local worker
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
+    <p><code>diis_slot_of_age</code> for this state&rsquo;s ring</p>
 
 
     <h3>Arguments</h3>
@@ -182,37 +181,22 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
-              type(comm_t),
+              <span class="anchor" id="variable-this~51"></span>
+              class(<a href='../type/diis_state_t.html'>diis_state_t</a>),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>node_comm</strong></td>
+            <td><strong>this</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~14"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_idx</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~12"></span>
+              <span class="anchor" id="variable-age~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -220,22 +204,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
               
             </td>
             <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~7"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
+            <td><strong>age</strong></td>
             <td>
                 
             </td>
@@ -243,6 +212,13 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     </tbody>
   </table>
 
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-slot~2"></span>
+          integer
+        </small>
+      </h3>
+      
     <br>
     <div class="card">
       <div class="card-header">
@@ -254,59 +230,32 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_to_worker~~CallsGraph Pages: 1 -->
-<svg id="procsend_fragment_to_workerCallsGraph" width="514pt" height="74pt"
- viewBox="0.00 0.00 514.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_to_worker~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
-<title>proc~~send_fragment_to_worker~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 510,-70 510,4 -4,4"/>
-<!-- proc~send_fragment_to_worker -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_node1" class="node">
-<title>proc~send_fragment_to_worker</title>
-<polygon fill="none" stroke="black" points="151,-45 0,-45 0,-21 151,-21 151,-45"/>
-<text text-anchor="middle" x="75.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_to_worker</text>
+<!-- Title: proc~~slot_of_age~~CallsGraph Pages: 1 -->
+<svg id="procslot_of_ageCallsGraph" width="213pt" height="32pt"
+ viewBox="0.00 0.00 213.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~slot_of_age~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~slot_of_age~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 209,-28 209,4 -4,4"/>
+<!-- proc~slot_of_age -->
+<g id="proc~~slot_of_age~~CallsGraph_node1" class="node">
+<title>proc~slot_of_age</title>
+<polygon fill="none" stroke="black" points="73,-24 0,-24 0,0 73,0 73,-24"/>
+<text text-anchor="middle" x="36.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">slot_of_age</text>
 </g>
-<!-- proc~send_fragment_payload -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_node2" class="node">
-<title>proc~send_fragment_payload</title>
-<g id="a_proc~~send_fragment_to_worker~~CallsGraph_node2"><a xlink:href="../proc/send_fragment_payload.html" xlink:title="send_fragment_payload">
-<polygon fill="#d9534f" stroke="#d9534f" points="328,-45 187,-45 187,-21 328,-21 328,-45"/>
-<text text-anchor="middle" x="257.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_payload</text>
+<!-- proc~diis_slot_of_age -->
+<g id="proc~~slot_of_age~~CallsGraph_node2" class="node">
+<title>proc~diis_slot_of_age</title>
+<g id="a_proc~~slot_of_age~~CallsGraph_node2"><a xlink:href="../proc/diis_slot_of_age.html" xlink:title="diis_slot_of_age">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="205,-24 109,-24 109,0 205,0 205,-24"/>
+<text text-anchor="middle" x="157" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">diis_slot_of_age</text>
 </a>
 </g>
 </g>
-<!-- proc~send_fragment_to_worker&#45;&gt;proc~send_fragment_payload -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_edge1" class="edge">
-<title>proc~send_fragment_to_worker&#45;&gt;proc~send_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M151.01,-33C159.56,-33 168.31,-33 176.92,-33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="176.95,-36.5 186.95,-33 176.95,-29.5 176.95,-36.5"/>
-</g>
-<!-- isend -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_node3" class="node">
-<title>isend</title>
-<polygon fill="#777777" stroke="#777777" points="462,-66 408,-66 408,-42 462,-42 462,-66"/>
-<text text-anchor="middle" x="435" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
-</g>
-<!-- proc~send_fragment_payload&#45;&gt;isend -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_edge2" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;isend</title>
-<path fill="none" stroke="#ff0000" d="M328.11,-41.33C351.91,-44.18 377.57,-47.25 397.67,-49.65"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="397.28,-53.13 407.63,-50.84 398.12,-46.18 397.28,-53.13"/>
-</g>
-<!-- proc~build_fragment_payload -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_node4" class="node">
-<title>proc~build_fragment_payload</title>
-<g id="a_proc~~send_fragment_to_worker~~CallsGraph_node4"><a xlink:href="../proc/build_fragment_payload.html" xlink:title="build_fragment_payload">
-<polygon fill="#d9534f" stroke="#d9534f" points="506,-24 364,-24 364,0 506,0 506,-24"/>
-<text text-anchor="middle" x="435" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_payload</text>
-</a>
-</g>
-</g>
-<!-- proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload -->
-<g id="proc~~send_fragment_to_worker~~CallsGraph_edge3" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M328.11,-24.67C336.57,-23.66 345.27,-22.62 353.87,-21.59"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="354.38,-25.05 363.9,-20.39 353.55,-18.1 354.38,-25.05"/>
+<!-- proc~slot_of_age&#45;&gt;proc~diis_slot_of_age -->
+<g id="proc~~slot_of_age~~CallsGraph_edge1" class="edge">
+<title>proc~slot_of_age&#45;&gt;proc~diis_slot_of_age</title>
+<path fill="none" stroke="#ff0000" d="M73.05,-12C81.09,-12 89.82,-12 98.5,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="98.63,-15.5 108.63,-12 98.63,-8.5 98.63,-15.5"/>
 </g>
 </g>
 </svg>
@@ -401,32 +350,47 @@ large graphs.</div>
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_to_worker~~CalledByGraph Pages: 1 -->
-<svg id="procsend_fragment_to_workerCalledByGraph" width="367pt" height="32pt"
- viewBox="0.00 0.00 367.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_to_worker~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
-<title>proc~~send_fragment_to_worker~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 363,-28 363,4 -4,4"/>
-<!-- proc~send_fragment_to_worker -->
-<g id="proc~~send_fragment_to_worker~~CalledByGraph_node1" class="node">
-<title>proc~send_fragment_to_worker</title>
-<polygon fill="none" stroke="black" points="359,-24 208,-24 208,0 359,0 359,-24"/>
-<text text-anchor="middle" x="283.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_to_worker</text>
+<!-- Title: proc~~slot_of_age~~CalledByGraph Pages: 1 -->
+<svg id="procslot_of_ageCalledByGraph" width="282pt" height="74pt"
+ viewBox="0.00 0.00 282.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~slot_of_age~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~slot_of_age~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 278,-70 278,4 -4,4"/>
+<!-- proc~slot_of_age -->
+<g id="proc~~slot_of_age~~CalledByGraph_node1" class="node">
+<title>proc~slot_of_age</title>
+<polygon fill="none" stroke="black" points="274,-45 201,-45 201,-21 274,-21 274,-45"/>
+<text text-anchor="middle" x="237.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">slot_of_age</text>
 </g>
-<!-- proc~handle_local_worker_requests -->
-<g id="proc~~send_fragment_to_worker~~CalledByGraph_node2" class="node">
-<title>proc~handle_local_worker_requests</title>
-<g id="a_proc~~send_fragment_to_worker~~CalledByGraph_node2"><a xlink:href="../proc/handle_local_worker_requests.html" xlink:title="handle_local_worker_requests">
-<polygon fill="#d9534f" stroke="#d9534f" points="172,-24 0,-24 0,0 172,0 172,-24"/>
-<text text-anchor="middle" x="86" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests</text>
+<!-- proc~diis_extrapolate -->
+<g id="proc~~slot_of_age~~CalledByGraph_node2" class="node">
+<title>proc~diis_extrapolate</title>
+<g id="a_proc~~slot_of_age~~CalledByGraph_node2"><a xlink:href="../proc/diis_extrapolate.html" xlink:title="diis_state_t%diis_extrapolate">
+<polygon fill="#d9534f" stroke="#d9534f" points="165,-66 0,-66 0,-42 165,-42 165,-66"/>
+<text text-anchor="middle" x="82.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">diis_state_t%diis_extrapolate</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_local_worker_requests&#45;&gt;proc~send_fragment_to_worker -->
-<g id="proc~~send_fragment_to_worker~~CalledByGraph_edge1" class="edge">
-<title>proc~handle_local_worker_requests&#45;&gt;proc~send_fragment_to_worker</title>
-<path fill="none" stroke="#ff0000" d="M172.18,-12C180.59,-12 189.13,-12 197.54,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="197.72,-15.5 207.72,-12 197.72,-8.5 197.72,-15.5"/>
+<!-- proc~diis_extrapolate&#45;&gt;proc~slot_of_age -->
+<g id="proc~~slot_of_age~~CalledByGraph_edge1" class="edge">
+<title>proc~diis_extrapolate&#45;&gt;proc~slot_of_age</title>
+<path fill="none" stroke="#ff0000" d="M165.37,-42.76C174.17,-41.56 182.86,-40.36 191,-39.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="191.53,-42.7 200.97,-37.88 190.58,-35.77 191.53,-42.7"/>
+</g>
+<!-- proc~diis_push -->
+<g id="proc~~slot_of_age~~CalledByGraph_node3" class="node">
+<title>proc~diis_push</title>
+<g id="a_proc~~slot_of_age~~CalledByGraph_node3"><a xlink:href="../proc/diis_push.html" xlink:title="diis_state_t%diis_push">
+<polygon fill="#d9534f" stroke="#d9534f" points="147.5,-24 17.5,-24 17.5,0 147.5,0 147.5,-24"/>
+<text text-anchor="middle" x="82.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">diis_state_t%diis_push</text>
+</a>
+</g>
+</g>
+<!-- proc~diis_push&#45;&gt;proc~slot_of_age -->
+<g id="proc~~slot_of_age~~CalledByGraph_edge2" class="edge">
+<title>proc~diis_push&#45;&gt;proc~slot_of_age</title>
+<path fill="none" stroke="#ff0000" d="M147.94,-20.85C162.39,-22.83 177.43,-24.89 190.92,-26.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="190.52,-30.22 200.9,-28.11 191.47,-23.29 190.52,-30.22"/>
 </g>
 </g>
 </svg>
@@ -525,15 +489,13 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_fragment_to_worker</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Send fragment data to local worker</span>
-<span class="w">      </span><span class="c">!! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">node_comm</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dest_rank</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">send_fragment_payload</span><span class="p">(</span><span class="n">node_comm</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_WORKER_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">send_fragment_to_worker</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">slot_of_age</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! `diis_slot_of_age` for this state&#39;s ring</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">diis_state_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">age</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">slot</span>
+<span class="w">      </span><span class="n">slot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">diis_slot_of_age</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">newest</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_stored</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_vectors</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">slot_of_age</span>
 </pre></div>
 
     </section>
@@ -557,7 +519,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

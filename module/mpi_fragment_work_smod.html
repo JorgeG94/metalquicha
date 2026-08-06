@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 6.0% of total for modules and submodules.">749 statements</a>
+                 title=" 6.8% of total for modules and submodules.">872 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -146,23 +146,20 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-build_fragment_payload">build_fragment_payload</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-build_fragment_payload_from_row">build_fragment_payload_from_row</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-assemble_one_fragment_hessian">assemble_one_fragment_hessian</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-build_hessian_task_table">build_hessian_task_table</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-build_task_payload_from_row">build_task_payload_from_row</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-fold_completed_fragments">fold_completed_fragments</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-get_group_leader_rank">get_group_leader_rank</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-global_coordinator_impl">global_coordinator_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-group_global_coordinator_impl">group_global_coordinator_impl</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_group_node_requests~2">handle_group_node_requests</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_requests">handle_local_worker_requests</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_requests_group~2">handle_local_worker_requests_group</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_results~2">handle_local_worker_results</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_node_requests">handle_node_requests</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_node_results~2">handle_node_results</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_group_node_requests">handle_group_node_requests</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_requests_group">handle_local_worker_requests_group</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_local_worker_results">handle_local_worker_results</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-handle_node_results">handle_node_results</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_coordinator_impl">node_coordinator_impl</a>
             <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-node_worker_impl">node_worker_impl</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_payload">send_fragment_payload</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_payload_from_row">send_fragment_payload_from_row</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_to_node">send_fragment_to_node</a>
-            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_fragment_to_worker">send_fragment_to_worker</a>
+            <a class="list-group-item" href="../module/mpi_fragment_work_smod.html#proc-send_task_payload_from_row">send_task_payload_from_row</a>
         </div>
       </div>
     </div>
@@ -202,10 +199,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
                   <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2016,12 +2013,11 @@ large graphs.</div>
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-build_fragment_payload"></span> <h3> subroutine <a href='../proc/build_fragment_payload.html'>build_fragment_payload</a>(fragment_idx, polymers, fragment_type, fragment_size, fragment_indices)  
+    <div class="card-header codesum"><span class="anchor" id="proc-assemble_one_fragment_hessian"></span> <h3> subroutine <a href='../proc/assemble_one_fragment_hessian.html'>assemble_one_fragment_hessian</a>(f, polymers, sys_geom, task_results, task_offset, frag_natoms, frag_result, world_comm)  
 </h3></div>
     <div class="card-body">
           
-  <p>Build fragment payload arrays for a given fragment index.
-Caller owns the returned fragment_indices and must deallocate it.</p>
+  <p>Fold one fragment&rsquo;s displacement results into its Hessian, then release them</p><a href="../proc/assemble_one_fragment_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2036,7 +2032,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~3"></span>
+              <span class="anchor" id="variable-f~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -2044,7 +2040,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_idx</strong></td>
+            <td><strong>f</strong></td>
             <td>
 
             </td>
@@ -2066,45 +2062,90 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_type~4"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-sys_geom~34"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
-<td>intent(out)</td>
+<td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_type</strong></td>
+            <td><strong>sys_geom</strong></td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~5"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-task_results"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_size</strong></td>
+            <td><strong>task_results</strong>(:)</td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_indices"></span>
+              <span class="anchor" id="variable-task_offset~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_natoms~2"></span>
               integer,
             </td>
-<td>intent(out),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              allocatable
+              
             </td>
             <td>::</td>
-            <td><strong>fragment_indices</strong>(:)</td>
+            <td><strong>frag_natoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_result~3"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~20"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
             <td>
 
             </td>
@@ -2117,11 +2158,171 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-build_fragment_payload_from_row"></span> <h3> subroutine <a href='../proc/build_fragment_payload_from_row.html'>build_fragment_payload_from_row</a>(polymer_row, fragment_type, fragment_size, fragment_indices)  
+    <div class="card-header codesum"><span class="anchor" id="proc-build_hessian_task_table"></span> <h3> subroutine <a href='../proc/build_hessian_task_table.html'>build_hessian_task_table</a>(polymers, total_fragments, sys_geom, expand, task_rows, task_offset, frag_natoms, total_tasks, world_comm)  
 </h3></div>
     <div class="card-body">
           
-  <p>Build fragment payload arrays for a given polymer row.
+  <p>Expand the screened fragment list into the flat list of independent evaluations</p><a href="../proc/build_hessian_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~8"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_fragments~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_fragments</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~33"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-expand"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>expand</strong></td>
+            <td>
+<p>.false. -&gt; one task per fragment (energy/gradient runs)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_rows"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_rows</strong>(:,:)</td>
+            <td>
+<p>(total_tasks, n_cols+1)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+<p>first task index of each fragment</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_natoms"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>frag_natoms</strong>(:)</td>
+            <td>
+<p>capped atom count of each fragment</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_tasks"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_tasks</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~18"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-build_task_payload_from_row"></span> <h3> subroutine <a href='../proc/build_task_payload_from_row.html'>build_task_payload_from_row</a>(task_row, fragment_type, fragment_size, fragment_indices, disp_code)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Split a task row into its fragment payload and displacement code.
 Caller owns the returned fragment_indices and must deallocate it.</p>
 
   <h4>Arguments</h4>
@@ -2137,7 +2338,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymer_row"></span>
+              <span class="anchor" id="variable-task_row"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2145,14 +2346,14 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
               
             </td>
             <td>::</td>
-            <td><strong>polymer_row</strong>(:)</td>
+            <td><strong>task_row</strong>(:)</td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_type~5"></span>
+              <span class="anchor" id="variable-fragment_type"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -2195,6 +2396,196 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-disp_code"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>disp_code</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-fold_completed_fragments"></span> <h3> subroutine <a href='../proc/fold_completed_fragments.html'>fold_completed_fragments</a>(polymers, total_fragments, sys_geom, task_results, task_offset, frag_natoms, frag_results, next_frag, scan_pos, world_comm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fold every fragment whose displacement results have all landed</p><a href="../proc/fold_completed_fragments.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-polymers~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>polymers</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_fragments~6"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_fragments</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~35"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_results~2"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_natoms~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_natoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag_results"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-next_frag"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>next_frag</strong></td>
+            <td>
+<p>Oldest fragment not yet folded</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scan_pos"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scan_pos</strong></td>
+            <td>
+<p>Next task of next_frag to verify</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~21"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -2222,7 +2613,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~15"></span>
+              <span class="anchor" id="variable-ctx~13"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2267,7 +2658,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_id~5"></span>
+              <span class="anchor" id="variable-group_id~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2322,7 +2713,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~10"></span>
+              <span class="anchor" id="variable-json_data~22"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2362,7 +2753,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~14"></span>
+              <span class="anchor" id="variable-ctx~12"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2383,7 +2774,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests~2"></span> <h3> subroutine <a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, finished_nodes)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests"></span> <h3> subroutine <a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, finished_nodes)  
 </h3></div>
     <div class="card-body">
           
@@ -2402,7 +2793,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~9"></span>
+              <span class="anchor" id="variable-ctx~8"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2417,7 +2808,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_queue~2"></span>
+              <span class="anchor" id="variable-fragment_queue"></span>
               type(<a href='../type/queue_t.html'>queue_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2462,7 +2853,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-finished_nodes~4"></span>
+              <span class="anchor" id="variable-finished_nodes"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2483,92 +2874,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests"></span> <h3> subroutine <a href='../proc/handle_local_worker_requests.html'>handle_local_worker_requests</a>(ctx, fragment_queue, worker_fragment_map, local_finished_workers)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Handle a single pending local worker request, if any.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ctx~11"></span>
-              type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ctx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_queue~4"></span>
-              type(<a href='../type/queue_t.html'>queue_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_queue</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-worker_fragment_map~3"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>worker_fragment_map</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-local_finished_workers~6"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>local_finished_workers</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group~2"></span> <h3> subroutine <a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, worker_fragment_map, local_finished_workers)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group"></span> <h3> subroutine <a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a>(ctx, fragment_queue, group_fragment_ids, group_polymers, worker_fragment_map, local_finished_workers)  
 </h3></div>
     <div class="card-body">
           
@@ -2587,7 +2893,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~10"></span>
+              <span class="anchor" id="variable-ctx~9"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2602,7 +2908,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_queue~3"></span>
+              <span class="anchor" id="variable-fragment_queue~2"></span>
               type(<a href='../type/queue_t.html'>queue_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2662,7 +2968,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_finished_workers~5"></span>
+              <span class="anchor" id="variable-local_finished_workers~2"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2683,7 +2989,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results~2"></span> <h3> subroutine <a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a>(ctx, worker_fragment_map, results, results_received, coord_timer)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results"></span> <h3> subroutine <a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a>(ctx, worker_fragment_map, results, results_received, total_items, coord_timer)  
 </h3></div>
     <div class="card-body">
           
@@ -2702,7 +3008,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~12"></span>
+              <span class="anchor" id="variable-ctx~10"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2717,7 +3023,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-worker_fragment_map~4"></span>
+              <span class="anchor" id="variable-worker_fragment_map~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -2732,7 +3038,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~7"></span>
+              <span class="anchor" id="variable-results~5"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2747,7 +3053,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~9"></span>
+              <span class="anchor" id="variable-results_received~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -2762,7 +3068,22 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~6"></span>
+              <span class="anchor" id="variable-total_items"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_items</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer~4"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -2783,77 +3104,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_requests"></span> <h3> subroutine <a href='../proc/handle_node_requests.html'>handle_node_requests</a>(ctx, fragment_queue, finished_nodes)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Handle a single pending node coordinator request, if any.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ctx~8"></span>
-              type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ctx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_queue"></span>
-              type(<a href='../type/queue_t.html'>queue_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_queue</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-finished_nodes~3"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>finished_nodes</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results~2"></span> <h3> subroutine <a href='../proc/handle_node_results~2.html'>handle_node_results</a>(ctx, results, results_received, coord_timer)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results"></span> <h3> subroutine <a href='../proc/handle_node_results.html'>handle_node_results</a>(ctx, results, results_received, total_items, coord_timer)  
 </h3></div>
     <div class="card-body">
           
@@ -2872,7 +3123,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~13"></span>
+              <span class="anchor" id="variable-ctx~11"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2887,7 +3138,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~8"></span>
+              <span class="anchor" id="variable-results~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2902,7 +3153,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~10"></span>
+              <span class="anchor" id="variable-results_received~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -2917,7 +3168,22 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~7"></span>
+              <span class="anchor" id="variable-total_items~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_items</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer~5"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -2957,7 +3223,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~17"></span>
+              <span class="anchor" id="variable-ctx~15"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2997,7 +3263,7 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~19"></span>
+              <span class="anchor" id="variable-ctx~17"></span>
               class(<a href='../type/many_body_expansion_t.html'>many_body_expansion_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3018,12 +3284,12 @@ Caller owns the returned fragment_indices and must deallocate it.</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_fragment_payload"></span> <h3> subroutine <a href='../proc/send_fragment_payload.html'>send_fragment_payload</a>(comm, tag, fragment_idx, polymers, dest_rank)  
+    <div class="card-header codesum"><span class="anchor" id="proc-send_task_payload_from_row"></span> <h3> subroutine <a href='../proc/send_task_payload_from_row.html'>send_task_payload_from_row</a>(comm, tag, task_idx, task_row, dest_rank)  
 </h3></div>
     <div class="card-body">
           
-  <p>Send fragment payload over the specified communicator/tag.
-Uses int64 for fragment_idx to handle large fragment indices.</p>
+  <p>Send a task payload over the specified communicator/tag.
+task_idx indexes the flat task list, not the fragment list.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -3038,7 +3304,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~9"></span>
+              <span class="anchor" id="variable-comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3053,7 +3319,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~8"></span>
+              <span class="anchor" id="variable-tag"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3068,7 +3334,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-task_idx"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3076,14 +3342,14 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_idx</strong></td>
+            <td><strong>task_idx</strong></td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-task_row~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3091,286 +3357,14 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
               
             </td>
             <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
+            <td><strong>task_row</strong>(:)</td>
             <td>
-
+<p>task index, fragment type, fragment size, monomer indices, displacement code</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~4"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_fragment_payload_from_row"></span> <h3> subroutine <a href='../proc/send_fragment_payload_from_row.html'>send_fragment_payload_from_row</a>(comm, tag, fragment_idx, polymer_row, dest_rank)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send fragment payload over the specified communicator/tag using a polymer row.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-comm~10"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-tag~9"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>tag</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_idx~5"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymer_row~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymer_row</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_fragment_to_node"></span> <h3> subroutine <a href='../proc/send_fragment_to_node.html'>send_fragment_to_node</a>(world_comm, fragment_idx, polymers, dest_rank)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send fragment data to remote node coordinator
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-world_comm~11"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>world_comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_idx~13"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~11"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~6"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_fragment_to_worker"></span> <h3> subroutine <a href='../proc/send_fragment_to_worker.html'>send_fragment_to_worker</a>(node_comm, fragment_idx, polymers, dest_rank)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send fragment data to local worker
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-node_comm~3"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>node_comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_idx~14"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~12"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~7"></span>
+              <span class="anchor" id="variable-dest_rank~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3397,7 +3391,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         <section>
           <h2>Module Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-do_fragment_work"></span> <h3>module subroutine <a href='../proc/do_fragment_work.html'>do_fragment_work</a>(fragment_idx, result, method_config, phys_frag, calc_type, world_comm)  
+    <div class="card-header codesum"><span class="anchor" id="proc-do_fragment_work"></span> <h3>module subroutine <a href='../proc/do_fragment_work.html'>do_fragment_work</a>(fragment_idx, result, method_config, phys_frag, calc_type, world_comm, print_geometry)  
     <a href="../interface/do_fragment_work.html"><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
 </h3></div>
     <div class="card-body">
@@ -3417,7 +3411,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~6"></span>
+              <span class="anchor" id="variable-fragment_idx~4"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3432,7 +3426,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~19"></span>
+              <span class="anchor" id="variable-result~21"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3447,7 +3441,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~6"></span>
+              <span class="anchor" id="variable-method_config~8"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3477,7 +3471,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~8"></span>
+              <span class="anchor" id="variable-calc_type~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -3492,7 +3486,7 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~10"></span>
+              <span class="anchor" id="variable-world_comm~19"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -3503,6 +3497,21 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
             <td><strong>world_comm</strong></td>
             <td>
 <p>MPI communicator for abort</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-print_geometry~2"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>print_geometry</strong></td>
+            <td>
+<p>Dump the geometry when verbose (default .true.)</p>
             </td>
         </tr>
     </tbody>
@@ -3551,7 +3560,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~9"></span>
+              <span class="anchor" id="variable-json_data~21"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -3593,7 +3602,7 @@ Handles work requests and result collection from local workers</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~16"></span>
+              <span class="anchor" id="variable-ctx~14"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -3635,7 +3644,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~18"></span>
+              <span class="anchor" id="variable-ctx~16"></span>
               class(*),
             </td>
 <td>intent(in)</td>
@@ -3676,7 +3685,7 @@ Bond connectivity is accessed via ctx%sys_geom%bonds</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

@@ -1,0 +1,1275 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>build_gmbe_task_table &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>build_gmbe_task_table
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.5% of total for procedures.">64 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_fragment_distribution_scheme.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">build_gmbe_task_table</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-atom_list~3">atom_list</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-base~3">base</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-error~57">error</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-frag~3">frag</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-k~14">k</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-max_atoms~2">max_atoms</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-n_atoms~15">n_atoms</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-n_disp~3">n_disp</a>
+            <a class="list-group-item" href="../proc/build_gmbe_task_table.html#variable-t">t</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/build_gmbe_task_table.html#src">build_gmbe_task_table</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine build_gmbe_task_table(pie_atom_sets, n_pie_terms, sys_geom, expand, task_atom_sets, task_offset, term_natoms, total_tasks, world_comm)  
+</h2>
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~build_gmbe_task_table~~UsesGraph Pages: 1 -->
+<svg id="procbuild_gmbe_task_tableUsesGraph" width="245pt" height="32pt"
+ viewBox="0.00 0.00 245.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_gmbe_task_table~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~build_gmbe_task_table~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 241,-28 241,4 -4,4"/>
+<!-- proc~build_gmbe_task_table -->
+<g id="proc~~build_gmbe_task_table~~UsesGraph_node1" class="node">
+<title>proc~build_gmbe_task_table</title>
+<polygon fill="none" stroke="black" points="237,-24 103,-24 103,0 237,0 237,-24"/>
+<text text-anchor="middle" x="170" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_gmbe_task_table</text>
+</g>
+<!-- module~mqc_error -->
+<g id="proc~~build_gmbe_task_table~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_proc~~build_gmbe_task_table~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="67,-24 0,-24 0,0 67,0 67,-24"/>
+<text text-anchor="middle" x="33.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;module~mqc_error -->
+<g id="proc~~build_gmbe_task_table~~UsesGraph_edge1" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M102.93,-12C94.15,-12 85.34,-12 77.11,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="77.02,-8.5 67.02,-12 77.02,-15.5 77.02,-8.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+
+    <p>Expand the PIE term list into the flat list of independent evaluations</p>
+<p>Same idea as the MBE task table, and the payoff is larger here: GMBE
+typically has a handful of big overlapping fragments, so one-task-per-term
+caps strong scaling at a very small number while each term still needs
+6*n_atoms + 1 sequential gradients.</p>
+<p>Atom sets are column-major (max_atoms, n_terms), so the displacement code
+rides in one extra row appended to each column. Atom indices are &gt;= 0 and
+the list is terminated by a negative, so the payload builder bounds its
+scan at max_atoms and reads the code from the row past it.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~38"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-expand~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>expand</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_atom_sets"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_atom_sets</strong>(:,:)</td>
+            <td>
+                <p>(max_atoms+1, total_tasks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+                <p>first task index of each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_natoms"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>term_natoms</strong>(:)</td>
+            <td>
+                <p>capped atom count of each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_tasks~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_tasks</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~22"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~build_gmbe_task_table~~CallsGraph Pages: 1 -->
+<svg id="procbuild_gmbe_task_tableCallsGraph" width="641pt" height="203pt"
+ viewBox="0.00 0.00 641.00 202.89" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_gmbe_task_table~~CallsGraph" class="graph" transform="scale(0.56 0.56) rotate(0) translate(4 360)">
+<title>proc~~build_gmbe_task_table~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-360 1146,-360 1146,4 -4,4"/>
+<!-- proc~build_gmbe_task_table -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node1" class="node">
+<title>proc~build_gmbe_task_table</title>
+<polygon fill="none" stroke="black" points="134,-256 0,-256 0,-232 134,-232 134,-256"/>
+<text text-anchor="middle" x="67" y="-241.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_gmbe_task_table</text>
+</g>
+<!-- abort_comm -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node2" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="321.5,-356 241.5,-356 241.5,-332 321.5,-332 321.5,-356"/>
+<text text-anchor="middle" x="281.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;abort_comm -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge1" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M81.09,-256.19C99.51,-272.68 134.79,-301.88 170,-318 189.23,-326.8 211.75,-332.79 231.42,-336.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="230.94,-340.26 241.42,-338.69 232.26,-333.38 230.94,-340.26"/>
+</g>
+<!-- error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node3" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="874.5,-296 820.5,-296 820.5,-272 874.5,-272 874.5,-296"/>
+<text text-anchor="middle" x="847.5" y="-281.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge2" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M90.72,-256.07C110.9,-266.07 141.52,-279.49 170,-285 399.09,-329.32 461.67,-285.77 695,-285 734.41,-284.87 779.59,-284.55 810.28,-284.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="810.53,-287.8 820.5,-284.22 810.47,-280.8 810.53,-287.8"/>
+</g>
+<!-- proc~build_fragment_from_atom_list -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node4" class="node">
+<title>proc~build_fragment_from_atom_list</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node4"><a xlink:href="../proc/build_fragment_from_atom_list.html" xlink:title="build_fragment_from_atom_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="370,-192 193,-192 193,-168 370,-168 370,-192"/>
+<text text-anchor="middle" x="281.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
+</a>
+</g>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;proc~build_fragment_from_atom_list -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge3" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;proc~build_fragment_from_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M102.78,-231.86C122.42,-225.15 147.49,-216.8 170,-210 187.42,-204.74 206.51,-199.4 223.85,-194.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="225.07,-198.01 233.83,-192.04 223.26,-191.25 225.07,-198.01"/>
+</g>
+<!-- proc~error_get_full_trace -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node5" class="node">
+<title>proc~error_get_full_trace</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node5"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="362,-276 201,-276 201,-252 362,-252 362,-276"/>
+<text text-anchor="middle" x="281.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+</a>
+</g>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;proc~error_get_full_trace -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge4" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;proc~error_get_full_trace</title>
+<path fill="none" stroke="#ff0000" d="M134.07,-250.22C151.94,-251.9 171.58,-253.75 190.52,-255.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="190.36,-259.03 200.65,-256.48 191.02,-252.06 190.36,-259.03"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="631.5,-276 492.5,-276 492.5,-252 631.5,-252 631.5,-276"/>
+<text text-anchor="middle" x="562" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge5" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M134.12,-243.26C146.06,-243.15 158.4,-243.06 170,-243 269.11,-242.51 294.08,-236.84 393,-243 422.13,-244.81 453.94,-248.38 481.97,-252.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="481.74,-255.57 492.11,-253.43 482.67,-248.63 481.74,-255.57"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node7" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node7"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="393,-87 170,-87 170,-63 393,-63 393,-87"/>
+<text text-anchor="middle" x="281.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~build_gmbe_task_table&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge6" class="edge">
+<title>proc~build_gmbe_task_table&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M82.03,-231.97C101.54,-215.32 138.08,-184.41 170,-159 199.26,-135.71 233.64,-109.79 256.19,-92.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.29,-95.79 264.22,-87.02 254.11,-90.18 258.29,-95.79"/>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff00" d="M347.33,-192.08C362.86,-196.45 378.98,-202.28 393,-210 412.01,-220.47 409.45,-233.56 429,-243 445.4,-250.92 464.14,-255.95 482.26,-259.13"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="481.82,-262.61 492.24,-260.71 482.91,-255.69 481.82,-262.61"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node8" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node8"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="621,-234 503,-234 503,-210 621,-210 621,-234"/>
+<text text-anchor="middle" x="562" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge7" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#00ff00" d="M362.31,-192.04C403.56,-198.26 453.38,-205.77 492.82,-211.72"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="492.46,-215.2 502.87,-213.23 493.5,-208.28 492.46,-215.2"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node10" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node10"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="630.5,-192 493.5,-192 493.5,-168 630.5,-168 630.5,-192"/>
+<text text-anchor="middle" x="562" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge8" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#00ff00" d="M370.24,-180C406.37,-180 447.89,-180 482.95,-180"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="483.13,-183.5 493.13,-180 483.13,-176.5 483.13,-183.5"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node11" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node11"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="626,-150 498,-150 498,-126 626,-126 626,-150"/>
+<text text-anchor="middle" x="562" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge9" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#00ff00" d="M362.31,-167.96C401.85,-162 449.27,-154.85 487.86,-149.03"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="488.62,-152.46 497.98,-147.5 487.57,-145.53 488.62,-152.46"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node12" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node12"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="639,-108 485,-108 485,-84 639,-84 639,-108"/>
+<text text-anchor="middle" x="562" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge10" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#00ff00" d="M305.69,-167.88C334.02,-153.58 383.79,-130.1 429,-117 443.63,-112.76 459.43,-109.32 474.84,-106.54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="475.64,-109.95 484.9,-104.81 474.45,-103.05 475.64,-109.95"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node13" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node13"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="695,-66 429,-66 429,-42 695,-42 695,-66"/>
+<text text-anchor="middle" x="562" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge12" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#00ff00" d="M297.71,-167.71C329.1,-142.58 400.49,-86.71 429,-75 434.5,-72.74 440.22,-70.72 446.07,-68.92"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="447.34,-72.2 456,-66.09 445.42,-65.47 447.34,-72.2"/>
+</g>
+<!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge13" class="edge">
+<title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ffff" d="M362.31,-264C399.77,-264 444.3,-264 481.7,-264"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="482.05,-267.5 492.05,-264 482.05,-260.5 482.05,-267.5"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node9" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node9"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="676.5,-24 447.5,-24 447.5,0 676.5,0 676.5,-24"/>
+<text text-anchor="middle" x="562" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge14" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#ff00ff" d="M319.82,-62.94C349.23,-53.77 391.42,-41.34 429,-33 440.8,-30.38 453.26,-27.96 465.62,-25.76"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="466.25,-29.2 475.5,-24.05 465.05,-22.31 466.25,-29.2"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node14" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node14"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="964,-24 731,-24 731,0 964,0 964,-24"/>
+<text text-anchor="middle" x="847.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge15" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffff00" d="M676.68,-12C691.2,-12 706.12,-12 720.82,-12"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="720.95,-15.5 730.95,-12 720.95,-8.5 720.95,-15.5"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge16" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff00" d="M630.79,-181.66C652.38,-184.51 675.66,-190.18 695,-201 716.46,-213 710.73,-229.08 731,-243 755.1,-259.54 786.59,-270.14 810.61,-276.41"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="809.85,-279.82 820.4,-278.83 811.53,-273.03 809.85,-279.82"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node15" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node15"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="929,-234 766,-234 766,-210 929,-210 929,-234"/>
+<text text-anchor="middle" x="847.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge17" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff00" d="M630.55,-190.01C668.07,-195.57 715.25,-202.56 755.94,-208.58"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="755.45,-212.05 765.86,-210.05 756.48,-205.13 755.45,-212.05"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node16" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node16"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="900,-192 795,-192 795,-168 900,-168 900,-192"/>
+<text text-anchor="middle" x="847.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge18" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff00" d="M630.55,-180C677.44,-180 739.43,-180 784.96,-180"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="784.99,-183.5 794.99,-180 784.99,-176.5 784.99,-183.5"/>
+</g>
+<!-- to_char -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node17" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="874.5,-150 820.5,-150 820.5,-126 874.5,-126 874.5,-150"/>
+<text text-anchor="middle" x="847.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge19" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff00" d="M630.55,-169.99C686.92,-161.64 765.09,-150.06 810.28,-143.37"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="810.83,-146.82 820.21,-141.89 809.81,-139.9 810.83,-146.82"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_node18" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~build_gmbe_task_table~~CallsGraph_node18"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1142,-24 1000,-24 1000,0 1142,0 1142,-24"/>
+<text text-anchor="middle" x="1071" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~build_gmbe_task_table~~CallsGraph_edge20" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#ff0000" d="M964.12,-12C972.77,-12 981.38,-12 989.74,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="989.79,-15.5 999.79,-12 989.79,-8.5 989.79,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocbuild_gmbe_task_tableCallsGraph = svgPanZoom('#procbuild_gmbe_task_tableCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~build_gmbe_task_table~~CalledByGraph Pages: 1 -->
+<svg id="procbuild_gmbe_task_tableCalledByGraph" width="570pt" height="32pt"
+ viewBox="0.00 0.00 570.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~build_gmbe_task_table~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~build_gmbe_task_table~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 566,-28 566,4 -4,4"/>
+<!-- proc~build_gmbe_task_table -->
+<g id="proc~~build_gmbe_task_table~~CalledByGraph_node1" class="node">
+<title>proc~build_gmbe_task_table</title>
+<polygon fill="none" stroke="black" points="562,-24 428,-24 428,0 562,0 562,-24"/>
+<text text-anchor="middle" x="495" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">build_gmbe_task_table</text>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~build_gmbe_task_table~~CalledByGraph_node2" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~build_gmbe_task_table~~CalledByGraph_node2"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="392,-24 259,-24 259,0 392,0 392,-24"/>
+<text text-anchor="middle" x="325.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~build_gmbe_task_table -->
+<g id="proc~~build_gmbe_task_table~~CalledByGraph_edge1" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~build_gmbe_task_table</title>
+<path fill="none" stroke="#ff0000" d="M392.22,-12C400.65,-12 409.34,-12 417.92,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="417.92,-15.5 427.92,-12 417.92,-8.5 417.92,-15.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~build_gmbe_task_table~~CalledByGraph_node3" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~build_gmbe_task_table~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-24 0,-24 0,0 223,0 223,-24"/>
+<text text-anchor="middle" x="111.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~build_gmbe_task_table~~CalledByGraph_edge2" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M223.16,-12C231.86,-12 240.53,-12 248.92,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249,-15.5 259,-12 249,-8.5 249,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_list~3"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atom_list</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-base~3"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>base</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~57"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-frag~3"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>frag</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~14"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_atoms~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_atoms~15"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_atoms</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_disp~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_disp</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-t"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>t</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">build_gmbe_task_table</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">expand</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">task_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">task_offset</span><span class="p">,</span><span class="w"> </span><span class="n">term_natoms</span><span class="p">,</span><span class="w"> </span><span class="n">total_tasks</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Expand the PIE term list into the flat list of independent evaluations</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Same idea as the MBE task table, and the payoff is larger here: GMBE</span>
+<span class="w">      </span><span class="c">!! typically has a handful of big overlapping fragments, so one-task-per-term</span>
+<span class="w">      </span><span class="c">!! caps strong scaling at a very small number while each term still needs</span>
+<span class="w">      </span><span class="c">!! 6*n_atoms + 1 sequential gradients.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Atom sets are column-major (max_atoms, n_terms), so the displacement code</span>
+<span class="w">      </span><span class="c">!! rides in one extra row appended to each column. Atom indices are &gt;= 0 and</span>
+<span class="w">      </span><span class="c">!! the list is terminated by a negative, so the payload builder bounds its</span>
+<span class="w">      </span><span class="c">!! scan at max_atoms and reads the code from the row past it.</span>
+<span class="w">      </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">error_t</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">expand</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">   </span><span class="c">!! (max_atoms+1, total_tasks)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_offset</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! first task index of each term</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_natoms</span><span class="p">(:)</span><span class="w">         </span><span class="c">!! capped atom count of each term</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_tasks</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">frag</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_list</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">base</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n_disp</span>
+
+<span class="w">      </span><span class="n">max_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">term_natoms</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">task_offset</span><span class="p">(</span><span class="n">n_pie_terms</span><span class="p">))</span>
+<span class="w">      </span><span class="n">term_natoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0_int64</span>
+<span class="w">      </span><span class="k">do </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">         </span><span class="n">task_offset</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">expand</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">            </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">max_atoms</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">               </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">            if</span><span class="w"> </span><span class="p">(</span><span class="n">n_atoms</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">               allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
+<span class="w">               </span><span class="n">atom_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">build_fragment_from_atom_list</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">atom_list</span><span class="p">,</span><span class="w"> </span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">frag</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;build_gmbe_task_table: &quot;</span><span class="o">//</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">())</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">abort_comm</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">               </span><span class="k">end if</span>
+<span class="k">               </span><span class="n">term_natoms</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frag</span><span class="p">%</span><span class="n">n_atoms</span>
+<span class="w">               </span><span class="k">call </span><span class="n">frag</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">               </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_list</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2_int64</span><span class="o">*</span><span class="mi">3_int64</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">term_natoms</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_tasks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">         </span><span class="k">end if</span>
+<span class="k">      end do</span>
+
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">task_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">total_tasks</span><span class="p">))</span>
+<span class="w">      </span><span class="n">task_atom_sets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">         </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_offset</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+
+<span class="w">         </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">expand</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DISP_WHOLE_FRAGMENT</span>
+<span class="w">            </span><span class="k">cycle</span>
+<span class="k">         end if</span>
+<span class="k">         </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">         </span><span class="n">n_disp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">term_natoms</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_disp</span>
+<span class="w">            </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+<span class="w">            </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span>
+
+<span class="w">            </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">max_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+<span class="w">            </span><span class="n">task_atom_sets</span><span class="p">(</span><span class="n">max_atoms</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">k</span>
+<span class="w">         </span><span class="k">end do</span>
+<span class="k">      end do</span>
+
+<span class="k">   end subroutine </span><span class="n">build_gmbe_task_table</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 14:52 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

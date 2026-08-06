@@ -146,6 +146,8 @@ module mqc_config_parser
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
+      character(len=:), allocatable :: fragment_breakdown
+         !! Where the per-fragment MBE table goes: "csv", "json" or "none"
 
    contains
       procedure :: destroy => config_destroy
@@ -388,6 +390,7 @@ contains
 
       ! Set defaults
       config%log_level = "info"
+      config%fragment_breakdown = "csv"
 
       ! Read file line by line and dispatch to section parsers
       do
@@ -497,6 +500,7 @@ contains
       if (allocated(this%aux_basis)) deallocate (this%aux_basis)
       if (allocated(this%functional)) deallocate (this%functional)
       if (allocated(this%log_level)) deallocate (this%log_level)
+      if (allocated(this%fragment_breakdown)) deallocate (this%fragment_breakdown)
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)
       if (allocated(this%cutoff_method)) deallocate (this%cutoff_method)

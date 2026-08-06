@@ -94,145 +94,198 @@ contains
 
    end function compute_mbe_delta
 
-   subroutine map_fragment_to_system_gradient(frag_grad, monomers, sys_geom, sys_grad, world_comm)
-      !! Map fragment gradient to system gradient coordinates with hydrogen cap redistribution
+   subroutine compute_mbe_coefficients(polymers, fragment_count, max_level, lookup, coeffs)
+      !! Collapse the recursive MBE delta definition into one scalar weight per fragment
       !!
-      !! This function rebuilds the fragment to get local→global mappings and cap information,
-      !! then redistributes gradients including hydrogen caps to their original atoms.
+      !! The recursion  delta_i = X_i - sum_{S proper subset of i} delta_S  is linear
+      !! in the fragment quantities X, and its structure depends only on which
+      !! fragments survived screening -- never on the data itself. So the total
+      !!
+      !!   X_total = sum_i delta_i          (over fragments with |i| <= max_level)
+      !!
+      !! can be rewritten once as  X_total = sum_i coeffs(i) * X_i.  That lets
+      !! gradients, Hessians and dipole derivatives be folded straight into a single
+      !! system-sized array as each fragment arrives, instead of materialising a
+      !! system-sized delta per fragment (which is O(fragment_count * (3N)^2) and
+      !! becomes the memory wall long before the fragment results themselves do).
+      !!
+      !! Fragments are expanded largest-first: a weight can only be modified by
+      !! strict supersets, which are strictly larger, so every weight at level n is
+      !! final by the time level n is reached.
+      !!
+      !! Derived by running the recursion on scalars rather than using the closed
+      !! form (-1)^(L-n) * C(N-n-1, L-n), because distance screening removes
+      !! fragments and the surviving coefficients are then not the textbook ones.
+      integer, intent(in) :: polymers(:, :)
+      integer(int64), intent(in) :: fragment_count
+      integer, intent(in) :: max_level
+      type(fragment_lookup_t), intent(in) :: lookup
+      real(dp), intent(out) :: coeffs(:)  !! (fragment_count) MBE weight of each fragment
+
+      real(dp), allocatable :: weights(:)
+      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
+      integer(int64) :: i, subset_idx
+      integer :: nlevel, fragment_size, subset_size, k
+      logical :: has_next
+
+      allocate (weights(fragment_count))
+      weights = 0.0_dp
+      coeffs = 0.0_dp
+
+      ! Every fragment in the expansion enters the total with unit weight
+      do i = 1_int64, fragment_count
+         fragment_size = count(polymers(i, :) > 0)
+         if (fragment_size >= 1 .and. fragment_size <= max_level) weights(i) = 1.0_dp
+      end do
+
+      do nlevel = max_level, 1, -1
+         do i = 1_int64, fragment_count
+            fragment_size = count(polymers(i, :) > 0)
+            if (fragment_size /= nlevel) cycle
+
+            ! delta_i contributes X_i with this fragment's accumulated weight ...
+            coeffs(i) = coeffs(i) + weights(i)
+            if (nlevel < 2) cycle
+
+            ! ... and hands -weight down to each proper subset's delta
+            do subset_size = 1, nlevel - 1
+               do k = 1, subset_size
+                  indices(k) = k
+               end do
+
+               has_next = .true.
+               do while (has_next)
+                  do k = 1, subset_size
+                     subset(k) = polymers(i, indices(k))
+                  end do
+                  subset_idx = lookup%find(subset(1:subset_size), subset_size)
+
+                  ! A missing subset cannot reach here: the energy recursion walks the
+                  ! identical enumeration first and aborts on any gap.
+                  if (subset_idx > 0) weights(subset_idx) = weights(subset_idx) - weights(i)
+
+                  call get_next_combination(indices, subset_size, nlevel, has_next)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (weights)
+
+   end subroutine compute_mbe_coefficients
+
+   subroutine accumulate_fragment_derivatives(frag_result, monomers, sys_geom, coeff, mbe_result, &
+                                              do_grad, do_hess, do_dipole_derivs, world_comm)
+      !! Fold coeff * (one fragment's derivatives) into the system-sized totals
+      !!
+      !! The fragment is rebuilt once and shared by all three quantities, and each is
+      !! scatter-accumulated over that fragment's own atoms only -- no system-sized
+      !! temporary is allocated or zeroed anywhere.
       !! Bond connectivity is accessed via sys_geom%bonds.
-      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients
+      use mqc_result_types, only: calculation_result_t, mbe_result_t
+      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_gradients, &
+                                       redistribute_cap_hessian, redistribute_cap_dipole_derivatives
       use mqc_error, only: error_t
-      use pic_logger, only: verbose_level
-      real(dp), intent(in) :: frag_grad(:, :)  !! (3, natoms_frag)
-      integer, intent(in) :: monomers(:)  !! Monomer indices in fragment
+      type(calculation_result_t), intent(in) :: frag_result
+      integer, intent(in) :: monomers(:)  !! Monomer indices making up this fragment
       type(system_geometry_t), intent(in) :: sys_geom
-      real(dp), intent(inout) :: sys_grad(:, :)  !! (3, total_atoms)
+      real(dp), intent(in) :: coeff  !! MBE weight for this fragment
+      type(mbe_result_t), intent(inout) :: mbe_result  !! Accumulation target
+      logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
 
       type(physical_fragment_t) :: fragment
       type(error_t) :: error
-      integer :: i_mon, i_atom, frag_atom_idx, sys_atom_idx
-      integer :: current_log_level
-
-      ! Explicitly zero out the entire sys_grad array
-      sys_grad = 0.0_dp
-
-      ! Debug output
-      call logger%configuration(level=current_log_level)
-      if (current_log_level >= debug_level) then
-         block
-            character(len=256) :: debug_msg
-            write (debug_msg, "(a,i0,a,*(i0,1x))") "  Mapping fragment with ", size(monomers), " monomers: ", monomers
-            call logger%debug(trim(debug_msg))
-            write (debug_msg, "(a,i0,a)") "  Fragment has ", size(frag_grad, 2), " atoms"
-            call logger%debug(trim(debug_msg))
-         end block
-      end if
 
       if (allocated(sys_geom%bonds)) then
-         ! Rebuild fragment to get local→global mapping and cap information
+         ! Rebuild fragment to recover local->global mapping and cap information
          call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
             if (present(world_comm)) then
                call abort_comm(world_comm, 1)
             else
-               error stop "Failed to build fragment in gradient mapping"
+               error stop "Failed to build fragment while accumulating MBE derivatives"
             end if
          end if
 
-         ! Use new gradient redistribution with cap handling
-         call redistribute_cap_gradients(fragment, frag_grad, sys_grad)
+         if (do_grad) then
+            call redistribute_cap_gradients(fragment, frag_result%gradient, mbe_result%gradient, scale=coeff)
+         end if
+         if (do_hess) then
+            call redistribute_cap_hessian(fragment, frag_result%hessian, mbe_result%hessian, scale=coeff)
+         end if
+         if (do_dipole_derivs) then
+            call redistribute_cap_dipole_derivatives(fragment, frag_result%dipole_derivatives, &
+                                                     mbe_result%dipole_derivatives, scale=coeff)
+         end if
 
-         ! Clean up
          call fragment%destroy()
       else
-         ! Old code path for fragments without hydrogen caps
-         ! Map fragment gradient to system positions (fixed-size monomers only)
-         frag_atom_idx = 0
-         do i_mon = 1, size(monomers)
-            do i_atom = 1, sys_geom%atoms_per_monomer
-               frag_atom_idx = frag_atom_idx + 1
-               sys_atom_idx = (monomers(i_mon) - 1)*sys_geom%atoms_per_monomer + i_atom
-
-               if (current_log_level >= debug_level .and. i_atom == 1) then
-                  block
-                     character(len=256) :: debug_msg
-                     write (debug_msg, "(a,i0,a,i0,a,i0)") &
-                        "    Monomer ", monomers(i_mon), ": frag atoms ", &
-                        frag_atom_idx, " -> sys atom ", sys_atom_idx
-                     call logger%debug(trim(debug_msg))
-                  end block
-               end if
-
-               sys_grad(:, sys_atom_idx) = frag_grad(:, frag_atom_idx)
-            end do
-         end do
+         call accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
+                                  do_grad, do_hess, do_dipole_derivs)
       end if
 
-   end subroutine map_fragment_to_system_gradient
+   end subroutine accumulate_fragment_derivatives
 
-   subroutine compute_mbe_gradient(fragment_idx, fragment, lookup, results, delta_gradients, n, sys_geom, world_comm)
-      !! Bottom-up computation of n-body gradient correction
-      !! Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
-      !! All gradients are in system coordinates, so subtraction is simple
-      !! Bond connectivity is accessed via sys_geom%bonds
-      use mqc_result_types, only: calculation_result_t
-      integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) ::  n
-      integer, intent(in) :: fragment(:)
-      type(fragment_lookup_t), intent(in) :: lookup
-      type(calculation_result_t), intent(in) :: results(:)
-      real(dp), intent(inout) :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
+   subroutine accumulate_uncapped(frag_result, monomers, sys_geom, coeff, mbe_result, &
+                                  do_grad, do_hess, do_dipole_derivs)
+      !! Accumulation path for systems without bond connectivity
+      !!
+      !! With no caps and fixed-size monomers the local->global map is pure
+      !! arithmetic, so no fragment needs to be rebuilt.
+      use mqc_result_types, only: calculation_result_t, mbe_result_t
+      type(calculation_result_t), intent(in) :: frag_result
+      integer, intent(in) :: monomers(:)
       type(system_geometry_t), intent(in) :: sys_geom
-      type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      real(dp), intent(in) :: coeff
+      type(mbe_result_t), intent(inout) :: mbe_result
+      logical, intent(in) :: do_grad, do_hess, do_dipole_derivs
 
-      integer :: subset_size, i
-      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
-      integer(int64) :: subset_idx
-      logical :: has_next
+      integer :: i_mon, i_atom, j_mon, j_atom, icart
+      integer :: frag_atom_i, frag_atom_j, sys_atom_i, sys_atom_j
+      integer :: n_monomers, per_monomer
 
-      ! Start with the full n-mer gradient mapped to system coordinates
-      call map_fragment_to_system_gradient(results(fragment_idx)%gradient, fragment, &
-                                           sys_geom, delta_gradients(:, :, fragment_idx), world_comm)
+      n_monomers = size(monomers)
+      per_monomer = sys_geom%atoms_per_monomer
 
-      ! Subtract all proper subsets (size 1 to n-1)
-      ! This is EXACTLY like the energy calculation, but for each gradient component
-      do subset_size = 1, n - 1
-         ! Initialize first combination
-         do i = 1, subset_size
-            indices(i) = i
-         end do
+      frag_atom_i = 0
+      do i_mon = 1, n_monomers
+         do i_atom = 1, per_monomer
+            frag_atom_i = frag_atom_i + 1
+            sys_atom_i = (monomers(i_mon) - 1)*per_monomer + i_atom
 
-         ! Loop through all combinations
-         do
-            ! Build current subset
-            do i = 1, subset_size
-               subset(i) = fragment(indices(i))
-            end do
-
-            ! Look up subset index
-            subset_idx = lookup%find(subset(1:subset_size), subset_size)
-            if (subset_idx < 0) then
-               call logger%error("Subset not found in MBE gradient computation")
-               if (present(world_comm)) then
-                  call abort_comm(world_comm, 1)
-               else
-                  error stop "Subset not found in MBE gradient!"
-               end if
+            if (do_grad) then
+               mbe_result%gradient(:, sys_atom_i) = mbe_result%gradient(:, sys_atom_i) + &
+                                                    coeff*frag_result%gradient(:, frag_atom_i)
             end if
 
-            ! Subtract pre-computed delta gradient (simple array subtraction in system coords)
-            delta_gradients(:, :, fragment_idx) = delta_gradients(:, :, fragment_idx) - &
-                                                  delta_gradients(:, :, subset_idx)
+            if (do_dipole_derivs) then
+               do icart = 1, 3
+                  mbe_result%dipole_derivatives(:, (sys_atom_i - 1)*3 + icart) = &
+                     mbe_result%dipole_derivatives(:, (sys_atom_i - 1)*3 + icart) + &
+                     coeff*frag_result%dipole_derivatives(:, (frag_atom_i - 1)*3 + icart)
+               end do
+            end if
 
-            ! Get next combination
-            call get_next_combination(indices, subset_size, n, has_next)
-            if (.not. has_next) exit
+            if (do_hess) then
+               frag_atom_j = 0
+               do j_mon = 1, n_monomers
+                  do j_atom = 1, per_monomer
+                     frag_atom_j = frag_atom_j + 1
+                     sys_atom_j = (monomers(j_mon) - 1)*per_monomer + j_atom
+
+                     mbe_result%hessian(3*sys_atom_i - 2:3*sys_atom_i, 3*sys_atom_j - 2:3*sys_atom_j) = &
+                        mbe_result%hessian(3*sys_atom_i - 2:3*sys_atom_i, 3*sys_atom_j - 2:3*sys_atom_j) + &
+                        coeff*frag_result%hessian(3*frag_atom_i - 2:3*frag_atom_i, &
+                                                  3*frag_atom_j - 2:3*frag_atom_j)
+                  end do
+               end do
+            end if
          end do
       end do
 
-   end subroutine compute_mbe_gradient
+   end subroutine accumulate_uncapped
 
    subroutine compute_mbe_dipole(fragment_idx, fragment, lookup, results, delta_dipoles, n, world_comm)
       !! Bottom-up computation of n-body dipole correction
@@ -291,222 +344,6 @@ contains
       end do
 
    end subroutine compute_mbe_dipole
-
-   subroutine map_fragment_to_system_hessian(frag_hess, monomers, sys_geom, sys_hess)
-      !! Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
-      !! Bond connectivity is accessed via sys_geom%bonds
-      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_hessian
-      use mqc_error, only: error_t
-      real(dp), intent(in) :: frag_hess(:, :)  !! (3*natoms_frag, 3*natoms_frag)
-      integer, intent(in) :: monomers(:)
-      type(system_geometry_t), intent(in) :: sys_geom
-      real(dp), intent(inout) :: sys_hess(:, :)  !! (3*total_atoms, 3*total_atoms)
-
-      type(physical_fragment_t) :: fragment
-      type(error_t) :: error
-
-      ! Zero out
-      sys_hess = 0.0_dp
-
-      if (allocated(sys_geom%bonds)) then
-         ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
-         call redistribute_cap_hessian(fragment, frag_hess, sys_hess)
-         call fragment%destroy()
-      else
-         ! Old code path for fragments without hydrogen caps
-         ! Map fragment Hessian to system positions (fixed-size monomers only)
-         block
-            integer :: i_mon, j_mon, i_atom, j_atom
-            integer :: frag_atom_i, frag_atom_j, sys_atom_i, sys_atom_j
-            integer :: frag_row_start, frag_col_start, sys_row_start, sys_col_start
-            integer :: n_monomers
-
-            n_monomers = size(monomers)
-            frag_atom_i = 0
-
-            ! Map each monomer's atoms
-            do i_mon = 1, n_monomers
-               do i_atom = 1, sys_geom%atoms_per_monomer
-                  frag_atom_i = frag_atom_i + 1
-                  sys_atom_i = (monomers(i_mon) - 1)*sys_geom%atoms_per_monomer + i_atom
-                  frag_row_start = (frag_atom_i - 1)*3 + 1
-                  sys_row_start = (sys_atom_i - 1)*3 + 1
-
-                  ! Map this atom's Hessian blocks with all other atoms in fragment
-                  frag_atom_j = 0
-                  do j_mon = 1, n_monomers
-                     do j_atom = 1, sys_geom%atoms_per_monomer
-                        frag_atom_j = frag_atom_j + 1
-                        sys_atom_j = (monomers(j_mon) - 1)*sys_geom%atoms_per_monomer + j_atom
-                        frag_col_start = (frag_atom_j - 1)*3 + 1
-                        sys_col_start = (sys_atom_j - 1)*3 + 1
-
-                        ! Copy the 3×3 block for this atom pair
-                        sys_hess(sys_row_start:sys_row_start + 2, sys_col_start:sys_col_start + 2) = &
-                           frag_hess(frag_row_start:frag_row_start + 2, frag_col_start:frag_col_start + 2)
-                     end do
-                  end do
-               end do
-            end do
-         end block
-      end if
-
-   end subroutine map_fragment_to_system_hessian
-
-   subroutine map_fragment_to_system_dipole_derivatives(frag_dipole_derivs, monomers, sys_geom, sys_dipole_derivs)
-      !! Map fragment dipole derivatives to system coordinates with hydrogen cap redistribution
-      !!
-      !! Dipole derivatives have shape (3, 3*N) where each column corresponds to
-      !! the derivative of dipole w.r.t. one Cartesian coordinate of one atom.
-      !! Bond connectivity is accessed via sys_geom%bonds
-      use mqc_physical_fragment, only: build_fragment_from_indices, redistribute_cap_dipole_derivatives
-      use mqc_error, only: error_t
-      real(dp), intent(in) :: frag_dipole_derivs(:, :)  !! (3, 3*natoms_frag)
-      integer, intent(in) :: monomers(:)
-      type(system_geometry_t), intent(in) :: sys_geom
-      real(dp), intent(inout) :: sys_dipole_derivs(:, :)  !! (3, 3*total_atoms)
-
-      type(physical_fragment_t) :: fragment
-      type(error_t) :: error
-
-      ! Zero out
-      sys_dipole_derivs = 0.0_dp
-
-      if (allocated(sys_geom%bonds)) then
-         ! Rebuild fragment to get local→global mapping and cap information
-         call build_fragment_from_indices(sys_geom, monomers, fragment, error, sys_geom%bonds)
-         call redistribute_cap_dipole_derivatives(fragment, frag_dipole_derivs, sys_dipole_derivs)
-         call fragment%destroy()
-      else
-         ! Code path for fragments without hydrogen caps
-         ! Map fragment dipole derivative columns to system positions (fixed-size monomers only)
-         block
-            integer :: i_mon, i_atom
-            integer :: frag_atom_idx, sys_atom_idx
-            integer :: frag_col_start, sys_col_start
-            integer :: n_monomers
-
-            n_monomers = size(monomers)
-            frag_atom_idx = 0
-
-            ! Map each monomer's atoms
-            do i_mon = 1, n_monomers
-               do i_atom = 1, sys_geom%atoms_per_monomer
-                  frag_atom_idx = frag_atom_idx + 1
-                  sys_atom_idx = (monomers(i_mon) - 1)*sys_geom%atoms_per_monomer + i_atom
-                  frag_col_start = (frag_atom_idx - 1)*3 + 1
-                  sys_col_start = (sys_atom_idx - 1)*3 + 1
-
-                  ! Copy the 3 columns (x, y, z derivatives) for this atom
-                  sys_dipole_derivs(:, sys_col_start:sys_col_start + 2) = &
-                     frag_dipole_derivs(:, frag_col_start:frag_col_start + 2)
-               end do
-            end do
-         end block
-      end if
-
-   end subroutine map_fragment_to_system_dipole_derivatives
-
-   subroutine compute_mbe_hessian(fragment_idx, fragment, lookup, results, delta_hessians, n, sys_geom)
-      !! Bottom-up computation of n-body Hessian correction
-      !! Mirrors MBE gradient logic but for second derivatives
-      !! Bond connectivity is accessed via sys_geom%bonds
-      use mqc_result_types, only: calculation_result_t
-      use mqc_error, only: error_t
-      integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) ::  n
-      integer, intent(in) :: fragment(:)
-      type(fragment_lookup_t), intent(in) :: lookup
-      type(calculation_result_t), intent(in) :: results(:)
-      real(dp), intent(inout) :: delta_hessians(:, :, :)  !! (3*total_atoms, 3*total_atoms, fragment_count)
-      type(system_geometry_t), intent(in) :: sys_geom
-
-      integer :: subset_size, i, hess_dim
-      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
-      integer(int64) :: subset_idx
-      logical :: has_next
-
-      hess_dim = 3*sys_geom%total_atoms
-
-      ! Start with the full n-mer Hessian mapped to system coordinates
-      call map_fragment_to_system_hessian(results(fragment_idx)%hessian, fragment, &
-                                          sys_geom, delta_hessians(:, :, fragment_idx))
-
-      ! Subtract all proper subsets (size 1 to n-1)
-      do subset_size = 1, n - 1
-         ! Initialize first combination
-         do i = 1, subset_size
-            indices(i) = i
-         end do
-
-         has_next = .true.
-         do while (has_next)
-            do i = 1, subset_size
-               subset(i) = fragment(indices(i))
-            end do
-            subset_idx = lookup%find(subset(1:subset_size), subset_size)
-
-            if (subset_idx > 0) then
-               ! Subtract this subset's delta Hessian
-               delta_hessians(:, :, fragment_idx) = delta_hessians(:, :, fragment_idx) - &
-                                                    delta_hessians(:, :, subset_idx)
-            end if
-
-            call get_next_combination(indices, subset_size, n, has_next)
-         end do
-      end do
-
-   end subroutine compute_mbe_hessian
-
-   subroutine compute_mbe_dipole_derivatives(fragment_idx, fragment, lookup, results, delta_dipole_derivs, n, sys_geom)
-      !! Bottom-up computation of n-body dipole derivative correction
-      !! Mirrors MBE Hessian logic but for dipole derivatives
-      !! Bond connectivity is accessed via sys_geom%bonds
-      use mqc_result_types, only: calculation_result_t
-      use mqc_error, only: error_t
-      integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) ::  n
-      integer, intent(in) :: fragment(:)
-      type(fragment_lookup_t), intent(in) :: lookup
-      type(calculation_result_t), intent(in) :: results(:)
-      real(dp), intent(inout) :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
-      type(system_geometry_t), intent(in) :: sys_geom
-
-      integer :: subset_size, i
-      integer :: indices(MAX_MBE_LEVEL), subset(MAX_MBE_LEVEL)  ! Stack arrays to avoid heap contention
-      integer(int64) :: subset_idx
-      logical :: has_next
-
-      ! Start with the full n-mer dipole derivatives mapped to system coordinates
-      call map_fragment_to_system_dipole_derivatives(results(fragment_idx)%dipole_derivatives, fragment, &
-                                                     sys_geom, delta_dipole_derivs(:, :, fragment_idx))
-
-      ! Subtract all proper subsets (size 1 to n-1)
-      do subset_size = 1, n - 1
-         ! Initialize first combination
-         do i = 1, subset_size
-            indices(i) = i
-         end do
-
-         has_next = .true.
-         do while (has_next)
-            do i = 1, subset_size
-               subset(i) = fragment(indices(i))
-            end do
-            subset_idx = lookup%find(subset(1:subset_size), subset_size)
-
-            if (subset_idx > 0) then
-               ! Subtract this subset's delta dipole derivatives
-               delta_dipole_derivs(:, :, fragment_idx) = delta_dipole_derivs(:, :, fragment_idx) - &
-                                                         delta_dipole_derivs(:, :, subset_idx)
-            end if
-
-            call get_next_combination(indices, subset_size, n, has_next)
-         end do
-      end do
-
-   end subroutine compute_mbe_dipole_derivatives
 
    !---------------------------------------------------------------------------
    ! Helper subroutines for reducing code duplication
@@ -618,13 +455,13 @@ contains
       integer(int64) :: i
       integer :: fragment_size, nlevel, current_log_level, hess_dim
       real(dp), allocatable :: sum_by_level(:), delta_energies(:), energies(:)
-      real(dp), allocatable :: delta_gradients(:, :, :), delta_hessians(:, :, :)
       real(dp), allocatable :: delta_dipoles(:, :)  !! (3, fragment_count)
-      real(dp), allocatable :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
+      real(dp), allocatable :: coeffs(:)  !! (fragment_count) collapsed MBE weight per fragment
       real(dp), allocatable :: ir_intensities(:)  !! IR intensities in km/mol
       real(dp) :: delta_E
       logical :: do_detailed_print, compute_grad, compute_hess, compute_dipole, compute_dipole_derivs
       type(fragment_lookup_t) :: lookup
+      type(timer_type) :: assembly_timer
 
       ! Determine what to compute based on allocated components in mbe_result
       compute_grad = allocated(mbe_result%gradient)
@@ -699,31 +536,19 @@ contains
          energies(i) = results(i)%energy%total()
       end do
 
-      ! Allocate gradient delta arrays if needed
-      if (compute_grad) then
-         allocate (delta_gradients(3, sys_geom%total_atoms, fragment_count))
-         delta_gradients = 0.0_dp
-         mbe_result%gradient = 0.0_dp
-      end if
+      ! Derivatives are accumulated straight into the system-sized totals below, so
+      ! no per-fragment delta arrays are needed for them -- only the zeroed targets.
+      if (compute_grad) mbe_result%gradient = 0.0_dp
+      if (compute_hess) mbe_result%hessian = 0.0_dp
 
-      ! Allocate hessian delta arrays if needed
-      if (compute_hess) then
-         allocate (delta_hessians(hess_dim, hess_dim, fragment_count))
-         delta_hessians = 0.0_dp
-         mbe_result%hessian = 0.0_dp
-      end if
-
-      ! Allocate dipole delta arrays if needed
+      ! Allocate dipole delta arrays if needed (O(fragment_count) scalars, kept as-is)
       if (compute_dipole) then
          allocate (delta_dipoles(3, fragment_count))
          delta_dipoles = 0.0_dp
          mbe_result%dipole = 0.0_dp
       end if
 
-      ! Allocate dipole derivative delta arrays if needed (for IR intensities)
       if (compute_dipole_derivs) then
-         allocate (delta_dipole_derivs(3, hess_dim, fragment_count))
-         delta_dipole_derivs = 0.0_dp
          allocate (mbe_result%dipole_derivatives(3, hess_dim))
          mbe_result%dipole_derivatives = 0.0_dp
       end if
@@ -758,25 +583,9 @@ contains
                delta_energies(i) = energies(i)
                sum_by_level(1) = sum_by_level(1) + delta_energies(i)
 
-               if (compute_grad) then
-                  call map_fragment_to_system_gradient(results(i)%gradient, &
-                                             polymers(i, 1:fragment_size), sys_geom, delta_gradients(:, :, i), world_comm)
-               end if
-
-               if (compute_hess) then
-                  call map_fragment_to_system_hessian(results(i)%hessian, &
-                                                      polymers(i, 1:fragment_size), sys_geom, delta_hessians(:, :, i))
-               end if
-
                if (compute_dipole) then
                   ! For 1-body, delta dipole is just the fragment dipole
                   delta_dipoles(:, i) = results(i)%dipole
-               end if
-
-               if (compute_dipole_derivs) then
-                  ! For 1-body, delta dipole derivatives are just the fragment values mapped to system
-                  call map_fragment_to_system_dipole_derivatives(results(i)%dipole_derivatives, &
-                                                     polymers(i, 1:fragment_size), sys_geom, delta_dipole_derivs(:, :, i))
                end if
 
             else if (fragment_size >= 2 .and. fragment_size <= max_level) then
@@ -786,28 +595,21 @@ contains
                delta_energies(i) = delta_E
                sum_by_level(fragment_size) = sum_by_level(fragment_size) + delta_E
 
-               if (compute_grad) then
-                  call compute_mbe_gradient(i, polymers(i, 1:fragment_size), lookup, &
-                                            results, delta_gradients, fragment_size, sys_geom, world_comm)
-               end if
-
-               if (compute_hess) then
-                  call compute_mbe_hessian(i, polymers(i, 1:fragment_size), lookup, &
-                                           results, delta_hessians, fragment_size, sys_geom)
-               end if
-
                if (compute_dipole) then
                   call compute_mbe_dipole(i, polymers(i, 1:fragment_size), lookup, &
                                           results, delta_dipoles, fragment_size, world_comm)
                end if
-
-               if (compute_dipole_derivs) then
-                  call compute_mbe_dipole_derivatives(i, polymers(i, 1:fragment_size), lookup, &
-                                                      results, delta_dipole_derivs, fragment_size, sys_geom)
-               end if
             end if
          end do
       end do
+
+      ! Collapse the delta recursion into one weight per fragment while the lookup
+      ! table is still alive. Only needed for the quantities that are mapped into
+      ! system coordinates; energy and dipole stay on the O(fragment_count) path.
+      if (compute_grad .or. compute_hess .or. compute_dipole_derivs) then
+         allocate (coeffs(fragment_count))
+         call compute_mbe_coefficients(polymers, fragment_count, max_level, lookup, coeffs)
+      end if
 
       ! Clean up lookup table
       call lookup%destroy()
@@ -816,24 +618,26 @@ contains
       mbe_result%total_energy = sum(sum_by_level)
       mbe_result%has_energy = .true.
 
-      if (compute_grad) then
+      ! Fold every fragment's derivatives into the system totals in one pass. The
+      ! fragment is rebuilt once per fragment and shared by all three quantities.
+      if (allocated(coeffs)) then
+         call assembly_timer%start()
          do i = 1_int64, fragment_count
             fragment_size = count(polymers(i, :) > 0)
-            if (fragment_size <= max_level) then
-               mbe_result%gradient = mbe_result%gradient + delta_gradients(:, :, i)
-            end if
-         end do
-         mbe_result%has_gradient = .true.
-      end if
+            if (fragment_size < 1 .or. fragment_size > max_level) cycle
+            if (coeffs(i) == 0.0_dp) cycle  ! Fragment cancels out of the expansion
 
-      if (compute_hess) then
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
-            if (fragment_size <= max_level) then
-               mbe_result%hessian = mbe_result%hessian + delta_hessians(:, :, i)
-            end if
+            call accumulate_fragment_derivatives(results(i), polymers(i, 1:fragment_size), sys_geom, coeffs(i), &
+                                                 mbe_result, compute_grad, compute_hess, compute_dipole_derivs, &
+                                                 world_comm)
          end do
-         mbe_result%has_hessian = .true.
+         call assembly_timer%stop()
+         call logger%debug("Time to assemble MBE derivatives: "// &
+                           to_char(assembly_timer%get_elapsed_time())//" s")
+
+         if (compute_grad) mbe_result%has_gradient = .true.
+         if (compute_hess) mbe_result%has_hessian = .true.
+         if (compute_dipole_derivs) mbe_result%has_dipole_derivatives = .true.
       end if
 
       if (compute_dipole) then
@@ -844,16 +648,6 @@ contains
             end if
          end do
          mbe_result%has_dipole = .true.
-      end if
-
-      if (compute_dipole_derivs) then
-         do i = 1_int64, fragment_count
-            fragment_size = count(polymers(i, :) > 0)
-            if (fragment_size <= max_level) then
-               mbe_result%dipole_derivatives = mbe_result%dipole_derivatives + delta_dipole_derivs(:, :, i)
-            end if
-         end do
-         mbe_result%has_dipole_derivatives = .true.
       end if
 
       ! Print energy breakdown (always)
@@ -1027,10 +821,8 @@ contains
 
       ! Cleanup
       deallocate (sum_by_level, delta_energies, energies)
-      if (allocated(delta_gradients)) deallocate (delta_gradients)
-      if (allocated(delta_hessians)) deallocate (delta_hessians)
       if (allocated(delta_dipoles)) deallocate (delta_dipoles)
-      if (allocated(delta_dipole_derivs)) deallocate (delta_dipole_derivs)
+      if (allocated(coeffs)) deallocate (coeffs)
 
    end subroutine compute_mbe
 

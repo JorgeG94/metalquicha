@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>send_fragment_payload &ndash; metalquicha</title>
+    <title>send_task_payload_from_row &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,7 +83,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>send_fragment_payload
+    <h1>send_task_payload_from_row
       <small>Subroutine</small>
       
     </h1>
@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">22 statements</a>
+                 title=" 0.2% of total for procedures.">25 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -108,7 +108,7 @@
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html'>mqc_mbe_mpi_fragment_distribution_scheme.F90</a></li>
                 <li class="breadcrumb-item"><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></li>
-            <li class="breadcrumb-item active" aria-current="page">send_fragment_payload</li>
+            <li class="breadcrumb-item active" aria-current="page">send_task_payload_from_row</li>
           </ol>
         </nav>
       </div>
@@ -136,11 +136,13 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/send_fragment_payload.html#variable-fragment_idx_int64">fragment_idx_int64</a>
-            <a class="list-group-item" href="../proc/send_fragment_payload.html#variable-fragment_indices~3">fragment_indices</a>
-            <a class="list-group-item" href="../proc/send_fragment_payload.html#variable-fragment_size~7">fragment_size</a>
-            <a class="list-group-item" href="../proc/send_fragment_payload.html#variable-fragment_type~6">fragment_type</a>
-            <a class="list-group-item" href="../proc/send_fragment_payload.html#variable-req~15">req</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-n_task_payload_msgs">N_TASK_PAYLOAD_MSGS</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-disp_code~2">disp_code</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-fragment_indices~3">fragment_indices</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-fragment_size~7">fragment_size</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-fragment_type~2">fragment_type</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-req~5">req</a>
+            <a class="list-group-item" href="../proc/send_task_payload_from_row.html#variable-task_idx_int64">task_idx_int64</a>
         </div>
       </div>
     </div>
@@ -166,7 +168,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/send_fragment_payload.html#src">send_fragment_payload</a>
+        <a class="list-group-item" href="../proc/send_task_payload_from_row.html#src">send_task_payload_from_row</a>
       </div>
     </div>
 
@@ -176,12 +178,12 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine send_fragment_payload(comm, tag, fragment_idx, polymers, dest_rank)  
+    <h2> subroutine send_task_payload_from_row(comm, tag, task_idx, task_row, dest_rank)  
 </h2>
     
 
-    <p>Send fragment payload over the specified communicator/tag.
-Uses int64 for fragment_idx to handle large fragment indices.</p>
+    <p>Send a task payload over the specified communicator/tag.
+task_idx indexes the flat task list, not the fragment list.</p>
 
 
     <h3>Arguments</h3>
@@ -197,7 +199,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~9"></span>
+              <span class="anchor" id="variable-comm"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -212,7 +214,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~8"></span>
+              <span class="anchor" id="variable-tag"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -227,7 +229,7 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-task_idx"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -235,14 +237,14 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_idx</strong></td>
+            <td><strong>task_idx</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~10"></span>
+              <span class="anchor" id="variable-task_row~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -250,14 +252,14 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
               
             </td>
             <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
+            <td><strong>task_row</strong>(:)</td>
             <td>
-                
+                <p>task index, fragment type, fragment size, monomer indices, displacement code</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dest_rank~4"></span>
+              <span class="anchor" id="variable-dest_rank~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -284,44 +286,44 @@ Uses int64 for fragment_idx to handle large fragment indices.</p>
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_payload~~CallsGraph Pages: 1 -->
-<svg id="procsend_fragment_payloadCallsGraph" width="327pt" height="74pt"
- viewBox="0.00 0.00 327.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_payload~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
-<title>proc~~send_fragment_payload~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 323,-70 323,4 -4,4"/>
-<!-- proc~send_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CallsGraph_node1" class="node">
-<title>proc~send_fragment_payload</title>
-<polygon fill="none" stroke="black" points="141,-45 0,-45 0,-21 141,-21 141,-45"/>
-<text text-anchor="middle" x="70.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_payload</text>
+<!-- Title: proc~~send_task_payload_from_row~~CallsGraph Pages: 1 -->
+<svg id="procsend_task_payload_from_rowCallsGraph" width="379pt" height="74pt"
+ viewBox="0.00 0.00 379.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~send_task_payload_from_row~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~send_task_payload_from_row~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 375,-70 375,4 -4,4"/>
+<!-- proc~send_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CallsGraph_node1" class="node">
+<title>proc~send_task_payload_from_row</title>
+<polygon fill="none" stroke="black" points="167,-45 0,-45 0,-21 167,-21 167,-45"/>
+<text text-anchor="middle" x="83.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_task_payload_from_row</text>
 </g>
 <!-- isend -->
-<g id="proc~~send_fragment_payload~~CallsGraph_node2" class="node">
+<g id="proc~~send_task_payload_from_row~~CallsGraph_node2" class="node">
 <title>isend</title>
-<polygon fill="#777777" stroke="#777777" points="275,-66 221,-66 221,-42 275,-42 275,-66"/>
-<text text-anchor="middle" x="248" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
+<polygon fill="#777777" stroke="#777777" points="314,-66 260,-66 260,-42 314,-42 314,-66"/>
+<text text-anchor="middle" x="287" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
 </g>
-<!-- proc~send_fragment_payload&#45;&gt;isend -->
-<g id="proc~~send_fragment_payload~~CallsGraph_edge1" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;isend</title>
-<path fill="none" stroke="#ff0000" d="M141.11,-41.33C164.91,-44.18 190.57,-47.25 210.67,-49.65"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="210.28,-53.13 220.63,-50.84 211.12,-46.18 210.28,-53.13"/>
+<!-- proc~send_task_payload_from_row&#45;&gt;isend -->
+<g id="proc~~send_task_payload_from_row~~CallsGraph_edge1" class="edge">
+<title>proc~send_task_payload_from_row&#45;&gt;isend</title>
+<path fill="none" stroke="#ff0000" d="M167.04,-41.6C195.88,-44.61 226.78,-47.83 249.86,-50.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249.57,-53.72 259.88,-51.28 250.29,-46.76 249.57,-53.72"/>
 </g>
-<!-- proc~build_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CallsGraph_node3" class="node">
-<title>proc~build_fragment_payload</title>
-<g id="a_proc~~send_fragment_payload~~CallsGraph_node3"><a xlink:href="../proc/build_fragment_payload.html" xlink:title="build_fragment_payload">
-<polygon fill="#d9534f" stroke="#d9534f" points="319,-24 177,-24 177,0 319,0 319,-24"/>
-<text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_payload</text>
+<!-- proc~build_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CallsGraph_node3" class="node">
+<title>proc~build_task_payload_from_row</title>
+<g id="a_proc~~send_task_payload_from_row~~CallsGraph_node3"><a xlink:href="../proc/build_task_payload_from_row.html" xlink:title="build_task_payload_from_row">
+<polygon fill="#d9534f" stroke="#d9534f" points="371,-24 203,-24 203,0 371,0 371,-24"/>
+<text text-anchor="middle" x="287" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_task_payload_from_row</text>
 </a>
 </g>
 </g>
-<!-- proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CallsGraph_edge2" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M141.11,-24.67C149.57,-23.66 158.27,-22.62 166.87,-21.59"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="167.38,-25.05 176.9,-20.39 166.55,-18.1 167.38,-25.05"/>
+<!-- proc~send_task_payload_from_row&#45;&gt;proc~build_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CallsGraph_edge2" class="edge">
+<title>proc~send_task_payload_from_row&#45;&gt;proc~build_task_payload_from_row</title>
+<path fill="none" stroke="#ff0000" d="M167.04,-24.4C175.55,-23.51 184.25,-22.6 192.87,-21.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="193.35,-25.17 202.94,-20.66 192.63,-18.21 193.35,-25.17"/>
 </g>
 </g>
 </svg>
@@ -416,81 +418,187 @@ large graphs.</div>
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_payload~~CalledByGraph Pages: 1 -->
-<svg id="procsend_fragment_payloadCalledByGraph" width="544pt" height="74pt"
- viewBox="0.00 0.00 544.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_payload~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
-<title>proc~~send_fragment_payload~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 540,-70 540,4 -4,4"/>
-<!-- proc~send_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_node1" class="node">
-<title>proc~send_fragment_payload</title>
-<polygon fill="none" stroke="black" points="536,-45 395,-45 395,-21 536,-21 536,-45"/>
-<text text-anchor="middle" x="465.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_payload</text>
+<!-- Title: proc~~send_task_payload_from_row~~CalledByGraph Pages: 1 -->
+<svg id="procsend_task_payload_from_rowCalledByGraph" width="641pt" height="40pt"
+ viewBox="0.00 0.00 641.00 39.56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~send_task_payload_from_row~~CalledByGraph" class="graph" transform="scale(0.53 0.53) rotate(0) translate(4 70)">
+<title>proc~~send_task_payload_from_row~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 1195,-70 1195,4 -4,4"/>
+<!-- proc~send_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node1" class="node">
+<title>proc~send_task_payload_from_row</title>
+<polygon fill="none" stroke="black" points="1191,-45 1024,-45 1024,-21 1191,-21 1191,-45"/>
+<text text-anchor="middle" x="1107.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_task_payload_from_row</text>
 </g>
-<!-- proc~send_fragment_to_node -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_node2" class="node">
-<title>proc~send_fragment_to_node</title>
-<g id="a_proc~~send_fragment_payload~~CalledByGraph_node2"><a xlink:href="../proc/send_fragment_to_node.html" xlink:title="send_fragment_to_node">
-<polygon fill="#d9534f" stroke="#d9534f" points="354,-66 213,-66 213,-42 354,-42 354,-66"/>
-<text text-anchor="middle" x="283.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_to_node</text>
+<!-- proc~handle_group_node_requests -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node2" class="node">
+<title>proc~handle_group_node_requests</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node2"><a xlink:href="../proc/handle_group_node_requests.html" xlink:title="handle_group_node_requests">
+<polygon fill="#d9534f" stroke="#d9534f" points="968,-66 800,-66 800,-42 968,-42 968,-66"/>
+<text text-anchor="middle" x="884" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_group_node_requests</text>
 </a>
 </g>
 </g>
-<!-- proc~send_fragment_to_node&#45;&gt;proc~send_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_edge1" class="edge">
-<title>proc~send_fragment_to_node&#45;&gt;proc~send_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M354.09,-45.88C364.11,-44.71 374.48,-43.5 384.68,-42.31"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="385.27,-45.77 394.8,-41.13 384.46,-38.81 385.27,-45.77"/>
+<!-- proc~handle_group_node_requests&#45;&gt;proc~send_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge1" class="edge">
+<title>proc~handle_group_node_requests&#45;&gt;proc~send_task_payload_from_row</title>
+<path fill="none" stroke="#ff0000" d="M968.11,-46.12C982.87,-44.72 998.33,-43.26 1013.35,-41.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1014.04,-45.28 1023.66,-40.85 1013.38,-38.31 1014.04,-45.28"/>
 </g>
-<!-- proc~send_fragment_to_worker -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_node3" class="node">
-<title>proc~send_fragment_to_worker</title>
-<g id="a_proc~~send_fragment_payload~~CalledByGraph_node3"><a xlink:href="../proc/send_fragment_to_worker.html" xlink:title="send_fragment_to_worker">
-<polygon fill="#d9534f" stroke="#d9534f" points="359,-24 208,-24 208,0 359,0 359,-24"/>
-<text text-anchor="middle" x="283.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_to_worker</text>
+<!-- proc~handle_local_worker_requests_group -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node3" class="node">
+<title>proc~handle_local_worker_requests_group</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node3"><a xlink:href="../proc/handle_local_worker_requests_group.html" xlink:title="handle_local_worker_requests_group">
+<polygon fill="#d9534f" stroke="#d9534f" points="988,-24 780,-24 780,0 988,0 988,-24"/>
+<text text-anchor="middle" x="884" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests_group</text>
 </a>
 </g>
 </g>
-<!-- proc~send_fragment_to_worker&#45;&gt;proc~send_fragment_payload -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_edge2" class="edge">
-<title>proc~send_fragment_to_worker&#45;&gt;proc~send_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M359.01,-20.69C367.56,-21.69 376.31,-22.71 384.92,-23.72"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="384.61,-27.2 394.95,-24.89 385.43,-20.25 384.61,-27.2"/>
+<!-- proc~handle_local_worker_requests_group&#45;&gt;proc~send_task_payload_from_row -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge2" class="edge">
+<title>proc~handle_local_worker_requests_group&#45;&gt;proc~send_task_payload_from_row</title>
+<path fill="none" stroke="#ff0000" d="M988.29,-21.79C996.79,-22.6 1005.35,-23.41 1013.77,-24.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1013.66,-27.71 1023.95,-25.17 1014.32,-20.74 1013.66,-27.71"/>
 </g>
-<!-- proc~handle_local_worker_requests -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_node4" class="node">
-<title>proc~handle_local_worker_requests</title>
-<g id="a_proc~~send_fragment_payload~~CalledByGraph_node4"><a xlink:href="../proc/handle_local_worker_requests.html" xlink:title="handle_local_worker_requests">
-<polygon fill="#d9534f" stroke="#d9534f" points="172,-24 0,-24 0,0 172,0 172,-24"/>
-<text text-anchor="middle" x="86" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_requests</text>
+<!-- proc~global_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node4" class="node">
+<title>proc~global_coordinator_impl</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node4"><a xlink:href="../proc/global_coordinator_impl.html" xlink:title="global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="726,-66 584,-66 584,-42 726,-42 726,-66"/>
+<text text-anchor="middle" x="655" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator_impl</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_local_worker_requests&#45;&gt;proc~send_fragment_to_worker -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_edge4" class="edge">
-<title>proc~handle_local_worker_requests&#45;&gt;proc~send_fragment_to_worker</title>
-<path fill="none" stroke="#00ffff" d="M172.18,-12C180.59,-12 189.13,-12 197.54,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="197.72,-15.5 207.72,-12 197.72,-8.5 197.72,-15.5"/>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge3" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
+<path fill="none" stroke="#ff0000" d="M726.27,-54C746.39,-54 768.64,-54 789.91,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="789.92,-57.5 799.92,-54 789.92,-50.5 789.92,-57.5"/>
 </g>
-<!-- proc~handle_node_requests -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_node5" class="node">
-<title>proc~handle_node_requests</title>
-<g id="a_proc~~send_fragment_payload~~CalledByGraph_node5"><a xlink:href="../proc/handle_node_requests.html" xlink:title="handle_node_requests">
-<polygon fill="#d9534f" stroke="#d9534f" points="152,-66 20,-66 20,-42 152,-42 152,-66"/>
-<text text-anchor="middle" x="86" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_requests</text>
+<!-- proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge5" class="edge">
+<title>proc~global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
+<path fill="none" stroke="#00ffff" d="M721.05,-41.96C748.12,-36.96 779.72,-31.11 807.78,-25.92"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="808.75,-29.3 817.94,-24.04 807.47,-22.42 808.75,-29.3"/>
+</g>
+<!-- proc~group_global_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node5" class="node">
+<title>proc~group_global_coordinator_impl</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node5"><a xlink:href="../proc/group_global_coordinator_impl.html" xlink:title="group_global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="744,-24 566,-24 566,0 744,0 744,-24"/>
+<text text-anchor="middle" x="655" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">group_global_coordinator_impl</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_node_requests&#45;&gt;proc~send_fragment_to_node -->
-<g id="proc~~send_fragment_payload~~CalledByGraph_edge3" class="edge">
-<title>proc~handle_node_requests&#45;&gt;proc~send_fragment_to_node</title>
-<path fill="none" stroke="#ff0000" d="M152.1,-54C168.29,-54 185.83,-54 202.64,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="202.99,-57.5 212.99,-54 202.99,-50.5 202.99,-57.5"/>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge4" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_group_node_requests</title>
+<path fill="none" stroke="#ff0000" d="M721.05,-24.04C748.12,-29.04 779.72,-34.89 807.78,-40.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="807.47,-43.58 817.94,-41.96 808.75,-36.7 807.47,-43.58"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge6" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_requests_group</title>
+<path fill="none" stroke="#00ffff" d="M744.09,-12C752.51,-12 761.13,-12 769.74,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="769.84,-15.5 779.84,-12 769.84,-8.5 769.84,-15.5"/>
+</g>
+<!-- proc~global_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node6" class="node">
+<title>proc~global_coordinator</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node6"><a xlink:href="../proc/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="518.5,-66 405.5,-66 405.5,-42 518.5,-42 518.5,-66"/>
+<text text-anchor="middle" x="462" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~global_coordinator&#45;&gt;proc~global_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge7" class="edge">
+<title>proc~global_coordinator&#45;&gt;proc~global_coordinator_impl</title>
+<path fill="none" stroke="#ff0000" d="M518.5,-54C535.69,-54 555,-54 573.53,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="573.72,-57.5 583.72,-54 573.72,-50.5 573.72,-57.5"/>
+</g>
+<!-- proc~node_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node7" class="node">
+<title>proc~node_coordinator_impl</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node7"><a xlink:href="../proc/node_coordinator_impl.html" xlink:title="node_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="530,-24 394,-24 394,0 530,0 530,-24"/>
+<text text-anchor="middle" x="462" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge8" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M530.07,-12C538.41,-12 547.08,-12 555.77,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="555.97,-15.5 565.97,-12 555.97,-8.5 555.97,-15.5"/>
+</g>
+<!-- interface~global_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node8" class="node">
+<title>interface~global_coordinator</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node8"><a xlink:href="../interface/global_coordinator.html" xlink:title="global_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="358,-66 245,-66 245,-42 358,-42 358,-66"/>
+<text text-anchor="middle" x="301.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~global_coordinator&#45;&gt;proc~global_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge9" class="edge">
+<title>interface~global_coordinator&#45;&gt;proc~global_coordinator</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M358.38,-54C370.29,-54 382.97,-54 395.21,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="395.36,-57.5 405.36,-54 395.36,-50.5 395.36,-57.5"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node9" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node9"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="355,-24 248,-24 248,0 355,0 355,-24"/>
+<text text-anchor="middle" x="301.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~node_coordinator_impl -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge10" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~node_coordinator_impl</title>
+<path fill="none" stroke="#00ffff" d="M355.28,-12C364.43,-12 374.12,-12 383.77,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="383.79,-15.5 393.79,-12 383.79,-8.5 383.79,-15.5"/>
+</g>
+<!-- interface~node_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node10" class="node">
+<title>interface~node_coordinator</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node10"><a xlink:href="../interface/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="158,-24 51,-24 51,0 158,0 158,-24"/>
+<text text-anchor="middle" x="104.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~node_coordinator&#45;&gt;proc~node_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge12" class="edge">
+<title>interface~node_coordinator&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M158.01,-12C182.61,-12 212.1,-12 237.85,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="237.89,-15.5 247.89,-12 237.89,-8.5 237.89,-15.5"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_node11" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~send_task_payload_from_row~~CalledByGraph_node11"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="209,-66 0,-66 0,-42 209,-42 209,-66"/>
+<text text-anchor="middle" x="104.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~global_coordinator -->
+<g id="proc~~send_task_payload_from_row~~CalledByGraph_edge11" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M209.28,-54C217.91,-54 226.48,-54 234.71,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="234.93,-57.5 244.93,-54 234.93,-50.5 234.93,-57.5"/>
 </g>
 </g>
 </svg>
-</div>          <div>
+</div>                <script>
+                  var panprocsend_task_payload_from_rowCalledByGraph = svgPanZoom('#procsend_task_payload_from_rowCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -588,15 +696,32 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx_int64"></span>
-              integer(kind=int64),
+              <span class="anchor" id="variable-n_task_payload_msgs"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>N_TASK_PAYLOAD_MSGS</strong></td>
+<td> =</td>
+                <td>5</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-disp_code~2"></span>
+              integer(kind=int32),
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>fragment_idx_int64</strong></td>
+            <td><strong>disp_code</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -639,7 +764,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_type~6"></span>
+              <span class="anchor" id="variable-fragment_type~2"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -656,7 +781,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~15"></span>
+              <span class="anchor" id="variable-req~5"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -664,7 +789,24 @@ large graphs.</div>
               
             </td>
             <td>::</td>
-            <td><strong>req</strong>(4)</td>
+            <td><strong>req</strong>(N_TASK_PAYLOAD_MSGS)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_idx_int64"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_idx_int64</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -687,34 +829,38 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_fragment_payload</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Send fragment payload over the specified communicator/tag.</span>
-<span class="w">      </span><span class="c">!! Uses int64 for fragment_idx to handle large fragment indices.</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_task_payload_from_row</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="n">task_row</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Send a task payload over the specified communicator/tag.</span>
+<span class="w">      </span><span class="c">!! task_idx indexes the flat task list, not the fragment list.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tag</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_idx</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dest_rank</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_row</span><span class="p">(:)</span>
+<span class="w">      </span><span class="c">!! task index, fragment type, fragment size, monomer indices, displacement code</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">N_TASK_PAYLOAD_MSGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span><span class="p">,</span><span class="w"> </span><span class="n">disp_code</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">(:)</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx_int64</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">request_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="n">N_TASK_PAYLOAD_MSGS</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_idx_int64</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">build_fragment_payload</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">build_task_payload_from_row</span><span class="p">(</span><span class="n">task_row</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">disp_code</span><span class="p">)</span>
 
-<span class="w">      </span><span class="n">fragment_idx_int64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx_int64</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="w">      </span><span class="n">task_idx_int64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">task_idx_int64</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_type</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_size</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_indices</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">isend</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">disp_code</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">req</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">wait</span><span class="p">(</span><span class="n">req</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
 
 <span class="w">      </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">fragment_indices</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">send_fragment_payload</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">send_task_payload_from_row</span>
 </pre></div>
 
     </section>
@@ -738,7 +884,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

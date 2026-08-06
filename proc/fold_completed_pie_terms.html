@@ -1,0 +1,1029 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>fold_completed_pie_terms &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>fold_completed_pie_terms
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">25 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_gmbe_fragment_distribution_scheme.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html'>mqc_gmbe_fragment_distribution_scheme.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></li>
+            <li class="breadcrumb-item active" aria-current="page">fold_completed_pie_terms</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/fold_completed_pie_terms.html#variable-last_task~2">last_task</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/fold_completed_pie_terms.html#src">fold_completed_pie_terms</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, task_results, task_offset, term_natoms, term_results, next_term, scan_pos, world_comm)  
+</h2>
+    
+
+    <p>Fold every PIE term whose displacement results have all landed</p>
+<p>Mirror of fold_completed_fragments on the MBE side: a monotone scan from the
+oldest unfolded term, so bookkeeping is O(1) amortised per task and the drain
+routines report nothing. Terms with no atoms carry no Hessian and are stepped
+over rather than waited on.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~40"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_results~4"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset~7"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_natoms~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_natoms</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_results"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_results</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-next_term"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>next_term</strong></td>
+            <td>
+                <p>Oldest term not yet folded</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scan_pos~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scan_pos</strong></td>
+            <td>
+                <p>Next task of next_term to verify</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~24"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fold_completed_pie_terms~~CallsGraph Pages: 1 -->
+<svg id="procfold_completed_pie_termsCallsGraph" width="641pt" height="185pt"
+ viewBox="0.00 0.00 641.00 185.12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fold_completed_pie_terms~~CallsGraph" class="graph" transform="scale(0.46 0.46) rotate(0) translate(4 398)">
+<title>proc~~fold_completed_pie_terms~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-398 1388,-398 1388,4 -4,4"/>
+<!-- proc~fold_completed_pie_terms -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node1" class="node">
+<title>proc~fold_completed_pie_terms</title>
+<polygon fill="none" stroke="black" points="153,-231 0,-231 0,-207 153,-207 153,-231"/>
+<text text-anchor="middle" x="76.5" y="-216.6" font-family="Helvetica,sans-Serif" font-size="10.50">fold_completed_pie_terms</text>
+</g>
+<!-- proc~assemble_one_pie_term_hessian -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node2" class="node">
+<title>proc~assemble_one_pie_term_hessian</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node2"><a xlink:href="../proc/assemble_one_pie_term_hessian.html" xlink:title="assemble_one_pie_term_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="376,-231 189,-231 189,-207 376,-207 376,-231"/>
+<text text-anchor="middle" x="282.5" y="-216.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">assemble_one_pie_term_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~fold_completed_pie_terms&#45;&gt;proc~assemble_one_pie_term_hessian -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge1" class="edge">
+<title>proc~fold_completed_pie_terms&#45;&gt;proc~assemble_one_pie_term_hessian</title>
+<path fill="none" stroke="#ff0000" d="M153.17,-219C161.49,-219 170.05,-219 178.62,-219"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="178.67,-222.5 188.67,-219 178.67,-215.5 178.67,-222.5"/>
+</g>
+<!-- abort_comm -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node3" class="node">
+<title>abort_comm</title>
+<polygon fill="#777777" stroke="#777777" points="563.5,-394 483.5,-394 483.5,-370 563.5,-370 563.5,-394"/>
+<text text-anchor="middle" x="523.5" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;abort_comm -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge2" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;abort_comm</title>
+<path fill="none" stroke="#ff0000" d="M291.15,-231.11C308.87,-258.1 355.54,-323.35 412,-356 430.61,-366.76 453.42,-373.07 473.47,-376.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="472.93,-380.23 483.37,-378.43 474.09,-373.32 472.93,-380.23"/>
+</g>
+<!-- error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node4" class="node">
+<title>error</title>
+<polygon fill="#777777" stroke="#777777" points="1116.5,-344 1062.5,-344 1062.5,-320 1116.5,-320 1116.5,-344"/>
+<text text-anchor="middle" x="1089.5" y="-329.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge3" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;error</title>
+<path fill="none" stroke="#ff0000" d="M295.64,-231.14C316.99,-251.58 363.6,-292.29 412,-309 644.5,-389.29 949.05,-353.66 1052.4,-338"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1052.98,-341.45 1062.33,-336.46 1051.91,-334.53 1052.98,-341.45"/>
+</g>
+<!-- proc~build_fragment_from_atom_list -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node5" class="node">
+<title>proc~build_fragment_from_atom_list</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node5"><a xlink:href="../proc/build_fragment_from_atom_list.html" xlink:title="build_fragment_from_atom_list">
+<polygon fill="#d9534f" stroke="#d9534f" points="612,-231 435,-231 435,-207 612,-207 612,-231"/>
+<text text-anchor="middle" x="523.5" y="-216.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_atom_list</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~build_fragment_from_atom_list -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge4" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~build_fragment_from_atom_list</title>
+<path fill="none" stroke="#ff0000" d="M376.25,-219C392.07,-219 408.55,-219 424.5,-219"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="424.9,-222.5 434.9,-219 424.9,-215.5 424.9,-222.5"/>
+</g>
+<!-- proc~error_get_full_trace -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node6" class="node">
+<title>proc~error_get_full_trace</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node6"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="604,-273 443,-273 443,-249 604,-249 604,-273"/>
+<text text-anchor="middle" x="523.5" y="-258.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~error_get_full_trace -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge5" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~error_get_full_trace</title>
+<path fill="none" stroke="#ff0000" d="M351.99,-231.04C380.74,-236.09 414.34,-241.99 444.08,-247.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="443.55,-250.68 454,-248.96 444.76,-243.78 443.55,-250.68"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node7" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node7"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="873.5,-314 734.5,-314 734.5,-290 873.5,-290 873.5,-314"/>
+<text text-anchor="middle" x="804" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~error_has_error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge6" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M302.14,-231.17C326.34,-246.24 370.39,-271.22 412,-282 517.53,-309.34 644.31,-310.27 724.28,-307.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="724.44,-310.65 734.28,-306.73 724.14,-303.66 724.44,-310.65"/>
+</g>
+<!-- proc~finite_diff_dipole_derivatives -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node8" class="node">
+<title>proc~finite_diff_dipole_derivatives</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node8"><a xlink:href="../proc/finite_diff_dipole_derivatives.html" xlink:title="finite_diff_dipole_derivatives">
+<polygon fill="#d9534f" stroke="#d9534f" points="605.5,-189 441.5,-189 441.5,-165 605.5,-165 605.5,-189"/>
+<text text-anchor="middle" x="523.5" y="-174.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finite_diff_dipole_derivatives</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~finite_diff_dipole_derivatives -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge7" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~finite_diff_dipole_derivatives</title>
+<path fill="none" stroke="#ff0000" d="M351.99,-206.96C380.74,-201.91 414.34,-196.01 444.08,-190.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="444.76,-194.22 454,-189.04 443.55,-187.32 444.76,-194.22"/>
+</g>
+<!-- proc~finite_diff_hessian_from_gradients -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node9" class="node">
+<title>proc~finite_diff_hessian_from_gradients</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node9"><a xlink:href="../proc/finite_diff_hessian_from_gradients.html" xlink:title="finite_diff_hessian_from_gradients">
+<polygon fill="#d9534f" stroke="#d9534f" points="620,-147 427,-147 427,-123 620,-123 620,-147"/>
+<text text-anchor="middle" x="523.5" y="-132.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finite_diff_hessian_from_gradients</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~finite_diff_hessian_from_gradients -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge8" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~finite_diff_hessian_from_gradients</title>
+<path fill="none" stroke="#ff0000" d="M303.7,-206.97C328.41,-192.76 371.93,-169.36 412,-156 419.36,-153.55 427.1,-151.35 434.91,-149.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="435.92,-152.74 444.84,-147.02 434.3,-145.93 435.92,-152.74"/>
+</g>
+<!-- proc~fragment_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node10" class="node">
+<title>proc~fragment_destroy</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node10"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="635,-24 412,-24 412,0 635,0 635,-24"/>
+<text text-anchor="middle" x="523.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;proc~fragment_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge9" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;proc~fragment_destroy</title>
+<path fill="none" stroke="#ff0000" d="M288.55,-206.54C302.65,-173.39 345.81,-82.53 412,-38 418.01,-33.95 424.58,-30.53 431.42,-27.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.79,-30.86 440.88,-24.02 430.29,-24.33 432.79,-30.86"/>
+</g>
+<!-- to_char -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node11" class="node">
+<title>to_char</title>
+<polygon fill="#777777" stroke="#777777" points="1116.5,-147 1062.5,-147 1062.5,-123 1116.5,-123 1116.5,-147"/>
+<text text-anchor="middle" x="1089.5" y="-132.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+</g>
+<!-- proc~assemble_one_pie_term_hessian&#45;&gt;to_char -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge10" class="edge">
+<title>proc~assemble_one_pie_term_hessian&#45;&gt;to_char</title>
+<path fill="none" stroke="#ff0000" d="M294.13,-206.87C314.52,-184.46 361.6,-136.8 412,-114 625.31,-17.51 707.55,-24.52 937,-71 981.19,-79.95 1028.51,-102.21 1058.28,-117.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1056.84,-121.15 1067.31,-122.81 1060.16,-114.99 1056.84,-121.15"/>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge15" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#aaff00" d="M612.12,-229.96C620.12,-232.63 627.88,-235.93 635,-240 656.06,-252.03 649.77,-269.29 671,-281 687.12,-289.89 705.92,-295.28 724.19,-298.5"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="723.85,-301.99 734.27,-300.07 724.93,-295.07 723.85,-301.99"/>
+</g>
+<!-- proc~add_hydrogen_caps -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node12" class="node">
+<title>proc~add_hydrogen_caps</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node12"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="863,-104 745,-104 745,-80 863,-80 863,-104"/>
+<text text-anchor="middle" x="804" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge11" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~add_hydrogen_caps</title>
+<path fill="none" stroke="#aaff00" d="M612.02,-210.97C620.31,-207.75 628.16,-203.52 635,-198 666.93,-172.24 638.69,-138.28 671,-113 688.91,-98.99 712.45,-92.63 734.68,-90.11"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="735.13,-93.58 744.78,-89.21 734.51,-86.61 735.13,-93.58"/>
+</g>
+<!-- proc~check_duplicate_atoms -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node14" class="node">
+<title>proc~check_duplicate_atoms</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node14"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="872.5,-272 735.5,-272 735.5,-248 872.5,-248 872.5,-272"/>
+<text text-anchor="middle" x="804" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge12" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~check_duplicate_atoms</title>
+<path fill="none" stroke="#aaff00" d="M606.18,-231.02C643.74,-236.55 688.07,-243.08 725.15,-248.54"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="725,-252.06 735.41,-250.05 726.02,-245.13 725,-252.06"/>
+</g>
+<!-- proc~count_hydrogen_caps -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node15" class="node">
+<title>proc~count_hydrogen_caps</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node15"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="868,-230 740,-230 740,-206 868,-206 868,-230"/>
+<text text-anchor="middle" x="804" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge13" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~count_hydrogen_caps</title>
+<path fill="none" stroke="#aaff00" d="M612.24,-218.68C649.97,-218.55 693.57,-218.39 729.56,-218.26"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="729.99,-221.76 739.98,-218.23 729.97,-214.76 729.99,-221.76"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node16" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node16"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="881,-188 727,-188 727,-164 881,-164 881,-188"/>
+<text text-anchor="middle" x="804" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge14" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#aaff00" d="M602.45,-206.96C638.04,-201.47 680.32,-194.94 716.85,-189.3"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="717.65,-192.72 726.99,-187.74 716.58,-185.8 717.65,-192.72"/>
+</g>
+<!-- proc~fragment_compute_nelec -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node17" class="node">
+<title>proc~fragment_compute_nelec</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node17"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="937,-146 671,-146 671,-122 937,-122 937,-146"/>
+<text text-anchor="middle" x="804" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+</a>
+</g>
+</g>
+<!-- proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge16" class="edge">
+<title>proc~build_fragment_from_atom_list&#45;&gt;proc~fragment_compute_nelec</title>
+<path fill="none" stroke="#aaff00" d="M612.23,-208.21C620.2,-205.51 627.93,-202.15 635,-198 656.5,-185.38 649.32,-167.29 671,-155 674.27,-153.15 677.66,-151.44 681.13,-149.88"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="682.57,-153.07 690.51,-146.05 679.92,-146.59 682.57,-153.07"/>
+</g>
+<!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge17" class="edge">
+<title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff00" d="M604.31,-272.75C641.77,-278.26 686.3,-284.82 723.7,-290.33"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="723.65,-293.86 734.05,-291.85 724.67,-286.93 723.65,-293.86"/>
+</g>
+<!-- proc~basis_set_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node13" class="node">
+<title>proc~basis_set_destroy</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node13"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="918.5,-24 689.5,-24 689.5,0 918.5,0 918.5,-24"/>
+<text text-anchor="middle" x="804" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge18" class="edge">
+<title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
+<path fill="none" stroke="#aa00ff" d="M635.37,-12C649.79,-12 664.63,-12 679.25,-12"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="679.32,-15.5 689.32,-12 679.32,-8.5 679.32,-15.5"/>
+</g>
+<!-- proc~atomic_basis_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node18" class="node">
+<title>proc~atomic_basis_destroy</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node18"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1206,-24 973,-24 973,0 1206,0 1206,-24"/>
+<text text-anchor="middle" x="1089.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge19" class="edge">
+<title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
+<path fill="none" stroke="#ffff00" d="M918.68,-12C933.2,-12 948.12,-12 962.82,-12"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="962.95,-15.5 972.95,-12 962.95,-8.5 962.95,-15.5"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;error -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge20" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;error</title>
+<path fill="none" stroke="#00ff00" d="M872.59,-266.13C893.6,-269.26 916.6,-273.96 937,-281 954.3,-286.97 956.03,-294.13 973,-301 998.7,-311.4 1029.02,-319.39 1052.14,-324.65"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1051.7,-328.13 1062.22,-326.87 1053.21,-321.3 1051.7,-328.13"/>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge23" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
+<path fill="none" stroke="#00ff00" d="M872.68,-255.08C893.81,-252.01 916.85,-247.04 937,-239 950.74,-233.52 1024.09,-181.39 1063.47,-153.08"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1065.71,-155.78 1071.78,-147.1 1061.62,-150.1 1065.71,-155.78"/>
+</g>
+<!-- proc~element_number_to_symbol -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node19" class="node">
+<title>proc~element_number_to_symbol</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node19"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1171,-250 1008,-250 1008,-226 1171,-226 1171,-250"/>
+<text text-anchor="middle" x="1089.5" y="-235.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge21" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
+<path fill="none" stroke="#00ff00" d="M872.55,-254.76C909.99,-251.85 957.05,-248.2 997.68,-245.05"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="998.16,-248.52 1007.86,-244.26 997.62,-241.54 998.16,-248.52"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node20" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node20"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="1142,-292 1037,-292 1037,-268 1142,-268 1142,-292"/>
+<text text-anchor="middle" x="1089.5" y="-277.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge22" class="edge">
+<title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff00" d="M872.55,-264.77C919.44,-268.07 981.43,-272.45 1026.96,-275.66"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1026.77,-279.15 1036.99,-276.37 1027.26,-272.17 1026.77,-279.15"/>
+</g>
+<!-- proc~cgto_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_node21" class="node">
+<title>proc~cgto_destroy</title>
+<g id="a_proc~~fold_completed_pie_terms~~CallsGraph_node21"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1384,-24 1242,-24 1242,0 1384,0 1384,-24"/>
+<text text-anchor="middle" x="1313" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
+<g id="proc~~fold_completed_pie_terms~~CallsGraph_edge24" class="edge">
+<title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
+<path fill="none" stroke="#ff0000" d="M1206.12,-12C1214.77,-12 1223.38,-12 1231.74,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1231.79,-15.5 1241.79,-12 1231.79,-8.5 1231.79,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocfold_completed_pie_termsCallsGraph = svgPanZoom('#procfold_completed_pie_termsCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fold_completed_pie_terms~~CalledByGraph Pages: 1 -->
+<svg id="procfold_completed_pie_termsCalledByGraph" width="589pt" height="32pt"
+ viewBox="0.00 0.00 589.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~fold_completed_pie_terms~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 585,-28 585,4 -4,4"/>
+<!-- proc~fold_completed_pie_terms -->
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph_node1" class="node">
+<title>proc~fold_completed_pie_terms</title>
+<polygon fill="none" stroke="black" points="581,-24 428,-24 428,0 581,0 581,-24"/>
+<text text-anchor="middle" x="504.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">fold_completed_pie_terms</text>
+</g>
+<!-- proc~gmbe_pie_coordinator -->
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph_node2" class="node">
+<title>proc~gmbe_pie_coordinator</title>
+<g id="a_proc~~fold_completed_pie_terms~~CalledByGraph_node2"><a xlink:href="../proc/gmbe_pie_coordinator.html" xlink:title="gmbe_pie_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="392,-24 259,-24 259,0 392,0 392,-24"/>
+<text text-anchor="middle" x="325.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_pie_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_pie_coordinator&#45;&gt;proc~fold_completed_pie_terms -->
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph_edge1" class="edge">
+<title>proc~gmbe_pie_coordinator&#45;&gt;proc~fold_completed_pie_terms</title>
+<path fill="none" stroke="#ff0000" d="M392.16,-12C400.5,-12 409.14,-12 417.74,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="417.8,-15.5 427.8,-12 417.8,-8.5 417.8,-15.5"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph_node3" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~fold_completed_pie_terms~~CalledByGraph_node3"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-24 0,-24 0,0 223,0 223,-24"/>
+<text text-anchor="middle" x="111.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator -->
+<g id="proc~~fold_completed_pie_terms~~CalledByGraph_edge2" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_pie_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M223.16,-12C231.86,-12 240.53,-12 248.92,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="249,-15.5 259,-12 249,-8.5 249,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-last_task~2"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>last_task</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">fold_completed_pie_terms</span><span class="p">(</span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">task_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">task_offset</span><span class="p">,</span><span class="w"> </span><span class="n">term_natoms</span><span class="p">,</span><span class="w"> </span><span class="n">term_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                       </span><span class="n">next_term</span><span class="p">,</span><span class="w"> </span><span class="n">scan_pos</span><span class="p">,</span><span class="w"> </span><span class="n">world_comm</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Fold every PIE term whose displacement results have all landed</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Mirror of fold_completed_fragments on the MBE side: a monotone scan from the</span>
+<span class="w">      </span><span class="c">!! oldest unfolded term, so bookkeeping is O(1) amortised per task and the drain</span>
+<span class="w">      </span><span class="c">!! routines report nothing. Terms with no atoms carry no Hessian and are stepped</span>
+<span class="w">      </span><span class="c">!! over rather than waited on.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_pie_terms</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_offset</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_natoms</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">term_results</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">next_term</span><span class="w">  </span><span class="c">!! Oldest term not yet folded</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scan_pos</span><span class="w">   </span><span class="c">!! Next task of next_term to verify</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">last_task</span>
+
+<span class="w">      </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">next_term</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">term_natoms</span><span class="p">(</span><span class="n">next_term</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">last_task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_offset</span><span class="p">(</span><span class="n">next_term</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2_int64</span><span class="o">*</span><span class="mi">3_int64</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="n">term_natoms</span><span class="p">(</span><span class="n">next_term</span><span class="p">),</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">do while</span><span class="w"> </span><span class="p">(</span><span class="n">scan_pos</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">last_task</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">task_results</span><span class="p">(</span><span class="n">scan_pos</span><span class="p">)%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">               </span><span class="n">scan_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scan_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">            </span><span class="k">end do</span>
+
+<span class="k">            call </span><span class="n">assemble_one_pie_term_hessian</span><span class="p">(</span><span class="n">next_term</span><span class="p">,</span><span class="w"> </span><span class="n">pie_atom_sets</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">task_results</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                               </span><span class="n">task_offset</span><span class="p">,</span><span class="w"> </span><span class="n">term_natoms</span><span class="p">,</span><span class="w"> </span><span class="n">term_results</span><span class="p">(</span><span class="n">next_term</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                               </span><span class="n">world_comm</span><span class="p">)</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="k">         </span><span class="n">next_term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">next_term</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1_int64</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">next_term</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n_pie_terms</span><span class="p">)</span><span class="w"> </span><span class="n">scan_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">task_offset</span><span class="p">(</span><span class="n">next_term</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">   end subroutine </span><span class="n">fold_completed_pie_terms</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 14:52 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

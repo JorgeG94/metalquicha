@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.4% of total for derived types.</p>Including implementation: 104 statements,  5.4% of total for derived types.">15 statements</a>
+                 title="<p> 2.3% of total for derived types.</p>Including implementation: 110 statements,  5.5% of total for derived types.">15 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,7 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/error_t.html#variable-call_stack">call_stack</a>
-            <a class="list-group-item" href="../type/error_t.html#variable-code~3">code</a>
+            <a class="list-group-item" href="../type/error_t.html#variable-code">code</a>
             <a class="list-group-item" href="../type/error_t.html#variable-message">message</a>
             <a class="list-group-item" href="../type/error_t.html#variable-stack_depth">stack_depth</a>
         </div>
@@ -171,7 +171,7 @@
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_code">get_code</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_full_trace">get_full_trace</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-get_message">get_message</a>
-            <a class="list-group-item" href="../type/error_t.html#boundprocedure-has_error~2">has_error</a>
+            <a class="list-group-item" href="../type/error_t.html#boundprocedure-has_error">has_error</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-print_trace">print_trace</a>
             <a class="list-group-item" href="../type/error_t.html#boundprocedure-set">set</a>
         </div>
@@ -306,12 +306,12 @@ large graphs.</div>
               <span class="anchor" id="variable-call_stack"></span>
               character(len=MAX_LOCATION_LEN),
             </td>
-              <td>public</td>
+              <td>public,</td>
             <td>
-              
+              allocatable
             </td>
             <td>::</td>
-            <td><strong>call_stack</strong>(MAX_STACK_DEPTH)</td>
+            <td><strong>call_stack</strong>(:)</td>
                 <td></td>
                 <td></td>
             <td>
@@ -320,7 +320,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-code~3"></span>
+              <span class="anchor" id="variable-code"></span>
               integer,
             </td>
               <td>public</td>
@@ -351,6 +351,11 @@ large graphs.</div>
             <td>
                 <p>Error message</p>
 <p>Stack trace support</p>
+<p>Allocated on the first add_context rather than held inline. An error_t is
+embedded by value in calculation_result_t, which the coordinator allocates
+one of per fragment &ndash; an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made
+every result 3104 bytes, of which 2560 was an empty call stack. On runs with
+millions of fragments that was gigabytes of untouched buffer on rank 0.</p>
             </td>
         </tr>
         <tr>
@@ -685,7 +690,7 @@ Returns a multi-line string with error and call stack</p>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-has_error~2"></span>
+      <span class="anchor" id="boundprocedure-has_error"></span>
       <h3>
           procedure, public ::
   <strong>has_error</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/error_has_error.html'>error_has_error</a>
@@ -905,8 +910,14 @@ Resets the stack trace</p>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">message</span><span class="w">  </span><span class="c">!! Error message</span>
 
 <span class="w">      </span><span class="c">!! Stack trace support</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Allocated on the first add_context rather than held inline. An error_t is</span>
+<span class="w">      </span><span class="c">!! embedded by value in calculation_result_t, which the coordinator allocates</span>
+<span class="w">      </span><span class="c">!! one of per fragment -- an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made</span>
+<span class="w">      </span><span class="c">!! every result 3104 bytes, of which 2560 was an empty call stack. On runs with</span>
+<span class="w">      </span><span class="c">!! millions of fragments that was gigabytes of untouched buffer on rank 0.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">stack_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="c">!! Current stack depth</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_LOCATION_LEN</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">call_stack</span><span class="p">(</span><span class="n">MAX_STACK_DEPTH</span><span class="p">)</span><span class="w">  </span><span class="c">!! Call locations</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="n">MAX_LOCATION_LEN</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">call_stack</span><span class="p">(:)</span><span class="w">  </span><span class="c">!! Call locations</span>
 <span class="w">   </span><span class="k">contains</span>
 <span class="k">      procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_error</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_has_error</span>
 <span class="w">      </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">set</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">error_set</span>
@@ -939,7 +950,7 @@ Resets the stack trace</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

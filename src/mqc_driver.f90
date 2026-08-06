@@ -121,6 +121,7 @@ contains
 
             if (should_write_json) then
                if (json_data%output_mode /= OUTPUT_MODE_NONE) then
+                  json_data%fragment_breakdown = config%fragment_breakdown
                   call write_json_output(json_data)
                   call json_data%destroy()
                end if

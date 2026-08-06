@@ -90,6 +90,18 @@
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			   <tr>
+                 <td><a href='../proc/accumulate_fragment_derivatives.html'>accumulate_fragment_derivatives</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold coeff * (one fragment&rsquo;s derivatives) into the system-sized totals</p><a href="../proc/accumulate_fragment_derivatives.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/accumulate_uncapped.html'>accumulate_uncapped</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Accumulation path for systems without bond connectivity</p><a href="../proc/accumulate_uncapped.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_hydrogen_caps.html'>add_hydrogen_caps</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -126,6 +138,18 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_fragment_lookup.html'>mqc_fragment_lookup</a></td>
                  <td>Function</td>
                  <td><p>Check if two arrays are equal</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/assemble_one_fragment_hessian.html'>assemble_one_fragment_hessian</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold one fragment&rsquo;s displacement results into its Hessian, then release them</p><a href="../proc/assemble_one_fragment_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/assemble_one_pie_term_hessian.html'>assemble_one_pie_term_hessian</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold one PIE term&rsquo;s displacement results into its Hessian, then release them</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/atom_sets_equal.html'>atom_sets_equal</a></td>
@@ -182,18 +206,16 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Build a fragment on-the-fly from monomer indices with hydrogen capping for broken bonds</p><a href="../proc/build_fragment_from_indices.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/build_fragment_payload.html'>build_fragment_payload</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td><a href='../proc/build_gmbe_task_table.html'>build_gmbe_task_table</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
-                 <td><p>Build fragment payload arrays for a given fragment index.
-Caller owns the returned fragment_indices and must deallocate it.</p></td>
+                 <td><p>Expand the PIE term list into the flat list of independent evaluations</p><a href="../proc/build_gmbe_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/build_fragment_payload_from_row.html'>build_fragment_payload_from_row</a></td>
+                 <td><a href='../proc/build_hessian_task_table.html'>build_hessian_task_table</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td><p>Build fragment payload arrays for a given polymer row.
-Caller owns the returned fragment_indices and must deallocate it.</p></td>
+                 <td><p>Expand the screened fragment list into the flat list of independent evaluations</p><a href="../proc/build_hessian_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_mbe_lookup_table.html'>build_mbe_lookup_table</a></td>
@@ -206,6 +228,13 @@ Caller owns the returned fragment_indices and must deallocate it.</p></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Build a molecular basis from a BSE JSON file for a list of atoms</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_task_payload_from_row.html'>build_task_payload_from_row</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Split a task row into its fragment payload and displacement code.
+Caller owns the returned fragment_indices and must deallocate it.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_type_from_string.html'>calc_type_from_string</a></td>
@@ -353,6 +382,12 @@ This is the main interface for optimization/dynamics codes</p><a href="../proc/c
                  <td><p>Compute many-body expansion (MBE) energy with optional gradient, hessian, and dipole</p><a href="../proc/compute_mbe.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/compute_mbe_coefficients.html'>compute_mbe_coefficients</a></td>
+                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Collapse the recursive MBE delta definition into one scalar weight per fragment</p><a href="../proc/compute_mbe_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_mbe_delta.html'>compute_mbe_delta</a></td>
                  <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
                  <td>Function</td>
@@ -367,31 +402,6 @@ All subsets must have been computed already (guaranteed by processing fragments 
                  <td><p>Bottom-up computation of n-body dipole correction
 Exactly mirrors the energy MBE logic: deltaDipole = Dipole - sum(all subset deltaDipoles)
 Dipoles are additive vectors in the system frame, no coordinate mapping needed</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/compute_mbe_dipole_derivatives.html'>compute_mbe_dipole_derivatives</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Bottom-up computation of n-body dipole derivative correction
-Mirrors MBE Hessian logic but for dipole derivatives
-Bond connectivity is accessed via sys_geom%bonds</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/compute_mbe_gradient.html'>compute_mbe_gradient</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Bottom-up computation of n-body gradient correction
-Exactly mirrors the energy MBE logic: deltaG = G - sum(all subset deltaGs)
-All gradients are in system coordinates, so subtraction is simple
-Bond connectivity is accessed via sys_geom%bonds</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/compute_mbe_hessian.html'>compute_mbe_hessian</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Bottom-up computation of n-body Hessian correction
-Mirrors MBE gradient logic but for second derivatives
-Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_moments_of_inertia.html'>compute_moments_of_inertia</a></td>
@@ -587,6 +597,48 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>Run a density-fitted Kohn-Sham calculation through cuEST</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/diis_coefficients.html'>diis_coefficients</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Extrapolation weights, oldest-first, from a cached error overlap matrix</p><a href="../proc/diis_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_count.html'>diis_count</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Function</td>
+                 <td><p>Number of entries currently in the subspace</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_destroy.html'>diis_destroy</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release the history</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_extrapolate.html'>diis_extrapolate</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Replace fock with the DIIS combination of the stored Fock matrices</p><a href="../proc/diis_extrapolate.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_init.html'>diis_init</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Allocate the history for a subspace of max_vectors entries</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_push.html'>diis_push</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Add one (Fock, error) pair, evicting the oldest entry when full</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diis_slot_of_age.html'>diis_slot_of_age</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Function</td>
+                 <td><p>Slot holding the age-th oldest entry, age = 1 .. n_stored</p><a href="../proc/diis_slot_of_age.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -744,6 +796,18 @@ Resets the stack trace</p></td>
                  <td><p>Send all currently batched results to rank 0 and reset the batch.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/fold_completed_fragments.html'>fold_completed_fragments</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold every fragment whose displacement results have all landed</p><a href="../proc/fold_completed_fragments.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fold_completed_pie_terms.html'>fold_completed_pie_terms</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold every PIE term whose displacement results have all landed</p><a href="../proc/fold_completed_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/fragment_compute_nelec.html'>fragment_compute_nelec</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -792,6 +856,12 @@ Resets the stack trace</p></td>
                  <td><p>Check if a fragment should be screened out based on distance cutoffs.
 Returns true if the fragment itself OR any of its k-subsets (k &gt;= 2) exceeds
 the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragment_table_filename.html'>fragment_table_filename</a></td>
+                 <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
+                 <td>Function</td>
+                 <td><p>Sidecar name derived from the JSON output name: output_w1.json -&gt; output_w1_fragments.csv</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/generate_fragment_list.html'>generate_fragment_list</a></td>
@@ -995,15 +1065,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1012,34 +1082,28 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Receive grouped result batches on rank 0 and update global progress counters.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests.html'>handle_local_worker_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending local worker request, if any.</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1048,22 +1112,16 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Drain pending local worker results and append them to the outbound batch.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_node_requests.html'>handle_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request, if any.</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1155,25 +1213,6 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Reset all flags and scalar values to defaults</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/map_fragment_to_system_dipole_derivatives.html'>map_fragment_to_system_dipole_derivatives</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Map fragment dipole derivatives to system coordinates with hydrogen cap redistribution</p><a href="../proc/map_fragment_to_system_dipole_derivatives.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/map_fragment_to_system_gradient.html'>map_fragment_to_system_gradient</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Map fragment gradient to system gradient coordinates with hydrogen cap redistribution</p><a href="../proc/map_fragment_to_system_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/map_fragment_to_system_hessian.html'>map_fragment_to_system_hessian</a></td>
-                 <td><a href='../module/mqc_mbe.html'>mqc_mbe</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Map fragment Hessian to system Hessian coordinates with hydrogen cap redistribution
-Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mass_weight_hessian.html'>mass_weight_hessian</a></td>
@@ -1843,33 +1882,6 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><p>Send the failure flag, code and trace that travel with a result</p><a href="../proc/send_error_state.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/send_fragment_payload.html'>send_fragment_payload</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Send fragment payload over the specified communicator/tag.
-Uses int64 for fragment_idx to handle large fragment indices.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/send_fragment_payload_from_row.html'>send_fragment_payload_from_row</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Send fragment payload over the specified communicator/tag using a polymer row.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/send_fragment_to_node.html'>send_fragment_to_node</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Send fragment data to remote node coordinator
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/send_fragment_to_worker.html'>send_fragment_to_worker</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Send fragment data to local worker
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/send_group_assignment_matrix.html'>send_group_assignment_matrix</a></td>
                  <td><a href='../module/mqc_group_shard_io.html'>mqc_group_shard_io</a></td>
                  <td>Subroutine</td>
@@ -1882,16 +1894,11 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
                  <td><p>Send PIE term atom list from a row.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/send_pie_term_to_node.html'>send_pie_term_to_node</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../proc/send_task_payload_from_row.html'>send_task_payload_from_row</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td><p>Send PIE term (atom list) to remote node coordinator</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/send_pie_term_to_worker.html'>send_pie_term_to_worker</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Send PIE term (atom list) to local worker</p></td>
+                 <td><p>Send a task payload over the specified communicator/tag.
+task_idx indexes the flat task list, not the fragment list.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/serial_fragment_processor.html'>serial_fragment_processor</a></td>
@@ -1934,6 +1941,18 @@ Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                  <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
                  <td>Subroutine</td>
                  <td><p>Skip lines until &lsquo;end&rsquo; marker is found</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/slot_of_age.html'>slot_of_age</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Function</td>
+                 <td><p><code>diis_slot_of_age</code> for this state&rsquo;s ring</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/solve_diis.html'>solve_diis</a></td>
+                 <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Solve the small DIIS linear system by Gaussian elimination</p><a href="../proc/solve_diis.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/sort_fragments_by_size.html'>sort_fragments_by_size</a></td>
@@ -1995,6 +2014,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
 For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/write_fragment_table.html'>write_fragment_table</a></td>
+                 <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write one row per fragment: identity, energy, many-body correction, distance</p><a href="../proc/write_fragment_table.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/write_gmbe_pie_json_impl.html'>write_gmbe_pie_json_impl</a></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
@@ -2011,6 +2036,12 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
                  <td><a href='../module/mqc_json_writer.html'>mqc_json_writer</a></td>
                  <td>Subroutine</td>
                  <td><p>Write detailed MBE energy breakdown to JSON file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/write_optional_value.html'>write_optional_value</a></td>
+                 <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Emit one comma-separated value, or an empty cell if the column is absent</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_unfragmented_json_impl.html'>write_unfragmented_json_impl</a></td>
@@ -2079,7 +2110,7 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

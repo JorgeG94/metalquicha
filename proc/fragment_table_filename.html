@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>send_fragment_to_node &ndash; metalquicha</title>
+    <title>fragment_table_filename &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,8 +83,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>send_fragment_to_node
-      <small>Subroutine</small>
+    <h1>fragment_table_filename
+      <small>Function</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">7 statements</a>
+                 title=" 0.0% of total for procedures.">4 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_mbe_mpi_fragment_distribution_scheme.F90"> Source File</a>
+              <a href="../src/mqc_fragment_table_writer.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html'>mqc_mbe_mpi_fragment_distribution_scheme.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></li>
-            <li class="breadcrumb-item active" aria-current="page">send_fragment_to_node</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_fragment_table_writer.f90.html'>mqc_fragment_table_writer.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">fragment_table_filename</li>
           </ol>
         </nav>
       </div>
@@ -151,7 +151,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/send_fragment_to_node.html#src">send_fragment_to_node</a>
+        <a class="list-group-item" href="../proc/fragment_table_filename.html#src">fragment_table_filename</a>
       </div>
     </div>
 
@@ -161,88 +161,23 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine send_fragment_to_node(world_comm, fragment_idx, polymers, dest_rank)  
+    <h2>public  function fragment_table_filename() result(filename)  
 </h2>
     
 
-    <p>Send fragment data to remote node coordinator
-Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</p>
+    <p>Sidecar name derived from the JSON output name: output_w1.json -&gt; output_w1_fragments.csv</p>
 
 
     <h3>Arguments</h3>
-        <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-world_comm~11"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>world_comm</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-fragment_idx~13"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>fragment_idx</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-polymers~11"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>polymers</strong>(:,:)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~6"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
+    <em>None</em>
+    <br>
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-filename~5"></span>
+          character(len=256)
+        </small>
+      </h3>
+      
     <br>
     <div class="card">
       <div class="card-header">
@@ -254,59 +189,32 @@ Uses int64 for fragment_idx to handle large fragment indices that overflow int32
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_to_node~~CallsGraph Pages: 1 -->
-<svg id="procsend_fragment_to_nodeCallsGraph" width="504pt" height="74pt"
- viewBox="0.00 0.00 504.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_to_node~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
-<title>proc~~send_fragment_to_node~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 500,-70 500,4 -4,4"/>
-<!-- proc~send_fragment_to_node -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_node1" class="node">
-<title>proc~send_fragment_to_node</title>
-<polygon fill="none" stroke="black" points="141,-45 0,-45 0,-21 141,-21 141,-45"/>
-<text text-anchor="middle" x="70.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_to_node</text>
+<!-- Title: proc~~fragment_table_filename~~CallsGraph Pages: 1 -->
+<svg id="procfragment_table_filenameCallsGraph" width="282pt" height="32pt"
+ viewBox="0.00 0.00 282.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fragment_table_filename~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~fragment_table_filename~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 278,-28 278,4 -4,4"/>
+<!-- proc~fragment_table_filename -->
+<g id="proc~~fragment_table_filename~~CallsGraph_node1" class="node">
+<title>proc~fragment_table_filename</title>
+<polygon fill="none" stroke="black" points="147,-24 0,-24 0,0 147,0 147,-24"/>
+<text text-anchor="middle" x="73.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">fragment_table_filename</text>
 </g>
-<!-- proc~send_fragment_payload -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_node2" class="node">
-<title>proc~send_fragment_payload</title>
-<g id="a_proc~~send_fragment_to_node~~CallsGraph_node2"><a xlink:href="../proc/send_fragment_payload.html" xlink:title="send_fragment_payload">
-<polygon fill="#d9534f" stroke="#d9534f" points="318,-45 177,-45 177,-21 318,-21 318,-45"/>
-<text text-anchor="middle" x="247.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send_fragment_payload</text>
+<!-- proc~get_basename -->
+<g id="proc~~fragment_table_filename~~CallsGraph_node2" class="node">
+<title>proc~get_basename</title>
+<g id="a_proc~~fragment_table_filename~~CallsGraph_node2"><a xlink:href="../proc/get_basename.html" xlink:title="get_basename">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="274,-24 183,-24 183,0 274,0 274,-24"/>
+<text text-anchor="middle" x="228.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_basename</text>
 </a>
 </g>
 </g>
-<!-- proc~send_fragment_to_node&#45;&gt;proc~send_fragment_payload -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_edge1" class="edge">
-<title>proc~send_fragment_to_node&#45;&gt;proc~send_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M141.17,-33C149.5,-33 158.06,-33 166.53,-33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="166.79,-36.5 176.79,-33 166.79,-29.5 166.79,-36.5"/>
-</g>
-<!-- isend -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_node3" class="node">
-<title>isend</title>
-<polygon fill="#777777" stroke="#777777" points="452,-66 398,-66 398,-42 452,-42 452,-66"/>
-<text text-anchor="middle" x="425" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">isend</text>
-</g>
-<!-- proc~send_fragment_payload&#45;&gt;isend -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_edge2" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;isend</title>
-<path fill="none" stroke="#ff0000" d="M318.11,-41.33C341.91,-44.18 367.57,-47.25 387.67,-49.65"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="387.28,-53.13 397.63,-50.84 388.12,-46.18 387.28,-53.13"/>
-</g>
-<!-- proc~build_fragment_payload -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_node4" class="node">
-<title>proc~build_fragment_payload</title>
-<g id="a_proc~~send_fragment_to_node~~CallsGraph_node4"><a xlink:href="../proc/build_fragment_payload.html" xlink:title="build_fragment_payload">
-<polygon fill="#d9534f" stroke="#d9534f" points="496,-24 354,-24 354,0 496,0 496,-24"/>
-<text text-anchor="middle" x="425" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_payload</text>
-</a>
-</g>
-</g>
-<!-- proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload -->
-<g id="proc~~send_fragment_to_node~~CallsGraph_edge3" class="edge">
-<title>proc~send_fragment_payload&#45;&gt;proc~build_fragment_payload</title>
-<path fill="none" stroke="#ff0000" d="M318.11,-24.67C326.57,-23.66 335.27,-22.62 343.87,-21.59"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="344.38,-25.05 353.9,-20.39 343.55,-18.1 344.38,-25.05"/>
+<!-- proc~fragment_table_filename&#45;&gt;proc~get_basename -->
+<g id="proc~~fragment_table_filename~~CallsGraph_edge1" class="edge">
+<title>proc~fragment_table_filename&#45;&gt;proc~get_basename</title>
+<path fill="none" stroke="#ff0000" d="M147.42,-12C155.86,-12 164.36,-12 172.5,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.6,-15.5 182.6,-12 172.6,-8.5 172.6,-15.5"/>
 </g>
 </g>
 </svg>
@@ -401,36 +309,121 @@ large graphs.</div>
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~send_fragment_to_node~~CalledByGraph Pages: 1 -->
-<svg id="procsend_fragment_to_nodeCalledByGraph" width="317pt" height="32pt"
- viewBox="0.00 0.00 317.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~send_fragment_to_node~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
-<title>proc~~send_fragment_to_node~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 313,-28 313,4 -4,4"/>
-<!-- proc~send_fragment_to_node -->
-<g id="proc~~send_fragment_to_node~~CalledByGraph_node1" class="node">
-<title>proc~send_fragment_to_node</title>
-<polygon fill="none" stroke="black" points="309,-24 168,-24 168,0 309,0 309,-24"/>
-<text text-anchor="middle" x="238.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_fragment_to_node</text>
+<!-- Title: proc~~fragment_table_filename~~CalledByGraph Pages: 1 -->
+<svg id="procfragment_table_filenameCalledByGraph" width="641pt" height="80pt"
+ viewBox="0.00 0.00 641.00 79.59" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fragment_table_filename~~CalledByGraph" class="graph" transform="scale(0.71 0.71) rotate(0) translate(4 108)">
+<title>proc~~fragment_table_filename~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-108 898,-108 898,4 -4,4"/>
+<!-- proc~fragment_table_filename -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node1" class="node">
+<title>proc~fragment_table_filename</title>
+<polygon fill="none" stroke="black" points="894,-64 747,-64 747,-40 894,-40 894,-64"/>
+<text text-anchor="middle" x="820.5" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50">fragment_table_filename</text>
 </g>
-<!-- proc~handle_node_requests -->
-<g id="proc~~send_fragment_to_node~~CalledByGraph_node2" class="node">
-<title>proc~handle_node_requests</title>
-<g id="a_proc~~send_fragment_to_node~~CalledByGraph_node2"><a xlink:href="../proc/handle_node_requests.html" xlink:title="handle_node_requests">
-<polygon fill="#d9534f" stroke="#d9534f" points="132,-24 0,-24 0,0 132,0 132,-24"/>
-<text text-anchor="middle" x="66" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_requests</text>
+<!-- proc~write_fragment_table -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node2" class="node">
+<title>proc~write_fragment_table</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node2"><a xlink:href="../proc/write_fragment_table.html" xlink:title="write_fragment_table">
+<polygon fill="#d9534f" stroke="#d9534f" points="711,-64 585,-64 585,-40 711,-40 711,-64"/>
+<text text-anchor="middle" x="648" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fragment_table</text>
 </a>
 </g>
 </g>
-<!-- proc~handle_node_requests&#45;&gt;proc~send_fragment_to_node -->
-<g id="proc~~send_fragment_to_node~~CalledByGraph_edge1" class="edge">
-<title>proc~handle_node_requests&#45;&gt;proc~send_fragment_to_node</title>
-<path fill="none" stroke="#ff0000" d="M132.43,-12C140.71,-12 149.25,-12 157.72,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="158,-15.5 168,-12 158,-8.5 158,-15.5"/>
+<!-- proc~write_fragment_table&#45;&gt;proc~fragment_table_filename -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge1" class="edge">
+<title>proc~write_fragment_table&#45;&gt;proc~fragment_table_filename</title>
+<path fill="none" stroke="#ff0000" d="M711.04,-52C719.39,-52 728.06,-52 736.69,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="736.8,-55.5 746.8,-52 736.8,-48.5 736.8,-55.5"/>
+</g>
+<!-- proc~write_json_output -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node3" class="node">
+<title>proc~write_json_output</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node3"><a xlink:href="../proc/write_json_output.html" xlink:title="write_json_output">
+<polygon fill="#d9534f" stroke="#d9534f" points="549,-64 443,-64 443,-40 549,-40 549,-64"/>
+<text text-anchor="middle" x="496" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_json_output</text>
+</a>
+</g>
+</g>
+<!-- proc~write_json_output&#45;&gt;proc~write_fragment_table -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge2" class="edge">
+<title>proc~write_json_output&#45;&gt;proc~write_fragment_table</title>
+<path fill="none" stroke="#ff0000" d="M549.04,-52C557.37,-52 566.12,-52 574.82,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="574.99,-55.5 584.99,-52 574.99,-48.5 574.99,-55.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node4" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node4"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="407,-64 313,-64 313,-40 407,-40 407,-64"/>
+<text text-anchor="middle" x="360" y="-49.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~write_json_output -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge3" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~write_json_output</title>
+<path fill="none" stroke="#ff0000" d="M407.12,-52C415.39,-52 424.13,-52 432.77,-52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.82,-55.5 442.82,-52 432.82,-48.5 432.82,-55.5"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node5" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node5"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-104 100.5,-104 100.5,-80 266.5,-80 266.5,-104"/>
+<text text-anchor="middle" x="183.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;proc~run_calculation -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge4" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-80C257.74,-75.21 281.82,-69.69 303.05,-64.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="303.94,-68.21 312.9,-62.57 302.37,-61.39 303.94,-68.21"/>
+</g>
+<!-- proc~run_multi_molecule_calculations -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node6" class="node">
+<title>proc~run_multi_molecule_calculations</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node6"><a xlink:href="../proc/run_multi_molecule_calculations.html" xlink:title="run_multi_molecule_calculations">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-24 90,-24 90,0 277,0 277,-24"/>
+<text text-anchor="middle" x="183.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_multi_molecule_calculations</text>
+</a>
+</g>
+</g>
+<!-- proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge5" class="edge">
+<title>proc~run_multi_molecule_calculations&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M236.86,-24C257.74,-28.79 281.82,-34.31 303.05,-39.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.37,-42.61 312.9,-41.43 303.94,-35.79 302.37,-42.61"/>
+</g>
+<!-- program~main -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_node7" class="node">
+<title>program~main</title>
+<g id="a_proc~~fragment_table_filename~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-44 0,-44 0,-20 54,-20 54,-44"/>
+<text text-anchor="middle" x="27" y="-29.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~run_calculation -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge6" class="edge">
+<title>program~main&#45;&gt;proc~run_calculation</title>
+<path fill="none" stroke="#ff0000" d="M54.25,-33.59C107.66,-36.81 230.05,-44.21 302.43,-48.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="302.54,-52.09 312.73,-49.2 302.96,-45.11 302.54,-52.09"/>
+</g>
+<!-- program~main&#45;&gt;proc~run_multi_molecule_calculations -->
+<g id="proc~~fragment_table_filename~~CalledByGraph_edge7" class="edge">
+<title>program~main&#45;&gt;proc~run_multi_molecule_calculations</title>
+<path fill="none" stroke="#00ff00" d="M54.21,-28.61C61.81,-27.62 70.61,-26.48 79.96,-25.27"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="80.42,-28.74 89.89,-23.99 79.52,-21.8 80.42,-28.74"/>
 </g>
 </g>
 </svg>
-</div>          <div>
+</div>                <script>
+                  var panprocfragment_table_filenameCalledByGraph = svgPanZoom('#procfragment_table_filenameCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -525,15 +518,11 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_fragment_to_node</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Send fragment data to remote node coordinator</span>
-<span class="w">      </span><span class="c">!! Uses int64 for fragment_idx to handle large fragment indices that overflow int32.</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">world_comm</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment_idx</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dest_rank</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">polymers</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">send_fragment_payload</span><span class="p">(</span><span class="n">world_comm</span><span class="p">,</span><span class="w"> </span><span class="n">TAG_NODE_FRAGMENT</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="n">dest_rank</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end subroutine </span><span class="n">send_fragment_to_node</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">fragment_table_filename</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Sidecar name derived from the JSON output name: output_w1.json -&gt; output_w1_fragments.csv</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span>
+<span class="w">      </span><span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;output_&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">get_basename</span><span class="p">())</span><span class="o">//</span><span class="s2">&quot;_fragments.csv&quot;</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">fragment_table_filename</span>
 </pre></div>
 
     </section>
@@ -557,7 +546,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

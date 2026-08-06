@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 7.1% of total for modules and submodules.">882 statements</a>
+                 title=" 8.1% of total for modules and submodules.">1037 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -128,7 +128,18 @@
         <div id="sidebar">
       <h3>Contents</h3>
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#variable-n_term_payload_msgs">N_TERM_PAYLOAD_MSGS</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -149,13 +160,14 @@
             <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-gmbe_group_global_coordinator">gmbe_group_global_coordinator</a>
             <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-gmbe_pie_coordinator">gmbe_pie_coordinator</a>
             <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-serial_gmbe_pie_processor">serial_gmbe_pie_processor</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_group_node_requests">handle_group_node_requests</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_local_worker_requests_group">handle_local_worker_requests_group</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_local_worker_results">handle_local_worker_results</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_node_results">handle_node_results</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-assemble_one_pie_term_hessian">assemble_one_pie_term_hessian</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-build_gmbe_task_table">build_gmbe_task_table</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-fold_completed_pie_terms">fold_completed_pie_terms</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_group_node_requests~2">handle_group_node_requests</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_local_worker_requests_group~2">handle_local_worker_requests_group</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_local_worker_results~2">handle_local_worker_results</a>
+            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-handle_node_results~2">handle_node_results</a>
             <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-send_pie_term_payload">send_pie_term_payload</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-send_pie_term_to_node">send_pie_term_to_node</a>
-            <a class="list-group-item" href="../module/mqc_gmbe_fragment_distribution_scheme.html#proc-send_pie_term_to_worker">send_pie_term_to_worker</a>
         </div>
       </div>
     </div>
@@ -176,6 +188,7 @@
     <div class="col-md-9" id='text'>
       <p>Implements fragment distribution schemes for GMBE calculations with overlapping fragments
 Handles both serial and MPI-parallelized distribution of monomers and intersection fragments
+term index, fragment type, atom count, atom list, displacement code
 PIE-based serial processor
 PIE-based MPI coordinator</p>
 <br>          <div class="card mb-4">
@@ -184,25 +197,25 @@ PIE-based MPI coordinator</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
-                  <li class="list-inline-item">pic_timer</li>
-                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
-                  <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
                   <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
-                  <li class="list-inline-item">pic_io</li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
-                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_thermochemistry.html'>mqc_thermochemistry</a></li>
                   <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_work_queue.html'>mqc_work_queue</a></li>
+                  <li class="list-inline-item"><a href='mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></li>
                   <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_mpi_tags.html'>mqc_mpi_tags</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
                   <li class="list-inline-item"><a href='mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></li>
                   <li class="list-inline-item"><a href='mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
+                  <li class="list-inline-item">pic_timer</li>
+                  <li class="list-inline-item">pic_io</li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
                   <li class="list-inline-item"><a href='mqc_group_shard_io.html'>mqc_group_shard_io</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
+                  <li class="list-inline-item"><a href='mqc_group_batching.html'>mqc_group_batching</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2221,6 +2234,40 @@ large graphs.</div>
       <br>
 
 
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_term_payload_msgs"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>N_TERM_PAYLOAD_MSGS</strong></td>
+<td> =</td>
+                <td>5</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
 
 
 
@@ -2249,7 +2296,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~8"></span>
+              <span class="anchor" id="variable-resources~11"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2264,7 +2311,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks~2"></span>
+              <span class="anchor" id="variable-node_leader_ranks~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2279,7 +2326,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_ids~2"></span>
+              <span class="anchor" id="variable-group_ids~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2322,7 +2369,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~3"></span>
+              <span class="anchor" id="variable-resources~6"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2335,6 +2382,215 @@ Bond connectivity is accessed via sys_geom%bonds</p>
 
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~7"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+<p>Unique atom sets (max_atoms, n_pie_terms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_coefficients~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_coefficients</strong>(:)</td>
+            <td>
+<p>PIE coefficient for each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~6"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-node_leader_ranks~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>node_leader_ranks</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-num_nodes~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>num_nodes</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_leader_ranks~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>group_leader_ranks</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group_ids~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>group_ids</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-global_groups~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>global_groups</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~41"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method_config~10"></span>
+              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method_config</strong></td>
+            <td>
+<p>Method configuration</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calc_type~11"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calc_type</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_data~24"></span>
+              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_data</strong></td>
+            <td>
+<p>JSON output data</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-serial_gmbe_pie_processor"></span> <h3>public  subroutine <a href='../proc/serial_gmbe_pie_processor.html'>serial_gmbe_pie_processor</a>(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method_config, calc_type, json_data)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Serial GMBE processor using PIE coefficients
+Evaluates each unique atom set once and sums with PIE coefficients
+Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
+If json_data is present, populates it for centralized JSON output
+Bond connectivity is accessed via sys_geom%bonds</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
         <tr>
             <td>
               <span class="anchor" id="variable-pie_atom_sets~3"></span>
@@ -2382,82 +2638,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_leader_ranks"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>node_leader_ranks</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-num_nodes"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>num_nodes</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-group_leader_ranks"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>group_leader_ranks</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-group_ids"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>group_ids</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-global_groups~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>global_groups</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-sys_geom~19"></span>
+              <span class="anchor" id="variable-sys_geom~37"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2472,7 +2653,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~3"></span>
+              <span class="anchor" id="variable-method_config~9"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2487,7 +2668,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -2502,7 +2683,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~3"></span>
+              <span class="anchor" id="variable-json_data~23"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2523,15 +2704,11 @@ Bond connectivity is accessed via sys_geom%bonds</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-serial_gmbe_pie_processor"></span> <h3>public  subroutine <a href='../proc/serial_gmbe_pie_processor.html'>serial_gmbe_pie_processor</a>(pie_atom_sets, pie_coefficients, n_pie_terms, sys_geom, method_config, calc_type, json_data)  
+    <div class="card-header codesum"><span class="anchor" id="proc-assemble_one_pie_term_hessian"></span> <h3>private  subroutine <a href='../proc/assemble_one_pie_term_hessian.html'>assemble_one_pie_term_hessian</a>(t, pie_atom_sets, sys_geom, task_results, task_offset, term_natoms, term_result, world_comm)  
 </h3></div>
     <div class="card-body">
           
-  <p>Serial GMBE processor using PIE coefficients
-Evaluates each unique atom set once and sums with PIE coefficients
-Supports energy-only, energy+gradient, and energy+gradient+Hessian calculations
-If json_data is present, populates it for centralized JSON output
-Bond connectivity is accessed via sys_geom%bonds</p>
+  <p>Fold one PIE term&rsquo;s displacement results into its Hessian, then release them</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -2546,7 +2723,22 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-pie_atom_sets~2"></span>
+              <span class="anchor" id="variable-t~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>t</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2556,42 +2748,12 @@ Bond connectivity is accessed via sys_geom%bonds</p>
             <td>::</td>
             <td><strong>pie_atom_sets</strong>(:,:)</td>
             <td>
-<p>Unique atom sets (max_atoms, n_pie_terms)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-pie_coefficients~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>pie_coefficients</strong>(:)</td>
-            <td>
-<p>PIE coefficient for each term</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_pie_terms~2"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_pie_terms</strong></td>
-            <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~18"></span>
+              <span class="anchor" id="variable-sys_geom~39"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2606,47 +2768,77 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
-              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+              <span class="anchor" id="variable-task_results~3"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
-<td>intent(in)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>method_config</strong></td>
-            <td>
-<p>Method configuration</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-calc_type~2"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>calc_type</strong></td>
+            <td><strong>task_results</strong>(:)</td>
             <td>
 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
-              type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
+              <span class="anchor" id="variable-task_offset~6"></span>
+              integer(kind=int64),
             </td>
-<td>intent(out),</td>
-              <td>optional</td>            <td>
+<td>intent(in)</td>
+              <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>json_data</strong></td>
+            <td><strong>task_offset</strong>(:)</td>
             <td>
-<p>JSON output data</p>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_natoms~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_natoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_result"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~23"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
             </td>
         </tr>
     </tbody>
@@ -2657,7 +2849,342 @@ Bond connectivity is accessed via sys_geom%bonds</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests"></span> <h3>private  subroutine <a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a>(resources, term_queue, term_ids, atom_sets, finished_nodes)  
+    <div class="card-header codesum"><span class="anchor" id="proc-build_gmbe_task_table"></span> <h3>private  subroutine <a href='../proc/build_gmbe_task_table.html'>build_gmbe_task_table</a>(pie_atom_sets, n_pie_terms, sys_geom, expand, task_atom_sets, task_offset, term_natoms, total_tasks, world_comm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Expand the PIE term list into the flat list of independent evaluations</p><a href="../proc/build_gmbe_task_table.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~4"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~38"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-expand~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>expand</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_atom_sets"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_atom_sets</strong>(:,:)</td>
+            <td>
+<p>(max_atoms+1, total_tasks)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+<p>first task index of each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_natoms"></span>
+              integer,
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>term_natoms</strong>(:)</td>
+            <td>
+<p>capped atom count of each term</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_tasks~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>total_tasks</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~22"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-fold_completed_pie_terms"></span> <h3>private  subroutine <a href='../proc/fold_completed_pie_terms.html'>fold_completed_pie_terms</a>(pie_atom_sets, n_pie_terms, sys_geom, task_results, task_offset, term_natoms, term_results, next_term, scan_pos, world_comm)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fold every PIE term whose displacement results have all landed</p><a href="../proc/fold_completed_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pie_atom_sets~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pie_atom_sets</strong>(:,:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~40"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_results~4"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_offset~7"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_offset</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_natoms~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_natoms</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term_results"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term_results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-next_term"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>next_term</strong></td>
+            <td>
+<p>Oldest term not yet folded</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scan_pos~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scan_pos</strong></td>
+            <td>
+<p>Next task of next_term to verify</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-world_comm~24"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>world_comm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_group_node_requests~2"></span> <h3>private  subroutine <a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a>(resources, term_queue, term_ids, atom_sets, finished_nodes)  
 </h3></div>
     <div class="card-body">
           
@@ -2676,7 +3203,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~6"></span>
+              <span class="anchor" id="variable-resources~9"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2736,7 +3263,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-finished_nodes"></span>
+              <span class="anchor" id="variable-finished_nodes~3"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2757,7 +3284,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group"></span> <h3>private  subroutine <a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a>(resources, term_queue, term_ids, atom_sets, worker_term_map, local_finished_workers)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_requests_group~2"></span> <h3>private  subroutine <a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a>(resources, term_queue, term_ids, atom_sets, worker_term_map, local_finished_workers)  
 </h3></div>
     <div class="card-body">
           
@@ -2776,7 +3303,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~7"></span>
+              <span class="anchor" id="variable-resources~10"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2851,7 +3378,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_finished_workers~2"></span>
+              <span class="anchor" id="variable-local_finished_workers~5"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -2872,7 +3399,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results"></span> <h3>private  subroutine <a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a>(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)  
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_local_worker_results~2"></span> <h3>private  subroutine <a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a>(resources, worker_term_map, results, results_received, coord_timer, n_pie_terms)  
 </h3></div>
     <div class="card-body">
           
@@ -2891,7 +3418,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources~4"></span>
+              <span class="anchor" id="variable-resources~7"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2921,107 +3448,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~4"></span>
-              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>results</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-results_received~5"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>results_received</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-coord_timer~3"></span>
-              type(timer_type),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>coord_timer</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_pie_terms~4"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_pie_terms</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results"></span> <h3>private  subroutine <a href='../proc/handle_node_results.html'>handle_node_results</a>(resources, results, results_received, coord_timer, n_pie_terms)  
-</h3></div>
-    <div class="card-body">
-          
-  
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-resources~5"></span>
-              type(<a href='../type/resources_t.html'>resources_t</a>),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>resources</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-results~5"></span>
+              <span class="anchor" id="variable-results~9"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3051,7 +3478,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~4"></span>
+              <span class="anchor" id="variable-coord_timer~7"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -3066,7 +3493,107 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_pie_terms~5"></span>
+              <span class="anchor" id="variable-n_pie_terms~7"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_pie_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-handle_node_results~2"></span> <h3>private  subroutine <a href='../proc/handle_node_results~2.html'>handle_node_results</a>(resources, results, results_received, coord_timer, n_pie_terms)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-resources~8"></span>
+              type(<a href='../type/resources_t.html'>resources_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>resources</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results~10"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results_received~7"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>results_received</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coord_timer~8"></span>
+              type(timer_type),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coord_timer</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_pie_terms~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3106,7 +3633,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-comm~8"></span>
+              <span class="anchor" id="variable-comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -3121,7 +3648,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tag~7"></span>
+              <span class="anchor" id="variable-tag~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3160,176 +3687,6 @@ Bond connectivity is accessed via sys_geom%bonds</p>
             </td>
             <td>::</td>
             <td><strong>atom_row</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_pie_term_to_node"></span> <h3>private  subroutine <a href='../proc/send_pie_term_to_node.html'>send_pie_term_to_node</a>(world_comm, term_idx, pie_atom_sets, dest_rank)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send PIE term (atom list) to remote node coordinator</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-world_comm~5"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>world_comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-term_idx~7"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>term_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-pie_atom_sets~4"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>pie_atom_sets</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dest_rank~2"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dest_rank</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-send_pie_term_to_worker"></span> <h3>private  subroutine <a href='../proc/send_pie_term_to_worker.html'>send_pie_term_to_worker</a>(node_comm, term_idx, pie_atom_sets, dest_rank)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Send PIE term (atom list) to local worker</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-node_comm~2"></span>
-              type(comm_t),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>node_comm</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-term_idx~8"></span>
-              integer(kind=int64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>term_idx</strong></td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-pie_atom_sets~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>pie_atom_sets</strong>(:,:)</td>
             <td>
 
             </td>
@@ -3379,7 +3736,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>

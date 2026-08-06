@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">42 statements</a>
+                 title=" 0.3% of total for procedures.">42 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,12 +136,12 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-has_pending">has_pending</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-has_pending~10">has_pending</a>
             <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-item_idx~3">item_idx</a>
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-local_status">local_status</a>
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-req~4">req</a>
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_result">worker_result</a>
-            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_source">worker_source</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-local_status~5">local_status</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-req~23">req</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_result~2">worker_result</a>
+            <a class="list-group-item" href="../proc/handle_local_worker_results_to_batch.html#variable-worker_source~4">worker_source</a>
         </div>
       </div>
     </div>
@@ -197,7 +197,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_comm"></span>
+              <span class="anchor" id="variable-node_comm~2"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -212,7 +212,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~2"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -242,7 +242,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-batch_count~3"></span>
+              <span class="anchor" id="variable-batch_count~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -257,7 +257,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-batch_ids~3"></span>
+              <span class="anchor" id="variable-batch_ids~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -272,7 +272,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-batch_results~3"></span>
+              <span class="anchor" id="variable-batch_results~5"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -287,7 +287,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received"></span>
+              <span class="anchor" id="variable-results_received~9"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout),</td>
@@ -497,6 +497,12 @@
 <path fill="none" stroke="#0000ff" d="M614.5,-137.34C638.61,-133.17 665.83,-128.46 690.71,-124.16"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="691.59,-127.56 700.84,-122.41 690.39,-120.67 691.59,-127.56"/>
 </g>
+<!-- proc~result_irecv&#45;&gt;proc~result_destroy -->
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge16" class="edge">
+<title>proc~result_irecv&#45;&gt;proc~result_destroy</title>
+<path fill="none" stroke="#aa00ff" d="M365.65,-114.39C394.55,-120.09 436.2,-128.3 471.87,-135.34"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="471.27,-138.79 481.76,-137.29 472.62,-131.92 471.27,-138.79"/>
+</g>
 <!-- irecv -->
 <g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_node11" class="node">
 <title>irecv</title>
@@ -531,13 +537,13 @@
 <text text-anchor="middle" x="771.5" y="-65.96" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
 </g>
 <!-- proc~result_irecv&#45;&gt;recv -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge16" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge17" class="edge">
 <title>proc~result_irecv&#45;&gt;recv</title>
 <path fill="none" stroke="#aa00ff" d="M365.57,-99.68C388.2,-95.08 418.19,-89.54 445,-86.36 549.45,-73.99 673.79,-70.09 734.09,-68.89"/>
 <polygon fill="#aa00ff" stroke="#aa00ff" points="734.31,-72.39 744.24,-68.7 734.18,-65.39 734.31,-72.39"/>
 </g>
 <!-- proc~recv_error_state&#45;&gt;recv -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge19" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge20" class="edge">
 <title>proc~recv_error_state&#45;&gt;recv</title>
 <path fill="none" stroke="#00ff00" d="M593.1,-36.11C635.31,-43.78 695.78,-54.78 734.08,-61.74"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="733.8,-65.25 744.26,-63.59 735.05,-58.36 733.8,-65.25"/>
@@ -552,7 +558,7 @@
 </g>
 </g>
 <!-- proc~recv_error_state&#45;&gt;proc~error_clear -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge17" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge18" class="edge">
 <title>proc~recv_error_state&#45;&gt;proc~error_clear</title>
 <path fill="none" stroke="#00ff00" d="M593.14,-17.51C618.56,-12.81 650.33,-7.7 679,-5.36 760.95,1.32 782.11,2.02 864,-5.36 880.56,-6.86 898.29,-9.53 914.77,-12.48"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="914.37,-15.97 924.84,-14.34 915.65,-9.08 914.37,-15.97"/>
@@ -567,13 +573,13 @@
 </g>
 </g>
 <!-- proc~recv_error_state&#45;&gt;proc~error_set -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge18" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge19" class="edge">
 <title>proc~recv_error_state&#45;&gt;proc~error_set</title>
 <path fill="none" stroke="#00ff00" d="M593.1,-27.15C626.91,-27 672.45,-26.8 708.92,-26.64"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="708.96,-30.14 718.94,-26.59 708.93,-23.14 708.96,-30.14"/>
 </g>
 <!-- proc~result_isend&#45;&gt;isend -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge20" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge21" class="edge">
 <title>proc~result_isend&#45;&gt;isend</title>
 <path fill="none" stroke="#00ffff" d="M582.24,-198.3C624.44,-206.16 692.78,-218.89 734.48,-226.65"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="734,-230.12 744.47,-228.52 735.28,-223.24 734,-230.12"/>
@@ -588,7 +594,7 @@
 </g>
 </g>
 <!-- proc~result_isend&#45;&gt;proc~send_error_state -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge21" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge22" class="edge">
 <title>proc~result_isend&#45;&gt;proc~send_error_state</title>
 <path fill="none" stroke="#00ffff" d="M582.24,-191.36C617.18,-191.36 670.03,-191.36 710.85,-191.36"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="710.95,-194.86 720.95,-191.36 710.95,-187.86 710.95,-194.86"/>
@@ -600,7 +606,7 @@
 <text text-anchor="middle" x="980.5" y="-148.96" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send</text>
 </g>
 <!-- proc~result_isend&#45;&gt;send -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge22" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge23" class="edge">
 <title>proc~result_isend&#45;&gt;send</title>
 <path fill="none" stroke="#00ffff" d="M582.13,-184.6C608.96,-179.94 646.11,-173.97 679,-170.36 773.95,-159.94 886.45,-154.72 943.07,-152.58"/>
 <polygon fill="#00ffff" stroke="#00ffff" points="943.44,-156.07 953.3,-152.21 943.18,-149.07 943.44,-156.07"/>
@@ -615,13 +621,13 @@
 </g>
 </g>
 <!-- proc~result_reset&#45;&gt;proc~energy_reset -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge23" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge24" class="edge">
 <title>proc~result_reset&#45;&gt;proc~energy_reset</title>
 <path fill="none" stroke="#0000ff" d="M864.2,-109.92C876.62,-109.86 889.27,-109.8 901.42,-109.74"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="901.51,-113.24 911.49,-109.69 901.47,-106.24 901.51,-113.24"/>
 </g>
 <!-- proc~result_reset&#45;&gt;proc~error_clear -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge24" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge25" class="edge">
 <title>proc~result_reset&#45;&gt;proc~error_clear</title>
 <path fill="none" stroke="#0000ff" d="M835.69,-98.25C845.3,-95.73 855.01,-92.77 864,-89.36 895.72,-77.33 929.52,-58.05 952.3,-43.99"/>
 <polygon fill="#0000ff" stroke="#0000ff" points="954.44,-46.78 961.05,-38.5 950.72,-40.85 954.44,-46.78"/>
@@ -636,13 +642,13 @@
 </g>
 </g>
 <!-- proc~energy_reset&#45;&gt;proc~mp2_reset -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge25" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge26" class="edge">
 <title>proc~energy_reset&#45;&gt;proc~mp2_reset</title>
 <path fill="none" stroke="#ff0000" d="M1049.55,-109.36C1061.48,-109.36 1074.03,-109.36 1086.38,-109.36"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="1086.69,-112.86 1096.69,-109.36 1086.69,-105.86 1086.69,-112.86"/>
 </g>
 <!-- proc~send_error_state&#45;&gt;send -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge28" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge29" class="edge">
 <title>proc~send_error_state&#45;&gt;send</title>
 <path fill="none" stroke="#0066ff" d="M822.08,-181.78C859.48,-174.56 909.9,-164.81 943.5,-158.32"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="944.2,-161.75 953.35,-156.42 942.87,-154.88 944.2,-161.75"/>
@@ -657,7 +663,7 @@
 </g>
 </g>
 <!-- proc~send_error_state&#45;&gt;proc~error_get_code -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge26" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge27" class="edge">
 <title>proc~send_error_state&#45;&gt;proc~error_get_code</title>
 <path fill="none" stroke="#0066ff" d="M822.08,-191.84C845.73,-192.07 874.6,-192.35 901.12,-192.61"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="901.12,-196.11 911.15,-192.7 901.18,-189.11 901.12,-196.11"/>
@@ -672,7 +678,7 @@
 </g>
 </g>
 <!-- proc~send_error_state&#45;&gt;proc~error_get_full_trace -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge27" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge28" class="edge">
 <title>proc~send_error_state&#45;&gt;proc~error_get_full_trace</title>
 <path fill="none" stroke="#0066ff" d="M822.08,-201.9C849.38,-207.7 883.61,-214.98 913.18,-221.27"/>
 <polygon fill="#0066ff" stroke="#0066ff" points="912.5,-224.7 923.01,-223.36 913.96,-217.85 912.5,-224.7"/>
@@ -687,7 +693,7 @@
 </g>
 </g>
 <!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
-<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge29" class="edge">
+<g id="proc~~handle_local_worker_results_to_batch~~CallsGraph_edge30" class="edge">
 <title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
 <path fill="none" stroke="#00ff00" d="M1061.05,-235.36C1071.95,-235.36 1083.14,-235.36 1094.04,-235.36"/>
 <polygon fill="#00ff00" stroke="#00ff00" points="1094.37,-238.86 1104.37,-235.36 1094.37,-231.86 1094.37,-238.86"/>
@@ -1016,7 +1022,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_pending"></span>
+              <span class="anchor" id="variable-has_pending~10"></span>
               logical,
             </td>
               <td>private</td>
@@ -1050,7 +1056,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_status"></span>
+              <span class="anchor" id="variable-local_status~5"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1067,7 +1073,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~4"></span>
+              <span class="anchor" id="variable-req~23"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1084,7 +1090,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-worker_result"></span>
+              <span class="anchor" id="variable-worker_result~2"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
               <td>private</td>
@@ -1101,7 +1107,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-worker_source"></span>
+              <span class="anchor" id="variable-worker_source~4"></span>
               integer,
             </td>
               <td>private</td>
@@ -1212,7 +1218,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 06:26 +0000             </p>
+ on 2026-08-06 14:52 +0000             </p>
           </div>
         </div>
         <br>
