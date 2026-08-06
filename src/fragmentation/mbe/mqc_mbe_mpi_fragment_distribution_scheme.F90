@@ -1069,6 +1069,15 @@ contains
 call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leader_rank, TAG_NODE_SCALAR_RESULT, req)  ! result
             call wait(req)
 
+            ! Release before the next receive. pic-mpi's array recv only
+            ! allocates when the target is unallocated -- it does not resize a
+            ! buffer that is already there, but still receives the sender's full
+            ! count into it. Reusing this one across fragments of different sizes
+            ! therefore writes past the end of the smaller allocation and
+            ! corrupts the heap, surfacing later as an abort in an unrelated
+            ! deallocate.
+            call worker_result%destroy()
+
             ! Clear the mapping
             worker_fragment_map(worker_source) = 0
          end if

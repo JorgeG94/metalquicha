@@ -455,6 +455,9 @@ contains
       integer, intent(in) :: source, tag
       type(MPI_Status), intent(out) :: status
 
+      ! Same reuse hazard as result_irecv -- see the note there.
+      call result%destroy()
+
       ! Receive energy components
       call recv(comm, result%energy%scf, source, tag, status)
       call recv(comm, result%energy%mp2%ss, source, tag, status)
@@ -506,6 +509,16 @@ contains
       integer, intent(in) :: source, tag
       type(request_t), intent(out) :: req
       type(MPI_Status) :: status
+
+      ! Start from an empty result. pic-mpi's array receives allocate only when
+      ! the target is unallocated -- they will not resize a buffer that is
+      ! already there, yet still receive the sender's full element count into
+      ! it. A caller reusing one result across messages of different shapes
+      ! (a relay loop forwarding fragments of unequal size, say) would overflow
+      ! the smaller allocation and corrupt the heap, surfacing much later as an
+      ! abort inside an unrelated deallocate. Clearing here makes reuse safe for
+      ! every caller rather than each having to remember.
+      call result%destroy()
 
       ! Receive SCF energy (non-blocking)
       call irecv(comm, result%energy%scf, source, tag, req)
