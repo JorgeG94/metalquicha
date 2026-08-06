@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.2% of total for derived types.</p>Including implementation: 13 statements,  0.7% of total for derived types.">13 statements</a>
+                 title="<p> 2.1% of total for derived types.</p>Including implementation: 13 statements,  0.7% of total for derived types.">13 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,7 +136,7 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/correlation_config_t.html#variable-aux_basis~2">aux_basis</a>
+            <a class="list-group-item" href="../type/correlation_config_t.html#variable-aux_basis">aux_basis</a>
             <a class="list-group-item" href="../type/correlation_config_t.html#variable-energy_convergence~2">energy_convergence</a>
             <a class="list-group-item" href="../type/correlation_config_t.html#variable-freeze_core">freeze_core</a>
             <a class="list-group-item" href="../type/correlation_config_t.html#variable-local_type">local_type</a>
@@ -233,7 +233,7 @@
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~correlation_config_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~correlation_config_t~~InheritedByGraph_edge2" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M380.89,-35.33C352.52,-38.71 315.45,-43.14 284.51,-46.83"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="283.79,-43.4 274.28,-48.06 284.62,-50.35 283.79,-43.4"/>
@@ -249,7 +249,7 @@
 </g>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~correlation_config_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~correlation_config_t~~InheritedByGraph_edge3" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M569.88,-56.54C563.83,-56.71 557.81,-56.87 552,-57 436.47,-59.58 407.48,-63.27 292,-59 289.48,-58.91 286.91,-58.79 284.32,-58.67"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="284.42,-55.17 274.24,-58.1 284.03,-62.16 284.42,-55.17"/>
@@ -365,7 +365,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis~2"></span>
+              <span class="anchor" id="variable-aux_basis"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -375,7 +375,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>aux_basis</strong></td>
 <td> =</td>
-                <td>&#39;&#39;</td>
+                <td>&#34;&#34;</td>
             <td>
                 <p>Auxiliary basis for RI (e.g., &ldquo;cc-pvdz-ri&rdquo;, &ldquo;cc-pvtz-ri&rdquo;)</p>
             </td>
@@ -426,7 +426,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>local_type</strong></td>
 <td> =</td>
-                <td>&#39;dlpno&#39;</td>
+                <td>&#34;dlpno&#34;</td>
             <td>
                 <p>Local correlation type: &ldquo;pno&rdquo;, &ldquo;dlpno&rdquo;, &ldquo;lmp2&rdquo;, &ldquo;lno&rdquo;</p>
             </td>
@@ -575,13 +575,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Density fitting for correlation</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_df</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Use density fitting (RI) for correlation integrals</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aux_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aux_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 <span class="w">         </span><span class="c">!! Auxiliary basis for RI (e.g., &quot;cc-pvdz-ri&quot;, &quot;cc-pvtz-ri&quot;)</span>
 
 <span class="w">      </span><span class="c">! Local correlation</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_local</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Use local correlation approximation</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;dlpno&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">local_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dlpno&quot;</span>
 <span class="w">         </span><span class="c">!! Local correlation type: &quot;pno&quot;, &quot;dlpno&quot;, &quot;lmp2&quot;, &quot;lno&quot;</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pno_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-7_dp</span>
 <span class="w">         </span><span class="c">!! PNO occupation threshold for truncation</span>
@@ -616,7 +616,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

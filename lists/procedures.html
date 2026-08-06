@@ -109,18 +109,6 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Allocate array of shells in an atomic basis</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/ang_mom_char_to_int.html'>ang_mom_char_to_int</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Convert angular momentum character to integer</p><a href="../proc/ang_mom_char_to_int.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ang_mom_int_to_char.html'>ang_mom_int_to_char</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Convert angular momentum integer to character</p><a href="../proc/ang_mom_int_to_char.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/append_result_to_batch.html'>append_result_to_batch</a></td>
                  <td><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></td>
                  <td>Subroutine</td>
@@ -156,6 +144,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Function</td>
                  <td><p>Get total number of basis functions for an atom</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/basis_search_path.html'>basis_search_path</a></td>
+                 <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Directories searched for basis set files, in order</p><a href="../proc/basis_search_path.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/basis_set_allocate_elements.html'>basis_set_allocate_elements</a></td>
@@ -208,11 +202,10 @@ Caller owns the returned fragment_indices and must deallocate it.</p></td>
                  <td><p>Build hash table for fast fragment lookups</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/build_molecular_basis.html'>build_molecular_basis</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
+                 <td><a href='../proc/build_molecular_basis_json.html'>build_molecular_basis_json</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Subroutine</td>
-                 <td><p>Build molecular basis from geometry and basis file
-Only parses unique elements, then copies basis data to atoms</p></td>
+                 <td><p>Build a molecular basis from a BSE JSON file for a list of atoms</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_type_from_string.html'>calc_type_from_string</a></td>
@@ -295,12 +288,6 @@ This catches bugs in geometry construction or fragment building</p></td>
                  <td>Subroutine</td>
                  <td><p>Check if any atoms appear in multiple fragments
 This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/classify_line.html'>classify_line</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Classify a line from a gamess formatted basis set file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cli_args_destroy.html'>cli_args_destroy</a></td>
@@ -546,9 +533,9 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                </tr>
 			   <tr>
                  <td><a href='../proc/copy_atomic_basis.html'>copy_atomic_basis</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Subroutine</td>
-                 <td><p>Deep copy of atomic basis data from source to dest</p></td>
+                 <td><p>Deep copy of an atomic basis</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/count_hydrogen_caps.html'>count_hydrogen_caps</a></td>
@@ -556,12 +543,6 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td>Subroutine</td>
                  <td><p>Count how many hydrogen caps are needed for a fragment
 A cap is needed when exactly one atom of a broken bond is in the fragment</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/count_shells_for_element.html'>count_shells_for_element</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Count the number of shells for a specific element in a GAMESS formatted basis string,</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/create_method.html'>create_method</a></td>
@@ -585,19 +566,25 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../proc/dft_calc_energy.html'>dft_calc_energy</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate electronic energy using Kohn-Sham DFT</p><a href="../proc/dft_calc_energy.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Calculate electronic energy using Kohn-Sham DFT</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/dft_calc_gradient.html'>dft_calc_gradient</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate energy gradient using Kohn-Sham DFT</p><a href="../proc/dft_calc_gradient.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Calculate energy gradient using Kohn-Sham DFT</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/dft_calc_hessian.html'>dft_calc_hessian</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate energy Hessian using Kohn-Sham DFT</p><a href="../proc/dft_calc_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Hessian by central differences of the analytic gradients</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dft_run.html'>dft_run</a></td>
+                 <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run a density-fitted Kohn-Sham calculation through cuEST</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
@@ -709,41 +696,28 @@ If unit not specified, prints to stdout (unit 6)</p></td>
 Resets the stack trace</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/extract_element.html'>extract_element</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Extract the basis set data for a specific element from the basis file</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/factory_create.html'>factory_create</a></td>
                  <td><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></td>
                  <td>Function</td>
                  <td><p>Create a quantum chemistry method instance from configuration</p><a href="../proc/factory_create.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/fill_element_basis.html'>fill_element_basis</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
+                 <td><a href='../proc/fail.html'>fail</a></td>
+                 <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
                  <td>Subroutine</td>
-                 <td><p>Fill in the shell data for a specific element from a GAMESS formatted basis string</p></td>
+                 <td><p>Propagate a failed displacement outward with enough context to locate it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/find_basis_file.html'>find_basis_file</a></td>
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td>Subroutine</td>
-                 <td><p>Find basis set file using normalized name</p><a href="../proc/find_basis_file.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Locate the JSON file defining a basis set</p><a href="../proc/find_basis_file.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/find_fragment_intersection.html'>find_fragment_intersection</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Function</td>
                  <td><p>Find shared atoms between two fragments (for GMBE with overlapping fragments)</p><a href="../proc/find_fragment_intersection.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/find_unique_strings.html'>find_unique_strings</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Find unique strings in an array
-Returns array of unique strings and count</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/finite_diff_dipole_derivatives.html'>finite_diff_dipole_derivatives</a></td>
@@ -756,6 +730,12 @@ Returns array of unique strings and count</p></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
                  <td><p>Compute Hessian matrix from finite differences of gradients</p><a href="../proc/finite_diff_hessian_from_gradients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/finite_difference_hessian.html'>finite_difference_hessian</a></td>
+                 <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Hessian of <code>method</code> at <code>fragment</code>, by central differences of gradients</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/flush_group_results.html'>flush_group_results</a></td>
@@ -926,12 +906,6 @@ Example: &ldquo;output_multi_structure_molecule_1.json&rdquo; -&gt; &ldquo;molec
 has_next = .true. if there&rsquo;s a next combination</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/get_next_line.html'>get_next_line</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Extract the next line from a string starting at line_start</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/get_nfrags.html'>get_nfrags</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
@@ -1021,15 +995,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1045,27 +1019,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1081,15 +1055,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1122,6 +1096,18 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Calculate energy gradient using Hartree-Fock method</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/hf_calc_hessian.html'>hf_calc_hessian</a></td>
+                 <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Hessian by central differences of the analytic gradients</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hf_run.html'>hf_run</a></td>
+                 <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run a density-fitted RHF calculation through cuEST</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/initialize_fragmented_system.html'>initialize_fragmented_system</a></td>
                  <td><a href='../module/mqc_config_adapter.html'>mqc_config_adapter</a></td>
                  <td>Subroutine</td>
@@ -1147,40 +1133,16 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Convert integer to string</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Compute intersection of two atom lists</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/is_blank_or_control.html'>is_blank_or_control</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Check if a line is blank or a control line (starts with &lsquo;$&rsquo;)</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/is_function_line.html'>is_function_line</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Check if a line is a function coefficient line (starts with a number)</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/is_letter.html'>is_letter</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Check if character is a letter (A-Z or a-z)</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/is_shell_header.html'>is_shell_header</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Check if a line is a shell header line (starts with S, P, D, F, G, H, I, or L)</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/is_uppercase_letter.html'>is_uppercase_letter</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Check if character is an uppercase letter (A-Z)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
@@ -1419,19 +1381,19 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../proc/normalize_basis_name.html'>normalize_basis_name</a></td>
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td>Function</td>
-                 <td><p>Normalize basis set name to filename-safe format</p><a href="../proc/normalize_basis_name.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Normalize a basis set name to its Basis Set Exchange spelling</p><a href="../proc/normalize_basis_name.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/null_hessian.html'>null_hessian</a></td>
-                 <td><a href='../module/mqc_method_hf.html'>mqc_method_hf</a></td>
+                 <td><a href='../proc/normalize_shell_coefficients.html'>normalize_shell_coefficients</a></td>
+                 <td><a href='../module/mqc_basis_normalization.html'>mqc_basis_normalization</a></td>
                  <td>Subroutine</td>
-                 <td><p>Placeholder for Hessian calculation</p></td>
+                 <td><p>Normalized coefficients for a <code>cgto_type</code> shell</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/open_basis_file.html'>open_basis_file</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
+                 <td><a href='../proc/normalized_coefficients.html'>normalized_coefficients</a></td>
+                 <td><a href='../module/mqc_basis_normalization.html'>mqc_basis_normalization</a></td>
                  <td>Subroutine</td>
-                 <td><p>Open and read a GAMESS formatted basis set file</p></td>
+                 <td><p>Normalized contraction coefficients for a single shell</p><a href="../proc/normalized_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/parse_aimd_section.html'>parse_aimd_section</a></td>
@@ -1464,12 +1426,6 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/parse_element_basis.html'>parse_element_basis</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse basis set for a specific element from a GAMESS formatted basis string</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/parse_fragment.html'>parse_fragment</a></td>
                  <td><a href='../module/mqc_config_parser_fragments.html'>mqc_config_parser_fragments</a></td>
                  <td>Subroutine</td>
@@ -1492,12 +1448,6 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
                  <td>Interface</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_function_line.html'>parse_function_line</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse function line (e.g., &ldquo;1 1.0 2.0&rdquo; or &ldquo;1 1.0 2.0 3.0&rdquo; for L shells)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/parse_geometry_generic.html'>parse_geometry_generic</a></td>
@@ -1576,12 +1526,6 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
                  <td>Interface</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_shell_header.html'>parse_shell_header</a></td>
-                 <td><a href='../module/mqc_basis_reader.html'>mqc_basis_reader</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse shell header line (e.g., &ldquo;S 2&rdquo; or &ldquo;L 3&rdquo;)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/parse_single_molecule.html'>parse_single_molecule</a></td>
@@ -1743,6 +1687,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_json_basis_element.html'>read_json_basis_element</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Parse the basis definition for one element from a BSE JSON file</p><a href="../proc/read_json_basis_element.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_json_content.html'>read_json_content</a></td>
                  <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td>Subroutine</td>
@@ -1774,6 +1724,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Receive shard-assignment ids and polymer matrix from rank 0.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/recv_error_state.html'>recv_error_state</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Receive the failure flag, code and trace that travel with a result</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/redistribute_cap_dipole_derivatives.html'>redistribute_cap_dipole_derivatives</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -1790,6 +1746,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
                  <td><p>Redistribute hydrogen cap Hessian to original atoms</p><a href="../proc/redistribute_cap_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report_translational_sum_rule.html'>report_translational_sum_rule</a></td>
+                 <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Check the translational sum rule on the dipole derivatives</p><a href="../proc/report_translational_sum_rule.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/resources_finalize.html'>resources_finalize</a></td>
@@ -1850,6 +1812,12 @@ Sends energy components and conditionally sends gradient based on has_gradient f
                  <td><p>Main calculation dispatcher - routes to fragmented or unfragmented calculation</p><a href="../proc/run_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/run_cuest_scf.html'>run_cuest_scf</a></td>
+                 <td><a href='../module/mqc_cuest_bridge.html'>mqc_cuest_bridge</a></td>
+                 <td>Subroutine</td>
+                 <td><p>No-op stand-in: report the missing backend, compute nothing</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_fragmented_calculation.html'>run_fragmented_calculation</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -1867,6 +1835,12 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle unfragmented calculation (nlevel=0)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/send_error_state.html'>send_error_state</a></td>
+                 <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Send the failure flag, code and trace that travel with a result</p><a href="../proc/send_error_state.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/send_fragment_payload.html'>send_fragment_payload</a></td>
@@ -1950,6 +1924,12 @@ Example: suffix=&rdquo;_mol1&rdquo; -&gt; &ldquo;output_multi_structure_mol1.jso
 Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/shell_angular_momenta.html'>shell_angular_momenta</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Angular momenta carried by one shell entry</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/skip_to_end.html'>skip_to_end</a></td>
                  <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
                  <td>Subroutine</td>
@@ -1969,13 +1949,6 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
                  <td>Subroutine</td>
                  <td><p>Split input text into lines based on CR, LF, or CRLF line endings
 Trailing newlines do not create empty lines</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/strings_equal.html'>strings_equal</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Compare two strings after trimming and adjusting (removing leading/trailing whitespace)
-Compare two strings for equality after trimming and adjusting (removing leading/trailing whitespace)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/strip_comment.html'>strip_comment</a></td>
@@ -2013,12 +1986,6 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/uppercase.html'>uppercase</a></td>
-                 <td><a href='../module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Convert a string to uppercase, should use pic_ascii!</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/validate_cutoffs.html'>validate_cutoffs</a></td>
@@ -2112,7 +2079,7 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

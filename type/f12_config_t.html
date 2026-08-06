@@ -228,7 +228,7 @@
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~f12_config_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~f12_config_t~~InheritedByGraph_edge2" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M336.89,-35.33C308.52,-38.71 271.45,-43.14 240.51,-46.83"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="239.79,-43.4 230.28,-48.06 240.62,-50.35 239.79,-43.4"/>
@@ -244,7 +244,7 @@
 </g>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~f12_config_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~f12_config_t~~InheritedByGraph_edge3" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M525.88,-56.54C519.83,-56.71 513.81,-56.87 508,-57 392.47,-59.58 363.48,-63.27 248,-59 245.48,-58.91 242.91,-58.79 240.32,-58.67"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="240.42,-55.17 230.24,-58.1 240.03,-62.16 240.42,-55.17"/>
@@ -370,7 +370,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>ansatz</strong></td>
 <td> =</td>
-                <td>&#39;3c&#39;</td>
+                <td>&#34;3c&#34;</td>
             <td>
                 <p>F12 ansatz: &ldquo;3c&rdquo;, &ldquo;3c(fix)&rdquo;, &ldquo;2b&rdquo;, &ldquo;2a&rdquo;</p>
             </td>
@@ -387,7 +387,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>cabs_basis</strong></td>
 <td> =</td>
-                <td>&#39;&#39;</td>
+                <td>&#34;&#34;</td>
             <td>
                 <p>Complementary auxiliary basis (CABS) for RI</p>
             </td>
@@ -421,7 +421,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>optri_basis</strong></td>
 <td> =</td>
-                <td>&#39;&#39;</td>
+                <td>&#34;&#34;</td>
             <td>
                 <p>Optional RI basis for F12 intermediates</p>
             </td>
@@ -475,13 +475,13 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Settings for explicitly correlated F12 methods (MP2-F12, CCSD-F12, etc.)</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">geminal_exponent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
 <span class="w">         </span><span class="c">!! Slater-type geminal exponent (beta)</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ansatz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;3c&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ansatz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;3c&quot;</span>
 <span class="w">         </span><span class="c">!! F12 ansatz: &quot;3c&quot;, &quot;3c(fix)&quot;, &quot;2b&quot;, &quot;2a&quot;</span>
 
 <span class="w">      </span><span class="c">! Auxiliary basis sets for F12</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cabs_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cabs_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 <span class="w">         </span><span class="c">!! Complementary auxiliary basis (CABS) for RI</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">optri_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">optri_basis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
 <span class="w">         </span><span class="c">!! Optional RI basis for F12 intermediates</span>
 
 <span class="w">      </span><span class="c">! Approximations</span>
@@ -512,7 +512,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

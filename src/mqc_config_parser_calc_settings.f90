@@ -13,7 +13,7 @@ contains
       character(len=MAX_LINE_LEN) :: line, key, value
       integer :: io_stat, eq_pos
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %hessian section")
             return
@@ -21,26 +21,26 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos == 0) cycle
 
          key = adjustl(line(1:eq_pos - 1))
          value = adjustl(line(eq_pos + 1:))
 
          select case (trim(key))
-         case ('finite_difference_displacement', 'displacement')
+         case ("finite_difference_displacement", "displacement")
             read (value, *, iostat=io_stat) config%hessian_displacement
-         case ('temperature')
+         case ("temperature")
             read (value, *, iostat=io_stat) config%hessian_temperature
             if (io_stat /= 0) then
                call error%set(ERROR_PARSE, "Invalid temperature value: "//trim(value))
                return
             end if
-         case ('pressure')
+         case ("pressure")
             read (value, *, iostat=io_stat) config%hessian_pressure
             if (io_stat /= 0) then
                call error%set(ERROR_PARSE, "Invalid pressure value: "//trim(value))
@@ -62,7 +62,7 @@ contains
       character(len=MAX_LINE_LEN) :: line, key, value
       integer :: io_stat, eq_pos
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %aimd section")
             return
@@ -70,24 +70,24 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos == 0) cycle
 
          key = adjustl(line(1:eq_pos - 1))
          value = adjustl(line(eq_pos + 1:))
 
          select case (trim(key))
-         case ('dt', 'timestep')
+         case ("dt", "timestep")
             read (value, *, iostat=io_stat) config%aimd_dt
-         case ('nsteps', 'steps')
+         case ("nsteps", "steps")
             read (value, *, iostat=io_stat) config%aimd_nsteps
-         case ('initial_temperature', 'temperature')
+         case ("initial_temperature", "temperature")
             read (value, *, iostat=io_stat) config%aimd_initial_temperature
-         case ('output_frequency', 'output_freq')
+         case ("output_frequency", "output_freq")
             read (value, *, iostat=io_stat) config%aimd_output_frequency
          case default
             call error%set(ERROR_PARSE, "Unknown key in %aimd section: "//trim(key))
@@ -108,7 +108,7 @@ contains
       in_cutoffs = .false.
 
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %fragmentation section")
             return
@@ -116,9 +116,9 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') then
+         if (trim(strip_comment(line)) == "end") then
             if (in_cutoffs) then
                ! Validate cutoffs before leaving the cutoffs section
                call validate_cutoffs(config, error)
@@ -128,17 +128,17 @@ contains
                end if
                in_cutoffs = .false.
                cycle
-            else
-               exit
             end if
+
+            exit
          end if
 
-         if (trim(line) == '%cutoffs') then
+         if (trim(line) == "%cutoffs") then
             in_cutoffs = .true.
             cycle
          end if
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos == 0) cycle
 
          key = adjustl(line(1:eq_pos - 1))
@@ -187,9 +187,9 @@ contains
             end block
          else
             select case (trim(key))
-            case ('method')
+            case ("method")
                config%frag_method = trim(value)
-            case ('level')
+            case ("level")
                read (value, *, iostat=io_stat) config%frag_level
                if (io_stat == 0) then
                   if (config%frag_level < 0) then
@@ -202,9 +202,9 @@ contains
                      return
                   end if
                end if
-            case ('allow_overlapping_fragments')
-               config%allow_overlapping_fragments = (trim(value) == 'true')
-            case ('max_intersection_level')
+            case ("allow_overlapping_fragments")
+               config%allow_overlapping_fragments = (trim(value) == "true")
+            case ("max_intersection_level")
                read (value, *, iostat=io_stat) config%max_intersection_level
                if (io_stat == 0) then
                   if (config%max_intersection_level < 1) then
@@ -217,13 +217,13 @@ contains
                      return
                   end if
                end if
-            case ('embedding')
+            case ("embedding")
                config%embedding = trim(value)
-            case ('cutoff_method')
+            case ("cutoff_method")
                config%cutoff_method = trim(value)
-            case ('distance_metric')
+            case ("distance_metric")
                config%distance_metric = trim(value)
-            case ('global_groups')
+            case ("global_groups")
                read (value, *, iostat=io_stat) config%global_groups
                if (io_stat /= 0) then
                   call error%set(ERROR_PARSE, "Invalid global_groups value: "//trim(value))
@@ -233,7 +233,7 @@ contains
                   call error%set(ERROR_VALIDATION, "global_groups must be >= 1")
                   return
                end if
-            case ('nodes_per_group')
+            case ("nodes_per_group")
                read (value, *, iostat=io_stat) config%nodes_per_group
                if (io_stat /= 0) then
                   call error%set(ERROR_PARSE, "Invalid nodes_per_group value: "//trim(value))
@@ -277,7 +277,7 @@ contains
 
          ! Validate monotonic decreasing
          if (cutoff_high > cutoff_low) then
-            write (msg, '(a,i0,a,f0.2,a,i0,a,f0.2,a)') &
+            write (msg, "(a,i0,a,f0.2,a,i0,a,f0.2,a)") &
                "Fragment cutoffs must be monotonically decreasing: ", &
                level_high, "-mer cutoff (", cutoff_high, ") cannot be larger than ", &
                level_low, "-mer cutoff (", cutoff_low, "). Check %cutoffs section."

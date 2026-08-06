@@ -139,11 +139,11 @@
             <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-eq_pos~13">eq_pos</a>
             <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-ifrag~2">ifrag</a>
             <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-io_stat~24">io_stat</a>
-            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-key~14">key</a>
-            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-line~31">line</a>
+            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-key~15">key</a>
+            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-line~23">line</a>
             <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-msg~3">msg</a>
             <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-nfrag_local">nfrag_local</a>
-            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-value~14">value</a>
+            <a class="list-group-item" href="../proc/parse_fragments_generic.html#variable-value~16">value</a>
         </div>
       </div>
     </div>
@@ -200,7 +200,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~46"></span>
+              <span class="anchor" id="variable-unit~45"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -245,7 +245,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~81"></span>
+              <span class="anchor" id="variable-error~74"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -826,7 +826,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-key~14"></span>
+              <span class="anchor" id="variable-key~15"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -843,7 +843,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~31"></span>
+              <span class="anchor" id="variable-line~23"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -894,7 +894,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~14"></span>
+              <span class="anchor" id="variable-value~16"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -939,7 +939,7 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! First pass: read nfrag</span>
 <span class="w">      </span><span class="k">do</span>
-<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unexpected end of file in %fragments section&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
@@ -947,16 +947,16 @@ large graphs.</div>
 
 <span class="k">         </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;#&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;!&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;end&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
 
-<span class="k">         </span><span class="n">eq_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
+<span class="k">         </span><span class="n">eq_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;=&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span>
 <span class="w">            </span><span class="k">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="n">eq_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:))</span>
 
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;nfrag&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;nfrag&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               read</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">nfrag_local</span>
 <span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Invalid nfrag value&quot;</span><span class="p">)</span>
@@ -979,16 +979,16 @@ large graphs.</div>
 <span class="w">      </span><span class="c">! Parse individual fragments</span>
 <span class="w">      </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">      </span><span class="k">do</span>
-<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="k">         read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
 
 <span class="k">         </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;#&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;!&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">line</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;!&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;end&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
 
-<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;%fragment&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;%fragment&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            </span><span class="n">ifrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifrag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ifrag</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">nfrag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">               call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;More fragments than declared nfrag&quot;</span><span class="p">)</span>
@@ -1003,7 +1003,7 @@ large graphs.</div>
 <span class="k">      end do</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">ifrag</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">nfrag</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A,I0,A,I0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Expected &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; fragments, found &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ifrag</span>
+<span class="k">         write</span><span class="w"> </span><span class="p">(</span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A,I0,A,I0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Expected &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; fragments, found &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ifrag</span>
 <span class="w">         </span><span class="k">call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -1032,7 +1032,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

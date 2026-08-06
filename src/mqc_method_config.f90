@@ -27,6 +27,16 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
+      character(len=16) :: guess = "gwh"
+         !! Initial guess: 'core', 'gwh' or 'sac'
+      logical :: unrestricted = .false.
+         !! Force an unrestricted (UHF/UKS) treatment even for a closed shell.
+         !! Needed for broken-symmetry singlets, and the cleanest check that
+         !! the unrestricted code reduces to the restricted result.
+      character(len=32) :: aux_basis_set = "def2-universal-jkfit"
+         !! Auxiliary (JKFIT) basis for the density-fitted J and K.
+         !! Required, not optional, for the cuEST backend: cuEST exposes no
+         !! conventional four-index ERI path, so J/K are always fitted.
    end type scf_config_t
 
    !============================================================================
@@ -40,9 +50,9 @@ module mqc_method_config
          !! Electronic temperature in Kelvin (Fermi smearing)
 
       ! Solvation
-      character(len=32) :: solvent = ''
+      character(len=32) :: solvent = ""
          !! Solvent name: "water", "ethanol", etc. Empty for gas phase
-      character(len=16) :: solvation_model = ''
+      character(len=16) :: solvation_model = ""
          !! Solvation model: "alpb", "gbsa", "cpcm"
       logical :: use_cds = .true.
          !! Include non-polar CDS terms
@@ -66,11 +76,11 @@ module mqc_method_config
    type :: dft_config_t
       !! Configuration for Kohn-Sham DFT method
       !! Note: SCF settings (convergence, DIIS) come from scf_config_t
-      character(len=32) :: functional = 'b3lyp'
+      character(len=32) :: functional = "b3lyp"
          !! XC functional: "lda", "pbe", "b3lyp", "m06-2x", etc.
 
       ! Integration grid
-      character(len=16) :: grid_type = 'medium'
+      character(len=16) :: grid_type = "medium"
          !! Grid quality: "coarse", "medium", "fine", "ultrafine"
       integer :: radial_points = 75
          !! Radial grid points per atom
@@ -80,13 +90,13 @@ module mqc_method_config
       ! Density fitting
       logical :: use_density_fitting = .false.
          !! Use RI-J approximation
-      character(len=32) :: aux_basis_set = ''
+      character(len=32) :: aux_basis_set = ""
          !! Auxiliary basis for density fitting
 
       ! Dispersion correction
       logical :: use_dispersion = .false.
          !! Add empirical dispersion
-      character(len=8) :: dispersion_type = 'd3bj'
+      character(len=8) :: dispersion_type = "d3bj"
          !! Dispersion type: "d3", "d3bj", "d4"
    end type dft_config_t
 
@@ -123,7 +133,7 @@ module mqc_method_config
       ! Perturbative corrections
       logical :: use_pt2 = .false.
          !! Apply CASPT2/NEVPT2 after CASSCF
-      character(len=16) :: pt2_type = 'nevpt2'
+      character(len=16) :: pt2_type = "nevpt2"
          !! PT2 flavor: "caspt2", "nevpt2"
       real(dp) :: ipea_shift = 0.25_dp
          !! IPEA shift for CASPT2
@@ -148,13 +158,13 @@ module mqc_method_config
       ! Density fitting for correlation
       logical :: use_df = .true.
          !! Use density fitting (RI) for correlation integrals
-      character(len=32) :: aux_basis = ''
+      character(len=32) :: aux_basis = ""
          !! Auxiliary basis for RI (e.g., "cc-pvdz-ri", "cc-pvtz-ri")
 
       ! Local correlation
       logical :: use_local = .false.
          !! Use local correlation approximation
-      character(len=16) :: local_type = 'dlpno'
+      character(len=16) :: local_type = "dlpno"
          !! Local correlation type: "pno", "dlpno", "lmp2", "lno"
       real(dp) :: pno_threshold = 1.0e-7_dp
          !! PNO occupation threshold for truncation
@@ -193,7 +203,7 @@ module mqc_method_config
       ! EOM-CC for excited states
       integer :: n_roots = 0
          !! Number of EOM-CC roots (0 = ground state only)
-      character(len=8) :: eom_type = 'ee'
+      character(len=8) :: eom_type = "ee"
          !! EOM type: "ee" (excitation), "ip" (ionization), "ea" (attachment)
    end type cc_config_t
 
@@ -204,13 +214,13 @@ module mqc_method_config
       !! Settings for explicitly correlated F12 methods (MP2-F12, CCSD-F12, etc.)
       real(dp) :: geminal_exponent = 1.0_dp
          !! Slater-type geminal exponent (beta)
-      character(len=8) :: ansatz = '3c'
+      character(len=8) :: ansatz = "3c"
          !! F12 ansatz: "3c", "3c(fix)", "2b", "2a"
 
       ! Auxiliary basis sets for F12
-      character(len=32) :: cabs_basis = ''
+      character(len=32) :: cabs_basis = ""
          !! Complementary auxiliary basis (CABS) for RI
-      character(len=32) :: optri_basis = ''
+      character(len=32) :: optri_basis = ""
          !! Optional RI basis for F12 intermediates
 
       ! Approximations
@@ -237,10 +247,14 @@ module mqc_method_config
          !! Method type constant
       logical :: verbose = .false.
          !! Enable verbose output
-      character(len=32) :: basis_set = 'sto-3g'
+      character(len=32) :: basis_set = "sto-3g"
          !! Basis set name (HF, DFT, MCSCF)
       logical :: use_spherical = .true.
          !! Spherical vs Cartesian basis functions
+      integer :: device_rank = 0
+         !! Node-local MPI rank, used to spread ranks across the GPUs on a
+         !! node. Zero is correct for a serial run; a fragmented run must set
+         !! the real value or every rank binds to device 0.
 
       !----- Shared configurations -----
       type(scf_config_t) :: scf
@@ -267,10 +281,11 @@ module mqc_method_config
 
 contains
 
-   pure logical function xtb_has_solvation(this)
+   pure function xtb_has_solvation(this) result(has_solvation)
       !! Check if solvation is configured for XTB
       class(xtb_config_t), intent(in) :: this
-      xtb_has_solvation = len_trim(this%solvent) > 0 .or. this%dielectric > 0.0_dp
+      logical :: has_solvation
+      has_solvation = len_trim(this%solvent) > 0 .or. this%dielectric > 0.0_dp
    end function xtb_has_solvation
 
    subroutine xtb_configure(this, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale, solvent, solvation_model)
@@ -297,7 +312,7 @@ contains
       if (present(solvation_model)) then
          this%solvation_model = solvation_model
       else if (len_trim(this%solvent) > 0 .or. dielectric > 0.0_dp) then
-         this%solvation_model = 'alpb'  ! Default solvation model
+         this%solvation_model = "alpb"  ! Default solvation model
       end if
    end subroutine xtb_configure
 
@@ -312,12 +327,12 @@ contains
       integer, intent(out) :: n_lines                    !! Number of lines populated
 
       n_lines = 0
-      info_lines = ''
+      info_lines = ""
 
       if (.not. this%has_solvation()) return
 
       n_lines = 1
-      if (trim(this%solvation_model) == 'cpcm') then
+      if (trim(this%solvation_model) == "cpcm") then
          if (this%dielectric > 0.0_dp) then
             info_lines(1) = "XTB solvation enabled: cpcm with dielectric = "//to_char(this%dielectric)
          else
@@ -346,14 +361,14 @@ contains
       ! Common settings
       this%method_type = METHOD_TYPE_UNKNOWN
       this%verbose = .false.
-      this%basis_set = 'sto-3g'
+      this%basis_set = "sto-3g"
       this%use_spherical = .true.
 
       ! XTB defaults
       this%xtb%accuracy = 0.01_dp
       this%xtb%electronic_temp = 300.0_dp
-      this%xtb%solvent = ''
-      this%xtb%solvation_model = ''
+      this%xtb%solvent = ""
+      this%xtb%solvation_model = ""
       this%xtb%use_cds = .true.
       this%xtb%use_shift = .true.
       this%xtb%dielectric = -1.0_dp
@@ -368,14 +383,14 @@ contains
       this%scf%diis_size = 8
 
       ! DFT-specific defaults
-      this%dft%functional = 'b3lyp'
-      this%dft%grid_type = 'medium'
+      this%dft%functional = "b3lyp"
+      this%dft%grid_type = "medium"
       this%dft%radial_points = 75
       this%dft%angular_points = 302
       this%dft%use_density_fitting = .false.
-      this%dft%aux_basis_set = ''
+      this%dft%aux_basis_set = ""
       this%dft%use_dispersion = .false.
-      this%dft%dispersion_type = 'd3bj'
+      this%dft%dispersion_type = "d3bj"
 
       ! MCSCF defaults
       this%mcscf%n_active_electrons = 0
@@ -388,7 +403,7 @@ contains
       this%mcscf%orbital_convergence = 1.0e-6_dp
       this%mcscf%ci_convergence = 1.0e-8_dp
       this%mcscf%use_pt2 = .false.
-      this%mcscf%pt2_type = 'nevpt2'
+      this%mcscf%pt2_type = "nevpt2"
       this%mcscf%ipea_shift = 0.25_dp
       this%mcscf%imaginary_shift = 0.0_dp
 
@@ -397,9 +412,9 @@ contains
       this%corr%n_frozen_core = -1
       this%corr%freeze_core = .true.
       this%corr%use_df = .true.
-      this%corr%aux_basis = ''
+      this%corr%aux_basis = ""
       this%corr%use_local = .false.
-      this%corr%local_type = 'dlpno'
+      this%corr%local_type = "dlpno"
       this%corr%pno_threshold = 1.0e-7_dp
       this%corr%use_scs = .false.
       this%corr%scs_ss = 1.0_dp/3.0_dp
@@ -413,13 +428,13 @@ contains
       this%cc%use_diis = .true.
       this%cc%diis_size = 8
       this%cc%n_roots = 0
-      this%cc%eom_type = 'ee'
+      this%cc%eom_type = "ee"
 
       ! F12 defaults
       this%f12%geminal_exponent = 1.0_dp
-      this%f12%ansatz = '3c'
-      this%f12%cabs_basis = ''
-      this%f12%optri_basis = ''
+      this%f12%ansatz = "3c"
+      this%f12%cabs_basis = ""
+      this%f12%optri_basis = ""
       this%f12%use_exponent_fit = .false.
       this%f12%scale_triples = .true.
    end subroutine config_reset
@@ -429,20 +444,46 @@ contains
       !!
       !! Dispatches to appropriate logging based on the configured method.
       !! This allows the driver to log settings without knowing method details.
-      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
+                                  METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, method_type_to_string
       use pic_logger, only: logger => global_logger
       class(method_config_t), intent(in) :: this
 
       character(len=128) :: info_lines(4)
       integer :: n_lines, i
 
-      ! Log XTB solvation settings if using XTB method
       select case (this%method_type)
       case (METHOD_TYPE_GFN1, METHOD_TYPE_GFN2)
+         ! Semi-empirical: no basis to report, but solvation matters
          call this%xtb%get_solvation_info(info_lines, n_lines)
          do i = 1, n_lines
             call logger%info(trim(info_lines(i)))
          end do
+
+      case (METHOD_TYPE_HF, METHOD_TYPE_DFT, METHOD_TYPE_MCSCF)
+         ! Which basis a run actually used is the first thing anyone needs when
+         ! comparing two energies, so report it rather than leaving it implicit.
+         call logger%info("Method settings:")
+         call logger%info("  Method:          "//trim(method_type_to_string(this%method_type)))
+         if (this%method_type == METHOD_TYPE_DFT) then
+            call logger%info("  Functional:      "//trim(this%dft%functional))
+         end if
+         call logger%info("  Basis set:       "//trim(this%basis_set))
+         call logger%info("  Auxiliary basis: "//trim(this%scf%aux_basis_set))
+         if (this%use_spherical) then
+            call logger%info("  Angular form:    spherical (pure)")
+         else
+            call logger%info("  Angular form:    Cartesian")
+         end if
+         if (this%method_type == METHOD_TYPE_DFT) then
+            block
+               character(len=64) :: grid_line
+               write (grid_line, "(a,i0,a,i0)") "  XC grid:         ", &
+                  this%dft%radial_points, " radial x ", this%dft%angular_points
+               call logger%info(trim(grid_line))
+            end block
+         end if
+
       case default
          return
       end select

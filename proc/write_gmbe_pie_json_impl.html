@@ -136,16 +136,16 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-atom_indices">atom_indices</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-atom_indices~2">atom_indices</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-basename~6">basename</a>
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-i~22">i</a>
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-io_stat~7">io_stat</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-i~62">i</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-io_stat~18">io_stat</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-iunit~3">iunit</a>
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-j~4">j</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-j~20">j</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-json~3">json</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-main_obj~3">main_obj</a>
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-max_atoms">max_atoms</a>
-            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-n_atoms~6">n_atoms</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-max_atoms~13">max_atoms</a>
+            <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-n_atoms~14">n_atoms</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-n_nonzero_terms">n_nonzero_terms</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-output_file~4">output_file</a>
             <a class="list-group-item" href="../proc/write_gmbe_pie_json_impl.html#variable-pie_obj">pie_obj</a>
@@ -207,7 +207,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~3"></span>
+              <span class="anchor" id="variable-data~5"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -650,7 +650,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_indices"></span>
+              <span class="anchor" id="variable-atom_indices~2"></span>
               integer,
             </td>
               <td>private,</td>
@@ -684,7 +684,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~22"></span>
+              <span class="anchor" id="variable-i~62"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -701,7 +701,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~7"></span>
+              <span class="anchor" id="variable-io_stat~18"></span>
               integer,
             </td>
               <td>private</td>
@@ -735,7 +735,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~4"></span>
+              <span class="anchor" id="variable-j~20"></span>
               integer,
             </td>
               <td>private</td>
@@ -786,7 +786,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_atoms"></span>
+              <span class="anchor" id="variable-max_atoms~13"></span>
               integer,
             </td>
               <td>private</td>
@@ -803,7 +803,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~6"></span>
+              <span class="anchor" id="variable-n_atoms~14"></span>
               integer,
             </td>
               <td>private</td>
@@ -951,17 +951,17 @@ large graphs.</div>
 <span class="w">      </span><span class="n">basename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_basename</span><span class="p">()</span>
 
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">(</span><span class="n">real_format</span><span class="o">=</span><span class="n">JSON_REAL_FORMAT</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">basename</span><span class="p">))</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">main_obj</span><span class="p">)</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">total_energy</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;total_energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">total_energy</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">gradient</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;gradient_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;gradient_norm&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">gradient</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_hessian</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">hessian</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hessian_frobenius_norm&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hessian_frobenius_norm&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">hessian</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! Count non-zero coefficient terms</span>
@@ -972,11 +972,11 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end if</span>
 
 <span class="w">      </span><span class="c">! PIE terms section</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pie_terms&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;pie_terms&quot;</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">pie_obj</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">n_nonzero_terms</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">n_nonzero_terms</span><span class="p">))</span>
 
-<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;terms&#39;</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">create_array</span><span class="p">(</span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;terms&quot;</span><span class="p">)</span>
 <span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">pie_obj</span><span class="p">,</span><span class="w"> </span><span class="n">terms_arr</span><span class="p">)</span>
 
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">pie_atom_sets</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="p">&amp;</span>
@@ -986,7 +986,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">n_pie_terms</span>
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
 
-<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="k">            call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">terms_arr</span><span class="p">,</span><span class="w"> </span><span class="n">term_obj</span><span class="p">)</span>
 
 <span class="w">            </span><span class="c">! Extract atom list size (atoms until negative sentinel)</span>
@@ -997,18 +997,18 @@ large graphs.</div>
 
 <span class="k">            allocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_indices</span><span class="p">(</span><span class="n">n_atoms</span><span class="p">))</span>
 <span class="w">            </span><span class="n">atom_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">pie_atom_sets</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">n_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;atom_indices&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">atom_indices</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;atom_indices&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">atom_indices</span><span class="p">)</span>
 <span class="w">            </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">atom_indices</span><span class="p">)</span>
 
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;coefficient&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;weighted_energy&#39;</span><span class="p">,</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="k">data</span><span class="p">%</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coefficient&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">term_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;weighted_energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">pie_coefficients</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">)</span><span class="o">*</span><span class="k">data</span><span class="p">%</span><span class="n">pie_energies</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">         </span><span class="k">end do</span>
 <span class="k">      end if</span>
 
 <span class="w">      </span><span class="c">! Write to file</span>
 <span class="w">      </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Writing GMBE PIE JSON output to &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">))</span>
-<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
+<span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">newunit</span><span class="o">=</span><span class="n">iunit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;write&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to open &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; for writing&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
@@ -1044,7 +1044,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

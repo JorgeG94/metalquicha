@@ -146,8 +146,17 @@ array handling, strings, loggers, timers, etc.</p>
 <p>Additionally, users can opt to try the <a href="https://github.com/jeffhammond/vapaa">vapaa</a> backend for the <code>mpi_f08</code> module
 to ensure cross compiler portability. Please report any issues associated here and in vapaa.</p>
 <p>Metalquicha implements a naive backend for unfragmented and fragmented quantum chemistry
-calculations. Currently, metalquicha uses <a href="https://github.com/tblite/tblite">tblite</a> as
-its chemistry engine which performs energy calculations.</p>
+calculations. Two chemistry engines are available:</p>
+<ul>
+<li><a href="https://github.com/tblite/tblite">tblite</a> for semi-empirical xTB (GFN1, GFN2), on the CPU</li>
+<li><a href="https://developer.nvidia.com/cuda/cuda-x-libraries/cuest">NVIDIA cuEST</a> for
+  Hartree-Fock and Kohn-Sham DFT on the GPU — energies, analytic gradients and
+  Hessians, for whole molecules and for every fragment of an MBE/GMBE expansion.
+  See <strong><a href="CUEST.md">CUEST.md</a></strong> for the full story: build instructions, the 20
+  available functionals, and the validation numbers.</li>
+</ul>
+<p>Both plug in behind the same <code>qc_method_t</code> interface, so fragmentation, screening
+and many-body assembly are unchanged by the choice of engine.</p>
 <p>If you are interested in contributing, please see <a href="https://github.com/JorgeG94/pic/blob/main/contributing.md">here</a>. Pic is the main project here and all the contributions fall downstream.</p>
 <p>You can see <a href="https://github.com/users/JorgeG94/projects/4">Project</a> for some information on development priorities and things being done!</p>
 <h2 id="ai-disclaimer">AI Disclaimer</h2>
@@ -176,7 +185,8 @@ extensive expertise in both.</p>
 <li>A Fortran compiler</li>
 <li>An MPI installation</li>
 <li>A BLAS/LAPACK install</li>
-<li>TBLITE (will be downloaded automatically)</li>
+<li>TBLITE (will be downloaded automatically), for xTB</li>
+<li>NVIDIA cuEST and CUDA 12, for GPU Hartree-Fock/DFT (optional; see <a href="CUEST.md">CUEST.md</a>)</li>
 </ul>
 <p>You can then simply:</p>
 <div class="codehilite"><pre><span></span><code>mkdir build
@@ -185,6 +195,18 @@ cmake ../
 make -j
 </code></pre></div>
 
+<p>To build the GPU backend instead of (or alongside) xTB:</p>
+<div class="codehilite"><pre><span></span><code>FC=mpifort CC=mpicc cmake -B build \
+    -DMQC_ENABLE_TBLITE=OFF \
+    -DMQC_ENABLE_CUEST=ON \
+    -DCUEST_ROOT=/path/to/libcuest-linux-x86_64-&lt;ver&gt;_cuda12-archive
+cmake --build build -j
+</code></pre></div>
+
+<p>Only the cuEST shared library is needed; the Fortran bindings are pre-generated
+and vendored, and can optionally be fetched from
+<a href="https://github.com/JorgeG94/mod_cuest">mod_cuest</a> instead. Running needs a GPU
+of compute capability 8.0 or newer. Full details in <a href="CUEST.md">CUEST.md</a>.</p>
 <h3 id="notes-on-fortran-compiler-compatibility">Notes on Fortran compiler compatibility</h3>
 <p>If you enable tblite (enabled by default at the moment) you are going to be blocked by which compilers does tblite
 support. If you decide to not build tblite and just build the framework the code will work with most modern compilers.</p>
@@ -248,6 +270,16 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
 </code></pre></div>
 
 <p>If you don&rsquo;t want to use the python script, you can modify this file by adding an xyz formatted geometry. Supported calculations are <code>Energy</code>, <code>Gradient</code>, and <code>Hessian</code>.</p>
+<p>For a GPU Hartree-Fock or DFT calculation, change the <code>%model</code> section to:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">%model</span>
+<span class="n">method</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">dft</span><span class="w">                    </span><span class="o">!</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="n">hf</span>
+<span class="n">basis</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">def2</span><span class="o">-</span><span class="n">svp</span>
+<span class="n">aux_basis</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">def2</span><span class="o">-</span><span class="n">universal</span><span class="o">-</span><span class="n">jkfit</span><span class="w">   </span><span class="o">!</span><span class="w"> </span><span class="n">required</span><span class="o">:</span><span class="w"> </span><span class="n">cuEST</span><span class="w"> </span><span class="n">always</span><span class="w"> </span><span class="n">density</span><span class="o">-</span><span class="n">fits</span><span class="w"> </span><span class="n">J</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">K</span>
+<span class="n">functional</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pbe0</span><span class="w">                   </span><span class="o">!</span><span class="w"> </span><span class="n">dft</span><span class="w"> </span><span class="n">only</span>
+<span class="n">end</span><span class="w">  </span><span class="o">!</span><span class="w"> </span><span class="n">model</span>
+</code></pre></div>
+
+<p>Everything else — fragmentation, driver type, SCF settings — is unchanged.</p>
         </div>
           <div class="col-md-4">
             <div class="card card-body bg-light">
@@ -272,7 +304,7 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
           <div class="col-xs-6 col-sm-3">
             <div>
               <h3>Source Files</h3>
-              <ul><li><a href='sourcefile/main.f90.html'>main.f90</a></li><li><a href='sourcefile/mqc_basis_file_reader.f90.html'>mqc_basis_file_reader.f90</a></li><li><a href='sourcefile/mqc_basis_reader.f90.html'>mqc_basis_reader.f90</a></li><li><a href='sourcefile/mqc_basis_utils.f90.html'>mqc_basis_utils.f90</a></li><li><a href='sourcefile/mqc_calc_types.f90.html'>mqc_calc_types.f90</a></li><li><a href='sourcefile/mqc_calculation_defaults.f90.html'>mqc_calculation_defaults.f90</a></li><li><a href='sourcefile/mqc_calculation_interface.f90.html'>mqc_calculation_interface.f90</a></li><li><a href='sourcefile/mqc_calculation_keywords.f90.html'>mqc_calculation_keywords.f90</a></li><li><a href='sourcefile/mqc_cgto.f90.html'>mqc_cgto.f90</a></li><li><a href='sourcefile/mqc_cli_parser.f90.html'>mqc_cli_parser.f90</a></li></ul>
+              <ul><li><a href='sourcefile/main.f90.html'>main.f90</a></li><li><a href='sourcefile/mqc_basis_normalization.f90.html'>mqc_basis_normalization.f90</a></li><li><a href='sourcefile/mqc_basis_utils.f90.html'>mqc_basis_utils.F90</a></li><li><a href='sourcefile/mqc_calc_types.f90.html'>mqc_calc_types.f90</a></li><li><a href='sourcefile/mqc_calculation_defaults.f90.html'>mqc_calculation_defaults.f90</a></li><li><a href='sourcefile/mqc_calculation_interface.f90.html'>mqc_calculation_interface.f90</a></li><li><a href='sourcefile/mqc_calculation_keywords.f90.html'>mqc_calculation_keywords.f90</a></li><li><a href='sourcefile/mqc_cgto.f90.html'>mqc_cgto.f90</a></li><li><a href='sourcefile/mqc_cli_parser.f90.html'>mqc_cli_parser.f90</a></li><li><a href='sourcefile/mqc_combinatorics.f90.html'>mqc_combinatorics.f90</a></li></ul>
             </div>
             <div>
               <ul>
@@ -283,7 +315,7 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
           <div class="col-xs-6 col-sm-3">
             <div>
               <h3>Modules</h3>
-              <ul><li><a href='module/mqc_basis_file_reader.html'>mqc_basis_file_reader</a></li><li><a href='module/mqc_basis_reader.html'>mqc_basis_reader</a></li><li><a href='module/mqc_basis_utils.html'>mqc_basis_utils</a></li><li><a href='module/mqc_calc_types.html'>mqc_calc_types</a></li><li><a href='module/mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li><li><a href='module/mqc_calculation_interface.html'>mqc_calculation_interface</a></li><li><a href='module/mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li><li><a href='module/mqc_cgto.html'>mqc_cgto</a></li><li><a href='module/mqc_cli_parser.html'>mqc_cli_parser</a></li><li><a href='module/mqc_combinatorics.html'>mqc_combinatorics</a></li></ul>
+              <ul><li><a href='module/mqc_basis_normalization.html'>mqc_basis_normalization</a></li><li><a href='module/mqc_basis_utils.html'>mqc_basis_utils</a></li><li><a href='module/mqc_calc_types.html'>mqc_calc_types</a></li><li><a href='module/mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li><li><a href='module/mqc_calculation_interface.html'>mqc_calculation_interface</a></li><li><a href='module/mqc_calculation_keywords.html'>mqc_calculation_keywords</a></li><li><a href='module/mqc_cgto.html'>mqc_cgto</a></li><li><a href='module/mqc_cli_parser.html'>mqc_cli_parser</a></li><li><a href='module/mqc_combinatorics.html'>mqc_combinatorics</a></li><li><a href='module/mqc_config_adapter.html'>mqc_config_adapter</a></li></ul>
             </div>
             <div>
               <ul>
@@ -294,7 +326,7 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
           <div class="col-xs-6 col-sm-3">
             <div>
               <h3>Procedures</h3>
-              <ul><li><a href='proc/add_hydrogen_caps.html'>add_hydrogen_caps</a></li><li><a href='proc/add_solvation_to_calc.html'>add_solvation_to_calc</a></li><li><a href='proc/allocate_basis_shells.html'>allocate_basis_shells</a></li><li><a href='proc/ang_mom_char_to_int.html'>ang_mom_char_to_int</a></li><li><a href='proc/ang_mom_int_to_char.html'>ang_mom_int_to_char</a></li><li><a href='proc/append_result_to_batch.html'>append_result_to_batch</a></li><li><a href='proc/apply_distance_screening.html'>apply_distance_screening</a></li><li><a href='proc/arrays_equal_internal.html'>arrays_equal_internal</a></li><li><a href='proc/atom_sets_equal.html'>atom_sets_equal</a></li><li><a href='proc/atomic_basis_destroy.html'>atomic_basis_destroy</a></li></ul>
+              <ul><li><a href='proc/add_hydrogen_caps.html'>add_hydrogen_caps</a></li><li><a href='proc/add_solvation_to_calc.html'>add_solvation_to_calc</a></li><li><a href='proc/allocate_basis_shells.html'>allocate_basis_shells</a></li><li><a href='proc/append_result_to_batch.html'>append_result_to_batch</a></li><li><a href='proc/apply_distance_screening.html'>apply_distance_screening</a></li><li><a href='proc/arrays_equal_internal.html'>arrays_equal_internal</a></li><li><a href='proc/atom_sets_equal.html'>atom_sets_equal</a></li><li><a href='proc/atomic_basis_destroy.html'>atomic_basis_destroy</a></li><li><a href='proc/atomic_basis_num_basis_functions.html'>atomic_basis_num_basis_functions</a></li><li><a href='proc/basis_search_path.html'>basis_search_path</a></li></ul>
             </div>
             <div>
               <ul>
@@ -305,7 +337,7 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
           <div class="col-xs-6 col-sm-3">
             <div>
               <h3>Derived Types</h3>
-              <ul><li><a href='type/aimd_keywords_t.html'>aimd_keywords_t</a></li><li><a href='type/atomic_basis_type.html'>atomic_basis_type</a></li><li><a href='type/basis_file_t.html'>basis_file_t</a></li><li><a href='type/bond_t.html'>bond_t</a></li><li><a href='type/calculation_result_t.html'>calculation_result_t</a></li><li><a href='type/cc_config_t.html'>cc_config_t</a></li><li><a href='type/cc_energy_t.html'>cc_energy_t</a></li><li><a href='type/cgto_type.html'>cgto_type</a></li><li><a href='type/cli_args_type.html'>cli_args_type</a></li><li><a href='type/correlation_config_t.html'>correlation_config_t</a></li></ul>
+              <ul><li><a href='type/aimd_keywords_t.html'>aimd_keywords_t</a></li><li><a href='type/atomic_basis_type.html'>atomic_basis_type</a></li><li><a href='type/bond_t.html'>bond_t</a></li><li><a href='type/calculation_result_t.html'>calculation_result_t</a></li><li><a href='type/cc_config_t.html'>cc_config_t</a></li><li><a href='type/cc_energy_t.html'>cc_energy_t</a></li><li><a href='type/cgto_type.html'>cgto_type</a></li><li><a href='type/cli_args_type.html'>cli_args_type</a></li><li><a href='type/correlation_config_t.html'>correlation_config_t</a></li><li><a href='type/cuest_scf_settings_t.html'>cuest_scf_settings_t</a></li></ul>
             </div>
             <div>
               <ul>
@@ -329,7 +361,7 @@ in serial mode. Or <code>mpirun -np 4 ./build/mqc validation/inputs/prism.mqc</c
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

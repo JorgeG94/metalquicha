@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-elem">elem</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-i~62">i</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-io_stat~18">io_stat</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-line~23">line</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-natoms~3">natoms</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-x~3">x</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-y~3">y</a>
-            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-z~3">z</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-i~42">i</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-io_stat~7">io_stat</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-line~5">line</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-natoms">natoms</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-x~2">x</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-y~2">y</a>
+            <a class="list-group-item" href="../proc/parse_geometry_generic.html#variable-z~2">z</a>
         </div>
       </div>
     </div>
@@ -332,7 +332,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~34"></span>
+              <span class="anchor" id="variable-unit~8"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -347,7 +347,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~4"></span>
+              <span class="anchor" id="variable-geom~5"></span>
               type(<a href='../type/geometry_type.html'>geometry_type</a>),
             </td>
 <td>intent(inout)</td>
@@ -362,7 +362,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~59"></span>
+              <span class="anchor" id="variable-error~27"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -792,7 +792,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~62"></span>
+              <span class="anchor" id="variable-i~42"></span>
               integer,
             </td>
               <td>private</td>
@@ -809,7 +809,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~18"></span>
+              <span class="anchor" id="variable-io_stat~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -826,7 +826,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-line~23"></span>
+              <span class="anchor" id="variable-line~5"></span>
               character(len=MAX_LINE_LEN),
             </td>
               <td>private</td>
@@ -843,7 +843,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-natoms~3"></span>
+              <span class="anchor" id="variable-natoms"></span>
               integer,
             </td>
               <td>private</td>
@@ -860,7 +860,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~3"></span>
+              <span class="anchor" id="variable-x~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -877,7 +877,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-y~3"></span>
+              <span class="anchor" id="variable-y~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -894,7 +894,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-z~3"></span>
+              <span class="anchor" id="variable-z~2"></span>
               real(kind=dp),
             </td>
               <td>private</td>
@@ -936,7 +936,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">io_stat</span><span class="p">,</span><span class="w"> </span><span class="n">natoms</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span>
 <span class="w">      </span><span class="c">! Read number of atoms</span>
-<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Error reading natoms in %geometry section&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
@@ -951,7 +951,7 @@ large graphs.</div>
 <span class="k">      </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">natoms</span>
 
 <span class="w">      </span><span class="c">! Read blank line (comment line in XYZ format)</span>
-<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Error reading comment line in %geometry section&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
@@ -965,14 +965,14 @@ large graphs.</div>
 
 <span class="w">      </span><span class="c">! Read coordinates</span>
 <span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">natoms</span>
-<span class="w">         </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">         </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Error reading geometry coordinates&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
 
 <span class="k">         </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;end&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unexpected &#39;end&#39; while reading geometry&quot;</span><span class="p">)</span>
 <span class="w">            </span><span class="k">return</span>
 <span class="k">         end if</span>
@@ -990,14 +990,14 @@ large graphs.</div>
 <span class="w">      </span><span class="k">end do</span>
 
 <span class="w">      </span><span class="c">! Read &#39;end&#39; marker</span>
-<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(A)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(A)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">io_stat</span><span class="p">)</span><span class="w"> </span><span class="n">line</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">io_stat</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Missing &#39;end&#39; in %geometry section&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
 
 <span class="k">      </span><span class="n">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">adjustl</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">strip_comment</span><span class="p">(</span><span class="n">line</span><span class="p">))</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="s2">&quot;end&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Expected &#39;end&#39; after geometry coordinates&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">return</span>
 <span class="k">      end if</span>
@@ -1026,7 +1026,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

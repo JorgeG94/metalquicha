@@ -43,9 +43,10 @@ contains
       has_item = .true.
    end subroutine queue_pop
 
-   pure logical function queue_is_empty(queue)
+   pure function queue_is_empty(queue) result(is_empty)
       type(queue_t), intent(in) :: queue
-      queue_is_empty = (queue%head > queue%count)
+      logical :: is_empty
+      is_empty = (queue%head > queue%count)
    end function queue_is_empty
 
    subroutine queue_destroy(queue)

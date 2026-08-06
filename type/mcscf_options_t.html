@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 3.3% of total for derived types.</p>Including implementation: 20 statements,  1.1% of total for derived types.">20 statements</a>
+                 title="<p> 3.2% of total for derived types.</p>Including implementation: 20 statements,  1.0% of total for derived types.">20 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,7 +138,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-basis_set~3">basis_set</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ci_tol">ci_tol</a>
-            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-energy_tol~2">energy_tol</a>
+            <a class="list-group-item" href="../type/mcscf_options_t.html#variable-energy_tol">energy_tol</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-imaginary_shift~2">imaginary_shift</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-ipea_shift~2">ipea_shift</a>
             <a class="list-group-item" href="../type/mcscf_options_t.html#variable-max_macro_iter~2">max_macro_iter</a>
@@ -309,7 +309,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>basis_set</strong></td>
 <td> =</td>
-                <td>&#39;sto-3g&#39;</td>
+                <td>&#34;sto-3g&#34;</td>
             <td>
                 <p>Basis set name</p>
             </td>
@@ -333,7 +333,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~2"></span>
+              <span class="anchor" id="variable-energy_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -497,7 +497,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>orbital_optimizer</strong></td>
 <td> =</td>
-                <td>&#39;super-ci&#39;</td>
+                <td>&#34;super-ci&#34;</td>
             <td>
                 <p>Orbital optimizer: &ldquo;super-ci&rdquo;, &ldquo;newton-raphson&rdquo;, &ldquo;ah&rdquo; (augmented Hessian)</p>
             </td>
@@ -531,7 +531,7 @@ large graphs.</div>
             <td>::</td>
             <td><strong>pt2_type</strong></td>
 <td> =</td>
-                <td>&#39;nevpt2&#39;</td>
+                <td>&#34;nevpt2&#34;</td>
             <td>
                 <p>PT2 type: &ldquo;caspt2&rdquo;, &ldquo;nevpt2&rdquo;</p>
             </td>
@@ -617,7 +617,7 @@ large graphs.</div>
     <h3><span class="anchor" id="src"></span>Source Code</h3>
     <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mcscf_options_t</span>
 <span class="w">      </span><span class="c">!! MCSCF/CASSCF calculation options</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;sto-3g&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sto-3g&quot;</span>
 <span class="w">         </span><span class="c">!! Basis set name</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">spherical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Use spherical (true) or Cartesian (false) basis</span>
@@ -652,13 +652,13 @@ large graphs.</div>
 <span class="w">         </span><span class="c">!! CI energy convergence threshold</span>
 
 <span class="w">      </span><span class="c">! Orbital optimization algorithm</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;super-ci&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;super-ci&quot;</span>
 <span class="w">         </span><span class="c">!! Orbital optimizer: &quot;super-ci&quot;, &quot;newton-raphson&quot;, &quot;ah&quot; (augmented Hessian)</span>
 
 <span class="w">      </span><span class="c">! Perturbative corrections</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_pt2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Apply perturbative correction after CASSCF</span>
-<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pt2_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;nevpt2&#39;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pt2_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nevpt2&quot;</span>
 <span class="w">         </span><span class="c">!! PT2 type: &quot;caspt2&quot;, &quot;nevpt2&quot;</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ipea_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.25_dp</span>
 <span class="w">         </span><span class="c">!! IPEA shift for CASPT2 (Hartree)</span>
@@ -687,7 +687,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

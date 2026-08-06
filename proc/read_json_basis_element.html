@@ -1,0 +1,1172 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>read_json_basis_element &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>read_json_basis_element
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.8% of total for procedures.">98 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_basis_reader.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_basis_reader.f90.html'>mqc_json_basis_reader.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></li>
+            <li class="breadcrumb-item active" aria-current="page">read_json_basis_element</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-angular_momenta">angular_momenta</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-atomic_number~4">atomic_number</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-element_key">element_key</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-file_exists~3">file_exists</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-found~2">found</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-imom">imom</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-iprim">iprim</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-ishell~2">ishell</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-json~5">json</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-n_prim~2">n_prim</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-n_shells_json">n_shells_json</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-n_shells_total">n_shells_total</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-read_status">read_status</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-shell_index">shell_index</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-shell_path">shell_path</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-value~15">value</a>
+            <a class="list-group-item" href="../proc/read_json_basis_element.html#variable-value_text">value_text</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_json_basis_element.html#src">read_json_basis_element</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine read_json_basis_element(json_path, element_symbol, atom_basis, error)  
+</h2>
+    
+
+    <p>Parse the basis definition for one element from a BSE JSON file</p>
+<p>Shells listing several angular momenta are split into one shell per
+angular momentum, all sharing the exponent list.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json_path"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json_path</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_symbol"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>element_symbol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atom_basis"></span>
+              type(<a href='../type/atomic_basis_type.html'>atomic_basis_type</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atom_basis</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~48"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_json_basis_element~~CallsGraph Pages: 1 -->
+<svg id="procread_json_basis_elementCallsGraph" width="515pt" height="511pt"
+ viewBox="0.00 0.00 515.00 511.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_json_basis_element~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 507)">
+<title>proc~~read_json_basis_element~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-507 511,-507 511,4 -4,4"/>
+<!-- proc~read_json_basis_element -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node1" class="node">
+<title>proc~read_json_basis_element</title>
+<polygon fill="none" stroke="black" points="145,-276 0,-276 0,-252 145,-252 145,-276"/>
+<text text-anchor="middle" x="72.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_json_basis_element</text>
+</g>
+<!-- destroy -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node2" class="node">
+<title>destroy</title>
+<polygon fill="#777777" stroke="#777777" points="323,-503 269,-503 269,-479 323,-479 323,-503"/>
+<text text-anchor="middle" x="296" y="-488.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">destroy</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;destroy -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge1" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;destroy</title>
+<path fill="none" stroke="#ff0000" d="M75.95,-276.17C83.9,-312.28 112.52,-419.44 181,-470 203.28,-486.45 234.56,-491.28 258.71,-492.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.85,-495.74 268.92,-492.43 258.99,-488.74 258.85,-495.74"/>
+</g>
+<!-- failed -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node3" class="node">
+<title>failed</title>
+<polygon fill="#777777" stroke="#777777" points="323,-461 269,-461 269,-437 323,-437 323,-461"/>
+<text text-anchor="middle" x="296" y="-446.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">failed</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;failed -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge2" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;failed</title>
+<path fill="none" stroke="#ff0000" d="M78.06,-276.26C89.95,-306.43 124.91,-384.6 181,-423 203.91,-438.68 234.88,-445.03 258.75,-447.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.57,-451.04 268.84,-448.42 259.18,-444.06 258.57,-451.04"/>
+</g>
+<!-- get -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node4" class="node">
+<title>get</title>
+<polygon fill="#777777" stroke="#777777" points="504,-296 450,-296 450,-272 504,-272 504,-296"/>
+<text text-anchor="middle" x="477" y="-281.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;get -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge3" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;get</title>
+<path fill="none" stroke="#ff0000" d="M79.39,-276.39C92.9,-303.19 129.04,-366.03 181,-390 273.82,-432.82 321.8,-439.93 411,-390 442.97,-372.1 461.12,-331.33 469.73,-305.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="473.16,-306.63 472.84,-296.04 466.49,-304.52 473.16,-306.63"/>
+</g>
+<!-- info -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node5" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="323,-381 269,-381 269,-357 323,-357 323,-381"/>
+<text text-anchor="middle" x="296" y="-366.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;info -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge4" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M85.1,-276.26C103.52,-294.93 141.47,-330.22 181,-348 205.51,-359.03 235.47,-364.26 258.53,-366.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.3,-370.24 268.59,-367.71 258.97,-363.28 258.3,-370.24"/>
+</g>
+<!-- initialize -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node6" class="node">
+<title>initialize</title>
+<polygon fill="#777777" stroke="#777777" points="324.5,-339 267.5,-339 267.5,-315 324.5,-315 324.5,-339"/>
+<text text-anchor="middle" x="296" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">initialize</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;initialize -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge5" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;initialize</title>
+<path fill="none" stroke="#ff0000" d="M100.4,-276.16C121.86,-285.46 152.86,-297.99 181,-306 206.06,-313.13 234.94,-318.42 257.36,-321.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="257.07,-325.41 267.48,-323.43 258.11,-318.48 257.07,-325.41"/>
+</g>
+<!-- load -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node7" class="node">
+<title>load</title>
+<polygon fill="#777777" stroke="#777777" points="323,-297 269,-297 269,-273 323,-273 323,-297"/>
+<text text-anchor="middle" x="296" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">load</text>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;load -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge6" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;load</title>
+<path fill="none" stroke="#ff0000" d="M145.11,-270.79C182.99,-274.38 227.87,-278.64 258.59,-281.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.54,-285.06 268.83,-282.52 259.2,-278.09 258.54,-285.06"/>
+</g>
+<!-- proc~allocate_basis_shells -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node8" class="node">
+<title>proc~allocate_basis_shells</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node8"><a xlink:href="../proc/allocate_basis_shells.html" xlink:title="atomic_basis_type%allocate_basis_shells">
+<polygon fill="#d9534f" stroke="#d9534f" points="411,-255 181,-255 181,-231 411,-231 411,-255"/>
+<text text-anchor="middle" x="296" y="-240.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%allocate_basis_shells</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~allocate_basis_shells -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge7" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~allocate_basis_shells</title>
+<path fill="none" stroke="#ff0000" d="M145.11,-257.21C153.47,-256.42 162.16,-255.59 170.98,-254.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="171.34,-258.24 180.96,-253.81 170.68,-251.27 171.34,-258.24"/>
+</g>
+<!-- proc~cgto_allocate_arrays -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node9" class="node">
+<title>proc~cgto_allocate_arrays</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node9"><a xlink:href="../proc/cgto_allocate_arrays.html" xlink:title="cgto_type%cgto_allocate_arrays">
+<polygon fill="#d9534f" stroke="#d9534f" points="388,-213 204,-213 204,-189 388,-189 388,-213"/>
+<text text-anchor="middle" x="296" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_allocate_arrays</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~cgto_allocate_arrays -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge8" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~cgto_allocate_arrays</title>
+<path fill="none" stroke="#ff0000" d="M100.4,-251.84C121.86,-242.54 152.86,-230.01 181,-222 189.91,-219.46 199.29,-217.16 208.7,-215.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="209.44,-218.51 218.5,-213.02 207.99,-211.67 209.44,-218.51"/>
+</g>
+<!-- proc~element_symbol_to_number -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node10" class="node">
+<title>proc~element_symbol_to_number</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node10"><a xlink:href="../proc/element_symbol_to_number.html" xlink:title="element_symbol_to_number">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="377.5,-45 214.5,-45 214.5,-21 377.5,-21 377.5,-45"/>
+<text text-anchor="middle" x="296" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_symbol_to_number</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~element_symbol_to_number -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge9" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~element_symbol_to_number</title>
+<path fill="none" stroke="#ff0000" d="M75.82,-251.86C83.47,-215.32 111.51,-105.73 181,-54 188.15,-48.67 196.25,-44.56 204.74,-41.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="206.05,-44.66 214.47,-38.23 203.88,-38 206.05,-44.66"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node11" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node11"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="348.5,-129 243.5,-129 243.5,-105 348.5,-105 348.5,-129"/>
+<text text-anchor="middle" x="296" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~error_set -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge10" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M79.96,-251.91C94.35,-226.27 131.69,-166.45 181,-138 196.66,-128.96 215.38,-123.68 233.07,-120.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="233.97,-124.04 243.34,-119.09 232.93,-117.12 233.97,-124.04"/>
+</g>
+<!-- proc~integer_to_key -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node12" class="node">
+<title>proc~integer_to_key</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node12"><a xlink:href="../proc/integer_to_key.html" xlink:title="integer_to_key">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="341.5,-87 250.5,-87 250.5,-63 341.5,-63 341.5,-87"/>
+<text text-anchor="middle" x="296" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">integer_to_key</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~integer_to_key -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge11" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~integer_to_key</title>
+<path fill="none" stroke="#ff0000" d="M77.43,-251.83C88.27,-220.33 121.8,-135.8 181,-96 198.36,-84.33 220.42,-78.67 240.49,-76.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="240.9,-79.55 250.47,-75 240.15,-72.59 240.9,-79.55"/>
+</g>
+<!-- proc~shell_angular_momenta -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node13" class="node">
+<title>proc~shell_angular_momenta</title>
+<g id="a_proc~~read_json_basis_element~~CallsGraph_node13"><a xlink:href="../proc/shell_angular_momenta.html" xlink:title="shell_angular_momenta">
+<polygon fill="#d9534f" stroke="#d9534f" points="366.5,-171 225.5,-171 225.5,-147 366.5,-147 366.5,-171"/>
+<text text-anchor="middle" x="296" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">shell_angular_momenta</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_basis_element&#45;&gt;proc~shell_angular_momenta -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge12" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~shell_angular_momenta</title>
+<path fill="none" stroke="#ff0000" d="M85.1,-251.74C103.52,-233.07 141.47,-197.78 181,-180 191.75,-175.16 203.56,-171.44 215.37,-168.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.27,-171.96 225.26,-166.36 214.74,-165.13 216.27,-171.96"/>
+</g>
+<!-- to_lower -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node14" class="node">
+<title>to_lower</title>
+<polygon fill="#777777" stroke="#777777" points="506,-24 448,-24 448,0 506,0 506,-24"/>
+<text text-anchor="middle" x="477" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_lower</text>
+</g>
+<!-- proc~element_symbol_to_number&#45;&gt;to_lower -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge13" class="edge">
+<title>proc~element_symbol_to_number&#45;&gt;to_lower</title>
+<path fill="none" stroke="#0000ff" d="M377.6,-23.54C398.35,-21.11 419.74,-18.6 437.26,-16.55"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="438.1,-19.97 447.62,-15.33 437.28,-13.02 438.1,-19.97"/>
+</g>
+<!-- to_upper -->
+<g id="proc~~read_json_basis_element~~CallsGraph_node15" class="node">
+<title>to_upper</title>
+<polygon fill="#777777" stroke="#777777" points="507,-66 447,-66 447,-42 507,-42 507,-66"/>
+<text text-anchor="middle" x="477" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_upper</text>
+</g>
+<!-- proc~element_symbol_to_number&#45;&gt;to_upper -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge14" class="edge">
+<title>proc~element_symbol_to_number&#45;&gt;to_upper</title>
+<path fill="none" stroke="#0000ff" d="M377.6,-42.46C398.04,-44.85 419.11,-47.33 436.48,-49.36"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="436.44,-52.88 446.78,-50.57 437.25,-45.93 436.44,-52.88"/>
+</g>
+<!-- proc~shell_angular_momenta&#45;&gt;get -->
+<g id="proc~~read_json_basis_element~~CallsGraph_edge15" class="edge">
+<title>proc~shell_angular_momenta&#45;&gt;get</title>
+<path fill="none" stroke="#ff007f" d="M366.58,-162.48C382.17,-165.71 397.94,-171.12 411,-180 440.43,-200.01 459.13,-238.22 468.58,-262.33"/>
+<polygon fill="#ff007f" stroke="#ff007f" points="465.3,-263.56 472.06,-271.71 471.86,-261.12 465.3,-263.56"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_json_basis_element~~CalledByGraph Pages: 1 -->
+<svg id="procread_json_basis_elementCalledByGraph" width="346pt" height="32pt"
+ viewBox="0.00 0.00 346.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_json_basis_element~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~read_json_basis_element~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 342,-28 342,4 -4,4"/>
+<!-- proc~read_json_basis_element -->
+<g id="proc~~read_json_basis_element~~CalledByGraph_node1" class="node">
+<title>proc~read_json_basis_element</title>
+<polygon fill="none" stroke="black" points="338,-24 193,-24 193,0 338,0 338,-24"/>
+<text text-anchor="middle" x="265.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_json_basis_element</text>
+</g>
+<!-- proc~build_molecular_basis_json -->
+<g id="proc~~read_json_basis_element~~CalledByGraph_node2" class="node">
+<title>proc~build_molecular_basis_json</title>
+<g id="a_proc~~read_json_basis_element~~CalledByGraph_node2"><a xlink:href="../proc/build_molecular_basis_json.html" xlink:title="build_molecular_basis_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="157,-24 0,-24 0,0 157,0 157,-24"/>
+<text text-anchor="middle" x="78.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_molecular_basis_json</text>
+</a>
+</g>
+</g>
+<!-- proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element -->
+<g id="proc~~read_json_basis_element~~CalledByGraph_edge1" class="edge">
+<title>proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element</title>
+<path fill="none" stroke="#ff0000" d="M157.15,-12C165.59,-12 174.19,-12 182.68,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.95,-15.5 192.95,-12 182.95,-8.5 182.95,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_momenta"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>angular_momenta</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atomic_number~4"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>atomic_number</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_key"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>element_key</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-file_exists~3"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>file_exists</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-found~2"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>found</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-imom"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>imom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iprim"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iprim</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ishell~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ishell</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~5"></span>
+              type(json_file),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_prim~2"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_prim</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_shells_json"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_shells_json</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_shells_total"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_shells_total</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-read_status"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>read_status</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shell_index"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shell_index</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shell_path"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>shell_path</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~15"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value_text"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>value_text</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_json_basis_element</span><span class="p">(</span><span class="n">json_path</span><span class="p">,</span><span class="w"> </span><span class="n">element_symbol</span><span class="p">,</span><span class="w"> </span><span class="n">atom_basis</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Parse the basis definition for one element from a BSE JSON file</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Shells listing several angular momenta are split into one shell per</span>
+<span class="w">      </span><span class="c">!! angular momentum, all sharing the exponent list.</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json_path</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_symbol</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">atomic_basis_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atom_basis</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_key</span><span class="p">,</span><span class="w"> </span><span class="n">shell_path</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">value_text</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">angular_momenta</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">atomic_number</span><span class="p">,</span><span class="w"> </span><span class="n">n_shells_json</span><span class="p">,</span><span class="w"> </span><span class="n">n_shells_total</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">imom</span><span class="p">,</span><span class="w"> </span><span class="n">iprim</span><span class="p">,</span><span class="w"> </span><span class="n">n_prim</span><span class="p">,</span><span class="w"> </span><span class="n">shell_index</span><span class="p">,</span><span class="w"> </span><span class="n">read_status</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">value</span>
+<span class="k">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">file_exists</span>
+
+<span class="w">      </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="n">json_path</span><span class="p">,</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">file_exists</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">file_exists</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_IO</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;JSON basis file not found: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">atomic_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_symbol_to_number</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">element_symbol</span><span class="p">)))</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">atomic_number</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Unrecognized element symbol: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">element_symbol</span><span class="p">))</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      </span><span class="n">element_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">atomic_number</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">initialize</span><span class="p">()</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">json_path</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">json</span><span class="p">%</span><span class="n">failed</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Could not parse JSON basis file: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! ---- how many shells, and how many after splitting? -------------------</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;elements.&quot;</span><span class="o">//</span><span class="n">element_key</span><span class="o">//</span><span class="s2">&quot;.electron_shells&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_shells_json</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n_shells_json</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Element &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">element_symbol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot; not found in JSON basis file &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">n_shells_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">ishell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_shells_json</span>
+<span class="w">         </span><span class="k">call </span><span class="n">shell_angular_momenta</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">element_key</span><span class="p">,</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">angular_momenta</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">         </span><span class="n">n_shells_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_shells_total</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">angular_momenta</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">n_shells_total</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;No usable shells for &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">element_symbol</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot; in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">element_symbol</span><span class="p">))</span>
+<span class="w">      </span><span class="k">call </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">allocate_shells</span><span class="p">(</span><span class="n">n_shells_total</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! ---- fill, splitting combined shells ----------------------------------</span>
+<span class="w">      </span><span class="n">shell_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">ishell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_shells_json</span>
+<span class="w">         </span><span class="k">call </span><span class="n">shell_angular_momenta</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">element_key</span><span class="p">,</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">angular_momenta</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+
+<span class="k">         </span><span class="n">shell_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;elements.&quot;</span><span class="o">//</span><span class="n">element_key</span><span class="o">//</span><span class="s2">&quot;.electron_shells(&quot;</span><span class="o">//</span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">ishell</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span>
+
+<span class="w">         </span><span class="c">! Values are read one at a time by indexed path. BSE stores them as</span>
+<span class="w">         </span><span class="c">! strings to preserve every digit, and json-fortran&#39;s scalar string</span>
+<span class="w">         </span><span class="c">! accessor is the portable way to reach them; basis sets are small</span>
+<span class="w">         </span><span class="c">! enough that the extra lookups do not matter.</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="n">shell_path</span><span class="o">//</span><span class="s2">&quot;.exponents&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_prim</span><span class="p">)</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">n_prim</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Shell without exponents in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">            </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">            </span><span class="k">return</span>
+<span class="k">         end if</span>
+
+<span class="k">         do </span><span class="n">imom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">angular_momenta</span><span class="p">)</span>
+<span class="w">            </span><span class="n">shell_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shell_index</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">shells</span><span class="p">(</span><span class="n">shell_index</span><span class="p">)%</span><span class="n">ang_mom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">angular_momenta</span><span class="p">(</span><span class="n">imom</span><span class="p">)</span>
+<span class="w">            </span><span class="k">call </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">shells</span><span class="p">(</span><span class="n">shell_index</span><span class="p">)%</span><span class="n">allocate_arrays</span><span class="p">(</span><span class="n">n_prim</span><span class="p">)</span>
+
+<span class="w">            </span><span class="k">do </span><span class="n">iprim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n_prim</span>
+<span class="w">               </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">shell_path</span><span class="o">//</span><span class="s2">&quot;.exponents(&quot;</span><span class="o">//</span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">iprim</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">value_text</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Missing exponent in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               read</span><span class="w"> </span><span class="p">(</span><span class="n">value_text</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">read_status</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">read_status</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Malformed exponent &#39;&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">value_text</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">&quot;&#39; in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">shells</span><span class="p">(</span><span class="n">shell_index</span><span class="p">)%</span><span class="n">exponents</span><span class="p">(</span><span class="n">iprim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">value</span>
+
+<span class="k">               call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">shell_path</span><span class="o">//</span><span class="s2">&quot;.coefficients(&quot;</span><span class="o">//</span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">imom</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)(&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">iprim</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value_text</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Coefficient set does not match the &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">&quot;exponent count in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               read</span><span class="w"> </span><span class="p">(</span><span class="n">value_text</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">read_status</span><span class="p">)</span><span class="w"> </span><span class="k">value</span>
+<span class="k">               if</span><span class="w"> </span><span class="p">(</span><span class="n">read_status</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                  call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_PARSE</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Malformed coefficient &#39;&quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">value_text</span><span class="p">)</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                 </span><span class="s2">&quot;&#39; in &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">json_path</span><span class="p">))</span>
+<span class="w">                  </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">                  </span><span class="k">return</span>
+<span class="k">               end if</span>
+<span class="k">               </span><span class="n">atom_basis</span><span class="p">%</span><span class="n">shells</span><span class="p">(</span><span class="n">shell_index</span><span class="p">)%</span><span class="n">coefficients</span><span class="p">(</span><span class="n">iprim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">value</span>
+<span class="k">            end do</span>
+<span class="k">         end do</span>
+<span class="k">      end do</span>
+
+<span class="k">      call </span><span class="n">json</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">read_json_basis_element</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 06:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,776 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_cuest_bridge_stub.f90 &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_cuest_bridge_stub.f90
+      <small>Source File</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for source files.">19 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_cuest_bridge_stub.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+            <li class="breadcrumb-item active" aria-current="page">mqc_cuest_bridge_stub.f90</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#mods-0"
+         aria-expanded="false" aria-controls="mods-0">
+         <h4 class="card-header bg-primary text-white">Modules</h4>
+      </a>
+      <div id="mods-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_cuest_bridge.html">mqc_cuest_bridge</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/mqc_cuest_bridge_stub.f90.html#src">mqc_cuest_bridge_stub.f90</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      <p>Stub cuEST bridge, for builds without the cuEST backend</p>
+      <br>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">This file depends on</h3>
+          </div>
+          <div class="card-body">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph Pages: 1 -->
+<svg id="sourcefilemqc_cuest_bridge_stubf90EfferentGraph" width="641pt" height="279pt"
+ viewBox="0.00 0.00 641.00 278.78" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph" class="graph" transform="scale(0.91 0.91) rotate(0) translate(4 303.04)">
+<title>sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-303.04 702,-303.04 702,4 -4,4"/>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node1" class="node">
+<title>sourcefile~mqc_cuest_bridge_stub.f90</title>
+<polygon fill="none" stroke="black" points="698,-237.04 541,-237.04 541,-213.04 698,-213.04 698,-237.04"/>
+<text text-anchor="middle" x="619.5" y="-222.64" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_cuest_bridge_stub.f90</text>
+</g>
+<!-- sourcefile~mqc_cuest_iface.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node2" class="node">
+<title>sourcefile~mqc_cuest_iface.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node2"><a xlink:href="../sourcefile/mqc_cuest_iface.f90.html" xlink:title="mqc_cuest_iface.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="485.5,-299.04 364.5,-299.04 364.5,-275.04 485.5,-275.04 485.5,-299.04"/>
+<text text-anchor="middle" x="425" y="-284.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cuest_iface.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_cuest_iface.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge1" class="edge">
+<title>sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_cuest_iface.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M587.43,-237.09C564.76,-245.68 533.19,-257.22 505,-266.04 498.2,-268.17 491.03,-270.27 483.9,-272.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="482.95,-268.91 474.24,-274.94 484.81,-275.65 482.95,-268.91"/>
+</g>
+<!-- sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node3" class="node">
+<title>sourcefile~mqc_error.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node3"><a xlink:href="../sourcefile/mqc_error.f90.html" xlink:title="mqc_error.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="99,-145.04 13,-145.04 13,-121.04 99,-121.04 99,-145.04"/>
+<text text-anchor="middle" x="56" y="-130.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge2" class="edge">
+<title>sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M540.96,-223.09C445.04,-220.32 287.31,-214.5 229.5,-205.04"/>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node4" class="node">
+<title>sourcefile~mqc_physical_fragment.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node4"><a xlink:href="../sourcefile/mqc_physical_fragment.f90.html" xlink:title="mqc_physical_fragment.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="505,-135.04 345,-135.04 345,-111.04 505,-111.04 505,-135.04"/>
+<text text-anchor="middle" x="425" y="-120.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge3" class="edge">
+<title>sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_physical_fragment.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M595.66,-212.94C561.51,-194.85 496.99,-160.66 458.11,-140.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="459.28,-136.72 448.81,-135.13 456.01,-142.9 459.28,-136.72"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node5" class="node">
+<title>sourcefile~mqc_result_types.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node5"><a xlink:href="../sourcefile/mqc_result_types.f90.html" xlink:title="mqc_result_types.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="487,-257.04 363,-257.04 363,-233.04 487,-233.04 487,-257.04"/>
+<text text-anchor="middle" x="425" y="-242.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge4" class="edge">
+<title>sourcefile~mqc_cuest_bridge_stub.f90&#45;&gt;sourcefile~mqc_result_types.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M540.76,-233.12C526.4,-234.61 511.47,-236.16 497.31,-237.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="496.75,-234.17 487.16,-238.69 497.47,-241.14 496.75,-234.17"/>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge7" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M410.07,-135.18C379.08,-160.74 301.47,-216.82 229.5,-205.04"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M227.5,-205.04C191.65,-199.18 181.72,-199.55 148,-186.04 124.88,-176.78 100.59,-162.37 82.93,-150.91"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="84.61,-147.82 74.34,-145.22 80.75,-153.66 84.61,-147.82"/>
+</g>
+<!-- sourcefile~mqc_cgto.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node6" class="node">
+<title>sourcefile~mqc_cgto.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node6"><a xlink:href="../sourcefile/mqc_cgto.f90.html" xlink:title="mqc_cgto.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="270.5,-135.04 186.5,-135.04 186.5,-111.04 270.5,-111.04 270.5,-135.04"/>
+<text text-anchor="middle" x="228.5" y="-120.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_cgto.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge5" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_cgto.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M344.89,-123.04C323.32,-123.04 300.51,-123.04 280.91,-123.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="280.69,-119.54 270.69,-123.04 280.69,-126.54 280.69,-119.54"/>
+</g>
+<!-- sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node7" class="node">
+<title>sourcefile~mqc_elements.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node7"><a xlink:href="../sourcefile/mqc_elements.f90.html" xlink:title="mqc_elements.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="284,-93.04 173,-93.04 173,-69.04 284,-69.04 284,-93.04"/>
+<text text-anchor="middle" x="228.5" y="-78.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_elements.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge6" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_elements.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M368.26,-111.01C345.18,-106.02 318.26,-100.21 294.3,-95.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="294.75,-91.55 284.24,-92.86 293.27,-98.4 294.75,-91.55"/>
+</g>
+<!-- sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node8" class="node">
+<title>sourcefile~mqc_geometry.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node8"><a xlink:href="../sourcefile/mqc_geometry.f90.html" xlink:title="mqc_geometry.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="112,-31.04 0,-31.04 0,-7.04 112,-7.04 112,-31.04"/>
+<text text-anchor="middle" x="56" y="-16.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge8" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_geometry.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M415.64,-110.89C398.73,-87.53 357.9,-37.01 309,-18.04 248.96,5.24 174.66,1.42 122.34,-6.03"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="121.55,-2.62 112.18,-7.57 122.59,-9.54 121.55,-2.62"/>
+</g>
+<!-- sourcefile~mqc_physical_constants.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node9" class="node">
+<title>sourcefile~mqc_physical_constants.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node9"><a xlink:href="../sourcefile/mqc_physical_constants.f90.html" xlink:title="mqc_physical_constants.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="309,-177.04 148,-177.04 148,-153.04 309,-153.04 309,-177.04"/>
+<text text-anchor="middle" x="228.5" y="-162.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_physical_constants.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge9" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_physical_constants.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M368.26,-135.08C345.48,-140 318.94,-145.73 295.22,-150.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="294.28,-147.47 285.24,-153.01 295.76,-154.32 294.28,-147.47"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node10" class="node">
+<title>sourcefile~mqc_xyz_reader.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_node10"><a xlink:href="../sourcefile/mqc_xyz_reader.f90.html" xlink:title="mqc_xyz_reader.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="287.5,-51.04 169.5,-51.04 169.5,-27.04 287.5,-27.04 287.5,-51.04"/>
+<text text-anchor="middle" x="228.5" y="-36.64" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_xyz_reader.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge10" class="edge">
+<title>sourcefile~mqc_physical_fragment.f90&#45;&gt;sourcefile~mqc_xyz_reader.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M405.17,-110.85C382.95,-96.92 344.52,-74.22 309,-60.04 303.56,-57.87 297.83,-55.86 292.03,-54.01"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="292.84,-50.6 282.26,-51.05 290.81,-57.3 292.84,-50.6"/>
+</g>
+<!-- sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge11" class="edge">
+<title>sourcefile~mqc_result_types.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M371.38,-233.01C332.37,-224.39 277.81,-212.95 229.5,-205.04"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_error.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge12" class="edge">
+<title>sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_error.f90</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M169.98,-51.15C162.4,-53.63 154.88,-56.57 148,-60.04 120.4,-73.97 93.36,-97.23 76.03,-113.76"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="73.5,-111.33 68.78,-120.82 78.39,-116.35 73.5,-111.33"/>
+</g>
+<!-- sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_geometry.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~EfferentGraph_edge13" class="edge">
+<title>sourcefile~mqc_xyz_reader.f90&#45;&gt;sourcefile~mqc_geometry.f90</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M169.3,-32.22C154.11,-30.43 137.63,-28.5 122.11,-26.68"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="122.4,-23.19 112.06,-25.5 121.59,-30.14 122.4,-23.19"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pansourcefilemqc_cuest_bridge_stubf90EfferentGraph = svgPanZoom('#sourcefilemqc_cuest_bridge_stubf90EfferentGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#EfferentGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="EfferentGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Files dependent on this one</h3>
+          </div>
+          <div class="card-body">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph Pages: 1 -->
+<svg id="sourcefilemqc_cuest_bridge_stubf90AfferentGraph" width="641pt" height="80pt"
+ viewBox="0.00 0.00 641.00 79.87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph" class="graph" transform="scale(0.34 0.34) rotate(0) translate(4 230)">
+<title>sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-230 1874,-230 1874,4 -4,4"/>
+<!-- sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node1" class="node">
+<title>sourcefile~mqc_cuest_bridge_stub.f90</title>
+<polygon fill="none" stroke="black" points="157,-166 0,-166 0,-142 157,-142 157,-166"/>
+<text text-anchor="middle" x="78.5" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_cuest_bridge_stub.f90</text>
+</g>
+<!-- sourcefile~mqc_method_dft.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node2" class="node">
+<title>sourcefile~mqc_method_dft.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node2"><a xlink:href="../sourcefile/mqc_method_dft.f90.html" xlink:title="mqc_method_dft.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="317,-187 193,-187 193,-163 317,-163 317,-187"/>
+<text text-anchor="middle" x="255" y="-172.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_dft.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge1" class="edge">
+<title>sourcefile~mqc_method_dft.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M192.97,-167.66C184.63,-166.65 175.95,-165.61 167.25,-164.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="167.41,-161.05 157.06,-163.33 166.57,-168 167.41,-161.05"/>
+</g>
+<!-- sourcefile~mqc_method_hf.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node3" class="node">
+<title>sourcefile~mqc_method_hf.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node3"><a xlink:href="../sourcefile/mqc_method_hf.f90.html" xlink:title="mqc_method_hf.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="315,-145 195,-145 195,-121 315,-121 315,-145"/>
+<text text-anchor="middle" x="255" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_hf.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge2" class="edge">
+<title>sourcefile~mqc_method_hf.f90&#45;&gt;sourcefile~mqc_cuest_bridge_stub.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M194.92,-140.11C185.99,-141.18 176.62,-142.31 167.24,-143.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.59,-139.99 157.08,-144.66 167.42,-146.94 166.59,-139.99"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node4" class="node">
+<title>sourcefile~mqc_method_factory.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node4"><a xlink:href="../sourcefile/mqc_method_factory.f90.html" xlink:title="mqc_method_factory.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="499,-166 353,-166 353,-142 499,-142 499,-166"/>
+<text text-anchor="middle" x="426" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_factory.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_dft.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge3" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_dft.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M352.84,-162.97C344.26,-164.03 335.51,-165.12 326.95,-166.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="326.51,-162.71 317.02,-167.42 327.37,-169.66 326.51,-162.71"/>
+</g>
+<!-- sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_hf.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge4" class="edge">
+<title>sourcefile~mqc_method_factory.f90&#45;&gt;sourcefile~mqc_method_hf.f90</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M352.84,-145.03C343.71,-143.9 334.39,-142.74 325.31,-141.61"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="325.54,-138.11 315.19,-140.35 324.68,-145.06 325.54,-138.11"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node5" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node5"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="790,-146 535,-146 535,-122 790,-122 790,-146"/>
+<text text-anchor="middle" x="662.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge5" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M534.98,-144.79C526.29,-145.53 517.67,-146.27 509.31,-146.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="508.92,-143.5 499.26,-147.84 509.52,-150.47 508.92,-143.5"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node6" class="node">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node6"><a xlink:href="../sourcefile/mqc_mbe_fragment_distribution_scheme_hessian.f90.html" xlink:title="mqc_mbe_fragment_distribution_scheme_hessian.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1127,-226 826,-226 826,-202 1127,-202 1127,-226"/>
+<text text-anchor="middle" x="976.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme_hessian.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_factory.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge6" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_method_factory.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M865.49,-201.97C760.34,-190.46 604.18,-173.38 509.36,-163.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="509.57,-159.51 499.25,-161.9 508.81,-166.47 509.57,-159.51"/>
+</g>
+<!-- sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge10" class="edge">
+<title>sourcefile~mqc_mbe_fragment_distribution_scheme_hessian.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M893.18,-201.94C871.21,-198.11 847.59,-193.43 826,-188 784.07,-177.45 737.32,-161.45 704.78,-149.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="705.75,-146.24 695.15,-146.08 703.33,-152.81 705.75,-146.24"/>
+</g>
+<!-- sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node7" class="node">
+<title>sourcefile~mqc_driver.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node7"><a xlink:href="../sourcefile/mqc_driver.f90.html" xlink:title="mqc_driver.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1566.5,-125 1475.5,-125 1475.5,-101 1566.5,-101 1566.5,-125"/>
+<text text-anchor="middle" x="1521" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge7" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1475.28,-111.01C1364.9,-106.54 1070.68,-97.26 826,-113 801.42,-114.58 774.89,-117.49 750.52,-120.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="750.04,-117.19 740.59,-121.98 750.96,-124.13 750.04,-117.19"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node9" class="node">
+<title>sourcefile~mqc_many_body_expansion.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node9"><a xlink:href="../sourcefile/mqc_many_body_expansion.f90.html" xlink:title="mqc_many_body_expansion.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1345,-146 1163,-146 1163,-122 1345,-122 1345,-146"/>
+<text text-anchor="middle" x="1254" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_many_body_expansion.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge17" class="edge">
+<title>sourcefile~mqc_driver.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1475.35,-116.54C1442.57,-119.14 1396.75,-122.77 1355.37,-126.05"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1354.93,-122.57 1345.24,-126.85 1355.49,-129.55 1354.93,-122.57"/>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node8" class="node">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node8"><a xlink:href="../sourcefile/mqc_gmbe_fragment_distribution_scheme.f90.html" xlink:title="mqc_gmbe_fragment_distribution_scheme.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1106,-146 847,-146 847,-122 1106,-122 1106,-146"/>
+<text text-anchor="middle" x="976.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge8" class="edge">
+<title>sourcefile~mqc_gmbe_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M846.8,-134C831.44,-134 815.73,-134 800.26,-134"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="800.15,-130.5 790.15,-134 800.15,-137.5 800.15,-130.5"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge9" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1205.02,-146.06C1150.28,-158.62 1057.94,-176.2 977.5,-174"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M975.5,-174C893.67,-171.76 800.69,-158.43 737.68,-147.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="737.89,-144.25 727.44,-146.01 736.71,-151.15 737.89,-144.25"/>
+</g>
+<!-- sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge16" class="edge">
+<title>sourcefile~mqc_many_body_expansion.f90&#45;&gt;sourcefile~mqc_gmbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M1162.79,-134C1147.99,-134 1132.35,-134 1116.68,-134"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="1116.4,-130.5 1106.4,-134 1116.4,-137.5 1116.4,-130.5"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node10" class="node">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node10"><a xlink:href="../sourcefile/mqc_mbe_mpi_fragment_distribution_scheme.f90.html" xlink:title="mqc_mbe_mpi_fragment_distribution_scheme.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1661,-176 1381,-176 1381,-152 1661,-152 1661,-176"/>
+<text text-anchor="middle" x="1521" y="-161.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_mpi_fragment_distribution_scheme.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge11" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1380.89,-170.07C1271.29,-174 1114.63,-177.76 977.5,-174"/>
+</g>
+<!-- sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge18" class="edge">
+<title>sourcefile~mqc_mbe_mpi_fragment_distribution_scheme.f90&#45;&gt;sourcefile~mqc_many_body_expansion.f90</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M1413.74,-151.97C1394.46,-149.79 1374.4,-147.52 1355.29,-145.35"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1355.42,-141.85 1345.09,-144.2 1354.64,-148.8 1355.42,-141.85"/>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node11" class="node">
+<title>sourcefile~mqc_serial_fragment_processor.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node11"><a xlink:href="../sourcefile/mqc_serial_fragment_processor.f90.html" xlink:title="mqc_serial_fragment_processor.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1077,-66 876,-66 876,-42 1077,-42 1077,-66"/>
+<text text-anchor="middle" x="976.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge12" class="edge">
+<title>sourcefile~mqc_serial_fragment_processor.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M893.18,-66.06C871.21,-69.89 847.59,-74.57 826,-80 784.07,-90.55 737.32,-106.55 704.78,-118.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="703.33,-115.19 695.15,-121.92 705.75,-121.76 703.33,-115.19"/>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node12" class="node">
+<title>sourcefile~mqc_unfragmented_workflow.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node12"><a xlink:href="../sourcefile/mqc_unfragmented_workflow.f90.html" xlink:title="mqc_unfragmented_workflow.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1071.5,-24 881.5,-24 881.5,0 1071.5,0 1071.5,-24"/>
+<text text-anchor="middle" x="976.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge13" class="edge">
+<title>sourcefile~mqc_unfragmented_workflow.f90&#45;&gt;sourcefile~mqc_mbe_fragment_distribution_scheme.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M881.13,-19.18C862.51,-22.28 843.37,-26.7 826,-33 771.71,-52.68 716.22,-92.21 686.19,-115.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="683.76,-113.01 678.07,-121.96 688.09,-118.51 683.76,-113.01"/>
+</g>
+<!-- sourcefile~main.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node13" class="node">
+<title>sourcefile~main.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node13"><a xlink:href="../sourcefile/main.f90.html" xlink:title="main.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1813.5,-146 1753.5,-146 1753.5,-122 1813.5,-122 1813.5,-146"/>
+<text text-anchor="middle" x="1783.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge14" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1753.38,-131.65C1710.72,-128.21 1630.49,-121.75 1576.63,-117.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1576.82,-113.91 1566.57,-116.59 1576.25,-120.89 1576.82,-113.91"/>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node14" class="node">
+<title>sourcefile~mqc_calculation_interface.f90</title>
+<g id="a_sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_node14"><a xlink:href="../sourcefile/mqc_calculation_interface.f90.html" xlink:title="mqc_calculation_interface.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1870,-104 1697,-104 1697,-80 1870,-80 1870,-104"/>
+<text text-anchor="middle" x="1783.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_interface.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90 -->
+<g id="sourcefile~~mqc_cuest_bridge_stub.f90~~AfferentGraph_edge15" class="edge">
+<title>sourcefile~mqc_calculation_interface.f90&#45;&gt;sourcefile~mqc_driver.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1696.84,-98.91C1657.47,-102.08 1611.91,-105.75 1577.17,-108.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1576.44,-105.1 1566.75,-109.39 1577,-112.08 1576.44,-105.1"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var pansourcefilemqc_cuest_bridge_stubf90AfferentGraph = svgPanZoom('#sourcefilemqc_cuest_bridge_stubf90AfferentGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#AfferentGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="AfferentGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+          </div>
+        </div>
+<br>
+      <section>
+        <h2><span class="anchor" id="src"></span>Source Code</h2>
+        <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!! Stub cuEST bridge, for builds without the cuEST backend</span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="k">module </span><span class="n">mqc_cuest_bridge</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">   </span><span class="c">!! The fpm build, and any CMake build with MQC_ENABLE_CUEST=OFF, compiles</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">   </span><span class="c">!! this. It reports that no integral backend is present rather than</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="w">   </span><span class="c">!! computing anything. The real implementation, compiled only by CMake with</span>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">   </span><span class="c">!! the backend, lives in `cuest_backend/backend/mqc_cuest_bridge.f90` and</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a><span class="w">   </span><span class="c">!! provides the same module and the same `run_cuest_scf` interface.</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_cuest_iface</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">cuest_scf_settings_t</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_physical_fragment</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">physical_fragment_t</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_result_types</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">calculation_result_t</span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">   </span><span class="k">use </span><span class="n">mqc_error</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">ERROR_VALIDATION</span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">   </span><span class="k">implicit none</span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="k">   private</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a>
+<a id="ln-15" name="ln-15" href="#ln-15"></a><span class="k">   public</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">run_cuest_scf</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="k">contains</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="k">   subroutine </span><span class="n">run_cuest_scf</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span><span class="w"> </span><span class="n">fragment</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">want_gradient</span><span class="p">)</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a><span class="w">      </span><span class="c">!! No-op stand-in: report the missing backend, compute nothing</span>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cuest_scf_settings_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">settings</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">physical_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragment</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a><span class="k">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">want_gradient</span>
+<a id="ln-25" name="ln-25" href="#ln-25"></a>
+<a id="ln-26" name="ln-26" href="#ln-26"></a><span class="w">      </span><span class="k">call result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="w">                            </span><span class="s2">&quot;This calculation needs the cuEST integral backend; &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a><span class="w">                            </span><span class="s2">&quot;build with CMake and -DMQC_ENABLE_CUEST=ON&quot;</span><span class="p">)</span>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a><span class="w">      </span><span class="k">result</span><span class="p">%</span><span class="n">has_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="w">   </span><span class="k">end subroutine </span><span class="n">run_cuest_scf</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="k">end module </span><span class="n">mqc_cuest_bridge</span>
+</pre></div>
+
+      </section>
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 06:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

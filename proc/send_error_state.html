@@ -1,0 +1,971 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>send_error_state &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>send_error_state
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">19 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_result_types.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_result_types.f90.html'>mqc_result_types.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+            <li class="breadcrumb-item active" aria-current="page">send_error_state</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-encoded">encoded</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-i~19">i</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-n~5">n</a>
+            <a class="list-group-item" href="../proc/send_error_state.html#variable-trace">trace</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/send_error_state.html#src">send_error_state</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine send_error_state(result, comm, dest, tag)  
+</h2>
+    
+
+    <p>Send the failure flag, code and trace that travel with a result</p>
+<p>This is not optional bookkeeping. Without it a fragment that failed on
+a worker arrives at the coordinator looking healthy: <code>has_error</code> stays
+at its default <code>.false.</code>, the untouched SCF energy of 0 is taken at
+face value, and the many-body expansion quietly sums zeros. Every
+<code>has_error</code> check on the receiving side depends on this being sent.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~2"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~2"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dest"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dest</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tag"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tag</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~send_error_state~~CallsGraph Pages: 1 -->
+<svg id="procsend_error_stateCallsGraph" width="481pt" height="116pt"
+ viewBox="0.00 0.00 481.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~send_error_state~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<title>proc~~send_error_state~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 477,-112 477,4 -4,4"/>
+<!-- proc~send_error_state -->
+<g id="proc~~send_error_state~~CallsGraph_node1" class="node">
+<title>proc~send_error_state</title>
+<polygon fill="none" stroke="black" points="101,-66 0,-66 0,-42 101,-42 101,-66"/>
+<text text-anchor="middle" x="50.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_error_state</text>
+</g>
+<!-- proc~error_get_code -->
+<g id="proc~~send_error_state~~CallsGraph_node2" class="node">
+<title>proc~error_get_code</title>
+<g id="a_proc~~send_error_state~~CallsGraph_node2"><a xlink:href="../proc/error_get_code.html" xlink:title="error_t%error_get_code">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="286.5,-108 148.5,-108 148.5,-84 286.5,-84 286.5,-108"/>
+<text text-anchor="middle" x="217.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_code</text>
+</a>
+</g>
+</g>
+<!-- proc~send_error_state&#45;&gt;proc~error_get_code -->
+<g id="proc~~send_error_state~~CallsGraph_edge1" class="edge">
+<title>proc~send_error_state&#45;&gt;proc~error_get_code</title>
+<path fill="none" stroke="#ff0000" d="M98.78,-66.04C117.68,-70.85 139.62,-76.43 159.4,-81.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.66,-84.89 169.21,-83.96 160.38,-78.1 158.66,-84.89"/>
+</g>
+<!-- proc~error_get_full_trace -->
+<g id="proc~~send_error_state~~CallsGraph_node3" class="node">
+<title>proc~error_get_full_trace</title>
+<g id="a_proc~~send_error_state~~CallsGraph_node3"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="298,-66 137,-66 137,-42 298,-42 298,-66"/>
+<text text-anchor="middle" x="217.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+</a>
+</g>
+</g>
+<!-- proc~send_error_state&#45;&gt;proc~error_get_full_trace -->
+<g id="proc~~send_error_state~~CallsGraph_edge2" class="edge">
+<title>proc~send_error_state&#45;&gt;proc~error_get_full_trace</title>
+<path fill="none" stroke="#ff0000" d="M101.01,-54C109.21,-54 117.94,-54 126.78,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="126.79,-57.5 136.79,-54 126.79,-50.5 126.79,-57.5"/>
+</g>
+<!-- send -->
+<g id="proc~~send_error_state~~CallsGraph_node4" class="node">
+<title>send</title>
+<polygon fill="#777777" stroke="#777777" points="244.5,-24 190.5,-24 190.5,0 244.5,0 244.5,-24"/>
+<text text-anchor="middle" x="217.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send</text>
+</g>
+<!-- proc~send_error_state&#45;&gt;send -->
+<g id="proc~~send_error_state~~CallsGraph_edge3" class="edge">
+<title>proc~send_error_state&#45;&gt;send</title>
+<path fill="none" stroke="#ff0000" d="M98.78,-41.96C124.78,-35.35 156.52,-27.27 180.49,-21.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="181.42,-24.54 190.25,-18.68 179.69,-17.76 181.42,-24.54"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~send_error_state~~CallsGraph_node5" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~send_error_state~~CallsGraph_node5"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="473,-66 334,-66 334,-42 473,-42 473,-66"/>
+<text text-anchor="middle" x="403.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
+<g id="proc~~send_error_state~~CallsGraph_edge4" class="edge">
+<title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ff00" d="M298.13,-54C306.63,-54 315.26,-54 323.75,-54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="324,-57.5 334,-54 324,-50.5 324,-57.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~send_error_state~~CalledByGraph Pages: 1 -->
+<svg id="procsend_error_stateCalledByGraph" width="641pt" height="89pt"
+ viewBox="0.00 0.00 641.00 89.45" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~send_error_state~~CalledByGraph" class="graph" transform="scale(0.41 0.41) rotate(0) translate(4 213.42)">
+<title>proc~~send_error_state~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-213.42 1554,-213.42 1554,4 -4,4"/>
+<!-- proc~send_error_state -->
+<g id="proc~~send_error_state~~CalledByGraph_node1" class="node">
+<title>proc~send_error_state</title>
+<polygon fill="none" stroke="black" points="1550,-45 1449,-45 1449,-21 1550,-21 1550,-45"/>
+<text text-anchor="middle" x="1499.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">send_error_state</text>
+</g>
+<!-- proc~result_isend -->
+<g id="proc~~send_error_state~~CalledByGraph_node2" class="node">
+<title>proc~result_isend</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node2"><a xlink:href="../proc/result_isend.html" xlink:title="result_isend">
+<polygon fill="#d9534f" stroke="#d9534f" points="1413,-66 1337,-66 1337,-42 1413,-42 1413,-66"/>
+<text text-anchor="middle" x="1375" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_isend</text>
+</a>
+</g>
+</g>
+<!-- proc~result_isend&#45;&gt;proc~send_error_state -->
+<g id="proc~~send_error_state~~CalledByGraph_edge1" class="edge">
+<title>proc~result_isend&#45;&gt;proc~send_error_state</title>
+<path fill="none" stroke="#ff0000" d="M1413.09,-47.64C1421.27,-46.24 1430.14,-44.72 1438.97,-43.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1439.61,-46.65 1448.87,-41.51 1438.43,-39.75 1439.61,-46.65"/>
+</g>
+<!-- proc~result_send -->
+<g id="proc~~send_error_state~~CalledByGraph_node3" class="node">
+<title>proc~result_send</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node3"><a xlink:href="../proc/result_send.html" xlink:title="result_send">
+<polygon fill="#d9534f" stroke="#d9534f" points="1411.5,-24 1338.5,-24 1338.5,0 1411.5,0 1411.5,-24"/>
+<text text-anchor="middle" x="1375" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">result_send</text>
+</a>
+</g>
+</g>
+<!-- proc~result_send&#45;&gt;proc~send_error_state -->
+<g id="proc~~send_error_state~~CalledByGraph_edge2" class="edge">
+<title>proc~result_send&#45;&gt;proc~send_error_state</title>
+<path fill="none" stroke="#ff0000" d="M1411.76,-18.13C1420.27,-19.59 1429.57,-21.18 1438.83,-22.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1438.36,-26.24 1448.81,-24.48 1439.54,-19.34 1438.36,-26.24"/>
+</g>
+<!-- proc~flush_group_results -->
+<g id="proc~~send_error_state~~CalledByGraph_node4" class="node">
+<title>proc~flush_group_results</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node4"><a xlink:href="../proc/flush_group_results.html" xlink:title="flush_group_results">
+<polygon fill="#d9534f" stroke="#d9534f" points="1301,-144 1187,-144 1187,-120 1301,-120 1301,-144"/>
+<text text-anchor="middle" x="1244" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">flush_group_results</text>
+</a>
+</g>
+</g>
+<!-- proc~flush_group_results&#45;&gt;proc~result_isend -->
+<g id="proc~~send_error_state~~CalledByGraph_edge3" class="edge">
+<title>proc~flush_group_results&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#ff0000" d="M1264.87,-119.98C1286.31,-107.02 1320.63,-86.27 1345.06,-71.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1347.14,-74.33 1353.89,-66.16 1343.52,-68.34 1347.14,-74.33"/>
+</g>
+<!-- proc~node_coordinator_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_node5" class="node">
+<title>proc~node_coordinator_impl</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node5"><a xlink:href="../proc/node_coordinator_impl.html" xlink:title="node_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="681,-96 545,-96 545,-72 681,-72 681,-96"/>
+<text text-anchor="middle" x="613" y="-81.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~result_isend -->
+<g id="proc~~send_error_state~~CalledByGraph_edge4" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#ff0000" d="M681.11,-81.35C832.27,-75.38 1196.36,-61.01 1326.64,-55.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1326.85,-59.36 1336.71,-55.47 1326.58,-52.37 1326.85,-59.36"/>
+</g>
+<!-- proc~group_global_coordinator_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_node8" class="node">
+<title>proc~group_global_coordinator_impl</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node8"><a xlink:href="../proc/group_global_coordinator_impl.html" xlink:title="group_global_coordinator_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="898.5,-125 720.5,-125 720.5,-101 898.5,-101 898.5,-125"/>
+<text text-anchor="middle" x="809.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">group_global_coordinator_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_edge13" class="edge">
+<title>proc~node_coordinator_impl&#45;&gt;proc~group_global_coordinator_impl</title>
+<path fill="none" stroke="#ffff00" d="M681.21,-94.02C692.96,-95.77 705.36,-97.62 717.63,-99.45"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="717.47,-102.97 727.88,-100.98 718.51,-96.04 717.47,-102.97"/>
+</g>
+<!-- proc~node_worker_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_node6" class="node">
+<title>proc~node_worker_impl</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node6"><a xlink:href="../proc/node_worker_impl.html" xlink:title="node_worker_impl">
+<polygon fill="#d9534f" stroke="#d9534f" points="1299,-26 1189,-26 1189,-2 1299,-2 1299,-26"/>
+<text text-anchor="middle" x="1244" y="-11.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker_impl</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker_impl&#45;&gt;proc~result_isend -->
+<g id="proc~~send_error_state~~CalledByGraph_edge5" class="edge">
+<title>proc~node_worker_impl&#45;&gt;proc~result_isend</title>
+<path fill="none" stroke="#ff0000" d="M1283.7,-26C1297.33,-30.23 1312.8,-35.02 1327.03,-39.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1326.06,-42.8 1336.65,-42.42 1328.14,-36.11 1326.06,-42.8"/>
+</g>
+<!-- proc~gmbe_group_global_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_node7" class="node">
+<title>proc~gmbe_group_global_coordinator</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node7"><a xlink:href="../proc/gmbe_group_global_coordinator.html" xlink:title="gmbe_group_global_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="902,-176 717,-176 717,-152 902,-152 902,-176"/>
+<text text-anchor="middle" x="809.5" y="-161.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_group_global_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~flush_group_results -->
+<g id="proc~~send_error_state~~CalledByGraph_edge6" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~flush_group_results</title>
+<path fill="none" stroke="#ff0000" d="M846.24,-176.08C909.31,-195.47 1043.83,-228.18 1151,-195 1178.65,-186.44 1205.39,-166.39 1222.85,-151.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1225.54,-153.47 1230.63,-144.18 1220.86,-148.27 1225.54,-153.47"/>
+</g>
+<!-- proc~handle_local_worker_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_node9" class="node">
+<title>proc~handle_local_worker_results_to_batch</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node9"><a xlink:href="../proc/handle_local_worker_results_to_batch.html" xlink:title="handle_local_worker_results_to_batch">
+<polygon fill="#d9534f" stroke="#d9534f" points="1151,-186 938,-186 938,-162 1151,-162 1151,-186"/>
+<text text-anchor="middle" x="1044.5" y="-171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_local_worker_results_to_batch</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_edge14" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_local_worker_results_to_batch</title>
+<path fill="none" stroke="#00ff00" d="M902.25,-167.94C910.67,-168.3 919.28,-168.67 927.87,-169.04"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="927.81,-172.54 937.95,-169.47 928.11,-165.54 927.81,-172.54"/>
+</g>
+<!-- proc~handle_node_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_node10" class="node">
+<title>proc~handle_node_results_to_batch</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node10"><a xlink:href="../proc/handle_node_results_to_batch.html" xlink:title="handle_node_results_to_batch">
+<polygon fill="#d9534f" stroke="#d9534f" points="1130.5,-144 958.5,-144 958.5,-120 1130.5,-120 1130.5,-144"/>
+<text text-anchor="middle" x="1044.5" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">handle_node_results_to_batch</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_node_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_edge16" class="edge">
+<title>proc~gmbe_group_global_coordinator&#45;&gt;proc~handle_node_results_to_batch</title>
+<path fill="none" stroke="#00ffff" d="M897.92,-151.99C914.28,-149.75 931.46,-147.39 948.05,-145.11"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="948.86,-148.53 958.29,-143.7 947.91,-141.6 948.86,-148.53"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~flush_group_results -->
+<g id="proc~~send_error_state~~CalledByGraph_edge7" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~flush_group_results</title>
+<path fill="none" stroke="#ff0000" d="M898.63,-106.8C967.56,-103.32 1065.67,-101.39 1151,-111 1163.59,-112.42 1176.97,-114.9 1189.51,-117.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1188.83,-121.1 1199.36,-119.93 1190.4,-114.28 1188.83,-121.1"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_edge15" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_local_worker_results_to_batch</title>
+<path fill="none" stroke="#00ff00" d="M845.39,-125.06C870.85,-133.59 906.31,-144.9 938,-153 947.5,-155.43 957.54,-157.74 967.5,-159.89"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="966.9,-163.34 977.41,-161.98 968.35,-156.49 966.9,-163.34"/>
+</g>
+<!-- proc~group_global_coordinator_impl&#45;&gt;proc~handle_node_results_to_batch -->
+<g id="proc~~send_error_state~~CalledByGraph_edge17" class="edge">
+<title>proc~group_global_coordinator_impl&#45;&gt;proc~handle_node_results_to_batch</title>
+<path fill="none" stroke="#00ffff" d="M898.59,-120.18C914.81,-121.51 931.81,-122.89 948.23,-124.23"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="948.12,-127.73 958.37,-125.06 948.69,-120.76 948.12,-127.73"/>
+</g>
+<!-- proc~handle_local_worker_results_to_batch&#45;&gt;proc~flush_group_results -->
+<g id="proc~~send_error_state~~CalledByGraph_edge8" class="edge">
+<title>proc~handle_local_worker_results_to_batch&#45;&gt;proc~flush_group_results</title>
+<path fill="none" stroke="#ff0000" d="M1107.48,-161.96C1121.79,-159.1 1136.94,-156 1151,-153 1160.85,-150.9 1171.28,-148.59 1181.44,-146.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1182.5,-149.65 1191.48,-144.03 1180.95,-142.82 1182.5,-149.65"/>
+</g>
+<!-- proc~handle_node_results_to_batch&#45;&gt;proc~flush_group_results -->
+<g id="proc~~send_error_state~~CalledByGraph_edge9" class="edge">
+<title>proc~handle_node_results_to_batch&#45;&gt;proc~flush_group_results</title>
+<path fill="none" stroke="#ff0000" d="M1130.69,-132C1146.13,-132 1162.02,-132 1176.81,-132"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1176.86,-135.5 1186.86,-132 1176.86,-128.5 1176.86,-135.5"/>
+</g>
+<!-- proc~node_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_node11" class="node">
+<title>proc~node_coordinator</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node11"><a xlink:href="../proc/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="509,-96 402,-96 402,-72 509,-72 509,-96"/>
+<text text-anchor="middle" x="455.5" y="-81.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~node_coordinator&#45;&gt;proc~node_coordinator_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_edge10" class="edge">
+<title>proc~node_coordinator&#45;&gt;proc~node_coordinator_impl</title>
+<path fill="none" stroke="#00ff00" d="M509.15,-84C517.38,-84 526.03,-84 534.68,-84"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="534.8,-87.5 544.8,-84 534.8,-80.5 534.8,-87.5"/>
+</g>
+<!-- proc~node_worker -->
+<g id="proc~~send_error_state~~CalledByGraph_node12" class="node">
+<title>proc~node_worker</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node12"><a xlink:href="../proc/node_worker.html" xlink:title="node_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="496.5,-36 414.5,-36 414.5,-12 496.5,-12 496.5,-36"/>
+<text text-anchor="middle" x="455.5" y="-21.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~node_worker&#45;&gt;proc~node_worker_impl -->
+<g id="proc~~send_error_state~~CalledByGraph_edge11" class="edge">
+<title>proc~node_worker&#45;&gt;proc~node_worker_impl</title>
+<path fill="none" stroke="#0000ff" d="M496.58,-23.49C624.19,-21.87 1021.74,-16.81 1178.51,-14.82"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="1178.97,-18.31 1188.93,-14.69 1178.88,-11.32 1178.97,-18.31"/>
+</g>
+<!-- interface~node_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_node13" class="node">
+<title>interface~node_coordinator</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node13"><a xlink:href="../interface/node_coordinator.html" xlink:title="node_coordinator">
+<polygon fill="#a7506f" stroke="#a7506f" points="366,-96 259,-96 259,-72 366,-72 366,-96"/>
+<text text-anchor="middle" x="312.5" y="-81.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_coordinator</text>
+</a>
+</g>
+</g>
+<!-- interface~node_coordinator&#45;&gt;proc~node_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_edge18" class="edge">
+<title>interface~node_coordinator&#45;&gt;proc~node_coordinator</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M366,-84C374.44,-84 383.26,-84 391.9,-84"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="391.95,-87.5 401.95,-84 391.95,-80.5 391.95,-87.5"/>
+</g>
+<!-- interface~node_worker -->
+<g id="proc~~send_error_state~~CalledByGraph_node14" class="node">
+<title>interface~node_worker</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node14"><a xlink:href="../interface/node_worker.html" xlink:title="node_worker">
+<polygon fill="#a7506f" stroke="#a7506f" points="353.5,-54 271.5,-54 271.5,-30 353.5,-30 353.5,-54"/>
+<text text-anchor="middle" x="312.5" y="-39.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_worker</text>
+</a>
+</g>
+</g>
+<!-- interface~node_worker&#45;&gt;proc~node_worker -->
+<g id="proc~~send_error_state~~CalledByGraph_edge19" class="edge">
+<title>interface~node_worker&#45;&gt;proc~node_worker</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M353.53,-36.89C369.3,-34.88 387.6,-32.54 404.25,-30.41"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="404.9,-33.86 414.37,-29.12 404.01,-26.92 404.9,-33.86"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="proc~~send_error_state~~CalledByGraph_node15" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node15"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="223,-96 0,-96 0,-72 223,-72 223,-96"/>
+<text text-anchor="middle" x="111.5" y="-81.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_edge12" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;proc~gmbe_group_global_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M192.65,-96.01C214.17,-99.09 237.46,-102.3 259,-105 415.02,-124.55 596.48,-143.25 706.86,-154.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="706.69,-157.68 716.99,-155.18 707.38,-150.71 706.69,-157.68"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;interface~node_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_edge20" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;interface~node_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M223.06,-84C231.74,-84 240.3,-84 248.49,-84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="248.63,-87.5 258.63,-84 248.63,-80.5 248.63,-87.5"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;interface~node_worker -->
+<g id="proc~~send_error_state~~CalledByGraph_edge22" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;interface~node_worker</title>
+<path fill="none" stroke="#00ff00" d="M178.33,-71.99C193.06,-69.17 208.58,-66.08 223,-63 235.55,-60.32 249.05,-57.22 261.64,-54.25"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="262.58,-57.62 271.5,-51.9 260.96,-50.81 262.58,-57.62"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="proc~~send_error_state~~CalledByGraph_node16" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_proc~~send_error_state~~CalledByGraph_node16"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="216,-54 7,-54 7,-30 216,-30 216,-54"/>
+<text text-anchor="middle" x="111.5" y="-39.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~node_coordinator -->
+<g id="proc~~send_error_state~~CalledByGraph_edge21" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~node_coordinator</title>
+<path fill="none" stroke="#ff0000" d="M178.33,-54.01C193.06,-56.83 208.58,-59.92 223,-63 232.61,-65.05 242.78,-67.35 252.67,-69.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="251.9,-73.06 262.44,-71.94 253.5,-66.25 251.9,-73.06"/>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;interface~node_worker -->
+<g id="proc~~send_error_state~~CalledByGraph_edge23" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;interface~node_worker</title>
+<path fill="none" stroke="#00ff00" d="M216.08,-42C231.73,-42 247.25,-42 261.08,-42"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="261.3,-45.5 271.3,-42 261.3,-38.5 261.3,-45.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocsend_error_stateCalledByGraph = svgPanZoom('#procsend_error_stateCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-encoded"></span>
+              integer(kind=int32),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>encoded</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~19"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~5"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-trace"></span>
+              character(len=:),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>trace</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">send_error_state</span><span class="p">(</span><span class="k">result</span><span class="p">,</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Send the failure flag, code and trace that travel with a result</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! This is not optional bookkeeping. Without it a fragment that failed on</span>
+<span class="w">      </span><span class="c">!! a worker arrives at the coordinator looking healthy: `has_error` stays</span>
+<span class="w">      </span><span class="c">!! at its default `.false.`, the untouched SCF energy of 0 is taken at</span>
+<span class="w">      </span><span class="c">!! face value, and the many-body expansion quietly sums zeros. Every</span>
+<span class="w">      </span><span class="c">!! `has_error` check on the receiving side depends on this being sent.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
+<span class="k">      type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span>
+
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">trace</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">encoded</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_code</span><span class="p">(),</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! pic-mpi carries no character type, so the trace goes as one character</span>
+<span class="w">      </span><span class="c">! code per element. It is never empty: a zero-length message would leave</span>
+<span class="w">      </span><span class="c">! the coordinator with a failure it cannot name.</span>
+<span class="w">      </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">error</span><span class="p">%</span><span class="n">get_full_trace</span><span class="p">()</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Calculation failed without a diagnostic&quot;</span>
+<span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">trace</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">encoded</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">         </span><span class="n">encoded</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">iachar</span><span class="p">(</span><span class="n">trace</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">))</span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">      call </span><span class="n">send</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">encoded</span><span class="p">,</span><span class="w"> </span><span class="n">dest</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">send_error_state</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 06:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

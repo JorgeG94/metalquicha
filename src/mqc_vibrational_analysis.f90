@@ -603,7 +603,8 @@ contains
          !! IR intensities in km/mol (one per mode)
 
       integer :: n_atoms, n_coords, iatom, i, j, k
-      real(dp) :: mass, inv_sqrt_mass, trdip(3)
+      real(dp) :: mass, inv_sqrt_mass
+      real(dp) :: trdip(3)
 
       n_atoms = size(element_numbers)
       n_coords = 3*n_atoms
@@ -710,7 +711,7 @@ contains
          ! Mode numbers header
          line = "                    "
          do k = mode_start, mode_end
-            write (freq_str, '(i12)') k
+            write (freq_str, "(i12)") k
             line = trim(line)//freq_str
          end do
          call logger%info(trim(line))
@@ -720,10 +721,10 @@ contains
          do k = mode_start, mode_end
             if (frequencies(k) < 0.0_dp .and. abs(frequencies(k)) > 10.0_dp) then
                ! Significant imaginary frequency - show with "i"
-               write (freq_str, '(f12.4,a)') abs(frequencies(k)), "i"
+               write (freq_str, "(f12.4,a)") abs(frequencies(k)), "i"
             else
                ! Real or near-zero frequency
-               write (freq_str, '(f12.4)') abs(frequencies(k))
+               write (freq_str, "(f12.4)") abs(frequencies(k))
             end if
             line = trim(line)//freq_str
          end do
@@ -732,7 +733,7 @@ contains
          ! Reduced masses
          line = " Red. masses --  "
          do k = mode_start, mode_end
-            write (mass_str, '(f12.4)') reduced_masses(k)
+            write (mass_str, "(f12.4)") reduced_masses(k)
             line = trim(line)//mass_str
          end do
          call logger%info(trim(line))
@@ -741,13 +742,13 @@ contains
          if (present(force_constants_mdyne)) then
             line = " Frc consts  --  "
             do k = mode_start, mode_end
-               write (fc_str, '(f12.4)') force_constants_mdyne(k)
+               write (fc_str, "(f12.4)") force_constants_mdyne(k)
                line = trim(line)//fc_str
             end do
          else
             line = " Frc consts  --  "
             do k = mode_start, mode_end
-               write (fc_str, '(f12.6)') force_constants(k)
+               write (fc_str, "(f12.6)") force_constants(k)
                line = trim(line)//fc_str
             end do
          end if
@@ -757,7 +758,7 @@ contains
          if (present(ir_intensities)) then
             line = " IR Intens  --  "
             do k = mode_start, mode_end
-               write (ir_str, '(f12.4)') ir_intensities(k)
+               write (ir_str, "(f12.4)") ir_intensities(k)
                line = trim(line)//ir_str
             end do
             call logger%info(trim(line))
@@ -771,11 +772,11 @@ contains
                elem_sym = element_number_to_symbol(element_numbers(iatom))
 
                ! Build line with atom info and displacements for each mode
-               write (line, '(i4,1x,a2)') iatom, elem_sym
+               write (line, "(i4,1x,a2)") iatom, elem_sym
 
                do k = mode_start, mode_end
                   do icoord = 1, 3
-                     write (freq_str, '(f10.5)') cartesian_displacements(3*(iatom - 1) + icoord, k)
+                     write (freq_str, "(f10.5)") cartesian_displacements(3*(iatom - 1) + icoord, k)
                      line = trim(line)//freq_str
                   end do
                end do
@@ -809,13 +810,13 @@ contains
             end if
          end do
 
-         write (line, '(a,i5)') "   Total modes:              ", n_modes
+         write (line, "(a,i5)") "   Total modes:              ", n_modes
          call logger%info(trim(line))
-         write (line, '(a,i5)') "   Real frequencies:         ", n_real
+         write (line, "(a,i5)") "   Real frequencies:         ", n_real
          call logger%info(trim(line))
-         write (line, '(a,i5)') "   Imaginary frequencies:    ", n_imag
+         write (line, "(a,i5)") "   Imaginary frequencies:    ", n_imag
          call logger%info(trim(line))
-         write (line, '(a,i5)') "   Near-zero (trans/rot):    ", n_zero
+         write (line, "(a,i5)") "   Near-zero (trans/rot):    ", n_zero
          call logger%info(trim(line))
 
          if (n_imag > 0) then

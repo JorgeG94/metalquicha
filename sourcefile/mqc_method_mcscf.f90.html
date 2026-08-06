@@ -699,7 +699,7 @@ large graphs.</div>
 <a id="ln-14" name="ln-14" href="#ln-14"></a>
 <a id="ln-15" name="ln-15" href="#ln-15"></a><span class="w">   </span><span class="k">type</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mcscf_options_t</span>
 <a id="ln-16" name="ln-16" href="#ln-16"></a><span class="w">      </span><span class="c">!! MCSCF/CASSCF calculation options</span>
-<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;sto-3g&#39;</span>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">basis_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sto-3g&quot;</span>
 <a id="ln-18" name="ln-18" href="#ln-18"></a><span class="w">         </span><span class="c">!! Basis set name</span>
 <a id="ln-19" name="ln-19" href="#ln-19"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">spherical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
 <a id="ln-20" name="ln-20" href="#ln-20"></a><span class="w">         </span><span class="c">!! Use spherical (true) or Cartesian (false) basis</span>
@@ -734,13 +734,13 @@ large graphs.</div>
 <a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">         </span><span class="c">!! CI energy convergence threshold</span>
 <a id="ln-50" name="ln-50" href="#ln-50"></a>
 <a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">      </span><span class="c">! Orbital optimization algorithm</span>
-<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;super-ci&#39;</span>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">orbital_optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;super-ci&quot;</span>
 <a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">         </span><span class="c">!! Orbital optimizer: &quot;super-ci&quot;, &quot;newton-raphson&quot;, &quot;ah&quot; (augmented Hessian)</span>
 <a id="ln-54" name="ln-54" href="#ln-54"></a>
 <a id="ln-55" name="ln-55" href="#ln-55"></a><span class="w">      </span><span class="c">! Perturbative corrections</span>
 <a id="ln-56" name="ln-56" href="#ln-56"></a><span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">use_pt2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <a id="ln-57" name="ln-57" href="#ln-57"></a><span class="w">         </span><span class="c">!! Apply perturbative correction after CASSCF</span>
-<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pt2_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;nevpt2&#39;</span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pt2_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nevpt2&quot;</span>
 <a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">         </span><span class="c">!! PT2 type: &quot;caspt2&quot;, &quot;nevpt2&quot;</span>
 <a id="ln-60" name="ln-60" href="#ln-60"></a><span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ipea_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.25_dp</span>
 <a id="ln-61" name="ln-61" href="#ln-61"></a><span class="w">         </span><span class="c">!! IPEA shift for CASPT2 (Hartree)</span>
@@ -911,7 +911,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

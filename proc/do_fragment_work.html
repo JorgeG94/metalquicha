@@ -136,11 +136,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calc_type_local~2">calc_type_local</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calculator~3">calculator</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calc_type_local">calc_type_local</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-calculator">calculator</a>
             <a class="list-group-item" href="../proc/do_fragment_work.html#variable-current_log_level~3">current_log_level</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-is_verbose~2">is_verbose</a>
-            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-local_config~3">local_config</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-is_verbose">is_verbose</a>
+            <a class="list-group-item" href="../proc/do_fragment_work.html#variable-local_config">local_config</a>
         </div>
       </div>
     </div>
@@ -317,7 +317,7 @@ Verbosity is controlled by the global logger level.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~5"></span>
+              <span class="anchor" id="variable-fragment_idx~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -332,7 +332,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~11"></span>
+              <span class="anchor" id="variable-result~19"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -347,7 +347,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~2"></span>
+              <span class="anchor" id="variable-method_config~6"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -377,7 +377,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~3"></span>
+              <span class="anchor" id="variable-calc_type~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -392,7 +392,7 @@ Verbosity is controlled by the global logger level.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~10"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -719,47 +719,35 @@ Verbosity is controlled by the global logger level.</p>
 <path fill="none" stroke="#00ff66" d="M501.97,-290.95C511.52,-288.44 521.11,-285.48 530,-282 547.25,-275.25 549.46,-269.33 566,-261 569.15,-259.41 572.46,-257.83 575.79,-256.29"/>
 <polygon fill="#00ff66" stroke="#00ff66" points="577.5,-259.36 585.19,-252.08 574.63,-252.97 577.5,-259.36"/>
 </g>
-<!-- state_weights -->
-<g id="proc~~do_fragment_work~~CallsGraph_node24" class="node">
-<title>state_weights</title>
-<polygon fill="#777777" stroke="#777777" points="834.5,-294 749.5,-294 749.5,-270 834.5,-270 834.5,-294"/>
-<text text-anchor="middle" x="792" y="-279.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">state_weights</text>
-</g>
-<!-- proc~configure_mcscf&#45;&gt;state_weights -->
-<g id="proc~~do_fragment_work~~CallsGraph_edge22" class="edge">
-<title>proc~configure_mcscf&#45;&gt;state_weights</title>
-<path fill="none" stroke="#00ffff" d="M666.4,-282C689.14,-282 716.12,-282 739.15,-282"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="739.43,-285.5 749.43,-282 739.43,-278.5 739.43,-285.5"/>
-</g>
 <!-- proc~method_type_to_string -->
 <g id="proc~~do_fragment_work~~CallsGraph_node22" class="node">
 <title>proc~method_type_to_string</title>
 <g id="a_proc~~do_fragment_work~~CallsGraph_node22"><a xlink:href="../proc/method_type_to_string.html" xlink:title="method_type_to_string">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="858.5,-252 725.5,-252 725.5,-228 858.5,-228 858.5,-252"/>
-<text text-anchor="middle" x="792" y="-237.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="858.5,-273 725.5,-273 725.5,-249 858.5,-249 858.5,-273"/>
+<text text-anchor="middle" x="792" y="-258.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">method_type_to_string</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~method_type_to_string -->
-<g id="proc~~do_fragment_work~~CallsGraph_edge23" class="edge">
+<g id="proc~~do_fragment_work~~CallsGraph_edge22" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~method_type_to_string</title>
-<path fill="none" stroke="#7f00ff" d="M658.68,-240C675.63,-240 695.77,-240 715.15,-240"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="715.2,-243.5 725.2,-240 715.2,-236.5 715.2,-243.5"/>
+<path fill="none" stroke="#7f00ff" d="M658.68,-245.03C675.63,-247.08 695.77,-249.51 715.15,-251.85"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="714.85,-255.34 725.2,-253.06 715.69,-248.39 714.85,-255.34"/>
 </g>
 <!-- proc~xtb_has_solvation -->
 <g id="proc~~do_fragment_work~~CallsGraph_node23" class="node">
 <title>proc~xtb_has_solvation</title>
 <g id="a_proc~~do_fragment_work~~CallsGraph_node23"><a xlink:href="../proc/xtb_has_solvation.html" xlink:title="xtb_config_t%xtb_has_solvation">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="882,-210 702,-210 702,-186 882,-186 882,-210"/>
-<text text-anchor="middle" x="792" y="-195.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="882,-231 702,-231 702,-207 882,-207 882,-231"/>
+<text text-anchor="middle" x="792" y="-216.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_config_t%xtb_has_solvation</text>
 </a>
 </g>
 </g>
 <!-- proc~configure_xtb&#45;&gt;proc~xtb_has_solvation -->
-<g id="proc~~do_fragment_work~~CallsGraph_edge24" class="edge">
+<g id="proc~~do_fragment_work~~CallsGraph_edge23" class="edge">
 <title>proc~configure_xtb&#45;&gt;proc~xtb_has_solvation</title>
-<path fill="none" stroke="#7f00ff" d="M658.92,-229.55C672.64,-226.16 687.96,-222.39 702,-219 710.95,-216.84 720.42,-214.58 729.71,-212.37"/>
-<polygon fill="#7f00ff" stroke="#7f00ff" points="730.75,-215.72 739.68,-210.01 729.14,-208.91 730.75,-215.72"/>
+<path fill="none" stroke="#7f00ff" d="M658.68,-234.97C668.79,-233.75 680.03,-232.39 691.57,-231"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="692.26,-234.44 701.76,-229.77 691.42,-227.49 692.26,-234.44"/>
 </g>
 </g>
 </svg>
@@ -1199,7 +1187,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type_local~2"></span>
+              <span class="anchor" id="variable-calc_type_local"></span>
               integer(kind=int32),
             </td>
               <td>private</td>
@@ -1216,7 +1204,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calculator~3"></span>
+              <span class="anchor" id="variable-calculator"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
               <td>private,</td>
@@ -1250,7 +1238,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_verbose~2"></span>
+              <span class="anchor" id="variable-is_verbose"></span>
               logical,
             </td>
               <td>private</td>
@@ -1267,7 +1255,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_config~3"></span>
+              <span class="anchor" id="variable-local_config"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>private</td>
@@ -1337,7 +1325,10 @@ large graphs.</div>
 <span class="w">         </span><span class="n">local_config</span><span class="p">%</span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">is_verbose</span>
 
 <span class="w">         </span><span class="c">! Create calculator using factory</span>
-<span class="w">         </span><span class="n">calculator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_method</span><span class="p">(</span><span class="n">local_config</span><span class="p">)</span>
+<span class="w">         </span><span class="c">! allocate(..., source=) rather than plain assignment: see the note in</span>
+<span class="w">         </span><span class="c">! mqc_method_factory -- gfortran 13.2.0 segfaults on intrinsic</span>
+<span class="w">         </span><span class="c">! assignment from a polymorphic allocatable function result.</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">calculator</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="o">=</span><span class="n">create_method</span><span class="p">(</span><span class="n">local_config</span><span class="p">))</span>
 
 <span class="w">         </span><span class="c">! Run the calculation using polymorphic dispatch</span>
 <span class="w">         </span><span class="k">select case</span><span class="w"> </span><span class="p">(</span><span class="n">calc_type_local</span><span class="p">)</span>
@@ -1393,7 +1384,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-02-20 06:49 +0000             </p>
+ on 2026-08-06 06:26 +0000             </p>
           </div>
         </div>
         <br>

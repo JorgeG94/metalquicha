@@ -1,0 +1,1298 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_semi_numerical_hessian &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_semi_numerical_hessian
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.2% of total for modules and submodules.">149 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_semi_numerical_hessian.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_semi_numerical_hessian.f90.html'>mqc_semi_numerical_hessian.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_semi_numerical_hessian</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_semi_numerical_hessian.html#proc-finite_difference_hessian">finite_difference_hessian</a>
+            <a class="list-group-item" href="../module/mqc_semi_numerical_hessian.html#proc-fail">fail</a>
+            <a class="list-group-item" href="../module/mqc_semi_numerical_hessian.html#proc-report_translational_sum_rule">report_translational_sum_rule</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Builds a Hessian from central differences of a method&rsquo;s analytic
+gradients:</p>
+<p>H[i,j] = (g_j(x_i + h) - g_j(x_i - h)) / 2h</p>
+<p>This is <em>semi</em>-numerical: only one derivative is taken numerically, the
+other is analytic. That matters for accuracy &ndash; differencing energies
+twice would lose roughly half the available digits, whereas differencing
+gradients once keeps most of them.</p>
+<p>The routine is written against <code>qc_method_t</code> rather than any concrete
+method, so anything with a working <code>calc_gradient</code> gets a Hessian for
+free.</p>
+<p>Cost is 6N gradient evaluations for N atoms, and each of those is a full
+SCF. The displaced geometries are independent, so this is the obvious
+place to distribute work across ranks &ndash; metalquicha already does that
+for the unfragmented Hessian path.
+Hessian from central differences of gradients</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
+                  <li class="list-inline-item"><a href='mqc_finite_differences.html'>mqc_finite_differences</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item">pic_io</li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_semi_numerical_hessian~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_semi_numerical_hessianUsesGraph" width="641pt" height="306pt"
+ viewBox="0.00 0.00 641.00 306.24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph" class="graph" transform="scale(0.68 0.68) rotate(0) translate(4 443.66)">
+<title>module~~mqc_semi_numerical_hessian~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-443.66 933,-443.66 933,4 -4,4"/>
+<!-- module~mqc_semi_numerical_hessian -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node1" class="node">
+<title>module~mqc_semi_numerical_hessian</title>
+<polygon fill="none" stroke="black" points="929,-323.32 757,-323.32 757,-299.32 929,-299.32 929,-323.32"/>
+<text text-anchor="middle" x="843" y="-308.92" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_semi_numerical_hessian</text>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node2" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node2"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-269.32 111,-269.32 111,-245.32 178,-245.32 178,-269.32"/>
+<text text-anchor="middle" x="144.5" y="-254.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge1" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M653.5,-331.32C467.68,-293.13 406.77,-374.91 227,-314.32 203.67,-306.46 181.04,-289.67 165.58,-276.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="167.55,-273.41 157.76,-269.37 162.89,-278.64 167.55,-273.41"/>
+</g>
+<!-- module~mqc_finite_differences -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node3" class="node">
+<title>module~mqc_finite_differences</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node3"><a xlink:href="../module/mqc_finite_differences.html" xlink:title="mqc_finite_differences">
+<polygon fill="#337ab7" stroke="#337ab7" points="721,-383.32 588,-383.32 588,-359.32 721,-359.32 721,-383.32"/>
+<text text-anchor="middle" x="654.5" y="-368.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_finite_differences</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_finite_differences -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge2" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_finite_differences</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M804.26,-323.46C774.97,-332.89 734.18,-346.01 702.73,-356.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="701.31,-352.91 692.87,-359.3 703.46,-359.57 701.31,-352.91"/>
+</g>
+<!-- module~mqc_method_base -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node4" class="node">
+<title>module~mqc_method_base</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node4"><a xlink:href="../module/mqc_method_base.html" xlink:title="mqc_method_base">
+<polygon fill="#337ab7" stroke="#337ab7" points="711,-303.32 598,-303.32 598,-279.32 711,-279.32 711,-303.32"/>
+<text text-anchor="middle" x="654.5" y="-288.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_base</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_method_base -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge3" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_method_base</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M756.94,-302.2C744.9,-300.91 732.68,-299.6 721.09,-298.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="721.4,-294.87 711.08,-297.28 720.65,-301.83 721.4,-294.87"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node5" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node5"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="547.5,-86.32 408.5,-86.32 408.5,-62.32 547.5,-62.32 547.5,-86.32"/>
+<text text-anchor="middle" x="478" y="-71.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge4" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M799.05,-323.39C761.01,-332.31 704.14,-341.32 655.5,-331.32"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M653.5,-331.32C623.81,-325.22 610.95,-332.12 588,-312.32 552.91,-282.05 504.55,-148.96 486.33,-96.08"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="489.56,-94.69 483.01,-86.36 482.93,-96.95 489.56,-94.69"/>
+</g>
+<!-- module~mqc_result_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node6" class="node">
+<title>module~mqc_result_types</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node6"><a xlink:href="../module/mqc_result_types.html" xlink:title="mqc_result_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="530,-303.32 426,-303.32 426,-279.32 530,-279.32 530,-303.32"/>
+<text text-anchor="middle" x="478" y="-288.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_result_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge5" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M653.5,-331.32C615.29,-323.47 572.6,-313.7 539.01,-305.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="539.43,-302.29 528.89,-303.39 537.82,-309.1 539.43,-302.29"/>
+</g>
+<!-- pic_io -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node7" class="node">
+<title>pic_io</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="681.5,-261.32 627.5,-261.32 627.5,-237.32 681.5,-237.32 681.5,-261.32"/>
+<text text-anchor="middle" x="654.5" y="-246.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_io</text>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;pic_io -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge6" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;pic_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M806.84,-299.24C782.72,-290.99 749.96,-279.87 721,-270.32 711.4,-267.16 701,-263.79 691.36,-260.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="692.26,-257.32 681.67,-257.6 690.13,-263.98 692.26,-257.32"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node8" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="688.5,-219.32 620.5,-219.32 620.5,-195.32 688.5,-195.32 688.5,-219.32"/>
+<text text-anchor="middle" x="654.5" y="-204.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;pic_logger -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge7" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M827.23,-299.06C805.27,-281.34 762.17,-248.5 721,-228.32 713.84,-224.81 705.95,-221.7 698.21,-219.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="699.14,-215.65 688.55,-215.87 696.97,-222.3 699.14,-215.65"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node9" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-167.32 0,-167.32 0,-143.32 62,-143.32 62,-167.32"/>
+<text text-anchor="middle" x="31" y="-152.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_semi_numerical_hessian&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge8" class="edge">
+<title>module~mqc_semi_numerical_hessian&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M827.75,-323.46C806.12,-341.25 763.04,-374.27 721,-392.32 590.61,-448.3 545.21,-444.24 404,-430.32 356.42,-425.63 345.89,-415.65 298.5,-409.32"/>
+</g>
+<!-- module~mqc_finite_differences&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge10" class="edge">
+<title>module~mqc_finite_differences&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M608.61,-359.19C601.06,-355.64 593.81,-351.11 588,-345.32 578.55,-335.92 511.05,-159.03 487.27,-96.22"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="490.41,-94.63 483.6,-86.52 483.86,-97.11 490.41,-94.63"/>
+</g>
+<!-- module~mqc_finite_differences&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge11" class="edge">
+<title>module~mqc_finite_differences&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M587.87,-373.49C537.42,-375.71 466.08,-380.06 404,-388.32 356.61,-394.63 345.96,-415.13 298.5,-409.32"/>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M296.5,-409.32C227.91,-400.16 202.22,-410.97 145.5,-371.32"/>
+</g>
+<!-- module~mqc_calculation_defaults -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node10" class="node">
+<title>module~mqc_calculation_defaults</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node10"><a xlink:href="../module/mqc_calculation_defaults.html" xlink:title="mqc_calculation_defaults">
+<polygon fill="#337ab7" stroke="#337ab7" points="552,-421.32 404,-421.32 404,-397.32 552,-397.32 552,-421.32"/>
+<text text-anchor="middle" x="478" y="-406.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_calculation_defaults</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_finite_differences&#45;&gt;module~mqc_calculation_defaults -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge9" class="edge">
+<title>module~mqc_finite_differences&#45;&gt;module~mqc_calculation_defaults</title>
+<path fill="none" stroke="#ffbf00" stroke-dasharray="5,2" d="M598.29,-383.35C581.02,-387.11 561.8,-391.29 543.93,-395.18"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="543.18,-391.76 534.15,-397.31 544.67,-398.6 543.18,-391.76"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge12" class="edge">
+<title>module~mqc_method_base&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M602.49,-279.3C597.29,-276.84 592.34,-273.88 588,-270.32 530.23,-222.96 497.83,-136.5 485.22,-96.15"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="488.55,-95.06 482.31,-86.5 481.85,-97.08 488.55,-95.06"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;module~mqc_result_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge13" class="edge">
+<title>module~mqc_method_base&#45;&gt;module~mqc_result_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M597.81,-291.32C579.46,-291.32 558.96,-291.32 540.23,-291.32"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="540.02,-287.82 530.02,-291.32 540.02,-294.82 540.02,-287.82"/>
+</g>
+<!-- module~mqc_method_base&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge14" class="edge">
+<title>module~mqc_method_base&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M598.66,-279.23C594.68,-276.78 591.04,-273.85 588,-270.32 524.09,-196.34 621.4,-122.18 552,-53.32 471.03,27.01 412.16,-22.86 298.5,-13.32"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M296.5,-13.32C229.77,-6.2 207.74,11.77 145.5,-13.32"/>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M143.5,-13.32C123.18,-21.52 114.23,-17.6 98,-32.32 67.11,-60.36 47.92,-106.31 38.66,-133.4"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="35.27,-132.52 35.5,-143.11 41.92,-134.69 35.27,-132.52"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge17" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M296.5,-215.32C261.14,-230.26 218.91,-241.49 188.11,-248.56"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="187.12,-245.19 178.13,-250.8 188.65,-252.02 187.12,-245.19"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge21" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M453.84,-62.28C420.55,-45.94 356.75,-18.21 298.5,-13.32"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node11" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node11"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-227.32 112.5,-227.32 112.5,-203.32 176.5,-203.32 176.5,-227.32"/>
+<text text-anchor="middle" x="144.5" y="-212.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M469.64,-86.46C454.08,-111.07 415.34,-167.02 368,-196.32 340.77,-213.18 328,-202.86 298.5,-215.32"/>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M296.5,-215.32C261.68,-230.04 218.18,-228.17 186.82,-223.74"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="187.1,-220.24 176.68,-222.16 186.02,-227.16 187.1,-220.24"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node12" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node12"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-65.32 252,-65.32 252,-41.32 343,-41.32 343,-65.32"/>
+<text text-anchor="middle" x="297.5" y="-50.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M408.5,-66.26C390.17,-64.11 370.61,-61.81 353.14,-59.75"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="353.46,-56.26 343.12,-58.57 352.64,-63.22 353.46,-56.26"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node13" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node13"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-147.32 98,-147.32 98,-123.32 191,-123.32 191,-147.32"/>
+<text text-anchor="middle" x="144.5" y="-132.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M451.66,-86.45C429.97,-96.25 397.64,-109.49 368,-116.32 312.27,-129.16 246.89,-133.52 201.49,-134.9"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="201.16,-131.4 191.25,-135.17 201.34,-138.4 201.16,-131.4"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node14" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node14"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-107.32 227,-107.32 227,-83.32 368,-83.32 368,-107.32"/>
+<text text-anchor="middle" x="297.5" y="-92.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge19" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M408.5,-82.38C398.62,-83.54 388.38,-84.75 378.3,-85.93"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="377.82,-82.47 368.3,-87.11 378.64,-89.42 377.82,-82.47"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node15" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsesGraph_node15"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-187.32 248,-187.32 248,-163.32 347,-163.32 347,-187.32"/>
+<text text-anchor="middle" x="297.5" y="-172.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge20" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ff3f" stroke-dasharray="5,2" d="M461.88,-86.52C441.5,-102.52 403.65,-130.75 368,-149.32 360.93,-153.01 353.22,-156.43 345.59,-159.5"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="344.09,-156.33 336.02,-163.2 346.61,-162.86 344.09,-156.33"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge22" class="edge">
+<title>module~mqc_result_types&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M425.87,-281.27C407.67,-277.99 386.98,-274.61 368,-272.32 305.73,-264.82 233.16,-260.8 188.27,-258.87"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.16,-255.36 178.03,-258.44 187.87,-262.36 188.16,-255.36"/>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge24" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M460.51,-303.35C409.77,-338.77 252.93,-436.23 145.5,-371.32"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M143.5,-371.32C75.6,-323.86 46.27,-222.17 36.28,-177.33"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="39.69,-176.52 34.2,-167.46 32.84,-177.97 39.69,-176.52"/>
+</g>
+<!-- pic_mpi_lib -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node16" class="node">
+<title>pic_mpi_lib</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="333.5,-305.32 261.5,-305.32 261.5,-281.32 333.5,-281.32 333.5,-305.32"/>
+<text text-anchor="middle" x="297.5" y="-290.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_lib</text>
+</g>
+<!-- module~mqc_result_types&#45;&gt;pic_mpi_lib -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge23" class="edge">
+<title>module~mqc_result_types&#45;&gt;pic_mpi_lib</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M425.85,-291.9C399.98,-292.19 368.85,-292.53 343.84,-292.81"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="343.5,-289.32 333.54,-292.93 343.57,-296.32 343.5,-289.32"/>
+</g>
+<!-- module~mqc_calculation_defaults&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge25" class="edge">
+<title>module~mqc_calculation_defaults&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M403.8,-413.32C371.42,-414.06 332.95,-413.54 298.5,-409.32"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge26" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M120.94,-203.18C104.39,-194.28 81.7,-182.07 63.39,-172.21"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="64.99,-169.1 54.53,-167.45 61.68,-175.27 64.99,-169.1"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge28" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M260.08,-41.24C218.9,-27.95 156.16,-9.03 145.5,-13.32"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_node17" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-65.32 115.5,-65.32 115.5,-41.32 173.5,-41.32 173.5,-65.32"/>
+<text text-anchor="middle" x="144.5" y="-50.92" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge27" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M251.6,-53.32C230.13,-53.32 204.69,-53.32 184.1,-53.32"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="183.83,-49.82 173.83,-53.32 183.83,-56.82 183.83,-49.82"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge29" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M97.83,-143.51C89.28,-145.05 80.4,-146.64 72.03,-148.14"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="71.37,-144.71 62.14,-149.92 72.6,-151.6 71.37,-144.71"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge30" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M226.9,-94.25C188.06,-95.55 139.33,-100.37 98,-114.32 82.68,-119.5 67.23,-128.82 55.14,-137.27"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="53.01,-134.49 46.97,-143.19 57.12,-140.15 53.01,-134.49"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge31" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M255.83,-187.33C246.01,-191.09 235.82,-195.74 227,-201.32 208.15,-213.26 209.39,-223.69 191,-236.32 188.93,-237.74 186.75,-239.11 184.5,-240.42"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="182.82,-237.35 175.67,-245.16 186.13,-243.52 182.82,-237.35"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge33" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M247.99,-171.65C197.52,-167.84 119.41,-161.93 72.24,-158.37"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="72.34,-154.86 62.1,-157.6 71.81,-161.84 72.34,-154.86"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_semi_numerical_hessian~~UsesGraph_edge32" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M251.2,-163.32C235.44,-159.15 217.59,-154.42 201.09,-150.05"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="201.6,-146.56 191.03,-147.38 199.8,-153.33 201.6,-146.56"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_semi_numerical_hessianUsesGraph = svgPanZoom('#modulemqc_semi_numerical_hessianUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_semi_numerical_hessian~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_semi_numerical_hessianUsedByGraph" width="641pt" height="182pt"
+ viewBox="0.00 0.00 641.00 182.14" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph" class="graph" transform="scale(0.5 0.5) rotate(0) translate(4 360)">
+<title>module~~mqc_semi_numerical_hessian~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-360 1277,-360 1277,4 -4,4"/>
+<!-- module~mqc_semi_numerical_hessian -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node1" class="node">
+<title>module~mqc_semi_numerical_hessian</title>
+<polygon fill="none" stroke="black" points="172,-150 0,-150 0,-126 172,-126 172,-150"/>
+<text text-anchor="middle" x="86" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_semi_numerical_hessian</text>
+</g>
+<!-- module~mqc_method_dft -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node2" class="node">
+<title>module~mqc_method_dft</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node2"><a xlink:href="../module/mqc_method_dft.html" xlink:title="mqc_method_dft">
+<polygon fill="#337ab7" stroke="#337ab7" points="310,-171 208,-171 208,-147 310,-147 310,-171"/>
+<text text-anchor="middle" x="259" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_dft</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_dft&#45;&gt;module~mqc_semi_numerical_hessian -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_method_dft&#45;&gt;module~mqc_semi_numerical_hessian</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M207.62,-152.81C199.62,-151.83 191.12,-150.79 182.48,-149.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.66,-146.22 172.3,-148.48 181.8,-153.17 182.66,-146.22"/>
+</g>
+<!-- module~mqc_method_hf -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node3" class="node">
+<title>module~mqc_method_hf</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node3"><a xlink:href="../module/mqc_method_hf.html" xlink:title="mqc_method_hf">
+<polygon fill="#337ab7" stroke="#337ab7" points="308,-129 210,-129 210,-105 308,-105 308,-129"/>
+<text text-anchor="middle" x="259" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_hf</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_hf&#45;&gt;module~mqc_semi_numerical_hessian -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_method_hf&#45;&gt;module~mqc_semi_numerical_hessian</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M209.91,-122.91C201.19,-123.98 191.82,-125.13 182.28,-126.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="181.8,-122.83 172.3,-127.52 182.65,-129.78 181.8,-122.83"/>
+</g>
+<!-- module~mqc_method_factory -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node4" class="node">
+<title>module~mqc_method_factory</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node4"><a xlink:href="../module/mqc_method_factory.html" xlink:title="mqc_method_factory">
+<polygon fill="#337ab7" stroke="#337ab7" points="471,-150 346,-150 346,-126 471,-126 471,-150"/>
+<text text-anchor="middle" x="408.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_factory</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_method_factory&#45;&gt;module~mqc_method_dft -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_method_factory&#45;&gt;module~mqc_method_dft</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M345.8,-146.78C337.38,-147.98 328.75,-149.21 320.35,-150.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="319.67,-146.97 310.26,-151.84 320.66,-153.9 319.67,-146.97"/>
+</g>
+<!-- module~mqc_method_factory&#45;&gt;module~mqc_method_hf -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge4" class="edge">
+<title>module~mqc_method_factory&#45;&gt;module~mqc_method_hf</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M345.8,-129.22C336.74,-127.93 327.43,-126.6 318.43,-125.32"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="318.84,-121.84 308.44,-123.9 317.85,-128.77 318.84,-121.84"/>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node5" class="node">
+<title>module~mqc_mbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node5"><a xlink:href="../module/mqc_mbe_fragment_distribution_scheme.html" xlink:title="mqc_mbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="739,-192 507,-192 507,-168 739,-168 739,-192"/>
+<text text-anchor="middle" x="623" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_mbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge5" class="edge">
+<title>module~mqc_mbe_fragment_distribution_scheme&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M554.13,-167.97C538.62,-165.12 522.23,-162.03 507,-159 496.27,-156.87 484.9,-154.51 473.86,-152.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="474.35,-148.69 463.84,-150.02 472.89,-155.53 474.35,-148.69"/>
+</g>
+<!-- proc~hessian_coordinator -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node6" class="node">
+<title>proc~hessian_coordinator</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node6"><a xlink:href="../proc/hessian_coordinator.html" xlink:title="hessian_coordinator">
+<polygon fill="#d9534f" stroke="#d9534f" points="683.5,-150 562.5,-150 562.5,-126 683.5,-126 683.5,-150"/>
+<text text-anchor="middle" x="623" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_coordinator</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_coordinator&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge6" class="edge">
+<title>proc~hessian_coordinator&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M562.24,-138C537.1,-138 507.63,-138 481.32,-138"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="481.03,-134.5 471.03,-138 481.03,-141.5 481.03,-134.5"/>
+</g>
+<!-- proc~hessian_worker -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node7" class="node">
+<title>proc~hessian_worker</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node7"><a xlink:href="../proc/hessian_worker.html" xlink:title="hessian_worker">
+<polygon fill="#d9534f" stroke="#d9534f" points="670.5,-108 575.5,-108 575.5,-84 670.5,-84 670.5,-108"/>
+<text text-anchor="middle" x="623" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_worker</text>
+</a>
+</g>
+</g>
+<!-- proc~hessian_worker&#45;&gt;module~mqc_method_factory -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge7" class="edge">
+<title>proc~hessian_worker&#45;&gt;module~mqc_method_factory</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M575.49,-104.15C554.54,-107.91 529.49,-112.53 507,-117 496.27,-119.13 484.9,-121.49 473.86,-123.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="472.89,-120.47 463.84,-125.98 474.35,-127.31 472.89,-120.47"/>
+</g>
+<!-- module~mpi_fragment_work_smod -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node8" class="node">
+<title>module~mpi_fragment_work_smod</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node8"><a xlink:href="../module/mpi_fragment_work_smod.html" xlink:title="mpi_fragment_work_smod">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="971,-356 818,-356 818,-332 971,-332 971,-356"/>
+<text text-anchor="middle" x="894.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mpi_fragment_work_smod</text>
+</a>
+</g>
+</g>
+<!-- module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge13" class="edge">
+<title>module~mpi_fragment_work_smod&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" d="M817.73,-337.34C803.05,-334.2 788.15,-329.63 775,-323 715.47,-293 663.26,-231.89 638.78,-200.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="641.46,-197.88 632.63,-192.02 635.88,-202.11 641.46,-197.88"/>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node9" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node9"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="931,-314 858,-314 858,-290 931,-290 931,-314"/>
+<text text-anchor="middle" x="894.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge8" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M857.78,-297.5C833.74,-293.67 801.68,-287 775,-276 726.07,-255.82 675.39,-219.98 646.96,-198.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="648.92,-195.36 638.87,-192.01 644.64,-200.9 648.92,-195.36"/>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node10" class="node">
+<title>module~mqc_gmbe_fragment_distribution_scheme</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node10"><a xlink:href="../module/mqc_gmbe_fragment_distribution_scheme.html" xlink:title="mqc_gmbe_fragment_distribution_scheme">
+<polygon fill="#337ab7" stroke="#337ab7" points="1014,-234 775,-234 775,-210 1014,-210 1014,-234"/>
+<text text-anchor="middle" x="894.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_gmbe_fragment_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge9" class="edge">
+<title>module~mqc_gmbe_fragment_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M816.27,-209.96C783.43,-204.85 744.97,-198.85 711.12,-193.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="711.66,-190.12 701.24,-192.04 710.58,-197.04 711.66,-190.12"/>
+</g>
+<!-- module~mqc_hessian_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node11" class="node">
+<title>module~mqc_hessian_distribution_scheme</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node11"><a xlink:href="../module/mqc_hessian_distribution_scheme.html" xlink:title="mqc_hessian_distribution_scheme">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="991.5,-192 797.5,-192 797.5,-168 991.5,-168 991.5,-192"/>
+<text text-anchor="middle" x="894.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_hessian_distribution_scheme</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge14" class="edge">
+<title>module~mqc_hessian_distribution_scheme&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" d="M797.35,-180C781.7,-180 765.29,-180 749.07,-180"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="749.01,-176.5 739.01,-180 749.01,-183.5 749.01,-176.5"/>
+</g>
+<!-- module~mqc_serial_fragment_processor -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node12" class="node">
+<title>module~mqc_serial_fragment_processor</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node12"><a xlink:href="../module/mqc_serial_fragment_processor.html" xlink:title="mqc_serial_fragment_processor">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="985.5,-150 803.5,-150 803.5,-126 985.5,-126 985.5,-150"/>
+<text text-anchor="middle" x="894.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_serial_fragment_processor</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge15" class="edge">
+<title>module~mqc_serial_fragment_processor&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" d="M816.27,-150.04C783.43,-155.15 744.97,-161.15 711.12,-166.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="710.58,-162.96 701.24,-167.96 711.66,-169.88 710.58,-162.96"/>
+</g>
+<!-- module~mqc_unfragmented_workflow -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node13" class="node">
+<title>module~mqc_unfragmented_workflow</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node13"><a xlink:href="../module/mqc_unfragmented_workflow.html" xlink:title="mqc_unfragmented_workflow">
+<polygon fill="#5bc0de" stroke="#5bc0de" points="979.5,-108 809.5,-108 809.5,-84 979.5,-84 979.5,-108"/>
+<text text-anchor="middle" x="894.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_unfragmented_workflow</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge16" class="edge">
+<title>module~mqc_unfragmented_workflow&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" d="M809.38,-103.47C797.36,-106.63 785.52,-110.99 775,-117 753.65,-129.19 760.32,-146.75 739,-159 735.73,-160.88 732.32,-162.6 728.83,-164.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="727.33,-160.99 719.37,-167.98 729.95,-167.49 727.33,-160.99"/>
+</g>
+<!-- proc~gmbe_run_distributed -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node14" class="node">
+<title>proc~gmbe_run_distributed</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node14"><a xlink:href="../proc/gmbe_run_distributed.html" xlink:title="gmbe_context_t%gmbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="1273,-272 1050,-272 1050,-248 1273,-248 1273,-272"/>
+<text text-anchor="middle" x="1161.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge10" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1049.9,-265.3C972.1,-266.57 866.04,-263.33 775,-243 731.72,-233.34 685.08,-212.03 655.26,-196.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="656.69,-193.68 646.2,-192.2 653.48,-199.9 656.69,-193.68"/>
+</g>
+<!-- proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge19" class="edge">
+<title>proc~gmbe_run_distributed&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1076.65,-247.98C1048.85,-243.99 1017.72,-239.53 989.22,-235.44"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="989.65,-231.97 979.26,-234.01 988.66,-238.89 989.65,-231.97"/>
+</g>
+<!-- proc~mbe_run_distributed -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node15" class="node">
+<title>proc~mbe_run_distributed</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node15"><a xlink:href="../proc/mbe_run_distributed.html" xlink:title="mbe_context_t%mbe_run_distributed">
+<polygon fill="#d9534f" stroke="#d9534f" points="999,-66 790,-66 790,-42 999,-42 999,-66"/>
+<text text-anchor="middle" x="894.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_distributed</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge11" class="edge">
+<title>proc~mbe_run_distributed&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M789.85,-65.65C784.58,-68.27 779.58,-71.36 775,-75 743.18,-100.24 770.75,-133.67 739,-159 737.36,-160.31 735.67,-161.54 733.93,-162.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="731.75,-159.93 724.88,-167.99 735.28,-165.97 731.75,-159.93"/>
+</g>
+<!-- proc~mbe_run_serial -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node16" class="node">
+<title>proc~mbe_run_serial</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node16"><a xlink:href="../proc/mbe_run_serial.html" xlink:title="mbe_context_t%mbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="985,-24 804,-24 804,0 985,0 985,-24"/>
+<text text-anchor="middle" x="894.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mbe_context_t%mbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge12" class="edge">
+<title>proc~mbe_run_serial&#45;&gt;module~mqc_mbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M803.94,-16.58C793.31,-20.24 783.3,-25.51 775,-33 731.75,-72.01 782.14,-119.88 739,-159 737.83,-160.07 736.62,-161.08 735.37,-162.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="733.07,-159.39 726.74,-167.89 736.99,-165.19 733.07,-159.39"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node17" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node17"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="1244.5,-356 1078.5,-356 1078.5,-332 1244.5,-332 1244.5,-356"/>
+<text text-anchor="middle" x="1161.5" y="-341.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge17" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1084.56,-331.96C1038.23,-324.62 980.54,-315.48 941.15,-309.24"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="941.48,-305.74 931.05,-307.63 940.38,-312.66 941.48,-305.74"/>
+</g>
+<!-- proc~gmbe_run_serial -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node18" class="node">
+<title>proc~gmbe_run_serial</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node18"><a xlink:href="../proc/gmbe_run_serial.html" xlink:title="gmbe_context_t%gmbe_run_serial">
+<polygon fill="#d9534f" stroke="#d9534f" points="1259,-230 1064,-230 1064,-206 1259,-206 1259,-230"/>
+<text text-anchor="middle" x="1161.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">gmbe_context_t%gmbe_run_serial</text>
+</a>
+</g>
+</g>
+<!-- proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge20" class="edge">
+<title>proc~gmbe_run_serial&#45;&gt;module~mqc_gmbe_fragment_distribution_scheme</title>
+<path fill="none" stroke="#aaff00" stroke-dasharray="5,2" d="M1063.7,-219.46C1050.86,-219.65 1037.54,-219.86 1024.26,-220.06"/>
+<polygon fill="#aaff00" stroke="#aaff00" points="1024.07,-216.56 1014.13,-220.21 1024.18,-223.56 1024.07,-216.56"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_node19" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_semi_numerical_hessian~~UsedByGraph_node19"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1188.5,-314 1134.5,-314 1134.5,-290 1188.5,-290 1188.5,-314"/>
+<text text-anchor="middle" x="1161.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_semi_numerical_hessian~~UsedByGraph_edge18" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ffaa00" stroke-dasharray="5,2" d="M1134.12,-302C1089.23,-302 997.44,-302 941.7,-302"/>
+<polygon fill="#ffaa00" stroke="#ffaa00" points="941.4,-298.5 931.4,-302 941.4,-305.5 941.4,-298.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_semi_numerical_hessianUsedByGraph = svgPanZoom('#modulemqc_semi_numerical_hessianUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-finite_difference_hessian"></span> <h3>public  subroutine <a href='../proc/finite_difference_hessian.html'>finite_difference_hessian</a>(method, fragment, result, verbose)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Hessian of <code>method</code> at <code>fragment</code>, by central differences of gradients</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-method~4"></span>
+              class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>method</strong></td>
+            <td>
+<p>Any method with analytic gradients</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment~23"></span>
+              type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fragment</strong></td>
+            <td>
+<p>Reference geometry</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~32"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+<p>Energy, gradient and Hessian</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-verbose~6"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>verbose</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-fail"></span> <h3>private  subroutine <a href='../proc/fail.html'>fail</a>(result, point, direction, index)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Propagate a failed displacement outward with enough context to locate it</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-result~33"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>result</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-point~2"></span>
+              type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>point</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-direction~2"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>direction</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-index~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>index</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report_translational_sum_rule"></span> <h3>private  subroutine <a href='../proc/report_translational_sum_rule.html'>report_translational_sum_rule</a>(dipole_derivatives, charge, verbose)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Check the translational sum rule on the dipole derivatives</p><a href="../proc/report_translational_sum_rule.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dipole_derivatives~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dipole_derivatives</strong>(:,:)</td>
+            <td>
+<p>(3, 3*n_atoms)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charge~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>charge</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-verbose~7"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>verbose</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-06 06:26 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
