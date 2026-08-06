@@ -1,23 +1,26 @@
 # Plan: device-resident SCF and DIIS in the cuEST backend
 
-Status: steps 1–4 landed for the **restricted** path. Steps 1–2 are validated
-on the A100; steps 3–4 compile clean but have **not** been run on a GPU — see
-rule 1 below. `validation/run_cuest_validation.sh` is what decides.
+Status: all five steps landed for the **restricted** path. Steps 1–4 are
+validated on the A100; step 5 compiles clean but has **not** been run on a GPU
+— see rule 1 below. `validation/run_cuest_validation.sh` is what decides.
 
-Remaining: step 5 (diagonalisation, optional and profile-gated), and the
-unrestricted path, which still round-trips every term.
+Remaining: the unrestricted path, which still round-trips every term, and a
+timing run on step 5 (see below — it was gated on a profile it has not had).
 
-After step 4, one restricted SCF iteration costs:
+**The restricted SCF loop now performs no `n_ao²` transfers at all.** Per
+iteration, what crosses is:
 
 | | |
 |---|---|
-| H2D | density, occupied coefficients |
-| D2H | extrapolated Fock ×1 |
-| scalars | 2 energy traces, error norm, 1 DIIS overlap row |
+| H2D | nothing |
+| D2H | nothing of size `n_ao²` |
+| scalars | 3 energy contractions, DIIS error norm, 1 DIIS overlap row, solver info |
 | syncs | 1 (between the cuEST integrals and the cuBLAS reading them) |
 
-The Fock still comes down only because `diagonalize_fock` is host LAPACK.
-That is step 5, and it is the only host step left in the loop.
+Every scalar is a value the host needs to *decide* something — to print, to
+converge, or to solve the small DIIS system — rather than data in transit. The
+guess is uploaded once before the loop; density, occupied orbitals and orbital
+energies are fetched once after it.
 
 ---
 
@@ -161,13 +164,25 @@ transposition is needed — unlike cuEST's row-major matrices (see the header of
 After this the only per-iteration host traffic is the density H2D, the Fock
 D2H for diagonalisation, and two scalars (energy, error norm).
 
-### Step 5 — (optional, later) diagonalisation
+### Step 5 — Diagonalisation — DONE, needs timing
 
-`diagonalize_fock` is the remaining host step and the reason the Fock still
-comes back. Moving it needs cuSOLVER (`cusolverDnDsygvd`), which is a new
-binding set. Do this only if a profile says the transfer and the host
-diagonalisation actually matter — at moderate `n_ao` they may not, and it is
-by far the largest piece of new binding work.
+`diagonalize_fock` was the remaining host step and the reason the Fock came
+back at all. It is now `cusolverDnDsyevd` — **not** `Dsygvd`: the overlap is
+canonically orthogonalised once up front, which is what drops the near-null
+modes, and after that transform the problem is the ordinary symmetric one.
+
+`build_density` moved with it. That is the part that closes the loop: C is
+produced on the device, its occupied block sliced off there (free — both sides
+are column-major, so the first `n_occ` columns are the first `n_ao*n_occ`
+elements), and `D = 2 C_occ C_occ^T` never touches the host. What cuEST reads
+at the top of an iteration is what cuBLAS and cuSOLVER wrote at the bottom of
+the previous one.
+
+**This step was gated on a profile and has not had one.** cuSOLVER's `syevd`
+carries high fixed overhead, so at fragment-sized `n_mo` it may lose to host
+LAPACK even though it removes the last `n_ao²` transfer; the win grows with
+`n_ao`. Time it against the commit before it on a representative fragment and
+on a large single molecule. It is one commit, so `git revert` is the exit.
 
 ---
 

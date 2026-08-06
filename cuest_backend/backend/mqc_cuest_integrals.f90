@@ -104,6 +104,9 @@ module mqc_cuest_integrals
       !! cuEST objects and device buffers for a single molecule
       type(c_ptr) :: handle = c_null_ptr  !! Borrowed handle, not owned here
       type(c_ptr) :: cublas = c_null_ptr  !! Borrowed cuBLAS handle, not owned here
+      type(c_ptr) :: cusolver = c_null_ptr  !! Borrowed cuSOLVER handle, not owned here
+      integer(c_int) :: solver_lwork = 0
+         !! Doubles in `d_solver`, from a cuSOLVER bufferSize query
 
       ! cuEST objects, each with the persistent workspace that must outlive it
       type(c_ptr) :: basis = c_null_ptr       !! Primary (orbital) AO basis
@@ -170,7 +173,17 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_error = c_null_ptr  !! DIIS error vector, (n_mo, n_mo)
       type(c_ptr) :: d_transform = c_null_ptr   !! Orthogonalizer X, (n_ao, n_mo)
       type(c_ptr) :: d_commutator = c_null_ptr  !! FDS - SDF in the AO basis
-      type(c_ptr) :: d_work = c_null_ptr        !! Intermediate for the commutator
+      type(c_ptr) :: d_work = c_null_ptr
+         !! General scratch for the SCF's own linear algebra, n_ao^2. Every
+         !! user must treat it as clobbered on entry and must not expect it to
+         !! survive a call into anything else.
+
+      ! Fock diagonalization
+      type(c_ptr) :: d_fock_ortho = c_null_ptr    !! F' = X^T F X, then C'
+      type(c_ptr) :: d_orbitals = c_null_ptr      !! C = X C', (n_ao, n_mo)
+      type(c_ptr) :: d_eigenvalues = c_null_ptr   !! Orbital energies, (n_mo)
+      type(c_ptr) :: d_solver = c_null_ptr        !! cuSOLVER workspace
+      type(c_ptr) :: d_devinfo = c_null_ptr       !! cuSOLVER convergence flag
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy
@@ -242,6 +255,7 @@ contains
       n_atoms = size(atomic_numbers)
       this%handle = context%handle
       this%cublas = context%cublas_handle
+      this%cusolver = context%cusolver_handle
       this%n_atoms = int(n_atoms, c_int64_t)
       this%n_occ = int(n_occ, c_int64_t)
       this%unrestricted = present(n_occ_beta)
@@ -340,6 +354,10 @@ contains
       call context%scratch_transform%ensure(this%n_ao*this%n_ao, "orthogonalizer", error)
       call context%scratch_commutator%ensure(this%n_ao*this%n_ao, "commutator", error)
       call context%scratch_work%ensure(this%n_ao*this%n_ao, "commutator scratch", error)
+      call context%scratch_fock_ortho%ensure(this%n_ao*this%n_ao, "orthogonal Fock", error)
+      call context%scratch_orbitals%ensure(this%n_ao*this%n_ao, "molecular orbitals", error)
+      call context%scratch_eigenvalues%ensure(this%n_ao, "orbital energies", error)
+      call context%scratch_devinfo%ensure(1_c_int64_t, "eigensolver info", error)
       if (error%has_error()) then
          call error%add_context("mqc_cuest_integrals:create")
          return
@@ -354,6 +372,13 @@ contains
       this%d_transform = context%scratch_transform%ptr
       this%d_commutator = context%scratch_commutator%ptr
       this%d_work = context%scratch_work%ptr
+      this%d_fock_ortho = context%scratch_fock_ortho%ptr
+      this%d_orbitals = context%scratch_orbitals%ptr
+      this%d_eigenvalues = context%scratch_eigenvalues%ptr
+      this%d_devinfo = context%scratch_devinfo%ptr
+      ! `d_solver` is sized by a cuSOLVER bufferSize query, which needs n_mo --
+      ! not known until the overlap has been diagonalized. The SCF fills it in.
+      this%d_solver = c_null_ptr
 
       call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
       call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)
@@ -1891,6 +1916,11 @@ contains
       this%d_transform = c_null_ptr
       this%d_commutator = c_null_ptr
       this%d_work = c_null_ptr
+      this%d_fock_ortho = c_null_ptr
+      this%d_orbitals = c_null_ptr
+      this%d_eigenvalues = c_null_ptr
+      this%d_solver = c_null_ptr
+      this%d_devinfo = c_null_ptr
 
       if (c_associated(this%xc_plan)) status = cuestXCIntPlanDestroy(this%xc_plan)
       this%xc_plan = c_null_ptr
@@ -1925,6 +1955,8 @@ contains
 
       this%handle = c_null_ptr
       this%cublas = c_null_ptr
+      this%cusolver = c_null_ptr
+      this%solver_lwork = 0
       this%n_atoms = 0
       this%n_ao = 0
       this%n_occ = 0

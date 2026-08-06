@@ -19,11 +19,13 @@ module mqc_cuest_context
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, c_associated
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_runtime, only: cuest_status_check, cuda_status_check, &
-                                cublas_status_check, device_alloc, device_free
+                                cublas_status_check, cusolver_status_check, &
+                                device_alloc, device_free
    use cuest, only: cuestCreate, cuestDestroy, cuestParametersCreate, &
                     cuestParametersDestroy, cuestSetMathMode, &
                     CUEST_HANDLE_PARAMETERS, CUEST_NATIVE_FP64_MATH_MODE
    use cublas, only: cublasCreate, cublasDestroy
+   use cusolver, only: cusolverDnCreate, cusolverDnDestroy
    use cuda_runtime, only: cudaSetDevice, cudaGetDeviceCount
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -57,6 +59,9 @@ module mqc_cuest_context
          !! cublasHandle_t, for the SCF's own linear algebra on device-resident
          !! matrices. Created alongside the cuEST handle because it is bound to
          !! the same device and has the same per-rank lifetime.
+      type(c_ptr) :: cusolver_handle = c_null_ptr
+         !! cusolverDnHandle_t, for the Fock diagonalization. Same device, same
+         !! lifetime, same reason to create it once per rank.
       integer :: device_id = -1           !! CUDA device this handle is bound to
       logical :: initialized = .false.    !! Whether `handle` is live
 
@@ -95,6 +100,17 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_diis_fock   !! n_fock x max_vectors
       type(device_pool_t) :: scratch_diis_error  !! n_error x max_vectors
       type(device_pool_t) :: scratch_diis_row    !! max_vectors, one overlap row
+
+      ! Fock diagonalization. `scratch_solver` is cuSOLVER's own workspace,
+      ! sized by a bufferSize query rather than by anything derivable here.
+      type(device_pool_t) :: scratch_fock_ortho  !! F' = X^T F X, overwritten with C'
+      type(device_pool_t) :: scratch_orbitals    !! C = X C', (n_ao, n_mo)
+      type(device_pool_t) :: scratch_eigenvalues  !! Orbital energies, (n_mo)
+      type(device_pool_t) :: scratch_solver      !! cusolverDnDsyevd workspace
+      type(device_pool_t) :: scratch_devinfo
+         !! cuSOLVER's convergence flag, a single device int. Held as one
+         !! double because that is the unit the pools count in, and a double is
+         !! more than wide enough.
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -187,6 +203,10 @@ contains
       call cublas_status_check(cublasCreate(this%cublas_handle), "cublasCreate", error)
       if (error%has_error()) return
 
+      call cusolver_status_check(cusolverDnCreate(this%cusolver_handle), &
+                                 "cusolverDnCreate", error)
+      if (error%has_error()) return
+
       this%initialized = .true.
 
       ! Say which device this rank took. Without it a misbinding -- every rank
@@ -224,6 +244,14 @@ contains
       call this%scratch_diis_fock%release()
       call this%scratch_diis_error%release()
       call this%scratch_diis_row%release()
+      call this%scratch_fock_ortho%release()
+      call this%scratch_orbitals%release()
+      call this%scratch_eigenvalues%release()
+      call this%scratch_solver%release()
+      call this%scratch_devinfo%release()
+
+      if (c_associated(this%cusolver_handle)) status = cusolverDnDestroy(this%cusolver_handle)
+      this%cusolver_handle = c_null_ptr
 
       if (c_associated(this%cublas_handle)) status = cublasDestroy(this%cublas_handle)
       this%cublas_handle = c_null_ptr

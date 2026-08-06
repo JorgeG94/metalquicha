@@ -65,6 +65,13 @@ module cublas
    integer(c_int), parameter :: CUBLAS_POINTER_MODE_HOST = 0
    integer(c_int), parameter :: CUBLAS_POINTER_MODE_DEVICE = 1
 
+   ! ---- cublasFillMode_t -------------------------------------------------
+   ! Declared here rather than in cusolver.f90 because it is a cuBLAS type;
+   ! cuSOLVER's `uplo` arguments borrow it, as they do in the C headers.
+   integer(c_int), parameter :: CUBLAS_FILL_MODE_LOWER = 0
+   integer(c_int), parameter :: CUBLAS_FILL_MODE_UPPER = 1
+   integer(c_int), parameter :: CUBLAS_FILL_MODE_FULL = 2
+
    interface
 
       ! ---- handle lifetime ----------------------------------------------

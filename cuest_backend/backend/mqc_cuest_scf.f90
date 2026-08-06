@@ -6,20 +6,27 @@ module mqc_cuest_scf
    !! orthogonalization, diagonalization, DIIS and energy evaluation all live
    !! here.
    !!
-   !! The restricted path is device-resident. J, K and Vxc are built into
-   !! buffers of their own and assembled into a Fock matrix that never leaves
-   !! the card until it has to; the commutator FDS - SDF and its projection
-   !! into the orthogonal basis are cuBLAS; the DIIS history is device-side
-   !! too, so the extrapolation is a device-to-device combination. What crosses
-   !! per iteration is the density and the occupied coefficients going up, the
-   !! extrapolated Fock coming down, and a handful of scalars -- two energy
-   !! traces, the error norm, and one row of the DIIS overlap.
+   !! **The restricted SCF loop performs no n_ao^2 transfers.** J, K and Vxc are
+   !! built into buffers of their own and assembled into a Fock matrix on the
+   !! card; the commutator FDS - SDF and its projection into the orthogonal
+   !! basis are cuBLAS; the DIIS history is device-side, so the extrapolation
+   !! is a device-to-device combination; the Fock is diagonalized by cuSOLVER
+   !! and the density rebuilt from the resulting coefficients without either
+   !! ever crossing the bus. The loop closes on itself: what cuEST reads at the
+   !! top of an iteration is what cuBLAS and cuSOLVER wrote at the bottom of
+   !! the previous one.
    !!
-   !! The Fock still comes down because `diagonalize_fock` is host LAPACK, and
-   !! that is the last host step in the loop. Moving it needs cuSOLVER; whether
-   !! it is worth a new binding set is a question for a profile, not for a
-   !! guess -- at fragment-sized n_ao the O(N^3) host work is small next to the
-   !! integrals.
+   !! What does cross, per iteration, is scalars: three energy contractions,
+   !! the DIIS error norm, one row of the DIIS overlap matrix, and cuSOLVER's
+   !! convergence flag. Every one of them is a value the host needs in order to
+   !! decide something -- to print, to converge, or to solve the small DIIS
+   !! system -- rather than data in transit.
+   !!
+   !! The guess is uploaded once before the loop; the density, occupied
+   !! orbitals and orbital energies are fetched once after it, for the dipole,
+   !! the gradient and the printed frontier orbitals. The overlap
+   !! diagonalization that builds the orthogonalizer stays host LAPACK: it runs
+   !! once, outside the loop, and moving it would buy nothing per iteration.
    !!
    !! The unrestricted path below still round-trips every term. It is the same
    !! transformation twice over with a second spin channel, and has not been
@@ -46,7 +53,7 @@ module mqc_cuest_scf
    !! directly and is NOT 1/2 sum D Vxc -- writing the energy as
    !! 1/2 sum D (H + F), which is correct for pure HF, would double count the
    !! XC contribution.
-   use, intrinsic :: iso_c_binding, only: c_int
+   use, intrinsic :: iso_c_binding, only: c_int, c_int64_t
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
@@ -56,8 +63,12 @@ module mqc_cuest_scf
    use mqc_diis_device, only: diis_device_t
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_context, only: cuest_context_t
-   use mqc_cuest_runtime, only: device_sync, cublas_status_check
-   use cublas, only: cublasDgemm, cublasDnrm2, CUBLAS_OP_N, CUBLAS_OP_T
+   use mqc_cuest_runtime, only: device_sync, cublas_status_check, &
+                                cusolver_status_check, copy_int_to_host, copy_to_host
+   use cublas, only: cublasDgemm, cublasDnrm2, cublasDcopy, CUBLAS_OP_N, CUBLAS_OP_T, &
+                     CUBLAS_FILL_MODE_UPPER
+   use cusolver, only: cusolverDnDsyevd, cusolverDnDsyevd_bufferSize, &
+                       CUSOLVER_EIG_MODE_VECTOR
    implicit none
    private
 
@@ -348,7 +359,7 @@ contains
       type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
-      real(dp) :: xc_energy, trace_j, trace_k
+      real(dp) :: xc_energy, trace_h, trace_j, trace_k
       logical :: diis_ok
 
       guess_type = SCF_GUESS_GWH
@@ -431,24 +442,34 @@ contains
          write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
-      ! The core Hamiltonian, the overlap and the orthogonalizer are all
-      ! iteration-invariant, so they go to the device once and stay there:
-      ! every Fock assembly starts from H, and every commutator reads S and X.
+      ! Everything the loop reads goes up here, and nothing of size n_ao^2 goes
+      ! either way again until it is over.
+      !
+      ! H, S and X are iteration-invariant. The density and the occupied
+      ! coefficients are not, but they are the *guess*: from the first
+      ! diagonalization onwards the device produces its own, so this is the
+      ! only time they are uploaded rather than computed in place.
       call system%stage_to(system%d_core, core_hamiltonian, "core Hamiltonian", error)
       call system%stage_to(system%d_ovlp, overlap, "overlap matrix", error)
       call system%stage_to(system%d_transform, transform, "orthogonalizer", error)
+      call system%stage_density(density, error)
+      call system%stage_occupied(occupied(:, 1:n_occ), error)
       if (error%has_error()) then
-         call error%add_context("mqc_cuest_scf:iteration-invariant upload")
+         call error%add_context("mqc_cuest_scf:initial upload")
          return
       end if
 
+      call solver_workspace(system, context, n_mo, error)
+      if (error%has_error()) return
+
+      ! The guess has served its purpose. Neither the host Fock nor the host
+      ! orbitals are read again -- the loop below produces and consumes both on
+      ! the device -- so drop them rather than carrying two dead n_ao^2 arrays
+      ! for the rest of the run.
+      deallocate (fock, orbitals)
+
       ! ---- SCF iterations --------------------------------------------------
       do iteration = 1, max_iterations
-         ! K and Vxc read the same occupied coefficients, so one upload serves
-         ! both -- where the old path uploaded them once per call.
-         call system%stage_density(density, error)
-         call system%stage_occupied(occupied(:, 1:n_occ), error)
-
          call system%coulomb_device(system%d_matrix, system%d_j, error)
 
          ! A pure functional has no exact exchange; cuEST would compute K and
@@ -483,10 +504,14 @@ contains
             call system%matrix_dot(system%d_matrix, system%d_k, trace_k, "D.K", error)
          end if
 
-         ! The energy needs no Fock matrix -- the two traces already carry
-         ! everything J and K contribute -- so it is available here, before the
-         ! Fock has been anywhere near the host.
-         electronic_energy = sum(density*core_hamiltonian) &
+         ! The energy is three device contractions and a scalar cuEST already
+         ! handed back. No matrix is needed on the host to compute it.
+         call system%matrix_dot(system%d_matrix, system%d_core, trace_h, "D.H", error)
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_scf:energy traces")
+            return
+         end if
+         electronic_energy = trace_h &
                              + 0.5_dp*trace_j &
                              - 0.5_dp*trace_k &
                              + xc_energy
@@ -528,26 +553,33 @@ contains
             end if
          end if
 
-         ! The one n_ao^2 transfer left in the iteration, and the only reason
-         ! the Fock comes back at all: diagonalization is still host LAPACK.
-         ! It sits after the extrapolation so the matrix crosses once, not
-         ! once before DIIS and again after.
-         call system%fetch(system%d_fock, fock, "F", error)
+         ! ---- new orbitals and density --------------------------------------
+         ! Diagonalize, slice off the occupied block and rebuild the density,
+         ! all on the card. This closes the loop: the density and coefficients
+         ! the next iteration's J, K and Vxc read are already where cuEST wants
+         ! them, so nothing of size n_ao^2 crosses the bus at all.
+         call diagonalize_fock_device(system, n_ao, n_mo, n_occ, error)
          if (error%has_error()) then
-            call error%add_context("mqc_cuest_scf:Fock fetch")
+            call error%add_context("mqc_cuest_scf:diagonalization")
             return
          end if
-
-         ! ---- new orbitals and density --------------------------------------
-         deallocate (orbitals, orbital_energies)
-         call diagonalize_fock(fock, transform, orbitals, orbital_energies, error)
-         if (error%has_error()) return
-
-         occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
-         call build_density(occupied(:, 1:n_occ), density)
       end do
 
       if (.not. result%converged) result%iterations = max_iterations
+
+      ! Bring the converged state back, once. Everything below this line is a
+      ! consumer on the host -- the dipole, the gradient, the printed orbital
+      ! energies -- so this is where the loop's residency ends.
+      !
+      ! On the converged iteration the loop exits before diagonalizing, so
+      ! these hold the orbitals and density that produced the Fock just
+      ! accepted, which is the same pairing the host path produced.
+      call fetch_scf_state(system, n_ao, n_mo, n_occ, density, occupied, &
+                           orbital_energies, error)
+      if (error%has_error()) then
+         call error%add_context("mqc_cuest_scf:converged state fetch")
+         return
+      end if
 
       result%electronic_energy = electronic_energy
       result%xc_energy = xc_energy
@@ -914,6 +946,152 @@ contains
       call pic_gemm(occupied(:, 1:n_occ), occupied(:, 1:n_occ), density, &
                     transb="T", alpha=1.0_dp, beta=0.0_dp)
    end subroutine set_spin_density
+
+   subroutine fetch_scf_state(system, n_ao, n_mo, n_occ, density, occupied, &
+                              orbital_energies, error)
+      !! Bring the density, occupied orbitals and orbital energies back once
+      !!
+      !! The SCF loop leaves all three on the device. Their host consumers --
+      !! the dipole, the gradient's energy-weighted density, the printed
+      !! frontier orbitals -- run after convergence, so one transfer each at
+      !! the end serves them all.
+      type(cuest_system_t), intent(inout) :: system
+      integer, intent(in) :: n_ao, n_mo, n_occ
+      real(dp), intent(inout) :: density(:, :)   !! (n_ao, n_ao)
+      real(dp), intent(inout) :: occupied(:, :)  !! (n_ao, >= n_occ)
+      real(dp), allocatable, intent(inout) :: orbital_energies(:)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: flat(:)
+
+      if (error%has_error()) return
+
+      call system%fetch(system%d_matrix, density, "converged density", error)
+      if (error%has_error()) return
+
+      if (allocated(orbital_energies)) deallocate (orbital_energies)
+      allocate (orbital_energies(n_mo))
+      call copy_to_host(orbital_energies, system%d_eigenvalues, "orbital energies", error)
+      if (error%has_error()) return
+
+      if (n_occ <= 0) return
+
+      ! Column-major on both sides, so the occupied block comes back as one
+      ! contiguous n_ao*n_occ run with no repacking.
+      allocate (flat(n_ao*n_occ))
+      call copy_to_host(flat, system%d_c_occ, "occupied orbitals", error)
+      if (.not. error%has_error()) occupied(:, 1:n_occ) = reshape(flat, [n_ao, n_occ])
+      deallocate (flat)
+   end subroutine fetch_scf_state
+
+   subroutine solver_workspace(system, context, n_mo, error)
+      !! Size cuSOLVER's workspace for an n_mo eigenproblem and pool it
+      !!
+      !! The requirement depends on n_mo alone, not on the matrix, so this runs
+      !! once before the SCF loop rather than once per iteration.
+      type(cuest_system_t), intent(inout) :: system
+      type(cuest_context_t), intent(inout) :: context
+      integer, intent(in) :: n_mo
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: lwork
+
+      if (error%has_error()) return
+
+      lwork = 0
+      call cusolver_status_check(cusolverDnDsyevd_bufferSize(system%cusolver, &
+                                                             CUSOLVER_EIG_MODE_VECTOR, &
+                                                             CUBLAS_FILL_MODE_UPPER, &
+                                                             int(n_mo, c_int), &
+                                                             system%d_fock_ortho, &
+                                                             int(n_mo, c_int), &
+                                                             system%d_eigenvalues, lwork), &
+                                 "cusolverDnDsyevd_bufferSize", error)
+      if (error%has_error()) return
+
+      call context%scratch_solver%ensure(int(max(lwork, 1), c_int64_t), &
+                                         "eigensolver workspace", error)
+      if (error%has_error()) return
+      system%d_solver = context%scratch_solver%ptr
+      system%solver_lwork = lwork
+   end subroutine solver_workspace
+
+   subroutine diagonalize_fock_device(system, n_ao, n_mo, n_occ, error)
+      !! Solve FC = SCe on the device and rebuild the density from the result
+      !!
+      !! The device twin of `diagonalize_fock` plus `build_density`, which the
+      !! unrestricted path still uses and which are the reference this was
+      !! written against. Doing both here is what keeps the density on the
+      !! card: C is produced on the device, the occupied block is sliced off it
+      !! on the device, and D = 2 C_occ C_occ^T never touches the host.
+      !!
+      !! Slicing is free because both are column-major: the first n_occ columns
+      !! of C are its first n_ao*n_occ elements, contiguous.
+      type(cuest_system_t), intent(inout) :: system
+      integer, intent(in) :: n_ao, n_mo, n_occ
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: m, k, devinfo
+
+      if (error%has_error()) return
+
+      m = int(n_ao, c_int)
+      k = int(n_mo, c_int)
+
+      ! F' = X^T F X, through the same scratch the commutator used -- which is
+      ! dead by now, the DIIS having already consumed its output.
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, k, m, 1.0_dp, system%d_fock, m, &
+                                           system%d_transform, m, 0.0_dp, system%d_work, m), &
+                               "cublasDgemm(F X)", error)
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_T, CUBLAS_OP_N, &
+                                           k, k, m, 1.0_dp, system%d_transform, m, &
+                                           system%d_work, m, 0.0_dp, system%d_fock_ortho, k), &
+                               "cublasDgemm(X^T F X)", error)
+      if (error%has_error()) return
+
+      ! Overwrites d_fock_ortho with the eigenvectors C', which is why F' gets
+      ! a buffer of its own rather than sharing one with something still live.
+      call cusolver_status_check(cusolverDnDsyevd(system%cusolver, &
+                                                  CUSOLVER_EIG_MODE_VECTOR, &
+                                                  CUBLAS_FILL_MODE_UPPER, k, &
+                                                  system%d_fock_ortho, k, &
+                                                  system%d_eigenvalues, system%d_solver, &
+                                                  system%solver_lwork, system%d_devinfo), &
+                                 "cusolverDnDsyevd", error)
+      if (error%has_error()) return
+
+      ! cuSOLVER reports non-convergence through this device int, not through
+      ! the status above. Skipping the check would let a failed eigensolve pass
+      ! for a successful one with meaningless orbitals.
+      call copy_int_to_host(devinfo, system%d_devinfo, "eigensolver info", error)
+      if (error%has_error()) return
+      if (devinfo /= 0) then
+         call error%set(ERROR_VALIDATION, &
+                        "cuEST SCF: device Fock diagonalization failed (cusolverDnDsyevd info /= 0)")
+         return
+      end if
+
+      ! Back-transform C = X C'
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, k, k, 1.0_dp, system%d_transform, m, &
+                                           system%d_fock_ortho, k, 0.0_dp, &
+                                           system%d_orbitals, m), &
+                               "cublasDgemm(X C')", error)
+
+      if (n_occ <= 0) return
+
+      ! The occupied block, and the density it implies. Two electrons per
+      ! spatial orbital, hence the 2.
+      call cublas_status_check(cublasDcopy(system%cublas, int(n_ao*n_occ, c_int), &
+                                           system%d_orbitals, 1, system%d_c_occ, 1), &
+                               "cublasDcopy(occupied orbitals)", error)
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_T, &
+                                           m, m, int(n_occ, c_int), 2.0_dp, &
+                                           system%d_c_occ, m, system%d_c_occ, m, &
+                                           0.0_dp, system%d_matrix, m), &
+                               "cublasDgemm(2 C_occ C_occ^T)", error)
+   end subroutine diagonalize_fock_device
 
    subroutine commutator_error_device(system, n_ao, n_mo, error_norm, error)
       !! X^T (FDS - SDF) X and its norm, entirely on the device
