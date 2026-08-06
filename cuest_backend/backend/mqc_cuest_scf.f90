@@ -1,11 +1,18 @@
 !! Restricted Hartree-Fock SCF driven by cuEST integrals
 module mqc_cuest_scf
-   !! Closed-shell SCF on the host, with every integral supplied by cuEST.
+   !! Closed-shell SCF, with every integral supplied by cuEST.
    !!
    !! cuEST provides S, T, V, J and K but no SCF machinery, so the
    !! orthogonalization, diagonalization, DIIS and energy evaluation all live
-   !! here and run on the CPU through pic-blas/LAPACK. For fragment-sized
-   !! molecules the O(N^3) host work is small next to the integrals.
+   !! here. For fragment-sized molecules the O(N^3) work is small next to the
+   !! integrals, which is why most of it is still host LAPACK.
+   !!
+   !! The restricted path keeps the Fock matrix on the device: J, K and Vxc are
+   !! built into buffers of their own, combined there, and only the assembled
+   !! F comes back -- one n_ao^2 transfer and one synchronise per iteration
+   !! instead of three of each. The two energy traces come back as scalars.
+   !! The unrestricted path below still round-trips every term; it is the same
+   !! transformation twice over and has not been done yet.
    !!
    !! Exchange is density-fitted, which is not a choice: cuEST exposes no
    !! conventional four-index ERI path, so an auxiliary (JKFIT) basis is
@@ -34,6 +41,7 @@ module mqc_cuest_scf
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
    use mqc_cuest_integrals, only: cuest_system_t
+   use mqc_cuest_runtime, only: device_sync
    implicit none
    private
 
@@ -315,14 +323,13 @@ contains
       real(dp), allocatable :: fock_scratch(:, :)
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
       real(dp), allocatable :: core_hamiltonian(:, :), fock(:, :), density(:, :)
-      real(dp), allocatable :: coulomb(:, :), exchange(:, :), xc_potential(:, :)
       real(dp), allocatable :: transform(:, :), orbitals(:, :), orbital_energies(:)
       real(dp), allocatable :: occupied(:, :), diis_error(:, :), error_ortho(:, :)
       real(dp), allocatable :: scratch(:, :), ortho_scratch(:, :)
       type(diis_state_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
-      real(dp) :: xc_energy
+      real(dp) :: xc_energy, trace_j, trace_k
       logical :: diis_ok
 
       guess_type = SCF_GUESS_GWH
@@ -384,8 +391,7 @@ contains
       occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
       call build_density(occupied(:, 1:n_occ), density)
 
-      allocate (coulomb(n_ao, n_ao), exchange(n_ao, n_ao), diis_error(n_ao, n_ao))
-      allocate (xc_potential(n_ao, n_ao))
+      allocate (diis_error(n_ao, n_ao))
       xc_energy = 0.0_dp
       allocate (error_ortho(n_mo, n_mo), scratch(n_ao, n_ao), ortho_scratch(n_ao, n_mo))
       if (use_diis) then
@@ -407,28 +413,66 @@ contains
          write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
+      ! The core Hamiltonian does not change between iterations, so it goes to
+      ! the device once and every Fock assembly below starts from that copy.
+      call system%stage_to(system%d_core, core_hamiltonian, "core Hamiltonian", error)
+      if (error%has_error()) then
+         call error%add_context("mqc_cuest_scf:core Hamiltonian upload")
+         return
+      end if
+
       ! ---- SCF iterations --------------------------------------------------
       do iteration = 1, max_iterations
-         call system%compute_coulomb(density, coulomb, error)
+         ! K and Vxc read the same occupied coefficients, so one upload serves
+         ! both -- where the old path uploaded them once per call.
+         call system%stage_density(density, error)
+         call system%stage_occupied(occupied(:, 1:n_occ), error)
+
+         call system%coulomb_device(system%d_matrix, system%d_j, error)
 
          ! A pure functional has no exact exchange; cuEST would compute K and
          ! then scale it by zero, so its own header advises skipping the call.
+         ! Skipped here means d_k is never written, which is why the assembly
+         ! below is told whether to add it rather than adding a zeroed buffer.
          if (system%needs_exchange) then
-            call system%compute_exchange(occupied(:, 1:n_occ), exchange, error)
-         else
-            exchange = 0.0_dp
+            call system%exchange_device(system%d_c_occ, system%d_k, error)
          end if
 
-         call system%compute_xc(occupied(:, 1:n_occ), xc_energy, xc_potential, error)
+         call system%xc_device(system%d_c_occ, system%d_xc, xc_energy, error)
+
+         ! The one synchronise in the iteration, standing between the cuEST
+         ! integrals and the cuBLAS that consumes them: cuEST is free to queue
+         ! its work on a stream of its own, and a cuBLAS call reading J before
+         ! the Coulomb kernel has finished writing it would produce plausible
+         ! numbers rather than an error.
+         call device_sync("Fock terms", error)
          if (error%has_error()) then
             call error%add_context("mqc_cuest_scf:Fock build")
             return
          end if
 
-         fock = core_hamiltonian + coulomb - exchange + xc_potential
+         ! F = H + J - K + Vxc, assembled where the terms already are.
+         call system%assemble_fock(system%needs_exchange, system%has_xc, error)
+
+         ! The two energy traces come back as scalars instead of dragging J and
+         ! K across with them.
+         call system%matrix_dot(system%d_matrix, system%d_j, trace_j, "D.J", error)
+         trace_k = 0.0_dp
+         if (system%needs_exchange) then
+            call system%matrix_dot(system%d_matrix, system%d_k, trace_k, "D.K", error)
+         end if
+
+         ! The only n_ao^2 transfer left in the iteration. Its own synchronise
+         ! is a no-op by now; the device went idle at the one above.
+         call system%fetch(system%d_fock, fock, "F", error)
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_scf:Fock build")
+            return
+         end if
+
          electronic_energy = sum(density*core_hamiltonian) &
-                             + 0.5_dp*sum(density*coulomb) &
-                             - 0.5_dp*sum(density*exchange) &
+                             + 0.5_dp*trace_j &
+                             - 0.5_dp*trace_k &
                              + xc_energy
          energy_change = electronic_energy - previous_energy
          previous_energy = electronic_energy

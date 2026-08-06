@@ -188,7 +188,7 @@ module mqc_cuest_integrals
       procedure :: exchange_device => system_exchange_device
       procedure :: xc_device => system_xc_device
       procedure :: assemble_fock => system_assemble_fock
-      procedure :: density_trace => system_density_trace
+      procedure :: matrix_dot => system_matrix_dot
       procedure :: fetch => system_fetch
       procedure :: gradient_overlap => system_gradient_overlap
       procedure :: gradient_kinetic => system_gradient_kinetic
@@ -1287,26 +1287,31 @@ contains
       end if
    end subroutine system_assemble_fock
 
-   subroutine system_density_trace(this, device_ptr, trace, error)
-      !! sum_uv D_uv M_uv for a device-resident symmetric M
+   subroutine system_matrix_dot(this, d_a, d_b, dot, label, error)
+      !! sum_uv A_uv B_uv for two device-resident n_ao x n_ao matrices
       !!
-      !! The Frobenius inner product of two symmetric matrices is the dot
-      !! product of their flattenings, so layout does not enter. Note that the
-      !! result comes back through a host pointer, which makes this call
-      !! blocking: two per iteration is fine, a loop over them is not.
+      !! The Frobenius inner product is the dot product of the flattenings, so
+      !! the row-major/column-major difference does not enter -- and for the
+      !! symmetric matrices the SCF feeds it, neither does which one is which.
+      !!
+      !! The result comes back through a HOST pointer, so this call blocks
+      !! until the stream drains. Two per iteration is fine; a loop over one
+      !! per DIIS vector would be a synchronise per vector, which is what
+      !! cublasDgemv exists to avoid.
       class(cuest_system_t), intent(inout) :: this
-      type(c_ptr), intent(in) :: device_ptr  !! M, (n_ao, n_ao) on device
-      real(dp), intent(out) :: trace
+      type(c_ptr), intent(in) :: d_a, d_b     !! (n_ao, n_ao) on device
+      real(dp), intent(out) :: dot
+      character(len=*), intent(in) :: label   !! What is being contracted, for errors
       type(error_t), intent(inout) :: error
 
-      trace = 0.0_dp
+      dot = 0.0_dp
       if (error%has_error()) return
 
       call cublas_status_check(cublasDdot(this%cublas, int(this%n_ao*this%n_ao, c_int), &
-                                          this%d_matrix, 1, device_ptr, 1, trace), &
-                               "cublasDdot(density trace)", error)
-      if (error%has_error()) trace = 0.0_dp
-   end subroutine system_density_trace
+                                          d_a, 1, d_b, 1, dot), &
+                               "cublasDdot("//trim(label)//")", error)
+      if (error%has_error()) dot = 0.0_dp
+   end subroutine system_matrix_dot
 
    ! ==========================================================================
    !  Nuclear derivatives
