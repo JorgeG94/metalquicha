@@ -33,8 +33,10 @@ module mqc_cuest_integrals
    use mqc_cuest_basis, only: cuest_shell_set_t, build_cuest_shells
    use mqc_cuest_grid, only: atom_grid_set_t, build_atom_grids
    use mqc_cuest_context, only: cuest_context_t
-   use mqc_cuest_runtime, only: cuest_status_check, workspace_alloc, workspace_free, &
+   use mqc_cuest_runtime, only: cuest_status_check, cublas_status_check, &
+                                workspace_alloc, workspace_free, &
                                 copy_to_device, copy_to_host, device_sync
+   use cublas, only: cublasDaxpy, cublasDcopy, cublasDdot
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, &
                     cuestParametersCreate, cuestParametersDestroy, &
                     cuestAOBasisCreate, cuestAOBasisCreateWorkspaceQuery, cuestAOBasisDestroy, &
@@ -101,6 +103,7 @@ module mqc_cuest_integrals
    type :: cuest_system_t
       !! cuEST objects and device buffers for a single molecule
       type(c_ptr) :: handle = c_null_ptr  !! Borrowed handle, not owned here
+      type(c_ptr) :: cublas = c_null_ptr  !! Borrowed cuBLAS handle, not owned here
 
       ! cuEST objects, each with the persistent workspace that must outlive it
       type(c_ptr) :: basis = c_null_ptr       !! Primary (orbital) AO basis
@@ -155,6 +158,15 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_result = c_null_ptr  !! Whichever matrix is being built
       type(c_ptr) :: d_gradient = c_null_ptr        !! natom x 3 gradient output
       type(c_ptr) :: d_charge_gradient = c_null_ptr  !! Hellmann-Feynman half
+
+      ! One buffer per Fock term, so the three can coexist and be combined on
+      ! the device instead of each being fetched before the next overwrites it.
+      type(c_ptr) :: d_j = c_null_ptr     !! Coulomb output
+      type(c_ptr) :: d_k = c_null_ptr     !! Exchange output
+      type(c_ptr) :: d_xc = c_null_ptr    !! XC potential output
+      type(c_ptr) :: d_fock = c_null_ptr  !! Assembled Fock
+      type(c_ptr) :: d_core = c_null_ptr  !! Core Hamiltonian, iteration-invariant
+      type(c_ptr) :: d_ovlp = c_null_ptr  !! Overlap, iteration-invariant
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy
@@ -166,6 +178,18 @@ module mqc_cuest_integrals
       procedure :: compute_xc => system_compute_xc
       procedure :: compute_dipole => system_compute_dipole
       procedure :: compute_xc_uks => system_compute_xc_uks
+
+      ! Device-resident SCF path: stage inputs, compute into a chosen output
+      ! buffer without fetching, combine, and fetch once at the end.
+      procedure :: stage_density => system_stage_density
+      procedure :: stage_occupied => system_stage_occupied
+      procedure :: stage_to => system_stage_to
+      procedure :: coulomb_device => system_coulomb_device
+      procedure :: exchange_device => system_exchange_device
+      procedure :: xc_device => system_xc_device
+      procedure :: assemble_fock => system_assemble_fock
+      procedure :: density_trace => system_density_trace
+      procedure :: fetch => system_fetch
       procedure :: gradient_overlap => system_gradient_overlap
       procedure :: gradient_kinetic => system_gradient_kinetic
       procedure :: gradient_potential => system_gradient_potential
@@ -213,6 +237,7 @@ contains
 
       n_atoms = size(atomic_numbers)
       this%handle = context%handle
+      this%cublas = context%cublas_handle
       this%n_atoms = int(n_atoms, c_int64_t)
       this%n_occ = int(n_occ, c_int64_t)
       this%unrestricted = present(n_occ_beta)
@@ -288,6 +313,25 @@ contains
       end if
       this%d_matrix = context%scratch_density%ptr
       this%d_result = context%scratch_result%ptr
+
+      ! Fock terms. Six extra n_ao^2 buffers is 48 MB at n_ao = 1000, against
+      ! the 40-80 GB of an A100 or H100 -- cheap next to what it removes.
+      call context%scratch_j%ensure(this%n_ao*this%n_ao, "Coulomb matrix", error)
+      call context%scratch_k%ensure(this%n_ao*this%n_ao, "exchange matrix", error)
+      call context%scratch_xc%ensure(this%n_ao*this%n_ao, "XC potential", error)
+      call context%scratch_fock%ensure(this%n_ao*this%n_ao, "Fock matrix", error)
+      call context%scratch_core%ensure(this%n_ao*this%n_ao, "core Hamiltonian", error)
+      call context%scratch_ovlp%ensure(this%n_ao*this%n_ao, "overlap matrix", error)
+      if (error%has_error()) then
+         call error%add_context("mqc_cuest_integrals:create")
+         return
+      end if
+      this%d_j = context%scratch_j%ptr
+      this%d_k = context%scratch_k%ptr
+      this%d_xc = context%scratch_xc%ptr
+      this%d_fock = context%scratch_fock%ptr
+      this%d_core = context%scratch_core%ptr
+      this%d_ovlp = context%scratch_ovlp%ptr
 
       call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
       call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)
@@ -608,12 +652,16 @@ contains
       call cuest_status_check(status, "cuestParametersDestroy(UKS XC potential)", error)
 
       call fetch_matrix(this, vxc_alpha, "Vxc alpha", error)
-      call fetch_named_matrix(this, this%d_result_beta, vxc_beta, "Vxc beta", error)
+      call this%fetch(this%d_result_beta, vxc_beta, "Vxc beta", error)
       if (.not. error%has_error()) xc_energy = energy
    end subroutine system_compute_xc_uks
 
-   subroutine fetch_named_matrix(this, device_ptr, matrix, label, error)
-      !! Copy an n_ao x n_ao matrix back from an explicitly named device buffer
+   subroutine system_fetch(this, device_ptr, matrix, label, error)
+      !! Synchronize, then copy an n_ao x n_ao device buffer into a host matrix
+      !!
+      !! The synchronize is what makes this safe to call on a buffer some cuEST
+      !! or cuBLAS call has only *queued* work into. Every fetch in this module
+      !! goes through here for that reason.
       class(cuest_system_t), intent(inout) :: this
       type(c_ptr), intent(in) :: device_ptr
       real(dp), intent(out) :: matrix(:, :)
@@ -625,11 +673,14 @@ contains
       matrix = 0.0_dp
       if (error%has_error()) return
 
+      call device_sync(label, error)
+      if (error%has_error()) return
+
       allocate (flat(this%n_ao*this%n_ao))
       call copy_to_host(flat, device_ptr, label, error)
       if (.not. error%has_error()) matrix = reshape(flat, [int(this%n_ao), int(this%n_ao)])
       deallocate (flat)
-   end subroutine fetch_named_matrix
+   end subroutine system_fetch
 
    subroutine build_xc_plan(this, atomic_numbers, functional_id, n_radial, n_angular, error)
       !! Build the molecular quadrature grid and the XC integral plan
@@ -732,36 +783,28 @@ contains
                               "query XC plan range-separation parameter", error)
    end subroutine build_xc_plan
 
-   subroutine system_compute_xc(this, c_occ, xc_energy, xc_potential, error)
-      !! Exchange-correlation energy and potential from occupied MO coefficients
+   subroutine system_xc_device(this, d_c_occ, d_out, xc_energy, error)
+      !! RKS exchange-correlation potential, device in and device out
+      !!
+      !! `xc_energy` is a host scalar even here -- cuEST writes Exc through a
+      !! host pointer, which is why this one call does synchronize internally
+      !! whatever the surrounding code does. On a pure Hartree-Fock system
+      !! there is no XC plan, so `d_out` is left untouched and the energy is
+      !! zero: skip the term rather than adding a stale buffer.
       class(cuest_system_t), intent(inout) :: this
-      real(dp), intent(in) :: c_occ(:, :)           !! (n_ao, n_occ)
-      real(dp), intent(out) :: xc_energy            !! Exc, Hartree
-      real(dp), intent(out) :: xc_potential(:, :)   !! Vxc, (n_ao, n_ao)
+      type(c_ptr), intent(in) :: d_c_occ  !! Occupied MOs, (n_ao, n_occ) on device
+      type(c_ptr), intent(in) :: d_out    !! Vxc, (n_ao, n_ao) on device
+      real(dp), intent(out) :: xc_energy  !! Exc, Hartree
       type(error_t), intent(inout) :: error
 
       type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params
       integer(c_int) :: status
-      real(dp), allocatable :: flat(:)
       real(dp), target :: energy
 
       xc_energy = 0.0_dp
-      if (error%has_error()) then
-         xc_potential = 0.0_dp
-         return
-      end if
-      if (.not. this%has_xc) then
-         xc_potential = 0.0_dp
-         return
-      end if
-
-      allocate (flat(size(c_occ)))
-      flat = reshape(c_occ, [size(c_occ)])
-      call copy_to_device(this%d_c_occ, flat, "occupied MO coefficients (XC)", error)
-      deallocate (flat)
-      if (error%has_error()) return
+      if (error%has_error() .or. .not. this%has_xc) return
 
       params = c_null_ptr
       call cuest_status_check(cuestParametersCreate(CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, params), &
@@ -776,15 +819,15 @@ contains
       call cuest_status_check(cuestXCPotentialRKSComputeWorkspaceQuery(this%handle, this%xc_plan, &
                                                                        params, variable_buffer, &
                                                                        temporary_desc, this%n_occ, &
-                                                                       this%d_c_occ, c_loc(energy), &
-                                                                       this%d_result), &
+                                                                       d_c_occ, c_loc(energy), &
+                                                                       d_out), &
                               "cuestXCPotentialRKSComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestXCPotentialRKSCompute(this%handle, this%xc_plan, params, &
                                                             variable_buffer, temporary_ws, &
-                                                            this%n_occ, this%d_c_occ, &
-                                                            c_loc(energy), this%d_result), &
+                                                            this%n_occ, d_c_occ, &
+                                                            c_loc(energy), d_out), &
                                  "cuestXCPotentialRKSCompute", error)
       end if
 
@@ -792,8 +835,27 @@ contains
       status = cuestParametersDestroy(CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, params)
       call cuest_status_check(status, "cuestParametersDestroy(RKS XC potential)", error)
 
-      call fetch_matrix(this, xc_potential, "Vxc", error)
       if (.not. error%has_error()) xc_energy = energy
+   end subroutine system_xc_device
+
+   subroutine system_compute_xc(this, c_occ, xc_energy, xc_potential, error)
+      !! Exchange-correlation energy and potential from host MO coefficients
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ(:, :)           !! (n_ao, n_occ)
+      real(dp), intent(out) :: xc_energy            !! Exc, Hartree
+      real(dp), intent(out) :: xc_potential(:, :)   !! Vxc, (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+
+      xc_energy = 0.0_dp
+      xc_potential = 0.0_dp
+      if (error%has_error() .or. .not. this%has_xc) return
+
+      call this%stage_occupied(c_occ, error)
+      if (error%has_error()) return
+
+      call this%xc_device(this%d_c_occ, this%d_result, xc_energy, error)
+      call fetch_matrix(this, xc_potential, "Vxc", error)
+      if (error%has_error()) xc_energy = 0.0_dp
    end subroutine system_compute_xc
 
    subroutine system_compute_dipole(this, density, dipole, error)
@@ -989,25 +1051,22 @@ contains
       call fetch_matrix(this, potential, "V", error)
    end subroutine system_compute_potential
 
-   subroutine system_compute_coulomb(this, density, coulomb, error)
-      !! Density-fitted Coulomb matrix J from a density matrix
+   subroutine system_coulomb_device(this, d_density, d_out, error)
+      !! Density-fitted Coulomb matrix J, device in and device out
+      !!
+      !! Neither uploads nor fetches: the density is already on the device and
+      !! J is left there for the caller to combine. The work is queued, not
+      !! completed -- synchronize before reading `d_out` from the host.
       class(cuest_system_t), intent(inout) :: this
-      real(dp), intent(in) :: density(:, :)   !! (n_ao, n_ao), symmetric
-      real(dp), intent(out) :: coulomb(:, :)  !! (n_ao, n_ao)
+      type(c_ptr), intent(in) :: d_density  !! Density, (n_ao, n_ao) on device
+      type(c_ptr), intent(in) :: d_out      !! J, (n_ao, n_ao) on device
       type(error_t), intent(inout) :: error
 
       type(cuestWorkspaceDescriptor_t) :: temporary_desc
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params
       integer(c_int) :: status
-      real(dp), allocatable :: flat(:)
 
-      if (error%has_error()) return
-
-      allocate (flat(size(density)))
-      flat = reshape(density, [size(density)])
-      call copy_to_device(this%d_matrix, flat, "density matrix", error)
-      deallocate (flat)
       if (error%has_error()) return
 
       params = c_null_ptr
@@ -1017,55 +1076,64 @@ contains
 
       call cuest_status_check(cuestDFCoulombComputeWorkspaceQuery(this%handle, this%df_plan, &
                                                                   params, temporary_desc, &
-                                                                  this%d_matrix, this%d_result), &
+                                                                  d_density, d_out), &
                               "cuestDFCoulombComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestDFCoulombCompute(this%handle, this%df_plan, params, &
-                                                       temporary_ws, this%d_matrix, this%d_result), &
+                                                       temporary_ws, d_density, d_out), &
                                  "cuestDFCoulombCompute", error)
       end if
 
       call workspace_free(temporary_ws)
       status = cuestParametersDestroy(CUEST_DFCOULOMBCOMPUTE_PARAMETERS, params)
       call cuest_status_check(status, "cuestParametersDestroy(DF Coulomb)", error)
+   end subroutine system_coulomb_device
 
+   subroutine system_compute_coulomb(this, density, coulomb, error)
+      !! Density-fitted Coulomb matrix J from a host density matrix
+      !!
+      !! The host-to-host form, kept for the gradient path and the atomic
+      !! guess. The SCF drives `coulomb_device` instead.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)   !! (n_ao, n_ao), symmetric
+      real(dp), intent(out) :: coulomb(:, :)  !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+
+      if (error%has_error()) return
+
+      call stage_matrix(this, this%d_matrix, density, "density matrix", error)
+      if (error%has_error()) return
+
+      call this%coulomb_device(this%d_matrix, this%d_result, error)
       call fetch_matrix(this, coulomb, "J", error)
    end subroutine system_compute_coulomb
 
-   subroutine system_compute_exchange(this, c_occ, exchange, error, n_occupied)
-      !! Density-fitted exchange matrix K from occupied MO coefficients
+   subroutine system_exchange_device(this, d_c_occ, d_out, error, n_occupied)
+      !! Density-fitted exchange matrix K, device in and device out
       !!
       !! `n_occupied` overrides the stored count, which is what the two spin
-      !! channels of an unrestricted calculation need.
+      !! channels of an unrestricted calculation need. An empty spin channel is
+      !! the caller's problem here: with nothing to contract, `d_out` is left
+      !! untouched rather than being zeroed, so skip the term instead of
+      !! adding it.
       class(cuest_system_t), intent(inout) :: this
-      real(dp), intent(in) :: c_occ(:, :)      !! (n_ao, n_occ)
-      real(dp), intent(out) :: exchange(:, :)  !! (n_ao, n_ao)
+      type(c_ptr), intent(in) :: d_c_occ  !! Occupied MOs, (n_ao, n_occ) on device
+      type(c_ptr), intent(in) :: d_out    !! K, (n_ao, n_ao) on device
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_occupied
-      integer(c_int64_t) :: occupancy
 
       type(cuestWorkspaceDescriptor_t) :: temporary_desc, variable_buffer
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params
       integer(c_int) :: status
-      real(dp), allocatable :: flat(:)
+      integer(c_int64_t) :: occupancy
 
       if (error%has_error()) return
 
       occupancy = this%n_occ
       if (present(n_occupied)) occupancy = int(n_occupied, c_int64_t)
-
-      if (occupancy <= 0) then
-         exchange = 0.0_dp
-         return
-      end if
-
-      allocate (flat(size(c_occ)))
-      flat = reshape(c_occ, [size(c_occ)])
-      call copy_to_device(this%d_c_occ, flat, "occupied MO coefficients", error)
-      deallocate (flat)
-      if (error%has_error()) return
+      if (occupancy <= 0) return
 
       params = c_null_ptr
       call cuest_status_check(cuestParametersCreate(CUEST_DFSYMMETRICEXCHANGECOMPUTE_PARAMETERS, &
@@ -1080,51 +1148,165 @@ contains
                                                                             this%df_plan, params, &
                                                                             variable_buffer, &
                                                                             temporary_desc, &
-                                                                            occupancy, this%d_c_occ, &
-                                                                            this%d_result), &
+                                                                            occupancy, d_c_occ, &
+                                                                            d_out), &
                               "cuestDFSymmetricExchangeComputeWorkspaceQuery", error)
       if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
       if (.not. error%has_error()) then
          call cuest_status_check(cuestDFSymmetricExchangeCompute(this%handle, this%df_plan, &
                                                                  params, variable_buffer, &
                                                                  temporary_ws, occupancy, &
-                                                                 this%d_c_occ, this%d_result), &
+                                                                 d_c_occ, d_out), &
                                  "cuestDFSymmetricExchangeCompute", error)
       end if
 
       call workspace_free(temporary_ws)
       status = cuestParametersDestroy(CUEST_DFSYMMETRICEXCHANGECOMPUTE_PARAMETERS, params)
       call cuest_status_check(status, "cuestParametersDestroy(DF exchange)", error)
+   end subroutine system_exchange_device
 
+   subroutine system_compute_exchange(this, c_occ, exchange, error, n_occupied)
+      !! Density-fitted exchange matrix K from host occupied MO coefficients
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ(:, :)      !! (n_ao, n_occ)
+      real(dp), intent(out) :: exchange(:, :)  !! (n_ao, n_ao)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_occupied
+
+      integer(c_int64_t) :: occupancy
+
+      if (error%has_error()) return
+
+      occupancy = this%n_occ
+      if (present(n_occupied)) occupancy = int(n_occupied, c_int64_t)
+      if (occupancy <= 0) then
+         exchange = 0.0_dp
+         return
+      end if
+
+      call this%stage_occupied(c_occ, error)
+      if (error%has_error()) return
+
+      call this%exchange_device(this%d_c_occ, this%d_result, error, n_occupied=n_occupied)
       call fetch_matrix(this, exchange, "K", error)
    end subroutine system_compute_exchange
 
    subroutine fetch_matrix(this, matrix, label, error)
-      !! Synchronize, then copy the result buffer back into a host matrix
+      !! Synchronize, then copy the shared result buffer into a host matrix
       class(cuest_system_t), intent(inout) :: this
       real(dp), intent(out) :: matrix(:, :)
       character(len=*), intent(in) :: label
       type(error_t), intent(inout) :: error
 
+      call this%fetch(this%d_result, matrix, label, error)
+   end subroutine fetch_matrix
+
+   ! ==========================================================================
+   !  Device-resident SCF support
+   !
+   !  Staging puts a host matrix into a named device buffer; the compute_*
+   !  _device routines above leave their results there; assembly and traces
+   !  then run on the device through cuBLAS. Only the assembled Fock and two
+   !  scalars cross back per SCF iteration.
+   ! ==========================================================================
+
+   subroutine system_stage_to(this, device_ptr, matrix, label, error)
+      !! Copy a host n_ao x n_ao matrix into a caller-chosen device buffer
+      !!
+      !! Matrices crossing this boundary are symmetric, so the row-major /
+      !! column-major difference is a no-op -- see the note at the top of this
+      !! module before staging anything that is not.
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: device_ptr
+      real(dp), intent(in) :: matrix(:, :)
+      character(len=*), intent(in) :: label
+      type(error_t), intent(inout) :: error
+
+      call stage_matrix(this, device_ptr, matrix, label, error)
+   end subroutine system_stage_to
+
+   subroutine system_stage_density(this, density, error)
+      !! Copy the host density into the shared density buffer
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: density(:, :)  !! (n_ao, n_ao), symmetric
+      type(error_t), intent(inout) :: error
+
+      call stage_matrix(this, this%d_matrix, density, "density matrix", error)
+   end subroutine system_stage_density
+
+   subroutine system_stage_occupied(this, c_occ, error)
+      !! Copy the host occupied MO coefficients into the shared alpha buffer
+      !!
+      !! K and Vxc take the same coefficients, so the SCF stages once per
+      !! iteration and both device routines read the result.
+      class(cuest_system_t), intent(inout) :: this
+      real(dp), intent(in) :: c_occ(:, :)  !! (n_ao, n_occ)
+      type(error_t), intent(inout) :: error
+
       real(dp), allocatable :: flat(:)
 
-      if (error%has_error()) then
-         matrix = 0.0_dp
-         return
-      end if
-
-      call device_sync(label, error)
       if (error%has_error()) return
 
-      allocate (flat(this%n_ao*this%n_ao))
-      call copy_to_host(flat, this%d_result, label, error)
-      if (.not. error%has_error()) then
-         matrix = reshape(flat, [this%n_ao, this%n_ao])
-      else
-         matrix = 0.0_dp
-      end if
+      allocate (flat(size(c_occ)))
+      flat = reshape(c_occ, [size(c_occ)])
+      call copy_to_device(this%d_c_occ, flat, "occupied MO coefficients", error)
       deallocate (flat)
-   end subroutine fetch_matrix
+   end subroutine system_stage_occupied
+
+   subroutine system_assemble_fock(this, add_exchange, add_xc, error)
+      !! F := H + J - K + Vxc, entirely on the device
+      !!
+      !! `add_exchange` and `add_xc` say whether those buffers hold anything.
+      !! A pure functional never runs the exchange call and Hartree-Fock never
+      !! runs the XC call, and in both cases the buffer holds whatever the last
+      !! fragment left there -- adding it would be the classic silent
+      !! stale-memory failure, so the term is skipped rather than zeroed.
+      class(cuest_system_t), intent(inout) :: this
+      logical, intent(in) :: add_exchange  !! Whether d_k was written this iteration
+      logical, intent(in) :: add_xc        !! Whether d_xc was written this iteration
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: n
+
+      if (error%has_error()) return
+      n = int(this%n_ao*this%n_ao, c_int)
+
+      call cublas_status_check(cublasDcopy(this%cublas, n, this%d_core, 1, this%d_fock, 1), &
+                               "cublasDcopy(H -> F)", error)
+      call cublas_status_check(cublasDaxpy(this%cublas, n, 1.0_dp, this%d_j, 1, this%d_fock, 1), &
+                               "cublasDaxpy(+J)", error)
+      if (add_exchange) then
+         call cublas_status_check(cublasDaxpy(this%cublas, n, -1.0_dp, this%d_k, 1, &
+                                              this%d_fock, 1), &
+                                  "cublasDaxpy(-K)", error)
+      end if
+      if (add_xc) then
+         call cublas_status_check(cublasDaxpy(this%cublas, n, 1.0_dp, this%d_xc, 1, &
+                                              this%d_fock, 1), &
+                                  "cublasDaxpy(+Vxc)", error)
+      end if
+   end subroutine system_assemble_fock
+
+   subroutine system_density_trace(this, device_ptr, trace, error)
+      !! sum_uv D_uv M_uv for a device-resident symmetric M
+      !!
+      !! The Frobenius inner product of two symmetric matrices is the dot
+      !! product of their flattenings, so layout does not enter. Note that the
+      !! result comes back through a host pointer, which makes this call
+      !! blocking: two per iteration is fine, a loop over them is not.
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: device_ptr  !! M, (n_ao, n_ao) on device
+      real(dp), intent(out) :: trace
+      type(error_t), intent(inout) :: error
+
+      trace = 0.0_dp
+      if (error%has_error()) return
+
+      call cublas_status_check(cublasDdot(this%cublas, int(this%n_ao*this%n_ao, c_int), &
+                                          this%d_matrix, 1, device_ptr, 1, trace), &
+                               "cublasDdot(density trace)", error)
+      if (error%has_error()) trace = 0.0_dp
+   end subroutine system_density_trace
 
    ! ==========================================================================
    !  Nuclear derivatives
@@ -1184,7 +1366,7 @@ contains
          return
       end if
 
-      call stage_matrix(this, weighted_density, "energy-weighted density", error)
+      call stage_matrix(this, this%d_matrix, weighted_density, "energy-weighted density", error)
       if (error%has_error()) return
 
       params = c_null_ptr
@@ -1228,7 +1410,7 @@ contains
          return
       end if
 
-      call stage_matrix(this, density, "density (kinetic gradient)", error)
+      call stage_matrix(this, this%d_matrix, density, "density (kinetic gradient)", error)
       if (error%has_error()) return
 
       params = c_null_ptr
@@ -1277,7 +1459,7 @@ contains
          return
       end if
 
-      call stage_matrix(this, density, "density (potential gradient)", error)
+      call stage_matrix(this, this%d_matrix, density, "density (potential gradient)", error)
       if (error%has_error()) return
 
       params = c_null_ptr
@@ -1347,7 +1529,7 @@ contains
          return
       end if
 
-      call stage_matrix(this, half_density, "half density (JK gradient)", error)
+      call stage_matrix(this, this%d_matrix, half_density, "half density (JK gradient)", error)
       if (error%has_error()) return
 
       ! A pure functional has no exchange term; the header allows passing zero
@@ -1493,7 +1675,7 @@ contains
       n_a = int(this%n_occ)
       n_b = int(this%n_occ_beta)
 
-      call stage_matrix(this, total_density, "total density (UKS JK gradient)", error)
+      call stage_matrix(this, this%d_matrix, total_density, "total density (UKS JK gradient)", error)
       if (error%has_error()) return
 
       if (this%needs_exchange) then
@@ -1614,18 +1796,21 @@ contains
       call fetch_gradient(this, gradient, "dExc/dR (UKS)", error)
    end subroutine system_gradient_xc_uks
 
-   subroutine stage_matrix(this, matrix, label, error)
-      !! Copy an n_ao x n_ao host matrix into the shared device input buffer
+   subroutine stage_matrix(this, device_ptr, matrix, label, error)
+      !! Copy an n_ao x n_ao host matrix into a named device buffer
       class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: device_ptr
       real(dp), intent(in) :: matrix(:, :)
       character(len=*), intent(in) :: label
       type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: flat(:)
 
+      if (error%has_error()) return
+
       allocate (flat(size(matrix)))
       flat = reshape(matrix, [size(matrix)])
-      call copy_to_device(this%d_matrix, flat, label, error)
+      call copy_to_device(device_ptr, flat, label, error)
       deallocate (flat)
    end subroutine stage_matrix
 
@@ -1666,6 +1851,12 @@ contains
       this%d_charge_gradient = c_null_ptr
       this%xyz_device = c_null_ptr
       this%charges_device = c_null_ptr
+      this%d_j = c_null_ptr
+      this%d_k = c_null_ptr
+      this%d_xc = c_null_ptr
+      this%d_fock = c_null_ptr
+      this%d_core = c_null_ptr
+      this%d_ovlp = c_null_ptr
 
       if (c_associated(this%xc_plan)) status = cuestXCIntPlanDestroy(this%xc_plan)
       this%xc_plan = c_null_ptr
@@ -1699,6 +1890,7 @@ contains
       if (allocated(this%charges_host)) deallocate (this%charges_host)
 
       this%handle = c_null_ptr
+      this%cublas = c_null_ptr
       this%n_atoms = 0
       this%n_ao = 0
       this%n_occ = 0

@@ -19,10 +19,11 @@ module mqc_cuest_context
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, c_associated
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_runtime, only: cuest_status_check, cuda_status_check, &
-                                device_alloc, device_free
+                                cublas_status_check, device_alloc, device_free
    use cuest, only: cuestCreate, cuestDestroy, cuestParametersCreate, &
                     cuestParametersDestroy, cuestSetMathMode, &
                     CUEST_HANDLE_PARAMETERS, CUEST_NATIVE_FP64_MATH_MODE
+   use cublas, only: cublasCreate, cublasDestroy
    use cuda_runtime, only: cudaSetDevice, cudaGetDeviceCount
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
@@ -51,6 +52,10 @@ module mqc_cuest_context
    type :: cuest_context_t
       !! A live cuEST handle bound to one GPU, plus reusable device scratch
       type(c_ptr) :: handle = c_null_ptr  !! cuestHandle_t
+      type(c_ptr) :: cublas_handle = c_null_ptr
+         !! cublasHandle_t, for the SCF's own linear algebra on device-resident
+         !! matrices. Created alongside the cuEST handle because it is bound to
+         !! the same device and has the same per-rank lifetime.
       integer :: device_id = -1           !! CUDA device this handle is bound to
       logical :: initialized = .false.    !! Whether `handle` is live
 
@@ -67,6 +72,17 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_charges  !! Nuclear charges
       type(device_pool_t) :: scratch_gradient  !! natom x 3 gradient output
       type(device_pool_t) :: scratch_charge_gradient  !! Hellmann-Feynman half
+
+      ! One output buffer per Fock term. `scratch_result` alone cannot serve
+      ! all three: J, K and Vxc would each have to be pulled to the host before
+      ! the next call overwrote it, which is what forced the round trip the
+      ! device-resident path exists to remove.
+      type(device_pool_t) :: scratch_j     !! Coulomb output
+      type(device_pool_t) :: scratch_k     !! Exchange output
+      type(device_pool_t) :: scratch_xc    !! XC potential output
+      type(device_pool_t) :: scratch_fock  !! Assembled Fock, stays resident
+      type(device_pool_t) :: scratch_core  !! Core Hamiltonian, uploaded once
+      type(device_pool_t) :: scratch_ovlp  !! Overlap, uploaded once
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -153,6 +169,12 @@ contains
                               "cuestSetMathMode(native FP64)", error)
       if (error%has_error()) return
 
+      ! cuBLAS binds to whatever device is current, which cudaSetDevice above
+      ! has already fixed. The handle is left in its default
+      ! CUBLAS_POINTER_MODE_HOST, which is what the bindings assume.
+      call cublas_status_check(cublasCreate(this%cublas_handle), "cublasCreate", error)
+      if (error%has_error()) return
+
       this%initialized = .true.
 
       ! Say which device this rank took. Without it a misbinding -- every rank
@@ -177,6 +199,15 @@ contains
       call this%scratch_charges%release()
       call this%scratch_gradient%release()
       call this%scratch_charge_gradient%release()
+      call this%scratch_j%release()
+      call this%scratch_k%release()
+      call this%scratch_xc%release()
+      call this%scratch_fock%release()
+      call this%scratch_core%release()
+      call this%scratch_ovlp%release()
+
+      if (c_associated(this%cublas_handle)) status = cublasDestroy(this%cublas_handle)
+      this%cublas_handle = c_null_ptr
 
       if (c_associated(this%handle)) status = cuestDestroy(this%handle)
       this%handle = c_null_ptr

@@ -17,6 +17,7 @@ module mqc_cuest_runtime
    use mqc_error, only: error_t, ERROR_VALIDATION
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, CUEST_STATUS_SUCCESS
    use cuest_helpers, only: cuest_status_name
+   use cublas, only: CUBLAS_STATUS_SUCCESS, cublas_status_name
    use cuda_runtime, only: cudaMalloc, cudaFree, cudaMemcpy, cudaSuccess, &
                            cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost, &
                            cudaDeviceSynchronize
@@ -26,6 +27,7 @@ module mqc_cuest_runtime
 
    public :: cuest_status_check   !! Turn a cuEST status into an error_t
    public :: cuda_status_check    !! Turn a CUDA status into an error_t
+   public :: cublas_status_check  !! Turn a cuBLAS status into an error_t
    public :: device_sync          !! cudaDeviceSynchronize with error_t
    public :: workspace_alloc, workspace_free  !! cuestWorkspace_t lifecycle
    public :: device_alloc, device_free        !! Device buffers counted in doubles
@@ -79,6 +81,19 @@ contains
                      " -> "//trim(cuda_error_name(status))//": "// &
                      trim(cuda_error_string(status)))
    end subroutine cuda_status_check
+
+   subroutine cublas_status_check(status, context, error)
+      !! Record a failed cuBLAS status as an error
+      integer(c_int), intent(in) :: status      !! Status returned by a cuBLAS call
+      character(len=*), intent(in) :: context   !! What was being attempted
+      type(error_t), intent(inout) :: error
+
+      if (status == CUBLAS_STATUS_SUCCESS) return
+      if (error%has_error()) return
+
+      call error%set(ERROR_VALIDATION, "cuBLAS call failed: "//trim(context)// &
+                     " -> "//trim(cublas_status_name(status)))
+   end subroutine cublas_status_check
 
    subroutine device_sync(context, error)
       !! Block until all queued GPU work has completed
