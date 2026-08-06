@@ -80,6 +80,7 @@ class Model:
     method: str
     basis: Optional[str] = None
     aux_basis: Optional[str] = None
+    functional: Optional[str] = None
 
 
 @dataclass
@@ -98,6 +99,8 @@ class SCF:
     """SCF convergence settings."""
     maxiter: int
     tolerance: float
+    unrestricted: Optional[bool] = None
+    guess: Optional[str] = None
 
 
 @dataclass

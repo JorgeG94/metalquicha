@@ -211,7 +211,7 @@ contains
             do iatom = 1, sys_geom%total_atoms
                block
                   character(len=256) :: grad_line
-                  write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                  write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                      total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
                   call logger%info(trim(grad_line))
                end block
@@ -356,7 +356,8 @@ contains
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64), intent(in) :: n_pie_terms
-      integer, intent(in) :: node_leader_ranks(:), num_nodes
+      integer, intent(in) ::  num_nodes
+      integer, intent(in) :: node_leader_ranks(:)
       integer, intent(in) :: group_leader_ranks(:)
       integer, intent(in) :: group_ids(:)
       integer, intent(in) :: global_groups
@@ -624,7 +625,7 @@ contains
                do iatom = 1, sys_geom%total_atoms
                   block
                      character(len=256) :: grad_line
-                     write (grad_line, '(a,i5,a,3f20.12)') "  Atom ", iatom, ": ", &
+                     write (grad_line, "(a,i5,a,3f20.12)") "  Atom ", iatom, ": ", &
                         total_gradient(1, iatom), total_gradient(2, iatom), total_gradient(3, iatom)
                      call logger%info(trim(grad_line))
                   end block

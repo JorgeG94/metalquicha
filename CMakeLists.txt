@@ -22,9 +22,39 @@ add_subdirectory(cmake)
 include(demo_status)
 
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
-option(MQC_ENABLE_LIBCINT "Link to libcint for ERI computations" OFF)
 option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
-mark_as_advanced(MQC_ENABLE_LIBCINT)
+option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
+set(CUEST_ROOT
+    ""
+    CACHE PATH "Root of the unpacked libcuest-<ver>-archive (needs lib/)")
+set(MQC_CUEST_BINDINGS
+    "vendored"
+    CACHE STRING "Where the cuEST Fortran bindings come from: vendored | fetch")
+set_property(CACHE MQC_CUEST_BINDINGS PROPERTY STRINGS vendored fetch)
+set(MQC_CUEST_BINDINGS_TAG
+    "main"
+    CACHE STRING "Git tag/branch of mod_cuest when MQC_CUEST_BINDINGS=fetch")
+
+# Basis sets come out of the Basis Set Exchange bundle at configure time. Add a
+# name here (lowercase, as BSE spells it) to have it extracted; the bundle has
+# every basis BSE publishes, so nothing needs downloading. basis_sets/*.json is
+# derived entirely from this list -- anything else found there is deleted -- so
+# removing a name here removes it from the build.
+set(MQC_BASIS_BUNDLE
+    "basis_sets-json-0.12.tar.bz2"
+    CACHE STRING "Basis Set Exchange bundle under basis_sets/")
+set(MQC_BASIS_SETS
+    # Pople, Dunning, and the auxiliaries the validation inputs name
+    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
+    # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
+    "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
+    "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
+    "def2-qzvp;def2-qzvp-rifit;def2-qzvpd;def2-qzvpp;def2-qzvpp-rifit;def2-qzvppd;def2-qzvppd-rifit"
+    "def2-mtzvp;def2-mtzvpp;def2-mtzvpp-rij;def2-universal-jfit;def2-universal-jkfit;def2-ecp"
+    CACHE STRING "Basis sets to extract from ${MQC_BASIS_BUNDLE}")
+
+include(ExtractBasisSets)
+mqc_extract_basis_sets()
 
 add_library(${main_lib} STATIC)
 set_target_properties(${main_lib} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -57,11 +87,30 @@ else()
   target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_TBLITE)
 endif()
 
-if(MQC_ENABLE_LIBCINT)
-  find_package(libcint REQUIRED)
-  list(APPEND libraries_to_link libcint::cint_fortran)
-else()
-  target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_LIBCINT)
+# NVIDIA cuEST -- GPU integrals behind the HF/DFT methods.
+#
+# Only the shared library is needed to build: the Fortran bindings under
+# src/cuest_bindings are pre-generated and vendored, so the cuEST headers are
+# not required here. Linking libcuest.so by full path makes CMake set the rpath
+# for us.
+#
+# Runtime note: cuEST ships GPU code for sm_80 and newer only. It compiles and
+# links anywhere, but on an older card (Volta/V100, e.g. the Gadi login node)
+# cuestCreate returns CUEST_STATUS_UNSUPPORTED_ARCHITECTURE.
+if(MQC_ENABLE_CUEST)
+  if(NOT CUEST_ROOT)
+    message(
+      FATAL_ERROR "MQC_ENABLE_CUEST=ON requires -DCUEST_ROOT=<cuest archive>")
+  endif()
+  find_library(
+    CUEST_LIBRARY
+    NAMES cuest
+    PATHS "${CUEST_ROOT}/lib"
+    NO_DEFAULT_PATH REQUIRED)
+  find_package(CUDAToolkit REQUIRED)
+  list(APPEND libraries_to_link ${CUEST_LIBRARY} CUDA::cudart)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CUEST)
+  message(STATUS "cuEST enabled: ${CUEST_LIBRARY}")
 endif()
 
 if(NOT TARGET "jsonfortran::jsonfortran")
@@ -75,6 +124,13 @@ find_package(
   REQUIRED)
 
 add_subdirectory(src)
+
+# The cuEST backend lives outside src/ on purpose: the fpm build globs all of
+# src/, and fpm cannot link the cuEST binary library, so fpm builds the CPU/xTB
+# path only. CMake adds the backend explicitly here.
+if(MQC_ENABLE_CUEST)
+  add_subdirectory(cuest_backend)
+endif()
 
 if(MQC_ENABLE_TESTING)
   add_subdirectory(test)
@@ -98,6 +154,16 @@ target_include_directories(${main_lib} PRIVATE "${jsonfortran_BINARY_DIR}")
 add_dependencies(${main_lib} jsonfortran)
 
 add_executable(${exe_name} ${PROJECT_SOURCE_DIR}/app/main.f90)
+
+# Finite-difference check on the analytic gradient. Not a ctest case: it needs a
+# GPU of sm_80 or newer, so it cannot run in CI or on a login node.
+if(MQC_ENABLE_CUEST)
+  add_executable(check_gradient
+                 ${PROJECT_SOURCE_DIR}/validation/check_gradient.f90)
+  target_include_directories(check_gradient
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_gradient PRIVATE ${main_lib})
+endif()
 
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})

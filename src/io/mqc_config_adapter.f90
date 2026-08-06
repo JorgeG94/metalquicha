@@ -45,19 +45,37 @@ module mqc_config_adapter
 
 contains
 
-   subroutine config_to_driver(mqc_config, driver_config, molecule_index)
+   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank)
       !! Convert mqc_config_t to minimal driver_config_t
       !! Extracts only the fields needed by the driver
       !! If molecule_index is provided, uses that molecule's fragment count
       type(mqc_config_t), intent(in) :: mqc_config
       type(driver_config_t), intent(out) :: driver_config
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
+      integer, intent(in), optional :: node_rank  !! Node-local MPI rank, for GPU binding
 
       integer :: nfrag_to_use
 
       ! Build method configuration
       driver_config%method_config%method_type = mqc_config%method
       driver_config%method_config%verbose = .false.  ! Controlled by logger level in do_fragment_work
+
+      ! Node-local rank, so several ranks on one node land on distinct GPUs.
+      if (present(node_rank)) driver_config%method_config%device_rank = node_rank
+
+      ! Basis sets. Ignored by the semi-empirical methods, required by HF/DFT.
+      ! The auxiliary set is not optional for the cuEST backend: J and K are
+      ! always density-fitted there, so leaving it unset would fail at run time
+      ! rather than silently fall back.
+      if (allocated(mqc_config%basis)) then
+         driver_config%method_config%basis_set = mqc_config%basis
+      end if
+      if (allocated(mqc_config%aux_basis)) then
+         driver_config%method_config%scf%aux_basis_set = mqc_config%aux_basis
+      end if
+      if (allocated(mqc_config%functional)) then
+         driver_config%method_config%dft%functional = mqc_config%functional
+      end if
 
       ! Configure XTB solvation settings
       call driver_config%method_config%xtb%configure( &
@@ -118,6 +136,10 @@ contains
       driver_config%aimd%output_frequency = mqc_config%aimd_output_frequency
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
+      driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
+      if (allocated(mqc_config%scf_guess)) then
+         driver_config%method_config%scf%guess = mqc_config%scf_guess
+      end if
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output
@@ -140,7 +162,7 @@ contains
       ! Determine units
       use_angstrom = .true.
       if (allocated(mqc_config%units)) then
-         if (trim(mqc_config%units) == 'bohr') then
+         if (trim(mqc_config%units) == "bohr") then
             use_angstrom = .false.
          end if
       end if
@@ -357,19 +379,19 @@ contains
       integer :: level_int
 
       select case (trim(adjustl(level_string)))
-      case ('debug', 'Debug', 'DEBUG')
+      case ("debug", "Debug", "DEBUG")
          level_int = debug_level
-      case ('verbose', 'Verbose', 'VERBOSE')
+      case ("verbose", "Verbose", "VERBOSE")
          level_int = verbose_level
-      case ('info', 'Info', 'INFO')
+      case ("info", "Info", "INFO")
          level_int = info_level
-      case ('performance', 'Performance', 'PERFORMANCE')
+      case ("performance", "Performance", "PERFORMANCE")
          level_int = performance_level
-      case ('warning', 'Warning', 'WARNING')
+      case ("warning", "Warning", "WARNING")
          level_int = warning_level
-      case ('error', 'Error', 'ERROR')
+      case ("error", "Error", "ERROR")
          level_int = error_level
-      case ('knowledge', 'Knowledge', 'KNOWLEDGE')
+      case ("knowledge", "Knowledge", "KNOWLEDGE")
          level_int = knowledge_level
       case default
          ! Default to info level if unknown

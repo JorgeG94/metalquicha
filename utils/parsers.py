@@ -97,12 +97,13 @@ def _parse_schema(obj: Any) -> SchemaTag:
 
 def _parse_model(d: Dict[str, Any]) -> Model:
     """Parse model section."""
-    require_only_keys(d, {"method", "basis", "aux_basis"}, "model")
+    require_only_keys(d, {"method", "basis", "aux_basis", "functional"}, "model")
     method = req_type(d.get("method"), str, "model.method")
     basis = opt_type(d.get("basis"), str, "model.basis")
     aux = opt_type(d.get("aux_basis"), str, "model.aux_basis")
+    functional = opt_type(d.get("functional"), str, "model.functional")
 
-    return Model(method=method, basis=basis, aux_basis=aux)
+    return Model(method=method, basis=basis, aux_basis=aux, functional=functional)
 
 
 def _parse_xtb_keywords(d: Dict[str, Any]) -> XTB:
@@ -187,7 +188,7 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
     scf = None
     if "scf" in d:
         sd = req_type(d["scf"], dict, "keywords.scf")
-        require_only_keys(sd, {"maxiter", "tolerance"}, "keywords.scf")
+        require_only_keys(sd, {"maxiter", "tolerance", "unrestricted", "guess"}, "keywords.scf")
         maxiter = req_type(sd.get("maxiter"), int, "keywords.scf.maxiter")
         tol = sd.get("tolerance")
         if not isinstance(tol, (int, float)):
@@ -196,7 +197,11 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
             die("keywords.scf.maxiter must be > 0")
         if float(tol) <= 0:
             die("keywords.scf.tolerance must be > 0")
-        scf = SCF(maxiter=maxiter, tolerance=float(tol))
+        unrestricted = sd.get("unrestricted")
+        if unrestricted is not None and not isinstance(unrestricted, bool):
+            die("keywords.scf.unrestricted must be a boolean")
+        guess = opt_type(sd.get("guess"), str, "keywords.scf.guess")
+        scf = SCF(maxiter=maxiter, tolerance=float(tol), unrestricted=unrestricted, guess=guess)
 
     hessian = None
     if "hessian" in d:

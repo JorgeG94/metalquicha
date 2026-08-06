@@ -155,6 +155,8 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write(f"basis = {inp.model.basis}\n")
     if inp.model.aux_basis is not None:
         buf.write(f"aux_basis = {inp.model.aux_basis}\n")
+    if inp.model.functional is not None:
+        buf.write(f"functional = {inp.model.functional}\n")
     buf.write("end  ! model\n\n")
 
     # %driver
@@ -192,6 +194,10 @@ def emit_v1(inp: Input, json_path: Path) -> Tuple[str, Path]:
         buf.write("%scf\n")
         buf.write(f"maxiter = {inp.scf.maxiter}\n")
         buf.write(f"tolerance = {_fmt_float(inp.scf.tolerance)}\n")
+        if inp.scf.guess is not None:
+            buf.write(f"guess = {inp.scf.guess}\n")
+        if inp.scf.unrestricted is not None:
+            buf.write(f"unrestricted = {str(inp.scf.unrestricted).lower()}\n")
         buf.write("end  ! scf\n\n")
 
     # %xtb (optional)

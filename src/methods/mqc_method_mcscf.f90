@@ -14,7 +14,7 @@ module mqc_method_mcscf
 
    type :: mcscf_options_t
       !! MCSCF/CASSCF calculation options
-      character(len=32) :: basis_set = 'sto-3g'
+      character(len=32) :: basis_set = "sto-3g"
          !! Basis set name
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
@@ -49,13 +49,13 @@ module mqc_method_mcscf
          !! CI energy convergence threshold
 
       ! Orbital optimization algorithm
-      character(len=16) :: orbital_optimizer = 'super-ci'
+      character(len=16) :: orbital_optimizer = "super-ci"
          !! Orbital optimizer: "super-ci", "newton-raphson", "ah" (augmented Hessian)
 
       ! Perturbative corrections
       logical :: use_pt2 = .false.
          !! Apply perturbative correction after CASSCF
-      character(len=16) :: pt2_type = 'nevpt2'
+      character(len=16) :: pt2_type = "nevpt2"
          !! PT2 type: "caspt2", "nevpt2"
       real(dp) :: ipea_shift = 0.25_dp
          !! IPEA shift for CASPT2 (Hartree)

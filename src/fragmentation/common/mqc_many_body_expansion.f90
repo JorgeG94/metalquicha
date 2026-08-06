@@ -139,16 +139,18 @@ contains
    ! Base class methods
    !============================================================================
 
-   pure logical function mbe_base_has_mpi(this)
+   pure function mbe_base_has_mpi(this) result(has_mpi)
       !! Check if MPI resources are available
       class(many_body_expansion_t), intent(in) :: this
-      mbe_base_has_mpi = associated(this%resources)
+      logical :: has_mpi
+      has_mpi = associated(this%resources)
    end function mbe_base_has_mpi
 
-   pure logical function mbe_base_has_geometry(this)
+   pure function mbe_base_has_geometry(this) result(has_geometry)
       !! Check if system geometry is available
       class(many_body_expansion_t), intent(in) :: this
-      mbe_base_has_geometry = allocated(this%sys_geom)
+      logical :: has_geometry
+      has_geometry = allocated(this%sys_geom)
    end function mbe_base_has_geometry
 
    subroutine mbe_base_destroy(this)

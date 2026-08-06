@@ -21,7 +21,7 @@ contains
       character(len=256) :: basename
 
       ! Find last slash (if any) to extract basename
-      slash_pos = index(input_filename, '/', back=.true.)
+      slash_pos = index(input_filename, "/", back=.true.)
       if (slash_pos > 0) then
          basename = input_filename(slash_pos + 1:)
       else
@@ -29,7 +29,7 @@ contains
       end if
 
       ! Find last dot to remove extension
-      dot_pos = index(basename, '.', back=.true.)
+      dot_pos = index(basename, ".", back=.true.)
       if (dot_pos > 0) then
          basename = basename(1:dot_pos - 1)
       end if
@@ -69,7 +69,7 @@ contains
       start_pos = 8
 
       ! Find ".json" suffix
-      end_pos = index(output_json_filename, '.json', back=.true.) - 1
+      end_pos = index(output_json_filename, ".json", back=.true.) - 1
 
       if (end_pos > start_pos) then
          basename = output_json_filename(start_pos:end_pos)
@@ -86,12 +86,12 @@ contains
       integer :: start_pos, end_pos
 
       ! Find "_molecule_" or similar pattern
-      start_pos = index(filename, '_molecule_')
-      if (start_pos == 0) start_pos = index(filename, '_mol_')
+      start_pos = index(filename, "_molecule_")
+      if (start_pos == 0) start_pos = index(filename, "_mol_")
 
       if (start_pos > 0) then
          start_pos = start_pos + 1  ! Skip leading underscore
-         end_pos = index(filename, '.json') - 1
+         end_pos = index(filename, ".json") - 1
          if (end_pos > start_pos) then
             name = filename(start_pos:end_pos)
          else
@@ -102,20 +102,21 @@ contains
       end if
    end function get_molecule_name
 
-   logical function ends_with(str, suffix)
+   function ends_with(str, suffix) result(matches)
       !! Check if string ends with suffix
       character(len=*), intent(in) :: str, suffix
+      logical :: matches
       integer :: str_len, suffix_len
 
       str_len = len_trim(str)
       suffix_len = len_trim(suffix)
 
       if (suffix_len > str_len) then
-         ends_with = .false.
+         matches = .false.
          return
       end if
 
-      ends_with = (str(str_len - suffix_len + 1:str_len) == suffix)
+      matches = (str(str_len - suffix_len + 1:str_len) == suffix)
    end function ends_with
 
 end module mqc_io_helpers

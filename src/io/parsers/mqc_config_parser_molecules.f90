@@ -18,7 +18,7 @@ contains
 
       ! First pass: read nmol
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %molecules section")
             return
@@ -26,16 +26,16 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos > 0) then
             key = adjustl(line(1:eq_pos - 1))
             value = adjustl(line(eq_pos + 1:))
 
-            if (trim(key) == 'nmol') then
+            if (trim(key) == "nmol") then
                read (value, *, iostat=io_stat) nmol
                if (io_stat /= 0) then
                   call error%set(ERROR_PARSE, "Invalid nmol value")
@@ -58,16 +58,16 @@ contains
       ! Parse individual molecules
       imol = 0
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) exit
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
-         if (trim(line) == '%molecule') then
+         if (trim(line) == "%molecule") then
             imol = imol + 1
             if (imol > nmol) then
                call error%set(ERROR_PARSE, "More molecules than declared nmol")
@@ -82,7 +82,7 @@ contains
       end do
 
       if (imol /= nmol) then
-         write (msg, '(A,I0,A,I0)') "Expected ", nmol, " molecules, found ", imol
+         write (msg, "(A,I0,A,I0)") "Expected ", nmol, " molecules, found ", imol
          call error%set(ERROR_PARSE, trim(msg))
          return
       end if
@@ -98,7 +98,7 @@ contains
       character(len=MAX_LINE_LEN) :: line, key, value
       integer :: io_stat, eq_pos
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file in %molecule")
             return
@@ -106,31 +106,31 @@ contains
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
 
          ! Check for key=value pairs (like name)
-         eq_pos = index(line, '=')
+         eq_pos = index(line, "=")
          if (eq_pos > 0) then
             key = adjustl(line(1:eq_pos - 1))
             value = adjustl(line(eq_pos + 1:))
-            if (trim(key) == 'name') then
+            if (trim(key) == "name") then
                mol%name = trim(value)
                cycle
             end if
          end if
 
          ! Check for subsections
-         if (line(1:1) == '%') then
+         if (line(1:1) == "%") then
             select case (trim(line))
-            case ('%structure')
+            case ("%structure")
                call parse_molecule_structure(unit, mol, error)
-            case ('%geometry')
+            case ("%geometry")
                call parse_molecule_geometry(unit, mol, error)
-            case ('%fragments')
+            case ("%fragments")
                call parse_molecule_fragments(unit, mol, error)
-            case ('%connectivity')
+            case ("%connectivity")
                call parse_molecule_connectivity(unit, mol, error)
             case default
                ! Skip unknown subsections

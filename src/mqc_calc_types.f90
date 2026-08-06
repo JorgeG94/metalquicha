@@ -36,18 +36,18 @@ contains
       ! Convert to lowercase for case-insensitive comparison
       lower_str = trim(adjustl(calc_type_str))
       do i = 1, len(lower_str)
-         if (lower_str(i:i) >= 'A' .and. lower_str(i:i) <= 'Z') then
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
             lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
          end if
       end do
 
       ! Match against known types
       select case (lower_str)
-      case ('energy')
+      case ("energy")
          calc_type = CALC_TYPE_ENERGY
-      case ('gradient')
+      case ("gradient")
          calc_type = CALC_TYPE_GRADIENT
-      case ('hessian')
+      case ("hessian")
          calc_type = CALC_TYPE_HESSIAN
       case default
          calc_type = CALC_TYPE_UNKNOWN

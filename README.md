@@ -27,8 +27,17 @@ Additionally, users can opt to try the [vapaa](https://github.com/jeffhammond/va
 to ensure cross compiler portability. Please report any issues associated here and in vapaa.
 
 Metalquicha implements a naive backend for unfragmented and fragmented quantum chemistry
-calculations. Currently, metalquicha uses [tblite](https://github.com/tblite/tblite) as
-its chemistry engine which performs energy calculations.
+calculations. Two chemistry engines are available:
+
+- [tblite](https://github.com/tblite/tblite) for semi-empirical xTB (GFN1, GFN2), on the CPU
+- [NVIDIA cuEST](https://developer.nvidia.com/cuda/cuda-x-libraries/cuest) for
+  Hartree-Fock and Kohn-Sham DFT on the GPU — energies, analytic gradients and
+  Hessians, for whole molecules and for every fragment of an MBE/GMBE expansion.
+  See **[CUEST.md](CUEST.md)** for the full story: build instructions, the 20
+  available functionals, and the validation numbers.
+
+Both plug in behind the same `qc_method_t` interface, so fragmentation, screening
+and many-body assembly are unchanged by the choice of engine.
 
 If you are interested in contributing, please see [here](https://github.com/JorgeG94/pic/blob/main/contributing.md). Pic is the main project here and all the contributions fall downstream.
 
@@ -68,7 +77,8 @@ You will need an internet connection to download the dependencies. The main depe
 - A Fortran compiler
 - An MPI installation
 - A BLAS/LAPACK install
-- TBLITE (will be downloaded automatically)
+- TBLITE (will be downloaded automatically), for xTB
+- NVIDIA cuEST and CUDA 12, for GPU Hartree-Fock/DFT (optional; see [CUEST.md](CUEST.md))
 
 You can then simply:
 
@@ -78,6 +88,21 @@ cd build
 cmake ../
 make -j
 ```
+
+To build the GPU backend instead of (or alongside) xTB:
+
+```
+FC=mpifort CC=mpicc cmake -B build \
+    -DMQC_ENABLE_TBLITE=OFF \
+    -DMQC_ENABLE_CUEST=ON \
+    -DCUEST_ROOT=/path/to/libcuest-linux-x86_64-<ver>_cuda12-archive
+cmake --build build -j
+```
+
+Only the cuEST shared library is needed; the Fortran bindings are pre-generated
+and vendored, and can optionally be fetched from
+[mod_cuest](https://github.com/JorgeG94/mod_cuest) instead. Running needs a GPU
+of compute capability 8.0 or newer. Full details in [CUEST.md](CUEST.md).
 
 ### Notes on Fortran compiler compatibility
 
@@ -161,3 +186,16 @@ end  ! scf
 ```
 
 If you don't want to use the python script, you can modify this file by adding an xyz formatted geometry. Supported calculations are `Energy`, `Gradient`, and `Hessian`.
+
+For a GPU Hartree-Fock or DFT calculation, change the `%model` section to:
+
+```
+%model
+method     = dft                    ! or hf
+basis      = def2-svp
+aux_basis  = def2-universal-jkfit   ! required: cuEST always density-fits J and K
+functional = pbe0                   ! dft only
+end  ! model
+```
+
+Everything else — fragmentation, driver type, SCF settings — is unchanged.

@@ -17,15 +17,15 @@ module mqc_elements
       !! Element symbols for the complete periodic table (H through Og)
       !! Ordered by atomic number from 1 to 118
                                                                  ! for some reason this is how the formatted formats this (????)
-                                                                 'H', 'He', &
-                                                                 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', &
-                                                                 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', &
-               'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', &
-               'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', &
-                   'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', &
-                                'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', &
-                    'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', &
-                                 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+                                                                 "H", "He", &
+                                                                 "Li", "Be", "B", "C", "N", "O", "F", "Ne", &
+                                                                 "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", &
+               "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", &
+               "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", &
+                   "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", &
+                                "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", &
+                    "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", &
+                                 "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"]
 
    real(dp), parameter :: element_masses(n_elements) = [ &
       !! Standard atomic masses in atomic mass units (amu)
@@ -79,7 +79,7 @@ contains
       case (1:118)
          symbol = element_symbols(atomic_number)
       case default
-         symbol = 'Xx'  ! Unknown
+         symbol = "Xx"  ! Unknown
       end select
 
    end function element_number_to_symbol

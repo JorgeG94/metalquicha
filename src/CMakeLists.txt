@@ -8,9 +8,5 @@ add_subdirectory(methods)
 add_subdirectory(parallel)
 add_subdirectory(utils)
 add_subdirectory(vibrational)
-if(MQC_ENABLE_LIBCINT)
-  add_subdirectory(libcint_interface)
-endif()
-
 target_sources(${main_lib} PRIVATE mqc_calc_types.f90 mqc_method_types.f90
                                    mqc_driver.f90)

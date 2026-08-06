@@ -73,6 +73,12 @@ module mqc_config_parser
       integer(int32) :: method = METHOD_TYPE_GFN2
       character(len=:), allocatable :: basis
       character(len=:), allocatable :: aux_basis
+      character(len=:), allocatable :: functional
+      character(len=:), allocatable :: scf_guess
+         !! Initial guess name from %scf
+      logical :: scf_unrestricted = .false.
+         !! Force UHF/UKS even when the shell is closed
+         !! XC functional name, only meaningful when method = dft
 
       ! XTB solvation settings
       character(len=:), allocatable :: solvent  !! Solvent name (e.g., "water", "ethanol") or empty for gas phase
@@ -292,8 +298,8 @@ contains
       integer :: comment_pos
 
       ! Find first occurrence of ! or #
-      comment_pos = index(line, '!')
-      if (comment_pos == 0) comment_pos = index(line, '#')
+      comment_pos = index(line, "!")
+      if (comment_pos == 0) comment_pos = index(line, "#")
 
       if (comment_pos > 0) then
          ! Comment found - take everything before it
@@ -312,14 +318,14 @@ contains
       character(len=MAX_LINE_LEN) :: line
       integer :: io_stat
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) then
             call error%set(ERROR_IO, "Unexpected end of file while skipping section")
             return
          end if
 
          line = adjustl(line)
-         if (trim(strip_comment(line)) == 'end') exit
+         if (trim(strip_comment(line)) == "end") exit
       end do
 
    end subroutine skip_to_end
@@ -336,14 +342,14 @@ contains
       allocate (character(len=len_trim(method_str)) :: lower_str)
       lower_str = trim(adjustl(method_str))
       do i = 1, len(lower_str)
-         if (lower_str(i:i) >= 'A' .and. lower_str(i:i) <= 'Z') then
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
             lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
          end if
       end do
 
       ! Handle "XTB-GFN1" format -> extract "gfn1"
-      if (index(lower_str, 'xtb') > 0) then
-         dash_pos = index(lower_str, '-')
+      if (index(lower_str, "xtb") > 0) then
+         dash_pos = index(lower_str, "-")
          if (dash_pos > 0) then
             method_part = lower_str(dash_pos + 1:)
          else
@@ -374,7 +380,7 @@ contains
          return
       end if
 
-      open (newunit=unit, file=filename, status='old', action='read', iostat=io_stat)
+      open (newunit=unit, file=filename, status="old", action="read", iostat=io_stat)
       if (io_stat /= 0) then
          call error%set(ERROR_IO, "Error opening input file: "//trim(filename))
          return
@@ -385,43 +391,43 @@ contains
 
       ! Read file line by line and dispatch to section parsers
       do
-         read (unit, '(A)', iostat=io_stat) line
+         read (unit, "(A)", iostat=io_stat) line
          if (io_stat /= 0) exit
 
          line = adjustl(line)
          if (len_trim(line) == 0) cycle
-         if (line(1:1) == '#' .or. line(1:1) == '!') cycle
+         if (line(1:1) == "#" .or. line(1:1) == "!") cycle
 
          ! Check for section start
-         if (line(1:1) == '%') then
+         if (line(1:1) == "%") then
             select case (trim(line))
-            case ('%schema')
+            case ("%schema")
                call parse_schema_section(unit, config, parse_error)
-            case ('%model')
+            case ("%model")
                call parse_model_section(unit, config, parse_error)
-            case ('%driver')
+            case ("%driver")
                call parse_driver_section(unit, config, parse_error)
-            case ('%structure')
+            case ("%structure")
                call parse_structure_section(unit, config, parse_error)
-            case ('%geometry')
+            case ("%geometry")
                call parse_geometry_section(unit, config, parse_error)
-            case ('%fragments')
+            case ("%fragments")
                call parse_fragments_section(unit, config, parse_error)
-            case ('%connectivity')
+            case ("%connectivity")
                call parse_connectivity_section(unit, config, parse_error)
-            case ('%scf')
+            case ("%scf")
                call parse_scf_section(unit, config, parse_error)
-            case ('%xtb')
+            case ("%xtb")
                call parse_xtb_section(unit, config, parse_error)
-            case ('%hessian')
+            case ("%hessian")
                call parse_hessian_section(unit, config, parse_error)
-            case ('%aimd')
+            case ("%aimd")
                call parse_aimd_section(unit, config, parse_error)
-            case ('%fragmentation')
+            case ("%fragmentation")
                call parse_fragmentation_section(unit, config, parse_error)
-            case ('%system')
+            case ("%system")
                call parse_system_section(unit, config, parse_error)
-            case ('%molecules')
+            case ("%molecules")
                call parse_molecules_section(unit, config, parse_error)
             case default
                ! Skip unknown sections
@@ -489,6 +495,7 @@ contains
       if (allocated(this%units)) deallocate (this%units)
       if (allocated(this%basis)) deallocate (this%basis)
       if (allocated(this%aux_basis)) deallocate (this%aux_basis)
+      if (allocated(this%functional)) deallocate (this%functional)
       if (allocated(this%log_level)) deallocate (this%log_level)
       if (allocated(this%frag_method)) deallocate (this%frag_method)
       if (allocated(this%embedding)) deallocate (this%embedding)

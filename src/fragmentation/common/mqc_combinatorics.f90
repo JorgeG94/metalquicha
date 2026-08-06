@@ -75,7 +75,8 @@ contains
    recursive subroutine generate_fragment_list(monomers, max_level, polymers, count)
       !! Generate all possible fragments (combinations of monomers) up to max_level
       !! Uses int64 for count to handle large numbers of fragments that overflow int32.
-      integer(default_int), intent(in) :: monomers(:), max_level
+      integer(default_int), intent(in) ::  max_level
+      integer(default_int), intent(in) :: monomers(:)
       integer(default_int), intent(inout) :: polymers(:, :)
       integer(int64), intent(inout) :: count
       integer(default_int) :: r, n
@@ -100,7 +101,8 @@ contains
    recursive subroutine combine_util(arr, n, r, index, data, i, out_array, count)
       !! Utility for generating combinations recursively
       !! Uses int64 for count to handle large numbers of combinations that overflow int32.
-      integer(default_int), intent(in) :: arr(:), n, r, index, i
+      integer(default_int), intent(in) ::  n, r, index, i
+      integer(default_int), intent(in) :: arr(:)
       integer(default_int), intent(inout) :: data(:), out_array(:, :)
       integer(int64), intent(inout) :: count
       integer(default_int) :: j
@@ -120,7 +122,8 @@ contains
    subroutine print_combos(out_array, count, max_len)
       !! Print combinations stored in out_array
       !! Uses int64 for count to handle large numbers of combinations that overflow int32.
-      integer(default_int), intent(in) :: out_array(:, :), max_len
+      integer(default_int), intent(in) ::  max_len
+      integer(default_int), intent(in) :: out_array(:, :)
       integer(int64), intent(in) :: count
       integer(int64) :: i
       integer(default_int) :: j
@@ -128,9 +131,9 @@ contains
       do i = 1_int64, count
          do j = 1, max_len
             if (out_array(i, j) == 0) exit
-            write (*, '(I0)', advance='no') out_array(i, j)
+            write (*, "(I0)", advance="no") out_array(i, j)
             if (j < max_len .and. out_array(i, j + 1) /= 0) then
-               write (*, '(A)', advance='no') ":"
+               write (*, "(A)", advance="no") ":"
             end if
          end do
          write (*, *)  ! newline

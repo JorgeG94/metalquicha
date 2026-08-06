@@ -470,7 +470,7 @@ contains
       real(wp) :: eps
 
       ! Handle CPCM model separately
-      if (trim(solvation_model) == 'cpcm') then
+      if (trim(solvation_model) == "cpcm") then
          ! CPCM does not support CDS or shift - silently skip them
          ! (use_cds and use_shift are ignored for CPCM)
 
@@ -513,7 +513,7 @@ contains
 
       ! Determine if using ALPB or GBSA (GBSA = ALPB with alpb flag false)
       use_alpb = .true.
-      if (trim(solvation_model) == 'gbsa') then
+      if (trim(solvation_model) == "gbsa") then
          use_alpb = .false.
       end if
 
@@ -568,102 +568,102 @@ contains
       ! Convert to lowercase for case-insensitive matching
       name_lower = solvent_name
       do i = 1, len_trim(name_lower)
-         if (name_lower(i:i) >= 'A' .and. name_lower(i:i) <= 'Z') then
+         if (name_lower(i:i) >= "A" .and. name_lower(i:i) <= "Z") then
             name_lower(i:i) = char(ichar(name_lower(i:i)) + 32)
          end if
       end do
 
       select case (trim(name_lower))
          ! Water
-      case ('water', 'h2o')
+      case ("water", "h2o")
          eps = 78.4_wp
          ! Alcohols
-      case ('methanol', 'ch3oh')
+      case ("methanol", "ch3oh")
          eps = 32.7_wp
-      case ('ethanol', 'c2h5oh')
+      case ("ethanol", "c2h5oh")
          eps = 24.6_wp
-      case ('1-propanol', 'propanol')
+      case ("1-propanol", "propanol")
          eps = 20.1_wp
-      case ('2-propanol', 'isopropanol')
+      case ("2-propanol", "isopropanol")
          eps = 19.9_wp
-      case ('1-butanol', 'butanol')
+      case ("1-butanol", "butanol")
          eps = 17.5_wp
-      case ('2-butanol')
+      case ("2-butanol")
          eps = 15.8_wp
-      case ('1-octanol', 'octanol')
+      case ("1-octanol", "octanol")
          eps = 9.9_wp
          ! Polar aprotic
-      case ('acetone')
+      case ("acetone")
          eps = 20.7_wp
-      case ('acetonitrile', 'ch3cn')
+      case ("acetonitrile", "ch3cn")
          eps = 37.5_wp
-      case ('dmso', 'dimethylsulfoxide')
+      case ("dmso", "dimethylsulfoxide")
          eps = 46.7_wp
-      case ('dmf', 'dimethylformamide')
+      case ("dmf", "dimethylformamide")
          eps = 36.7_wp
-      case ('thf', 'tetrahydrofuran')
+      case ("thf", "tetrahydrofuran")
          eps = 7.6_wp
-      case ('formamide')
+      case ("formamide")
          eps = 109.5_wp
          ! Aromatics
-      case ('benzene')
+      case ("benzene")
          eps = 2.3_wp
-      case ('toluene')
+      case ("toluene")
          eps = 2.4_wp
-      case ('pyridine')
+      case ("pyridine")
          eps = 12.4_wp
-      case ('aniline')
+      case ("aniline")
          eps = 6.9_wp
-      case ('nitrobenzene')
+      case ("nitrobenzene")
          eps = 34.8_wp
-      case ('chlorobenzene')
+      case ("chlorobenzene")
          eps = 5.6_wp
          ! Halogenated
-      case ('chloroform', 'chcl3')
+      case ("chloroform", "chcl3")
          eps = 4.8_wp
-      case ('dichloromethane', 'ch2cl2', 'dcm')
+      case ("dichloromethane", "ch2cl2", "dcm")
          eps = 8.9_wp
-      case ('carbon tetrachloride', 'ccl4')
+      case ("carbon tetrachloride", "ccl4")
          eps = 2.2_wp
          ! Ethers
-      case ('diethylether', 'ether')
+      case ("diethylether", "ether")
          eps = 4.3_wp
-      case ('dioxane')
+      case ("dioxane")
          eps = 2.2_wp
-      case ('furan')
+      case ("furan")
          eps = 2.9_wp
          ! Alkanes
-      case ('pentane')
+      case ("pentane")
          eps = 1.8_wp
-      case ('hexane', 'n-hexane')
+      case ("hexane", "n-hexane")
          eps = 1.9_wp
-      case ('cyclohexane')
+      case ("cyclohexane")
          eps = 2.0_wp
-      case ('heptane', 'n-heptane')
+      case ("heptane", "n-heptane")
          eps = 1.9_wp
-      case ('octane', 'n-octane')
+      case ("octane", "n-octane")
          eps = 1.9_wp
-      case ('decane')
+      case ("decane")
          eps = 2.0_wp
-      case ('hexadecane')
+      case ("hexadecane")
          eps = 2.0_wp
          ! Other
-      case ('nitromethane')
+      case ("nitromethane")
          eps = 35.9_wp
-      case ('cs2', 'carbondisulfide')
+      case ("cs2", "carbondisulfide")
          eps = 2.6_wp
-      case ('ethyl acetate', 'ethylacetate')
+      case ("ethyl acetate", "ethylacetate")
          eps = 6.0_wp
-      case ('acetic acid', 'aceticacid')
+      case ("acetic acid", "aceticacid")
          eps = 6.2_wp
-      case ('formic acid', 'formicacid')
+      case ("formic acid", "formicacid")
          eps = 51.1_wp
-      case ('phenol')
+      case ("phenol")
          eps = 9.8_wp
-      case ('woctanol')
+      case ("woctanol")
          eps = 8.1_wp
          ! Infinite dielectric (conductor)
-      case ('inf')
+      case ("inf")
          eps = 1.0e10_wp
       case default
          eps = -1.0_wp  ! Unknown solvent

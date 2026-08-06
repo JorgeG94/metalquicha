@@ -51,6 +51,14 @@ contains
    end subroutine create_test_fragment
 
    subroutine test_hf_energy(error)
+      !! HF is no longer a placeholder: it either produces a real energy or
+      !! reports an error, and must never invent a number.
+      !!
+      !! What it does here depends on the build and the machine. Without the
+      !! cuEST backend it reports "no integral backend"; with it, this test
+      !! environment has no basis_sets/ directory in the working directory and
+      !! no supported GPU, so it reports that instead. Either way the contract
+      !! under test is the same: no silent fake energy.
       type(error_type), allocatable, intent(out) :: error
       type(hf_method_t) :: method
       type(physical_fragment_t) :: fragment
@@ -59,11 +67,14 @@ contains
       call create_test_fragment(fragment)
       call method%calc_energy(fragment, result)
 
-      call check(error, result%has_energy, "HF energy calculation should set has_energy")
+      call check(error, result%has_error .neqv. result%has_energy, &
+                 "HF must either produce an energy or report an error, not both or neither")
       if (allocated(error)) return
 
-      call check(error, is_equal(result%energy%scf, -1.0_dp), &
-                 "HF placeholder should return -1.0 energy")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed HF calculation must carry a diagnostic message")
+      end if
 
       call fragment%destroy()
    end subroutine test_hf_energy
@@ -77,20 +88,14 @@ contains
       call create_test_fragment(fragment)
       call method%calc_gradient(fragment, result)
 
-      call check(error, result%has_energy, "HF gradient should also compute energy")
+      ! Analytic HF gradients are not implemented yet. The contract is that
+      ! this is reported, not that a zero gradient is handed back as if real.
+      call check(error, result%has_error, &
+                 "HF gradients are unimplemented and must report an error")
       if (allocated(error)) return
 
-      call check(error, result%has_gradient, "HF gradient calculation should set has_gradient")
-      if (allocated(error)) return
-
-      call check(error, allocated(result%gradient), "HF gradient should be allocated")
-      if (allocated(error)) return
-
-      call check(error, size(result%gradient, 1) == 3, "Gradient should have 3 rows")
-      if (allocated(error)) return
-
-      call check(error, size(result%gradient, 2) == fragment%n_atoms, &
-                 "Gradient should have n_atoms columns")
+      call check(error,.not. result%has_gradient, &
+                 "An unimplemented HF gradient must not claim to have one")
 
       call fragment%destroy()
    end subroutine test_hf_gradient
@@ -120,15 +125,29 @@ contains
 
       method%options%verbose = .true.
       method%options%use_density_fitting = .true.
-      method%options%use_dispersion = .true.
 
       call method%calc_energy(fragment, result)
 
-      call check(error, result%has_energy, "DFT energy calculation should set has_energy")
+      ! DFT is a real calculation now: it either produces an energy or reports
+      ! why it could not. Which of the two happens depends on the build and on
+      ! whether a supported GPU and a basis_sets/ directory are present, but
+      ! inventing a number is never acceptable.
+      call check(error, result%has_error .neqv. result%has_energy, &
+                 "DFT must either produce an energy or report an error, not both or neither")
       if (allocated(error)) return
 
-      call check(error, is_equal(result%energy%scf, -1.0_dp*fragment%n_atoms), &
-                 "DFT placeholder should return -n_atoms energy")
+      if (result%has_error) then
+         call check(error, len_trim(result%error%get_message()) > 0, &
+                    "A failed DFT calculation must carry a diagnostic message")
+         if (allocated(error)) return
+      end if
+
+      ! Dispersion is not implemented for the cuEST backend, so asking for it
+      ! must fail loudly rather than quietly return an undispersed energy.
+      method%options%use_dispersion = .true.
+      call method%calc_energy(fragment, result)
+      call check(error, result%has_error, &
+                 "Requesting unimplemented dispersion must report an error")
 
       call fragment%destroy()
    end subroutine test_dft_energy
@@ -144,13 +163,14 @@ contains
 
       call method%calc_gradient(fragment, result)
 
-      call check(error, result%has_energy, "DFT gradient should also compute energy")
+      ! Analytic DFT gradients are not implemented; the contract is that this
+      ! is reported rather than a zero gradient being passed off as real.
+      call check(error, result%has_error, &
+                 "DFT gradients are unimplemented and must report an error")
       if (allocated(error)) return
 
-      call check(error, result%has_gradient, "DFT gradient calculation should set has_gradient")
-      if (allocated(error)) return
-
-      call check(error, allocated(result%gradient), "DFT gradient should be allocated")
+      call check(error,.not. result%has_gradient, &
+                 "An unimplemented DFT gradient must not claim to have one")
 
       call fragment%destroy()
    end subroutine test_dft_gradient
@@ -166,11 +186,13 @@ contains
 
       call method%calc_hessian(fragment, result)
 
-      call check(error, result%has_energy, "DFT Hessian should compute energy")
+      ! Analytic DFT Hessians are not implemented; report, never fabricate.
+      call check(error, result%has_error, &
+                 "DFT Hessians are unimplemented and must report an error")
       if (allocated(error)) return
 
       call check(error,.not. result%has_hessian, &
-                 "DFT Hessian placeholder should report not implemented")
+                 "An unimplemented DFT Hessian must not claim to have one")
 
       call fragment%destroy()
    end subroutine test_dft_hessian
@@ -268,7 +290,7 @@ program tester
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 

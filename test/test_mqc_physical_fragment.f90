@@ -504,11 +504,11 @@ contains
       integer :: unit
 
       open (newunit=unit, file=TEST_WATER_MONOMER, status="replace", action="write")
-      write (unit, '(a)') "3"
-      write (unit, '(a)') "Water monomer"
-      write (unit, '(a)') "O  0.0  0.0  0.0"
-      write (unit, '(a)') "H  0.757  0.586  0.0"
-      write (unit, '(a)') "H -0.757  0.586  0.0"
+      write (unit, "(a)") "3"
+      write (unit, "(a)") "Water monomer"
+      write (unit, "(a)") "O  0.0  0.0  0.0"
+      write (unit, "(a)") "H  0.757  0.586  0.0"
+      write (unit, "(a)") "H -0.757  0.586  0.0"
       close (unit)
    end subroutine create_test_water_monomer
 
@@ -518,20 +518,20 @@ contains
       call create_test_water_monomer()
 
       open (newunit=unit, file=TEST_WATER_TRIMER, status="replace", action="write")
-      write (unit, '(a)') "9"
-      write (unit, '(a)') "Water trimer"
+      write (unit, "(a)") "9"
+      write (unit, "(a)") "Water trimer"
       ! First water
-      write (unit, '(a)') "O  0.0  0.0  0.0"
-      write (unit, '(a)') "H  0.757  0.586  0.0"
-      write (unit, '(a)') "H -0.757  0.586  0.0"
+      write (unit, "(a)") "O  0.0  0.0  0.0"
+      write (unit, "(a)") "H  0.757  0.586  0.0"
+      write (unit, "(a)") "H -0.757  0.586  0.0"
       ! Second water
-      write (unit, '(a)') "O  3.0  0.0  0.0"
-      write (unit, '(a)') "H  3.757  0.586  0.0"
-      write (unit, '(a)') "H  2.243  0.586  0.0"
+      write (unit, "(a)") "O  3.0  0.0  0.0"
+      write (unit, "(a)") "H  3.757  0.586  0.0"
+      write (unit, "(a)") "H  2.243  0.586  0.0"
       ! Third water
-      write (unit, '(a)') "O  1.5  2.5  0.0"
-      write (unit, '(a)') "H  2.257  3.086  0.0"
-      write (unit, '(a)') "H  0.743  3.086  0.0"
+      write (unit, "(a)") "O  1.5  2.5  0.0"
+      write (unit, "(a)") "H  2.257  3.086  0.0"
+      write (unit, "(a)") "H  0.743  3.086  0.0"
       close (unit)
    end subroutine create_test_water_trimer
 
@@ -539,12 +539,12 @@ contains
       integer :: unit
 
       open (newunit=unit, file=TEST_MISMATCHED, status="replace", action="write")
-      write (unit, '(a)') "4"
-      write (unit, '(a)') "Mismatched monomer"
-      write (unit, '(a)') "O  0.0  0.0  0.0"
-      write (unit, '(a)') "H  0.757  0.586  0.0"
-      write (unit, '(a)') "H -0.757  0.586  0.0"
-      write (unit, '(a)') "H  0.0  -0.5  0.0"
+      write (unit, "(a)") "4"
+      write (unit, "(a)") "Mismatched monomer"
+      write (unit, "(a)") "O  0.0  0.0  0.0"
+      write (unit, "(a)") "H  0.757  0.586  0.0"
+      write (unit, "(a)") "H -0.757  0.586  0.0"
+      write (unit, "(a)") "H  0.0  -0.5  0.0"
       close (unit)
    end subroutine create_mismatched_monomer
 
@@ -586,7 +586,7 @@ program tester
    end do
 
    if (stat > 0) then
-      write (error_unit, '(i0, 1x, a)') stat, "test(s) failed!"
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
       error stop
    end if
 

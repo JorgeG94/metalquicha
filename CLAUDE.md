@@ -26,7 +26,7 @@ make -j
 mpirun -np 4 ./mqc input.mqc
 
 # Run tests
-ctest
+ctest -R "mqc"
 ```
 
 ## Directory Structure

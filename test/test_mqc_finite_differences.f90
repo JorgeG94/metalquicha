@@ -120,11 +120,11 @@ program test_mqc_finite_differences
       print *, ""
       print *, "ALL TESTS PASSED"
       stop 0
-   else
-      print *, ""
-      print *, "SOME TESTS FAILED"
-      stop 1
    end if
+
+   print *, ""
+   print *, "SOME TESTS FAILED"
+   stop 1
 
 contains
 
