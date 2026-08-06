@@ -37,13 +37,16 @@ module mqc_cuest_runtime
    !  must outlive the scoping unit that created it and is freed through a raw
    !  address, so a Fortran allocatable is not a substitute.
    interface
-      type(c_ptr) function c_malloc(nbytes) bind(C, name="malloc")
+      function c_malloc(nbytes) result(ptr) bind(C, name="malloc")
          import :: c_ptr, c_size_t
+         implicit none
          integer(c_size_t), value :: nbytes
+         type(c_ptr) :: ptr
       end function c_malloc
 
       subroutine c_free(ptr) bind(C, name="free")
          import :: c_ptr
+         implicit none
          type(c_ptr), value :: ptr
       end subroutine c_free
    end interface

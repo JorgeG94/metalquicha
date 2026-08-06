@@ -105,7 +105,8 @@ contains
       character(len=:), allocatable :: directories(:)
 
       character(len=MAX_PATH) :: env_value
-      character(len=MAX_PATH) :: collected(64)
+      integer, parameter :: MAX_SEARCH_DIRECTORIES = 64
+      character(len=MAX_PATH) :: collected(MAX_SEARCH_DIRECTORIES)
       integer :: env_length, status, n, start, colon
 
       n = 0

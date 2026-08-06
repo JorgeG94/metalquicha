@@ -356,7 +356,8 @@ contains
       integer, intent(in) :: pie_atom_sets(:, :)  !! Unique atom sets (max_atoms, n_pie_terms)
       integer, intent(in) :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64), intent(in) :: n_pie_terms
-      integer, intent(in) :: node_leader_ranks(:), num_nodes
+      integer, intent(in) ::  num_nodes
+      integer, intent(in) :: node_leader_ranks(:)
       integer, intent(in) :: group_leader_ranks(:)
       integer, intent(in) :: group_ids(:)
       integer, intent(in) :: global_groups

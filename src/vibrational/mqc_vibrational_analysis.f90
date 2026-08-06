@@ -603,7 +603,8 @@ contains
          !! IR intensities in km/mol (one per mode)
 
       integer :: n_atoms, n_coords, iatom, i, j, k
-      real(dp) :: mass, inv_sqrt_mass, trdip(3)
+      real(dp) :: mass, inv_sqrt_mass
+      real(dp) :: trdip(3)
 
       n_atoms = size(element_numbers)
       n_coords = 3*n_atoms

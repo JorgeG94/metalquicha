@@ -465,7 +465,8 @@ contains
 
       real(dp) :: mass_kg, T, P_pa
       real(dp) :: lambda, V_molar
-      real(dp) :: theta_rot(3), u
+      real(dp) ::  u
+      real(dp) :: theta_rot(3)
       integer :: i
 
       T = temperature

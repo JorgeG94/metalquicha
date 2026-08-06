@@ -38,8 +38,14 @@ message(STATUS "Adding individual test executables for ${project_name}...")
 # Non-MPI tests
 addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
-addtest(mqc_json_basis_reader)
 addtest(mqc_config_roundtrip)
+
+# Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
+# bundle. Only the CMake build does that, so the test compiles to a skip stub
+# elsewhere (notably under fpm, where the files are absent and gitignored).
+addtestpp(mqc_json_basis_reader)
+target_compile_definitions(test_mqc_json_basis_reader
+                           PRIVATE MQC_HAVE_BASIS_SETS)
 
 # Only meaningful with the cuEST backend compiled in.
 if(MQC_ENABLE_CUEST)

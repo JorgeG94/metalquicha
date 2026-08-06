@@ -14,8 +14,17 @@
 !  cuestStatus_t it produced.  Nothing here allocates or owns memory.
 ! ============================================================================
 module cuest_helpers
-   use, intrinsic :: iso_c_binding
-   use cuest
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_char, c_int, c_int32_t, c_int64_t, &
+                                                                             c_double, c_loc, c_sizeof, c_null_char
+   use cuest, only: cuestParametersConfigure, cuestParametersQuery, cuestQuery, &
+                    CUEST_STATUS_SUCCESS, CUEST_STATUS_EXCEPTION, &
+                    CUEST_STATUS_NULL_POINTER, CUEST_STATUS_INVALID_ARGUMENT, &
+                    CUEST_STATUS_INVALID_SIZE, CUEST_STATUS_INVALID_TYPE, &
+                    CUEST_STATUS_INVALID_PARAMETER, CUEST_STATUS_INVALID_ATTRIBUTE, &
+                    CUEST_STATUS_INVALID_HANDLE, CUEST_STATUS_UNKNOWN_ERROR, &
+                    CUEST_STATUS_UNSUPPORTED_ARGUMENT, &
+                    CUEST_STATUS_UNSUPPORTED_ARCHITECTURE, &
+                    CUEST_STATUS_INVALID_PLAN, CUEST_STATUS_HOME_NOT_FOUND
    implicit none
    private
 
