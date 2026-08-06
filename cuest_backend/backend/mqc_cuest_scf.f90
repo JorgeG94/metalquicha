@@ -40,7 +40,9 @@ module mqc_cuest_scf
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
+   use mqc_diis_device, only: diis_device_t
    use mqc_cuest_integrals, only: cuest_system_t
+   use mqc_cuest_context, only: cuest_context_t
    use mqc_cuest_runtime, only: device_sync
    implicit none
    private
@@ -298,12 +300,16 @@ contains
       call pic_gemm(occupied, occupied, density, transb="T", alpha=2.0_dp, beta=0.0_dp)
    end subroutine build_density
 
-   subroutine run_rhf_scf(system, atomic_numbers, coordinates, n_electrons, &
+   subroutine run_rhf_scf(system, context, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
                           guess_alpha, guess_beta)
       !! Drive a closed-shell RHF calculation to convergence
       type(cuest_system_t), intent(inout) :: system   !! Live cuEST objects for this molecule
+      type(cuest_context_t), intent(inout) :: context
+         !! Per-rank handle and pools. Needed because the DIIS history is
+         !! device-resident and is drawn from the same pools as everything
+         !! else, rather than being allocated afresh for each fragment.
       integer, intent(in) :: atomic_numbers(:)        !! Z per atom
       real(dp), intent(in) :: coordinates(:, :)       !! (3, n_atoms), Bohr
       integer, intent(in) :: n_electrons              !! Total electrons, must be even
@@ -326,7 +332,7 @@ contains
       real(dp), allocatable :: transform(:, :), orbitals(:, :), orbital_energies(:)
       real(dp), allocatable :: occupied(:, :), diis_error(:, :), error_ortho(:, :)
       real(dp), allocatable :: scratch(:, :), ortho_scratch(:, :)
-      type(diis_state_t) :: diis
+      type(diis_device_t) :: diis
       integer :: n_ao, n_mo, n_occ, iteration, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy, trace_j, trace_k
@@ -396,7 +402,8 @@ contains
       allocate (error_ortho(n_mo, n_mo), scratch(n_ao, n_ao), ortho_scratch(n_ao, n_mo))
       if (use_diis) then
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
-         call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo)
+         call diis%init(context, diis_size, n_ao*n_ao, n_mo*n_mo, error)
+         if (error%has_error()) return
       end if
 
       previous_energy = 0.0_dp
@@ -502,11 +509,20 @@ contains
 
          ! ---- DIIS extrapolation -------------------------------------------
          if (use_diis) then
-            ! The history is flat, so the matrices pass through by sequence
-            ! association -- both are contiguous, and the ring buffer plus the
-            ! incrementally maintained overlap live in the state object.
-            call diis%push(fock, error_ortho)
-            call diis%extrapolate(fock, diis_ok)
+            ! The Fock is already on the device and the history is too, so the
+            ! push is device-to-device and the extrapolation writes back into
+            ! d_fock in place. Only the error vector still has to be carried
+            ! over, because the commutator above is still host algebra -- that
+            ! upload, and the second fetch below, are what moving the
+            ! commutator to the device removes.
+            call system%stage_to(system%d_error, error_ortho, "DIIS error", error)
+            call diis%push(system%d_fock, system%d_error, error)
+            call diis%extrapolate(system%d_fock, diis_ok, error)
+            call system%fetch(system%d_fock, fock, "F (extrapolated)", error)
+            if (error%has_error()) then
+               call error%add_context("mqc_cuest_scf:DIIS")
+               return
+            end if
          end if
 
          ! ---- new orbitals and density --------------------------------------

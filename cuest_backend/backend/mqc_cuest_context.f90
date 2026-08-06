@@ -30,6 +30,7 @@ module mqc_cuest_context
    implicit none
    private
 
+   public :: device_pool_t          !! Grow-only device buffer shared across fragments
    public :: cuest_context_t        !! Per-rank cuEST handle
    public :: get_cuest_context      !! Lazily initialized process-wide context
    public :: finalize_cuest_context  !! Release the process-wide context
@@ -83,6 +84,14 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_fock  !! Assembled Fock, stays resident
       type(device_pool_t) :: scratch_core  !! Core Hamiltonian, uploaded once
       type(device_pool_t) :: scratch_ovlp  !! Overlap, uploaded once
+      type(device_pool_t) :: scratch_error  !! DIIS error vector, n_mo x n_mo
+
+      ! DIIS history. The largest single allocation here -- diis_size copies of
+      ! the Fock matrix -- which is exactly why it is pooled across fragments
+      ! rather than allocated per SCF.
+      type(device_pool_t) :: scratch_diis_fock   !! n_fock x max_vectors
+      type(device_pool_t) :: scratch_diis_error  !! n_error x max_vectors
+      type(device_pool_t) :: scratch_diis_row    !! max_vectors, one overlap row
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -205,6 +214,10 @@ contains
       call this%scratch_fock%release()
       call this%scratch_core%release()
       call this%scratch_ovlp%release()
+      call this%scratch_error%release()
+      call this%scratch_diis_fock%release()
+      call this%scratch_diis_error%release()
+      call this%scratch_diis_row%release()
 
       if (c_associated(this%cublas_handle)) status = cublasDestroy(this%cublas_handle)
       this%cublas_handle = c_null_ptr

@@ -167,6 +167,7 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_fock = c_null_ptr  !! Assembled Fock
       type(c_ptr) :: d_core = c_null_ptr  !! Core Hamiltonian, iteration-invariant
       type(c_ptr) :: d_ovlp = c_null_ptr  !! Overlap, iteration-invariant
+      type(c_ptr) :: d_error = c_null_ptr  !! DIIS error vector, (n_mo, n_mo)
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy
@@ -314,8 +315,13 @@ contains
       this%d_matrix = context%scratch_density%ptr
       this%d_result = context%scratch_result%ptr
 
-      ! Fock terms. Five extra n_ao^2 buffers is 40 MB at n_ao = 1000, against
-      ! the 40-80 GB of an A100 or H100 -- cheap next to what it removes.
+      ! Fock terms and the DIIS error. Six extra n_ao^2 buffers is 48 MB at
+      ! n_ao = 1000, against the 40-80 GB of an A100 or H100 -- cheap next to
+      ! what it removes.
+      !
+      ! The error vector is really n_mo x n_mo, but n_mo comes from the overlap
+      ! diagonalization and is not known this early. n_mo <= n_ao always, so
+      ! sizing it n_ao^2 costs a little memory and no correctness.
       !
       ! `scratch_ovlp` is deliberately not among them: nothing reads S on the
       ! device until the commutator moves there, so `d_ovlp` stays null and any
@@ -326,6 +332,7 @@ contains
       call context%scratch_xc%ensure(this%n_ao*this%n_ao, "XC potential", error)
       call context%scratch_fock%ensure(this%n_ao*this%n_ao, "Fock matrix", error)
       call context%scratch_core%ensure(this%n_ao*this%n_ao, "core Hamiltonian", error)
+      call context%scratch_error%ensure(this%n_ao*this%n_ao, "DIIS error vector", error)
       if (error%has_error()) then
          call error%add_context("mqc_cuest_integrals:create")
          return
@@ -335,6 +342,7 @@ contains
       this%d_xc = context%scratch_xc%ptr
       this%d_fock = context%scratch_fock%ptr
       this%d_core = context%scratch_core%ptr
+      this%d_error = context%scratch_error%ptr
 
       call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
       call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)
@@ -1214,7 +1222,10 @@ contains
    ! ==========================================================================
 
    subroutine system_stage_to(this, device_ptr, matrix, label, error)
-      !! Copy a host n_ao x n_ao matrix into a caller-chosen device buffer
+      !! Copy a host matrix into a caller-chosen device buffer
+      !!
+      !! The size comes from the array, so this serves the n_ao x n_ao matrices
+      !! and the n_mo x n_mo DIIS error alike; the caller owns the sizing.
       !!
       !! Matrices crossing this boundary are symmetric, so the row-major /
       !! column-major difference is a no-op -- see the note at the top of this
@@ -1865,6 +1876,7 @@ contains
       this%d_fock = c_null_ptr
       this%d_core = c_null_ptr
       this%d_ovlp = c_null_ptr
+      this%d_error = c_null_ptr
 
       if (c_associated(this%xc_plan)) status = cuestXCIntPlanDestroy(this%xc_plan)
       this%xc_plan = c_null_ptr

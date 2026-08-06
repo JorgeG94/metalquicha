@@ -19,6 +19,15 @@ module mqc_diis
    private
 
    public :: diis_state_t
+   public :: diis_slot_of_age   !! Ring slot holding the age-th oldest entry
+   public :: diis_coefficients  !! Extrapolation weights from a cached overlap matrix
+
+   !> The two procedures above are the parts of DIIS that have nothing to do
+   !  with where the vectors live: which slot an entry occupies, and what
+   !  weights a given overlap matrix implies. A device implementation shares
+   !  them rather than reimplementing them, so a host-versus-device divergence
+   !  can only have come from the vectors themselves -- which is the whole
+   !  point of keeping a host reference.
 
    real(dp), parameter :: PIVOT_FLOOR = 1.0e-14_dp
       !! Below this a pivot is treated as singular and extrapolation is skipped
@@ -77,17 +86,25 @@ contains
       n = this%n_stored
    end function diis_count
 
-   pure function slot_of_age(this, age) result(slot)
+   pure function diis_slot_of_age(newest, n_stored, max_vectors, age) result(slot)
       !! Slot holding the age-th oldest entry, age = 1 .. n_stored
       !!
       !! The history is a ring: pushing past the end overwrites the oldest entry
       !! in place, so nothing is ever shifted. The previous implementation moved
       !! the whole history down by one every iteration once full, which is
       !! O(max_vectors * n_fock) of pure copying per SCF step.
+      integer, intent(in) :: newest, n_stored, max_vectors
+      integer, intent(in) :: age
+      integer :: slot
+      slot = modulo(newest - n_stored + age - 1, max_vectors) + 1
+   end function diis_slot_of_age
+
+   pure function slot_of_age(this, age) result(slot)
+      !! `diis_slot_of_age` for this state's ring
       class(diis_state_t), intent(in) :: this
       integer, intent(in) :: age
       integer :: slot
-      slot = modulo(this%newest - this%n_stored + age - 1, this%max_vectors) + 1
+      slot = diis_slot_of_age(this%newest, this%n_stored, this%max_vectors, age)
    end function slot_of_age
 
    subroutine diis_push(this, fock, error_vector)
@@ -123,38 +140,60 @@ contains
       real(dp), intent(inout) :: fock(this%n_fock)
       logical, intent(out) :: ok
 
-      real(dp), allocatable :: b_matrix(:, :), coefficients(:)
+      real(dp), allocatable :: coefficients(:)
+      integer :: i
+
+      call diis_coefficients(this%overlap, this%newest, this%n_stored, &
+                             this%max_vectors, coefficients, ok)
+      if (ok) then
+         fock = 0.0_dp
+         do i = 1, this%n_stored
+            fock = fock + coefficients(i)*this%fock_history(:, slot_of_age(this, i))
+         end do
+      end if
+
+      if (allocated(coefficients)) deallocate (coefficients)
+   end subroutine diis_extrapolate
+
+   subroutine diis_coefficients(overlap, newest, n_stored, max_vectors, coefficients, ok)
+      !! Extrapolation weights, oldest-first, from a cached error overlap matrix
+      !!
+      !! `coefficients(i)` weights the age-i-oldest entry, so a caller walks its
+      !! history through `diis_slot_of_age` in the same order.
+      !!
+      !! The B matrix is assembled oldest-first rather than in slot order. The
+      !! DIIS solution is invariant to permutation of the subspace, but the
+      !! elimination is not bit-invariant, and age order is what the pre-ring
+      !! implementation solved -- so results stay reproducible across that
+      !! change, and across the host/device split.
+      real(dp), intent(in) :: overlap(:, :)   !! (max_vectors, max_vectors), slot coordinates
+      integer, intent(in) :: newest, n_stored, max_vectors
+      real(dp), allocatable, intent(out) :: coefficients(:)
+         !! (n_stored+1), oldest first. The trailing entry is the Lagrange
+         !! multiplier enforcing sum(c) = 1 and is not a weight -- read
+         !! 1..n_stored only.
+      logical, intent(out) :: ok              !! False when the subspace is too small or singular
+
+      real(dp), allocatable :: b_matrix(:, :)
       integer :: n, i, j
 
       ok = .false.
-      if (this%n_stored < 2) return
+      if (n_stored < 2) return
 
-      n = this%n_stored
-
-      ! Assembled oldest-first rather than in slot order. The DIIS solution is
-      ! invariant to permutation of the subspace, but the elimination below is
-      ! not bit-invariant, and age order is what the pre-ring implementation
-      ! solved -- so results stay reproducible across this change.
+      n = n_stored
       allocate (b_matrix(n + 1, n + 1))
       b_matrix = -1.0_dp
       b_matrix(n + 1, n + 1) = 0.0_dp
       do j = 1, n
          do i = 1, n
-            b_matrix(i, j) = this%overlap(slot_of_age(this, i), slot_of_age(this, j))
+            b_matrix(i, j) = overlap(diis_slot_of_age(newest, n_stored, max_vectors, i), &
+                                     diis_slot_of_age(newest, n_stored, max_vectors, j))
          end do
       end do
 
       call solve_diis(b_matrix, coefficients, ok)
-      if (ok) then
-         fock = 0.0_dp
-         do i = 1, n
-            fock = fock + coefficients(i)*this%fock_history(:, slot_of_age(this, i))
-         end do
-      end if
-
       deallocate (b_matrix)
-      if (allocated(coefficients)) deallocate (coefficients)
-   end subroutine diis_extrapolate
+   end subroutine diis_coefficients
 
    subroutine diis_destroy(this)
       !! Release the history

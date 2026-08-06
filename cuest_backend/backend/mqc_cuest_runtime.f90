@@ -31,6 +31,7 @@ module mqc_cuest_runtime
    public :: device_sync          !! cudaDeviceSynchronize with error_t
    public :: workspace_alloc, workspace_free  !! cuestWorkspace_t lifecycle
    public :: device_alloc, device_free        !! Device buffers counted in doubles
+   public :: device_offset        !! Address of an element part-way into a buffer
    public :: copy_to_device, copy_to_host     !! Host <-> device transfers
 
    integer(c_size_t), parameter :: BYTES_PER_DOUBLE = 8_c_size_t
@@ -178,6 +179,29 @@ contains
       if (c_associated(device_ptr)) status = cudaFree(device_ptr)
       device_ptr = c_null_ptr
    end subroutine device_free
+
+   function device_offset(base, n_doubles) result(ptr)
+      !! Address `n_doubles` doubles past `base`, for slicing one allocation
+      !!
+      !! A ring of history vectors is one buffer with a column per slot, so the
+      !! slot addresses are offsets into it. The arithmetic goes through
+      !! `c_intptr_t` because `c_ptr` is opaque and has no arithmetic of its
+      !! own; there is no bounds check, so the caller owns the indexing.
+      type(c_ptr), intent(in) :: base
+      integer(c_int64_t), intent(in) :: n_doubles  !! Element offset, not bytes
+      type(c_ptr) :: ptr
+
+      integer(c_intptr_t) :: address
+
+      if (.not. c_associated(base)) then
+         ptr = c_null_ptr
+         return
+      end if
+
+      address = transfer(base, address) &
+                + int(n_doubles, c_intptr_t)*int(BYTES_PER_DOUBLE, c_intptr_t)
+      ptr = transfer(address, ptr)
+   end function device_offset
 
    subroutine copy_to_device(device_ptr, host_array, context, error)
       !! Copy a host array of doubles onto the device
