@@ -80,13 +80,13 @@ contains
          element_symbols(iatom) = element_number_to_symbol(fragment%element_numbers(iatom))
       end do
 
-      call load_basis(settings%basis_set, element_symbols, orbital_basis, error)
+      call load_basis(settings%basis_set, element_symbols, orbital_basis, error, "orbital")
       if (error%has_error()) then
          call record_failure(result, error)
          return
       end if
 
-      call load_basis(settings%aux_basis_set, element_symbols, auxiliary_basis, error)
+      call load_basis(settings%aux_basis_set, element_symbols, auxiliary_basis, error, "auxiliary")
       if (error%has_error()) then
          call record_failure(result, error)
          return
@@ -246,7 +246,7 @@ contains
       end do
    end subroutine build_atom_bases
 
-   subroutine load_basis(basis_name, element_symbols, mol_basis, error)
+   subroutine load_basis(basis_name, element_symbols, mol_basis, error, role)
       !! Locate and parse a basis set for the atoms of a fragment
       !!
       !! `.gbs` (Gaussian94) is preferred and `.txt` (GAMESS $DATA) accepted;
@@ -255,6 +255,7 @@ contains
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_basis_type), intent(out) :: mol_basis
       type(error_t), intent(out) :: error
+      character(len=*), intent(in), optional :: role  !! "orbital" or "auxiliary", for diagnostics
 
       character(len=:), allocatable :: basis_path
       type(basis_file_t) :: basis_file
@@ -280,7 +281,59 @@ contains
       case default
          call error%set(ERROR_VALIDATION, "Unrecognized basis file format for "//trim(basis_name))
       end select
+      if (error%has_error()) return
+
+      call check_basis_covers_atoms(basis_name, basis_path, element_symbols, mol_basis, error, role)
    end subroutine load_basis
+
+   subroutine check_basis_covers_atoms(basis_name, basis_path, element_symbols, mol_basis, error, role)
+      !! Fail unless every atom came back with at least one shell
+      !!
+      !! The readers already refuse an element that is absent from the file,
+      !! but each of the three has its own notion of "absent" and a block that
+      !! parses to nothing would slip through all of them. An atom with no
+      !! basis functions is not a small error: cuEST would build a system whose
+      !! AO space simply omits that centre and converge an SCF for a different
+      !! molecule than the one that was asked for. Refuse it here, once, on the
+      !! only path any of the readers can reach the backend by.
+      character(len=*), intent(in) :: basis_name, basis_path
+      character(len=*), intent(in) :: element_symbols(:)
+      type(molecular_basis_type), intent(in) :: mol_basis
+      type(error_t), intent(inout) :: error
+      character(len=*), intent(in), optional :: role
+
+      character(len=:), allocatable :: what
+      integer :: iatom
+
+      what = "basis set"
+      if (present(role)) what = trim(role)//" basis set"
+
+      if (mol_basis%nelements /= size(element_symbols)) then
+         call error%set(ERROR_VALIDATION, "The "//what//" "//trim(basis_name)// &
+                        " produced entries for a different number of atoms than the fragment has")
+         return
+      end if
+
+      do iatom = 1, size(element_symbols)
+         if (mol_basis%elements(iatom)%nshells <= 0) then
+            call error%set(ERROR_VALIDATION, "No "//what//" defined for element "// &
+                           trim(adjustl(element_symbols(iatom)))//" (atom "//index_text(iatom)// &
+                           ") in "//trim(basis_path)//". Add the element to the basis file or "// &
+                           "choose a basis that covers it.")
+            return
+         end if
+      end do
+   end subroutine check_basis_covers_atoms
+
+   pure function index_text(value) result(text)
+      !! An integer as a trimmed string, for error messages
+      integer, intent(in) :: value
+      character(len=:), allocatable :: text
+      character(len=12) :: buffer
+
+      write (buffer, "(I0)") value
+      text = trim(buffer)
+   end function index_text
 
    subroutine record_failure(result, error)
       !! Mark a calculation as failed, carrying the diagnostic with it

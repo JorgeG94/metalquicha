@@ -129,7 +129,10 @@ contains
       type(atomic_basis_type) :: basis
       type(error_t) :: parse_error
 
-      call read_json_basis_element("../basis_sets/def2-svp.json", "Fe", basis, parse_error)
+      ! Uranium, not iron: def2-svp.json now carries the whole periodic table
+      ! up to radon, so only an element def2-SVP never defined at all is a
+      ! stable stand-in for "absent from the file".
+      call read_json_basis_element("../basis_sets/def2-svp.json", "U", basis, parse_error)
       call check(error, parse_error%has_error(), "a missing element must report an error")
    end subroutine test_missing_element
 

@@ -371,8 +371,6 @@ contains
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy
       logical :: diis_ok
-      real(dp) :: homo, lumo
-      character(len=256) :: result_line
 
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
@@ -561,12 +559,8 @@ contains
       result%occupied = occupied(:, 1:n_occ)
       result%n_occupied = n_occ      
       
-      homo = orbital_energies(n_occ)
-      lumo = orbital_energies(n_occ + 1)
-      
       if (verbose) then
-         write(result_line,'("  HOMO: ",f15.6,", LUMO: ",f15.6)') homo, lumo
-         call logger%info(trim(result_line))
+         call logger%info("  "//frontier_orbital_text("HOMO", "LUMO", orbital_energies, n_occ))
       end if
 
       if (.not. result%converged) then
@@ -673,9 +667,6 @@ contains
       integer :: n_ao, n_mo, n_alpha, n_beta, iteration, n_stored, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
       logical :: diis_ok, occupations_ok
-
-      real(dp) :: homo_alpha, lumo_alpha, homo_beta, lumo_beta
-      character(len=256) :: result_line
 
       guess_type = SCF_GUESS_GWH
       if (present(guess)) guess_type = guess
@@ -874,24 +865,51 @@ contains
       result%n_occupied_beta = n_beta
       result%spin_squared = spin_contamination(occ_a, occ_b, overlap, n_alpha, n_beta)
 
-      homo_alpha = result%orbital_energies(n_alpha)
-      lumo_alpha = result%orbital_energies(n_alpha + 1)
-      homo_beta = result%orbital_energies_beta(n_beta)
-      lumo_beta = result%orbital_energies_beta(n_beta + 1)
-
       if (verbose) then
          write (*, "(A,F12.6,A,F12.6,A)") "    <S^2> = ", result%spin_squared, &
             "   (exact ", 0.25_dp*real(n_alpha - n_beta, dp)*(real(n_alpha - n_beta, dp) + 2.0_dp), ")"
-         write(result_line,'("  HOMO alpha: ",f15.6,", LUMO alpha: ",f15.6)') homo_alpha, lumo_alpha
-         call logger%info(trim(result_line))
-         write(result_line,'("  HOMO beta: ",f15.6,", LUMO beta: ",f15.6)') homo_beta, lumo_beta
-         call logger%info(trim(result_line))
+         call logger%info("  "//frontier_orbital_text("HOMO alpha", "LUMO alpha", &
+                                                      result%orbital_energies, n_alpha))
+         call logger%info("  "//frontier_orbital_text("HOMO beta", "LUMO beta", &
+                                                      result%orbital_energies_beta, n_beta))
       end if
 
       if (.not. result%converged) then
          call error%set(ERROR_VALIDATION, "cuEST UKS did not converge in the iteration limit")
       end if
    end subroutine run_uks_scf
+
+   function frontier_orbital_text(homo_label, lumo_label, orbital_energies, n_occ) result(text)
+      !! "HOMO: ..., LUMO: ..." for one spin channel, omitting what does not exist
+      !!
+      !! Neither edge is guaranteed to be there. A spin channel with no
+      !! electrons (the beta channel of a one-electron fragment) has no HOMO,
+      !! and a saturated orbital space -- helium in a minimal basis, say -- has
+      !! no virtual to call a LUMO. Indexing blindly reads past the array.
+      character(len=*), intent(in) :: homo_label, lumo_label
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      character(len=:), allocatable :: text
+
+      character(len=64) :: buffer
+
+      text = ""
+      if (n_occ >= 1 .and. n_occ <= size(orbital_energies)) then
+         write (buffer, '(A,": ",F15.6)') homo_label, orbital_energies(n_occ)
+         text = trim(buffer)
+      end if
+
+      if (n_occ + 1 >= 1 .and. n_occ + 1 <= size(orbital_energies)) then
+         write (buffer, '(A,": ",F15.6)') lumo_label, orbital_energies(n_occ + 1)
+         if (len(text) > 0) then
+            text = text//", "//trim(buffer)
+         else
+            text = trim(buffer)
+         end if
+      end if
+
+      if (len(text) == 0) text = "no frontier orbitals to report"
+   end function frontier_orbital_text
 
    subroutine set_spin_density(orbitals, n_occ, occupied, density)
       !! Take the lowest n_occ orbitals of one spin and form D = C C^T

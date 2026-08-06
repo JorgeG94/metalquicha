@@ -19,8 +19,14 @@ force-push not yet needed.
 ## Environment (NCI Gadi)
 
 ```sh
-module load gcc/13.2.0 cuda      # or gcc/15.1.0; see the gfortran note below
+module load gcc/13.2.0 cuda openmpi/5.0.5 intel-mkl/2023.2.0
+# or gcc/15.1.0; see the gfortran note below
 ```
+
+`openmpi` supplies the `mpifort`/`mpicc` the build is configured with, and
+`intel-mkl` the BLAS/LAPACK that pic-blas links against -- without them cmake
+either finds no MPI compiler or falls back to a reference BLAS. `cuda` is
+needed to link `libcuest`, not to compile the Fortran.
 
 - **Compile/link** works on the login node. **Running cuEST** needs sm_80+, so
   it fails on the login node's V100 with `CUEST_STATUS_UNSUPPORTED_ARCHITECTURE`

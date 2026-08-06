@@ -11,7 +11,7 @@ module mqc_cuest_basis
                                                                              c_int64_t, c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_cgto, only: molecular_basis_type
+   use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_normalization, only: normalized_coefficients
    use mqc_cuest_runtime, only: cuest_status_check
    use cuest, only: cuestAOShellCreate, cuestAOShellDestroy, &
@@ -60,10 +60,21 @@ contains
       end if
 
       ! ---- per-atom shell counts -------------------------------------------
+      !
+      ! An atom with no shells would be handed to cuEST as a bare charge with
+      ! no AO functions on it -- a converged SCF for a different molecule than
+      ! the one asked for. `load_basis` rejects that already; this catches any
+      ! other route to here rather than trusting the caller.
       shell_set%n_atoms = int(mol_basis%nelements, c_int64_t)
       allocate (shell_set%n_shells_per_atom(mol_basis%nelements))
       shell_set%n_shells_total = 0
       do iatom = 1, mol_basis%nelements
+         if (mol_basis%elements(iatom)%nshells <= 0) then
+            call error%set(ERROR_VALIDATION, "cuEST basis build: atom "//atom_text(iatom)// &
+                           " ("//element_label(mol_basis%elements(iatom))//") has no basis functions")
+            call shell_set%destroy()
+            return
+         end if
          shell_set%n_shells_per_atom(iatom) = int(mol_basis%elements(iatom)%nshells, c_int64_t)
          shell_set%n_shells_total = shell_set%n_shells_total + shell_set%n_shells_per_atom(iatom)
       end do
@@ -134,6 +145,28 @@ contains
                                                  shell_params, shell), &
                               "cuestAOShellCreate", error)
    end subroutine create_shell
+
+   pure function element_label(atom_basis) result(label)
+      !! An atom's element symbol, or a placeholder if it was never filled in
+      type(atomic_basis_type), intent(in) :: atom_basis
+      character(len=:), allocatable :: label
+
+      if (allocated(atom_basis%element)) then
+         label = trim(atom_basis%element)
+      else
+         label = "unknown element"
+      end if
+   end function element_label
+
+   pure function atom_text(value) result(text)
+      !! An atom index as a trimmed string, for error messages
+      integer, intent(in) :: value
+      character(len=:), allocatable :: text
+      character(len=12) :: buffer
+
+      write (buffer, "(I0)") value
+      text = trim(buffer)
+   end function atom_text
 
    subroutine shell_set_destroy(this)
       !! Release every AO shell handle held by the set

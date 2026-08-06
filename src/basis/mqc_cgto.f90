@@ -29,8 +29,10 @@ module mqc_cgto
       !! element symbol
       type(cgto_type), allocatable :: shells(:)
       !! array of contracted shells
-      integer :: nshells
-      !! number of shells in type
+      integer :: nshells = 0
+      !! number of shells in type. Zero until `allocate_shells` runs, so an
+      !! atom the basis file never covered reads as empty rather than as
+      !! whatever was on the stack.
    contains
       procedure :: allocate_shells => allocate_basis_shells
       procedure :: destroy => atomic_basis_destroy
@@ -41,7 +43,7 @@ module mqc_cgto
       !! Molecular basis set data structure (assembled basis)
       type(atomic_basis_type), allocatable :: elements(:)
       !! array of atomic basis types
-      integer :: nelements
+      integer :: nelements = 0
       !! total number of atoms/elements in a molecule
    contains
       procedure :: allocate_elements => basis_set_allocate_elements

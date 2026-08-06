@@ -44,7 +44,9 @@ and unpack it. Only `lib/` is needed to build.
 ### 2. Build
 
 ```bash
-module load gcc/13.2.0 cuda
+# On NCI Gadi; elsewhere, whatever provides a Fortran compiler, CUDA,
+# an MPI wrapper (mpifort/mpicc) and a BLAS/LAPACK.
+module load gcc/13.2.0 cuda openmpi/5.0.5 intel-mkl/2023.2.0
 FC=mpifort CC=mpicc cmake -B build \
     -DMQC_ENABLE_TBLITE=OFF \
     -DMQC_ENABLE_CUEST=ON \

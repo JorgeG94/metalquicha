@@ -2,7 +2,7 @@
 module mqc_result_types
    !! Defines data structures for storing and managing results from
    !! quantum chemistry calculations including energies, gradients, and properties.
-   use pic_types, only: dp
+   use pic_types, only: dp, int32
    use pic_mpi_lib, only: comm_t, isend, irecv, send, recv, wait, request_t, MPI_Status
    use mqc_error, only: error_t
    implicit none
@@ -285,6 +285,71 @@ contains
       this%dipole = 0.0_dp
    end subroutine mbe_result_allocate_dipole
 
+   subroutine send_error_state(result, comm, dest, tag)
+      !! Send the failure flag, code and trace that travel with a result
+      !!
+      !! This is not optional bookkeeping. Without it a fragment that failed on
+      !! a worker arrives at the coordinator looking healthy: `has_error` stays
+      !! at its default `.false.`, the untouched SCF energy of 0 is taken at
+      !! face value, and the many-body expansion quietly sums zeros. Every
+      !! `has_error` check on the receiving side depends on this being sent.
+      type(calculation_result_t), intent(in) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: dest, tag
+
+      character(len=:), allocatable :: trace
+      integer(int32), allocatable :: encoded(:)
+      integer :: i, n
+
+      call send(comm, result%has_error, dest, tag)
+      if (.not. result%has_error) return
+
+      call send(comm, result%error%get_code(), dest, tag)
+
+      ! pic-mpi carries no character type, so the trace goes as one character
+      ! code per element. It is never empty: a zero-length message would leave
+      ! the coordinator with a failure it cannot name.
+      trace = result%error%get_full_trace()
+      if (len_trim(trace) == 0) trace = "Calculation failed without a diagnostic"
+      n = len_trim(trace)
+      allocate (encoded(n))
+      do i = 1, n
+         encoded(i) = iachar(trace(i:i))
+      end do
+      call send(comm, encoded, dest, tag)
+   end subroutine send_error_state
+
+   subroutine recv_error_state(result, comm, source, tag)
+      !! Receive the failure flag, code and trace that travel with a result
+      type(calculation_result_t), intent(inout) :: result
+      type(comm_t), intent(in) :: comm
+      integer, intent(in) :: source, tag
+
+      type(MPI_Status) :: status
+      integer(int32), allocatable :: encoded(:)
+      character(len=:), allocatable :: trace
+      integer(int32) :: code
+      integer :: i
+
+      call recv(comm, result%has_error, source, tag, status)
+      if (.not. result%has_error) then
+         call result%error%clear()
+         return
+      end if
+
+      call recv(comm, code, source, tag, status)
+      call recv(comm, encoded, source, tag, status)
+
+      allocate (character(len=size(encoded)) :: trace)
+      do i = 1, size(encoded)
+         trace(i:i) = achar(encoded(i))
+      end do
+      call result%error%set(int(code), trace)
+
+      ! A failed fragment has no usable energy, whatever the flags said.
+      result%has_energy = .false.
+   end subroutine recv_error_state
+
    subroutine result_send(result, comm, dest, tag)
       !! Send calculation result over MPI (blocking)
       !! Sends energy components and conditionally sends gradient based on has_gradient flag
@@ -326,6 +391,10 @@ contains
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
+
+      ! Failure state last, so the receiver has the whole payload drained
+      ! before it decides whether to trust any of it.
+      call send_error_state(result, comm, dest, tag)
    end subroutine result_send
 
    subroutine result_isend(result, comm, dest, tag, req)
@@ -372,6 +441,10 @@ contains
       if (result%has_dipole_derivatives) then
          call send(comm, result%dipole_derivatives, dest, tag)
       end if
+
+      ! Failure state last, so the receiver has the whole payload drained
+      ! before it decides whether to trust any of it.
+      call send_error_state(result, comm, dest, tag)
    end subroutine result_isend
 
    subroutine result_recv(result, comm, source, tag, status)
@@ -421,6 +494,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_error_state(result, comm, source, tag)
    end subroutine result_recv
 
    subroutine result_irecv(result, comm, source, tag, req)
@@ -473,6 +548,8 @@ contains
          ! Receive allocatable dipole derivatives array (MPI lib handles allocation)
          call recv(comm, result%dipole_derivatives, source, tag, status)
       end if
+
+      call recv_error_state(result, comm, source, tag)
    end subroutine result_irecv
 
 end module mqc_result_types
