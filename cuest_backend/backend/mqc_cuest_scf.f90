@@ -32,6 +32,7 @@ module mqc_cuest_scf
    use pic_lapack_interfaces, only: pic_syev
    use pic_logger, only: logger => global_logger
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_diis, only: diis_state_t
    use mqc_cuest_integrals, only: cuest_system_t
    implicit none
    private
@@ -289,53 +290,6 @@ contains
       call pic_gemm(occupied, occupied, density, transb="T", alpha=2.0_dp, beta=0.0_dp)
    end subroutine build_density
 
-   subroutine solve_diis(b_matrix, coefficients, ok)
-      !! Solve the small DIIS linear system by Gaussian elimination
-      !!
-      !! The system is at most (diis_size+1) square, so a dedicated LAPACK
-      !! solve would cost more in dependencies than it saves in time.
-      real(dp), intent(in) :: b_matrix(:, :)
-      real(dp), allocatable, intent(out) :: coefficients(:)
-      logical, intent(out) :: ok
-
-      real(dp), allocatable :: augmented(:, :)
-      integer :: n, i, j, pivot_row
-      real(dp) :: pivot, factor
-
-      n = size(b_matrix, 1)
-      allocate (augmented(n, n + 1), coefficients(n))
-      augmented(:, 1:n) = b_matrix
-      augmented(:, n + 1) = 0.0_dp
-      augmented(n, n + 1) = -1.0_dp
-      ok = .true.
-
-      do i = 1, n
-         pivot_row = i
-         do j = i + 1, n
-            if (abs(augmented(j, i)) > abs(augmented(pivot_row, i))) pivot_row = j
-         end do
-         if (pivot_row /= i) then
-            augmented([i, pivot_row], :) = augmented([pivot_row, i], :)
-         end if
-
-         pivot = augmented(i, i)
-         if (abs(pivot) < 1.0e-14_dp) then
-            ok = .false.
-            return
-         end if
-
-         do j = i + 1, n
-            factor = augmented(j, i)/pivot
-            augmented(j, i:n + 1) = augmented(j, i:n + 1) - factor*augmented(i, i:n + 1)
-         end do
-      end do
-
-      do i = n, 1, -1
-         coefficients(i) = (augmented(i, n + 1) - &
-                            sum(augmented(i, i + 1:n)*coefficients(i + 1:n)))/augmented(i, i)
-      end do
-   end subroutine solve_diis
-
    subroutine run_rhf_scf(system, atomic_numbers, coordinates, n_electrons, &
                           max_iterations, energy_tolerance, density_tolerance, &
                           use_diis, diis_size, verbose, result, error, guess, &
@@ -365,9 +319,8 @@ contains
       real(dp), allocatable :: transform(:, :), orbitals(:, :), orbital_energies(:)
       real(dp), allocatable :: occupied(:, :), diis_error(:, :), error_ortho(:, :)
       real(dp), allocatable :: scratch(:, :), ortho_scratch(:, :)
-      real(dp), allocatable :: fock_history(:, :, :), error_history(:, :, :)
-      real(dp), allocatable :: b_matrix(:, :), diis_coefficients(:)
-      integer :: n_ao, n_mo, n_occ, iteration, n_stored, i, j
+      type(diis_state_t) :: diis
+      integer :: n_ao, n_mo, n_occ, iteration, i, j
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy
       logical :: diis_ok
@@ -437,11 +390,10 @@ contains
       allocate (error_ortho(n_mo, n_mo), scratch(n_ao, n_ao), ortho_scratch(n_ao, n_mo))
       if (use_diis) then
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
-         allocate (fock_history(n_ao, n_ao, diis_size), error_history(n_mo, n_mo, diis_size))
+         call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo)
       end if
 
       previous_energy = 0.0_dp
-      n_stored = 0
       result%converged = .false.
 
       if (verbose) then
@@ -506,34 +458,11 @@ contains
 
          ! ---- DIIS extrapolation -------------------------------------------
          if (use_diis) then
-            if (n_stored < diis_size) then
-               n_stored = n_stored + 1
-            else
-               fock_history(:, :, 1:diis_size - 1) = fock_history(:, :, 2:diis_size)
-               error_history(:, :, 1:diis_size - 1) = error_history(:, :, 2:diis_size)
-            end if
-            fock_history(:, :, n_stored) = fock
-            error_history(:, :, n_stored) = error_ortho
-
-            if (n_stored > 1) then
-               allocate (b_matrix(n_stored + 1, n_stored + 1))
-               b_matrix = -1.0_dp
-               b_matrix(n_stored + 1, n_stored + 1) = 0.0_dp
-               do i = 1, n_stored
-                  do j = 1, n_stored
-                     b_matrix(i, j) = sum(error_history(:, :, i)*error_history(:, :, j))
-                  end do
-               end do
-
-               call solve_diis(b_matrix, diis_coefficients, diis_ok)
-               if (diis_ok) then
-                  fock = 0.0_dp
-                  do i = 1, n_stored
-                     fock = fock + diis_coefficients(i)*fock_history(:, :, i)
-                  end do
-               end if
-               deallocate (b_matrix, diis_coefficients)
-            end if
+            ! The history is flat, so the matrices pass through by sequence
+            ! association -- both are contiguous, and the ring buffer plus the
+            ! incrementally maintained overlap live in the state object.
+            call diis%push(fock, error_ortho)
+            call diis%extrapolate(fock, diis_ok)
          end if
 
          ! ---- new orbitals and density --------------------------------------
@@ -662,9 +591,13 @@ contains
       real(dp), allocatable :: energies_a(:), energies_b(:)
       real(dp), allocatable :: occ_a(:, :), occ_b(:, :)
       real(dp), allocatable :: err_a(:, :), err_b(:, :), scratch(:, :), ortho_scratch(:, :)
-      real(dp), allocatable :: fock_history(:, :, :, :), error_history(:, :, :, :)
-      real(dp), allocatable :: b_matrix(:, :), diis_coefficients(:)
-      integer :: n_ao, n_mo, n_alpha, n_beta, iteration, n_stored, i, j
+      type(diis_state_t) :: diis
+      real(dp), allocatable :: diis_fock(:), diis_err(:)
+         !! Both spin channels packed end to end. fock_a and fock_b are separate
+         !! allocations, so unlike the restricted case they cannot reach the flat
+         !! history by sequence association.
+      integer :: n_ao, n_mo, n_alpha, n_beta, iteration, i, j
+      integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
       logical :: diis_ok, occupations_ok
 
@@ -730,12 +663,13 @@ contains
       if (use_diis) then
          ! Index 1 of the leading dimension is alpha, index 2 beta: one DIIS
          ! problem spanning both channels.
-         allocate (fock_history(n_ao, n_ao, 2, diis_size))
-         allocate (error_history(n_mo, n_mo, 2, diis_size))
+         n_fock_spin = n_ao*n_ao
+         n_err_spin = n_mo*n_mo
+         call diis%init(diis_size, 2*n_fock_spin, 2*n_err_spin)
+         allocate (diis_fock(2*n_fock_spin), diis_err(2*n_err_spin))
       end if
       xc_energy = 0.0_dp
       previous_energy = 0.0_dp
-      n_stored = 0
       result%converged = .false.
 
       if (verbose) then
@@ -804,36 +738,18 @@ contains
          end if
 
          if (use_diis) then
-            if (n_stored < diis_size) then
-               n_stored = n_stored + 1
-            else
-               fock_history(:, :, :, 1:diis_size - 1) = fock_history(:, :, :, 2:diis_size)
-               error_history(:, :, :, 1:diis_size - 1) = error_history(:, :, :, 2:diis_size)
-            end if
-            fock_history(:, :, 1, n_stored) = fock_a
-            fock_history(:, :, 2, n_stored) = fock_b
-            error_history(:, :, 1, n_stored) = err_a(1:n_mo, 1:n_mo)
-            error_history(:, :, 2, n_stored) = err_b(1:n_mo, 1:n_mo)
+            ! Both spins stacked into one error vector, so a single
+            ! extrapolation drives both channels.
+            diis_fock(1:n_fock_spin) = reshape(fock_a, [n_fock_spin])
+            diis_fock(n_fock_spin + 1:) = reshape(fock_b, [n_fock_spin])
+            diis_err(1:n_err_spin) = reshape(err_a(1:n_mo, 1:n_mo), [n_err_spin])
+            diis_err(n_err_spin + 1:) = reshape(err_b(1:n_mo, 1:n_mo), [n_err_spin])
 
-            if (n_stored > 1) then
-               allocate (b_matrix(n_stored + 1, n_stored + 1))
-               b_matrix = -1.0_dp
-               b_matrix(n_stored + 1, n_stored + 1) = 0.0_dp
-               do i = 1, n_stored
-                  do j = 1, n_stored
-                     b_matrix(i, j) = sum(error_history(:, :, :, i)*error_history(:, :, :, j))
-                  end do
-               end do
-               call solve_diis(b_matrix, diis_coefficients, diis_ok)
-               if (diis_ok) then
-                  fock_a = 0.0_dp
-                  fock_b = 0.0_dp
-                  do i = 1, n_stored
-                     fock_a = fock_a + diis_coefficients(i)*fock_history(:, :, 1, i)
-                     fock_b = fock_b + diis_coefficients(i)*fock_history(:, :, 2, i)
-                  end do
-               end if
-               deallocate (b_matrix, diis_coefficients)
+            call diis%push(diis_fock, diis_err)
+            call diis%extrapolate(diis_fock, diis_ok)
+            if (diis_ok) then
+               fock_a = reshape(diis_fock(1:n_fock_spin), [n_ao, n_ao])
+               fock_b = reshape(diis_fock(n_fock_spin + 1:), [n_ao, n_ao])
             end if
          end if
 
