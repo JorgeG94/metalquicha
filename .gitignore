@@ -64,3 +64,7 @@ basis_sets/*.json
 # Python bytecode caches -- regenerated on every run, interpreter-version specific
 __pycache__/
 *.pyc
+
+# Local Python virtual environments
+.venv/
+venv/
