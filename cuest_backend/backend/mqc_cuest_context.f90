@@ -86,10 +86,16 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_j     !! Coulomb output
       type(device_pool_t) :: scratch_k     !! Exchange output
       type(device_pool_t) :: scratch_xc    !! XC potential output
-      type(device_pool_t) :: scratch_fock  !! Assembled Fock, stays resident
+      type(device_pool_t) :: scratch_fock
+         !! Assembled Fock, stays resident. Unrestricted runs size this to hold
+         !! BOTH spins back to back, so the pair is one contiguous vector -- the
+         !! DIIS history extrapolates over both channels at once and wants them
+         !! that way.
       type(device_pool_t) :: scratch_core  !! Core Hamiltonian, uploaded once
       type(device_pool_t) :: scratch_ovlp  !! Overlap, uploaded once
-      type(device_pool_t) :: scratch_error  !! DIIS error vector, n_mo x n_mo
+      type(device_pool_t) :: scratch_error
+         !! DIIS error vector, n_mo x n_mo -- both spins back to back when
+         !! unrestricted, for the same reason as `scratch_fock`
       type(device_pool_t) :: scratch_transform    !! Orthogonalizer X, uploaded once
       type(device_pool_t) :: scratch_commutator   !! FDS - SDF in the AO basis
       type(device_pool_t) :: scratch_work         !! Intermediate for the above
@@ -111,6 +117,15 @@ module mqc_cuest_context
          !! cuSOLVER's convergence flag, a single device int. Held as one
          !! double because that is the unit the pools count in, and a double is
          !! more than wide enough.
+
+      ! The beta twins, allocated only for unrestricted runs. The alpha channel
+      ! reuses the buffers above, so a restricted calculation pays nothing for
+      ! any of these.
+      type(device_pool_t) :: scratch_density_alpha  !! D^a
+      type(device_pool_t) :: scratch_density_beta   !! D^b
+      type(device_pool_t) :: scratch_k_beta         !! K[C_b]
+      type(device_pool_t) :: scratch_xc_beta        !! Vxc_b
+      type(device_pool_t) :: scratch_eigenvalues_beta  !! Beta orbital energies
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -249,6 +264,11 @@ contains
       call this%scratch_eigenvalues%release()
       call this%scratch_solver%release()
       call this%scratch_devinfo%release()
+      call this%scratch_density_alpha%release()
+      call this%scratch_density_beta%release()
+      call this%scratch_k_beta%release()
+      call this%scratch_xc_beta%release()
+      call this%scratch_eigenvalues_beta%release()
 
       if (c_associated(this%cusolver_handle)) status = cusolverDnDestroy(this%cusolver_handle)
       this%cusolver_handle = c_null_ptr
