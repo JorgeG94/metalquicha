@@ -158,7 +158,8 @@ contains
       integer, intent(in) :: charge
       logical, intent(in) :: verbose
 
-      real(dp) :: sums(3, 3), residual
+      real(dp) ::  residual
+      real(dp) :: sums(3, 3)
       integer :: n_atoms, iatom, k, kp
       character(len=96) :: line
 

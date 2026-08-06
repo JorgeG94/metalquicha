@@ -72,7 +72,8 @@ contains
       !! Print detailed energy breakdown for each fragment
       !! Shows full energy and deltaE correction for all monomers, dimers, trimers, etc.
       !! Uses int64 for fragment_count to handle large fragment counts that overflow int32.
-      integer, intent(in) :: polymers(:, :), max_level
+      integer, intent(in) ::  max_level
+      integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: fragment_count
       real(dp), intent(in) :: energies(:), delta_energies(:)
 

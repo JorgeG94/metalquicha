@@ -102,20 +102,21 @@ contains
       end if
    end function get_molecule_name
 
-   logical function ends_with(str, suffix)
+   function ends_with(str, suffix) result(matches)
       !! Check if string ends with suffix
       character(len=*), intent(in) :: str, suffix
+      logical :: matches
       integer :: str_len, suffix_len
 
       str_len = len_trim(str)
       suffix_len = len_trim(suffix)
 
       if (suffix_len > str_len) then
-         ends_with = .false.
+         matches = .false.
          return
       end if
 
-      ends_with = (str(str_len - suffix_len + 1:str_len) == suffix)
+      matches = (str(str_len - suffix_len + 1:str_len) == suffix)
    end function ends_with
 
 end module mqc_io_helpers

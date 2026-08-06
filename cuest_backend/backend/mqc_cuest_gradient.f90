@@ -48,7 +48,8 @@ contains
       real(dp), intent(out) :: gradient(:, :)    !! (3, n_atoms)
 
       integer :: iatom, jatom
-      real(dp) :: separation(3), distance, factor
+      real(dp) ::  distance, factor
+      real(dp) :: separation(3)
 
       gradient = 0.0_dp
       do iatom = 1, size(atomic_numbers)

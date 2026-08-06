@@ -55,7 +55,8 @@ contains
    subroutine fragment_lookup_insert(this, monomers, n, fragment_idx, error)
       !! Insert a monomer combination -> fragment index mapping
       class(fragment_lookup_t), intent(inout) :: this
-      integer, intent(in) :: monomers(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: monomers(:)
       integer(int64), intent(in) :: fragment_idx
       type(error_t), intent(out), optional :: error
 
@@ -104,11 +105,13 @@ contains
    function fragment_lookup_find(this, monomers, n) result(idx)
       !! Find fragment index for given monomer combination
       class(fragment_lookup_t), intent(in) :: this
-      integer, intent(in) :: monomers(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: monomers(:)
       integer(int64) :: idx
 
       integer(int32) :: hash_val
-      integer :: bucket, sorted_key(n)
+      integer :: bucket
+      integer :: sorted_key(n)
       type(hash_entry_t), pointer :: entry
 
       ! Sort monomers for canonical key
@@ -167,7 +170,9 @@ contains
    ! Helper functions for hash table
    pure function arrays_equal_internal(a, b, n) result(equal)
       !! Check if two arrays are equal
-      integer, intent(in) :: a(:), b(:), n
+      integer, intent(in) ::   n
+      integer, intent(in) :: b(:)
+      integer, intent(in) :: a(:)
       logical :: equal
       integer :: i
 

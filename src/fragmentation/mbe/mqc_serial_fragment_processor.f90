@@ -12,7 +12,8 @@ contains
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
       integer(int64), intent(in) :: total_fragments
-      integer, intent(in) :: polymers(:, :), max_level
+      integer, intent(in) ::  max_level
+      integer, intent(in) :: polymers(:, :)
       type(system_geometry_t), intent(in) :: sys_geom
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type

@@ -1,3 +1,4 @@
+#ifdef MQC_HAVE_BASIS_SETS
 module test_mqc_json_basis_reader
    !! Pins the Basis Set Exchange JSON reader against transcribed reference data.
    !!
@@ -200,3 +201,16 @@ program tester_mqc_json_basis_reader
       error stop
    end if
 end program tester_mqc_json_basis_reader
+
+#else
+program tester_mqc_json_basis_reader
+   !! The reference files this test parses -- basis_sets/def2-svp.json and
+   !! basis_sets/sto-3g.json -- are unpacked from the Basis Set Exchange bundle
+   !! by cmake/modules/ExtractBasisSets.cmake, which only the CMake build runs.
+   !! They are gitignored, so under fpm there is nothing on disk to read and the
+   !! test would fail on a missing file rather than on the reader. It runs in
+   !! full under CMake, which is where the files exist.
+   implicit none
+   write (*, "(A)") "# mqc_json_basis_reader: skipped (basis sets not extracted)"
+end program tester_mqc_json_basis_reader
+#endif

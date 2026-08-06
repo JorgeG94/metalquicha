@@ -35,11 +35,11 @@ set(MQC_CUEST_BINDINGS_TAG
     "main"
     CACHE STRING "Git tag/branch of mod_cuest when MQC_CUEST_BINDINGS=fetch")
 
-# Basis sets come out of the Basis Set Exchange bundle at configure time.
-# Add a name here (lowercase, as BSE spells it) to have it extracted; the
-# bundle has every basis BSE publishes, so nothing needs downloading.
-# basis_sets/*.json is derived entirely from this list -- anything else found
-# there is deleted -- so removing a name here removes it from the build.
+# Basis sets come out of the Basis Set Exchange bundle at configure time. Add a
+# name here (lowercase, as BSE spells it) to have it extracted; the bundle has
+# every basis BSE publishes, so nothing needs downloading. basis_sets/*.json is
+# derived entirely from this list -- anything else found there is deleted -- so
+# removing a name here removes it from the build.
 set(MQC_BASIS_BUNDLE
     "basis_sets-json-0.12.tar.bz2"
     CACHE STRING "Basis Set Exchange bundle under basis_sets/")

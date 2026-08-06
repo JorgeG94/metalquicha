@@ -195,7 +195,8 @@ contains
       !! Helper to generate all k-way intersections at a specific level k
       use mqc_physical_fragment, only: system_geometry_t
       type(system_geometry_t), intent(in) :: sys_geom
-      integer, intent(in) :: monomers(:), n_monomers, k, max_atoms
+      integer, intent(in) ::  n_monomers, k, max_atoms
+      integer, intent(in) :: monomers(:)
       integer, intent(inout) :: combination(:)
       integer, intent(inout) :: temp_intersections(:, :), temp_sets(:, :), temp_levels(:)
       integer, intent(inout) :: intersection_count
@@ -461,7 +462,9 @@ contains
    subroutine generate_k_way_intersections_from_lists(atom_lists, n_atoms_list, n_sets, k, combination, max_atoms, &
                                                       temp_intersections, temp_sets, temp_levels, intersection_count)
       !! Generate all k-way intersections from atom lists
-      integer, intent(in) :: atom_lists(:, :), n_atoms_list(:), n_sets, k, max_atoms
+      integer, intent(in) ::   n_sets, k, max_atoms
+      integer, intent(in) :: n_atoms_list(:)
+      integer, intent(in) :: atom_lists(:, :)
       integer, intent(inout) :: combination(:)
       integer, intent(inout) :: temp_intersections(:, :), temp_sets(:, :), temp_levels(:)
       integer, intent(inout) :: intersection_count
@@ -832,7 +835,9 @@ contains
 
    pure subroutine intersect_atom_lists(atoms1, n1, atoms2, n2, intersection, n_intersect)
       !! Compute intersection of two atom lists
-      integer, intent(in) :: atoms1(:), n1, atoms2(:), n2
+      integer, intent(in) ::  n1, n2
+      integer, intent(in) :: atoms2(:)
+      integer, intent(in) :: atoms1(:)
       integer, intent(out) :: intersection(:)
       integer, intent(out) :: n_intersect
       integer :: i, j

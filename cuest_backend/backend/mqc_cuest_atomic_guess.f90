@@ -69,7 +69,8 @@ contains
 
       ! Subshell capacities in Madelung (n+l, then n) order: 1s 2s 2p 3s 3p 4s
       ! 3d 4p 5s 4d 5p 6s 4f 5d 6p 7s
-      integer, parameter :: CAPACITY(16) = [2, 2, 6, 2, 6, 2, 10, 6, 2, 10, 6, 2, 14, 10, 6, 2]
+      integer, parameter :: N_SUBSHELLS = 16
+      integer, parameter :: CAPACITY(N_SUBSHELLS) = [2, 2, 6, 2, 6, 2, 10, 6, 2, 10, 6, 2, 14, 10, 6, 2]
       integer :: remaining, i, in_shell, degeneracy, unpaired
 
       remaining = atomic_number
@@ -174,7 +175,8 @@ contains
 
       type(cuest_system_t) :: system
       type(scf_result_t) :: scf
-      integer :: numbers(1), multiplicity, n_alpha, n_beta
+      integer ::  multiplicity, n_alpha, n_beta
+      integer :: numbers(1)
       real(dp) :: coordinates(3, 1)
 
       numbers(1) = atomic_number

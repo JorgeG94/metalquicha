@@ -15,8 +15,14 @@
 !    * cuda_device_name / cuda_capability  -- readable device properties
 ! ============================================================================
 module cuda_helpers
-   use, intrinsic :: iso_c_binding
-   use cuda_runtime
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_char, c_int, c_int32_t, c_int64_t, &
+                                                                             c_size_t, c_float, c_double, &
+                                                                             c_loc, c_f_pointer, c_associated, &
+                                                                             c_null_ptr, c_null_char
+   use cuda_runtime, only: cudaGetErrorString, cudaGetErrorName, cudaSuccess, &
+                           cudaMalloc, cudaFree, cudaMemcpy, &
+                           cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost, &
+                           cudaDeviceProp, cudaGetDeviceCount, cudaGetDeviceProperties
    implicit none
    private
 
@@ -212,7 +218,7 @@ contains
          write (*, "(2X,A,I0,A,A,A,I0,A,F6.1,A)") &
             "[", i, "] ", cuda_device_name(prop), &
             "  sm_", cuda_capability(prop), &
-            "  ", real(prop%totalGlobalMem)/1024.0**3, " GiB"
+            "  ", real(prop%totalGlobalMem)/1024.0_c_double**3, " GiB"
       end do
    end subroutine cuda_report_devices
 

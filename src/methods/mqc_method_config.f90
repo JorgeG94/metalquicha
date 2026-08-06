@@ -281,10 +281,11 @@ module mqc_method_config
 
 contains
 
-   pure logical function xtb_has_solvation(this)
+   pure function xtb_has_solvation(this) result(has_solvation)
       !! Check if solvation is configured for XTB
       class(xtb_config_t), intent(in) :: this
-      xtb_has_solvation = len_trim(this%solvent) > 0 .or. this%dielectric > 0.0_dp
+      logical :: has_solvation
+      has_solvation = len_trim(this%solvent) > 0 .or. this%dielectric > 0.0_dp
    end function xtb_has_solvation
 
    subroutine xtb_configure(this, use_cds, use_shift, dielectric, cpcm_nang, cpcm_rscale, solvent, solvation_model)

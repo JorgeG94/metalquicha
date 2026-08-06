@@ -1479,7 +1479,8 @@ contains
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params, coefficient_ptr
       integer(c_int) :: status
-      integer(c_int64_t) :: occupancies(2), n_matrices
+      integer(c_int64_t) ::  n_matrices
+      integer(c_int64_t) :: occupancies(2)
       real(dp) :: coefficient_scale
       real(dp), allocatable :: flat(:)
       integer :: n_a, n_b

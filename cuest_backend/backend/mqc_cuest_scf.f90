@@ -557,8 +557,8 @@ contains
       ! The gradient needs the occupied orbitals and their energies to form
       ! the energy-weighted density, so hand them back rather than recomputing.
       result%occupied = occupied(:, 1:n_occ)
-      result%n_occupied = n_occ      
-      
+      result%n_occupied = n_occ
+
       if (verbose) then
          call logger%info("  "//frontier_orbital_text("HOMO", "LUMO", orbital_energies, n_occ))
       end if

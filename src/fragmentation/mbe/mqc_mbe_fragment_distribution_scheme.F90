@@ -67,7 +67,8 @@ module mqc_mbe_fragment_distribution_scheme
                                                   method_config, calc_type, json_data)
          implicit none
          integer(int64), intent(in) :: total_fragments
-         integer, intent(in) :: polymers(:, :), max_level
+         integer, intent(in) ::  max_level
+         integer, intent(in) :: polymers(:, :)
          type(system_geometry_t), intent(in) :: sys_geom
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type

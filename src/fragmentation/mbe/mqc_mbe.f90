@@ -34,7 +34,8 @@ contains
       !! deltaE(i1,i2,...,in) = E(i1,i2,...,in) - sum of all subset deltaE values
       !! All subsets must have been computed already (guaranteed by processing fragments in order)
       integer(int64), intent(in) :: fragment_idx  !! Index of this fragment (already known)
-      integer, intent(in) :: fragment(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: fragment(:)
       type(fragment_lookup_t), intent(in) :: lookup  !! Pre-built hash table for lookups
       real(dp), intent(in) :: energies(:), delta_energies(:)  !! Pre-computed delta values
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
@@ -178,7 +179,8 @@ contains
       !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: fragment(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: fragment(:)
       type(fragment_lookup_t), intent(in) :: lookup
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_gradients(:, :, :)  !! (3, total_atoms, fragment_count)
@@ -238,7 +240,8 @@ contains
       !! Dipoles are additive vectors in the system frame, no coordinate mapping needed
       use mqc_result_types, only: calculation_result_t
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: fragment(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: fragment(:)
       type(fragment_lookup_t), intent(in) :: lookup
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_dipoles(:, :)  !! (3, fragment_count)
@@ -412,7 +415,8 @@ contains
       use mqc_result_types, only: calculation_result_t
       use mqc_error, only: error_t
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: fragment(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: fragment(:)
       type(fragment_lookup_t), intent(in) :: lookup
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_hessians(:, :, :)  !! (3*total_atoms, 3*total_atoms, fragment_count)
@@ -462,7 +466,8 @@ contains
       use mqc_result_types, only: calculation_result_t
       use mqc_error, only: error_t
       integer(int64), intent(in) :: fragment_idx
-      integer, intent(in) :: fragment(:), n
+      integer, intent(in) ::  n
+      integer, intent(in) :: fragment(:)
       type(fragment_lookup_t), intent(in) :: lookup
       type(calculation_result_t), intent(in) :: results(:)
       real(dp), intent(inout) :: delta_dipole_derivs(:, :, :)  !! (3, 3*total_atoms, fragment_count)
@@ -599,7 +604,8 @@ contains
 
       ! Required arguments
       integer(int64), intent(in) :: fragment_count
-      integer, intent(in) :: polymers(:, :), max_level
+      integer, intent(in) ::  max_level
+      integer, intent(in) :: polymers(:, :)
       type(calculation_result_t), intent(in) :: results(:)
       type(mbe_result_t), intent(inout) :: mbe_result  !! Pre-allocated by caller
 
