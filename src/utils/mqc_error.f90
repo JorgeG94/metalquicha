@@ -25,8 +25,14 @@ module mqc_error
       character(len=:), allocatable :: message  !! Error message
 
       !! Stack trace support
+      !!
+      !! Allocated on the first add_context rather than held inline. An error_t is
+      !! embedded by value in calculation_result_t, which the coordinator allocates
+      !! one of per fragment -- an inline MAX_STACK_DEPTH*MAX_LOCATION_LEN buffer made
+      !! every result 3104 bytes, of which 2560 was an empty call stack. On runs with
+      !! millions of fragments that was gigabytes of untouched buffer on rank 0.
       integer :: stack_depth = 0  !! Current stack depth
-      character(len=MAX_LOCATION_LEN) :: call_stack(MAX_STACK_DEPTH)  !! Call locations
+      character(len=MAX_LOCATION_LEN), allocatable :: call_stack(:)  !! Call locations
    contains
       procedure :: has_error => error_has_error
       procedure :: set => error_set
@@ -56,7 +62,9 @@ contains
 
       this%code = code
       this%message = trim(message)
-      this%stack_depth = 0  ! Reset stack when setting new error
+      ! A new error starts a new stack; release the old one rather than keep it live
+      this%stack_depth = 0
+      if (allocated(this%call_stack)) deallocate (this%call_stack)
    end subroutine error_set
 
    pure subroutine error_clear(this)
@@ -65,6 +73,7 @@ contains
       this%code = SUCCESS
       this%stack_depth = 0
       if (allocated(this%message)) deallocate (this%message)
+      if (allocated(this%call_stack)) deallocate (this%call_stack)
    end subroutine error_clear
 
    pure function error_get_code(this) result(code)
@@ -98,6 +107,11 @@ contains
       class(error_t), intent(inout) :: this
       character(len=*), intent(in) :: location
 
+      if (.not. allocated(this%call_stack)) then
+         allocate (this%call_stack(MAX_STACK_DEPTH))
+         this%call_stack = ""
+      end if
+
       if (this%stack_depth < MAX_STACK_DEPTH) then
          this%stack_depth = this%stack_depth + 1
          this%call_stack(this%stack_depth) = location
@@ -128,7 +142,7 @@ contains
       end if
 
       ! Add stack trace if available
-      if (this%stack_depth > 0) then
+      if (this%stack_depth > 0 .and. allocated(this%call_stack)) then
          buffer(pos:) = new_line("a")//"Call stack (most recent first):"
          pos = len_trim(buffer) + 1
 
@@ -164,7 +178,7 @@ contains
       end if
 
       ! Print stack trace if available
-      if (this%stack_depth > 0) then
+      if (this%stack_depth > 0 .and. allocated(this%call_stack)) then
          write (out_unit, "(A)") "Call stack (most recent first):"
          do i = this%stack_depth, 1, -1
             write (out_unit, "(A,I0,A)", advance="no") "  [", i, "] "
