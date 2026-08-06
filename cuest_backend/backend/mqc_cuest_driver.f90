@@ -164,26 +164,26 @@ contains
       if (.not. error%has_error()) then
          if (unrestricted) then
             if (guess_type == SCF_GUESS_SAC) then
-               call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
+               call run_uks_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, &
                                 guess=guess_type, guess_alpha=guess_alpha, guess_beta=guess_beta)
             else
-               call run_uks_scf(system, fragment%element_numbers, fragment%coordinates, &
+               call run_uks_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, fragment%multiplicity, settings%max_iter, &
                                 settings%energy_tol, settings%density_tol, settings%use_diis, &
                                 settings%diis_size, settings%verbose, scf, error, guess=guess_type)
             end if
          else
             if (guess_type == SCF_GUESS_SAC) then
-               call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+               call run_rhf_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type, &
                                 guess_alpha=guess_alpha, guess_beta=guess_beta)
             else
-               call run_rhf_scf(system, fragment%element_numbers, fragment%coordinates, &
+               call run_rhf_scf(system, context, fragment%element_numbers, fragment%coordinates, &
                                 fragment%nelec, settings%max_iter, settings%energy_tol, &
                                 settings%density_tol, settings%use_diis, settings%diis_size, &
                                 settings%verbose, scf, error, guess=guess_type)

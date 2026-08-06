@@ -51,6 +51,8 @@ module mqc_json_output_types
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
+      character(len=16) :: fragment_breakdown = "csv"
+         !! Where the per-fragment table goes: "csv", "json" or "none"
 
       !----- GMBE PIE-specific data -----
       integer, allocatable :: pie_atom_sets(:, :)     !! Unique atom sets (max_atoms, n_terms)

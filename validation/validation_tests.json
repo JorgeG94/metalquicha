@@ -93,6 +93,14 @@
       "type": "fragmented"
     },
     {
+      "name": "Hessian + gradient prism MBE(3)",
+      "input": "inputs/prism_hess3.mqc",
+      "expected_energy": -34.6829984115,
+      "expected_gradient_norm": 0.0154149709,
+      "expected_hessian_frobenius_norm": 3.247168636917,
+      "type": "fragmented"
+    },
+    {
       "name": "Hessian + gradient unfrag h3o",
       "input": "inputs/hess_h3o.mqc",
       "expected_energy": -5.773131213617977,

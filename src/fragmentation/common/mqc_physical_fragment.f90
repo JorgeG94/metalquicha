@@ -451,7 +451,7 @@ contains
 
    end subroutine build_fragment_from_atom_list
 
-   subroutine redistribute_cap_gradients(fragment, fragment_gradient, system_gradient)
+   subroutine redistribute_cap_gradients(fragment, fragment_gradient, system_gradient, scale)
       !! Redistribute hydrogen cap gradients to original atoms
       !!
       !! This subroutine handles gradient redistribution for fragments with hydrogen caps.
@@ -472,17 +472,22 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_gradient(:, :)   !! (3, n_atoms_fragment)
       real(dp), intent(inout) :: system_gradient(:, :)  !! (3, n_atoms_system)
+      real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
       integer :: i, local_idx, global_idx
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
+      real(dp) :: w
+
+      w = 1.0_dp
+      if (present(scale)) w = scale
 
       n_real_atoms = fragment%n_atoms - fragment%n_caps
 
       ! Accumulate gradients for real atoms using local→global mapping
       do i = 1, n_real_atoms
          global_idx = fragment%local_to_global(i)
-         system_gradient(:, global_idx) = system_gradient(:, global_idx) + fragment_gradient(:, i)
+         system_gradient(:, global_idx) = system_gradient(:, global_idx) + w*fragment_gradient(:, i)
       end do
 
       ! Redistribute cap gradients to original atoms they replace
@@ -494,13 +499,13 @@ contains
 
             ! Add cap gradient to the atom it replaces
             system_gradient(:, global_original_idx) = system_gradient(:, global_original_idx) + &
-                                                      fragment_gradient(:, local_cap_idx)
+                                                      w*fragment_gradient(:, local_cap_idx)
          end do
       end if
 
    end subroutine redistribute_cap_gradients
 
-   subroutine redistribute_cap_hessian(fragment, fragment_hessian, system_hessian)
+   subroutine redistribute_cap_hessian(fragment, fragment_hessian, system_hessian, scale)
       !! Redistribute hydrogen cap Hessian to original atoms
       !!
       !! This subroutine handles Hessian redistribution for fragments with hydrogen caps.
@@ -519,12 +524,17 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_hessian(:, :)   !! (3*n_atoms_fragment, 3*n_atoms_fragment)
       real(dp), intent(inout) :: system_hessian(:, :)  !! (3*n_atoms_system, 3*n_atoms_system)
+      real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
       integer :: i, j, local_i, local_j, global_i, global_j
       integer :: icart, jcart
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
       integer :: i_cap_2, local_cap_idx_2, global_original_idx_2
+      real(dp) :: w
+
+      w = 1.0_dp
+      if (present(scale)) w = scale
 
       n_real_atoms = fragment%n_atoms - fragment%n_caps
 
@@ -540,7 +550,7 @@ contains
                do jcart = 0, 2  ! x, y, z for atom j
                   system_hessian(3*(global_i - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
                      system_hessian(3*(global_i - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
-                     fragment_hessian(3*(i - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+                     w*fragment_hessian(3*(i - 1) + icart + 1, 3*(j - 1) + jcart + 1)
                end do
             end do
          end do
@@ -559,7 +569,7 @@ contains
                   do jcart = 0, 2
                      system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) = &
                         system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_j - 1) + jcart + 1) + &
-                        fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(j - 1) + jcart + 1)
+                        w*fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(j - 1) + jcart + 1)
                   end do
                end do
             end do
@@ -571,7 +581,7 @@ contains
                   do jcart = 0, 2
                      system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) = &
                         system_hessian(3*(global_i - 1) + icart + 1, 3*(global_original_idx - 1) + jcart + 1) + &
-                        fragment_hessian(3*(i - 1) + icart + 1, 3*(local_cap_idx - 1) + jcart + 1)
+                        w*fragment_hessian(3*(i - 1) + icart + 1, 3*(local_cap_idx - 1) + jcart + 1)
                   end do
                end do
             end do
@@ -585,7 +595,7 @@ contains
                   do jcart = 0, 2
                     system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) = &
                     system_hessian(3*(global_original_idx - 1) + icart + 1, 3*(global_original_idx_2 - 1) + jcart + 1) + &
-                        fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(local_cap_idx_2 - 1) + jcart + 1)
+                        w*fragment_hessian(3*(local_cap_idx - 1) + icart + 1, 3*(local_cap_idx_2 - 1) + jcart + 1)
                   end do
                end do
             end do
@@ -594,7 +604,7 @@ contains
 
    end subroutine redistribute_cap_hessian
 
-   subroutine redistribute_cap_dipole_derivatives(fragment, fragment_dipole_derivs, system_dipole_derivs)
+   subroutine redistribute_cap_dipole_derivatives(fragment, fragment_dipole_derivs, system_dipole_derivs, scale)
       !! Redistribute hydrogen cap dipole derivatives to original atoms
       !!
       !! Dipole derivatives have shape (3, 3*N_atoms) where each column corresponds to
@@ -607,10 +617,15 @@ contains
       type(physical_fragment_t), intent(in) :: fragment
       real(dp), intent(in) :: fragment_dipole_derivs(:, :)   !! (3, 3*n_atoms_fragment)
       real(dp), intent(inout) :: system_dipole_derivs(:, :)  !! (3, 3*n_atoms_system)
+      real(dp), intent(in), optional :: scale  !! Weight applied to this fragment (default 1)
 
       integer :: i, local_i, global_i, icart
       integer :: i_cap, local_cap_idx, global_original_idx
       integer :: n_real_atoms
+      real(dp) :: w
+
+      w = 1.0_dp
+      if (present(scale)) w = scale
 
       n_real_atoms = fragment%n_atoms - fragment%n_caps
 
@@ -623,7 +638,7 @@ contains
          do icart = 1, 3
             system_dipole_derivs(:, (global_i - 1)*3 + icart) = &
                system_dipole_derivs(:, (global_i - 1)*3 + icart) + &
-               fragment_dipole_derivs(:, (local_i - 1)*3 + icart)
+               w*fragment_dipole_derivs(:, (local_i - 1)*3 + icart)
          end do
       end do
 
@@ -637,7 +652,7 @@ contains
             do icart = 1, 3
                system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) = &
                   system_dipole_derivs(:, (global_original_idx - 1)*3 + icart) + &
-                  fragment_dipole_derivs(:, (local_cap_idx - 1)*3 + icart)
+                  w*fragment_dipole_derivs(:, (local_cap_idx - 1)*3 + icart)
             end do
          end do
       end if

@@ -19,16 +19,20 @@ module mqc_cuest_context
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, c_associated
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cuest_runtime, only: cuest_status_check, cuda_status_check, &
+                                cublas_status_check, cusolver_status_check, &
                                 device_alloc, device_free
    use cuest, only: cuestCreate, cuestDestroy, cuestParametersCreate, &
                     cuestParametersDestroy, cuestSetMathMode, &
                     CUEST_HANDLE_PARAMETERS, CUEST_NATIVE_FP64_MATH_MODE
+   use cublas, only: cublasCreate, cublasDestroy
+   use cusolver, only: cusolverDnCreate, cusolverDnDestroy
    use cuda_runtime, only: cudaSetDevice, cudaGetDeviceCount
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
    implicit none
    private
 
+   public :: device_pool_t          !! Grow-only device buffer shared across fragments
    public :: cuest_context_t        !! Per-rank cuEST handle
    public :: get_cuest_context      !! Lazily initialized process-wide context
    public :: finalize_cuest_context  !! Release the process-wide context
@@ -51,6 +55,13 @@ module mqc_cuest_context
    type :: cuest_context_t
       !! A live cuEST handle bound to one GPU, plus reusable device scratch
       type(c_ptr) :: handle = c_null_ptr  !! cuestHandle_t
+      type(c_ptr) :: cublas_handle = c_null_ptr
+         !! cublasHandle_t, for the SCF's own linear algebra on device-resident
+         !! matrices. Created alongside the cuEST handle because it is bound to
+         !! the same device and has the same per-rank lifetime.
+      type(c_ptr) :: cusolver_handle = c_null_ptr
+         !! cusolverDnHandle_t, for the Fock diagonalization. Same device, same
+         !! lifetime, same reason to create it once per rank.
       integer :: device_id = -1           !! CUDA device this handle is bound to
       logical :: initialized = .false.    !! Whether `handle` is live
 
@@ -67,6 +78,54 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_charges  !! Nuclear charges
       type(device_pool_t) :: scratch_gradient  !! natom x 3 gradient output
       type(device_pool_t) :: scratch_charge_gradient  !! Hellmann-Feynman half
+
+      ! One output buffer per Fock term. `scratch_result` alone cannot serve
+      ! all three: J, K and Vxc would each have to be pulled to the host before
+      ! the next call overwrote it, which is what forced the round trip the
+      ! device-resident path exists to remove.
+      type(device_pool_t) :: scratch_j     !! Coulomb output
+      type(device_pool_t) :: scratch_k     !! Exchange output
+      type(device_pool_t) :: scratch_xc    !! XC potential output
+      type(device_pool_t) :: scratch_fock
+         !! Assembled Fock, stays resident. Unrestricted runs size this to hold
+         !! BOTH spins back to back, so the pair is one contiguous vector -- the
+         !! DIIS history extrapolates over both channels at once and wants them
+         !! that way.
+      type(device_pool_t) :: scratch_core  !! Core Hamiltonian, uploaded once
+      type(device_pool_t) :: scratch_ovlp  !! Overlap, uploaded once
+      type(device_pool_t) :: scratch_error
+         !! DIIS error vector, n_mo x n_mo -- both spins back to back when
+         !! unrestricted, for the same reason as `scratch_fock`
+      type(device_pool_t) :: scratch_transform    !! Orthogonalizer X, uploaded once
+      type(device_pool_t) :: scratch_commutator   !! FDS - SDF in the AO basis
+      type(device_pool_t) :: scratch_work         !! Intermediate for the above
+
+      ! DIIS history. The largest single allocation here -- diis_size copies of
+      ! the Fock matrix -- which is exactly why it is pooled across fragments
+      ! rather than allocated per SCF.
+      type(device_pool_t) :: scratch_diis_fock   !! n_fock x max_vectors
+      type(device_pool_t) :: scratch_diis_error  !! n_error x max_vectors
+      type(device_pool_t) :: scratch_diis_row    !! max_vectors, one overlap row
+
+      ! Fock diagonalization. `scratch_solver` is cuSOLVER's own workspace,
+      ! sized by a bufferSize query rather than by anything derivable here.
+      type(device_pool_t) :: scratch_fock_ortho  !! F' = X^T F X, overwritten with C'
+      type(device_pool_t) :: scratch_orbitals    !! C = X C', (n_ao, n_mo)
+      type(device_pool_t) :: scratch_eigenvalues  !! Orbital energies, (n_mo)
+      type(device_pool_t) :: scratch_solver      !! cusolverDnDsyevd workspace
+      type(device_pool_t) :: scratch_devinfo
+         !! cuSOLVER's convergence flag, a single device int. Held as one
+         !! double because that is the unit the pools count in, and a double is
+         !! more than wide enough.
+
+      ! The beta twins, allocated only for unrestricted runs. The alpha channel
+      ! reuses the buffers above, so a restricted calculation pays nothing for
+      ! any of these.
+      type(device_pool_t) :: scratch_density_alpha  !! D^a
+      type(device_pool_t) :: scratch_density_beta   !! D^b
+      type(device_pool_t) :: scratch_k_beta         !! K[C_b]
+      type(device_pool_t) :: scratch_xc_beta        !! Vxc_b
+      type(device_pool_t) :: scratch_eigenvalues_beta  !! Beta orbital energies
    contains
       procedure :: create => context_create    !! Bind a device and create the handle
       procedure :: destroy => context_destroy  !! Release the handle and scratch
@@ -153,6 +212,16 @@ contains
                               "cuestSetMathMode(native FP64)", error)
       if (error%has_error()) return
 
+      ! cuBLAS binds to whatever device is current, which cudaSetDevice above
+      ! has already fixed. The handle is left in its default
+      ! CUBLAS_POINTER_MODE_HOST, which is what the bindings assume.
+      call cublas_status_check(cublasCreate(this%cublas_handle), "cublasCreate", error)
+      if (error%has_error()) return
+
+      call cusolver_status_check(cusolverDnCreate(this%cusolver_handle), &
+                                 "cusolverDnCreate", error)
+      if (error%has_error()) return
+
       this%initialized = .true.
 
       ! Say which device this rank took. Without it a misbinding -- every rank
@@ -177,6 +246,35 @@ contains
       call this%scratch_charges%release()
       call this%scratch_gradient%release()
       call this%scratch_charge_gradient%release()
+      call this%scratch_j%release()
+      call this%scratch_k%release()
+      call this%scratch_xc%release()
+      call this%scratch_fock%release()
+      call this%scratch_core%release()
+      call this%scratch_ovlp%release()
+      call this%scratch_error%release()
+      call this%scratch_transform%release()
+      call this%scratch_commutator%release()
+      call this%scratch_work%release()
+      call this%scratch_diis_fock%release()
+      call this%scratch_diis_error%release()
+      call this%scratch_diis_row%release()
+      call this%scratch_fock_ortho%release()
+      call this%scratch_orbitals%release()
+      call this%scratch_eigenvalues%release()
+      call this%scratch_solver%release()
+      call this%scratch_devinfo%release()
+      call this%scratch_density_alpha%release()
+      call this%scratch_density_beta%release()
+      call this%scratch_k_beta%release()
+      call this%scratch_xc_beta%release()
+      call this%scratch_eigenvalues_beta%release()
+
+      if (c_associated(this%cusolver_handle)) status = cusolverDnDestroy(this%cusolver_handle)
+      this%cusolver_handle = c_null_ptr
+
+      if (c_associated(this%cublas_handle)) status = cublasDestroy(this%cublas_handle)
+      this%cublas_handle = c_null_ptr
 
       if (c_associated(this%handle)) status = cuestDestroy(this%handle)
       this%handle = c_null_ptr

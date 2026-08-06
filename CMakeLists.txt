@@ -108,7 +108,13 @@ if(MQC_ENABLE_CUEST)
     PATHS "${CUEST_ROOT}/lib"
     NO_DEFAULT_PATH REQUIRED)
   find_package(CUDAToolkit REQUIRED)
-  list(APPEND libraries_to_link ${CUEST_LIBRARY} CUDA::cudart)
+  # cuBLAS backs the SCF's own linear algebra (the Fock assembly, the DIIS
+  # commutator and the orthogonal-basis transform) and cuSOLVER the Fock
+  # diagonalization, both reached through the hand-written bindings in
+  # cuest_backend/bindings/. cuEST links them internally too, but that is its
+  # private dependency -- ours has to be requested explicitly.
+  list(APPEND libraries_to_link ${CUEST_LIBRARY} CUDA::cudart CUDA::cublas
+       CUDA::cusolver)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_CUEST)
   message(STATUS "cuEST enabled: ${CUEST_LIBRARY}")
 endif()

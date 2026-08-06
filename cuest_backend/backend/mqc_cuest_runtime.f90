@@ -12,11 +12,13 @@ module mqc_cuest_runtime
    !! *temporary* one can be freed immediately afterwards.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, &
                                                                              c_size_t, c_intptr_t, c_double, c_loc, &
-                                                                             c_associated
+                                                                             c_associated, c_sizeof
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, CUEST_STATUS_SUCCESS
    use cuest_helpers, only: cuest_status_name
+   use cublas, only: CUBLAS_STATUS_SUCCESS, cublas_status_name
+   use cusolver, only: CUSOLVER_STATUS_SUCCESS, cusolver_status_name
    use cuda_runtime, only: cudaMalloc, cudaFree, cudaMemcpy, cudaSuccess, &
                            cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost, &
                            cudaDeviceSynchronize
@@ -26,9 +28,13 @@ module mqc_cuest_runtime
 
    public :: cuest_status_check   !! Turn a cuEST status into an error_t
    public :: cuda_status_check    !! Turn a CUDA status into an error_t
+   public :: cublas_status_check  !! Turn a cuBLAS status into an error_t
+   public :: cusolver_status_check  !! Turn a cuSOLVER status into an error_t
+   public :: copy_int_to_host     !! Read a single device int, e.g. a solver info
    public :: device_sync          !! cudaDeviceSynchronize with error_t
    public :: workspace_alloc, workspace_free  !! cuestWorkspace_t lifecycle
    public :: device_alloc, device_free        !! Device buffers counted in doubles
+   public :: device_offset        !! Address of an element part-way into a buffer
    public :: copy_to_device, copy_to_host     !! Host <-> device transfers
 
    integer(c_size_t), parameter :: BYTES_PER_DOUBLE = 8_c_size_t
@@ -79,6 +85,52 @@ contains
                      " -> "//trim(cuda_error_name(status))//": "// &
                      trim(cuda_error_string(status)))
    end subroutine cuda_status_check
+
+   subroutine cublas_status_check(status, context, error)
+      !! Record a failed cuBLAS status as an error
+      integer(c_int), intent(in) :: status      !! Status returned by a cuBLAS call
+      character(len=*), intent(in) :: context   !! What was being attempted
+      type(error_t), intent(inout) :: error
+
+      if (status == CUBLAS_STATUS_SUCCESS) return
+      if (error%has_error()) return
+
+      call error%set(ERROR_VALIDATION, "cuBLAS call failed: "//trim(context)// &
+                     " -> "//trim(cublas_status_name(status)))
+   end subroutine cublas_status_check
+
+   subroutine cusolver_status_check(status, context, error)
+      !! Record a failed cuSOLVER status as an error
+      integer(c_int), intent(in) :: status      !! Status returned by a cuSOLVER call
+      character(len=*), intent(in) :: context   !! What was being attempted
+      type(error_t), intent(inout) :: error
+
+      if (status == CUSOLVER_STATUS_SUCCESS) return
+      if (error%has_error()) return
+
+      call error%set(ERROR_VALIDATION, "cuSOLVER call failed: "//trim(context)// &
+                     " -> "//trim(cusolver_status_name(status)))
+   end subroutine cusolver_status_check
+
+   subroutine copy_int_to_host(value, device_ptr, context, error)
+      !! Read one 32-bit integer back from the device
+      !!
+      !! cuSOLVER reports convergence through a DEVICE int rather than the
+      !! return status, so checking it means a transfer. It is four bytes and
+      !! happens once per diagonalization, which is not worth avoiding -- and
+      !! not checking it means a non-converged eigensolve looks like a
+      !! converged one with wrong orbitals.
+      integer(c_int), intent(out), target :: value
+      type(c_ptr), intent(in) :: device_ptr
+      character(len=*), intent(in) :: context
+      type(error_t), intent(inout) :: error
+
+      value = 0
+      call cuda_status_check(cudaMemcpy(c_loc(value), device_ptr, &
+                                        int(c_sizeof(value), c_size_t), &
+                                        cudaMemcpyDeviceToHost), &
+                             "cudaMemcpy D2H int ("//trim(context)//")", error)
+   end subroutine copy_int_to_host
 
    subroutine device_sync(context, error)
       !! Block until all queued GPU work has completed
@@ -163,6 +215,29 @@ contains
       if (c_associated(device_ptr)) status = cudaFree(device_ptr)
       device_ptr = c_null_ptr
    end subroutine device_free
+
+   function device_offset(base, n_doubles) result(ptr)
+      !! Address `n_doubles` doubles past `base`, for slicing one allocation
+      !!
+      !! A ring of history vectors is one buffer with a column per slot, so the
+      !! slot addresses are offsets into it. The arithmetic goes through
+      !! `c_intptr_t` because `c_ptr` is opaque and has no arithmetic of its
+      !! own; there is no bounds check, so the caller owns the indexing.
+      type(c_ptr), intent(in) :: base
+      integer(c_int64_t), intent(in) :: n_doubles  !! Element offset, not bytes
+      type(c_ptr) :: ptr
+
+      integer(c_intptr_t) :: address
+
+      if (.not. c_associated(base)) then
+         ptr = c_null_ptr
+         return
+      end if
+
+      address = transfer(base, address) &
+                + int(n_doubles, c_intptr_t)*int(BYTES_PER_DOUBLE, c_intptr_t)
+      ptr = transfer(address, ptr)
+   end function device_offset
 
    subroutine copy_to_device(device_ptr, host_array, context, error)
       !! Copy a host array of doubles onto the device

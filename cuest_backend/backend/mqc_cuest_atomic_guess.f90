@@ -189,7 +189,7 @@ contains
                          use_spherical, n_alpha, functional_id, n_radial, n_angular, &
                          error, n_occ_beta=n_beta)
       if (.not. error%has_error()) then
-         call run_uks_scf(system, numbers, coordinates, atomic_number, multiplicity, &
+         call run_uks_scf(system, context, numbers, coordinates, atomic_number, multiplicity, &
                           200, 1.0e-8_dp, 1.0e-6_dp, .true., 8, .false., scf, error, &
                           guess=SCF_GUESS_GWH)
       end if

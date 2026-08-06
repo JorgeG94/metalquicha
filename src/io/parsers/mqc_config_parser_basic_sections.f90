@@ -274,6 +274,14 @@ contains
             config%log_level = trim(value)
          case ("skip_json_output")
             config%skip_json_output = (trim(value) == "true" .or. trim(value) == ".true.")
+         case ("fragment_breakdown")
+            select case (trim(value))
+            case ("csv", "json", "none")
+               config%fragment_breakdown = trim(value)
+            case default
+               call error%set(ERROR_PARSE, "fragment_breakdown must be csv, json or none, got: "//trim(value))
+               return
+            end select
          case default
             call error%set(ERROR_PARSE, "Unknown key in %system section: "//trim(key))
             return

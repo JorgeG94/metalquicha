@@ -23,7 +23,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_adapter, only: driver_config_t
-   use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
+   use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS, DISP_WHOLE_FRAGMENT
    use mqc_work_queue, only: queue_t
    use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
 
@@ -42,7 +42,8 @@ module mqc_mbe_fragment_distribution_scheme
    public :: node_worker, unfragmented_calculation, distributed_unfragmented_hessian
 
    interface
-      module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm)
+      module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm, &
+                                         print_geometry)
          implicit none
          integer(int64), intent(in) :: fragment_idx
          type(calculation_result_t), intent(out) :: result
@@ -50,6 +51,7 @@ module mqc_mbe_fragment_distribution_scheme
          type(physical_fragment_t), intent(in), optional :: phys_frag
          integer(int32), intent(in) :: calc_type
          type(comm_t), intent(in), optional :: world_comm
+         logical, intent(in), optional :: print_geometry
       end subroutine do_fragment_work
 
       module subroutine global_coordinator(ctx, json_data)
