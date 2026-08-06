@@ -4,11 +4,11 @@
 # -- which is far more than any build needs and far too much to keep in git.
 # Only the names in MQC_BASIS_SETS are extracted.
 #
-# Bundle members are "<bse-name>.<revision>.json", with several revisions of
-# the same basis side by side. Only the revision suffix is stripped: the file
-# keeps its Basis Set Exchange name, which is exactly what
-# mqc_basis_utils::normalize_basis_name produces, so there is no mapping
-# between the two languages to keep in step.
+# Bundle members are "<bse-name>.<revision>.json", with several revisions of the
+# same basis side by side. Only the revision suffix is stripped: the file keeps
+# its Basis Set Exchange name, which is exactly what
+# mqc_basis_utils::normalize_basis_name produces, so there is no mapping between
+# the two languages to keep in step.
 #
 # The highest revision of each basis wins. Extraction is skipped when every
 # wanted file is already present and newer than the tarball, so a reconfigure
@@ -38,9 +38,9 @@ function(mqc_extract_basis_sets)
 
   # ---- do two entries want the same file? -----------------------------------
   #
-  # Only reachable by listing a name twice in different cases now that the
-  # stem is the bundle name, but a duplicate would still have one extraction
-  # silently overwrite the other, so say so rather than pick.
+  # Only reachable by listing a name twice in different cases now that the stem
+  # is the bundle name, but a duplicate would still have one extraction silently
+  # overwrite the other, so say so rather than pick.
   set(seen_stems "")
   foreach(bse_name ${MQC_BASIS_SETS})
     mqc_canonical_basis_name("${bse_name}" stem)
@@ -57,14 +57,14 @@ function(mqc_extract_basis_sets)
   # ---- drop anything the bundle is no longer being asked for ----------------
   #
   # basis_sets/*.json is entirely derived -- only the bundle and PROVENANCE.md
-  # are tracked -- so the directory should hold exactly what MQC_BASIS_SETS
-  # asks for and nothing else. Without this, a name dropped from the list, or
-  # left over from an older naming scheme, stays on disk and keeps resolving:
-  # a basis that quietly outlives the decision to stop shipping it.
+  # are tracked -- so the directory should hold exactly what MQC_BASIS_SETS asks
+  # for and nothing else. Without this, a name dropped from the list, or left
+  # over from an older naming scheme, stays on disk and keeps resolving: a basis
+  # that quietly outlives the decision to stop shipping it.
   file(GLOB present "${dest}/*.json")
   foreach(path ${present})
-    # NAME, not NAME_WE: the latter strips from the first dot, which would
-    # maim any basis name that ever contains one.
+    # NAME, not NAME_WE: the latter strips from the first dot, which would maim
+    # any basis name that ever contains one.
     get_filename_component(stem "${path}" NAME)
     string(REGEX REPLACE "\\.json$" "" stem "${stem}")
     string(TOLOWER "${stem}" stem)
@@ -78,8 +78,8 @@ function(mqc_extract_basis_sets)
   set(missing "")
   foreach(bse_name ${MQC_BASIS_SETS})
     mqc_canonical_basis_name("${bse_name}" stem)
-    if(NOT EXISTS "${dest}/${stem}.json"
-       OR "${bundle}" IS_NEWER_THAN "${dest}/${stem}.json")
+    if(NOT EXISTS "${dest}/${stem}.json" OR "${bundle}" IS_NEWER_THAN
+                                            "${dest}/${stem}.json")
       list(APPEND missing "${bse_name}")
     endif()
   endforeach()
@@ -171,8 +171,8 @@ function(mqc_extract_basis_sets)
       message(FATAL_ERROR "Expected ${member} in the extracted bundle")
     endif()
     file(RENAME "${staging}/${member}" "${dest}/${stem}.json")
-    # tar restores each member's archived mtime, which predates the bundle
-    # file itself -- so without this the freshness check above fires on every
+    # tar restores each member's archived mtime, which predates the bundle file
+    # itself -- so without this the freshness check above fires on every
     # configure and re-extracts all 40. Stamp them as of now instead.
     file(TOUCH "${dest}/${stem}.json")
   endforeach()
