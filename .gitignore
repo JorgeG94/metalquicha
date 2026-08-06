@@ -60,3 +60,7 @@ fail.txt
 # configure time (see cmake/modules/ExtractBasisSets.cmake). The bundle is
 # tracked; the ~900 JSON files it can yield are not.
 basis_sets/*.json
+
+# Python bytecode caches -- regenerated on every run, interpreter-version specific
+__pycache__/
+*.pyc
