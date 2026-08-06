@@ -314,14 +314,18 @@ contains
       this%d_matrix = context%scratch_density%ptr
       this%d_result = context%scratch_result%ptr
 
-      ! Fock terms. Six extra n_ao^2 buffers is 48 MB at n_ao = 1000, against
+      ! Fock terms. Five extra n_ao^2 buffers is 40 MB at n_ao = 1000, against
       ! the 40-80 GB of an A100 or H100 -- cheap next to what it removes.
+      !
+      ! `scratch_ovlp` is deliberately not among them: nothing reads S on the
+      ! device until the commutator moves there, so `d_ovlp` stays null and any
+      ! premature use faults instead of quietly returning another fragment's
+      ! numbers.
       call context%scratch_j%ensure(this%n_ao*this%n_ao, "Coulomb matrix", error)
       call context%scratch_k%ensure(this%n_ao*this%n_ao, "exchange matrix", error)
       call context%scratch_xc%ensure(this%n_ao*this%n_ao, "XC potential", error)
       call context%scratch_fock%ensure(this%n_ao*this%n_ao, "Fock matrix", error)
       call context%scratch_core%ensure(this%n_ao*this%n_ao, "core Hamiltonian", error)
-      call context%scratch_ovlp%ensure(this%n_ao*this%n_ao, "overlap matrix", error)
       if (error%has_error()) then
          call error%add_context("mqc_cuest_integrals:create")
          return
@@ -331,7 +335,6 @@ contains
       this%d_xc = context%scratch_xc%ptr
       this%d_fock = context%scratch_fock%ptr
       this%d_core = context%scratch_core%ptr
-      this%d_ovlp = context%scratch_ovlp%ptr
 
       call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
       call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)

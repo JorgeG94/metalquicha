@@ -1,7 +1,13 @@
 # Plan: device-resident SCF and DIIS in the cuEST backend
 
-Status: designed, not started. Bindings landed (`bfd32607`), DIIS extracted and
-wired (`6840869c`, `711b9cc8`). Everything below is still to do.
+Status: steps 1 and 2 landed, unverified on hardware. Bindings landed
+(`bfd32607`), DIIS extracted and wired (`6840869c`, `711b9cc8`), separate
+output buffers (`f039c82f`), device Fock assembly (`e9656777`). Steps 3-5 are
+still to do.
+
+Both landed steps compile clean but have **not** been run on a GPU — see rule 1
+below. `validation/run_cuest_validation.sh` on the A100 is what decides whether
+they are correct.
 
 ---
 
@@ -29,7 +35,7 @@ part needing cuBLAS. Sequenced wrong — e.g. moving DIIS to the device before t
 Fock is resident — you get a version that is correct but *slower*, because you
 have added transfers rather than removed them.
 
-### Step 1 — Separate output buffers
+### Step 1 — Separate output buffers — DONE (`f039c82f`)
 
 *Files:* `mqc_cuest_context.f90`, `mqc_cuest_integrals.f90`
 
@@ -64,7 +70,7 @@ card. Cheap.
 *Verify:* energies unchanged on `run_cuest_validation.sh`. No behaviour change
 yet — same transfers, different buffers.
 
-### Step 2 — Assemble the Fock on device
+### Step 2 — Assemble the Fock on device — DONE (`e9656777`), RKS only
 
 *Files:* `mqc_cuest_integrals.f90`, `mqc_cuest_scf.f90`
 
@@ -86,6 +92,21 @@ Per-iteration traffic after this step:
 | syncs | 3 | 1 |
 
 *Verify:* energies unchanged. This is the step that actually pays.
+
+Three things as built differ from the sketch above, none of them large:
+
+- **The energy traces.** `E_elec = tr(D H) + ½ tr(D J) - ½ tr(D K) + Exc` needs
+  two contractions against J and K, which no longer exist on the host. They
+  come back as two scalars from `cublasDdot`. `tr(D H)` stays a host
+  contraction — both operands are already there. This is why "D2H: Fock ×1" is
+  really Fock ×1 plus two doubles.
+- **Overlap is not uploaded yet.** `scratch_ovlp` exists and is released, but
+  nothing reads it until the commutator moves in step 4, and uploading a buffer
+  no one reads is just a transfer with better PR. The `ensure` and the upload
+  belong to step 4.
+- **RKS only.** `run_uks_scf` still round-trips every term. It is the same
+  transformation applied twice with a second spin channel; worth doing, but not
+  before the restricted path is confirmed on hardware.
 
 ### Step 3 — Device-resident DIIS history
 
