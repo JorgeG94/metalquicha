@@ -429,19 +429,19 @@ contains
 
    end subroutine build_gmbe_task_table
 
-   subroutine assemble_pie_term_hessians(pie_atom_sets, n_pie_terms, sys_geom, task_results, &
-                                         task_offset, term_natoms, term_results, world_comm)
-      !! Fold the flat displacement results back into one Hessian per PIE term
+   subroutine assemble_one_pie_term_hessian(t, pie_atom_sets, sys_geom, task_results, &
+                                            task_offset, term_natoms, term_result, world_comm)
+      !! Fold one PIE term's displacement results into its Hessian, then release them
       use mqc_error, only: error_t
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, &
                                         finite_diff_dipole_derivatives, DEFAULT_DISPLACEMENT
+      integer(int64), intent(in) :: t
       integer, intent(in) :: pie_atom_sets(:, :)
-      integer(int64), intent(in) :: n_pie_terms
       type(system_geometry_t), intent(in) :: sys_geom
       type(calculation_result_t), intent(inout) :: task_results(:)
       integer(int64), intent(in) :: task_offset(:)
       integer, intent(in) :: term_natoms(:)
-      type(calculation_result_t), intent(inout) :: term_results(:)
+      type(calculation_result_t), intent(inout) :: term_result
       type(comm_t), intent(in) :: world_comm
 
       type(physical_fragment_t) :: frag
@@ -449,87 +449,126 @@ contains
       integer, allocatable :: atom_list(:)
       real(dp), allocatable :: fwd_grad(:, :, :), bwd_grad(:, :, :)
       real(dp), allocatable :: fwd_dip(:, :), bwd_dip(:, :)
-      integer(int64) :: t, base
+      integer(int64) :: base
       integer :: max_atoms, n_atoms_list, k, n_disp, n_atoms
       logical :: have_dipoles
 
       max_atoms = size(pie_atom_sets, 1)
 
-      do t = 1_int64, n_pie_terms
-         n_atoms = term_natoms(t)
-         base = task_offset(t)
-         if (n_atoms == 0) cycle
+      n_atoms = term_natoms(t)
+      base = task_offset(t)
 
-         n_disp = 3*n_atoms
+      n_disp = 3*n_atoms
 
-         n_atoms_list = 0
-         do while (n_atoms_list < max_atoms .and. pie_atom_sets(n_atoms_list + 1, t) >= 0)
-            n_atoms_list = n_atoms_list + 1
-         end do
-         allocate (atom_list(n_atoms_list))
-         atom_list = pie_atom_sets(1:n_atoms_list, t)
-         call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms_list, frag, error, sys_geom%bonds)
-         if (error%has_error()) then
-            call logger%error("assemble_pie_term_hessians: "//error%get_full_trace())
+      n_atoms_list = 0
+      do while (n_atoms_list < max_atoms .and. pie_atom_sets(n_atoms_list + 1, t) >= 0)
+         n_atoms_list = n_atoms_list + 1
+      end do
+      allocate (atom_list(n_atoms_list))
+      atom_list = pie_atom_sets(1:n_atoms_list, t)
+      call build_fragment_from_atom_list(sys_geom, atom_list, n_atoms_list, frag, error, sys_geom%bonds)
+      if (error%has_error()) then
+         call logger%error("assemble_pie_term_hessians: "//error%get_full_trace())
+         call abort_comm(world_comm, 1)
+      end if
+      deallocate (atom_list)
+
+      allocate (fwd_grad(n_disp, 3, n_atoms), bwd_grad(n_disp, 3, n_atoms))
+      allocate (fwd_dip(n_disp, 3), bwd_dip(n_disp, 3))
+      fwd_dip = 0.0_dp
+      bwd_dip = 0.0_dp
+      have_dipoles = .true.
+
+      do k = 1, n_disp
+         if (.not. task_results(base + 2*k - 1)%has_gradient .or. &
+             .not. task_results(base + 2*k)%has_gradient) then
+            call logger%error("Missing gradient for displacement "//to_char(k)// &
+                              " of PIE term "//to_char(t))
             call abort_comm(world_comm, 1)
          end if
-         deallocate (atom_list)
+         fwd_grad(k, :, :) = task_results(base + 2*k - 1)%gradient
+         bwd_grad(k, :, :) = task_results(base + 2*k)%gradient
 
-         allocate (fwd_grad(n_disp, 3, n_atoms), bwd_grad(n_disp, 3, n_atoms))
-         allocate (fwd_dip(n_disp, 3), bwd_dip(n_disp, 3))
-         fwd_dip = 0.0_dp
-         bwd_dip = 0.0_dp
-         have_dipoles = .true.
-
-         do k = 1, n_disp
-            if (.not. task_results(base + 2*k - 1)%has_gradient .or. &
-                .not. task_results(base + 2*k)%has_gradient) then
-               call logger%error("Missing gradient for displacement "//to_char(k)// &
-                                 " of PIE term "//to_char(t))
-               call abort_comm(world_comm, 1)
-            end if
-            fwd_grad(k, :, :) = task_results(base + 2*k - 1)%gradient
-            bwd_grad(k, :, :) = task_results(base + 2*k)%gradient
-
-            if (task_results(base + 2*k - 1)%has_dipole .and. task_results(base + 2*k)%has_dipole) then
-               fwd_dip(k, :) = task_results(base + 2*k - 1)%dipole
-               bwd_dip(k, :) = task_results(base + 2*k)%dipole
-            else
-               have_dipoles = .false.
-            end if
-         end do
-
-         call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, DEFAULT_DISPLACEMENT, &
-                                                 term_results(t)%hessian)
-         term_results(t)%has_hessian = .true.
-
-         term_results(t)%energy = task_results(base)%energy
-         term_results(t)%has_energy = task_results(base)%has_energy
-         term_results(t)%distance = task_results(base)%distance
-         if (task_results(base)%has_gradient) then
-            term_results(t)%gradient = task_results(base)%gradient
-            term_results(t)%has_gradient = .true.
+         if (task_results(base + 2*k - 1)%has_dipole .and. task_results(base + 2*k)%has_dipole) then
+            fwd_dip(k, :) = task_results(base + 2*k - 1)%dipole
+            bwd_dip(k, :) = task_results(base + 2*k)%dipole
+         else
+            have_dipoles = .false.
          end if
-         if (task_results(base)%has_dipole) then
-            term_results(t)%dipole = task_results(base)%dipole
-            term_results(t)%has_dipole = .true.
-         end if
-
-         if (have_dipoles) then
-            call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, DEFAULT_DISPLACEMENT, &
-                                                term_results(t)%dipole_derivatives)
-            term_results(t)%has_dipole_derivatives = .true.
-         end if
-
-         deallocate (fwd_grad, bwd_grad, fwd_dip, bwd_dip)
-         call frag%destroy()
-
-         do k = 0, 2*n_disp
-            call task_results(base + k)%destroy()
-         end do
       end do
 
-   end subroutine assemble_pie_term_hessians
+      call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, DEFAULT_DISPLACEMENT, &
+                                              term_result%hessian)
+      term_result%has_hessian = .true.
+
+      term_result%energy = task_results(base)%energy
+      term_result%has_energy = task_results(base)%has_energy
+      term_result%distance = task_results(base)%distance
+      if (task_results(base)%has_gradient) then
+         term_result%gradient = task_results(base)%gradient
+         term_result%has_gradient = .true.
+      end if
+      if (task_results(base)%has_dipole) then
+         term_result%dipole = task_results(base)%dipole
+         term_result%has_dipole = .true.
+      end if
+
+      if (have_dipoles) then
+         call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, DEFAULT_DISPLACEMENT, &
+                                             term_result%dipole_derivatives)
+         term_result%has_dipole_derivatives = .true.
+      end if
+
+      deallocate (fwd_grad, bwd_grad, fwd_dip, bwd_dip)
+      call frag%destroy()
+
+      do k = 0, 2*n_disp
+         call task_results(base + k)%destroy()
+      end do
+
+   end subroutine assemble_one_pie_term_hessian
+
+   subroutine fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, task_results, &
+                                       task_offset, term_natoms, term_results, &
+                                       next_term, scan_pos, world_comm)
+      !! Fold every PIE term whose displacement results have all landed
+      !!
+      !! Mirror of fold_completed_fragments on the MBE side: a monotone scan from the
+      !! oldest unfolded term, so bookkeeping is O(1) amortised per task and the drain
+      !! routines report nothing. Terms with no atoms carry no Hessian and are stepped
+      !! over rather than waited on.
+      integer, intent(in) :: pie_atom_sets(:, :)
+      integer(int64), intent(in) :: n_pie_terms
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(calculation_result_t), intent(inout) :: task_results(:)
+      integer(int64), intent(in) :: task_offset(:)
+      integer, intent(in) :: term_natoms(:)
+      type(calculation_result_t), intent(inout) :: term_results(:)
+      integer(int64), intent(inout) :: next_term  !! Oldest term not yet folded
+      integer(int64), intent(inout) :: scan_pos   !! Next task of next_term to verify
+      type(comm_t), intent(in) :: world_comm
+
+      integer(int64) :: last_task
+
+      do while (next_term <= n_pie_terms)
+         if (term_natoms(next_term) > 0) then
+            last_task = task_offset(next_term) + 2_int64*3_int64*int(term_natoms(next_term), int64)
+
+            do while (scan_pos <= last_task)
+               if (.not. task_results(scan_pos)%has_gradient) return
+               scan_pos = scan_pos + 1_int64
+            end do
+
+            call assemble_one_pie_term_hessian(next_term, pie_atom_sets, sys_geom, task_results, &
+                                               task_offset, term_natoms, term_results(next_term), &
+                                               world_comm)
+         end if
+
+         next_term = next_term + 1_int64
+         if (next_term <= n_pie_terms) scan_pos = task_offset(next_term)
+      end do
+
+   end subroutine fold_completed_pie_terms
 
    subroutine gmbe_pie_coordinator(resources, pie_atom_sets, pie_coefficients, n_pie_terms, &
                                    node_leader_ranks, num_nodes, group_leader_ranks, group_ids, global_groups, &
@@ -581,6 +620,7 @@ contains
       integer(int64), allocatable :: task_offset(:)
       integer, allocatable :: term_natoms(:)
       integer(int64) :: total_tasks
+      integer(int64) :: next_term, scan_pos
       logical :: expand_displacements
       integer(int64) :: worker_term_map(resources%mpi_comms%node_comm%size())
       type(queue_t) :: group0_queue
@@ -622,6 +662,12 @@ contains
                                  resources%mpi_comms%world_comm)
 
       allocate (results(total_tasks))
+
+      ! PIE term Hessians are folded in as their displacements land, so the targets
+      ! have to exist before the coordinator loop starts.
+      next_term = 1_int64
+      scan_pos = 1_int64
+      if (expand_displacements) allocate (term_results(n_pie_terms))
 
       if (expand_displacements) then
          call logger%info("Hessian displacements flattened into the PIE term queue:")
@@ -740,6 +786,14 @@ contains
          ! PRIORITY 3: Check for incoming results from node coordinators (group 0 only)
          call handle_node_results(resources, results, results_received, coord_timer, total_tasks)
 
+         ! Fold any PIE term whose displacements have all landed, releasing its
+         ! task gradients while the rest of the queue is still running.
+         if (expand_displacements) then
+            call fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, results, &
+                                          task_offset, term_natoms, term_results, next_term, scan_pos, &
+                                          resources%mpi_comms%world_comm)
+         end if
+
          ! PRIORITY 4: Remote node coordinator requests for group 0
         call handle_group_node_requests(resources, group0_queue, group0_term_ids, group0_atom_sets, group0_finished_nodes)
 
@@ -771,17 +825,25 @@ contains
       call logger%info("Time to evaluate all tasks "//to_char(coord_timer%get_elapsed_time())//" s")
 
       ! Fold the flat displacement results back into one Hessian per PIE term
+      ! Most terms were folded as their displacements landed; this only mops up
+      ! whatever a straggler at the head of the scan held back.
       if (expand_displacements) then
-         call logger%info(" ")
-         call logger%info("Assembling PIE term Hessians from displacement results...")
          call coord_timer%start()
-         allocate (term_results(n_pie_terms))
-         call assemble_pie_term_hessians(pie_atom_sets, n_pie_terms, sys_geom, results, &
-                                         task_offset, term_natoms, term_results, &
-                                         resources%mpi_comms%world_comm)
+         if (next_term <= n_pie_terms) then
+            call logger%info("Assembling remaining PIE term Hessians ("// &
+                             to_char(n_pie_terms - next_term + 1_int64)//" of "// &
+                             to_char(n_pie_terms)//" deferred)...")
+            call fold_completed_pie_terms(pie_atom_sets, n_pie_terms, sys_geom, results, &
+                                          task_offset, term_natoms, term_results, next_term, scan_pos, &
+                                          resources%mpi_comms%world_comm)
+         end if
+         if (next_term <= n_pie_terms) then
+            call logger%error("PIE term "//to_char(next_term)//" never received all its displacements")
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
          call move_alloc(term_results, results)
          call coord_timer%stop()
-         call logger%info("PIE term Hessians assembled in "//to_char(coord_timer%get_elapsed_time())//" s")
+         call logger%info("PIE term Hessians finalised in "//to_char(coord_timer%get_elapsed_time())//" s")
       end if
 
       ! Accumulate results with PIE coefficients

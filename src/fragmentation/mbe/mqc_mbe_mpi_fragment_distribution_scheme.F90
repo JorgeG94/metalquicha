@@ -152,7 +152,8 @@ contains
       deallocate (fragment_indices)
    end subroutine send_task_payload_from_row
 
-   module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm)
+   module subroutine do_fragment_work(fragment_idx, result, method_config, phys_frag, calc_type, world_comm, &
+                                      print_geometry)
       !! Process a single fragment for quantum chemistry calculation
       !!
       !! Performs energy and gradient calculation on a molecular fragment using
@@ -167,22 +168,29 @@ contains
       type(physical_fragment_t), intent(in), optional :: phys_frag  !! Fragment geometry
       integer(int32), intent(in) :: calc_type  !! Calculation type
       type(comm_t), intent(in), optional :: world_comm  !! MPI communicator for abort
+      logical, intent(in), optional :: print_geometry  !! Dump the geometry when verbose (default .true.)
 
       integer :: current_log_level  !! Current logger verbosity level
       logical :: is_verbose  !! Whether verbose output is enabled
+      logical :: show_geometry  !! Whether this task should dump its geometry
       integer(int32) :: calc_type_local  !! Local copy of calc_type
       type(method_config_t) :: local_config  !! Local copy for verbose override
       class(qc_method_t), allocatable :: calculator  !! Polymorphic calculator instance
 
       calc_type_local = calc_type
+      show_geometry = .true.
+      if (present(print_geometry)) show_geometry = print_geometry
 
       ! Query logger to determine verbosity
       call logger%configuration(level=current_log_level)
       is_verbose = (current_log_level >= verbose_level)
 
-      ! Print fragment geometry if provided and verbose mode is enabled
+      ! Print fragment geometry if provided and verbose mode is enabled.
+      ! Suppressed for displaced tasks: a flattened Hessian has 6N+1 tasks per
+      ! fragment, and dumping a near-identical geometry for every one of them buries
+      ! the log without adding anything the reference geometry does not already show.
       if (present(phys_frag)) then
-         if (is_verbose) then
+         if (is_verbose .and. show_geometry) then
             call print_fragment_xyz(fragment_idx, phys_frag)
          end if
 
@@ -228,19 +236,118 @@ contains
       end if
    end subroutine do_fragment_work
 
-   subroutine assemble_fragment_hessians(polymers, total_fragments, sys_geom, task_results, &
-                                         task_offset, frag_natoms, frag_results, world_comm)
-      !! Turn the flat task results back into one Hessian per fragment
+   subroutine assemble_one_fragment_hessian(f, polymers, sys_geom, task_results, &
+                                            task_offset, frag_natoms, frag_result, world_comm)
+      !! Fold one fragment's displacement results into its Hessian, then release them
       !!
-      !! Each fragment owns a contiguous block of task results laid out by
+      !! The fragment owns a contiguous block of task results laid out by
       !! build_hessian_task_table as [reference, +1, -1, +2, -2, ...]. Gathering that
       !! block gives exactly the forward/backward gradient arrays the serial path
       !! builds, so the same finite-difference routines produce a bit-identical
-      !! Hessian. Task results are released fragment by fragment as they are consumed,
-      !! so the flat results array and the assembled Hessians never both peak.
+      !! Hessian.
       use mqc_error, only: error_t
       use mqc_finite_differences, only: finite_diff_hessian_from_gradients, &
                                         finite_diff_dipole_derivatives, DEFAULT_DISPLACEMENT
+      integer(int64), intent(in) :: f
+      integer, intent(in) :: polymers(:, :)
+      type(system_geometry_t), intent(in) :: sys_geom
+      type(calculation_result_t), intent(inout) :: task_results(:)
+      integer(int64), intent(in) :: task_offset(:)
+      integer, intent(in) :: frag_natoms(:)
+      type(calculation_result_t), intent(inout) :: frag_result
+      type(comm_t), intent(in) :: world_comm
+
+      type(physical_fragment_t) :: frag
+      type(error_t) :: error
+      real(dp), allocatable :: fwd_grad(:, :, :), bwd_grad(:, :, :)
+      real(dp), allocatable :: fwd_dip(:, :), bwd_dip(:, :)
+      integer(int64) :: base
+      integer :: fragment_size, k, n_disp, n_atoms
+      logical :: have_dipoles
+
+      n_atoms = frag_natoms(f)
+      n_disp = 3*n_atoms
+      base = task_offset(f)
+
+      fragment_size = count(polymers(f, :) > 0)
+      call build_fragment_from_indices(sys_geom, polymers(f, 1:fragment_size), frag, error, sys_geom%bonds)
+      if (error%has_error()) then
+         call logger%error("assemble_one_fragment_hessian: "//error%get_full_trace())
+         call abort_comm(world_comm, 1)
+      end if
+
+      allocate (fwd_grad(n_disp, 3, n_atoms), bwd_grad(n_disp, 3, n_atoms))
+      allocate (fwd_dip(n_disp, 3), bwd_dip(n_disp, 3))
+      fwd_dip = 0.0_dp
+      bwd_dip = 0.0_dp
+      have_dipoles = .true.
+
+      do k = 1, n_disp
+         if (.not. task_results(base + 2*k - 1)%has_gradient .or. &
+             .not. task_results(base + 2*k)%has_gradient) then
+            call logger%error("Missing gradient for displacement "//to_char(k)// &
+                              " of fragment "//to_char(f))
+            call abort_comm(world_comm, 1)
+         end if
+         fwd_grad(k, :, :) = task_results(base + 2*k - 1)%gradient
+         bwd_grad(k, :, :) = task_results(base + 2*k)%gradient
+
+         if (task_results(base + 2*k - 1)%has_dipole .and. task_results(base + 2*k)%has_dipole) then
+            fwd_dip(k, :) = task_results(base + 2*k - 1)%dipole
+            bwd_dip(k, :) = task_results(base + 2*k)%dipole
+         else
+            have_dipoles = .false.
+         end if
+      end do
+
+      call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, DEFAULT_DISPLACEMENT, &
+                                              frag_result%hessian)
+      frag_result%has_hessian = .true.
+
+      ! The undisplaced point carries the energy, gradient and dipole that belong
+      ! beside this fragment's Hessian.
+      frag_result%energy = task_results(base)%energy
+      frag_result%has_energy = task_results(base)%has_energy
+      frag_result%distance = task_results(base)%distance
+      if (task_results(base)%has_gradient) then
+         frag_result%gradient = task_results(base)%gradient
+         frag_result%has_gradient = .true.
+      end if
+      if (task_results(base)%has_dipole) then
+         frag_result%dipole = task_results(base)%dipole
+         frag_result%has_dipole = .true.
+      end if
+
+      if (have_dipoles) then
+         call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, DEFAULT_DISPLACEMENT, &
+                                             frag_result%dipole_derivatives)
+         frag_result%has_dipole_derivatives = .true.
+      end if
+
+      deallocate (fwd_grad, bwd_grad, fwd_dip, bwd_dip)
+      call frag%destroy()
+
+      ! Release this fragment's task results now that they are folded in
+      do k = 0, 2*n_disp
+         call task_results(base + k)%destroy()
+      end do
+
+   end subroutine assemble_one_fragment_hessian
+
+   subroutine fold_completed_fragments(polymers, total_fragments, sys_geom, task_results, &
+                                       task_offset, frag_natoms, frag_results, &
+                                       next_frag, scan_pos, world_comm)
+      !! Fold every fragment whose displacement results have all landed
+      !!
+      !! Called from the coordinator loop so a fragment's Hessian is assembled and its
+      !! gradients released while the rest of the queue is still running, instead of
+      !! holding every task result until the end. Memory then tracks the number of
+      !! fragments in flight rather than the total task count.
+      !!
+      !! Completion is detected by a monotone scan from the oldest unfolded fragment,
+      !! so the bookkeeping is O(1) amortised per task and the drain routines need to
+      !! report nothing. A straggler at the head stalls the scan, in which case this
+      !! degrades to folding everything at the end -- never worse than that.
       integer, intent(in) :: polymers(:, :)
       integer(int64), intent(in) :: total_fragments
       type(system_geometry_t), intent(in) :: sys_geom
@@ -248,86 +355,28 @@ contains
       integer(int64), intent(in) :: task_offset(:)
       integer, intent(in) :: frag_natoms(:)
       type(calculation_result_t), intent(inout) :: frag_results(:)
+      integer(int64), intent(inout) :: next_frag  !! Oldest fragment not yet folded
+      integer(int64), intent(inout) :: scan_pos   !! Next task of next_frag to verify
       type(comm_t), intent(in) :: world_comm
 
-      type(physical_fragment_t) :: frag
-      type(error_t) :: error
-      real(dp), allocatable :: fwd_grad(:, :, :), bwd_grad(:, :, :)
-      real(dp), allocatable :: fwd_dip(:, :), bwd_dip(:, :)
-      integer(int64) :: f, base
-      integer :: fragment_size, k, n_disp, n_atoms
-      logical :: have_dipoles
+      integer(int64) :: last_task
 
-      do f = 1_int64, total_fragments
-         n_atoms = frag_natoms(f)
-         n_disp = 3*n_atoms
-         base = task_offset(f)
+      do while (next_frag <= total_fragments)
+         last_task = task_offset(next_frag) + 2_int64*3_int64*int(frag_natoms(next_frag), int64)
 
-         fragment_size = count(polymers(f, :) > 0)
-         call build_fragment_from_indices(sys_geom, polymers(f, 1:fragment_size), frag, error, sys_geom%bonds)
-         if (error%has_error()) then
-            call logger%error("assemble_fragment_hessians: "//error%get_full_trace())
-            call abort_comm(world_comm, 1)
-         end if
-
-         allocate (fwd_grad(n_disp, 3, n_atoms), bwd_grad(n_disp, 3, n_atoms))
-         allocate (fwd_dip(n_disp, 3), bwd_dip(n_disp, 3))
-         fwd_dip = 0.0_dp
-         bwd_dip = 0.0_dp
-         have_dipoles = .true.
-
-         do k = 1, n_disp
-            if (.not. task_results(base + 2*k - 1)%has_gradient .or. &
-                .not. task_results(base + 2*k)%has_gradient) then
-               call logger%error("Missing gradient for displacement "//to_char(k)// &
-                                 " of fragment "//to_char(f))
-               call abort_comm(world_comm, 1)
-            end if
-            fwd_grad(k, :, :) = task_results(base + 2*k - 1)%gradient
-            bwd_grad(k, :, :) = task_results(base + 2*k)%gradient
-
-            if (task_results(base + 2*k - 1)%has_dipole .and. task_results(base + 2*k)%has_dipole) then
-               fwd_dip(k, :) = task_results(base + 2*k - 1)%dipole
-               bwd_dip(k, :) = task_results(base + 2*k)%dipole
-            else
-               have_dipoles = .false.
-            end if
+         do while (scan_pos <= last_task)
+            if (.not. task_results(scan_pos)%has_gradient) return
+            scan_pos = scan_pos + 1_int64
          end do
 
-         call finite_diff_hessian_from_gradients(frag, fwd_grad, bwd_grad, DEFAULT_DISPLACEMENT, &
-                                                 frag_results(f)%hessian)
-         frag_results(f)%has_hessian = .true.
-
-         ! The undisplaced point carries the energy, gradient and dipole that belong
-         ! beside this fragment's Hessian.
-         frag_results(f)%energy = task_results(base)%energy
-         frag_results(f)%has_energy = task_results(base)%has_energy
-         frag_results(f)%distance = task_results(base)%distance
-         if (task_results(base)%has_gradient) then
-            frag_results(f)%gradient = task_results(base)%gradient
-            frag_results(f)%has_gradient = .true.
-         end if
-         if (task_results(base)%has_dipole) then
-            frag_results(f)%dipole = task_results(base)%dipole
-            frag_results(f)%has_dipole = .true.
-         end if
-
-         if (have_dipoles) then
-            call finite_diff_dipole_derivatives(n_atoms, fwd_dip, bwd_dip, DEFAULT_DISPLACEMENT, &
-                                                frag_results(f)%dipole_derivatives)
-            frag_results(f)%has_dipole_derivatives = .true.
-         end if
-
-         deallocate (fwd_grad, bwd_grad, fwd_dip, bwd_dip)
-         call frag%destroy()
-
-         ! Release this fragment's task results now that they are folded in
-         do k = 0, 2*n_disp
-            call task_results(base + k)%destroy()
-         end do
+         call assemble_one_fragment_hessian(next_frag, polymers, sys_geom, task_results, &
+                                            task_offset, frag_natoms, frag_results(next_frag), &
+                                            world_comm)
+         next_frag = next_frag + 1_int64
+         if (next_frag <= total_fragments) scan_pos = task_offset(next_frag)
       end do
 
-   end subroutine assemble_fragment_hessians
+   end subroutine fold_completed_fragments
 
    module subroutine global_coordinator(ctx, json_data)
       !! Global coordinator for distributing fragments to node coordinators
@@ -382,6 +431,7 @@ contains
       integer(int64), allocatable :: task_offset(:)
       integer, allocatable :: frag_natoms(:)
       integer(int64) :: total_tasks
+      integer(int64) :: next_frag, scan_pos
       logical :: expand_displacements
       integer(int64) :: worker_fragment_map(ctx%resources%mpi_comms%node_comm%size())
       type(queue_t) :: group0_queue
@@ -419,6 +469,12 @@ contains
       ! Allocate storage for results
       allocate (results(total_tasks))
       worker_fragment_map = 0
+
+      ! Fragment Hessians are folded in as their displacements land, so the targets
+      ! have to exist before the coordinator loop starts.
+      next_frag = 1_int64
+      scan_pos = 1_int64
+      if (expand_displacements) allocate (frag_results(ctx%total_fragments))
 
       if (expand_displacements) then
          call logger%info("Hessian displacements flattened into the fragment queue:")
@@ -539,6 +595,14 @@ contains
          ! PRIORITY 3: Check for incoming results from node coordinators (group 0 only)
          call handle_node_results(ctx, results, results_received, total_tasks, coord_timer)
 
+         ! Fold any fragment whose displacements have all landed, releasing its
+         ! task gradients while the rest of the queue is still running.
+         if (expand_displacements) then
+            call fold_completed_fragments(ctx%polymers, ctx%total_fragments, ctx%sys_geom, results, &
+                                          task_offset, frag_natoms, frag_results, next_frag, scan_pos, &
+                                          ctx%resources%mpi_comms%world_comm)
+         end if
+
          ! PRIORITY 4: Remote node coordinator requests for group 0
          call handle_group_node_requests(ctx, group0_queue, group0_fragment_ids, group0_polymers, group0_finished_nodes)
 
@@ -574,18 +638,25 @@ contains
          use mqc_result_types, only: mbe_result_t
          type(mbe_result_t) :: mbe_result
 
-         ! Fold the flat displacement results back into one Hessian per fragment
+         ! Most fragments were folded as their displacements landed; this only
+         ! mops up whatever a straggler at the head of the scan held back.
          if (expand_displacements) then
-            call logger%info(" ")
-            call logger%info("Assembling fragment Hessians from displacement results...")
             call coord_timer%start()
-            allocate (frag_results(ctx%total_fragments))
-            call assemble_fragment_hessians(ctx%polymers, ctx%total_fragments, ctx%sys_geom, results, &
-                                            task_offset, frag_natoms, frag_results, &
-                                            ctx%resources%mpi_comms%world_comm)
+            if (next_frag <= ctx%total_fragments) then
+               call logger%info("Assembling remaining fragment Hessians ("// &
+                                to_char(ctx%total_fragments - next_frag + 1_int64)//" of "// &
+                                to_char(ctx%total_fragments)//" deferred)...")
+               call fold_completed_fragments(ctx%polymers, ctx%total_fragments, ctx%sys_geom, results, &
+                                             task_offset, frag_natoms, frag_results, next_frag, scan_pos, &
+                                             ctx%resources%mpi_comms%world_comm)
+            end if
+            if (next_frag <= ctx%total_fragments) then
+               call logger%error("Fragment "//to_char(next_frag)//" never received all its displacements")
+               call abort_comm(ctx%resources%mpi_comms%world_comm, 1)
+            end if
             call move_alloc(frag_results, results)
             call coord_timer%stop()
-            call logger%info("Fragment Hessians assembled in "//to_char(coord_timer%get_elapsed_time())//" s")
+            call logger%info("Fragment Hessians finalised in "//to_char(coord_timer%get_elapsed_time())//" s")
          end if
 
          ! Compute the many-body expansion
@@ -1155,7 +1226,8 @@ call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leade
                   step = sign(DEFAULT_DISPLACEMENT, real(disp_code, dp))
                   call copy_and_displace_geometry(phys_frag, atom_idx, coord_idx, step, disp_frag)
                   call do_fragment_work(fragment_idx, result, ctx%method_config, disp_frag, &
-                                        CALC_TYPE_GRADIENT, ctx%resources%mpi_comms%world_comm)
+                                        CALC_TYPE_GRADIENT, ctx%resources%mpi_comms%world_comm, &
+                                        print_geometry=.false.)
                   call disp_frag%destroy()
                end if
 
