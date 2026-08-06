@@ -165,7 +165,7 @@ module cublas
          integer(c_int), value :: incx
          type(c_ptr), value :: y               !! device
          integer(c_int), value :: incy
-         real(c_double), intent(out) :: result !! host scalar under POINTER_MODE_HOST
+         real(c_double), intent(out) :: result  !! host scalar under POINTER_MODE_HOST
       end function cublasDdot
 
       integer(c_int) function cublasDnrm2(handle, n, x, incx, result) &
@@ -176,7 +176,7 @@ module cublas
          integer(c_int), value :: n
          type(c_ptr), value :: x               !! device
          integer(c_int), value :: incx
-         real(c_double), intent(out) :: result !! host scalar
+         real(c_double), intent(out) :: result  !! host scalar
       end function cublasDnrm2
 
       ! ---- level 2 -------------------------------------------------------
@@ -238,17 +238,28 @@ contains
       character(len=:), allocatable :: name
 
       select case (status)
-      case (CUBLAS_STATUS_SUCCESS); name = "CUBLAS_STATUS_SUCCESS"
-      case (CUBLAS_STATUS_NOT_INITIALIZED); name = "CUBLAS_STATUS_NOT_INITIALIZED"
-      case (CUBLAS_STATUS_ALLOC_FAILED); name = "CUBLAS_STATUS_ALLOC_FAILED"
-      case (CUBLAS_STATUS_INVALID_VALUE); name = "CUBLAS_STATUS_INVALID_VALUE"
-      case (CUBLAS_STATUS_ARCH_MISMATCH); name = "CUBLAS_STATUS_ARCH_MISMATCH"
-      case (CUBLAS_STATUS_MAPPING_ERROR); name = "CUBLAS_STATUS_MAPPING_ERROR"
-      case (CUBLAS_STATUS_EXECUTION_FAILED); name = "CUBLAS_STATUS_EXECUTION_FAILED"
-      case (CUBLAS_STATUS_INTERNAL_ERROR); name = "CUBLAS_STATUS_INTERNAL_ERROR"
-      case (CUBLAS_STATUS_NOT_SUPPORTED); name = "CUBLAS_STATUS_NOT_SUPPORTED"
-      case (CUBLAS_STATUS_LICENSE_ERROR); name = "CUBLAS_STATUS_LICENSE_ERROR"
-      case default; name = "CUBLAS_STATUS_UNKNOWN"
+      case (CUBLAS_STATUS_SUCCESS)
+         name = "CUBLAS_STATUS_SUCCESS"
+      case (CUBLAS_STATUS_NOT_INITIALIZED)
+         name = "CUBLAS_STATUS_NOT_INITIALIZED"
+      case (CUBLAS_STATUS_ALLOC_FAILED)
+         name = "CUBLAS_STATUS_ALLOC_FAILED"
+      case (CUBLAS_STATUS_INVALID_VALUE)
+         name = "CUBLAS_STATUS_INVALID_VALUE"
+      case (CUBLAS_STATUS_ARCH_MISMATCH)
+         name = "CUBLAS_STATUS_ARCH_MISMATCH"
+      case (CUBLAS_STATUS_MAPPING_ERROR)
+         name = "CUBLAS_STATUS_MAPPING_ERROR"
+      case (CUBLAS_STATUS_EXECUTION_FAILED)
+         name = "CUBLAS_STATUS_EXECUTION_FAILED"
+      case (CUBLAS_STATUS_INTERNAL_ERROR)
+         name = "CUBLAS_STATUS_INTERNAL_ERROR"
+      case (CUBLAS_STATUS_NOT_SUPPORTED)
+         name = "CUBLAS_STATUS_NOT_SUPPORTED"
+      case (CUBLAS_STATUS_LICENSE_ERROR)
+         name = "CUBLAS_STATUS_LICENSE_ERROR"
+      case default
+         name = "CUBLAS_STATUS_UNKNOWN"
       end select
    end function cublas_status_name
 
