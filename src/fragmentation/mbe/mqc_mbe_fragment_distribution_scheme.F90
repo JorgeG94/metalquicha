@@ -23,7 +23,7 @@ module mqc_mbe_fragment_distribution_scheme
    use mqc_method_types, only: method_type_to_string
    use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_adapter, only: driver_config_t
-   use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS
+   use mqc_calculation_defaults, only: FRAGMENT_TYPE_MONOMERS, FRAGMENT_TYPE_ATOMS, DISP_WHOLE_FRAGMENT
    use mqc_work_queue, only: queue_t
    use mqc_program_limits, only: GROUP_RESULT_BATCH_SIZE
 

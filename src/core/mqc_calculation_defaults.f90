@@ -46,4 +46,13 @@ module mqc_calculation_defaults
    integer, parameter, public :: FRAGMENT_TYPE_MONOMERS = 0  !! Fragment specified by monomer indices (MBE)
    integer, parameter, public :: FRAGMENT_TYPE_ATOMS = 1     !! Fragment specified by atom list (GMBE/PIE)
 
+   !! Displacement code carried by every work task.
+   !!
+   !! DISP_WHOLE_FRAGMENT means "run the requested calc_type on the fragment as it
+   !! stands" -- the original one-fragment-per-task behaviour, still used by every
+   !! energy/gradient run and by the whole GMBE path. Any other value marks a task
+   !! from a flattened Hessian queue: 0 is the undisplaced reference point and +/-k
+   !! displaces coordinate k forward/backward (see build_hessian_task_table).
+   integer, parameter, public :: DISP_WHOLE_FRAGMENT = huge(0)
+
 end module mqc_calculation_defaults
