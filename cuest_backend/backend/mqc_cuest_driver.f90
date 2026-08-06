@@ -9,11 +9,7 @@ module mqc_cuest_driver
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
    use mqc_elements, only: element_number_to_symbol
-   use mqc_basis_utils, only: find_basis_file, BASIS_FORMAT_GBS, BASIS_FORMAT_GAMESS, &
-                              BASIS_FORMAT_JSON
-   use mqc_basis_reader, only: build_molecular_basis
-   use mqc_basis_file_reader, only: basis_file_t, open_basis_file
-   use mqc_gbs_reader, only: build_molecular_basis_gbs
+   use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
@@ -249,8 +245,8 @@ contains
    subroutine load_basis(basis_name, element_symbols, mol_basis, error, role)
       !! Locate and parse a basis set for the atoms of a fragment
       !!
-      !! `.gbs` (Gaussian94) is preferred and `.txt` (GAMESS $DATA) accepted;
-      !! `find_basis_file` decides which by what is actually on disk.
+      !! Basis Set Exchange JSON is the only format; `find_basis_file` walks
+      !! the search path and reports where it looked if nothing turns up.
       character(len=*), intent(in) :: basis_name
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_basis_type), intent(out) :: mol_basis
@@ -258,29 +254,16 @@ contains
       character(len=*), intent(in), optional :: role  !! "orbital" or "auxiliary", for diagnostics
 
       character(len=:), allocatable :: basis_path
-      type(basis_file_t) :: basis_file
-      integer :: basis_format
 
       if (len_trim(basis_name) == 0) then
          call error%set(ERROR_VALIDATION, "No basis set specified")
          return
       end if
 
-      call find_basis_file(basis_name, basis_path, error, basis_format)
+      call find_basis_file(basis_name, basis_path, error)
       if (error%has_error()) return
 
-      select case (basis_format)
-      case (BASIS_FORMAT_JSON)
-         call build_molecular_basis_json(basis_path, element_symbols, mol_basis, error)
-      case (BASIS_FORMAT_GBS)
-         call build_molecular_basis_gbs(basis_path, element_symbols, mol_basis, error)
-      case (BASIS_FORMAT_GAMESS)
-         call open_basis_file(basis_file, basis_path, error)
-         if (error%has_error()) return
-         call build_molecular_basis(basis_file%data_section, element_symbols, mol_basis, error)
-      case default
-         call error%set(ERROR_VALIDATION, "Unrecognized basis file format for "//trim(basis_name))
-      end select
+      call build_molecular_basis_json(basis_path, element_symbols, mol_basis, error)
       if (error%has_error()) return
 
       call check_basis_covers_atoms(basis_name, basis_path, element_symbols, mol_basis, error, role)

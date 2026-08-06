@@ -35,6 +35,27 @@ set(MQC_CUEST_BINDINGS_TAG
     "main"
     CACHE STRING "Git tag/branch of mod_cuest when MQC_CUEST_BINDINGS=fetch")
 
+# Basis sets come out of the Basis Set Exchange bundle at configure time.
+# Add a name here (lowercase, as BSE spells it) to have it extracted; the
+# bundle has every basis BSE publishes, so nothing needs downloading.
+# basis_sets/*.json is derived entirely from this list -- anything else found
+# there is deleted -- so removing a name here removes it from the build.
+set(MQC_BASIS_BUNDLE
+    "basis_sets-json-0.12.tar.bz2"
+    CACHE STRING "Basis Set Exchange bundle under basis_sets/")
+set(MQC_BASIS_SETS
+    # Pople, Dunning, and the auxiliaries the validation inputs name
+    "sto-3g;3-21g;6-31g;6-31g_st_;6-31g_st__st_;cc-pvdz;cc-pvtz;aug-cc-pvdz;aug-cc-pvtz;cc-pvtz-jkfit;cc-pvdz-rifit;cc-pvtz-rifit"
+    # every def2 the bundle carries: orbital, diffuse, RI/JK auxiliaries, ECP
+    "def2-sv(p);def2-sv(p)-jkfit;def2-sv(p)-rifit;def2-svp;def2-svp-rifit;def2-svpd;def2-svpd-rifit"
+    "def2-tzvp;def2-tzvp-rifit;def2-tzvpd;def2-tzvpd-rifit;def2-tzvpp;def2-tzvpp-rifit;def2-tzvppd;def2-tzvppd-rifit"
+    "def2-qzvp;def2-qzvp-rifit;def2-qzvpd;def2-qzvpp;def2-qzvpp-rifit;def2-qzvppd;def2-qzvppd-rifit"
+    "def2-mtzvp;def2-mtzvpp;def2-mtzvpp-rij;def2-universal-jfit;def2-universal-jkfit;def2-ecp"
+    CACHE STRING "Basis sets to extract from ${MQC_BASIS_BUNDLE}")
+
+include(ExtractBasisSets)
+mqc_extract_basis_sets()
+
 add_library(${main_lib} STATIC)
 set_target_properties(${main_lib} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(libraries_to_link)

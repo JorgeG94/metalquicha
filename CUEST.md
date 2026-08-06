@@ -73,12 +73,9 @@ runs, so configure on a login node.
 
 ### 3. Basis sets
 
-Three formats are read, and `find_basis_file` takes the first that exists:
-`.json` (Basis Set Exchange), then `.gbs` (Gaussian94), then `.txt` (GAMESS
-`$DATA`). Provenance for the bundled sets is in `basis_sets/PROVENANCE.md`.
-
-**JSON is the one to use.** It keeps a combined shell's coefficient sets
-separate, so an `SP` shell splits cleanly into an S and a P sharing exponents:
+Basis Set Exchange JSON is the only format. It keeps a combined shell's
+coefficient sets separate, so an `SP` shell splits cleanly into an S and a P
+sharing exponents:
 
 ```json
 "angular_momentum": [0, 1],
@@ -86,18 +83,26 @@ separate, so an `SP` shell splits cleanly into an S and a P sharing exponents:
 "coefficients": [[s...], [p...]]
 ```
 
-Gaussian94 cannot express that, so `.gbs` files must be downloaded pre-split
-with `uncontract_spdf=1` or the reader rejects them. JSON also carries ECP data
-in the same file.
+Gaussian94 cannot express that — `.gbs` files had to be downloaded pre-split
+with `uncontract_spdf=1` — which, along with ECP data living in the same JSON
+file, is why the `.gbs` and GAMESS `$DATA` readers were dropped.
 
-```bash
-curl "https://www.basissetexchange.org/api/basis/<name>/format/json/?elements=H,C,N,O" \
-    -o basis_sets/<name>.json
-```
+The files are not in git. `basis_sets/` holds one compressed Basis Set Exchange
+bundle, and CMake extracts the sets named in `MQC_BASIS_SETS` at configure
+time — currently 40, including every def2 the bundle carries. Configure also
+deletes any JSON the list does not name, so the directory is derived entirely
+from that variable; see `basis_sets/PROVENANCE.md` for how to add one.
 
-The two readers are cross-checked against each other in the test suite: parsing
-def2-SVP from `.json` and from `.gbs` must give identical exponents and
-coefficients to 1e-10.
+`find_basis_file` searches `$MQC_BASIS_PATH` (colon-separated), then
+`./basis_sets`, then the `basis_sets/` of the tree the binary was configured
+from — so a build works from any working directory, and a failed lookup names
+every path it tried.
+
+Names normalize to their BSE spelling: lowercased, `*` written `_st_`,
+everything else kept. `cc-pVDZ` and `cc-pvdz` are the same file, `6-31G**`
+resolves to `6-31g_st__st_.json`, and `def2-SV(P)` stays distinct from
+`def2-SVP` — they are different basis sets, and an earlier flattening that
+dropped parentheses silently merged them.
 
 Orbital ↔ auxiliary pairings used by the validation inputs:
 
@@ -294,7 +299,7 @@ cuest_backend/                 # kept out of src/ so fpm never builds it
     mqc_cuest_driver.f90       #   physical_fragment_t -> converged result
 
 src/basis/
-    mqc_gbs_reader.f90         # Gaussian94 (.gbs) reader
+    mqc_basis_utils.F90        # name flattening and the basis search path
     mqc_json_basis_reader.f90  # Basis Set Exchange JSON reader
     mqc_basis_normalization.f90  # shell contraction normalization
 
