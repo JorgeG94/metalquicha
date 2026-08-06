@@ -4,15 +4,27 @@ module mqc_cuest_scf
    !!
    !! cuEST provides S, T, V, J and K but no SCF machinery, so the
    !! orthogonalization, diagonalization, DIIS and energy evaluation all live
-   !! here. For fragment-sized molecules the O(N^3) work is small next to the
-   !! integrals, which is why most of it is still host LAPACK.
+   !! here.
    !!
-   !! The restricted path keeps the Fock matrix on the device: J, K and Vxc are
-   !! built into buffers of their own, combined there, and only the assembled
-   !! F comes back -- one n_ao^2 transfer and one synchronise per iteration
-   !! instead of three of each. The two energy traces come back as scalars.
-   !! The unrestricted path below still round-trips every term; it is the same
-   !! transformation twice over and has not been done yet.
+   !! The restricted path is device-resident. J, K and Vxc are built into
+   !! buffers of their own and assembled into a Fock matrix that never leaves
+   !! the card until it has to; the commutator FDS - SDF and its projection
+   !! into the orthogonal basis are cuBLAS; the DIIS history is device-side
+   !! too, so the extrapolation is a device-to-device combination. What crosses
+   !! per iteration is the density and the occupied coefficients going up, the
+   !! extrapolated Fock coming down, and a handful of scalars -- two energy
+   !! traces, the error norm, and one row of the DIIS overlap.
+   !!
+   !! The Fock still comes down because `diagonalize_fock` is host LAPACK, and
+   !! that is the last host step in the loop. Moving it needs cuSOLVER; whether
+   !! it is worth a new binding set is a question for a profile, not for a
+   !! guess -- at fragment-sized n_ao the O(N^3) host work is small next to the
+   !! integrals.
+   !!
+   !! The unrestricted path below still round-trips every term. It is the same
+   !! transformation twice over with a second spin channel, and has not been
+   !! done yet; `commutator_error` and `mqc_diis` are its host reference, and
+   !! remain the reference the device versions here were diffed against.
    !!
    !! Exchange is density-fitted, which is not a choice: cuEST exposes no
    !! conventional four-index ERI path, so an auxiliary (JKFIT) basis is
@@ -34,6 +46,7 @@ module mqc_cuest_scf
    !! directly and is NOT 1/2 sum D Vxc -- writing the energy as
    !! 1/2 sum D (H + F), which is correct for pure HF, would double count the
    !! XC contribution.
+   use, intrinsic :: iso_c_binding, only: c_int
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
@@ -43,7 +56,8 @@ module mqc_cuest_scf
    use mqc_diis_device, only: diis_device_t
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_context, only: cuest_context_t
-   use mqc_cuest_runtime, only: device_sync
+   use mqc_cuest_runtime, only: device_sync, cublas_status_check
+   use cublas, only: cublasDgemm, cublasDnrm2, CUBLAS_OP_N, CUBLAS_OP_T
    implicit none
    private
 
@@ -330,10 +344,9 @@ contains
       real(dp), allocatable :: overlap(:, :), kinetic(:, :), potential(:, :)
       real(dp), allocatable :: core_hamiltonian(:, :), fock(:, :), density(:, :)
       real(dp), allocatable :: transform(:, :), orbitals(:, :), orbital_energies(:)
-      real(dp), allocatable :: occupied(:, :), diis_error(:, :), error_ortho(:, :)
-      real(dp), allocatable :: scratch(:, :), ortho_scratch(:, :)
+      real(dp), allocatable :: occupied(:, :)
       type(diis_device_t) :: diis
-      integer :: n_ao, n_mo, n_occ, iteration, i, j
+      integer :: n_ao, n_mo, n_occ, iteration
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm
       real(dp) :: xc_energy, trace_j, trace_k
       logical :: diis_ok
@@ -397,9 +410,7 @@ contains
       occupied(:, 1:n_occ) = orbitals(:, 1:n_occ)
       call build_density(occupied(:, 1:n_occ), density)
 
-      allocate (diis_error(n_ao, n_ao))
       xc_energy = 0.0_dp
-      allocate (error_ortho(n_mo, n_mo), scratch(n_ao, n_ao), ortho_scratch(n_ao, n_mo))
       if (use_diis) then
          ! The error vectors live in the orthogonal basis, the Fock matrices in the AO basis.
          call diis%init(context, diis_size, n_ao*n_ao, n_mo*n_mo, error)
@@ -420,11 +431,14 @@ contains
          write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
-      ! The core Hamiltonian does not change between iterations, so it goes to
-      ! the device once and every Fock assembly below starts from that copy.
+      ! The core Hamiltonian, the overlap and the orthogonalizer are all
+      ! iteration-invariant, so they go to the device once and stay there:
+      ! every Fock assembly starts from H, and every commutator reads S and X.
       call system%stage_to(system%d_core, core_hamiltonian, "core Hamiltonian", error)
+      call system%stage_to(system%d_ovlp, overlap, "overlap matrix", error)
+      call system%stage_to(system%d_transform, transform, "orthogonalizer", error)
       if (error%has_error()) then
-         call error%add_context("mqc_cuest_scf:core Hamiltonian upload")
+         call error%add_context("mqc_cuest_scf:iteration-invariant upload")
          return
       end if
 
@@ -469,14 +483,9 @@ contains
             call system%matrix_dot(system%d_matrix, system%d_k, trace_k, "D.K", error)
          end if
 
-         ! The only n_ao^2 transfer left in the iteration. Its own synchronise
-         ! is a no-op by now; the device went idle at the one above.
-         call system%fetch(system%d_fock, fock, "F", error)
-         if (error%has_error()) then
-            call error%add_context("mqc_cuest_scf:Fock build")
-            return
-         end if
-
+         ! The energy needs no Fock matrix -- the two traces already carry
+         ! everything J and K contribute -- so it is available here, before the
+         ! Fock has been anywhere near the host.
          electronic_energy = sum(density*core_hamiltonian) &
                              + 0.5_dp*trace_j &
                              - 0.5_dp*trace_k &
@@ -484,16 +493,15 @@ contains
          energy_change = electronic_energy - previous_energy
          previous_energy = electronic_energy
 
-         ! Commutator error FDS - SDF, zero at convergence, then projected into
-         ! the orthogonal basis so its norm is a basis-independent measure.
-         call pic_gemm(density, overlap, scratch)
-         call pic_gemm(fock, scratch, diis_error)
-         call pic_gemm(density, fock, scratch)
-         call pic_gemm(overlap, scratch, diis_error, alpha=-1.0_dp, beta=1.0_dp)
-
-         call pic_gemm(diis_error, transform, ortho_scratch)
-         call pic_gemm(transform, ortho_scratch, error_ortho, transa="T")
-         error_norm = sqrt(sum(error_ortho**2))
+         ! Commutator error FDS - SDF, zero at convergence, projected into the
+         ! orthogonal basis so its norm is a basis-independent measure. All of
+         ! it on the device, so the DIIS error vector is already where the
+         ! history wants it.
+         call commutator_error_device(system, n_ao, n_mo, error_norm, error)
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_scf:commutator")
+            return
+         end if
 
          if (verbose) then
             write (*, "(A,I5,F24.12,2ES14.4)") "    ", iteration, &
@@ -509,20 +517,25 @@ contains
 
          ! ---- DIIS extrapolation -------------------------------------------
          if (use_diis) then
-            ! The Fock is already on the device and the history is too, so the
-            ! push is device-to-device and the extrapolation writes back into
-            ! d_fock in place. Only the error vector still has to be carried
-            ! over, because the commutator above is still host algebra -- that
-            ! upload, and the second fetch below, are what moving the
-            ! commutator to the device removes.
-            call system%stage_to(system%d_error, error_ortho, "DIIS error", error)
+            ! Fock, error vector and history are all on the device: the push is
+            ! device-to-device and the extrapolation writes back into d_fock in
+            ! place. Nothing crosses but the overlap row, n_stored doubles.
             call diis%push(system%d_fock, system%d_error, error)
             call diis%extrapolate(system%d_fock, diis_ok, error)
-            call system%fetch(system%d_fock, fock, "F (extrapolated)", error)
             if (error%has_error()) then
                call error%add_context("mqc_cuest_scf:DIIS")
                return
             end if
+         end if
+
+         ! The one n_ao^2 transfer left in the iteration, and the only reason
+         ! the Fock comes back at all: diagonalization is still host LAPACK.
+         ! It sits after the extrapolation so the matrix crosses once, not
+         ! once before DIIS and again after.
+         call system%fetch(system%d_fock, fock, "F", error)
+         if (error%has_error()) then
+            call error%add_context("mqc_cuest_scf:Fock fetch")
+            return
          end if
 
          ! ---- new orbitals and density --------------------------------------
@@ -656,7 +669,7 @@ contains
          !! Both spin channels packed end to end. fock_a and fock_b are separate
          !! allocations, so unlike the restricted case they cannot reach the flat
          !! history by sequence association.
-      integer :: n_ao, n_mo, n_alpha, n_beta, iteration, i, j
+      integer :: n_ao, n_mo, n_alpha, n_beta, iteration
       integer :: n_fock_spin, n_err_spin
       real(dp) :: electronic_energy, previous_energy, energy_change, error_norm, xc_energy
       logical :: diis_ok, occupations_ok
@@ -901,6 +914,77 @@ contains
       call pic_gemm(occupied(:, 1:n_occ), occupied(:, 1:n_occ), density, &
                     transb="T", alpha=1.0_dp, beta=0.0_dp)
    end subroutine set_spin_density
+
+   subroutine commutator_error_device(system, n_ao, n_mo, error_norm, error)
+      !! X^T (FDS - SDF) X and its norm, entirely on the device
+      !!
+      !! The device twin of `commutator_error` below, which the unrestricted
+      !! path still uses and which is the reference this was written against.
+      !!
+      !! Layout. cuBLAS is column-major, which is Fortran's own convention, so
+      !! the leading dimensions are the Fortran ones and nothing is transposed
+      !! to compensate -- unlike cuEST's row-major matrices (see the header of
+      !! mqc_cuest_integrals.f90). That difference is invisible for the
+      !! symmetric matrices here (F, D, S) and does not arise for X, which this
+      !! code uploaded itself from a Fortran (n_ao, n_mo) array.
+      !!
+      !! FDS - SDF is antisymmetric rather than symmetric, but it is formed and
+      !! consumed on the device without ever crossing to the host, so the
+      !! layout question never comes up for it.
+      type(cuest_system_t), intent(inout) :: system
+      integer, intent(in) :: n_ao, n_mo
+      real(dp), intent(out) :: error_norm  !! ||X^T (FDS - SDF) X||_F
+      type(error_t), intent(inout) :: error
+
+      integer(c_int) :: m, k
+
+      error_norm = 0.0_dp
+      if (error%has_error()) return
+
+      m = int(n_ao, c_int)
+      k = int(n_mo, c_int)
+
+      ! work = D S
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, m, m, 1.0_dp, system%d_matrix, m, &
+                                           system%d_ovlp, m, 0.0_dp, system%d_work, m), &
+                               "cublasDgemm(D S)", error)
+      ! commutator = F (D S)
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, m, m, 1.0_dp, system%d_fock, m, &
+                                           system%d_work, m, 0.0_dp, system%d_commutator, m), &
+                               "cublasDgemm(F D S)", error)
+      ! work = D F
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, m, m, 1.0_dp, system%d_matrix, m, &
+                                           system%d_fock, m, 0.0_dp, system%d_work, m), &
+                               "cublasDgemm(D F)", error)
+      ! commutator := -S (D F) + commutator
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, m, m, -1.0_dp, system%d_ovlp, m, &
+                                           system%d_work, m, 1.0_dp, system%d_commutator, m), &
+                               "cublasDgemm(-S D F)", error)
+
+      ! Project into the orthogonal basis, where the norm is a basis-independent
+      ! measure. `work` is dead by now -- it last held D F, which the gemm above
+      ! has already consumed -- so it carries the (n_ao, n_mo) intermediate.
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_N, CUBLAS_OP_N, &
+                                           m, k, m, 1.0_dp, system%d_commutator, m, &
+                                           system%d_transform, m, 0.0_dp, system%d_work, m), &
+                               "cublasDgemm(E X)", error)
+      call cublas_status_check(cublasDgemm(system%cublas, CUBLAS_OP_T, CUBLAS_OP_N, &
+                                           k, k, m, 1.0_dp, system%d_transform, m, &
+                                           system%d_work, m, 0.0_dp, system%d_error, k), &
+                               "cublasDgemm(X^T E X)", error)
+      if (error%has_error()) return
+
+      ! Blocks, like every cuBLAS scalar result -- but the convergence test
+      ! needs this value on the host anyway, so nothing is lost.
+      call cublas_status_check(cublasDnrm2(system%cublas, int(n_mo*n_mo, c_int), &
+                                           system%d_error, 1, error_norm), &
+                               "cublasDnrm2(DIIS error)", error)
+      if (error%has_error()) error_norm = 0.0_dp
+   end subroutine commutator_error_device
 
    subroutine commutator_error(fock, density, overlap, transform, scratch, ortho_scratch, err)
       !! X^T (FDS - SDF) X, the DIIS error for one spin channel

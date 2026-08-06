@@ -85,6 +85,9 @@ module mqc_cuest_context
       type(device_pool_t) :: scratch_core  !! Core Hamiltonian, uploaded once
       type(device_pool_t) :: scratch_ovlp  !! Overlap, uploaded once
       type(device_pool_t) :: scratch_error  !! DIIS error vector, n_mo x n_mo
+      type(device_pool_t) :: scratch_transform    !! Orthogonalizer X, uploaded once
+      type(device_pool_t) :: scratch_commutator   !! FDS - SDF in the AO basis
+      type(device_pool_t) :: scratch_work         !! Intermediate for the above
 
       ! DIIS history. The largest single allocation here -- diis_size copies of
       ! the Fock matrix -- which is exactly why it is pooled across fragments
@@ -215,6 +218,9 @@ contains
       call this%scratch_core%release()
       call this%scratch_ovlp%release()
       call this%scratch_error%release()
+      call this%scratch_transform%release()
+      call this%scratch_commutator%release()
+      call this%scratch_work%release()
       call this%scratch_diis_fock%release()
       call this%scratch_diis_error%release()
       call this%scratch_diis_row%release()

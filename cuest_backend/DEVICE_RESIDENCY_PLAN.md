@@ -1,13 +1,23 @@
 # Plan: device-resident SCF and DIIS in the cuEST backend
 
-Status: steps 1 and 2 landed, unverified on hardware. Bindings landed
-(`bfd32607`), DIIS extracted and wired (`6840869c`, `711b9cc8`), separate
-output buffers (`f039c82f`), device Fock assembly (`e9656777`). Steps 3-5 are
-still to do.
+Status: steps 1–4 landed for the **restricted** path. Steps 1–2 are validated
+on the A100; steps 3–4 compile clean but have **not** been run on a GPU — see
+rule 1 below. `validation/run_cuest_validation.sh` is what decides.
 
-Both landed steps compile clean but have **not** been run on a GPU — see rule 1
-below. `validation/run_cuest_validation.sh` on the A100 is what decides whether
-they are correct.
+Remaining: step 5 (diagonalisation, optional and profile-gated), and the
+unrestricted path, which still round-trips every term.
+
+After step 4, one restricted SCF iteration costs:
+
+| | |
+|---|---|
+| H2D | density, occupied coefficients |
+| D2H | extrapolated Fock ×1 |
+| scalars | 2 energy traces, error norm, 1 DIIS overlap row |
+| syncs | 1 (between the cuEST integrals and the cuBLAS reading them) |
+
+The Fock still comes down only because `diagonalize_fock` is host LAPACK.
+That is step 5, and it is the only host step left in the loop.
 
 ---
 
@@ -108,7 +118,7 @@ Three things as built differ from the sketch above, none of them large:
   transformation applied twice with a second spin channel; worth doing, but not
   before the restricted path is confirmed on hardware.
 
-### Step 3 — Device-resident DIIS history
+### Step 3 — Device-resident DIIS history — DONE (`056bfc0c`)
 
 *Files:* new `mqc_diis_device.f90`, `mqc_cuest_scf.f90`
 
@@ -131,7 +141,7 @@ failure (a stale history producing plausible-but-wrong coefficients, no crash).
 SCF iteration counts and energies to ~1e-10. Do this **before** step 4 — it is
 much easier to localise a DIIS bug while the commutator is still on the host.
 
-### Step 4 — Commutator and basis transform on device
+### Step 4 — Commutator and basis transform on device — DONE
 
 *Files:* `mqc_cuest_scf.f90`
 

@@ -168,6 +168,9 @@ module mqc_cuest_integrals
       type(c_ptr) :: d_core = c_null_ptr  !! Core Hamiltonian, iteration-invariant
       type(c_ptr) :: d_ovlp = c_null_ptr  !! Overlap, iteration-invariant
       type(c_ptr) :: d_error = c_null_ptr  !! DIIS error vector, (n_mo, n_mo)
+      type(c_ptr) :: d_transform = c_null_ptr   !! Orthogonalizer X, (n_ao, n_mo)
+      type(c_ptr) :: d_commutator = c_null_ptr  !! FDS - SDF in the AO basis
+      type(c_ptr) :: d_work = c_null_ptr        !! Intermediate for the commutator
    contains
       procedure :: create => system_create
       procedure :: destroy => system_destroy
@@ -315,24 +318,28 @@ contains
       this%d_matrix = context%scratch_density%ptr
       this%d_result = context%scratch_result%ptr
 
-      ! Fock terms and the DIIS error. Six extra n_ao^2 buffers is 48 MB at
-      ! n_ao = 1000, against the 40-80 GB of an A100 or H100 -- cheap next to
-      ! what it removes.
+      ! Everything the device-resident SCF works on: the Fock terms, the
+      ! orthogonalizer, and the commutator and its scratch. Ten n_ao^2 buffers
+      ! is 80 MB at n_ao = 1000, against the 40-80 GB of an A100 or H100 --
+      ! cheap next to the six transfers and three synchronises per iteration it
+      ! removes, and pooled, so a fragmented run pays for it once per rank.
       !
-      ! The error vector is really n_mo x n_mo, but n_mo comes from the overlap
-      ! diagonalization and is not known this early. n_mo <= n_ao always, so
-      ! sizing it n_ao^2 costs a little memory and no correctness.
+      ! Several are sized n_ao^2 when they only need n_ao*n_mo or n_mo^2, since
+      ! n_mo <= n_ao always. That costs a little memory and no correctness.
       !
-      ! `scratch_ovlp` is deliberately not among them: nothing reads S on the
-      ! device until the commutator moves there, so `d_ovlp` stays null and any
-      ! premature use faults instead of quietly returning another fragment's
-      ! numbers.
+      ! The same goes for the orthogonalizer and the commutator scratch: X is
+      ! (n_ao, n_mo) and the projected error (n_mo, n_mo), but n_mo comes out
+      ! of the overlap diagonalization and is not known this early.
       call context%scratch_j%ensure(this%n_ao*this%n_ao, "Coulomb matrix", error)
       call context%scratch_k%ensure(this%n_ao*this%n_ao, "exchange matrix", error)
       call context%scratch_xc%ensure(this%n_ao*this%n_ao, "XC potential", error)
       call context%scratch_fock%ensure(this%n_ao*this%n_ao, "Fock matrix", error)
       call context%scratch_core%ensure(this%n_ao*this%n_ao, "core Hamiltonian", error)
+      call context%scratch_ovlp%ensure(this%n_ao*this%n_ao, "overlap matrix", error)
       call context%scratch_error%ensure(this%n_ao*this%n_ao, "DIIS error vector", error)
+      call context%scratch_transform%ensure(this%n_ao*this%n_ao, "orthogonalizer", error)
+      call context%scratch_commutator%ensure(this%n_ao*this%n_ao, "commutator", error)
+      call context%scratch_work%ensure(this%n_ao*this%n_ao, "commutator scratch", error)
       if (error%has_error()) then
          call error%add_context("mqc_cuest_integrals:create")
          return
@@ -342,7 +349,11 @@ contains
       this%d_xc = context%scratch_xc%ptr
       this%d_fock = context%scratch_fock%ptr
       this%d_core = context%scratch_core%ptr
+      this%d_ovlp = context%scratch_ovlp%ptr
       this%d_error = context%scratch_error%ptr
+      this%d_transform = context%scratch_transform%ptr
+      this%d_commutator = context%scratch_commutator%ptr
+      this%d_work = context%scratch_work%ptr
 
       call context%scratch_gradient%ensure(3*this%n_atoms, "gradient", error)
       call context%scratch_charge_gradient%ensure(3*this%n_atoms, "charge gradient", error)
@@ -1877,6 +1888,9 @@ contains
       this%d_core = c_null_ptr
       this%d_ovlp = c_null_ptr
       this%d_error = c_null_ptr
+      this%d_transform = c_null_ptr
+      this%d_commutator = c_null_ptr
+      this%d_work = c_null_ptr
 
       if (c_associated(this%xc_plan)) status = cuestXCIntPlanDestroy(this%xc_plan)
       this%xc_plan = c_null_ptr
