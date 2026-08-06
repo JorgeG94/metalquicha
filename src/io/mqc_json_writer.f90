@@ -9,6 +9,7 @@ module mqc_json_writer
    use mqc_physical_constants, only: HARTREE_TO_CALMOL, R_CALMOLK, AU_TO_DEBYE, CAL_TO_J
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
+   use mqc_fragment_table_writer, only: write_fragment_table
    use json_module, only: json_core, json_value
    implicit none
    private
@@ -37,6 +38,8 @@ contains
             call write_vibrational_json_impl(output_data)
          else
             call write_mbe_breakdown_json_impl(output_data)
+            ! The per-fragment table also goes out flat, where pandas can stream it
+            call write_fragment_table(output_data)
          end if
 
       case (OUTPUT_MODE_GMBE_PIE)
