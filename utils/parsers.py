@@ -375,7 +375,7 @@ def _parse_keywords(d: Dict[str, Any]) -> Tuple[Optional[SCF], Optional[Hessian]
 
 def _parse_system(d: Dict[str, Any]) -> System:
     """Parse system section."""
-    require_only_keys(d, {"logger", "skip_json_output"}, "system")
+    require_only_keys(d, {"logger", "skip_json_output", "fragment_breakdown"}, "system")
 
     logger_data = req_type(d.get("logger"), dict, "system.logger")
     require_only_keys(logger_data, {"level"}, "system.logger")
@@ -389,7 +389,12 @@ def _parse_system(d: Dict[str, Any]) -> System:
     if not isinstance(skip_json, bool):
         die("system.skip_json_output must be a boolean")
 
-    return System(logger=Logger(level=level), skip_json_output=skip_json)
+    breakdown = d.get("fragment_breakdown", "csv")
+    if not isinstance(breakdown, str) or breakdown not in ("csv", "json", "none"):
+        die('system.fragment_breakdown must be one of "csv", "json", "none"')
+
+    return System(logger=Logger(level=level), skip_json_output=skip_json,
+                  fragment_breakdown=breakdown)
 
 
 def _parse_molecule(m: Dict[str, Any], base_dir: Path, mi: int) -> Molecule:

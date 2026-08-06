@@ -151,6 +151,10 @@ class System:
     """System-level settings."""
     logger: Logger
     skip_json_output: bool = False  # Skip JSON output for large calculations
+    # Where the per-fragment MBE breakdown goes: "csv", "json" or "none".
+    # csv is the default: embedding the table in the JSON costs ~6x more to write
+    # and forces the consumer to hold the whole document in memory.
+    fragment_breakdown: str = "csv"
 
 
 @dataclass
