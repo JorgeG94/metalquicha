@@ -1,14 +1,17 @@
 # Plan: device-resident SCF and DIIS in the cuEST backend
 
-Status: all five steps landed for the **restricted** path. Steps 1–4 are
-validated on the A100; step 5 compiles clean but has **not** been run on a GPU
-— see rule 1 below. `validation/run_cuest_validation.sh` is what decides.
+Status: all five steps landed, for **both** the restricted and the unrestricted
+path. Steps 1–4 are validated on the A100 and measured at **3.4× end to end**
+(145.4 s → 42.5 s on 171/1714 tasks, rank 0 both runs). Step 5 and the
+unrestricted port compile clean but have **not** been run on a GPU — see rule 1
+below. `validation/run_cuest_validation.sh` is what decides; `uhf_oh` and
+`uhf_o2` are the rows that exercise the open-shell path.
 
-Remaining: the unrestricted path, which still round-trips every term, and a
-timing run on step 5 (see below — it was gated on a profile it has not had).
+Where the time actually went: not the DIIS, and not the diagonalisation. It was
+the transfers, which is what steps 1–4 removed.
 
-**The restricted SCF loop now performs no `n_ao²` transfers at all.** Per
-iteration, what crosses is:
+**Neither SCF loop now performs any `n_ao²` transfers at all.** Per iteration,
+what crosses is:
 
 | | |
 |---|---|
@@ -21,6 +24,13 @@ Every scalar is a value the host needs to *decide* something — to print, to
 converge, or to solve the small DIIS system — rather than data in transit. The
 guess is uploaded once before the loop; density, occupied orbitals and orbital
 energies are fetched once after it.
+
+The unrestricted path runs the same machinery once per spin. Two arrangements
+carry it: the two Fock matrices are halves of one allocation and the two error
+vectors halves of another, so the DIIS takes each pair as a single vector and
+one extrapolation drives both channels; and an empty beta channel is written
+exactly once, by the initial upload, since the loop has no occupied block to
+rebuild it from.
 
 ---
 
