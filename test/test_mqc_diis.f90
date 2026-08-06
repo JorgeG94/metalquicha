@@ -35,14 +35,14 @@ contains
       before = fock
 
       call diis%extrapolate(fock, ok)
-      call check(error, .not. ok, "extrapolated with an empty subspace")
+      call check(error,.not. ok, "extrapolated with an empty subspace")
       if (allocated(error)) return
       call check(error, all(fock == before), "fock modified with an empty subspace")
       if (allocated(error)) return
 
       call diis%push(fock, [1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp])
       call diis%extrapolate(fock, ok)
-      call check(error, .not. ok, "extrapolated with one stored vector")
+      call check(error,.not. ok, "extrapolated with one stored vector")
       if (allocated(error)) return
       call check(error, all(fock == before), "fock modified with one stored vector")
 

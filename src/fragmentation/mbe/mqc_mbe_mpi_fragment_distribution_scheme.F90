@@ -1119,7 +1119,7 @@ call result_isend(worker_result, ctx%resources%mpi_comms%world_comm, group_leade
                      call wait(req)
               call isend(ctx%resources%mpi_comms%node_comm, fragment_indices, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
-                    call isend(ctx%resources%mpi_comms%node_comm, disp_code, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
+                     call isend(ctx%resources%mpi_comms%node_comm, disp_code, status%MPI_SOURCE, TAG_WORKER_FRAGMENT, req)
                      call wait(req)
 
                      ! Track which fragment was sent to this worker
