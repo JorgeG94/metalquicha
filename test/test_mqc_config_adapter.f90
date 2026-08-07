@@ -1,6 +1,6 @@
 module test_mqc_config_adapter
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_config_parser, only: input_fragment_t, mqc_config_t
+   use mqc_config_types, only: input_fragment_t, mqc_config_t
    use mqc_config_adapter, only: check_fragment_overlap, config_to_driver, driver_config_t
    use mqc_method_types, only: METHOD_TYPE_GFN2
    use mqc_calc_types, only: CALC_TYPE_ENERGY

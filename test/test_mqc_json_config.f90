@@ -17,7 +17,8 @@ module test_mqc_json_config
    !! Note that `.mqc` inlines the geometry that the JSON only references by
    !! path, so agreement here also exercises the xyz resolution.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_config_parser, only: mqc_config_t, read_mqc_file
+   use mqc_config_types, only: mqc_config_t
+   use mqc_config_parser, only: read_mqc_file
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_error, only: error_t
    use pic_types, only: dp
@@ -372,7 +373,7 @@ contains
    end subroutine check_bonds
 
    subroutine check_one_bond(error, stem, ibond, bond_a, bond_b)
-      use mqc_config_parser, only: bond_t
+      use mqc_config_types, only: bond_t
       type(error_type), allocatable, intent(out) :: error
       character(len=*), intent(in) :: stem
       integer, intent(in) :: ibond

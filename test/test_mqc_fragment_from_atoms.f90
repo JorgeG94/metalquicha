@@ -1,7 +1,7 @@
 module test_mqc_fragment_from_atoms
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_physical_fragment, only: physical_fragment_t, system_geometry_t, build_fragment_from_atom_list
-   use mqc_config_parser, only: bond_t
+   use mqc_config_types, only: bond_t
    use pic_types, only: dp
    use mqc_error, only: error_t
    implicit none

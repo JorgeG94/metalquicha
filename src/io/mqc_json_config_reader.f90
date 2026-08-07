@@ -35,8 +35,8 @@ module mqc_json_config_reader
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
-   use mqc_config_parser, only: mqc_config_t, input_fragment_t, bond_t, &
-                                parse_method_string
+   use mqc_method_types, only: parse_method_string
+   use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use json_module, only: json_file
    implicit none

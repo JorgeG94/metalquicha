@@ -12,7 +12,8 @@ program main
    use mqc_resources, only: resources_t
    use mqc_driver, only: run_calculation, run_multi_molecule_calculations
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_config_parser, only: mqc_config_t, read_mqc_file
+   use mqc_config_types, only: mqc_config_t
+   use mqc_config_parser, only: read_mqc_file
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_io_helpers, only: set_output_json_filename, ends_with

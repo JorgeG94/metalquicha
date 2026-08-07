@@ -1,6 +1,7 @@
 target_sources(
   ${main_lib}
-  PRIVATE mqc_config_parser.F90
+  PRIVATE mqc_config_types.f90
+          mqc_config_parser.F90
           mqc_io_helpers.f90
           mqc_json.f90
           mqc_config_adapter.f90

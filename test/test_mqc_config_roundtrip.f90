@@ -14,7 +14,8 @@ module test_mqc_config_roundtrip
    !! deliberately NOT the default, so a dropped copy shows up as the default
    !! rather than coincidentally matching.
    use testdrive, only: new_unittest, unittest_type, error_type, check
-   use mqc_config_parser, only: mqc_config_t, read_mqc_file
+   use mqc_config_types, only: mqc_config_t
+   use mqc_config_parser, only: read_mqc_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver
    use mqc_method_base, only: qc_method_t
    use mqc_method_factory, only: create_method
