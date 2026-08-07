@@ -16,12 +16,11 @@ cd "$(dirname "$0")/.."
 MQC=./build/mqc
 
 for tag in hf pbe; do
-    python3 mqc_prep.py "validation/inputs/frag_water6_$tag.json" > /dev/null || exit 1
     echo "=== water hexamer MBE(2), $tag/def2-svp ==="
     # Anchored patterns, not substrings: a bare case-insensitive "MBE" also
     # matches "nuMBEr of atoms", which buries the result in per-fragment noise.
     /usr/bin/time -f "  wall: %e s   peak RSS: %M kB" \
-        $MQC "validation/inputs/frag_water6_$tag.mqc" 2>&1 \
+        $MQC "validation/inputs/frag_water6_$tag.json" 2>&1 \
         | grep -E "Total fragments:|Computing Many-Body|^ *wall:|ERROR:|Total processing time"
 
     # The MBE totals live in the JSON, not the log.

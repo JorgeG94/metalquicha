@@ -46,9 +46,8 @@ d = json.load(open(f"validation/inputs/{name}.json"))
 d.setdefault("keywords", {}).setdefault("scf", {"maxiter": 100, "tolerance": 1e-8})["guess"] = guess
 json.dump(d, open(dest, "w"), indent=4)
 PY
-        python3 mqc_prep.py "$WORK/$stem.json" > /dev/null 2>&1 || { echo "prep failed"; continue; }
 
-        out=$($MQC "$WORK/$stem.mqc" 2>&1)
+        out=$($MQC "$WORK/$stem.json" 2>&1)
         energy=$(printf '%s' "$out" | grep "Final energy:" | awk '{print $NF}')
         # Iteration lines are "<n> <energy> <dE> <diis>"; the last one wins.
         iters=$(printf '%s' "$out" | awk '/^ *[0-9]+ +-?[0-9]+\.[0-9]+ +-?[0-9]/ {n=$1} END {print n+0}')

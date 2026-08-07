@@ -1,62 +1,64 @@
 {
   "description": "Physics validation tests for metalquicha",
-  "tolerance": 1.0e-6,
+  "tolerance": 1e-06,
   "tests": [
-    { "name": "GMBE(1) test gly3",
-      "input": "inputs/overlapping_gly3.mqc",
-      "expected_energy": -47.0192718920,
-      "type" : "fragmented"
-      },
-    { "name": "GMBE(3) test decane",
-      "input": "inputs/nlevel_3_ov_decane.mqc",
-      "expected_energy": -33.0506139740,
-      "type" : "fragmented"
-      },
+    {
+      "name": "GMBE(1) test gly3",
+      "input": "inputs/overlapping_gly3.json",
+      "expected_energy": -47.019271892,
+      "type": "fragmented"
+    },
+    {
+      "name": "GMBE(3) test decane",
+      "input": "inputs/nlevel_3_ov_decane.json",
+      "expected_energy": -33.050613974,
+      "type": "fragmented"
+    },
     {
       "name": "Unfragmented glycine tripeptide",
-      "input": "inputs/no_frag.mqc",
-      "expected_energy": -143.291489223019653,
+      "input": "inputs/no_frag.json",
+      "expected_energy": -143.29148922301965,
       "type": "unfragmented"
     },
     {
       "name": "Charged cluster MBE",
-      "input": "inputs/charged_cluster.mqc",
-      "expected_energy": -45.7161383790,
+      "input": "inputs/charged_cluster.json",
+      "expected_energy": -45.716138379,
       "type": "fragmented"
     },
     {
       "name": "Glycine 10-mer MBE",
-      "input": "inputs/gly10.mqc",
+      "input": "inputs/gly10.json",
       "expected_energy": -143.3014637669,
       "type": "fragmented"
     },
     {
       "name": "Water prism MBE",
-      "input": "inputs/prism.mqc",
+      "input": "inputs/prism.json",
       "expected_energy": -34.6736678571,
       "type": "fragmented"
     },
     {
       "name": "Water prism MBE (1 group)",
-      "input": "inputs/prism_global_groups1.mqc",
+      "input": "inputs/prism_global_groups1.json",
       "expected_energy": -34.6736678571,
       "type": "fragmented"
     },
     {
       "name": "Water 20-mer isomer MBE",
-      "input": "inputs/w20_isomer.mqc",
+      "input": "inputs/w20_isomer.json",
       "expected_energy": -115.6850246841,
       "type": "fragmented"
     },
     {
       "name": "Hydronium ion unfragmented",
-      "input": "inputs/h3o.mqc",
+      "input": "inputs/h3o.json",
       "expected_energy": -5.773131213617977,
       "type": "unfragmented"
     },
     {
       "name": "Multi-fragment calculation",
-      "input": "inputs/multi_frag.mqc",
+      "input": "inputs/multi_frag.json",
       "expected_energies": {
         "molecule_1": -34.6736678571,
         "molecule_2": -34.6736678571
@@ -65,36 +67,36 @@
     },
     {
       "name": "Multi-structure conformers",
-      "input": "inputs/multi_structure.mqc",
+      "input": "inputs/multi_structure.json",
       "expected_energies": {
-        "molecule_1": -34.683832133514869,
-        "molecule_2": -34.683832133514869,
-        "molecule_3": -34.683832133514869,
-        "molecule_4": -34.683832133514869,
-        "molecule_5": -34.683832133514869,
-        "molecule_6": -34.683832133514869
+        "molecule_1": -34.68383213351487,
+        "molecule_2": -34.68383213351487,
+        "molecule_3": -34.68383213351487,
+        "molecule_4": -34.68383213351487,
+        "molecule_5": -34.68383213351487,
+        "molecule_6": -34.68383213351487
       },
       "type": "multi_molecule"
     },
     {
       "name": "Hessian + gradient overlapping gly3",
-      "input": "inputs/hess_gly3_ov.mqc",
-      "expected_energy": -47.0192718920,
-      "expected_gradient_norm": 0.1406590140,
-      "expected_hessian_frobenius_norm": 4.077069191300,
+      "input": "inputs/hess_gly3_ov.json",
+      "expected_energy": -47.019271892,
+      "expected_gradient_norm": 0.140659014,
+      "expected_hessian_frobenius_norm": 4.0770691913,
       "type": "fragmented"
     },
     {
       "name": "Hessian + gradient prism",
-      "input": "inputs/prism_hessian.mqc",
+      "input": "inputs/prism_hessian.json",
       "expected_energy": -34.6736678571,
       "expected_gradient_norm": 0.0315774691,
-      "expected_hessian_frobenius_norm": 3.263705700400,
+      "expected_hessian_frobenius_norm": 3.2637057004,
       "type": "fragmented"
     },
     {
       "name": "Hessian + gradient prism MBE(3)",
-      "input": "inputs/prism_hess3.mqc",
+      "input": "inputs/prism_hess3.json",
       "expected_energy": -34.6829984115,
       "expected_gradient_norm": 0.0154149709,
       "expected_hessian_frobenius_norm": 3.247168636917,
@@ -102,58 +104,58 @@
     },
     {
       "name": "Hessian + gradient unfrag h3o",
-      "input": "inputs/hess_h3o.mqc",
+      "input": "inputs/hess_h3o.json",
       "expected_energy": -5.773131213617977,
       "expected_gradient_norm": 0.034523358557187,
-      "expected_hessian_frobenius_norm": 1.410449942210,
+      "expected_hessian_frobenius_norm": 1.41044994221,
       "type": "unfragmented"
     },
     {
       "name": "ALBP solvation of w1 in water",
-      "input": "inputs/w1_water.mqc",
-      "expected_energy": -5.912219839402070,
+      "input": "inputs/w1_water.json",
+      "expected_energy": -5.91221983940207,
       "type": "unfragmented"
-     },
-      {
+    },
+    {
       "name": "CPCM solvation of w1 in water",
-      "input": "inputs/w1_water_cpcm.mqc",
+      "input": "inputs/w1_water_cpcm.json",
       "expected_energy": -5.881430808516041,
       "type": "unfragmented"
-     },
-      {
+    },
+    {
       "name": "GBSA solvation of w1 in water",
-      "input": "inputs/w1_water_gbsa.mqc",
+      "input": "inputs/w1_water_gbsa.json",
       "expected_energy": -5.935225830899037,
       "type": "unfragmented"
-     },
-     {
+    },
+    {
       "name": "Thermochemistry + vibrational analysis w1",
-      "input": "inputs/w1_vib_therm.mqc",
-      "expected_energy": -5.070544353838080,
-      "expected_gradient_norm": 0.000185024381720,
+      "input": "inputs/w1_vib_therm.json",
+      "expected_energy": -5.07054435383808,
+      "expected_gradient_norm": 0.00018502438172,
       "expected_hessian_frobenius_norm": 1.364748705645287,
       "expected_frequencies": [
-        -0.54701448957069055E-4,
-        -0.1240069256290646E-4,
-        -0.82295634937538521E-5,
-        -0.39219584976891549E-14,
-        0.87110217097480539E-13,
-        0.13177549039936705E-4,
-        0.15388240294028515E+4,
-        0.36428646747909797E+4,
-        0.36514750140948781E+4
+        -5.4701448957069055e-05,
+        -1.240069256290646e-05,
+        -8.229563493753852e-06,
+        -3.921958497689155e-15,
+        8.711021709748054e-14,
+        1.3177549039936705e-05,
+        1538.8240294028515,
+        3642.8646747909797,
+        3651.475014094878
       ],
       "expected_zpe": 0.020123434314,
       "expected_gibbs_correction": 0.001844309467,
       "type": "unfragmented"
-     },
-     {
+    },
+    {
       "name": "Hessian + gradient serial gly3 (for MPI testing)",
-      "input": "inputs/hess_gly3_serial.mqc",
+      "input": "inputs/hess_gly3_serial.json",
       "expected_energy": -47.0179834905979,
-      "expected_gradient_norm": 0.141432046954180,
-      "expected_hessian_frobenius_norm": 4.07766860495173855E+0,
+      "expected_gradient_norm": 0.14143204695418,
+      "expected_hessian_frobenius_norm": 4.0776686049517386,
       "type": "fragmented"
-     }
+    }
   ]
 }
