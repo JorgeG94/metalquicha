@@ -49,30 +49,30 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0", "index_base": 0, "units": "angstrom"},', &
-         '"model": {"method": "XTB-GFN2", "basis": "sto-3g", "aux_basis": "x", "functional": "pbe"},', &
-         '"driver": "Energy",', &
-         '"title": "anything",', &
-         '"system": {"logger": {"level": "info"}, "skip_json_output": false,', &
-         '           "fragment_breakdown": "csv"},', &
-         '"keywords": {', &
-         '  "scf": {"maxiter": 40, "tolerance": 1e-8, "unrestricted": false, "guess": "gwh"},', &
-         '  "hessian": {"displacement": 0.005, "temperature": 300.0, "pressure": 1.0},', &
-         '  "aimd": {"dt": 0.5, "nsteps": 10, "initial_temperature": 300.0,', &
-         '           "output_frequency": 1},', &
-         '  "xtb": {"solvent": "water", "solvation_model": "cpcm", "dielectric": 80.0,', &
-         '          "cpcm_nang": 230, "cpcm_rscale": 1.2, "use_cds": true, "use_shift": true},', &
-         '  "fragmentation": {"method": "MBE", "level": 3, "embedding": "none",', &
-         '                    "allow_overlapping_fragments": false,', &
-         '                    "max_intersection_level": 2, "cutoff_method": "distance",', &
-         '                    "distance_metric": "min", "global_groups": 2,', &
-         '                    "cutoffs": {"dimer": 6.0, "3": 4.0}}},', &
-         '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
-         '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
-         '  "molecular_charge": 1, "molecular_multiplicity": 2,', &
-         '  "fragments": [[0, 1], [2, 3]], "fragment_charges": [1, 0],', &
-         '  "fragment_multiplicities": [2, 1],', &
-         '  "connectivity": [[0, 1, 1]]}]'])
+                       '"schema": {"name": "t", "version": "1.0", "index_base": 0, "units": "angstrom"},', &
+                       '"model": {"method": "XTB-GFN2", "basis": "sto-3g", "aux_basis": "x", "functional": "pbe"},', &
+                       '"driver": "Energy",', &
+                       '"title": "anything",', &
+                       '"system": {"logger": {"level": "info"}, "skip_json_output": false,', &
+                       '           "fragment_breakdown": "csv"},', &
+                       '"keywords": {', &
+                       '  "scf": {"maxiter": 40, "tolerance": 1e-8, "unrestricted": false, "guess": "gwh"},', &
+                       '  "hessian": {"displacement": 0.005, "temperature": 300.0, "pressure": 1.0},', &
+                       '  "aimd": {"dt": 0.5, "nsteps": 10, "initial_temperature": 300.0,', &
+                       '           "output_frequency": 1},', &
+                       '  "xtb": {"solvent": "water", "solvation_model": "cpcm", "dielectric": 80.0,', &
+                       '          "cpcm_nang": 230, "cpcm_rscale": 1.2, "use_cds": true, "use_shift": true},', &
+                       '  "fragmentation": {"method": "MBE", "level": 3, "embedding": "none",', &
+                       '                    "allow_overlapping_fragments": false,', &
+                       '                    "max_intersection_level": 2, "cutoff_method": "distance",', &
+                       '                    "distance_metric": "min", "global_groups": 2,', &
+                       '                    "cutoffs": {"dimer": 6.0, "3": 4.0}}},', &
+                       '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
+                       '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
+                       '  "molecular_charge": 1, "molecular_multiplicity": 2,', &
+                       '  "fragments": [[0, 1], [2, 3]], "fragment_charges": [1, 0],', &
+                       '  "fragment_multiplicities": [2, 1],', &
+                       '  "connectivity": [[0, 1, 1]]}]'])
       call expect_accepted(error, "a deck using every allowed key")
    end subroutine test_valid
 
@@ -95,11 +95,11 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1, "charge": 0}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1, "charge": 0}]'])
       call expect_rejected(error, "charge", "an unknown key on a molecule")
    end subroutine test_unknown_molecule_key
 
@@ -116,10 +116,10 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"symbols": ["H"], "geometry": [0,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H"], "geometry": [0,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
       call expect_rejected(error, "model", "a deck with no model block")
    end subroutine test_missing_required
 
@@ -135,13 +135,13 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
-         '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1,', &
-         '  "fragments": [[0, 1], [2, 3]], "fragment_charges": [1, 0]}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
+                       '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1,', &
+                       '  "fragments": [[0, 1], [2, 3]], "fragment_charges": [1, 0]}]'])
       call expect_rejected(error, "sum", "fragment charges that do not add up")
    end subroutine test_charge_sum
 
@@ -149,13 +149,13 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
-         '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1,', &
-         '  "fragments": [[0, 1], [2, 3]], "fragment_multiplicities": [1]}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"symbols": ["H", "H", "H", "H"],', &
+                       '  "geometry": [0,0,0, 0.7,0,0, 2,0,0, 2.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1,', &
+                       '  "fragments": [[0, 1], [2, 3]], "fragment_multiplicities": [1]}]'])
       call expect_rejected(error, "fragment_multiplicities", &
                            "a multiplicity list shorter than the fragment list")
    end subroutine test_list_lengths
@@ -164,11 +164,11 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"xyz": "somewhere.xyz", "symbols": ["H"], "geometry": [0,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"xyz": "somewhere.xyz", "symbols": ["H"], "geometry": [0,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
       call expect_rejected(error, "not both", "a molecule giving xyz and symbols")
    end subroutine test_geometry_both
 
@@ -176,10 +176,10 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": [{"molecular_charge": 0, "molecular_multiplicity": 1}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": [{"molecular_charge": 0, "molecular_multiplicity": 1}]'])
       call expect_rejected(error, "either", "a molecule with no geometry at all")
    end subroutine test_geometry_neither
 
@@ -187,10 +187,10 @@ contains
       type(error_type), allocatable, intent(out) :: error
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         '"molecules": []'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       '"molecules": []'])
       call expect_rejected(error, "molecules", "an empty molecules array")
    end subroutine test_empty_molecules
 
@@ -215,12 +215,12 @@ contains
       character(len=*), intent(in) :: extra
 
       call write_deck([character(len=200) :: &
-         '"schema": {"name": "t", "version": "1.0"},', &
-         '"model": {"method": "XTB-GFN2"},', &
-         '"driver": "Energy",', &
-         extra, &
-         '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
-         '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
+                       '"schema": {"name": "t", "version": "1.0"},', &
+                       '"model": {"method": "XTB-GFN2"},', &
+                       '"driver": "Energy",', &
+                       extra, &
+                       '"molecules": [{"symbols": ["H", "H"], "geometry": [0,0,0, 0.7,0,0],', &
+                       '  "molecular_charge": 0, "molecular_multiplicity": 1}]'])
    end subroutine write_minimal
 
    subroutine expect_accepted(error, what)
@@ -231,7 +231,7 @@ contains
       type(error_t) :: read_error
 
       call read_json_config_file(DECK, config, read_error)
-      call check(error, .not. read_error%has_error(), &
+      call check(error,.not. read_error%has_error(), &
                  what//" should be accepted, but: "//read_error%get_message())
    end subroutine expect_accepted
 

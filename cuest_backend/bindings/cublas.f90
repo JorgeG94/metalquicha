@@ -42,7 +42,20 @@
 module cublas
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
    implicit none
-   public
+   private
+
+   public :: cublas_status_name
+   public :: cublasCreate, cublasDestroy, cublasSetStream, cublasSetPointerMode
+   public :: cublasDaxpy, cublasDcopy, cublasDscal, cublasDdot, cublasDnrm2
+   public :: cublasDgemv, cublasDgemm
+   public :: CUBLAS_STATUS_SUCCESS, CUBLAS_STATUS_NOT_INITIALIZED
+   public :: CUBLAS_STATUS_ALLOC_FAILED, CUBLAS_STATUS_INVALID_VALUE
+   public :: CUBLAS_STATUS_ARCH_MISMATCH, CUBLAS_STATUS_MAPPING_ERROR
+   public :: CUBLAS_STATUS_EXECUTION_FAILED, CUBLAS_STATUS_INTERNAL_ERROR
+   public :: CUBLAS_STATUS_NOT_SUPPORTED, CUBLAS_STATUS_LICENSE_ERROR
+   public :: CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C
+   public :: CUBLAS_POINTER_MODE_HOST, CUBLAS_POINTER_MODE_DEVICE
+   public :: CUBLAS_FILL_MODE_LOWER, CUBLAS_FILL_MODE_UPPER, CUBLAS_FILL_MODE_FULL
 
    ! ---- cublasStatus_t --------------------------------------------------
    integer(c_int), parameter :: CUBLAS_STATUS_SUCCESS = 0
@@ -76,45 +89,50 @@ module cublas
 
       ! ---- handle lifetime ----------------------------------------------
 
-      integer(c_int) function cublasCreate(handle) &
+      integer(c_int) function cublasCreate(handle) result(stat) &
          bind(C, name="cublasCreate_v2")
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), intent(out) :: handle  !! cublasHandle_t*
       end function cublasCreate
 
-      integer(c_int) function cublasDestroy(handle) &
+      integer(c_int) function cublasDestroy(handle) result(stat) &
          bind(C, name="cublasDestroy_v2")
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
       end function cublasDestroy
 
-      integer(c_int) function cublasSetStream(handle, streamId) &
+      integer(c_int) function cublasSetStream(handle, streamId) result(stat) &
          bind(C, name="cublasSetStream_v2")
          !! Put cuBLAS on the same stream as the rest of the work, so its
          !! calls order against them without a device-wide synchronize.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          type(c_ptr), value :: streamId  !! cudaStream_t; null means the default stream
       end function cublasSetStream
 
-      integer(c_int) function cublasSetPointerMode(handle, mode) &
+      integer(c_int) function cublasSetPointerMode(handle, mode) result(stat) &
          bind(C, name="cublasSetPointerMode_v2")
          !! Whether scalar arguments and results live on the host or the device.
          !! The bindings below assume HOST, which is the default.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: mode
       end function cublasSetPointerMode
 
       ! ---- level 1 -------------------------------------------------------
 
-      integer(c_int) function cublasDaxpy(handle, n, alpha, x, incx, y, incy) &
+      integer(c_int) function cublasDaxpy(handle, n, alpha, x, incx, y, incy) result(stat) &
          bind(C, name="cublasDaxpy_v2")
          !! y := alpha*x + y
          !!
          !! The Fock extrapolation and the h + J - K + Vxc assembly are both
          !! this, over flattened matrices.
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: n
          real(c_double), intent(in) :: alpha   !! host scalar under POINTER_MODE_HOST
@@ -124,13 +142,14 @@ module cublas
          integer(c_int), value :: incy
       end function cublasDaxpy
 
-      integer(c_int) function cublasDcopy(handle, n, x, incx, y, incy) &
+      integer(c_int) function cublasDcopy(handle, n, x, incx, y, incy) result(stat) &
          bind(C, name="cublasDcopy_v2")
          !! y := x, device to device
          !!
          !! Pushing a Fock or error matrix into the DIIS history, without a
          !! round trip through the host.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: n
          type(c_ptr), value :: x               !! device
@@ -139,10 +158,11 @@ module cublas
          integer(c_int), value :: incy
       end function cublasDcopy
 
-      integer(c_int) function cublasDscal(handle, n, alpha, x, incx) &
+      integer(c_int) function cublasDscal(handle, n, alpha, x, incx) result(stat) &
          bind(C, name="cublasDscal_v2")
          !! x := alpha*x
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: n
          real(c_double), intent(in) :: alpha   !! host scalar
@@ -150,7 +170,7 @@ module cublas
          integer(c_int), value :: incx
       end function cublasDscal
 
-      integer(c_int) function cublasDdot(handle, n, x, incx, y, incy, result) &
+      integer(c_int) function cublasDdot(handle, n, x, incx, y, incy, result) result(stat) &
          bind(C, name="cublasDdot_v2")
          !! result := x . y
          !!
@@ -159,6 +179,7 @@ module cublas
          !! of the new error vector against the whole history, one call instead
          !! of n_stored round trips.
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: n
          type(c_ptr), value :: x               !! device
@@ -168,10 +189,11 @@ module cublas
          real(c_double), intent(out) :: result  !! host scalar under POINTER_MODE_HOST
       end function cublasDdot
 
-      integer(c_int) function cublasDnrm2(handle, n, x, incx, result) &
+      integer(c_int) function cublasDnrm2(handle, n, x, incx, result) result(stat) &
          bind(C, name="cublasDnrm2_v2")
          !! result := ||x||_2 -- the DIIS convergence measure
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: n
          type(c_ptr), value :: x               !! device
@@ -182,7 +204,7 @@ module cublas
       ! ---- level 2 -------------------------------------------------------
 
       integer(c_int) function cublasDgemv(handle, trans, m, n, alpha, A, lda, &
-                                          x, incx, beta, y, incy) &
+                                          x, incx, beta, y, incy) result(stat) &
          bind(C, name="cublasDgemv_v2")
          !! y := alpha*op(A)*x + beta*y
          !!
@@ -190,6 +212,7 @@ module cublas
          !! (n_error, n_stored), x the new error vector, and y the whole new
          !! row of the overlap matrix in one call.
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: trans
          integer(c_int), value :: m, n
@@ -206,7 +229,7 @@ module cublas
       ! ---- level 3 -------------------------------------------------------
 
       integer(c_int) function cublasDgemm(handle, transa, transb, m, n, k, &
-                                          alpha, A, lda, B, ldb, beta, C, ldc) &
+                                          alpha, A, lda, B, ldb, beta, C, ldc) result(stat) &
          bind(C, name="cublasDgemm_v2")
          !! C := alpha*op(A)*op(B) + beta*C
          !!
@@ -215,6 +238,7 @@ module cublas
          !! Column-major, so the leading dimensions are the Fortran ones and no
          !! transposition is needed to match Fortran storage.
          import :: c_ptr, c_int, c_double
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: transa, transb
          integer(c_int), value :: m, n, k

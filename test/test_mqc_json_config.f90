@@ -215,7 +215,7 @@ contains
       type(error_t) :: read_error
 
       call read_json_config_file(INPUT_DIR//stem//".json", config, read_error)
-      call check(error, .not. read_error%has_error(), &
+      call check(error,.not. read_error%has_error(), &
                  stem//".json failed to parse: "//read_error%get_message())
    end subroutine load
 

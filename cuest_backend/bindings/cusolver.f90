@@ -41,7 +41,19 @@
 module cusolver
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int
    implicit none
-   public
+   private
+
+   public :: cusolver_status_name
+   public :: cusolverDnCreate, cusolverDnDestroy, cusolverDnSetStream
+   public :: cusolverDnDsyevd_bufferSize, cusolverDnDsyevd
+   public :: CUSOLVER_STATUS_SUCCESS, CUSOLVER_STATUS_NOT_INITIALIZED
+   public :: CUSOLVER_STATUS_ALLOC_FAILED, CUSOLVER_STATUS_INVALID_VALUE
+   public :: CUSOLVER_STATUS_ARCH_MISMATCH, CUSOLVER_STATUS_MAPPING_ERROR
+   public :: CUSOLVER_STATUS_EXECUTION_FAILED, CUSOLVER_STATUS_INTERNAL_ERROR
+   public :: CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED, CUSOLVER_STATUS_NOT_SUPPORTED
+   public :: CUSOLVER_STATUS_ZERO_PIVOT, CUSOLVER_STATUS_INVALID_LICENSE
+   public :: CUSOLVER_STATUS_INVALID_WORKSPACE
+   public :: CUSOLVER_EIG_MODE_NOVECTOR, CUSOLVER_EIG_MODE_VECTOR
 
    ! ---- cusolverStatus_t -------------------------------------------------
    integer(c_int), parameter :: CUSOLVER_STATUS_SUCCESS = 0
@@ -68,23 +80,26 @@ module cusolver
 
       ! ---- handle lifetime ----------------------------------------------
 
-      integer(c_int) function cusolverDnCreate(handle) &
+      integer(c_int) function cusolverDnCreate(handle) result(stat) &
          bind(C, name="cusolverDnCreate")
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), intent(out) :: handle  !! cusolverDnHandle_t*
       end function cusolverDnCreate
 
-      integer(c_int) function cusolverDnDestroy(handle) &
+      integer(c_int) function cusolverDnDestroy(handle) result(stat) &
          bind(C, name="cusolverDnDestroy")
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
       end function cusolverDnDestroy
 
-      integer(c_int) function cusolverDnSetStream(handle, streamId) &
+      integer(c_int) function cusolverDnSetStream(handle, streamId) result(stat) &
          bind(C, name="cusolverDnSetStream")
          !! Put cuSOLVER on the same stream as everything else, so its work
          !! orders against the cuBLAS around it without a device-wide sync.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          type(c_ptr), value :: streamId  !! cudaStream_t; null means the default stream
       end function cusolverDnSetStream
@@ -92,13 +107,14 @@ module cusolver
       ! ---- symmetric eigensolver, divide and conquer ---------------------
 
       integer(c_int) function cusolverDnDsyevd_bufferSize(handle, jobz, uplo, n, &
-                                                          A, lda, W, lwork) &
+                                                          A, lda, W, lwork) result(stat) &
          bind(C, name="cusolverDnDsyevd_bufferSize")
          !! How many doubles of device workspace the solve below will want
          !!
          !! Depends on `n` but not on the contents of A or W, so one query
          !! before the SCF loop covers every iteration of it.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: jobz     !! CUSOLVER_EIG_MODE_*
          integer(c_int), value :: uplo     !! CUBLAS_FILL_MODE_*
@@ -110,13 +126,14 @@ module cusolver
       end function cusolverDnDsyevd_bufferSize
 
       integer(c_int) function cusolverDnDsyevd(handle, jobz, uplo, n, A, lda, W, &
-                                               work, lwork, info) &
+                                               work, lwork, info) result(stat) &
          bind(C, name="cusolverDnDsyevd")
          !! Eigenvalues and eigenvectors of a real symmetric matrix
          !!
          !! A is OVERWRITTEN with the eigenvectors, one per column, so a caller
          !! that still needs the matrix must hand over a copy.
          import :: c_ptr, c_int
+         implicit none
          type(c_ptr), value :: handle
          integer(c_int), value :: jobz     !! CUSOLVER_EIG_MODE_*
          integer(c_int), value :: uplo     !! CUBLAS_FILL_MODE_*

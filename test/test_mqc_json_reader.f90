@@ -111,7 +111,7 @@ contains
       call write_deck('"method": "XTB-GFN2"', "Energy", "", "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), &
+      call check(error,.not. parse_error%has_error(), &
                  "minimal deck should parse: "//parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%schema_name, "mqc-frag")
@@ -155,7 +155,7 @@ contains
                       '"fragment_multiplicities": [1, 2]')
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%method, METHOD_TYPE_GFN1)
       if (allocated(error)) return
@@ -192,12 +192,12 @@ contains
                       '"connectivity": [[0, 1, 1], [1, 2, 1]]')
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%nbonds, 2)
       if (allocated(error)) return
       ! 0-1 lies inside fragment 1; 1-2 crosses from fragment 1 to fragment 2.
-      call check(error, .not. config%bonds(1)%is_broken, &
+      call check(error,.not. config%bonds(1)%is_broken, &
                  "a bond inside one fragment is not broken")
       if (allocated(error)) return
       call check(error, config%bonds(2)%is_broken, &
@@ -221,7 +221,7 @@ contains
       call write_deck('"method": "XTB-GFN2"', "Energy", "", "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%nfrag, 0)
       if (allocated(error)) return
@@ -255,7 +255,7 @@ contains
                       '"logger": {"level": "verbose"}', two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, allocated(config%log_level), "log_level should be set")
       if (allocated(error)) return
@@ -281,7 +281,7 @@ contains
                       '"temperature": 300.0, "pressure": 1.5}', "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%calc_type, CALC_TYPE_HESSIAN)
       if (allocated(error)) return
@@ -301,7 +301,7 @@ contains
       call write_deck('"method": "XTB-GFN2"', "Hessian", '"hessian": {}', "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, close_enough(config%hessian_displacement, DEFAULT_DISPLACEMENT))
       if (allocated(error)) return
@@ -321,7 +321,7 @@ contains
                       "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, close_enough(config%aimd_dt, 0.5_dp))
       if (allocated(error)) return
@@ -345,7 +345,7 @@ contains
                       "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%frag_method, "MBE")
       if (allocated(error)) return
@@ -373,7 +373,7 @@ contains
                       '"cutoffs": {"dimer": 10.0, "trimer": 8.0}}', "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, allocated(config%fragment_cutoffs), "cutoffs should be allocated")
       if (allocated(error)) return
@@ -392,7 +392,7 @@ contains
                       '"fragmentation": {"method": "MBE", "level": 3, '// &
                       '"cutoffs": {"2": 10.0, "3": 8.0}}', "", two_atoms())
       call read_deck(config, parse_error)
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, close_enough(config%fragment_cutoffs(3), 8.0_dp), &
                  "numeric cutoff keys should reach the same level")
@@ -424,7 +424,7 @@ contains
                       "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%global_groups, 3)
    end subroutine test_global_groups
@@ -439,7 +439,7 @@ contains
                       "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%nodes_per_group, 4)
    end subroutine test_nodes_per_group
@@ -456,7 +456,7 @@ contains
                       '"use_cds": false, "use_shift": false}', "", two_atoms())
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%solvent, "water")
       if (allocated(error)) return
@@ -495,7 +495,7 @@ contains
                       '"molecular_charge": 0, "molecular_multiplicity": 1')
       call read_deck(config, parse_error)
 
-      call check(error, .not. parse_error%has_error(), parse_error%get_message())
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
       if (allocated(error)) return
       call check(error, config%geometry%natoms, 3)
       if (allocated(error)) return
