@@ -1,18 +1,14 @@
 !! Reader for MQC JSON input files
 module mqc_json_config_reader
-   !! Parses the JSON input schema straight into `mqc_config_t`, with no
-   !! intermediate format.
+   !! The only input reader. Parses a JSON deck into `mqc_config_t`.
    !!
-   !! Why this exists. JSON is the format users actually author; `.mqc` is a
-   !! machine-generated intermediate that `mqc_prep.py` emits and only the
-   !! Fortran parser ever reads. That put ~2800 lines and a Python dependency
-   !! between a user's input file and this program's config type. This module
-   !! is the short way round, and json-fortran was already a hard dependency
-   !! for the output writer and the basis reader, so it costs nothing new.
+   !! Until 2.0 this program read a section-based `.mqc` format generated from
+   !! the user's JSON by a Python helper, so ~2800 lines and a runtime Python
+   !! dependency stood between an input file and this type. Both are gone.
+   !! json-fortran was already required by the output writer and the basis
+   !! reader, so reading JSON here costs no new dependency.
    !!
-   !! The schema is the one `utils/parsers.py` validates, which remains the
-   !! written specification. Two behaviours from it are worth stating here
-   !! because they are not obvious from the JSON alone:
+   !! Three behaviours are not obvious from the schema alone:
    !!
    !!   * **A molecule gives either `xyz` or `symbols` + `geometry`, never
    !!     both.** The `xyz` path is resolved relative to the directory holding
@@ -21,15 +17,22 @@ module mqc_json_config_reader
    !!   * **`is_broken` is derived, not declared.** A bond is broken when the
    !!     set of fragments containing atom i differs from the set containing
    !!     atom j. Nothing in the JSON says so; it falls out of the fragment
-   !!     definitions, and `mqc_prep.py` computed it at emit time.
+   !!     definitions. Comparing *sets* rather than asking whether both atoms
+   !!     share some fragment is what makes it right when fragments overlap.
+   !!   * **Absent keys leave defaults alone.** The `optional_*` accessors
+   !!     write only when the key is present, so `mqc_config_types` holds the
+   !!     defaults and nothing here restates them. Route two keys through one
+   !!     local and the first one's value survives into the second -- that bug
+   !!     has been made once already.
    !!
    !! Atom indices are 0-based throughout, in the JSON and in the config, and
    !! are stored as read.
    !!
-   !! Not yet carried over from the Python: rejection of unknown keys, and the
-   !! cross-checks that fragment charges sum to the molecular charge and that
-   !! multiplicities are consistent. Those are validation, not parsing, and
-   !! belong in one place for both input paths.
+   !! Still missing, and deliberately: rejection of unknown keys, and the
+   !! cross-check that fragment charges sum to the molecular charge. Both are
+   !! validation rather than parsing and want a home of their own -- a
+   !! misspelled key currently reads as an absent one, which is the least
+   !! friendly thing this reader does.
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL
    use mqc_geometry, only: geometry_type
@@ -93,7 +96,7 @@ contains
       integer :: n_mol, imol
       logical :: found
 
-      ! Defaults that `read_mqc_file` also applies before parsing.
+      ! The two defaults that are not declared on the type itself.
       config%log_level = "info"
       config%fragment_breakdown = "csv"
 
@@ -134,7 +137,8 @@ contains
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
 
-      ! The Python accepts either spelling of the displacement key.
+      ! Both spellings of the displacement key are accepted, as the JSON
+      ! generator used to allow.
       call optional_real(json, "keywords.hessian.finite_difference_displacement", &
                          config%hessian_displacement)
       call optional_real(json, "keywords.hessian.displacement", config%hessian_displacement)
@@ -152,6 +156,12 @@ contains
 
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)
+      ! Before 2.0 these were reachable only from a hand-written .mqc deck --
+      ! the JSON generator had no field for either, though both are plumbed
+      ! through to the xTB method. Retiring .mqc without adding them here
+      ! would have quietly removed the only way to turn them off.
+      call optional_logical(json, "keywords.xtb.use_cds", config%use_cds)
+      call optional_logical(json, "keywords.xtb.use_shift", config%use_shift)
       call optional_real(json, "keywords.xtb.dielectric", config%dielectric)
       call optional_int(json, "keywords.xtb.cpcm_nang", config%cpcm_nang)
       call optional_real(json, "keywords.xtb.cpcm_rscale", config%cpcm_rscale)

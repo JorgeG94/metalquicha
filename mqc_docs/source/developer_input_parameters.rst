@@ -8,7 +8,7 @@ Overview
 
 Input parameters flow through three stages:
 
-1. **Parsing** - ``mqc_config_parser.f90`` reads the ``.mqc`` file into ``mqc_config_t``
+1. **Parsing** - ``mqc_json_config_reader.f90`` reads the JSON deck into ``mqc_config_t``
 2. **Adaptation** - ``mqc_config_adapter.f90`` converts to ``driver_config_t``
 3. **Usage** - Driver and workflows use the configuration
 
@@ -269,6 +269,6 @@ Testing Your Changes
    .. code-block:: bash
 
       cmake --build build -j
-      ./build/mqc test_input.mqc
+      ./build/mqc test_input.json
 
 3. Add a unit test in ``test/`` if appropriate

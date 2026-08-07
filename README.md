@@ -140,11 +140,10 @@ Install the FPM following the [instructions](https://fpm.fortran-lang.org/instal
 To run a calculation you need to process the JSON input into our `mqc` format. To do this, you can simply do:
 
 ```bash
-python mqc_prep.py validation/inputs/prism.json
 ```
 
-And this will generate a `prism.mqc`. Which can be simply run as `./build/mqc validation/inputs/prism.mqc` to be run
-in serial mode. Or `mpirun -np 4 ./build/mqc validation/inputs/prism.mqc`.
+And this will generate a `prism.json`. Which can be simply run as `./build/mqc validation/inputs/prism.json` to be run
+in serial mode. Or `mpirun -np 4 ./build/mqc validation/inputs/prism.json`.
 
 A sample `mqc` file is shown below:
 

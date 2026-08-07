@@ -33,7 +33,6 @@ Directory Structure
    validation/
    └── inputs/
        ├── *.json          # Input JSON files (geometry, fragments, parameters)
-       └── *.mqc           # Generated .mqc files (created by mqc_prep.py)
 
    validation_tests.json   # Test manifest with expected energies
    run_validation.py       # Validation test runner script
@@ -80,11 +79,8 @@ Run the calculation to get the reference energy:
 
 .. code-block:: bash
 
-   # Convert JSON to .mqc
-   python3 mqc_prep.py validation/inputs/my_test.json
-
    # Run calculation
-   ./build/mqc validation/inputs/my_test.mqc
+   ./build/mqc validation/inputs/my_test.json
 
    # Extract energy from output JSON
    cat output_my_test.json | grep '"total_energy"' | head -1
@@ -102,7 +98,7 @@ Edit ``validation_tests.json`` to add your test with expected energy:
      "tests": [
        {
          "name": "My test case",
-         "input": "validation/inputs/my_test.mqc",
+         "input": "validation/inputs/my_test.json",
          "expected_energy": -123.456789,
          "type": "unfragmented"
        }
@@ -120,14 +116,12 @@ Edit ``validation_tests.json`` to add your test with expected energy:
 
 .. code-block:: bash
 
-   # Run all tests (automatically converts JSON to .mqc first)
+   # Run all tests
    python3 run_validation.py
 
    # Verbose output
    python3 run_validation.py -v
 
-   # Skip .mqc preparation (if already done)
-   python3 run_validation.py --skip-prep
 
    # Use custom executable
    python3 run_validation.py --exe ./my_build/mqc
@@ -151,7 +145,6 @@ Output:
    Metalquicha Validation Suite
    ============================
 
-   Converting JSON inputs to .mqc format...
    ✓ Converted validation/inputs/h3o.json
    ✓ Converted validation/inputs/prism.json
    ...
@@ -175,11 +168,7 @@ Advanced Options
    # Verbose mode (shows all output)
    python3 run_validation.py -v
 
-   # Skip JSON → .mqc conversion
-   python3 run_validation.py --skip-prep
 
-   # Use custom mqc_prep.py location
-   python3 run_validation.py --prep-script /path/to/mqc_prep.py
 
    # Use custom executable
    python3 run_validation.py --exe /path/to/mqc
@@ -195,13 +184,13 @@ Unfragmented Tests
 
 Single molecule calculations without fragmentation.
 
-**Example**: ``validation/inputs/h3o.mqc``
+**Example**: ``validation/inputs/h3o.json``
 
 .. code-block:: json
 
    {
      "name": "Hydronium ion unfragmented",
-     "input": "validation/inputs/h3o.mqc",
+     "input": "validation/inputs/h3o.json",
      "expected_energy": -5.773131213617977,
      "type": "unfragmented"
    }
@@ -221,13 +210,13 @@ Fragmented Tests (MBE/GMBE)
 
 Many-body expansion calculations with fragment-based energies.
 
-**Example**: ``validation/inputs/prism.mqc`` (MBE(2) on water prism)
+**Example**: ``validation/inputs/prism.json`` (MBE(2) on water prism)
 
 .. code-block:: json
 
    {
      "name": "Water prism MBE",
-     "input": "validation/inputs/prism.mqc",
+     "input": "validation/inputs/prism.json",
      "expected_energy": -34.6736678571,
      "type": "fragmented"
    }
@@ -259,13 +248,13 @@ Multi-Molecule Tests
 
 Multiple independent molecules (conformers, isomers) in one input.
 
-**Example**: ``validation/inputs/multi_frag.mqc``
+**Example**: ``validation/inputs/multi_frag.json``
 
 .. code-block:: json
 
    {
      "name": "Multi-fragment calculation",
-     "input": "validation/inputs/multi_frag.mqc",
+     "input": "validation/inputs/multi_frag.json",
      "expected_energies": {
        "molecule_1": -34.6736678571,
        "molecule_2": -34.6736678571
@@ -361,7 +350,7 @@ The validation suite includes several representative test cases:
 GMBE(1) Test (Overlapping Fragments)
 -------------------------------------
 
-**Test**: ``overlapping_gly3.mqc``
+**Test**: ``overlapping_gly3.json``
 
 - **System**: Glycine tripeptide with overlapping fragments
 - **Method**: GMBE(1) with inclusion-exclusion principle
@@ -371,7 +360,7 @@ GMBE(1) Test (Overlapping Fragments)
 GMBE(3) Test (Higher-Order)
 ----------------------------
 
-**Test**: ``nlevel_3_ov_decane.mqc``
+**Test**: ``nlevel_3_ov_decane.json``
 
 - **System**: Decane molecule with overlapping fragments
 - **Method**: GMBE(3) (trimers)
@@ -381,7 +370,7 @@ GMBE(3) Test (Higher-Order)
 Standard MBE(2) Test
 --------------------
 
-**Test**: ``prism.mqc``
+**Test**: ``prism.json``
 
 - **System**: Water prism (6 water molecules)
 - **Method**: MBE(2) (dimers)
@@ -391,7 +380,7 @@ Standard MBE(2) Test
 Large System Test
 -----------------
 
-**Test**: ``w20_isomer.mqc``
+**Test**: ``w20_isomer.json``
 
 - **System**: Water 20-mer isomer
 - **Method**: MBE(2)
@@ -401,7 +390,7 @@ Large System Test
 Charged Cluster Test
 --------------------
 
-**Test**: ``charged_cluster.mqc``
+**Test**: ``charged_cluster.json``
 
 - **System**: Charged molecular cluster
 - **Method**: MBE(2)
@@ -446,8 +435,6 @@ Common Issues
 **"No JSON files found"**
    Create ``validation/inputs/`` directory and add JSON files
 
-**"mqc_prep.py not found"**
-   Specify path with ``--prep-script /path/to/mqc_prep.py``
 
 **Energy mismatch**
    Check for:
@@ -484,7 +471,7 @@ Debugging Failed Tests
 
    .. code-block:: bash
 
-      ./build/mqc validation/inputs/my_test.mqc
+      ./build/mqc validation/inputs/my_test.json
 
 3. **Check JSON output**:
 
@@ -540,7 +527,7 @@ Best Practices
    .. code-block:: bash
 
       for i in {1..5}; do
-        ./build/mqc validation/inputs/my_test.mqc
+        ./build/mqc validation/inputs/my_test.json
         grep total_energy output_my_test.json
       done
 
@@ -566,7 +553,7 @@ The ``validation_tests.json`` file has the following structure:
      "tests": [
        {
          "name": "Test name (required)",
-         "input": "path/to/input.mqc (required)",
+         "input": "path/to/input.json (required)",
          "expected_energy": -123.456,  // for single molecule
          "expected_energies": {...},   // for multi-molecule
          "type": "unfragmented|fragmented|multi_molecule (required)"
@@ -583,7 +570,7 @@ The ``validation_tests.json`` file has the following structure:
 **Test object**:
 
 - ``name``: Descriptive test name
-- ``input``: Path to ``.mqc`` input file
+- ``input``: Path to the JSON input deck
 - ``expected_energy``: Expected total energy (for single molecule tests)
 - ``expected_energies``: Dictionary of expected energies (for multi-molecule tests)
 - ``type``: Test type (``unfragmented``, ``fragmented``, or ``multi_molecule``)
@@ -606,7 +593,7 @@ Example contribution:
 
    {
      "name": "Charged peptide with broken bonds",
-     "input": "validation/inputs/charged_peptide.mqc",
+     "input": "validation/inputs/charged_peptide.json",
      "expected_energy": -78.1234567890,
      "type": "fragmented",
      "comment": "Tests H-capping on charged system with multiple broken C-C bonds"

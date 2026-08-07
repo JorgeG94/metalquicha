@@ -69,26 +69,23 @@ Once you have fpm installed, you can build Metalquicha by running the following 
 Running Metalquicha
 =======================
 
-Metalquicha has a two input file (ish) system. The first file is a JSON format that is compliant
-with the QCSchema specificiation. These json files get converted to the mqc format which will
-be then read by metalquicha as the main input file. The idea is that the user will only
-interact with the JSON files and the mqc files will be generated automatically. However,
-the mqc files are pretty human readable, so you can also edit them directly if you'd like.
-
-In order to go from JSON to mqc, you need to use thte `mqc_prep.py` program. Simply run:
-
-.. code-block:: bash
-
-   mqc_prep.py input.json
+Metalquicha takes a single JSON input file, in a format compliant with the QCSchema
+specification.
 
 You can see examples of the JSON input files in the `sample_json` directory of the
 Metalquicha repository.
 
-Once you have the mqc file, you can run Metalquicha simply by running:
+.. note::
+
+   **Changed in 2.0.** Earlier versions converted the JSON to an intermediate
+   ``.mqc`` file with a ``mqc_prep.py`` helper, and read that. Both are gone;
+   pass the ``.json`` file directly. See :ref:`migrating_from_mqc`.
+
+Run Metalquicha by passing it your input:
 
 .. code-block:: bash
 
-   ./mqc input.mqc
+   ./mqc input.json
 
 This will run Metalquicha in serial mode (i.e. 1 MPI process). TBLite will use OpenMP
 threads to enable parallelism within the single MPI process. To run Metalquicha in parallel
@@ -96,12 +93,12 @@ you can use `mpirun`, or `mpiexec`. For example, to run with 4 MPI processes:
 
 .. code-block:: bash
 
-   mpirun -n 4 ./mqc input.mqc
+   mpirun -n 4 ./mqc input.json
 
 Metalquicha will run on multiple nodes, you can do that by using:
 
 .. code-block:: bash
 
-   mpirun -np 64 --map-by ppr:32:node ./mqc input.mqc
+   mpirun -np 64 --map-by ppr:32:node ./mqc input.json
 
 This will run Metalquicha with 64 MPI processes, with 32 processes per node.

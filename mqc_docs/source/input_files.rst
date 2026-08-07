@@ -6,7 +6,7 @@ Input File Formats
 
 (this file was partially generated with an LLM but carefully checked by me, Jorge)
 
-Metalquicha supports two input file formats: JSON (for user convenience) and ``.mqc`` (the native format that the Fortran code reads).
+Metalquicha reads JSON input files.
 
 .. contents::
    :local:
@@ -15,24 +15,20 @@ Metalquicha supports two input file formats: JSON (for user convenience) and ``.
 Overview
 ========
 
-The recommended workflow is:
+The workflow is:
 
-1. Create a JSON file with your calculation setup (easier to write/read)
-2. Use ``mqc_prep.py`` to convert JSON → ``.mqc`` format
-3. Run metalquicha with the ``.mqc`` file
+1. Create a JSON file with your calculation setup
+2. Run metalquicha with it
 
-The ``.mqc`` format is a simple section-based format that avoids JSON parsing complexity in Fortran while remaining human-readable.
+.. note::
 
-Generating .mqc Files
-=====================
-
-Use the ``mqc_prep.py`` Python script to convert JSON inputs to ``.mqc`` format:
-
-.. code-block:: bash
-
-   python3 mqc_prep.py input.json
-
-This will generate ``input.mqc`` (or ``{title}.mqc`` if a title is specified in the JSON).
+   **Changed in 2.0.** Earlier versions read a separate section-based
+   ``.mqc`` format, generated from your JSON by a ``mqc_prep.py`` helper.
+   That intermediate step is gone: ``mqc`` reads the JSON directly, and both
+   the ``.mqc`` format and ``mqc_prep.py`` have been removed. Your existing
+   JSON inputs work unchanged -- drop the conversion step and pass the
+   ``.json`` file where you used to pass the ``.mqc`` one. If you hand-wrote
+   ``.mqc`` files, see :ref:`migrating_from_mqc` below.
 
 JSON Input Format
 =================
@@ -280,206 +276,6 @@ Logger Configuration
 - ``error``: Errors only
 - ``knowledge``: Special knowledge-level output
 
-.mqc File Format
-================
-
-The ``.mqc`` format is section-based with ``%section ... end`` delimiters.
-
-Complete Example
-----------------
-
-.. code-block:: text
-
-   %schema
-   name = mqc-frag
-   version = 1.0
-   index_base = 0
-   units = angstrom
-   end
-
-   %model
-   method = XTB-GFN1
-   basis = cc-pVDZ
-   aux_basis = cc-pVDZ-RIFIT
-   end
-
-   %driver
-   type = Energy
-   end
-
-   %system
-   log_level = Verbose
-   end
-
-   %structure
-   charge = 0
-   multiplicity = 1
-   end
-
-   %geometry
-   6
-
-   O   0.000   0.000   0.000
-   H   0.000   0.000   0.960
-   H   0.757   0.000  -0.240
-   end
-
-   %fragments
-   nfrag = 2
-
-   %fragment
-   charge = 0
-   multiplicity = 1
-   %indices
-   0 1 2
-   end
-   end
-
-   %fragment
-   charge = 0
-   multiplicity = 1
-   %indices
-   3 4 5
-   end
-   end
-
-   end
-
-   %connectivity
-   nbonds = 1
-
-   0 1 1 broken
-
-   nbroken = 1
-   end
-
-   %scf
-   maxiter = 300
-   tolerance = 1e-06
-   end
-
-   %fragmentation
-   method = MBE
-   allow_overlapping_fragments = false
-   level = 2
-   embedding = none
-   cutoff_method = distance
-   distance_metric = min
-
-   %cutoffs
-   dimer = 10.0
-   trimer = 8.0
-   end
-   end
-
-Section Descriptions
---------------------
-
-``%schema``
-^^^^^^^^^^^
-
-Identifies format version and conventions:
-
-- ``name``: Format identifier (``mqc-frag``)
-- ``version``: Format version (``1.0``)
-- ``index_base``: 0-based (0) or 1-based (1) atom indexing
-- ``units``: Coordinate units (``angstrom`` or ``bohr``)
-
-``%model``
-^^^^^^^^^^
-
-Quantum chemistry method specification (same as JSON).
-
-``%driver``
-^^^^^^^^^^^
-
-Calculation type (``Energy``, ``Gradient``).
-
-``%system``
-^^^^^^^^^^^
-
-System configuration, primarily logging level.
-
-``%structure``
-^^^^^^^^^^^^^^
-
-Molecular charge and multiplicity.
-
-``%geometry``
-^^^^^^^^^^^^^
-
-Atomic coordinates in XYZ format:
-
-.. code-block:: text
-
-   %geometry
-   <number_of_atoms>
-   <blank line>
-   <symbol> <x> <y> <z>
-   <symbol> <x> <y> <z>
-   ...
-   end
-
-``%fragments``
-^^^^^^^^^^^^^^
-
-Fragment definitions with nested ``%fragment`` sections:
-
-.. code-block:: text
-
-   %fragments
-   nfrag = <number_of_fragments>
-
-   %fragment
-   charge = <fragment_charge>
-   multiplicity = <fragment_multiplicity>
-   %indices
-   <atom1> <atom2> <atom3> ...
-   end
-   end
-
-   end
-
-``%connectivity``
-^^^^^^^^^^^^^^^^^
-
-Bond definitions, especially for hydrogen capping:
-
-.. code-block:: text
-
-   %connectivity
-   nbonds = <number_of_bonds>
-
-   <atom_i> <atom_j> <bond_order> [broken]
-
-   nbroken = <number_of_broken_bonds>
-   end
-
-The ``broken`` keyword marks bonds where hydrogen caps should be added.
-
-``%scf``
-^^^^^^^^
-
-SCF convergence parameters (same as JSON).
-
-``%fragmentation``
-^^^^^^^^^^^^^^^^^^
-
-Fragmentation parameters with nested ``%cutoffs`` section:
-
-.. code-block:: text
-
-   %fragmentation
-   method = MBE
-   level = 2
-   ...
-
-   %cutoffs
-   dimer = 10.0
-   trimer = 8.0
-   end
-   end
-
 Running Calculations
 ====================
 
@@ -488,17 +284,14 @@ Basic Usage
 
 .. code-block:: bash
 
-   # Generate .mqc from JSON
-   python3 mqc_prep.py input.json
-
    # Run calculation (serial)
-   ./mqc input.mqc
+   ./mqc input.json
 
    # Run calculation (parallel with MPI)
-   mpirun -np 4 ./mqc input.mqc
+   mpirun -np 4 ./mqc input.json
 
    # Run on multiple nodes
-   mpirun -np 64 --map-by ppr:32:node ./mqc input.mqc
+   mpirun -np 64 --map-by ppr:32:node ./mqc input.json
 
 Output Files
 ------------
@@ -533,8 +326,7 @@ Run:
 
 .. code-block:: bash
 
-   python3 mqc_prep.py h3o.json
-   ./mqc h3o.mqc
+   ./mqc h3o.json
 
 Fragmented MBE Calculation
 ---------------------------
@@ -570,8 +362,7 @@ Run:
 
 .. code-block:: bash
 
-   python3 mqc_prep.py prism.json
-   ./mqc prism.mqc
+   ./mqc prism.json
 
 GMBE with Overlapping Fragments
 --------------------------------
@@ -612,8 +403,7 @@ Run:
 
 .. code-block:: bash
 
-   python3 mqc_prep.py overlapping_gly3.json
-   ./mqc overlapping_gly3.mqc
+   ./mqc overlapping_gly3.json
 
 Multi-Molecule Calculation
 ---------------------------
@@ -645,24 +435,28 @@ Each molecule is calculated independently, and results are organized by molecule
 Best Practices
 ==============
 
-1. **Use JSON for input creation**: Easier to write and validate
-2. **Keep .mqc files**: Version control friendly, human-readable
-3. **Start with small systems**: Test fragmentation schemes on small molecules first
-4. **Check JSON output**: Verify fragment energies are reasonable
-5. **Use appropriate log levels**: ``verbose`` for debugging, ``info`` for production
-6. **Validate results**: Use the validation test suite (see :ref:`validation`)
+1. **Keep your JSON decks in version control**: they are the input, not a
+   generated artifact
+2. **Start with small systems**: Test fragmentation schemes on small molecules first
+3. **Check JSON output**: Verify fragment energies are reasonable
+4. **Use appropriate log levels**: ``verbose`` for debugging, ``info`` for production
+5. **Validate results**: Use the validation test suite (see :ref:`validation`)
 
 Troubleshooting
 ===============
 
 **"Invalid input file extension"**
-   Ensure file ends with ``.mqc`` (not ``.json``)
+   Ensure the file ends with ``.json``. Versions before 2.0 took ``.mqc``;
+   see :ref:`migrating_from_mqc`.
 
-**"Error reading .mqc file"**
-   Check for:
-   - Missing ``end`` delimiters
-   - Mismatched section names
-   - Invalid values (e.g., negative atom count)
+**"Could not parse JSON input file"**
+   The document is not valid JSON. Common causes are a trailing comma after
+   the last entry of an object or array, and unquoted keys.
+
+**"Missing required key"**
+   ``schema.name``, ``schema.version``, ``model.method``, ``driver`` and
+   ``molecules`` are all required, as are ``molecular_charge`` and
+   ``molecular_multiplicity`` on each molecule.
 
 **Fragment charge/multiplicity mismatch**
    Ensure sum of fragment charges equals molecular charge
@@ -671,4 +465,56 @@ Troubleshooting
    Check that ``fragments`` array is not empty and indices are valid
 
 **Hydrogen capping not working**
-   Verify bonds are marked as ``is_broken: true`` in JSON or have ``broken`` keyword in ``.mqc``
+   Check that the bond is listed in ``connectivity`` and that its two atoms
+   fall in different fragments -- that is what makes a bond broken, and it is
+   derived rather than declared
+
+.. _migrating_from_mqc:
+
+Migrating from .mqc
+===================
+
+**Changed in 2.0.** ``.mqc`` and ``mqc_prep.py`` were removed; ``mqc`` reads
+JSON directly.
+
+If you drove metalquicha from JSON, as the documented workflow did, there is
+nothing to change but the command: pass the ``.json`` file where you used to
+pass the ``.mqc`` one, and drop the ``mqc_prep.py`` call. The schema is
+unchanged.
+
+If you hand-wrote ``.mqc`` files, they must be rewritten as JSON. The mapping
+is direct -- each ``%section`` becomes an object of the same name:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - ``.mqc``
+     - JSON
+   * - ``%schema`` / ``name``, ``version``
+     - ``"schema": {"name": ..., "version": ...}``
+   * - ``%model`` / ``method``, ``basis``, ``aux_basis``, ``functional``
+     - ``"model": {...}``, same keys
+   * - ``%driver`` / ``type = Energy``
+     - ``"driver": "Energy"``
+   * - ``%structure`` + ``%geometry``
+     - an entry in ``"molecules"``, with either ``"xyz"`` naming a file or
+       ``"symbols"`` plus a flat ``"geometry"`` list
+   * - ``%fragments`` / ``%fragment`` blocks
+     - ``"fragments"``, ``"fragment_charges"``, ``"fragment_multiplicities"``
+   * - ``%connectivity`` rows ``i j order``
+     - ``"connectivity": [[i, j, order], ...]``
+   * - ``%scf``, ``%hessian``, ``%aimd``, ``%fragmentation``, ``%xtb``
+     - ``"keywords": {"scf": {...}, "hessian": {...}, ...}``
+   * - ``%system`` / ``log_level``
+     - ``"system": {"logger": {"level": ...}}``
+
+Two differences worth knowing:
+
+* **Broken bonds are no longer written down.** ``.mqc`` marked each bond
+  ``broken`` or ``preserved``, because ``mqc_prep.py`` worked that out before
+  emitting the file. ``mqc`` now derives it: a bond is broken when its two
+  atoms do not belong to the same set of fragments. Just list the bonds.
+* **JSON has no comments.** ``.mqc`` accepted ``#`` and ``!``. If you
+  annotated your decks, the ``.xyz`` files they reference still take a
+  comment on their second line.

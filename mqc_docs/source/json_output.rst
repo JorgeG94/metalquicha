@@ -23,7 +23,7 @@ All JSON output files follow a common structure:
      }
    }
 
-Where ``<basename>`` is derived from the input filename (e.g., ``water.mqc`` produces output with key ``water``).
+Where ``<basename>`` is derived from the input filename (e.g., ``water.json`` produces output with key ``water``).
 
 Output files are named ``output_<basename>.json`` and placed in the working directory.
 

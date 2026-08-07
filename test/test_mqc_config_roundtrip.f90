@@ -15,7 +15,7 @@ module test_mqc_config_roundtrip
    !! rather than coincidentally matching.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_config_types, only: mqc_config_t
-   use mqc_config_parser, only: read_mqc_file
+   use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver
    use mqc_method_base, only: qc_method_t
    use mqc_method_factory, only: create_method
@@ -27,7 +27,7 @@ module test_mqc_config_roundtrip
    private
    public :: collect_mqc_config_roundtrip_tests
 
-   character(len=*), parameter :: SCRATCH_FILE = "test_roundtrip_scratch.mqc"
+   character(len=*), parameter :: SCRATCH_FILE = "test_roundtrip_scratch.json"
 
 contains
 
@@ -41,40 +41,30 @@ contains
    end subroutine collect_mqc_config_roundtrip_tests
 
    subroutine write_input(method, extra_model)
-      !! Write a minimal input with deliberately non-default settings
+      !! Write a minimal deck with deliberately non-default settings
       character(len=*), intent(in) :: method
-      character(len=*), intent(in) :: extra_model  !! e.g. "functional = pbe0"
+      character(len=*), intent(in) :: extra_model  !! e.g. '"functional": "pbe0"'
       integer :: unit
 
       open (newunit=unit, file=SCRATCH_FILE, status="replace", action="write")
-      write (unit, "(A)") "%schema"
-      write (unit, "(A)") "name = roundtrip"
-      write (unit, "(A)") "version = 1.0"
-      write (unit, "(A)") "index_base = 0"
-      write (unit, "(A)") "units = angstrom"
-      write (unit, "(A)") "end"
-      write (unit, "(A)") ""
-      write (unit, "(A)") "%model"
-      write (unit, "(A)") "method = "//method
-      write (unit, "(A)") "basis = cc-pvdz"
-      write (unit, "(A)") "aux_basis = def2-universal-jkfit"
-      if (len_trim(extra_model) > 0) write (unit, "(A)") extra_model
-      write (unit, "(A)") "end"
-      write (unit, "(A)") ""
-      write (unit, "(A)") "%driver"
-      write (unit, "(A)") "type = Energy"
-      write (unit, "(A)") "end"
-      write (unit, "(A)") ""
-      write (unit, "(A)") "%structure"
-      write (unit, "(A)") "charge = 0"
-      write (unit, "(A)") "multiplicity = 1"
-      write (unit, "(A)") "end"
-      write (unit, "(A)") ""
-      write (unit, "(A)") "%geometry"
-      write (unit, "(A)") "1"
-      write (unit, "(A)") ""
-      write (unit, "(A)") "He 0.0 0.0 0.0"
-      write (unit, "(A)") "end"
+      write (unit, "(A)") "{"
+      write (unit, "(A)") '  "schema": {"name": "roundtrip", "version": "1.0"},'
+      write (unit, "(A)") '  "model": {'
+      write (unit, "(A)") '    "method": "'//method//'",'
+      write (unit, "(A)") '    "basis": "cc-pvdz",'
+      if (len_trim(extra_model) > 0) then
+         write (unit, "(A)") '    "aux_basis": "def2-universal-jkfit",'
+         write (unit, "(A)") "    "//extra_model
+      else
+         write (unit, "(A)") '    "aux_basis": "def2-universal-jkfit"'
+      end if
+      write (unit, "(A)") "  },"
+      write (unit, "(A)") '  "driver": "Energy",'
+      write (unit, "(A)") '  "molecules": [{'
+      write (unit, "(A)") '    "symbols": ["He"], "geometry": [0.0, 0.0, 0.0],'
+      write (unit, "(A)") '    "molecular_charge": 0, "molecular_multiplicity": 1'
+      write (unit, "(A)") "  }]"
+      write (unit, "(A)") "}"
       close (unit)
    end subroutine write_input
 
@@ -97,7 +87,7 @@ contains
       type(error_t) :: parse_error
 
       call write_input("hf", "")
-      call read_mqc_file(SCRATCH_FILE, config, parse_error)
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
       call remove_input()
 
       call check(error,.not. parse_error%has_error(), "input should parse")
@@ -140,8 +130,8 @@ contains
       class(qc_method_t), allocatable :: method
       type(error_t) :: parse_error
 
-      call write_input("dft", "functional = pbe0")
-      call read_mqc_file(SCRATCH_FILE, config, parse_error)
+      call write_input("dft", '"functional": "pbe0"')
+      call read_json_config_file(SCRATCH_FILE, config, parse_error)
       call remove_input()
 
       call check(error,.not. parse_error%has_error(), "input should parse")

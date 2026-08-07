@@ -40,6 +40,7 @@ addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
 addtest(mqc_config_roundtrip)
 addtest(mqc_json_config)
+addtest(mqc_json_reader)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
 # bundle. Only the CMake build does that, so the test compiles to a skip stub
@@ -63,7 +64,6 @@ addtest(mqc_fragment_from_atoms)
 addtest(mqc_gmbe_energy)
 addtest(mqc_mbe)
 addtest(mqc_geometry)
-addtest(mqc_config_parser)
 addtest(mqc_config_adapter)
 addtest(mqc_cli_parser)
 addtest(mqc_split_lines)

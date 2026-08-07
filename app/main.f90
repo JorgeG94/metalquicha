@@ -1,8 +1,8 @@
 !! Main program for metalquicha quantum chemistry calculations
 !!
-!! Input format: .mqc (section-based format)
+!! Input format: JSON
 !!
-!! Usage: metalquicha input_file.mqc
+!! Usage: metalquicha input_file.json
 program main
    !! Orchestrates MPI initialization, input parsing, geometry loading,
    !! and dispatches to appropriate calculation routines (fragmented or unfragmented).
@@ -13,7 +13,6 @@ program main
    use mqc_driver, only: run_calculation, run_multi_molecule_calculations
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_types, only: mqc_config_t
-   use mqc_config_parser, only: read_mqc_file
    use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_io_helpers, only: set_output_json_filename, ends_with
@@ -27,13 +26,12 @@ program main
    type(timer_type) :: my_timer      !! Execution timing
    type(resources_t) :: resources    !! Resources container (MPI comms, etc.)
    type(driver_config_t) :: config   !! Driver configuration
-   type(mqc_config_t) :: mqc_config  !! Parsed .mqc file
+   type(mqc_config_t) :: mqc_config  !! Parsed input deck
    type(system_geometry_t) :: sys_geom  !! Loaded molecular system
    type(error_t) :: error            !! Error handling
    integer :: stat                   !! Status code for file I/O
    character(len=:), allocatable :: errmsg  !! Error messages for file I/O
    character(len=256) :: input_file  !! Input file name
-   logical :: json_input = .false.   !! Whether the deck is JSON rather than .mqc
 
    ! Initialize MPI
    ! pic-mpi will call mpi_init_thread when needed
@@ -51,7 +49,7 @@ program main
    ! Parse command line arguments
    if (command_argument_count() == 0) then
       if (resources%mpi_comms%world_comm%rank() == 0) then
-         call logger%error("No input file specified. Usage: mqc input_file.mqc")
+         call logger%error("No input file specified. Usage: mqc input_file.json")
       end if
       call abort_comm(resources%mpi_comms%world_comm, 1)
    else if (command_argument_count() == 1) then
@@ -75,18 +73,16 @@ program main
       end if
 
       call set_output_json_filename(input_file)
-      ! Validate file extension. JSON is the format users author; .mqc is the
-      ! generated intermediate, still read so existing decks keep working.
-      json_input = ends_with(input_file, ".json")
-      if (.not. json_input .and. .not. ends_with(input_file, ".mqc")) then
+      ! Validate file extension
+      if (.not. ends_with(input_file, ".json")) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
-            call logger%error("Invalid input file extension. Expected .json or .mqc")
+            call logger%error("Invalid input file extension. Expected .json")
          end if
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
    else
       if (resources%mpi_comms%world_comm%rank() == 0) then
-         call logger%error("Too many arguments. Usage: metalquicha [input_file.mqc]")
+         call logger%error("Too many arguments. Usage: metalquicha [input_file.json]")
       end if
       call abort_comm(resources%mpi_comms%world_comm, 1)
    end if
@@ -96,11 +92,7 @@ program main
       call logger%info("Reading input file: "//trim(input_file))
    end if
 
-   if (json_input) then
-      call read_json_config_file(input_file, mqc_config, error)
-   else
-      call read_mqc_file(input_file, mqc_config, error)
-   end if
+   call read_json_config_file(input_file, mqc_config, error)
    if (error%has_error()) then
       if (resources%mpi_comms%world_comm%rank() == 0) then
          call logger%error("Error reading input file: "//error%get_message())

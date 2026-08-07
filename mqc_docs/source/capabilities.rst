@@ -204,7 +204,7 @@ Input Formats
      }
    }
 
-**Internal .mqc format:**
+**JSON input format:**
 
 - Human-readable keyword-value format
 - Generated automatically from JSON
