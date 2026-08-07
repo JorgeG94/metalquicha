@@ -13,6 +13,7 @@ program main
    use mqc_driver, only: run_calculation, run_multi_molecule_calculations
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_config_parser, only: mqc_config_t, read_mqc_file
+   use mqc_json_config_reader, only: read_json_config_file
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry, get_logger_level
    use mqc_io_helpers, only: set_output_json_filename, ends_with
    use mqc_logo, only: print_logo
@@ -31,6 +32,7 @@ program main
    integer :: stat                   !! Status code for file I/O
    character(len=:), allocatable :: errmsg  !! Error messages for file I/O
    character(len=256) :: input_file  !! Input file name
+   logical :: json_input = .false.   !! Whether the deck is JSON rather than .mqc
 
    ! Initialize MPI
    ! pic-mpi will call mpi_init_thread when needed
@@ -72,10 +74,12 @@ program main
       end if
 
       call set_output_json_filename(input_file)
-      ! Validate file extension
-      if (.not. ends_with(input_file, ".mqc")) then
+      ! Validate file extension. JSON is the format users author; .mqc is the
+      ! generated intermediate, still read so existing decks keep working.
+      json_input = ends_with(input_file, ".json")
+      if (.not. json_input .and. .not. ends_with(input_file, ".mqc")) then
          if (resources%mpi_comms%world_comm%rank() == 0) then
-            call logger%error("Invalid input file extension. Expected .mqc")
+            call logger%error("Invalid input file extension. Expected .json or .mqc")
          end if
          call abort_comm(resources%mpi_comms%world_comm, 1)
       end if
@@ -86,15 +90,19 @@ program main
       call abort_comm(resources%mpi_comms%world_comm, 1)
    end if
 
-   ! Parse .mqc input file
+   ! Parse the input file
    if (resources%mpi_comms%world_comm%rank() == 0) then
       call logger%info("Reading input file: "//trim(input_file))
    end if
 
-   call read_mqc_file(input_file, mqc_config, error)
+   if (json_input) then
+      call read_json_config_file(input_file, mqc_config, error)
+   else
+      call read_mqc_file(input_file, mqc_config, error)
+   end if
    if (error%has_error()) then
       if (resources%mpi_comms%world_comm%rank() == 0) then
-         call logger%error("Error reading .mqc file: "//error%get_message())
+         call logger%error("Error reading input file: "//error%get_message())
       end if
       call abort_comm(resources%mpi_comms%world_comm, 1)
    end if

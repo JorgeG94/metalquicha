@@ -39,6 +39,7 @@ message(STATUS "Adding individual test executables for ${project_name}...")
 addtest(mqc_xyz_reader)
 addtest(mqc_xyz_reader_detailed)
 addtest(mqc_config_roundtrip)
+addtest(mqc_json_config)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
 # bundle. Only the CMake build does that, so the test compiles to a skip stub
