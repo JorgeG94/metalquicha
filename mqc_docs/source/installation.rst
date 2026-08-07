@@ -77,7 +77,7 @@ Metalquicha repository.
 
 .. note::
 
-   **Changed in 2.0.** Earlier versions converted the JSON to an intermediate
+   **Changed in 0.2.0.** Earlier versions converted the JSON to an intermediate
    ``.mqc`` file with a ``mqc_prep.py`` helper, and read that. Both are gone;
    pass the ``.json`` file directly. See :ref:`migrating_from_mqc`.
 

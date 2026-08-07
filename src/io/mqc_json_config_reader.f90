@@ -2,7 +2,7 @@
 module mqc_json_config_reader
    !! The only input reader. Parses a JSON deck into `mqc_config_t`.
    !!
-   !! Until 2.0 this program read a section-based `.mqc` format generated from
+   !! Until 0.2.0 this program read a section-based `.mqc` format generated from
    !! the user's JSON by a Python helper, so ~2800 lines and a runtime Python
    !! dependency stood between an input file and this type. Both are gone.
    !! json-fortran was already required by the output writer and the basis
@@ -156,7 +156,7 @@ contains
 
       call optional_string(json, "keywords.xtb.solvent", config%solvent)
       call optional_string(json, "keywords.xtb.solvation_model", config%solvation_model)
-      ! Before 2.0 these were reachable only from a hand-written .mqc deck --
+      ! Before 0.2.0 these were reachable only from a hand-written .mqc deck --
       ! the JSON generator had no field for either, though both are plumbed
       ! through to the xTB method. Retiring .mqc without adding them here
       ! would have quietly removed the only way to turn them off.

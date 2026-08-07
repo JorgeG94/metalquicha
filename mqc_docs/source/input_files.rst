@@ -22,7 +22,7 @@ The workflow is:
 
 .. note::
 
-   **Changed in 2.0.** Earlier versions read a separate section-based
+   **Changed in 0.2.0.** Earlier versions read a separate section-based
    ``.mqc`` format, generated from your JSON by a ``mqc_prep.py`` helper.
    That intermediate step is gone: ``mqc`` reads the JSON directly, and both
    the ``.mqc`` format and ``mqc_prep.py`` have been removed. Your existing
@@ -446,7 +446,7 @@ Troubleshooting
 ===============
 
 **"Invalid input file extension"**
-   Ensure the file ends with ``.json``. Versions before 2.0 took ``.mqc``;
+   Ensure the file ends with ``.json``. Versions before 0.2.0 took ``.mqc``;
    see :ref:`migrating_from_mqc`.
 
 **"Could not parse JSON input file"**
@@ -474,7 +474,7 @@ Troubleshooting
 Migrating from .mqc
 ===================
 
-**Changed in 2.0.** ``.mqc`` and ``mqc_prep.py`` were removed; ``mqc`` reads
+**Changed in 0.2.0.** ``.mqc`` and ``mqc_prep.py`` were removed; ``mqc`` reads
 JSON directly.
 
 If you drove metalquicha from JSON, as the documented workflow did, there is

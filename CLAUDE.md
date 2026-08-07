@@ -97,7 +97,7 @@ A molecule gives either `xyz` (a path, resolved relative to the deck) or
 in `connectivity` are marked broken automatically when their two atoms fall in
 different fragments -- that is derived, not declared.
 
-The `.mqc` format and its `mqc_prep.py` generator were removed in 2.0; see
+The `.mqc` format and its `mqc_prep.py` generator were removed in 0.2.0; see
 `mqc_docs/source/input_files.rst` for the migration table.
 
 ## Core Concepts
