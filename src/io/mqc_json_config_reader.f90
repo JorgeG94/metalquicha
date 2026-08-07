@@ -28,11 +28,11 @@ module mqc_json_config_reader
    !! Atom indices are 0-based throughout, in the JSON and in the config, and
    !! are stored as read.
    !!
-   !! Still missing, and deliberately: rejection of unknown keys, and the
-   !! cross-check that fragment charges sum to the molecular charge. Both are
-   !! validation rather than parsing and want a home of their own -- a
-   !! misspelled key currently reads as an absent one, which is the least
-   !! friendly thing this reader does.
+   !! Unknown keys, missing required ones, and the cross-checks between a
+   !! molecule's parallel lists are `mqc_json_schema`'s job, run over the
+   !! document before any of this. That separation is why the accessors below
+   !! can stay as simple as they are: by the time they run, the deck is known
+   !! to contain only keys this module knows about.
    use pic_types, only: dp
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN, MAX_MBE_LEVEL
    use mqc_geometry, only: geometry_type
@@ -41,6 +41,7 @@ module mqc_json_config_reader
    use mqc_method_types, only: parse_method_string
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
+   use mqc_json_schema, only: ensure_valid_json
    use json_module, only: json_file
    implicit none
    private
@@ -77,9 +78,14 @@ contains
          return
       end if
 
+      ! Validate before reading, so a misspelled key is reported as itself
+      ! rather than silently taking the default of the key it was meant to be.
       ! One place to load and one to destroy; everything that can fail lives
-      ! in the routine below and simply returns.
-      call populate_config(json, directory_of(filename), config, error)
+      ! in the two routines below and simply returns.
+      call ensure_valid_json(json, error)
+      if (.not. error%has_error()) then
+         call populate_config(json, directory_of(filename), config, error)
+      end if
       call json%destroy()
 
       if (error%has_error()) call error%add_context("mqc_json_config_reader:"//trim(filename))

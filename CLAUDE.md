@@ -58,6 +58,7 @@ metalquicha/
 | `app/main.f90` | Entry point, MPI init, input parsing |
 | `src/mqc_driver.f90` | Routes to fragmented/unfragmented workflows |
 | `src/io/mqc_json_config_reader.f90` | Parses JSON input decks |
+| `src/io/mqc_json_schema.f90` | Validates a deck before it is read |
 | `src/io/mqc_config_types.f90` | `mqc_config_t` and the types it is built from |
 | `src/fragmentation/mqc_mbe.f90` | Core MBE implementation (62KB) |
 | `src/fragmentation/mqc_physical_fragment.f90` | Fragment representation, H-capping |
@@ -240,10 +241,13 @@ See `FORTRAN_STYLE.md` for the complete style guide. Key points:
 
 ### Add a new input keyword
 1. Add the field to the relevant type in `mqc_config_types.f90`, with its default
-2. Read it in `mqc_json_config_reader.f90` (`optional_*` leaves the default alone
+2. Add the key to its object's allow-list in `mqc_json_schema.f90` — the
+   validator rejects anything it does not know, so a key added anywhere else
+   first will be refused before the reader ever sees it
+3. Read it in `mqc_json_config_reader.f90` (`optional_*` leaves the default alone
    when the key is absent, so there is no second table of defaults)
-3. Handle in `mqc_config_adapter.f90`
-4. Add a case to `test/test_mqc_json_reader.f90`
+4. Handle in `mqc_config_adapter.f90`
+5. Add a case to `test/test_mqc_json_reader.f90`
 
 ### Add a new test
 1. Create `test/test_mqc_feature.f90`

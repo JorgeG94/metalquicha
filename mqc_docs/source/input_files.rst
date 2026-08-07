@@ -458,6 +458,17 @@ Troubleshooting
    ``molecules`` are all required, as are ``molecular_charge`` and
    ``molecular_multiplicity`` on each molecule.
 
+**"Unknown key ..."**
+   The deck is checked against the schema before it is read, so a key that is
+   not part of the schema is an error rather than a setting that is silently
+   ignored. The message names the key and lists what is allowed in its place;
+   the usual cause is a misspelling or a key written at the wrong level.
+
+**"fragment charges sum to N but the molecular charge is M"**
+   ``fragment_charges`` must add up to ``molecular_charge``. This is checked
+   because the alternative is a calculation that runs to completion on the
+   wrong number of electrons.
+
 **Fragment charge/multiplicity mismatch**
    Ensure sum of fragment charges equals molecular charge
 
