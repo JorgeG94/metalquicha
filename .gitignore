@@ -56,6 +56,11 @@ build*/
 *.sqlite
 fail.txt
 
+# Scratch input decks written by the test suite. The tests delete these
+# themselves; this is for the run that crashed before it got there. One case
+# writes deliberately malformed JSON, so a stray copy fails the check-json hook.
+test/*_scratch.json
+
 # Basis sets are extracted from the Basis Set Exchange bundle at CMake
 # configure time (see cmake/modules/ExtractBasisSets.cmake). The bundle is
 # tracked; the ~900 JSON files it can yield are not.

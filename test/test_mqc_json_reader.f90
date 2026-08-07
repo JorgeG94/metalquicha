@@ -22,6 +22,7 @@ module test_mqc_json_reader
    implicit none
    private
    public :: collect_mqc_json_reader_tests
+   public :: remove_deck  !! Tidy the scratch file away
 
    character(len=*), parameter :: DECK = "test_json_reader_scratch.json"
 
@@ -572,12 +573,28 @@ contains
       same = abs(a - b) <= 1.0e-10_dp*max(1.0_dp, abs(b))
    end function close_enough
 
+   subroutine remove_deck()
+      !! Delete the scratch deck
+      !!
+      !! Called from the driver rather than from each test, so it runs whether
+      !! or not a test returned early. It matters more here than for most
+      !! scratch files: one case deliberately writes malformed JSON, and a
+      !! leftover copy trips the repository's check-json hook.
+      integer :: unit
+      logical :: exists
+
+      inquire (file=DECK, exist=exists)
+      if (.not. exists) return
+      open (newunit=unit, file=DECK, status="old")
+      close (unit, status="delete")
+   end subroutine remove_deck
+
 end module test_mqc_json_reader
 
 program tester
    use, intrinsic :: iso_fortran_env, only: error_unit
    use testdrive, only: run_testsuite, new_testsuite, testsuite_type
-   use test_mqc_json_reader, only: collect_mqc_json_reader_tests
+   use test_mqc_json_reader, only: collect_mqc_json_reader_tests, remove_deck
    implicit none
    integer :: stat, is
    type(testsuite_type), allocatable :: testsuites(:)
@@ -593,6 +610,8 @@ program tester
       write (*, fmt) "Testing:", testsuites(is)%name
       call run_testsuite(testsuites(is)%collect, error_unit, stat)
    end do
+
+   call remove_deck()
 
    if (stat > 0) then
       write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
