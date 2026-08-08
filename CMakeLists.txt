@@ -174,6 +174,10 @@ endif()
 # Manual check that a session splits rank 0 from the workers. Not a ctest case:
 # it is only meaningful under mpirun with more than one rank, and ctest here has
 # no MPI harness.
+add_executable(probe_ieee ${PROJECT_SOURCE_DIR}/validation/probe_ieee.f90)
+target_include_directories(probe_ieee PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(probe_ieee PRIVATE ${main_lib})
+
 add_executable(check_session ${PROJECT_SOURCE_DIR}/validation/check_session.f90)
 target_include_directories(check_session PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_session PRIVATE ${main_lib})

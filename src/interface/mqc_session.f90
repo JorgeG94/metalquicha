@@ -22,6 +22,7 @@ module mqc_session
    !! smallest thing that works: a worker blocked in `bcast` costs nothing, and
    !! the alternative of polling with `iprobe` would burn a core per rank for
    !! the whole setup phase.
+   use, intrinsic :: ieee_exceptions, only: ieee_set_flag, ieee_all
    use pic_types, only: int32
    use pic_mpi_lib, only: comm_world, bcast, pic_mpi_init, pic_mpi_finalize
    use mqc_resources, only: resources_t
@@ -67,6 +68,19 @@ contains
       end if
 
       call pic_mpi_init()
+
+      ! MPI start-up raises IEEE_INVALID and IEEE_DIVIDE_BY_ZERO on every rank
+      ! whenever there is more than one of them -- measured, not guessed: the
+      ! flags are already set on return from pic_mpi_init and are untouched at
+      ! -np 1. They are the MPI implementation's arithmetic, not ours.
+      !
+      ! Clearing them here rather than before the workers exit is what keeps
+      ! them useful. gfortran reports raised flags at STOP but not at END
+      ! PROGRAM, so the noise surfaced only on the workers, and suppressing it
+      ! at that end would have discarded genuine flags from whatever a worker
+      ! computes. Cleared at the start, a flag set later belongs to us.
+      call ieee_set_flag(ieee_all, .false.)
+
       this%resources%mpi_comms%world_comm = comm_world()
       this%resources%mpi_comms%node_comm = this%resources%mpi_comms%world_comm%split()
       this%rank = this%resources%mpi_comms%world_comm%rank()

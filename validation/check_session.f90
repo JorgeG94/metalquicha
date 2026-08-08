@@ -20,13 +20,10 @@
 !! the session must still start and stop cleanly rather than deadlocking on
 !! its own collective.
 !!
-!! Expect one "IEEE_INVALID_FLAG IEEE_DIVIDE_BY_ZERO" note per WORKER on exit.
-!! It is gfortran reporting raised floating-point flags at termination, and it
-!! appears on the workers' path and not on rank 0's or on `mqc`'s. Nothing here
-!! does arithmetic, so the flags come from below -- worth tracking down before
-!! this is put in front of users, since a warning on every rank of a clean run
-!! reads as a fault. Not suppressed, because clearing the flags here would also
-!! clear genuine ones once a worker does real numerics.
+!! A clean run prints nothing else. If IEEE flag notes appear on the workers'
+!! exit, the clearing in `session_begin` has been lost -- MPI start-up raises
+!! INVALID and DIVIDE_BY_ZERO at more than one rank, and gfortran reports
+!! raised flags at STOP, which is how a worker ends.
 program check_session
    use pic_types, only: int32
    use mqc_session, only: mqc_session_t, MQC_CMD_RUN
