@@ -12,6 +12,8 @@ module mqc_driver
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t
    use mqc_method_config, only: method_config_t
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
+   use mqc_validate, only: validate_system, validate_terms
+   use mqc_fraglist, only: fraglist_t
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
@@ -247,11 +249,24 @@ contains
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64) :: n_pie_terms  !! Number of unique PIE terms
       type(error_t) :: pie_error  !! Error from PIE enumeration
+      type(error_t) :: validation_error  !! Error from semantic validation
+      type(fraglist_t) :: supplied_check  !! Supplied terms, for validation only
 
       ! Extract values from config for readability
       max_level = config%nlevel
       allow_overlapping_fragments = config%allow_overlapping_fragments
       max_intersection_level = config%max_intersection_level
+
+      ! Every input path arrives here, so this is where the system is checked:
+      ! the JSON reader, the C interface and a supplied term list alike.
+      if (resources%mpi_comms%world_comm%rank() == 0) then
+         call validate_system(sys_geom, .not. config%unchecked_input, validation_error, &
+                              check_bonds=allocated(sys_geom%bonds))
+         if (validation_error%has_error()) then
+            call logger%error("invalid system: "//validation_error%get_message())
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end if
 
       ! Generate fragments -- unless the caller brought their own
       if (present(supplied_terms) .and. present(n_supplied_terms)) then
@@ -263,6 +278,21 @@ contains
                polymers(1:total_fragments, 1:max_level) = &
                   supplied_terms(1:total_fragments, 1:max_level)
             end if
+            ! A supplied list has had no screening or sorting applied to it and
+            ! comes from outside, so it is checked before anything is spent on
+            ! it -- above all for subset closure, which a reasonable-looking
+            ! screen breaks silently.
+            call supplied_check%replace(polymers, total_fragments, max_level, validation_error)
+            if (.not. validation_error%has_error()) then
+               call validate_terms(supplied_check, sys_geom, .not. config%unchecked_input, &
+                                   validation_error)
+            end if
+            call supplied_check%destroy()
+            if (validation_error%has_error()) then
+               call logger%error("invalid fragment list: "//validation_error%get_message())
+               call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
             call logger%info("Using a supplied fragment list:")
             call logger%info("  Total fragments: "//to_char(total_fragments))
             call logger%info("  Max level: "//to_char(max_level))

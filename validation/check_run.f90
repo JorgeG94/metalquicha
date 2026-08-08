@@ -119,12 +119,54 @@ program check_run
       write (*, "(A)") ""
       write (*, "(A)") "Compare the two total energies above: a supplied list that"
       write (*, "(A)") "reproduces the default must give the same number."
+      write (*, "(A)") ""
+      write (*, "(A)") "Pass a second argument to instead drop every monomer and keep the"
+      write (*, "(A)") "higher terms -- the shape a naive energy screen produces. That"
+      write (*, "(A)") "must be refused rather than run."
+   end if
+
+   ! ---- pass 3, on request: a screen that looks fine and is not -------------
+   if (command_argument_count() > 1) then
+      if (rank == 0) then
+         ! Drop the monomers and keep the n-mers. Removing the top level
+         ! instead would leave a list that is still closed -- the subsets
+         ! of what remains are all present -- and rightly pass.
+         call drop_all_of_level(terms, 1_default_int)
+         deallocate (supplied)
+         allocate (supplied(terms%n_terms, terms%max_level))
+         do iterm = 1, terms%n_terms
+            supplied(iterm, :) = terms%terms(iterm, :)
+         end do
+         write (*, "(A)") ""
+         write (*, "(A,I0,A)") "[pass 3] monomers dropped, ", terms%n_terms, &
+            " terms -- this should be refused"
+      end if
+      call run_calculation(resources, driver, sys_geom, sys_geom%bonds, &
+                           supplied_terms=supplied, n_supplied_terms=terms%n_terms)
+      if (rank == 0) write (*, "(A)") "REACHED HERE -- the bad list was not refused"
    end if
 
    call terms%destroy()
    call finish(0)
 
 contains
+
+   subroutine drop_all_of_level(list, level)
+      !! Remove every term of one order, leaving the rest
+      type(fraglist_t), intent(inout) :: list
+      integer(default_int), intent(in) :: level
+
+      logical, allocatable :: mask(:)
+      type(error_t) :: err
+      integer(int64) :: i
+
+      allocate (mask(list%n_terms))
+      do i = 1, list%n_terms
+         mask(i) = (list%level_of(i) /= level)
+      end do
+      call list%keep(mask, err)
+      deallocate (mask)
+   end subroutine drop_all_of_level
 
    subroutine finish(code)
       integer, intent(in) :: code

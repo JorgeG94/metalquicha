@@ -135,6 +135,7 @@ contains
       ! `optional_string` leaves its target alone rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
+      call optional_logical(json, "system.unchecked_input", config%unchecked_input)
       call optional_string(json, "system.fragment_breakdown", config%fragment_breakdown)
 
       ! ---- keywords --------------------------------------------------------

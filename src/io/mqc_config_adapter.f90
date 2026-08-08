@@ -41,6 +41,7 @@ module mqc_config_adapter
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
+      logical :: unchecked_input = .false.   !! Validation warns instead of refusing
       character(len=16) :: fragment_breakdown = "csv"  !! Per-fragment table: csv, json or none
    end type driver_config_t
 
@@ -144,6 +145,7 @@ contains
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output
+      driver_config%unchecked_input = mqc_config%unchecked_input
       if (allocated(mqc_config%fragment_breakdown)) then
          driver_config%fragment_breakdown = mqc_config%fragment_breakdown
       end if

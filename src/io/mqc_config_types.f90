@@ -152,6 +152,16 @@ module mqc_config_types
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
+      logical :: unchecked_input = .false.
+         !! Downgrade semantic validation to warnings.
+         !!
+         !! Off by default and meant to stay that way. The checks it disables
+         !! are for inputs that produce a converged, plausible, wrong answer --
+         !! monomer charges that do not sum, atoms in no fragment, a term list
+         !! the expansion cannot be assembled from. Some are conventions rather
+         !! than laws and a user may be breaking one deliberately, which is why
+         !! the escape exists; it is deliberately not a comfortable thing to
+         !! reach for.
       character(len=:), allocatable :: fragment_breakdown
          !! Where the per-fragment MBE table goes: "csv", "json" or "none"
 
