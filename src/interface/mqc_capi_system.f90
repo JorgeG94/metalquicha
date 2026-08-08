@@ -1,0 +1,354 @@
+!! C entry points for describing the system to be fragmented
+module mqc_capi_system
+   !! The molecule, its monomer partition and its bonds, reachable from C.
+   !!
+   !! Wraps `system_geometry_t`, which already carries all three -- the atoms,
+   !! the partition fragments are built from, and the connectivity hydrogen
+   !! capping needs. Nothing new is modelled here; this is the way in.
+   !!
+   !! Three conventions that are invisible in the signatures and wrong by
+   !! default if a caller assumes otherwise:
+   !!
+   !!   * **Coordinates arrive in Angstrom and are stored in Bohr.** Everything
+   !!     inside metalquicha is atomic units; every input path converts. A
+   !!     caller passing Bohr gets a molecule 1.89 times too large, which
+   !!     converges to a perfectly plausible wrong energy.
+   !!   * **Atom indices are 0-based**, in the monomer partition and in the
+   !!     bonds alike, matching the JSON schema and `bond_t`. Monomer indices
+   !!     in a *fragment term list* are 1-based -- different things, counted
+   !!     differently, and the one trap in this interface.
+   !!   * **Bonds carry their own broken flag.** The JSON path derives it from
+   !!     which monomers an atom falls in; a caller driving this directly is
+   !!     assumed to know, because with an arbitrary term list there is no
+   !!     single partition to derive it from. Passing every bond as broken is
+   !!     the "here is a list of broken bonds" case.
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_null_char, &
+                                          c_f_pointer, c_loc, c_associated
+   use pic_types, only: dp
+   use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
+   implicit none
+   private
+
+   public :: mqc_system_new, mqc_system_free
+   public :: mqc_system_set_geometry, mqc_system_set_monomers, mqc_system_set_bonds
+   public :: mqc_system_n_atoms, mqc_system_n_monomers, mqc_system_n_bonds
+   public :: mqc_system_last_error
+
+   integer(c_int), parameter :: MQC_OK = 0
+   integer(c_int), parameter :: MQC_ERROR = 1
+   integer(c_int), parameter :: MQC_BAD_HANDLE = 2
+
+   integer, parameter :: MESSAGE_LEN = 512
+   character(len=MESSAGE_LEN), save :: last_message = ""
+
+contains
+
+   function mqc_system_new() result(handle) bind(C, name="mqc_system_new")
+      !! Allocate an empty system and return its handle
+      type(c_ptr) :: handle
+
+      type(system_geometry_t), pointer :: sys
+
+      allocate (sys)
+      sys%n_monomers = 0
+      sys%atoms_per_monomer = 0
+      sys%total_atoms = 0
+      sys%charge = 0
+      sys%multiplicity = 1
+      handle = c_loc(sys)
+   end function mqc_system_new
+
+   subroutine mqc_system_free(handle) bind(C, name="mqc_system_free")
+      !! Release a system. Safe on a null handle.
+      type(c_ptr), value :: handle
+
+      type(system_geometry_t), pointer :: sys
+
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, sys)
+      call release(sys)
+      deallocate (sys)
+   end subroutine mqc_system_free
+
+   function mqc_system_set_geometry(handle, n_atoms, atomic_numbers, coordinates, &
+                                    charge, multiplicity) result(status) &
+      bind(C, name="mqc_system_set_geometry")
+      !! The atoms, in Angstrom
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n_atoms
+      integer(c_int), intent(in) :: atomic_numbers(n_atoms)
+      real(c_double), intent(in) :: coordinates(3*n_atoms)
+         !! x,y,z per atom, contiguous, ANGSTROM
+      integer(c_int), value :: charge
+      integer(c_int), value :: multiplicity
+      integer(c_int) :: status
+
+      type(system_geometry_t), pointer :: sys
+      integer :: iatom
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, sys)
+
+      if (n_atoms <= 0) then
+         last_message = "mqc_system_set_geometry: a system needs at least one atom"
+         status = MQC_ERROR
+         return
+      end if
+      if (multiplicity < 1) then
+         last_message = "mqc_system_set_geometry: multiplicity must be at least 1"
+         status = MQC_ERROR
+         return
+      end if
+
+      if (allocated(sys%element_numbers)) deallocate (sys%element_numbers)
+      if (allocated(sys%coordinates)) deallocate (sys%coordinates)
+      allocate (sys%element_numbers(n_atoms))
+      allocate (sys%coordinates(3, n_atoms))
+
+      sys%total_atoms = n_atoms
+      sys%charge = charge
+      sys%multiplicity = multiplicity
+      do iatom = 1, n_atoms
+         sys%element_numbers(iatom) = atomic_numbers(iatom)
+         ! The one conversion. Internal units are Bohr throughout.
+         sys%coordinates(1, iatom) = to_bohr(coordinates(3*(iatom - 1) + 1))
+         sys%coordinates(2, iatom) = to_bohr(coordinates(3*(iatom - 1) + 2))
+         sys%coordinates(3, iatom) = to_bohr(coordinates(3*(iatom - 1) + 3))
+      end do
+
+      status = MQC_OK
+   end function mqc_system_set_geometry
+
+   function mqc_system_set_monomers(handle, n_monomers, max_size, sizes, atoms, &
+                                    charges, multiplicities) result(status) &
+      bind(C, name="mqc_system_set_monomers")
+      !! The partition fragments are built from
+      !!
+      !! `atoms` is (max_size, n_monomers) with one monomer per COLUMN, matching
+      !! `fragment_atoms` -- the transpose of the term list's row-per-term
+      !! layout, because that is what the two underlying types already use.
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n_monomers
+      integer(c_int), value :: max_size
+      integer(c_int), intent(in) :: sizes(n_monomers)
+      integer(c_int), intent(in) :: atoms(max_size*n_monomers)
+         !! 0-based atom indices, column per monomer, unused slots ignored
+      integer(c_int), intent(in) :: charges(n_monomers)
+      integer(c_int), intent(in) :: multiplicities(n_monomers)
+      integer(c_int) :: status
+
+      type(system_geometry_t), pointer :: sys
+      integer :: imon, iatom, base
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, sys)
+
+      if (sys%total_atoms <= 0) then
+         last_message = "mqc_system_set_monomers: set the geometry first"
+         status = MQC_ERROR
+         return
+      end if
+      if (n_monomers <= 0 .or. max_size <= 0) then
+         last_message = "mqc_system_set_monomers: monomer count and size must be positive"
+         status = MQC_ERROR
+         return
+      end if
+      do imon = 1, n_monomers
+         if (sizes(imon) < 1 .or. sizes(imon) > max_size) then
+            last_message = "mqc_system_set_monomers: a monomer size is outside 1..max_size"
+            status = MQC_ERROR
+            return
+         end if
+      end do
+
+      if (allocated(sys%fragment_sizes)) deallocate (sys%fragment_sizes)
+      if (allocated(sys%fragment_atoms)) deallocate (sys%fragment_atoms)
+      if (allocated(sys%fragment_charges)) deallocate (sys%fragment_charges)
+      if (allocated(sys%fragment_multiplicities)) deallocate (sys%fragment_multiplicities)
+      allocate (sys%fragment_sizes(n_monomers))
+      allocate (sys%fragment_atoms(max_size, n_monomers))
+      allocate (sys%fragment_charges(n_monomers))
+      allocate (sys%fragment_multiplicities(n_monomers))
+      sys%fragment_atoms = 0
+
+      do imon = 1, n_monomers
+         base = (imon - 1)*max_size
+         do iatom = 1, sizes(imon)
+            if (atoms(base + iatom) < 0 .or. atoms(base + iatom) >= sys%total_atoms) then
+               last_message = "mqc_system_set_monomers: an atom index is out of range "// &
+                              "(indices are 0-based)"
+               status = MQC_ERROR
+               return
+            end if
+            sys%fragment_atoms(iatom, imon) = atoms(base + iatom)
+         end do
+         sys%fragment_sizes(imon) = sizes(imon)
+         sys%fragment_charges(imon) = charges(imon)
+         sys%fragment_multiplicities(imon) = multiplicities(imon)
+      end do
+
+      sys%n_monomers = n_monomers
+      ! Zero means "variable-sized", which is what the rest of the code reads it
+      ! as; only a uniform partition may claim a fixed size.
+      if (all(sizes == sizes(1))) then
+         sys%atoms_per_monomer = sizes(1)
+      else
+         sys%atoms_per_monomer = 0
+      end if
+
+      status = MQC_OK
+   end function mqc_system_set_monomers
+
+   function mqc_system_set_bonds(handle, n_bonds, atom_i, atom_j, order, is_broken) &
+      result(status) bind(C, name="mqc_system_set_bonds")
+      !! The connectivity hydrogen capping works from
+      !!
+      !! `is_broken` is non-zero for a bond fragmentation severs. Unlike the
+      !! JSON path, nothing is derived: a caller supplying an arbitrary term
+      !! list has no single partition to derive it from, so it says. Passing
+      !! every entry as broken is the plain "here is my list of broken bonds".
+      type(c_ptr), value :: handle
+      integer(c_int), value :: n_bonds
+      integer(c_int), intent(in) :: atom_i(n_bonds)  !! 0-based
+      integer(c_int), intent(in) :: atom_j(n_bonds)  !! 0-based
+      integer(c_int), intent(in) :: order(n_bonds)
+      integer(c_int), intent(in) :: is_broken(n_bonds)  !! non-zero = broken
+      integer(c_int) :: status
+
+      type(system_geometry_t), pointer :: sys
+      integer :: ibond
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, sys)
+
+      if (sys%total_atoms <= 0) then
+         last_message = "mqc_system_set_bonds: set the geometry first"
+         status = MQC_ERROR
+         return
+      end if
+      if (n_bonds < 0) then
+         last_message = "mqc_system_set_bonds: bond count cannot be negative"
+         status = MQC_ERROR
+         return
+      end if
+
+      do ibond = 1, n_bonds
+         if (atom_i(ibond) < 0 .or. atom_i(ibond) >= sys%total_atoms .or. &
+             atom_j(ibond) < 0 .or. atom_j(ibond) >= sys%total_atoms) then
+            last_message = "mqc_system_set_bonds: an atom index is out of range "// &
+                           "(indices are 0-based)"
+            status = MQC_ERROR
+            return
+         end if
+         if (atom_i(ibond) == atom_j(ibond)) then
+            last_message = "mqc_system_set_bonds: a bond joins an atom to itself"
+            status = MQC_ERROR
+            return
+         end if
+         if (order(ibond) < 1) then
+            last_message = "mqc_system_set_bonds: bond order must be positive"
+            status = MQC_ERROR
+            return
+         end if
+      end do
+
+      if (allocated(sys%bonds)) deallocate (sys%bonds)
+      allocate (sys%bonds(max(n_bonds, 1)))
+      do ibond = 1, n_bonds
+         sys%bonds(ibond)%atom_i = atom_i(ibond)
+         sys%bonds(ibond)%atom_j = atom_j(ibond)
+         sys%bonds(ibond)%order = order(ibond)
+         sys%bonds(ibond)%is_broken = (is_broken(ibond) /= 0)
+      end do
+
+      status = MQC_OK
+   end function mqc_system_set_bonds
+
+   function mqc_system_n_atoms(handle) result(n) bind(C, name="mqc_system_n_atoms")
+      !! Atoms in the system, or -1 for a bad handle
+      type(c_ptr), value :: handle
+      integer(c_int) :: n
+
+      type(system_geometry_t), pointer :: sys
+
+      n = -1_c_int
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, sys)
+      n = int(sys%total_atoms, c_int)
+   end function mqc_system_n_atoms
+
+   function mqc_system_n_monomers(handle) result(n) bind(C, name="mqc_system_n_monomers")
+      !! Monomers in the partition, or -1 for a bad handle
+      !!
+      !! This is what a term list is generated over, so a caller reads it
+      !! rather than tracking it separately.
+      type(c_ptr), value :: handle
+      integer(c_int) :: n
+
+      type(system_geometry_t), pointer :: sys
+
+      n = -1_c_int
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, sys)
+      n = int(sys%n_monomers, c_int)
+   end function mqc_system_n_monomers
+
+   function mqc_system_n_bonds(handle) result(n) bind(C, name="mqc_system_n_bonds")
+      !! Bonds recorded, or -1 for a bad handle
+      type(c_ptr), value :: handle
+      integer(c_int) :: n
+
+      type(system_geometry_t), pointer :: sys
+
+      n = -1_c_int
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, sys)
+      n = 0_c_int
+      if (allocated(sys%bonds)) n = int(size(sys%bonds), c_int)
+   end function mqc_system_n_bonds
+
+   subroutine mqc_system_last_error(buffer_len, buffer) &
+      bind(C, name="mqc_system_last_error")
+      !! Copy the most recent failure message out as a C string
+      integer(c_int), value :: buffer_len
+      character(kind=c_char), intent(inout) :: buffer(buffer_len)
+
+      integer :: n, i
+
+      if (buffer_len <= 0) return
+      n = min(len_trim(last_message), int(buffer_len) - 1)
+      do i = 1, n
+         buffer(i) = last_message(i:i)
+      end do
+      buffer(n + 1) = c_null_char
+   end subroutine mqc_system_last_error
+
+   subroutine release(sys)
+      !! Free everything the system owns
+      type(system_geometry_t), intent(inout) :: sys
+
+      if (allocated(sys%element_numbers)) deallocate (sys%element_numbers)
+      if (allocated(sys%coordinates)) deallocate (sys%coordinates)
+      if (allocated(sys%fragment_sizes)) deallocate (sys%fragment_sizes)
+      if (allocated(sys%fragment_atoms)) deallocate (sys%fragment_atoms)
+      if (allocated(sys%fragment_charges)) deallocate (sys%fragment_charges)
+      if (allocated(sys%fragment_multiplicities)) deallocate (sys%fragment_multiplicities)
+      if (allocated(sys%bonds)) deallocate (sys%bonds)
+      sys%total_atoms = 0
+      sys%n_monomers = 0
+      sys%atoms_per_monomer = 0
+   end subroutine release
+
+end module mqc_capi_system
