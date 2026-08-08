@@ -38,12 +38,16 @@ module mqc_driver
 contains
 
    subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
-                              supplied_terms, n_supplied_terms)
+                              supplied_terms, n_supplied_terms, write_output)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
       !! calculation routine with proper MPI setup and validation.
-      !! If result_out is present, returns result instead of writing JSON (for dynamics/optimization)
+      !! `result_out` and `write_output` are independent. A caller can take the
+      !! energy back, write the files, or both -- the common case for a driven
+      !! run being both, so a script can print or branch on a number without
+      !! re-reading the file this just wrote. They used to be one switch, which
+      !! meant asking for the result silently suppressed the output.
       !!
       !! `supplied_terms` hands over a term list instead of generating one, which
       !! is how a caller applies a criterion this code knows nothing about --
@@ -67,6 +71,9 @@ contains
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
       logical, intent(in), optional :: all_ranks_write_json  !! If true, all ranks write JSON (for multi-molecule)
+      logical, intent(in), optional :: write_output
+         !! Write the JSON summary and fragment breakdown. Default true.
+         !! `skip_json_output` in the config still overrides it.
       integer, intent(in), optional :: supplied_terms(:, :)
          !! (n_terms, max_level), 1-based monomer indices, zero-padded. Rank 0 only.
       integer(int64), intent(in), optional :: n_supplied_terms
@@ -76,6 +83,7 @@ contains
       integer :: i  !! Loop counter
       type(json_output_data_t) :: json_data  !! Cached output data for centralized JSON writing
       logical :: should_write_json  !! Whether this rank should write JSON
+      logical :: wants_output       !! Whether the caller asked for files at all
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -112,28 +120,26 @@ contains
       if (max_level == 0) then
          call omp_set_num_threads(1)
          if (present(result_out)) then
-            ! For dynamics/optimization: return result directly, no JSON output
-            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, result_out)
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, &
+                                              result_out, json_data=json_data)
          else
-            ! Normal mode: collect json_data for centralized output
-            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, json_data=json_data)
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, &
+                                              json_data=json_data)
          end if
       else
-         if (present(result_out)) then
-            ! For fragmented calculations with result_out (future use)
-            call run_fragmented_calculation(resources, config, sys_geom, bonds, &
-                                            supplied_terms=supplied_terms, &
-                                            n_supplied_terms=n_supplied_terms)
-         else
-            ! Normal mode: collect json_data for centralized output
-            call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
-                                            supplied_terms=supplied_terms, &
-                                            n_supplied_terms=n_supplied_terms)
-         end if
+         ! json_data is collected whether or not it will be written, because it
+         ! is also where a fragmented result comes from -- the expansion has no
+         ! other route back to a calculation_result_t.
+         call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
+                                         supplied_terms=supplied_terms, &
+                                         n_supplied_terms=n_supplied_terms)
+         if (present(result_out)) call result_from_json(json_data, result_out)
       end if
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
-      if (.not. present(result_out)) then
+      wants_output = .true.
+      if (present(write_output)) wants_output = write_output
+      if (wants_output) then
          ! Check if JSON output should be skipped
          if (config%skip_json_output) then
             if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -157,6 +163,30 @@ contains
       end if
 
    end subroutine run_calculation
+
+   subroutine result_from_json(json_data, result_out)
+      !! Take a fragmented run's headline numbers back to the caller
+      !!
+      !! The expansion assembles into `json_output_data_t` and has no other
+      !! route to a `calculation_result_t`, so this reads across rather than
+      !! recomputing. Only what a driving script would branch on: the total,
+      !! and the gradient and dipole when the run produced them. The
+      !! per-fragment detail stays in the CSV, where twenty million rows
+      !! belong.
+      type(json_output_data_t), intent(in) :: json_data
+      type(calculation_result_t), intent(inout) :: result_out
+
+      ! energy_t computes its total from components; an expansion total has
+      ! no correlation breakdown to put in the others, so it lands in scf --
+      ! which is what `total()` will then report.
+      result_out%energy%scf = json_data%total_energy
+      result_out%has_energy = json_data%has_energy
+      if (allocated(json_data%gradient)) then
+         result_out%gradient = json_data%gradient
+         result_out%has_gradient = .true.
+      end if
+      if (allocated(json_data%dipole)) result_out%dipole = json_data%dipole
+   end subroutine result_from_json
 
    subroutine run_unfragmented_calculation(world_comm, sys_geom, config, result_out, json_data)
       !! Handle unfragmented calculation (nlevel=0)

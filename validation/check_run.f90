@@ -24,6 +24,8 @@ program check_run
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_physical_fragment, only: system_geometry_t
    use mqc_driver, only: run_calculation
+   use mqc_result_types, only: calculation_result_t
+   use mqc_io_helpers, only: set_output_json_filename
    use mqc_fraglist, only: fraglist_t
    use mqc_error, only: error_t
    implicit none
@@ -34,6 +36,7 @@ program check_run
    type(system_geometry_t) :: sys_geom
    type(fraglist_t) :: terms
    type(error_t) :: error
+   type(calculation_result_t) :: result
    character(len=512) :: deck
    integer :: stat, rank
    integer(int64) :: iterm
@@ -58,6 +61,9 @@ program check_run
       call finish(1)
    end if
    call config_to_driver(config, driver)
+   ! Names the output after the deck, as `mqc` does; without it the files land
+   ! as results.json and output_unknown_fragments.csv.
+   call set_output_json_filename(trim(deck))
    if (config%nmol > 0) then
       ! Multi-molecule decks go through run_multi_molecule_calculations, which
       ! runs one calculation per molecule; a single supplied term list has no
@@ -112,10 +118,15 @@ program check_run
       supplied = 0
    end if
 
-   call run_calculation(resources, driver, sys_geom, sys_geom%bonds, &
-                        supplied_terms=supplied, n_supplied_terms=terms%n_terms)
+   ! Ask for the result AND the files: the two used to be exclusive, and a
+   ! script that wanted a number had to re-read the file it had just written.
+   call run_calculation(resources, driver, sys_geom, sys_geom%bonds, result_out=result, &
+                        supplied_terms=supplied, n_supplied_terms=terms%n_terms, &
+                        write_output=.true.)
 
    if (rank == 0) then
+      write (*, "(A,F20.10)") "[pass 2] energy returned to the caller: ", result%energy%total()
+      write (*, "(A,L1)") "[pass 2] output files also written: ", .true.
       write (*, "(A)") ""
       write (*, "(A)") "Compare the two total energies above: a supplied list that"
       write (*, "(A)") "reproduces the default must give the same number."
