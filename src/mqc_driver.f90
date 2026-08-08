@@ -35,18 +35,39 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json)
+   subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
+                              supplied_terms, n_supplied_terms)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
       !! calculation routine with proper MPI setup and validation.
       !! If result_out is present, returns result instead of writing JSON (for dynamics/optimization)
+      !!
+      !! `supplied_terms` hands over a term list instead of generating one, which
+      !! is how a caller applies a criterion this code knows nothing about --
+      !! an energy threshold from a previous run's breakdown, the terms a dead
+      !! run never reached, a hand-picked set. Distance screening and sorting
+      !! are skipped with it: the list is taken as given, in the order given.
+      !!
+      !! Only rank 0 needs it. The coordinator hands individual fragment
+      !! definitions to workers as tasks and they build them from `sys_geom`,
+      !! so the list itself never leaves rank 0 -- but every rank must already
+      !! have `sys_geom`, which the normal program gets by having every rank
+      !! parse the input and a session gets by broadcasting it.
+      !!
+      !! **The list must be closed under subsets.** An n-body term's delta is
+      !! its energy less every proper subset's delta, so keeping a trimer whose
+      !! dimers were screened away fails the lookup rather than approximating
+      !! anything. `fraglist_t%close_subsets` exists for this.
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
       logical, intent(in), optional :: all_ranks_write_json  !! If true, all ranks write JSON (for multi-molecule)
+      integer, intent(in), optional :: supplied_terms(:, :)
+         !! (n_terms, max_level), 1-based monomer indices, zero-padded. Rank 0 only.
+      integer(int64), intent(in), optional :: n_supplied_terms
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
@@ -98,10 +119,14 @@ contains
       else
          if (present(result_out)) then
             ! For fragmented calculations with result_out (future use)
-            call run_fragmented_calculation(resources, config, sys_geom, bonds)
+            call run_fragmented_calculation(resources, config, sys_geom, bonds, &
+                                            supplied_terms=supplied_terms, &
+                                            n_supplied_terms=n_supplied_terms)
          else
             ! Normal mode: collect json_data for centralized output
-            call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data)
+            call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
+                                            supplied_terms=supplied_terms, &
+                                            n_supplied_terms=n_supplied_terms)
          end if
       end if
 
@@ -174,7 +199,8 @@ contains
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data)
+   subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
+                                         supplied_terms, n_supplied_terms)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -185,6 +211,9 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+      integer, intent(in), optional :: supplied_terms(:, :)
+         !! (n_terms, max_level), 1-based monomer indices, zero-padded. Rank 0 only.
+      integer(int64), intent(in), optional :: n_supplied_terms
 
       ! Local variables extracted from config for readability
       integer :: max_level    !! Maximum fragment level for MBE
@@ -224,8 +253,21 @@ contains
       allow_overlapping_fragments = config%allow_overlapping_fragments
       max_intersection_level = config%max_intersection_level
 
-      ! Generate fragments
-      if (resources%mpi_comms%world_comm%rank() == 0) then
+      ! Generate fragments -- unless the caller brought their own
+      if (present(supplied_terms) .and. present(n_supplied_terms)) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            total_fragments = n_supplied_terms
+            allocate (polymers(max(total_fragments, 1_int64), max_level))
+            polymers = 0
+            if (total_fragments > 0) then
+               polymers(1:total_fragments, 1:max_level) = &
+                  supplied_terms(1:total_fragments, 1:max_level)
+            end if
+            call logger%info("Using a supplied fragment list:")
+            call logger%info("  Total fragments: "//to_char(total_fragments))
+            call logger%info("  Max level: "//to_char(max_level))
+         end if
+      else if (resources%mpi_comms%world_comm%rank() == 0) then
          if (allow_overlapping_fragments) then
             ! GMBE mode: PIE-based inclusion-exclusion
             ! GMBE(1): primaries are monomers

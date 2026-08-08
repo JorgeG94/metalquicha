@@ -30,7 +30,9 @@ contains
                   new_unittest("replace_round_trips", test_replace), &
                   new_unittest("replace_drops_stale_distances", test_replace_clears), &
                   new_unittest("rejects_impossible_levels", test_bad_level), &
-                  new_unittest("rejects_a_mismatched_mask", test_bad_mask) &
+                  new_unittest("rejects_a_mismatched_mask", test_bad_mask), &
+                  new_unittest("close_subsets_restores_what_assembly_needs", test_closure), &
+                  new_unittest("close_subsets_is_idempotent", test_closure_idempotent) &
                   ]
    end subroutine collect_mqc_fraglist_tests
 
@@ -283,6 +285,71 @@ contains
 
       call list%destroy()
    end subroutine test_bad_mask
+
+   subroutine test_closure(error)
+      !! A screened list is unusable until its subsets are back
+      type(error_type), allocatable, intent(out) :: error
+      type(fraglist_t) :: list
+      type(error_t) :: err
+      integer(default_int) :: mine(1, 3)
+
+      ! One trimer, alone. Assembling it needs its three dimers and three
+      ! monomers as well: seven terms in total.
+      mine(1, :) = [1, 2, 3]
+      call list%replace(mine, 1_int64, 3_default_int, err)
+      call check(error, .not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call list%close_subsets(err)
+      call check(error, .not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, int(list%n_terms), 7, &
+                 "a lone trimer needs 3 monomers + 3 dimers + itself")
+      if (allocated(error)) return
+
+      call check(error, count_of_level(list, 1), 3, "three monomers")
+      if (allocated(error)) return
+      call check(error, count_of_level(list, 2), 3, "three dimers")
+      if (allocated(error)) return
+      call check(error, count_of_level(list, 3), 1, "the trimer itself")
+
+      call list%destroy()
+   end subroutine test_closure
+
+   subroutine test_closure_idempotent(error)
+      !! Closing an already-closed list adds nothing
+      type(error_type), allocatable, intent(out) :: error
+      type(fraglist_t) :: list
+      type(error_t) :: err
+      integer(int64) :: after_first
+
+      call list%create(4_default_int, 2_default_int, err)
+      call list%close_subsets(err)
+      call check(error, .not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      after_first = list%n_terms
+
+      call list%close_subsets(err)
+      call check(error, int(list%n_terms), int(after_first), &
+                 "a second closure should be a no-op")
+      if (allocated(error)) return
+      ! C(4,2) dimers plus the 4 monomers they pull in.
+      call check(error, int(after_first), 10, "6 dimers + 4 monomers")
+
+      call list%destroy()
+   end subroutine test_closure_idempotent
+
+   pure function count_of_level(list, level) result(n)
+      type(fraglist_t), intent(in) :: list
+      integer, intent(in) :: level
+      integer :: n
+      integer(int64) :: iterm
+
+      n = 0
+      do iterm = 1, list%n_terms
+         if (int(list%level_of(iterm)) == level) n = n + 1
+      end do
+   end function count_of_level
 
 end module test_mqc_fraglist
 

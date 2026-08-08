@@ -1,0 +1,37 @@
+{
+  "unknown": {
+    "total_energy": -1.15685024684104434E+2,
+    "levels": [
+      {
+        "frag_level": 1,
+        "name": "monomers",
+        "count": 20,
+        "total_energy": -1.15372063100016518E+2
+      },
+      {
+        "frag_level": 2,
+        "name": "dimers",
+        "count": 190,
+        "total_energy": -2.65275643108521919E-1
+      },
+      {
+        "frag_level": 3,
+        "name": "trimers",
+        "count": 1140,
+        "total_energy": -4.38444558014845498E-2
+      },
+      {
+        "frag_level": 4,
+        "name": "tetramers",
+        "count": 4845,
+        "total_energy": -3.84148517790094957E-3
+      }
+    ],
+    "dipole": {
+      "x": -1.17839277627416722E-1,
+      "y": -1.55534629451280076E-1,
+      "z": -1.18732206260534268E-1,
+      "magnitude_debye": 5.8057870393848654E-1
+    }
+  }
+}

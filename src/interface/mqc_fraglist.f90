@@ -33,6 +33,11 @@ module mqc_fraglist
 
    public :: fraglist_t
 
+   integer, parameter :: MAX_TERM_LEVEL = 10
+      !! Deepest expansion subset closure handles, matching MAX_MBE_LEVEL. The
+      !! closure works on stack arrays of this width to stay out of the heap in
+      !! a loop that runs once per term.
+
    type :: fraglist_t
       !! A term list, and whatever has been computed about its terms
       integer(default_int) :: max_level = 0
@@ -50,6 +55,7 @@ module mqc_fraglist
       procedure :: replace => fraglist_replace
       procedure :: measure => fraglist_measure
       procedure :: keep => fraglist_keep
+      procedure :: close_subsets => fraglist_close_subsets
       procedure :: destroy => fraglist_destroy
       procedure :: level_of => fraglist_level_of
    end type fraglist_t
@@ -198,6 +204,115 @@ contains
       if (this%has_distances) call move_alloc(kept_distances, this%distances)
       this%n_terms = n_kept
    end subroutine fraglist_keep
+
+   subroutine fraglist_close_subsets(this, error)
+      !! Add back every subset of every surviving term
+      !!
+      !! **A screened list is not usable until this has run.** An n-body term's
+      !! contribution is its energy less the delta of every proper subset, so
+      !! keeping a trimer whose dimers fell below the threshold does not
+      !! approximate anything -- the assembly looks the subsets up and fails.
+      !! Screening therefore selects which *high-order* terms to keep, and this
+      !! restores what computing them requires.
+      !!
+      !! That is also why an energy screen saves less than it first appears: a
+      !! trimer kept for its own sake drags in three dimers and three monomers,
+      !! most of which the screen had already rejected on their own account.
+      !! The saving is real but it is in the tail, not the whole list.
+      class(fraglist_t), intent(inout) :: this
+      type(error_t), intent(inout) :: error
+
+      integer(default_int), allocatable :: closed(:, :)
+      integer(default_int) :: subset(MAX_TERM_LEVEL), term(MAX_TERM_LEVEL)
+      integer(int64) :: iterm, n_closed, capacity
+      integer(default_int) :: level, size_wanted, i
+      logical :: has_next
+
+      if (this%n_terms <= 0) return
+      if (this%max_level > MAX_TERM_LEVEL) then
+         call error%set(ERROR_VALIDATION, &
+                        "fraglist: max_level exceeds what subset closure supports")
+         return
+      end if
+
+      ! Every term of order n contributes at most 2^n - 1 subsets including
+      ! itself; duplicates are dropped below, so this is a bound, not a count.
+      capacity = this%n_terms*int(2**this%max_level, int64)
+      allocate (closed(capacity, this%max_level))
+      closed = 0
+      n_closed = 0
+
+      do iterm = 1, this%n_terms
+         term = 0
+         level = this%level_of(iterm)
+         term(1:level) = this%terms(iterm, 1:level)
+         do size_wanted = 1, level
+            call first_combination(subset, size_wanted)
+            do
+               call add_unique(closed, n_closed, this%max_level, &
+                               [(term(subset(i)), i=1, size_wanted)], size_wanted)
+               call next_index_set(subset, size_wanted, level, has_next)
+               if (.not. has_next) exit
+            end do
+         end do
+      end do
+
+      if (allocated(this%distances)) deallocate (this%distances)
+      this%has_distances = .false.
+      call move_alloc(closed, this%terms)
+      this%n_terms = n_closed
+   end subroutine fraglist_close_subsets
+
+   subroutine add_unique(store, n_stored, max_level, candidate, level)
+      !! Append a term unless an identical one is already present
+      integer(default_int), intent(inout) :: store(:, :)
+      integer(int64), intent(inout) :: n_stored
+      integer(default_int), intent(in) :: max_level
+      integer(default_int), intent(in) :: candidate(:)
+      integer(default_int), intent(in) :: level
+
+      integer(int64) :: istored
+
+      do istored = 1, n_stored
+         if (count(store(istored, :) > 0) /= level) cycle
+         if (all(store(istored, 1:level) == candidate(1:level))) return
+      end do
+
+      n_stored = n_stored + 1
+      store(n_stored, :) = 0
+      store(n_stored, 1:level) = candidate(1:level)
+   end subroutine add_unique
+
+   pure subroutine first_combination(indices, k)
+      !! The lexicographically first choice of k positions
+      integer(default_int), intent(inout) :: indices(:)
+      integer(default_int), intent(in) :: k
+      integer(default_int) :: i
+
+      do i = 1, k
+         indices(i) = i
+      end do
+   end subroutine first_combination
+
+   pure subroutine next_index_set(indices, k, n, has_next)
+      !! Advance k chosen positions out of n, lexicographically
+      integer(default_int), intent(inout) :: indices(:)
+      integer(default_int), intent(in) :: k, n
+      logical, intent(out) :: has_next
+      integer(default_int) :: i, j
+
+      has_next = .false.
+      do i = k, 1, -1
+         if (indices(i) < n - (k - i)) then
+            indices(i) = indices(i) + 1
+            do j = i + 1, k
+               indices(j) = indices(j - 1) + 1
+            end do
+            has_next = .true.
+            return
+         end if
+      end do
+   end subroutine next_index_set
 
    pure function fraglist_level_of(this, iterm) result(level)
       !! How many monomers a term actually has
