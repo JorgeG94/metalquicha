@@ -17,11 +17,17 @@ module mqc_capi_system
    !!     bonds alike, matching the JSON schema and `bond_t`. Monomer indices
    !!     in a *fragment term list* are 1-based -- different things, counted
    !!     differently, and the one trap in this interface.
-   !!   * **Bonds carry their own broken flag.** The JSON path derives it from
-   !!     which monomers an atom falls in; a caller driving this directly is
-   !!     assumed to know, because with an arbitrary term list there is no
-   !!     single partition to derive it from. Passing every bond as broken is
-   !!     the "here is a list of broken bonds" case.
+   !!   * **Bonds must be declared, and broken ones must be declared broken.**
+   !!     `set_bonds` is not optional: a system that never calls it is refused
+   !!     rather than assumed to have none, because those two states are
+   !!     indistinguishable from outside and only one of them is safe. Passing
+   !!     `n_bonds = 0` is the way to say a system has nothing to cut.
+   !!
+   !!     Where the connectivity is given, every bond crossing a monomer
+   !!     boundary must carry `is_broken`. That is checked here rather than
+   !!     trusted, because the alternative is a fragment with a dangling
+   !!     valence: an uncapped radical treated as a closed shell, which
+   !!     converges to a plausible number and warns about nothing.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_null_char, &
                                           c_f_pointer, c_loc, c_associated
    use pic_types, only: dp
@@ -32,6 +38,7 @@ module mqc_capi_system
    public :: mqc_system_new, mqc_system_free
    public :: mqc_system_set_geometry, mqc_system_set_monomers, mqc_system_set_bonds
    public :: mqc_system_n_atoms, mqc_system_n_monomers, mqc_system_n_bonds
+   public :: mqc_system_bonds_declared
    public :: mqc_system_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
@@ -41,33 +48,45 @@ module mqc_capi_system
    integer, parameter :: MESSAGE_LEN = 512
    character(len=MESSAGE_LEN), save :: last_message = ""
 
+   type :: system_handle_t
+      !! The system, plus what the caller has actually told us about it
+      !!
+      !! `bonds_declared` is not the same as having bonds. A caller that has
+      !! said "no bonds" and a caller that has not got round to it look
+      !! identical in `system_geometry_t`, and one of them is about to
+      !! fragment a covalent molecule into radicals.
+      type(system_geometry_t) :: geom
+      logical :: bonds_declared = .false.
+   end type system_handle_t
+
 contains
 
    function mqc_system_new() result(handle) bind(C, name="mqc_system_new")
       !! Allocate an empty system and return its handle
       type(c_ptr) :: handle
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
 
-      allocate (sys)
-      sys%n_monomers = 0
-      sys%atoms_per_monomer = 0
-      sys%total_atoms = 0
-      sys%charge = 0
-      sys%multiplicity = 1
-      handle = c_loc(sys)
+      allocate (h)
+      h%geom%n_monomers = 0
+      h%geom%atoms_per_monomer = 0
+      h%geom%total_atoms = 0
+      h%geom%charge = 0
+      h%geom%multiplicity = 1
+      h%bonds_declared = .false.
+      handle = c_loc(h)
    end function mqc_system_new
 
    subroutine mqc_system_free(handle) bind(C, name="mqc_system_free")
       !! Release a system. Safe on a null handle.
       type(c_ptr), value :: handle
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
 
       if (.not. c_associated(handle)) return
-      call c_f_pointer(handle, sys)
-      call release(sys)
-      deallocate (sys)
+      call c_f_pointer(handle, h)
+      call release(h%geom)
+      deallocate (h)
    end subroutine mqc_system_free
 
    function mqc_system_set_geometry(handle, n_atoms, atomic_numbers, coordinates, &
@@ -83,7 +102,7 @@ contains
       integer(c_int), value :: multiplicity
       integer(c_int) :: status
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
       integer :: iatom
 
       status = MQC_BAD_HANDLE
@@ -91,7 +110,7 @@ contains
          last_message = "null system handle"
          return
       end if
-      call c_f_pointer(handle, sys)
+      call c_f_pointer(handle, h)
 
       if (n_atoms <= 0) then
          last_message = "mqc_system_set_geometry: a system needs at least one atom"
@@ -104,20 +123,20 @@ contains
          return
       end if
 
-      if (allocated(sys%element_numbers)) deallocate (sys%element_numbers)
-      if (allocated(sys%coordinates)) deallocate (sys%coordinates)
-      allocate (sys%element_numbers(n_atoms))
-      allocate (sys%coordinates(3, n_atoms))
+      if (allocated(h%geom%element_numbers)) deallocate (h%geom%element_numbers)
+      if (allocated(h%geom%coordinates)) deallocate (h%geom%coordinates)
+      allocate (h%geom%element_numbers(n_atoms))
+      allocate (h%geom%coordinates(3, n_atoms))
 
-      sys%total_atoms = n_atoms
-      sys%charge = charge
-      sys%multiplicity = multiplicity
+      h%geom%total_atoms = n_atoms
+      h%geom%charge = charge
+      h%geom%multiplicity = multiplicity
       do iatom = 1, n_atoms
-         sys%element_numbers(iatom) = atomic_numbers(iatom)
+         h%geom%element_numbers(iatom) = atomic_numbers(iatom)
          ! The one conversion. Internal units are Bohr throughout.
-         sys%coordinates(1, iatom) = to_bohr(coordinates(3*(iatom - 1) + 1))
-         sys%coordinates(2, iatom) = to_bohr(coordinates(3*(iatom - 1) + 2))
-         sys%coordinates(3, iatom) = to_bohr(coordinates(3*(iatom - 1) + 3))
+         h%geom%coordinates(1, iatom) = to_bohr(coordinates(3*(iatom - 1) + 1))
+         h%geom%coordinates(2, iatom) = to_bohr(coordinates(3*(iatom - 1) + 2))
+         h%geom%coordinates(3, iatom) = to_bohr(coordinates(3*(iatom - 1) + 3))
       end do
 
       status = MQC_OK
@@ -141,7 +160,7 @@ contains
       integer(c_int), intent(in) :: multiplicities(n_monomers)
       integer(c_int) :: status
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
       integer :: imon, iatom, base
 
       status = MQC_BAD_HANDLE
@@ -149,9 +168,9 @@ contains
          last_message = "null system handle"
          return
       end if
-      call c_f_pointer(handle, sys)
+      call c_f_pointer(handle, h)
 
-      if (sys%total_atoms <= 0) then
+      if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_set_monomers: set the geometry first"
          status = MQC_ERROR
          return
@@ -169,39 +188,39 @@ contains
          end if
       end do
 
-      if (allocated(sys%fragment_sizes)) deallocate (sys%fragment_sizes)
-      if (allocated(sys%fragment_atoms)) deallocate (sys%fragment_atoms)
-      if (allocated(sys%fragment_charges)) deallocate (sys%fragment_charges)
-      if (allocated(sys%fragment_multiplicities)) deallocate (sys%fragment_multiplicities)
-      allocate (sys%fragment_sizes(n_monomers))
-      allocate (sys%fragment_atoms(max_size, n_monomers))
-      allocate (sys%fragment_charges(n_monomers))
-      allocate (sys%fragment_multiplicities(n_monomers))
-      sys%fragment_atoms = 0
+      if (allocated(h%geom%fragment_sizes)) deallocate (h%geom%fragment_sizes)
+      if (allocated(h%geom%fragment_atoms)) deallocate (h%geom%fragment_atoms)
+      if (allocated(h%geom%fragment_charges)) deallocate (h%geom%fragment_charges)
+      if (allocated(h%geom%fragment_multiplicities)) deallocate (h%geom%fragment_multiplicities)
+      allocate (h%geom%fragment_sizes(n_monomers))
+      allocate (h%geom%fragment_atoms(max_size, n_monomers))
+      allocate (h%geom%fragment_charges(n_monomers))
+      allocate (h%geom%fragment_multiplicities(n_monomers))
+      h%geom%fragment_atoms = 0
 
       do imon = 1, n_monomers
          base = (imon - 1)*max_size
          do iatom = 1, sizes(imon)
-            if (atoms(base + iatom) < 0 .or. atoms(base + iatom) >= sys%total_atoms) then
+            if (atoms(base + iatom) < 0 .or. atoms(base + iatom) >= h%geom%total_atoms) then
                last_message = "mqc_system_set_monomers: an atom index is out of range "// &
                               "(indices are 0-based)"
                status = MQC_ERROR
                return
             end if
-            sys%fragment_atoms(iatom, imon) = atoms(base + iatom)
+            h%geom%fragment_atoms(iatom, imon) = atoms(base + iatom)
          end do
-         sys%fragment_sizes(imon) = sizes(imon)
-         sys%fragment_charges(imon) = charges(imon)
-         sys%fragment_multiplicities(imon) = multiplicities(imon)
+         h%geom%fragment_sizes(imon) = sizes(imon)
+         h%geom%fragment_charges(imon) = charges(imon)
+         h%geom%fragment_multiplicities(imon) = multiplicities(imon)
       end do
 
-      sys%n_monomers = n_monomers
+      h%geom%n_monomers = n_monomers
       ! Zero means "variable-sized", which is what the rest of the code reads it
       ! as; only a uniform partition may claim a fixed size.
       if (all(sizes == sizes(1))) then
-         sys%atoms_per_monomer = sizes(1)
+         h%geom%atoms_per_monomer = sizes(1)
       else
-         sys%atoms_per_monomer = 0
+         h%geom%atoms_per_monomer = 0
       end if
 
       status = MQC_OK
@@ -223,7 +242,7 @@ contains
       integer(c_int), intent(in) :: is_broken(n_bonds)  !! non-zero = broken
       integer(c_int) :: status
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
       integer :: ibond
 
       status = MQC_BAD_HANDLE
@@ -231,10 +250,17 @@ contains
          last_message = "null system handle"
          return
       end if
-      call c_f_pointer(handle, sys)
+      call c_f_pointer(handle, h)
 
-      if (sys%total_atoms <= 0) then
+      if (h%geom%total_atoms <= 0) then
          last_message = "mqc_system_set_bonds: set the geometry first"
+         status = MQC_ERROR
+         return
+      end if
+      if (h%geom%n_monomers <= 0) then
+         ! The partition is what decides which bonds are cut, so it has to
+         ! exist before the claim about them can be checked.
+         last_message = "mqc_system_set_bonds: set the monomers first"
          status = MQC_ERROR
          return
       end if
@@ -245,8 +271,8 @@ contains
       end if
 
       do ibond = 1, n_bonds
-         if (atom_i(ibond) < 0 .or. atom_i(ibond) >= sys%total_atoms .or. &
-             atom_j(ibond) < 0 .or. atom_j(ibond) >= sys%total_atoms) then
+         if (atom_i(ibond) < 0 .or. atom_i(ibond) >= h%geom%total_atoms .or. &
+             atom_j(ibond) < 0 .or. atom_j(ibond) >= h%geom%total_atoms) then
             last_message = "mqc_system_set_bonds: an atom index is out of range "// &
                            "(indices are 0-based)"
             status = MQC_ERROR
@@ -264,29 +290,97 @@ contains
          end if
       end do
 
-      if (allocated(sys%bonds)) deallocate (sys%bonds)
-      allocate (sys%bonds(max(n_bonds, 1)))
+      ! Every bond whose ends fall in different monomers is cut by the
+      ! fragmentation, and must say so. Left unmarked, the fragment keeps a
+      ! dangling valence: an uncapped radical run as a closed shell, which
+      ! converges to a plausible number and warns about nothing. This is the
+      ! one thing here worth failing hard over.
       do ibond = 1, n_bonds
-         sys%bonds(ibond)%atom_i = atom_i(ibond)
-         sys%bonds(ibond)%atom_j = atom_j(ibond)
-         sys%bonds(ibond)%order = order(ibond)
-         sys%bonds(ibond)%is_broken = (is_broken(ibond) /= 0)
+         if (is_broken(ibond) /= 0) cycle
+         if (monomer_of(h%geom, atom_i(ibond)) /= monomer_of(h%geom, atom_j(ibond))) then
+            last_message = "mqc_system_set_bonds: the bond between atoms "// &
+                           int_text(atom_i(ibond))//" and "//int_text(atom_j(ibond))// &
+                           " crosses a monomer boundary but is not marked broken; "// &
+                           "fragmenting it would leave an uncapped valence"
+            status = MQC_ERROR
+            return
+         end if
       end do
 
+      if (allocated(h%geom%bonds)) deallocate (h%geom%bonds)
+      allocate (h%geom%bonds(max(n_bonds, 1)))
+      do ibond = 1, n_bonds
+         h%geom%bonds(ibond)%atom_i = atom_i(ibond)
+         h%geom%bonds(ibond)%atom_j = atom_j(ibond)
+         h%geom%bonds(ibond)%order = order(ibond)
+         h%geom%bonds(ibond)%is_broken = (is_broken(ibond) /= 0)
+      end do
+
+      ! Even zero bonds is a statement, and the one this records.
+      h%bonds_declared = .true.
       status = MQC_OK
    end function mqc_system_set_bonds
+
+   function mqc_system_bonds_declared(handle) result(declared) &
+      bind(C, name="mqc_system_bonds_declared")
+      !! Whether the caller has said anything about bonds at all
+      !!
+      !! A run refuses to start without this. Saying "no bonds" is a fine
+      !! answer; not having been asked is not, because the two are
+      !! indistinguishable afterwards and only one of them is safe.
+      type(c_ptr), value :: handle
+      integer(c_int) :: declared
+
+      type(system_handle_t), pointer :: h
+
+      declared = 0_c_int
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, h)
+      if (h%bonds_declared) declared = 1_c_int
+   end function mqc_system_bonds_declared
+
+   pure function monomer_of(sys, atom) result(imon)
+      !! Which monomer holds a 0-based atom, or 0 if the partition omits it
+      !!
+      !! Zero for an unpartitioned atom is deliberate: two atoms nobody claimed
+      !! compare equal and their bond is not called a cut, which is the right
+      !! answer for a partition that does not cover the molecule.
+      type(system_geometry_t), intent(in) :: sys
+      integer(c_int), intent(in) :: atom
+      integer :: imon
+
+      integer :: jmon
+
+      imon = 0
+      if (.not. allocated(sys%fragment_atoms)) return
+      do jmon = 1, sys%n_monomers
+         if (any(sys%fragment_atoms(1:sys%fragment_sizes(jmon), jmon) == int(atom))) then
+            imon = jmon
+            return
+         end if
+      end do
+   end function monomer_of
+
+   pure function int_text(value) result(text)
+      integer(c_int), intent(in) :: value
+      character(len=:), allocatable :: text
+      character(len=16) :: buffer
+
+      write (buffer, "(I0)") value
+      text = trim(adjustl(buffer))
+   end function int_text
 
    function mqc_system_n_atoms(handle) result(n) bind(C, name="mqc_system_n_atoms")
       !! Atoms in the system, or -1 for a bad handle
       type(c_ptr), value :: handle
       integer(c_int) :: n
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
 
       n = -1_c_int
       if (.not. c_associated(handle)) return
-      call c_f_pointer(handle, sys)
-      n = int(sys%total_atoms, c_int)
+      call c_f_pointer(handle, h)
+      n = int(h%geom%total_atoms, c_int)
    end function mqc_system_n_atoms
 
    function mqc_system_n_monomers(handle) result(n) bind(C, name="mqc_system_n_monomers")
@@ -297,12 +391,12 @@ contains
       type(c_ptr), value :: handle
       integer(c_int) :: n
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
 
       n = -1_c_int
       if (.not. c_associated(handle)) return
-      call c_f_pointer(handle, sys)
-      n = int(sys%n_monomers, c_int)
+      call c_f_pointer(handle, h)
+      n = int(h%geom%n_monomers, c_int)
    end function mqc_system_n_monomers
 
    function mqc_system_n_bonds(handle) result(n) bind(C, name="mqc_system_n_bonds")
@@ -310,13 +404,13 @@ contains
       type(c_ptr), value :: handle
       integer(c_int) :: n
 
-      type(system_geometry_t), pointer :: sys
+      type(system_handle_t), pointer :: h
 
       n = -1_c_int
       if (.not. c_associated(handle)) return
-      call c_f_pointer(handle, sys)
+      call c_f_pointer(handle, h)
       n = 0_c_int
-      if (allocated(sys%bonds)) n = int(size(sys%bonds), c_int)
+      if (allocated(h%geom%bonds)) n = int(size(h%geom%bonds), c_int)
    end function mqc_system_n_bonds
 
    subroutine mqc_system_last_error(buffer_len, buffer) &
