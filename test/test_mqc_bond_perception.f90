@@ -9,7 +9,8 @@ module test_mqc_bond_perception
    !! the carbon chain the second.
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
-                                  DEFAULT_BOND_TOLERANCE
+                                  auto_monomers, DEFAULT_BOND_TOLERANCE
+   use mqc_error, only: error_t
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
    use pic_types, only: dp
    implicit none
@@ -28,7 +29,9 @@ contains
                   new_unittest("audit_finds_an_undeclared_cut", test_audit_finds), &
                   new_unittest("audit_is_quiet_when_all_cuts_declared", test_audit_quiet), &
                   new_unittest("declared_either_way_round_counts", test_audit_order), &
-                  new_unittest("element_without_a_radius_bonds_to_nothing", test_no_radius) &
+                  new_unittest("element_without_a_radius_bonds_to_nothing", test_no_radius), &
+                  new_unittest("auto_monomers_splits_a_cluster", test_auto_cluster), &
+                  new_unittest("auto_monomers_refuses_one_molecule", test_auto_refuses) &
                   ]
    end subroutine collect_mqc_bond_perception_tests
 
@@ -201,6 +204,53 @@ contains
 
       call sys%destroy()
    end subroutine test_no_radius
+
+   subroutine test_auto_cluster(error)
+      !! A hydrogen-bonded dimer comes apart into its two molecules
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(error_t) :: err
+
+      call water_dimer(sys)
+      call auto_monomers(sys, err)
+      call check(error, .not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call check(error, sys%n_monomers, 2, "two waters, two monomers")
+      if (allocated(error)) return
+      call check(error, sys%atoms_per_monomer, 3, "each of three atoms")
+      if (allocated(error)) return
+      call check(error, all(sys%fragment_sizes == 3), "sizes agree")
+      if (allocated(error)) return
+      ! Atoms 0,1,2 are the first water; the partition should say so.
+      call check(error, all(sys%fragment_atoms(1:3, 1) == [0, 1, 2]), &
+                 "the first monomer holds the first three atoms")
+      if (allocated(error)) return
+      call check(error, all(sys%fragment_atoms(1:3, 2) == [3, 4, 5]), &
+                 "the second holds the rest")
+      if (allocated(error)) return
+      call check(error, all(sys%fragment_charges == 0), "neutral by default")
+
+      call sys%destroy()
+   end subroutine test_auto_cluster
+
+   subroutine test_auto_refuses(error)
+      !! One connected molecule is exactly where the user has to choose
+      type(error_type), allocatable, intent(out) :: error
+      type(system_geometry_t) :: sys
+      type(error_t) :: err
+
+      call carbon_chain(sys)
+      call auto_monomers(sys, err)
+
+      call check(error, err%has_error(), &
+                 "a single covalent molecule has no automatic partition")
+      if (allocated(error)) return
+      call check(error, index(err%get_message(), "explicitly") > 0, &
+                 "and the message should say to supply monomers explicitly")
+
+      call sys%destroy()
+   end subroutine test_auto_refuses
 
    ! ---- geometries ----------------------------------------------------------
 

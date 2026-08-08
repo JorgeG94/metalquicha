@@ -33,7 +33,8 @@ module mqc_capi_system
    use pic_types, only: dp
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
    use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
-                                  DEFAULT_BOND_TOLERANCE
+                                  auto_monomers, DEFAULT_BOND_TOLERANCE
+   use mqc_error, only: error_t
    implicit none
    private
 
@@ -42,6 +43,7 @@ module mqc_capi_system
    public :: mqc_system_n_atoms, mqc_system_n_monomers, mqc_system_n_bonds
    public :: mqc_system_bonds_declared
    public :: mqc_system_perceive_bonds, mqc_system_count_missing_bonds
+   public :: mqc_system_auto_monomers
    public :: mqc_system_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
@@ -341,6 +343,51 @@ contains
       call c_f_pointer(handle, h)
       if (h%bonds_declared) declared = 1_c_int
    end function mqc_system_bonds_declared
+
+   function mqc_system_auto_monomers(handle, tolerance) result(status) &
+      bind(C, name="mqc_system_auto_monomers")
+      !! Make each covalently connected molecule a monomer
+      !!
+      !! The right default for a cluster and refused for anything else. A
+      !! single connected molecule has no automatic partition -- where to cut
+      !! it is a chemical choice, and a bond graph has no opinion between per
+      !! residue, per functional group, or something else. It fails rather than
+      !! returning one monomer and quietly making fragmentation a no-op.
+      !!
+      !! So for a covalent system the monomers are mandatory, which is the
+      !! contract this enforces rather than documents.
+      type(c_ptr), value :: handle
+      real(c_double), value :: tolerance
+      integer(c_int) :: status
+
+      type(system_handle_t), pointer :: h
+      type(error_t) :: error
+      real(dp) :: tol
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, h)
+
+      if (h%geom%total_atoms <= 0) then
+         last_message = "mqc_system_auto_monomers: set the geometry first"
+         status = MQC_ERROR
+         return
+      end if
+
+      tol = DEFAULT_BOND_TOLERANCE
+      if (tolerance > 0.0_dp) tol = tolerance
+
+      call auto_monomers(h%geom, error, tol)
+      if (error%has_error()) then
+         last_message = error%get_message()
+         status = MQC_ERROR
+         return
+      end if
+      status = MQC_OK
+   end function mqc_system_auto_monomers
 
    function mqc_system_perceive_bonds(handle, tolerance) result(status) &
       bind(C, name="mqc_system_perceive_bonds")

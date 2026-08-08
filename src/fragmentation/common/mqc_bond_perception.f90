@@ -24,11 +24,13 @@ module mqc_bond_perception
    use pic_types, only: dp
    use mqc_elements, only: element_covalent_radius
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_angstrom
+   use mqc_error, only: error_t, ERROR_VALIDATION
    implicit none
    private
 
    public :: perceive_bonds        !! Connectivity implied by the geometry
    public :: missing_broken_bonds  !! Cut bonds a caller's list does not mention
+   public :: auto_monomers         !! Partition into covalently connected molecules
    public :: DEFAULT_BOND_TOLERANCE
 
    real(dp), parameter :: DEFAULT_BOND_TOLERANCE = 1.2_dp
@@ -175,6 +177,136 @@ contains
          end if
       end do
    end function is_declared
+
+   subroutine auto_monomers(sys_geom, error, tolerance)
+      !! Make each covalently connected molecule a monomer
+      !!
+      !! The obvious partition for a cluster: perceive the bonds, take the
+      !! connected components, and every water or every ligand becomes its own
+      !! monomer. Hydrogen bonds are not perceived as covalent, so a hydrogen
+      !! bonded cluster comes apart the way a chemist would expect.
+      !!
+      !! **It refuses on a single connected molecule**, which is the covalent
+      !! case. There the components are a partition of one, which cannot be
+      !! fragmented -- and the reason is not that the algorithm is too weak but
+      !! that the question is genuinely the user's: where a molecule should be
+      !! cut is chemistry, not connectivity. A peptide can be split per residue,
+      !! per secondary structure, or somewhere else entirely, and nothing in a
+      !! bond graph prefers one. So it says so rather than guessing, and rather
+      !! than returning a single monomer that quietly makes fragmentation a no-op.
+      !!
+      !! Two connected molecules are a fine partition even if each is large --
+      !! that is an ordinary MBE(2) on a dimer, and not this routine's business
+      !! to second-guess.
+      type(system_geometry_t), intent(inout) :: sys_geom
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: tolerance
+
+      type(bond_t), allocatable :: bonds(:)
+      integer, allocatable :: component(:), sizes(:)
+      integer :: n_bonds, n_components, iatom, ibond, imon, largest
+      integer :: root_i, root_j, slot
+
+      if (sys_geom%total_atoms <= 0) then
+         call error%set(ERROR_VALIDATION, "auto monomers: the system has no atoms")
+         return
+      end if
+
+      call perceive_bonds(sys_geom, bonds, n_bonds, tolerance)
+
+      ! Union-find over the bond graph. Every atom starts as its own component;
+      ! a bond merges two.
+      allocate (component(sys_geom%total_atoms))
+      do iatom = 1, sys_geom%total_atoms
+         component(iatom) = iatom
+      end do
+      do ibond = 1, n_bonds
+         root_i = find_root(component, bonds(ibond)%atom_i + 1)
+         root_j = find_root(component, bonds(ibond)%atom_j + 1)
+         if (root_i /= root_j) component(root_j) = root_i
+      end do
+      deallocate (bonds)
+
+      ! Flatten to component ids, then renumber them 1..n in first-atom order
+      ! so a monomer's number reflects where it appears in the geometry.
+      do iatom = 1, sys_geom%total_atoms
+         component(iatom) = find_root(component, iatom)
+      end do
+      n_components = 0
+      do iatom = 1, sys_geom%total_atoms
+         if (component(iatom) /= iatom) cycle
+         n_components = n_components + 1
+         ! Temporarily negative so a renumbered id is not mistaken for a root.
+         component(iatom) = -n_components
+      end do
+      do iatom = 1, sys_geom%total_atoms
+         if (component(iatom) > 0) component(iatom) = component(component(iatom))
+      end do
+      component = -component
+
+      if (n_components < 2) then
+         deallocate (component)
+         call error%set(ERROR_VALIDATION, &
+                        "auto monomers: the system is one covalently connected "// &
+                        "molecule, so there is nothing to partition. Where to cut it "// &
+                        "is a chemical choice -- supply the monomers explicitly, and "// &
+                        "the bonds they break")
+         return
+      end if
+
+      ! ---- fill the partition ----------------------------------------------
+      allocate (sizes(n_components))
+      sizes = 0
+      do iatom = 1, sys_geom%total_atoms
+         sizes(component(iatom)) = sizes(component(iatom)) + 1
+      end do
+      largest = maxval(sizes)
+
+      if (allocated(sys_geom%fragment_sizes)) deallocate (sys_geom%fragment_sizes)
+      if (allocated(sys_geom%fragment_atoms)) deallocate (sys_geom%fragment_atoms)
+      if (allocated(sys_geom%fragment_charges)) deallocate (sys_geom%fragment_charges)
+      if (allocated(sys_geom%fragment_multiplicities)) deallocate (sys_geom%fragment_multiplicities)
+      allocate (sys_geom%fragment_sizes(n_components))
+      allocate (sys_geom%fragment_atoms(largest, n_components))
+      allocate (sys_geom%fragment_charges(n_components))
+      allocate (sys_geom%fragment_multiplicities(n_components))
+
+      sys_geom%fragment_atoms = 0
+      sys_geom%fragment_sizes = 0
+      ! Neutral singlets: connectivity says nothing about charge, and a caller
+      ! who needs otherwise has to say so.
+      sys_geom%fragment_charges = 0
+      sys_geom%fragment_multiplicities = 1
+
+      do iatom = 1, sys_geom%total_atoms
+         imon = component(iatom)
+         slot = sys_geom%fragment_sizes(imon) + 1
+         sys_geom%fragment_sizes(imon) = slot
+         sys_geom%fragment_atoms(slot, imon) = iatom - 1
+      end do
+
+      sys_geom%n_monomers = n_components
+      if (all(sizes == sizes(1))) then
+         sys_geom%atoms_per_monomer = sizes(1)
+      else
+         sys_geom%atoms_per_monomer = 0
+      end if
+
+      deallocate (component, sizes)
+   end subroutine auto_monomers
+
+   pure recursive function find_root(component, node) result(root)
+      !! Representative of a node's component
+      integer, intent(in) :: component(:)
+      integer, intent(in) :: node
+      integer :: root
+
+      if (component(node) == node) then
+         root = node
+      else
+         root = find_root(component, component(node))
+      end if
+   end function find_root
 
    pure function monomer_of(sys_geom, atom) result(imon)
       !! Which monomer holds a 0-based atom, or 0 if the partition omits it
