@@ -2,6 +2,7 @@
 target_sources(
   ${main_lib}
   PRIVATE common/mqc_physical_fragment.f90
+          common/mqc_bond_perception.f90
           common/mqc_fragment_lookup.f90
           common/mqc_combinatorics.f90
           common/mqc_frag_utils.f90

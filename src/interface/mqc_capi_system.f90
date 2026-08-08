@@ -32,6 +32,8 @@ module mqc_capi_system
                                           c_f_pointer, c_loc, c_associated
    use pic_types, only: dp
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
+   use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &
+                                  DEFAULT_BOND_TOLERANCE
    implicit none
    private
 
@@ -39,6 +41,7 @@ module mqc_capi_system
    public :: mqc_system_set_geometry, mqc_system_set_monomers, mqc_system_set_bonds
    public :: mqc_system_n_atoms, mqc_system_n_monomers, mqc_system_n_bonds
    public :: mqc_system_bonds_declared
+   public :: mqc_system_perceive_bonds, mqc_system_count_missing_bonds
    public :: mqc_system_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
@@ -338,6 +341,92 @@ contains
       call c_f_pointer(handle, h)
       if (h%bonds_declared) declared = 1_c_int
    end function mqc_system_bonds_declared
+
+   function mqc_system_perceive_bonds(handle, tolerance) result(status) &
+      bind(C, name="mqc_system_perceive_bonds")
+      !! Work the connectivity out from the geometry and declare it
+      !!
+      !! Convenience, not authority. It uses covalent radii, so it will invent
+      !! a bond across a short contact and miss a long one, and it calls every
+      !! bond single. Good enough to save typing on an ordinary organic
+      !! molecule; not a substitute for saying, which is why declaring bonds by
+      !! hand remains the other way in.
+      !!
+      !! `tolerance` <= 0 asks for the default.
+      type(c_ptr), value :: handle
+      real(c_double), value :: tolerance
+      integer(c_int) :: status
+
+      type(system_handle_t), pointer :: h
+      type(bond_t), allocatable :: found(:)
+      integer :: n_found
+      real(dp) :: tol
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null system handle"
+         return
+      end if
+      call c_f_pointer(handle, h)
+
+      if (h%geom%total_atoms <= 0) then
+         last_message = "mqc_system_perceive_bonds: set the geometry first"
+         status = MQC_ERROR
+         return
+      end if
+      if (h%geom%n_monomers <= 0) then
+         last_message = "mqc_system_perceive_bonds: set the monomers first"
+         status = MQC_ERROR
+         return
+      end if
+
+      tol = DEFAULT_BOND_TOLERANCE
+      if (tolerance > 0.0_dp) tol = tolerance
+
+      call perceive_bonds(h%geom, found, n_found, tol)
+      if (allocated(h%geom%bonds)) deallocate (h%geom%bonds)
+      allocate (h%geom%bonds(max(n_found, 1)))
+      if (n_found > 0) h%geom%bonds(1:n_found) = found(1:n_found)
+      deallocate (found)
+
+      ! Perception marks cuts from the partition itself, so what it produces is
+      ! consistent by construction and needs no re-checking.
+      h%bonds_declared = .true.
+      status = MQC_OK
+   end function mqc_system_perceive_bonds
+
+   function mqc_system_count_missing_bonds(handle, tolerance) result(n_missing) &
+      bind(C, name="mqc_system_count_missing_bonds")
+      !! How many cuts the geometry implies that the declared bonds omit
+      !!
+      !! The audit `set_bonds` cannot perform. Checking that a declared bond is
+      !! marked broken catches a mislabelled one; it cannot catch one left out
+      !! entirely, because nothing in the list refers to it.
+      !!
+      !! Counted rather than enforced: perception is a heuristic and a caller
+      !! may have a reason. Non-zero means look, not stop.
+      type(c_ptr), value :: handle
+      real(c_double), value :: tolerance
+      integer(c_int) :: n_missing
+
+      type(system_handle_t), pointer :: h
+      integer, allocatable :: missing_i(:), missing_j(:)
+      integer :: count
+      real(dp) :: tol
+
+      n_missing = -1_c_int
+      if (.not. c_associated(handle)) return
+      call c_f_pointer(handle, h)
+      if (h%geom%total_atoms <= 0 .or. h%geom%n_monomers <= 0) return
+      if (.not. allocated(h%geom%bonds)) return
+
+      tol = DEFAULT_BOND_TOLERANCE
+      if (tolerance > 0.0_dp) tol = tolerance
+
+      call missing_broken_bonds(h%geom, h%geom%bonds, size(h%geom%bonds), &
+                                missing_i, missing_j, count, tol)
+      n_missing = int(count, c_int)
+   end function mqc_system_count_missing_bonds
 
    pure function monomer_of(sys, atom) result(imon)
       !! Which monomer holds a 0-based atom, or 0 if the partition omits it
