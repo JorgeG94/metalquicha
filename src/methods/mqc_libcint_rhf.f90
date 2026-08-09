@@ -15,7 +15,7 @@ module mqc_libcint_rhf
    use pic_blas_interfaces, only: pic_gemm
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_diis, only: diis_state_t, diis_slot_of_age, diis_coefficients
+   use mqc_diis, only: diis_state_t
    use mqc_libcint_integrals, only: libcint_molecule_t
    implicit none
    private
@@ -39,7 +39,7 @@ module mqc_libcint_rhf
 contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
-                              verbose, result, error)
+                              verbose, result, error, diis_vectors)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -48,10 +48,19 @@ contains
       logical, intent(in) :: verbose
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: diis_vectors
+         !! Subspace size. Zero turns DIIS off, which is worth being able to
+         !! do: the two paths should agree with and without it, and if they
+         !! do not, the extrapolation is where to look.
+
+      integer :: diis_size
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :)
       real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
       real(dp), allocatable :: coeff(:, :), eigenvalues(:)
+      real(dp), allocatable :: err(:, :), fock_flat(:)
+      type(diis_state_t) :: diis
+      logical :: extrapolated
       real(dp) :: e_elec, e_old, de, drms
       integer :: n_ao, n_mo, n_occ, iter
 
@@ -60,6 +69,9 @@ contains
                         "system has an odd one and wants an unrestricted method")
          return
       end if
+
+      diis_size = 8
+      if (present(diis_vectors)) diis_size = diis_vectors
 
       n_ao = mol%nao
       n_occ = nelec/2
@@ -81,6 +93,12 @@ contains
       end if
 
       allocate (fock(n_ao, n_ao), density(n_ao, n_ao), density_old(n_ao, n_ao))
+      allocate (err(n_mo, n_mo), fock_flat(n_ao*n_ao))
+
+      ! The error vector lives in the orthogonal basis, where it is n_mo
+      ! square rather than n_ao -- that is the same shape the cuEST path uses
+      ! and the reason both converge alike.
+      call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo)
 
       ! Core guess: F = H. Crude, and enough for the small systems this backend
       ! is for; a better guess is a convergence question, not a correctness one.
@@ -95,7 +113,20 @@ contains
       do iter = 1, max_iter
          density_old = density
          call build_fock(h, eri, density, fock)
+
+         ! The energy belongs to the Fock built from this density, so it is
+         ! taken before extrapolation. A DIIS-mixed Fock is a convergence
+         ! device, not a state anything is the energy of.
          e_elec = electronic_energy(h, fock, density)
+
+         ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
+         ! when F and D commute, which is what convergence means, so it is the
+         ! quantity worth extrapolating against.
+         call commutator(fock, density, s, x, err)
+         fock_flat = reshape(fock, [n_ao*n_ao])
+         call diis%push(fock_flat, reshape(err, [n_mo*n_mo]))
+         call diis%extrapolate(fock_flat, extrapolated)
+         if (extrapolated) fock = reshape(fock_flat, [n_ao, n_ao])
 
          call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
          if (error%has_error()) return
@@ -104,9 +135,9 @@ contains
          de = abs(e_elec - e_old)
          drms = sqrt(sum((density - density_old)**2)/real(n_ao*n_ao, dp))
          if (verbose) then
-            write (*, "(a,i4,a,f20.12,a,es10.3,a,es10.3)") &
+            write (*, "(a,i4,a,f20.12,a,es10.3,a,es10.3,a,i0)") &
                "  iter ", iter, "  E = ", e_elec + mol%nuclear_repulsion(), &
-               "  dE = ", de, "  dD = ", drms
+               "  dE = ", de, "  dD = ", drms, "  diis ", diis%count()
          end if
 
          e_old = e_elec
@@ -128,7 +159,36 @@ contains
       call move_alloc(eigenvalues, result%orbital_energies)
       call move_alloc(coeff, result%orbitals)
       call move_alloc(density, result%density)
+      call diis%destroy()
    end subroutine run_libcint_rhf
+
+   subroutine commutator(fock, density, overlap, x, err)
+      !! e = X^T (F D S - S D F) X, the DIIS error vector
+      !!
+      !! Projected into the orthogonal basis rather than left in the AO one:
+      !! in the AO basis the commutator's size depends on the overlap's
+      !! conditioning, so two bases describing the same molecule would
+      !! converge differently for no physical reason.
+      real(dp), intent(in) :: fock(:, :), density(:, :), overlap(:, :), x(:, :)
+      real(dp), intent(out) :: err(:, :)
+
+      real(dp), allocatable :: fd(:, :), fds(:, :), sd(:, :), sdf(:, :), work(:, :)
+      integer :: n_ao, n_mo
+
+      n_ao = size(fock, 1)
+      n_mo = size(x, 2)
+      allocate (fd(n_ao, n_ao), fds(n_ao, n_ao), sd(n_ao, n_ao), sdf(n_ao, n_ao))
+      allocate (work(n_ao, n_mo))
+
+      call pic_gemm(fock, density, fd)
+      call pic_gemm(fd, overlap, fds)
+      call pic_gemm(overlap, density, sd)
+      call pic_gemm(sd, fock, sdf)
+      fds = fds - sdf
+
+      call pic_gemm(fds, x, work)
+      call pic_gemm(x, work, err, transa="T")
+   end subroutine commutator
 
    subroutine build_orthogonalizer(overlap, transform, n_mo, error)
       !! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped

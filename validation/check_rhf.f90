@@ -87,7 +87,7 @@ contains
       !! r(OH) = 0.9689 angstrom, angle 103.9 degrees, placed in the yz plane.
       type(molecular_basis_type) :: basis
       type(libcint_molecule_t) :: mol
-      type(rhf_result_t) :: scf
+      type(rhf_result_t) :: scf, plain
       type(error_t) :: error
       real(dp) :: coords(3, 3)
       integer :: z(3)
@@ -113,6 +113,21 @@ contains
       call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., scf, error)
       call expect(.not. error%has_error(), "H2O SCF: "//error%get_message())
       call expect(scf%converged, "H2O SCF converged")
+
+      ! The same SCF with the extrapolation switched off. DIIS is allowed to
+      ! change how many iterations this takes and nothing else; if the two
+      ! answers differ, the extrapolation is altering the fixed point rather
+      ! than finding it faster, which no iteration count would reveal.
+      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., plain, error, &
+                           diis_vectors=0)
+      call expect(.not. error%has_error(), "H2O SCF without DIIS: "//error%get_message())
+      call expect(plain%converged, "H2O SCF converged without DIIS")
+      call expect(abs(scf%energy - plain%energy) < 1.0e-9_dp, &
+                  "DIIS and plain iteration reach the same energy")
+      write (*, "(A,I0,A,I0,A)") "              DIIS ", scf%iterations, &
+         " iterations against ", plain%iterations, " without"
+      call expect(scf%iterations < plain%iterations, &
+                  "DIIS actually converges in fewer iterations")
 
       write (*, "(A,F16.10,A,I0,A)") "H2O  /STO-3G  E = ", scf%energy, &
          "  (", scf%iterations, " iterations)"
