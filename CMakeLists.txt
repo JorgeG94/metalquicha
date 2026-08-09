@@ -17,6 +17,41 @@ set(all_targets ${main_lib} ${exe_name})
 # built without it fails the link outright rather than degrading.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Sequential MKL, not threaded, when MKL is what will be found.
+#
+# Every path in this program that computes a fragment pins itself to one OpenMP
+# thread -- the serial and distributed MBE processors, the GMBE processor, the
+# unfragmented driver. Threaded MKL underneath that is thread creation for work
+# that will never use it, and on the coordinator it is threads competing with
+# the ones handing out fragments. Parallelism here is MPI over fragments, not
+# BLAS over one small matrix.
+#
+# This is NOT a fix for the tblite corruption above >1 OpenMP thread. That was
+# measured against MKL_NUM_THREADS=1 and MKL_THREADING_LAYER=SEQUENTIAL and
+# fails identically, so it is tblite's own OpenMP and not the BLAS. The pins
+# remain load-bearing.
+#
+# Defaulted rather than forced: MKLROOT is the reliable signal that oneAPI is in
+# the environment, and where it is not -- CI uses OpenBLAS -- CMake's own
+# detection is left alone. Override with -DMQC_BLA_VENDOR=... , or set it empty
+# to get the previous behaviour back.
+if(DEFINED ENV{MKLROOT} AND NOT DEFINED MQC_BLA_VENDOR)
+  set(MQC_BLA_VENDOR
+      "Intel10_64lp_seq"
+      CACHE STRING "BLA_VENDOR passed to find_package(BLAS/LAPACK)")
+else()
+  set(MQC_BLA_VENDOR
+      ""
+      CACHE STRING "BLA_VENDOR passed to find_package(BLAS/LAPACK)")
+endif()
+
+if(MQC_BLA_VENDOR)
+  # Read by FindBLAS/FindLAPACK, which run inside the dependencies, so this has
+  # to be set before they are declared.
+  set(BLA_VENDOR ${MQC_BLA_VENDOR})
+  message(STATUS "BLAS vendor: ${BLA_VENDOR}")
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
