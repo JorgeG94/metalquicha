@@ -25,6 +25,7 @@ module mqc_driver
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_error, only: error_t
+   use mqc_fingerprint, only: calculation_fingerprint
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
    use mqc_json, only: merge_multi_molecule_json
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
@@ -135,6 +136,12 @@ contains
                                          n_supplied_terms=n_supplied_terms)
          if (present(result_out)) call result_from_json(json_data, result_out)
       end if
+
+      ! Stamped whether or not it is written, because the fingerprint is part
+      ! of the result rather than part of the reporting -- a caller taking the
+      ! energy back without files still needs to know what produced it.
+      json_data%fingerprint = calculation_fingerprint(sys_geom, config%method_config, &
+                                                      config%calc_type)
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
       wants_output = .true.

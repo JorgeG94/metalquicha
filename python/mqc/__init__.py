@@ -284,6 +284,28 @@ class Result:
         self.wrote = wrote
 
     @property
+    def fingerprint(self):
+        """Identity of the calculation that produced this, or None.
+
+        The thing to compare before reusing any of these energies. It covers
+        the geometry, the partition, the bonds, the method and the thresholds,
+        and deliberately not the logging or the rank count -- so a checkpoint
+        from a batch run matches an interactive rerun of the same science and
+        nothing else.
+        """
+        if not self.wrote:
+            return None
+        path = f"output_{self.label}.json"
+        if not os.path.exists(path):
+            return None
+        with open(path) as handle:
+            document = json.load(handle)
+        for entry in document.values():
+            if isinstance(entry, dict) and "fingerprint" in entry:
+                return entry["fingerprint"]
+        return None
+
+    @property
     def breakdown_csv(self):
         """The per-fragment CSV, if files were written.
 
