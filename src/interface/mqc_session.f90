@@ -23,10 +23,22 @@ module mqc_session
    !! the alternative of polling with `iprobe` would burn a core per rank for
    !! the whole setup phase.
    use, intrinsic :: ieee_exceptions, only: ieee_set_flag, ieee_all
-   use pic_types, only: int32
+   use pic_types, only: int32, int64
    use pic_mpi_lib, only: comm_world, bcast, pic_mpi_init, pic_mpi_finalize
    use mqc_resources, only: resources_t
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_bcast, only: bcast_string
+   use mqc_bcast_system, only: bcast_system_geometry
+   use mqc_physical_fragment, only: system_geometry_t
+   use mqc_config_types, only: mqc_config_t
+   use mqc_json_config_reader, only: read_json_config_text
+   use mqc_config_adapter, only: driver_config_t, config_to_driver, get_logger_level
+   use mqc_driver, only: run_calculation
+   use mqc_result_types, only: calculation_result_t
+   use mqc_io_helpers, only: set_output_json_filename
+   use mqc_validate, only: validate_system, validate_terms
+   use pic_logger, only: logger => global_logger
+   use mqc_fraglist, only: fraglist_t
    implicit none
    private
 
@@ -48,6 +60,7 @@ module mqc_session
    contains
       procedure :: begin => session_begin
       procedure :: command => session_command
+      procedure :: run => session_run
       procedure :: end_session => session_end
       procedure :: is_root => session_is_root
    end type mqc_session_t
@@ -126,16 +139,165 @@ contains
    subroutine worker_run(this)
       !! A worker's half of a calculation
       !!
-      !! Empty until the term list and geometry are broadcast: a worker cannot
-      !! take part in a calculation it has not been told the shape of. It is
-      !! separate from the loop already so that adding that is a change to one
-      !! routine rather than to the dispatch.
+      !! Receives what rank 0 sends, in the order rank 0 sends it, and then
+      !! calls the same `run_calculation` rank 0 does. The two sides are the
+      !! same three steps written twice rather than shared, because they are
+      !! mirror images and a shared routine would be mostly `if (is_root)`.
+      !! Keep them in step: a broadcast added to one and not the other hangs
+      !! the job rather than failing it.
       type(mqc_session_t), intent(inout) :: this
 
-      ! Referenced so the argument is not merely decorative while this is a
-      ! placeholder; the session is what the real body will work from.
+      character(len=:), allocatable :: settings
+      type(system_geometry_t) :: sys_geom
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+      type(error_t) :: error
+      integer :: dummy_terms(1, 1)
+
       if (.not. this%active) return
+
+      call bcast_string(this%resources%mpi_comms%world_comm, settings, 0_int32)
+      call bcast_system_geometry(this%resources%mpi_comms%world_comm, sys_geom, 0_int32)
+
+      ! Rank 0 parsed this before it committed to the run, so a worker reaching
+      ! here has a document already known to be good. Parsing it again rather
+      ! than receiving a filled struct is the whole reason the settings travel
+      ! as text: there is no field list to keep in step, so there is no field
+      ! to forget, and a worker cannot end up running a different method than
+      ! was asked for.
+      call read_json_config_text(settings, config, error)
+      if (error%has_error()) return
+      ! Same count as rank 0, from the geometry that just arrived. See
+      ! `session_run` for why leaving this out is not a crash.
+      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers)
+      call apply_log_level(config)
+
+      ! No term list: the coordinator hands out fragment definitions as tasks
+      ! and workers build them from sys_geom, so the list never leaves rank 0.
+      dummy_terms = 0
+
+      ! No result and no output. Both are rank-0-only inside `run_calculation`
+      ! and neither is collective, so this asks for nothing rather than asking
+      ! for something that would be discarded.
+      call run_calculation(this%resources, driver, sys_geom, sys_geom%bonds, &
+                           supplied_terms=dummy_terms, n_supplied_terms=0_int64, &
+                           write_output=.false.)
    end subroutine worker_run
+
+   subroutine session_run(this, settings, sys_geom, terms, n_terms, label, &
+                          write_output, result, error)
+      !! Drive a calculation across the job. Rank 0 only.
+      !!
+      !! The order here is load-bearing. Everything that can fail on rank 0 --
+      !! parsing the settings, rejecting a bad document -- happens *before*
+      !! `MQC_CMD_RUN` goes out. Once that command is sent the workers are
+      !! committed to a set of broadcasts, and a rank 0 that discovered a
+      !! problem afterwards could only return an error to its caller while N-1
+      !! ranks sat waiting for a geometry that would never arrive.
+      class(mqc_session_t), intent(inout) :: this
+      character(len=*), intent(in) :: settings
+         !! A JSON document of everything but the molecules
+      type(system_geometry_t), intent(inout) :: sys_geom
+         !! Read, not modified; `intent(inout)` because the broadcast it is
+         !! passed to writes on the receiving ranks.
+      integer, intent(in) :: terms(:, :)
+         !! (n_terms, max_level), 1-based monomer indices, zero-padded
+      integer(int64), intent(in) :: n_terms
+         !! Rows of `terms` to use; 0 to let the driver generate its own list
+      character(len=*), intent(in) :: label
+         !! Names the output files. Empty leaves the default.
+      logical, intent(in) :: write_output
+      type(calculation_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: payload
+      type(mqc_config_t) :: config
+      type(driver_config_t) :: driver
+
+      if (.not. this%active) then
+         call error%set(ERROR_VALIDATION, "mqc_session: no session to run in")
+         return
+      end if
+      if (this%rank /= 0) then
+         call error%set(ERROR_VALIDATION, "mqc_session: only rank 0 may drive a calculation")
+         return
+      end if
+
+      call read_json_config_text(settings, config, error)
+      if (error%has_error()) return
+      ! The fragment count comes from the system, not the document. Without it
+      ! a settings-only config reports zero fragments and the driver computes
+      ! the whole thing unfragmented -- converged, plausible, and not what was
+      ! asked for. Both sides must pass the same count, and they do because
+      ! both take it from the geometry they hold.
+      call config_to_driver(config, driver, n_fragments=sys_geom%n_monomers)
+      ! `main` sets the verbosity and a session never runs `main`, so without
+      ! this the level in the settings is read, validated, and ignored -- and
+      ! the default is loud enough that a script running a few thousand
+      ! fragments gets a few thousand lines it did not ask for.
+      call apply_log_level(config)
+
+      ! Checked here as well as in the driver, and the difference is what
+      ! happens on failure. The driver aborts the job, which is right for
+      ! `main` -- there is no one to tell -- and wrong for a driven run, where
+      ! it would take down the caller's interpreter and everything it had
+      ! built. Checking before the command goes out means a bad system or a
+      ! bad list comes back as an error the caller can act on, and the workers
+      ! never learn anything was attempted. The driver's copy stays as the
+      ! backstop for every other entry path.
+      call validate_system(sys_geom, .not. config%unchecked_input, error, &
+                           check_bonds=allocated(sys_geom%bonds))
+      if (error%has_error()) return
+      if (n_terms > 0) then
+         call check_supplied_terms(terms, n_terms, sys_geom, &
+                                   .not. config%unchecked_input, error)
+         if (error%has_error()) return
+      end if
+
+      call this%command(MQC_CMD_RUN, error)
+      if (error%has_error()) return
+
+      payload = settings
+      call bcast_string(this%resources%mpi_comms%world_comm, payload, 0_int32)
+      call bcast_system_geometry(this%resources%mpi_comms%world_comm, sys_geom, 0_int32)
+
+      if (len_trim(label) > 0) call set_output_json_filename(trim(label))
+
+      if (n_terms > 0) then
+         call run_calculation(this%resources, driver, sys_geom, sys_geom%bonds, &
+                              result_out=result, supplied_terms=terms, &
+                              n_supplied_terms=n_terms, write_output=write_output)
+      else
+         call run_calculation(this%resources, driver, sys_geom, sys_geom%bonds, &
+                              result_out=result, write_output=write_output)
+      end if
+   end subroutine session_run
+
+   subroutine apply_log_level(config)
+      !! Set the logger verbosity the settings asked for
+      type(mqc_config_t), intent(in) :: config
+
+      if (allocated(config%log_level)) then
+         call logger%configure(get_logger_level(config%log_level))
+      end if
+   end subroutine apply_log_level
+
+   subroutine check_supplied_terms(terms, n_terms, sys_geom, strict, error)
+      !! Run a supplied term list past the validator without committing to it
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: terms(:, :)
+      integer(int64), intent(in) :: n_terms
+      logical, intent(in) :: strict
+      type(error_t), intent(inout) :: error
+
+      type(fraglist_t) :: list
+
+      call list%replace(terms, n_terms, size(terms, 2), error)
+      if (.not. error%has_error()) then
+         call validate_terms(list, sys_geom, strict, error)
+      end if
+      call list%destroy()
+   end subroutine check_supplied_terms
 
    subroutine session_command(this, command, error)
       !! Tell the workers what to do next. Rank 0 only.

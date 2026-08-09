@@ -47,17 +47,29 @@ module mqc_json_schema
 
 contains
 
-   subroutine ensure_valid_json(json, error)
+   subroutine ensure_valid_json(json, error, settings_only)
       !! Validate a loaded deck, setting `error` on the first problem found
       !!
       !! Reports one problem rather than all of them: the first unknown key is
       !! usually the whole story, and a reader that stops there gives a
       !! message short enough to act on.
+      !!
+      !! `settings_only` validates a document that describes what to compute
+      !! but not what to compute it on -- the form that crosses to the workers
+      !! when the system arrives by another route. It relaxes exactly one
+      !! thing, the requirement that molecules be present; every other key is
+      !! held to the same spelling and the same shape, which is the point of
+      !! sending a document rather than a struct.
       type(json_file), intent(inout) :: json
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: settings_only
 
       type(json_core) :: core
       type(json_value), pointer :: root
+      logical :: settings
+
+      settings = .false.
+      if (present(settings_only)) settings = settings_only
 
       call json%get_core(core)
       call json%get(root)
@@ -66,7 +78,7 @@ contains
          return
       end if
 
-      call check_object(core, root, "", root_keys(), error)
+      call check_object(core, root, "", root_keys(settings), error)
       if (error%has_error()) return
 
       call check_child_object(core, root, "schema", schema_keys(), error)
@@ -105,7 +117,8 @@ contains
    !  somewhere else.
    ! ==========================================================================
 
-   function root_keys() result(keys)
+   function root_keys(settings_only) result(keys)
+      logical, intent(in) :: settings_only
       type(key_set_t) :: keys
       call allow(keys, "schema")
       call allow(keys, "model")
@@ -117,7 +130,10 @@ contains
       call require(keys, "schema")
       call require(keys, "model")
       call require(keys, "driver")
-      call require(keys, "molecules")
+      ! Still *allowed* when settings-only, so a document that carries one gets
+      ! the reader's explanation of why it will not be used rather than a bare
+      ! "unknown key: molecules", which would read as the opposite problem.
+      if (.not. settings_only) call require(keys, "molecules")
    end function root_keys
 
    function schema_keys() result(keys)

@@ -178,6 +178,10 @@ add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
 target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_run PRIVATE ${main_lib})
 
+add_executable(check_session_run ${PROJECT_SOURCE_DIR}/validation/check_session_run.f90)
+target_include_directories(check_session_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_session_run PRIVATE ${main_lib})
+
 add_executable(check_bcast_system
                ${PROJECT_SOURCE_DIR}/validation/check_bcast_system.f90)
 target_include_directories(check_bcast_system PRIVATE "${CMAKE_BINARY_DIR}/modules")

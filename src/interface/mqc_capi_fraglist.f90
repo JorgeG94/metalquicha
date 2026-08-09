@@ -41,7 +41,7 @@ module mqc_capi_fraglist
 
    public :: mqc_fraglist_new, mqc_fraglist_free
    public :: mqc_fraglist_generate, mqc_fraglist_count, mqc_fraglist_max_level
-   public :: mqc_fraglist_get, mqc_fraglist_set
+   public :: mqc_fraglist_get, mqc_fraglist_set, mqc_fraglist_close_subsets
    public :: mqc_fraglist_last_error
 
    integer(c_int), parameter :: MQC_OK = 0
@@ -224,6 +224,37 @@ contains
       deallocate (buffer)
       status = report(error)
    end function mqc_fraglist_set
+
+   function mqc_fraglist_close_subsets(handle) result(status) &
+      bind(C, name="mqc_fraglist_close_subsets")
+      !! Add every proper subset the list is missing
+      !!
+      !! The other half of screening, and the half a caller does not think to
+      !! ask for. An n-body term's delta is its energy less the delta of each
+      !! proper subset, so a screen that keeps a trimer and drops one of its
+      !! dimers has not approximated the expansion -- it has made one that
+      !! cannot be assembled. Every route that supplies a list checks for this
+      !! and refuses; this is what makes the list acceptable rather than
+      !! merely diagnosing it.
+      !!
+      !! It only ever grows the list, so applying it twice does nothing the
+      !! first did not, and applying it to a full list changes nothing at all.
+      type(c_ptr), value :: handle
+      integer(c_int) :: status
+
+      type(fraglist_t), pointer :: list
+      type(error_t) :: error
+
+      status = MQC_BAD_HANDLE
+      if (.not. c_associated(handle)) then
+         last_message = "null fragment list handle"
+         return
+      end if
+      call c_f_pointer(handle, list)
+
+      call list%close_subsets(error)
+      status = report(error)
+   end function mqc_fraglist_close_subsets
 
    subroutine mqc_fraglist_last_error(buffer, buffer_len) &
       bind(C, name="mqc_fraglist_last_error")

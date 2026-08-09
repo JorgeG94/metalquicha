@@ -45,6 +45,10 @@ module mqc_capi_system
    public :: mqc_system_perceive_bonds, mqc_system_count_missing_bonds
    public :: mqc_system_auto_monomers
    public :: mqc_system_last_error
+   public :: system_handle_t
+      !! Exposed for the sibling C-API modules that must open a system handle,
+      !! not for general use. Nothing outside `src/interface` should hold one:
+      !! the rest of the code works in `system_geometry_t`.
 
    integer(c_int), parameter :: MQC_OK = 0
    integer(c_int), parameter :: MQC_ERROR = 1
