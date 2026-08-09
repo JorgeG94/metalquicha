@@ -29,6 +29,8 @@ module mqc_libcint_integrals
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
+   use mqc_basis_utils, only: find_basis_file
+   use mqc_json_basis_reader, only: build_molecular_basis_json
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
                               libcint_cgto_sph, libcint_tot_cgto_sph, &
@@ -42,6 +44,7 @@ module mqc_libcint_integrals
    private
 
    public :: libcint_molecule_t
+   public :: build_libcint_molecule
 
    type :: libcint_molecule_t
       !! One molecule, packed the way libcint wants it
@@ -64,6 +67,49 @@ module mqc_libcint_integrals
    end type libcint_molecule_t
 
 contains
+
+   subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
+                                     basis_name, mol, error)
+      !! A molecule from a basis set *name*, through the ordinary reader
+      !!
+      !! This is what makes the backend general rather than a demonstration:
+      !! any of the basis sets in `basis_sets/` rather than whatever was
+      !! typed into a test.
+      !!
+      !! No normalisation is applied here beyond libcint's own. The BSE files
+      !! give contraction coefficients against normalised primitives, the
+      !! reader passes them through untouched, and `molecule_build` folds in
+      !! `libcint_gto_norm` -- which is the one convention libcint asks for.
+      !! Applying `normalize_shell_coefficients` as well would count it twice,
+      !! and the symptom is an overlap diagonal that is not 1.
+      integer, intent(in) :: atomic_numbers(:)
+      character(len=*), intent(in) :: element_symbols(:)
+      real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
+      character(len=*), intent(in) :: basis_name
+      type(libcint_molecule_t), intent(out) :: mol
+      type(error_t), intent(inout) :: error
+
+      type(molecular_basis_type) :: basis
+      character(len=:), allocatable :: path
+      type(error_t) :: read_error
+
+      call find_basis_file(basis_name, path, read_error)
+      if (read_error%has_error()) then
+         call error%set(ERROR_VALIDATION, "no basis set file for '"//trim(basis_name)// &
+                        "': "//read_error%get_message())
+         return
+      end if
+
+      call build_molecular_basis_json(path, element_symbols, basis, read_error)
+      if (read_error%has_error()) then
+         call error%set(ERROR_VALIDATION, "could not read "//trim(basis_name)//": "// &
+                        read_error%get_message())
+         return
+      end if
+
+      call mol%build(atomic_numbers, coordinates, basis, error)
+      call basis%destroy()
+   end subroutine build_libcint_molecule
 
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error)
       !! Pack atoms and shells into libcint's atm/bas/env
