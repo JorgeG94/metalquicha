@@ -28,6 +28,7 @@ contains
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
       type(error_t) :: error
+      integer :: outer_threads
 
       calc_type_local = calc_type
 
@@ -36,6 +37,9 @@ contains
 
       allocate (results(total_fragments))
 
+      ! One thread per fragment: the methods underneath are not safe to run
+      ! threaded, and they fail by corrupting a result rather than by stopping.
+      outer_threads = omp_get_max_threads()
       call omp_set_num_threads(1)
       call coord_timer%start()
       do frag_idx = 1_int64, total_fragments
@@ -95,7 +99,10 @@ contains
       end do
       call coord_timer%stop()
       call logger%info("Time to evaluate all fragments "//to_char(coord_timer%get_elapsed_time())//" s")
-      call omp_set_num_threads(omp_get_max_threads())
+      ! Not omp_get_max_threads(): after omp_set_num_threads(1) that reports 1,
+      ! so the obvious spelling hands back the value it just clamped and the
+      ! rest of the process silently stays single-threaded.
+      call omp_set_num_threads(outer_threads)
 
       call logger%info("All fragments processed")
 
