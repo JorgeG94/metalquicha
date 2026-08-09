@@ -364,14 +364,26 @@ contains
             fragment%charge = fragment%charge + sys_geom%fragment_charges(mono_idx)
          end do
 
-         ! For single fragment, use its specific multiplicity
-         if (n_monomers_in_frag == 1) then
-            fragment%multiplicity = sys_geom%fragment_multiplicities(monomer_indices(1))
-         else
-            ! For multi-fragment composites, multiplicity needs careful treatment
-            ! For now, default to system multiplicity (this may need refinement)
-            fragment%multiplicity = sys_geom%multiplicity
-         end if
+         ! Unpaired electrons add, exactly as the charges above do. A
+         ! composite taking `sys_geom%multiplicity` instead -- which is what
+         ! this did -- is wrong the moment spin is localised rather than
+         ! spread: give one monomer of a neutral cluster a +1 charge and a
+         ! doublet, and every *neutral* dimer in the expansion inherited the
+         ! doublet too, then failed as an even electron count with one
+         ! unpaired electron. That is also why an MBE of a charged system
+         ! could not be run at all.
+         !
+         ! Summing unpaired counts is high-spin coupling. For the case this
+         ! exists to serve -- one open-shell monomer among closed shells --
+         ! there is nothing to choose: the composite's spin is that monomer's.
+         ! Where two or more monomers are open-shell it takes the highest
+         ! multiplet, which is a choice, and a low-spin state has to be asked
+         ! for by giving the fragment its own multiplicity.
+         do i = 1, n_monomers_in_frag
+            mono_idx = monomer_indices(i)
+            fragment%multiplicity = fragment%multiplicity + &
+                                    (sys_geom%fragment_multiplicities(mono_idx) - 1)
+         end do
       else
          ! Fixed-size monomers: use system defaults
          fragment%charge = sys_geom%charge

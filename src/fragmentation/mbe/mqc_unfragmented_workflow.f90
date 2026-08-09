@@ -263,11 +263,14 @@ contains
       end block
       call logger%info("============================================")
 
-      ! Return result to caller or handle json_data
-      if (present(result_out)) then
-         ! Transfer result to output (for dynamics/optimization)
-         result_out = result
-      else
+      ! Both, not either. These were exclusive, so asking for the result
+      ! silently suppressed the files -- and a session always asks for the
+      ! result, which meant an unfragmented run driven from Python wrote
+      ! nothing at all and its fingerprint and gap read back as absent. The
+      ! fragmented path was fixed for this; this one was not.
+      if (present(result_out)) result_out = result
+
+      block
          ! Populate json_data for non-Hessian case if present
          ! (Hessian case already handled above in the vibrational block)
          if (present(json_data) .and. .not. result%has_hessian) then
@@ -290,8 +293,8 @@ contains
                json_data%has_gradient = .true.
             end if
          end if
-         call result%destroy()
-      end if
+      end block
+      call result%destroy()
 
    end subroutine unfragmented_calculation
 
