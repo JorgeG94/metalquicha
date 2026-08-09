@@ -160,6 +160,7 @@ contains
       call allow(keys, "logger")
       call allow(keys, "skip_json_output")
       call allow(keys, "unchecked_input")
+      call allow(keys, "checkpoint")
       call allow(keys, "fragment_breakdown")
    end function system_keys
 

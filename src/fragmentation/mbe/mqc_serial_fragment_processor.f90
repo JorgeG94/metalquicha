@@ -4,13 +4,15 @@ submodule(mqc_mbe_fragment_distribution_scheme) mqc_serial_fragment_processor
 contains
 
    module subroutine serial_fragment_processor(total_fragments, polymers, max_level, &
-                                               sys_geom, method_config, calc_type, json_data)
+                                               sys_geom, method_config, calc_type, json_data, &
+                                               checkpoint)
       !! Process all fragments serially in single-rank mode
       !! This is used when running with only 1 MPI rank
       !! Bond connectivity is accessed via sys_geom%bonds
       use mqc_error, only: error_t
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
+      use mqc_checkpoint, only: checkpoint_t
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) ::  max_level
       integer, intent(in) :: polymers(:, :)
@@ -18,6 +20,9 @@ contains
       type(method_config_t), intent(in) :: method_config  !! Method configuration
       integer(int32), intent(in) :: calc_type
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+      type(checkpoint_t), intent(inout), optional :: checkpoint
+         !! Fragments already done are taken from here and not recomputed;
+         !! fragments computed here are appended to it as they finish.
 
       integer(int64) :: frag_idx
       integer :: fragment_size, current_log_level, iatom
@@ -29,9 +34,14 @@ contains
       integer(int32) :: calc_type_local
       type(error_t) :: error
       integer :: outer_threads
+      logical :: known
+      real(dp) :: known_energy
+      integer :: known_status
+      integer(int64) :: n_reused
 
       calc_type_local = calc_type
 
+      n_reused = 0_int64
       call logger%info("Processing "//to_char(total_fragments)//" fragments serially...")
       call logger%info("  Calculation type: "//calc_type_to_string(calc_type_local))
 
@@ -47,6 +57,21 @@ contains
          allocate (fragment_indices(fragment_size))
          fragment_indices = polymers(frag_idx, 1:fragment_size)
 
+         ! Already done by an earlier run? Take it and move on. Keyed on the
+         ! monomers rather than the index, so a resumed list that is screened
+         ! differently still matches the right fragment.
+         if (present(checkpoint)) then
+            call checkpoint%lookup(polymers(frag_idx, :), known, known_energy, known_status)
+            if (known) then
+               results(frag_idx)%energy%scf = known_energy
+               results(frag_idx)%has_energy = .true.
+               results(frag_idx)%scf_status = known_status
+               n_reused = n_reused + 1_int64
+               deallocate (fragment_indices)
+               cycle
+            end if
+         end if
+
          call build_fragment_from_indices(sys_geom, fragment_indices, phys_frag, error, sys_geom%bonds)
          if (error%has_error()) then
             call logger%error(error%get_full_trace())
@@ -60,6 +85,14 @@ contains
             call logger%error("Fragment "//to_char(frag_idx)//" calculation failed: "// &
                               results(frag_idx)%error%get_message())
             error stop "Fragment calculation failed in serial processing"
+         end if
+
+         ! Recorded the moment it exists, so a kill on the next fragment does
+         ! not cost this one.
+         if (present(checkpoint)) then
+            call checkpoint%record(polymers(frag_idx, :), &
+                                   results(frag_idx)%energy%total(), &
+                                   results(frag_idx)%scf_status)
          end if
 
          ! Debug output for gradients
@@ -104,6 +137,10 @@ contains
       ! rest of the process silently stays single-threaded.
       call omp_set_num_threads(outer_threads)
 
+      if (n_reused > 0_int64) then
+         call logger%info("Reused "//to_char(n_reused)//" fragment(s) from the checkpoint; "// &
+                          "computed "//to_char(total_fragments - n_reused))
+      end if
       call logger%info("All fragments processed")
 
       call logger%info(" ")

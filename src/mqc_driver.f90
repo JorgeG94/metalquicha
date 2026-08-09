@@ -26,6 +26,7 @@ module mqc_driver
    use mqc_result_types, only: calculation_result_t
    use mqc_error, only: error_t
    use mqc_fingerprint, only: calculation_fingerprint
+   use mqc_checkpoint, only: checkpoint_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
    use mqc_json, only: merge_multi_molecule_json
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
@@ -261,6 +262,7 @@ contains
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer(default_int) :: supplied_width  !! Columns the caller actually provided
+      type(error_t) :: checkpoint_error
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
@@ -566,6 +568,39 @@ contains
          end select
       end if
 
+      ! Opened on rank 0 only: it is the rank that collects every result, so
+      ! it is the only one with anything to write, and N ranks appending to one
+      ! file would interleave.
+      ! Not yet wired into the distributed path, and saying so is not
+      ! optional. A twelve-hour MPI job launched in the belief that it is
+      ! resumable, that then is not, costs exactly what this feature exists to
+      ! save -- so it is announced rather than quietly skipped. The insertion
+      ! point is the fragment queue in mqc_mbe_mpi_fragment_distribution_scheme:
+      ! known terms must not be enqueued, and their results pre-filled.
+      if (len_trim(config%checkpoint_file) > 0 .and. &
+          resources%mpi_comms%world_comm%size() > 1 .and. &
+          resources%mpi_comms%world_comm%rank() == 0) then
+         call logger%warning("Checkpointing is not yet supported for distributed runs; "// &
+                             "this run will write nothing and resume nothing. Run on one "// &
+                             "rank to use "//trim(config%checkpoint_file)//".")
+      end if
+
+      if (resources%mpi_comms%world_comm%rank() == 0 .and. &
+          resources%mpi_comms%world_comm%size() == 1 .and. &
+          len_trim(config%checkpoint_file) > 0) then
+         call expansion%checkpoint%open(trim(config%checkpoint_file), &
+                                        calculation_fingerprint(sys_geom, config%method_config, &
+                                                                config%calc_type), &
+                                        max_level, checkpoint_error)
+         if (checkpoint_error%has_error()) then
+            ! A checkpoint from another calculation is not a warning. Its
+            ! energies would be spliced into this one and the total would come
+            ! out converged and meaningless.
+            call logger%error(checkpoint_error%get_message())
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end if
+
       ! Execute calculation using polymorphic dispatch
       if (resources%mpi_comms%world_comm%size() == 1) then
          call logger%info("Running in serial mode (single MPI rank)")
@@ -573,6 +608,7 @@ contains
       else
          call expansion%run_distributed(json_data)
       end if
+      call expansion%checkpoint%close()
 
       ! Clean up expansion context
       select type (expansion)
