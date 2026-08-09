@@ -20,7 +20,7 @@ module mqc_driver
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
@@ -591,7 +591,8 @@ contains
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &
                                                                 config%calc_type), &
-                                        max_level, checkpoint_error)
+                                        max_level, config%calc_type == CALC_TYPE_ENERGY, &
+                                        checkpoint_error)
          if (checkpoint_error%has_error()) then
             ! A checkpoint from another calculation is not a warning. Its
             ! energies would be spliced into this one and the total would come

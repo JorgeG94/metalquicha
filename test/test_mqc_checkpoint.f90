@@ -34,7 +34,8 @@ contains
                   new_unittest("status_survives", test_status), &
                   new_unittest("truncated_line_dropped", test_truncated), &
                   new_unittest("wrong_fingerprint_refused", test_wrong_fingerprint), &
-                  new_unittest("not_a_checkpoint_refused", test_not_a_checkpoint) &
+                  new_unittest("not_a_checkpoint_refused", test_not_a_checkpoint), &
+                  new_unittest("derivative_run_refused", test_derivative_refused) &
                   ]
    end subroutine collect_mqc_checkpoint
 
@@ -53,7 +54,7 @@ contains
       integer :: status
 
       call fresh()
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call ck%record([1, 2], -1.5_dp, SCF_CONVERGED)
       call ck%record([1, 0], -0.5_dp, SCF_CONVERGED)
       call ck%record([2, 3], -2.5_dp, SCF_CONVERGED)
@@ -89,7 +90,7 @@ contains
       integer :: status
 
       call fresh()
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call ck%record([1, 2], -1.5_dp, SCF_CONVERGED)
       call ck%close()
 
@@ -113,7 +114,7 @@ contains
       integer :: status
 
       call fresh()
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call ck%record([1, 2], -1.5_dp, SCF_NOT_CONVERGED)
       call ck%close()
 
@@ -134,7 +135,7 @@ contains
       integer :: unit
 
       call fresh()
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call ck%record([1, 2], -1.5_dp, SCF_CONVERGED)
       call ck%record([1, 3], -2.5_dp, SCF_CONVERGED)
       call ck%close()
@@ -159,11 +160,11 @@ contains
       type(error_t) :: err
 
       call fresh()
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call ck%record([1, 2], -1.5_dp, SCF_CONVERGED)
       call ck%close()
 
-      call ck%open(PATH, "fedcba9876543210", 2, err)
+      call ck%open(PATH, "fedcba9876543210", 2, .true., err)
       call check(error, err%has_error(), &
                  "a checkpoint from another calculation must be refused, not reused")
       call ck%close()
@@ -182,11 +183,28 @@ contains
       write (unit, "(a)") "something else entirely"
       close (unit)
 
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
       call check(error, err%has_error(), "a non-checkpoint file must be refused")
       call ck%close()
       call cleanup()
    end subroutine test_not_a_checkpoint
+
+   subroutine test_derivative_refused(error)
+      !! A checkpoint line holds an energy and nothing else
+      !!
+      !! A gradient run that reused one would come back without the gradient
+      !! and die assembling the total -- which it did, before this refused.
+      type(error_type), allocatable, intent(out) :: error
+      type(checkpoint_t) :: ck
+      type(error_t) :: err
+
+      call fresh()
+      call ck%open(PATH, FP, 2, .false., err)
+      call check(error, err%has_error(), &
+                 "a run needing derivatives must be refused a checkpoint")
+      call ck%close()
+      call cleanup()
+   end subroutine test_derivative_refused
 
    ! -- helpers ---------------------------------------------------------------
 
@@ -194,7 +212,7 @@ contains
       !! Load from disk into a fresh object
       type(checkpoint_t), intent(out) :: ck
       type(error_t), intent(out) :: err
-      call ck%open(PATH, FP, 2, err)
+      call ck%open(PATH, FP, 2, .true., err)
    end subroutine reopen
 
    subroutine fresh()

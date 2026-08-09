@@ -56,7 +56,7 @@ module mqc_checkpoint
 
 contains
 
-   subroutine checkpoint_open(this, path, fingerprint, max_level, error)
+   subroutine checkpoint_open(this, path, fingerprint, max_level, energy_only, error)
       !! Load an existing checkpoint if there is one, then open for appending
       !!
       !! Refuses rather than starting fresh when the fingerprint disagrees.
@@ -67,6 +67,8 @@ contains
       character(len=*), intent(in) :: path
       character(len=*), intent(in) :: fingerprint
       integer, intent(in) :: max_level
+      logical, intent(in) :: energy_only
+         !! Whether this run computes energies alone
       type(error_t), intent(inout) :: error
 
       logical :: exists
@@ -75,6 +77,18 @@ contains
       this%path = trim(path)
       this%max_level = max_level
       if (len_trim(path) == 0) return
+
+      ! A line holds one energy and nothing else, so a reused fragment comes
+      ! back without its gradient and the run dies assembling one. Refused
+      ! rather than half-supported: extending the format to carry gradients
+      ! and displacement sets is a real piece of work, and pretending to
+      ! support them meanwhile costs a job that thought it was resumable.
+      if (.not. energy_only) then
+         call error%set(ERROR_VALIDATION, "checkpointing only supports energy runs; "// &
+                        "this driver also needs derivatives, which the file does not "// &
+                        "carry. Remove system.checkpoint, or run the energy first.")
+         return
+      end if
 
       inquire (file=this%path, exist=exists)
       if (exists) then
