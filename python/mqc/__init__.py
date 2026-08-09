@@ -409,8 +409,10 @@ class MBE:
         cutoffs=None,
         unchecked=False,
         allow_crap_scf=False,
+        checkpoint=None,
         verbosity="info",
         keywords=None,
+        system_options=None,
     ):
         self.system = system
         self.level = int(level)
@@ -421,8 +423,17 @@ class MBE:
         self.cutoffs = dict(cutoffs) if cutoffs else None
         self.unchecked = bool(unchecked)
         self.allow_crap_scf = bool(allow_crap_scf)
+        self.checkpoint = checkpoint
+            #: Append each fragment as it finishes, and resume from what is
+            #: already there. Missing file -> created; existing -> resumed,
+            #: unless it was written by a different calculation, which is
+            #: refused rather than reused. A .h5 name gets the binary backend,
+            #: which is required anyway once the driver needs derivatives.
         self.verbosity = verbosity
         self.keywords = dict(keywords) if keywords else {}
+        self.system_options = dict(system_options) if system_options else {}
+            #: Escape hatch for the deck's `system` block. Not called `system`
+            #: because that is the molecule -- the first argument here.
         self._terms = None
 
     # -- the settings document ---------------------------------------------
@@ -457,7 +468,15 @@ class MBE:
                 "unchecked_input": self.unchecked,
             },
         }
+        if self.checkpoint:
+            document["system"]["checkpoint"] = str(self.checkpoint)
+
+        # Both blocks get an escape hatch, and for the same reason: a key
+        # added to the deck schema should be reachable from here without
+        # waiting for a named argument. `checkpoint` was not, for a while,
+        # which made restart invisible from Python.
         _merge(document["keywords"], self.keywords)
+        _merge(document["system"], self.system_options)
         return document
 
     # -- the term list ------------------------------------------------------

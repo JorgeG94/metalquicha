@@ -41,7 +41,9 @@ module mqc_checkpoint
       !! One checkpoint file, open for appending and holding what it loaded
       character(len=:), allocatable :: path
       logical :: active = .false.
-      integer :: unit = -1
+      integer :: unit = 0
+         !! Meaningful only while `active`; `newunit=` values are negative,
+         !! so the sign of this says nothing about whether it is open.
 
       integer(int64) :: n_loaded = 0
       integer :: max_level = 0
@@ -415,11 +417,18 @@ contains
 
       if (this%use_hdf5) then
          call this%h5%close()
-      else if (this%active .and. this%unit >= 0) then
+      else if (this%active) then
+         ! Not `this%unit >= 0`: `newunit=` hands back *negative* unit
+         ! numbers, so that test was never true and the file was never
+         ! closed. A program that runs once and exits does not notice --
+         ! the process closes it -- but a session runs many calculations
+         ! in one process, and the second one asking for the same
+         ! checkpoint got "already opened on another unit" instead of a
+         ! resume. `active` is the thing that actually says a unit is open.
          close (this%unit)
       end if
       this%active = .false.
-      this%unit = -1
+      this%unit = 0
    end subroutine checkpoint_close
 
 end module mqc_checkpoint
