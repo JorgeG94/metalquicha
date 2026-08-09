@@ -271,12 +271,14 @@ if(MQC_ENABLE_LIBCINT)
   FetchContent_Declare(
     libcint
     GIT_REPOSITORY https://github.com/JorgeG94/libcint.git
-    # Pinned to a commit, not to master. A branch is a moving target: a push to
-    # libcint would change what this program builds against, with nothing here
-    # recording that it changed. Worth replacing with a tag once the fork has
-    # one -- a tag says what it is, a hash does not. GIT_SHALLOW is off because
-    # a shallow fetch cannot resolve a bare commit hash.
-    GIT_TAG ef51512689e32f6a6693bbeab83966db5dbc4d15)
+    # A commit, not a branch. libcint develops on `develop`, so tracking that
+    # would change what this program builds against on every push there, with
+    # nothing here recording that it changed. This hash is reachable from
+    # develop and carries libcint_3c2e_sph and libcint_2c2e_sph, without which
+    # the density-fitting path will not compile. Worth replacing with a tag once
+    # the fork has one -- a tag says what it is, a hash does not, and a tag also
+    # lets GIT_SHALLOW come back, which a bare hash cannot resolve.
+    GIT_TAG 36e6da1fd88c2ff25144502e24201aed8e197079)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
