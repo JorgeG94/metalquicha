@@ -31,6 +31,8 @@ module mqc_capi_run
    use mqc_session, only: mqc_session_t
    use mqc_result_types, only: calculation_result_t
    use mqc_error, only: error_t
+   use mqc_config_types, only: bond_t
+   use mqc_bond_perception, only: missing_broken_bonds
    implicit none
    private
 
@@ -82,6 +84,18 @@ contains
          return
       end if
       call c_f_pointer(system, h)
+
+      ! A caller who never mentioned bonds is not a caller with no bonds, and
+      ! the difference is invisible further down: `validate_system` audits the
+      ! declared list against the geometry, and an empty list has nothing to
+      ! audit. So a covalent molecule cut into monomers with no bonds declared
+      ! would fragment into radicals, cap nothing, and return a number.
+      ! `bonds_declared` is the only place that distinction survives, so this
+      ! is the only place the check can be made.
+      if (.not. h%bonds_declared) then
+         call refuse_undeclared_cuts(h, status)
+         if (status /= MQC_OK) return
+      end if
 
       session => current_session()
       if (.not. session%active) then
@@ -136,6 +150,37 @@ contains
       end do
       buffer(n + 1) = c_null_char
    end subroutine mqc_run_last_error
+
+   subroutine refuse_undeclared_cuts(h, status)
+      !! Refuse a partition that cuts bonds nobody declared
+      !!
+      !! Perception against an empty declared list, so every cross-monomer bond
+      !! the geometry implies comes back as missing. For a molecular cluster
+      !! that is none and this costs one O(N^2) sweep; for a peptide chopped at
+      !! the backbone it is the difference between capped fragments and
+      !! radicals.
+      type(system_handle_t), intent(in) :: h
+      integer(c_int), intent(out) :: status
+
+      type(bond_t), allocatable :: none(:)
+      integer, allocatable :: missing_i(:), missing_j(:)
+      integer :: n_missing
+
+      status = MQC_OK
+      if (h%geom%total_atoms <= 0 .or. h%geom%n_monomers <= 0) return
+
+      allocate (none(0))
+      call missing_broken_bonds(h%geom, none, 0, missing_i, missing_j, n_missing)
+      deallocate (none)
+      if (n_missing <= 0) return
+
+      write (last_message, "(A,I0,A,I0,A,I0,A)") &
+         "the monomers cut ", n_missing, " bond(s) that were never declared, "// &
+         "starting with atoms ", missing_i(1), " and ", missing_j(1), &
+         "; declare them with mqc_system_set_bonds so the fragments are capped, "// &
+         "or set unchecked_input if the partition is deliberate"
+      status = MQC_ERROR
+   end subroutine refuse_undeclared_cuts
 
    pure function chars_to_string(n, chars) result(text)
       !! A C character array as a Fortran string

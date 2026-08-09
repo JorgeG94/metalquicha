@@ -456,11 +456,18 @@ contains
       !!
       !! Counted rather than enforced: perception is a heuristic and a caller
       !! may have a reason. Non-zero means look, not stop.
+      !!
+      !! A system with no declared bonds is answered rather than refused, and
+      !! is the case most worth answering -- it is the caller who has not
+      !! thought about bonds at all, so every cut the geometry implies is one
+      !! they do not know about. `-1` therefore means only that the question
+      !! could not be asked: a bad handle, no atoms, or no partition.
       type(c_ptr), value :: handle
       real(c_double), value :: tolerance
       integer(c_int) :: n_missing
 
       type(system_handle_t), pointer :: h
+      type(bond_t), allocatable :: declared(:)
       integer, allocatable :: missing_i(:), missing_j(:)
       integer :: count
       real(dp) :: tol
@@ -469,12 +476,16 @@ contains
       if (.not. c_associated(handle)) return
       call c_f_pointer(handle, h)
       if (h%geom%total_atoms <= 0 .or. h%geom%n_monomers <= 0) return
-      if (.not. allocated(h%geom%bonds)) return
 
       tol = DEFAULT_BOND_TOLERANCE
       if (tolerance > 0.0_dp) tol = tolerance
 
-      call missing_broken_bonds(h%geom, h%geom%bonds, size(h%geom%bonds), &
+      if (allocated(h%geom%bonds)) then
+         declared = h%geom%bonds
+      else
+         allocate (declared(0))
+      end if
+      call missing_broken_bonds(h%geom, declared, size(declared), &
                                 missing_i, missing_j, count, tol)
       n_missing = int(count, c_int)
    end function mqc_system_count_missing_bonds

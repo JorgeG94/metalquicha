@@ -12,6 +12,11 @@ set(main_lib ${project_name})
 set(exe_name mqc)
 set(all_targets ${main_lib} ${exe_name})
 
+# Set before the dependencies are declared, so they are built PIC too: the
+# ctypes shared library links every one of them into a .so, and a dependency
+# built without it fails the link outright rather than degrading.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
@@ -197,6 +202,18 @@ target_link_libraries(check_session PRIVATE ${main_lib})
 
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})
+
+# Shared library for ctypes. The C entry points live in the static archive and
+# nothing in it references them -- they are called from outside -- so a normal
+# archive link would take none of them and produce an empty .so.
+add_library(mqc_shared SHARED ${PROJECT_SOURCE_DIR}/src/interface/mqc_capi_export.f90)
+set_target_properties(mqc_shared PROPERTIES
+  OUTPUT_NAME mqc
+  Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/modules_shared")
+target_link_libraries(mqc_shared PRIVATE
+  "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>" "-Wl,--no-whole-archive"
+  ${main_lib})
+add_dependencies(mqc_shared ${main_lib})
 
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")
