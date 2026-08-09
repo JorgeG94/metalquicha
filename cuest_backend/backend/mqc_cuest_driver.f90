@@ -12,7 +12,7 @@ module mqc_cuest_driver
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t
+   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_functionals, only: functional_name_to_id
@@ -207,6 +207,18 @@ contains
 
       result%energy%scf = scf%total_energy
       result%has_energy = .true.
+
+      ! The SCF has known this all along; it simply was not carried out of
+      ! here. Without it a fragment that ran out of iterations contributes its
+      ! last-cycle energy to the expansion, has_error stays false, and the
+      ! total is wrong by however far that SCF still had to go -- with nothing
+      ! anywhere saying so.
+      if (scf%converged) then
+         result%scf_status = SCF_CONVERGED
+      else
+         result%scf_status = SCF_NOT_CONVERGED
+      end if
+      result%scf_iterations = scf%iterations
 
       ! The dipole is what IR intensities are built from: the Hessian path
       ! collects it at every displacement and differences it.

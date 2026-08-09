@@ -105,6 +105,7 @@ contains
       m%variant = method_type_to_string(config%method_type)
       m%verbose = config%verbose
       m%accuracy = real(config%xtb%accuracy, wp)
+      m%max_iter = config%scf%max_iter
 
       ! Electronic temperature (convert K to Hartree)
       ! kt = T * k_B, where k_B = 3.166808578545117e-06 Hartree/K

@@ -9,6 +9,7 @@ module mqc_mbe
    use pic_io, only: to_char
    use mqc_mbe_io, only: print_detailed_breakdown
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_MBE
+   use mqc_result_types, only: SCF_UNKNOWN, SCF_NOT_CONVERGED
    use mqc_thermochemistry, only: thermochemistry_result_t, compute_thermochemistry
    use mqc_mpi_tags, only: TAG_WORKER_REQUEST, TAG_WORKER_FRAGMENT, TAG_WORKER_FINISH, &
                            TAG_WORKER_SCALAR_RESULT, &
@@ -381,6 +382,45 @@ contains
       call logger%debug("Hash table size: "//to_char(lookup%table_size)// &
                         ", entries: "//to_char(lookup%n_entries))
    end subroutine build_mbe_lookup_table
+
+   subroutine report_unconverged(scf_status, fragment_count)
+      !! Say how many fragments did not converge, and name the first few
+      integer, intent(in) :: scf_status(:)
+      integer(int64), intent(in) :: fragment_count
+
+      integer(int64) :: i, n_bad, n_unknown, shown
+      character(len=256) :: line
+
+      n_bad = count(scf_status(1:fragment_count) == SCF_NOT_CONVERGED, kind=int64)
+      n_unknown = count(scf_status(1:fragment_count) == SCF_UNKNOWN, kind=int64)
+
+      if (n_unknown == fragment_count) then
+         ! Every fragment silent means the method does not report, not that a
+         ! million SCFs each declined to answer.
+         call logger%info("SCF convergence not reported by this method")
+         return
+      end if
+
+      if (n_bad == 0_int64) then
+         call logger%info("All "//to_char(fragment_count)//" fragments converged")
+         return
+      end if
+
+      write (line, "(a,i0,a,i0,a)") "WARNING: ", n_bad, " of ", fragment_count, &
+         " fragments did NOT converge -- this total is built from them"
+      call logger%warning(trim(line))
+      shown = 0_int64
+      do i = 1_int64, fragment_count
+         if (scf_status(i) /= SCF_NOT_CONVERGED) cycle
+         shown = shown + 1_int64
+         if (shown > 10_int64) exit
+         call logger%warning("  fragment "//to_char(i))
+      end do
+      if (n_bad > 10_int64) then
+         call logger%warning("  ... and "//to_char(n_bad - 10_int64)// &
+                             " more; see the scf column of the fragment table")
+      end if
+   end subroutine report_unconverged
 
    subroutine print_mbe_energy_breakdown(sum_by_level, max_level, total_energy)
       !! Print MBE energy breakdown to logger
@@ -801,9 +841,17 @@ contains
 
          ! Copy fragment distances if available
          allocate (json_data%fragment_distances(fragment_count))
+         allocate (json_data%fragment_scf_status(fragment_count))
          do i = 1_int64, fragment_count
             json_data%fragment_distances(i) = results(i)%distance
+            json_data%fragment_scf_status(i) = results(i)%scf_status
          end do
+
+         ! Said once, at the end, where it cannot be scrolled past. A warning
+         ! per fragment is invisible in a run with a million of them, and a
+         ! total assembled from unconverged pieces is otherwise indistinguishable
+         ! from a good one.
+         call report_unconverged(json_data%fragment_scf_status, fragment_count)
 
          ! Copy dipole if available
          if (mbe_result%has_dipole) then

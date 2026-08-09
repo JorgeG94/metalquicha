@@ -4,6 +4,7 @@ program test_mqc_hessian_finite_diff
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t
    use mqc_method_xtb, only: xtb_method_t
+   use omp_lib, only: omp_set_num_threads
    implicit none
 
    type(physical_fragment_t) :: water_geom
@@ -19,6 +20,20 @@ program test_mqc_hessian_finite_diff
    call create_test_water_molecule(water_geom)
    n_atoms = water_geom%n_atoms
    n_coords = 3*n_atoms
+
+   ! One thread, deliberately. tblite's generalized eigensolve fails here on
+   ! more than one -- "(sygvd) failed to solve eigenvalue problem. info=11",
+   ! reproducibly at 2, 4 and 8 threads and never at 1. That is a real defect
+   ! and it is not this test's; the test ran green through it for as long as
+   ! the xTB path ignored tblite's error log, taking whatever the failed
+   ! eigensolve left behind and asserting only that the flags were set.
+   !
+   ! Pinned rather than deleted so the finite-difference machinery stays
+   ! covered. `run_calculation` already pins the unfragmented path the same
+   ! way, which is why nobody met this from the command line -- but the
+   ! fragmented path does not, so this is reachable in a real run and now
+   ! fails loudly there instead of quietly.
+   call omp_set_num_threads(1)
 
    ! Setup XTB method
    xtb_calc%variant = "gfn2"
