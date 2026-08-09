@@ -488,7 +488,7 @@ class MBE:
         pass wants the number to decide with *and* the breakdown to screen on.
         """
         payload = json.dumps(self.settings()).encode()
-        name = str(label).encode()
+        name = _check_label(label).encode()
 
         handle = None
         try:
@@ -518,6 +518,35 @@ class MBE:
     def __repr__(self):
         n = "?" if self._terms is None else len(self._terms)
         return f"<mqc.MBE level={self.level} {self.method} terms={n}>"
+
+
+def _check_label(label):
+    """Reject a label the output files will not come back under.
+
+    The label names the output, and Fortran treats it as a *filename*: it
+    strips any directory and everything after the last dot, the way it derives
+    `output_water.json` from `water.json`. So a label like "tau0.001" writes
+    `output_tau0_*`, and "tau0.002" writes over it -- two runs, one set of
+    files, no complaint from anything. A later `breakdown()` then reads
+    whichever run finished last while believing it has the one it asked for.
+
+    Refused here rather than silently rewritten, because a label the caller
+    chose and a file they cannot find is a better failure than a file they can
+    find with the wrong numbers in it.
+    """
+    name = str(label)
+    if not name:
+        raise ValueError("a run needs a label; it names the output files")
+    stem = name.rsplit("/", 1)[-1]
+    if "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+    if stem != name:
+        raise ValueError(
+            f"label {name!r} would write its output as {stem or '(nothing)'!r} -- "
+            "the label names a file, so dots and slashes are eaten. Use "
+            f"{name.replace('/', '_').replace('.', '_')!r} instead."
+        )
+    return name
 
 
 def _read_terms(handle):

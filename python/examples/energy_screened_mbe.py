@@ -77,17 +77,26 @@ def main(path):
     high_result = high.run("refined", write_to_file=True)
 
     # ---- the correction --------------------------------------------------
-    # Only the kept terms are recomputed, so the difference between the two
-    # passes over those terms is the correction to the cheap total.
-    low_over_kept = sum(t.delta for t in breakdown if t.monomers in strong)
+    # Every term the high pass computed replaces its low counterpart, so the
+    # set to sum over is `high.terms()` -- not `strong`. The difference is the
+    # monomers, and it is not small: they are the whole 1-body energy, and two
+    # methods do not share an absolute scale. Correcting only the interactions
+    # leaves a GFN2 number with DFT decoration on top, which converges, looks
+    # reasonable, and is not a DFT answer.
+    #
+    # Stated as an invariant: with a threshold low enough to keep everything,
+    # `total` must equal a full high-level run exactly. That is worth checking
+    # once on a small cluster whenever this arithmetic is touched.
+    corrected = set(high.terms())
+    low_over_kept = sum(t.delta for t in breakdown if t.monomers in corrected)
     high_over_kept = sum(
-        t.delta for t in high_result.breakdown() if t.monomers in strong
+        t.delta for t in high_result.breakdown() if t.monomers in corrected
     )
     total = low_result.energy - low_over_kept + high_over_kept
 
     print()
     print(f"  E[{LOW['method']}, all terms]        {low_result.energy:20.10f}")
-    print(f"  correction over {len(strong)} terms  {high_over_kept - low_over_kept:+20.10f}")
+    print(f"  correction over {len(corrected)} terms  {high_over_kept - low_over_kept:+20.10f}")
     print(f"  E[two-level]                 {total:20.10f}")
 
 

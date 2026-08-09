@@ -2,7 +2,7 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
-   use pic_types, only: int32, int64, dp
+   use pic_types, only: int32, int64, dp, default_int
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger
@@ -253,6 +253,7 @@ contains
       integer :: max_intersection_level  !! Maximum k-way intersection depth for GMBE
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
+      integer(default_int) :: supplied_width  !! Columns the caller actually provided
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
@@ -304,9 +305,28 @@ contains
             total_fragments = n_supplied_terms
             allocate (polymers(max(total_fragments, 1_int64), max_level))
             polymers = 0
+            ! The caller's array is as wide as their highest term, which need
+            ! not be `max_level`: a screen that keeps no trimers hands over a
+            ! two-column list for a level-3 expansion, and copying `max_level`
+            ! columns from it reads off the end. That produced a monomer index
+            ! of 0 the once, which the validator caught; it is undefined
+            ! memory and could as easily have been a plausible index.
+            supplied_width = int(size(supplied_terms, 2), default_int)
+            if (supplied_width > max_level) then
+               ! Wider than the expansion allows. Truncating would silently
+               ! turn an n-mer into a smaller one, so refuse instead -- but
+               ! only if the extra columns actually hold anything.
+               if (any(supplied_terms(1:total_fragments, max_level + 1:supplied_width) /= 0)) then
+                  call logger%error("invalid fragment list: a term names more than "// &
+                                    to_char(max_level)//" monomers, which is the level "// &
+                                    "this expansion was configured for")
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
+               end if
+               supplied_width = max_level
+            end if
             if (total_fragments > 0) then
-               polymers(1:total_fragments, 1:max_level) = &
-                  supplied_terms(1:total_fragments, 1:max_level)
+               polymers(1:total_fragments, 1:supplied_width) = &
+                  supplied_terms(1:total_fragments, 1:supplied_width)
             end if
             ! A supplied list has had no screening or sorting applied to it and
             ! comes from outside, so it is checked before anything is spent on
