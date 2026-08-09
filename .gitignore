@@ -73,3 +73,6 @@ __pycache__/
 # Local Python virtual environments
 .venv/
 venv/
+
+# ctest scratch, swept in once by a broad git add
+Testing/
