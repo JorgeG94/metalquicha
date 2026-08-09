@@ -47,6 +47,8 @@ __all__ = [
     "ELEMENTS",
 ]
 
+HARTREE_TO_EV = 27.211386245988
+
 ELEMENTS = (
     # H through Og, matching mqc_elements.f90 exactly. It is a second copy of
     # that table and there is no mechanism keeping the two in step, so if this
@@ -306,6 +308,32 @@ class Result:
         return None
 
     @property
+    def gap_ev(self):
+        """HOMO-LUMO gap of the whole system in eV, or None.
+
+        Only an unfragmented run has one. A fragmented run returns None on
+        purpose rather than a number assembled from its fragments, because no
+        such assembly exists -- see `Term.gap_ev`.
+        """
+        document = self._output_document()
+        if not document:
+            return None
+        return document.get("homo_lumo_gap_ev")
+
+    def _output_document(self):
+        if not self.wrote:
+            return None
+        path = f"output_{self.label}.json"
+        if not os.path.exists(path):
+            return None
+        with open(path) as handle:
+            document = json.load(handle)
+        for entry in document.values():
+            if isinstance(entry, dict):
+                return entry
+        return None
+
+    @property
     def breakdown_csv(self):
         """The per-fragment CSV, if files were written.
 
@@ -333,6 +361,8 @@ class Result:
             ie, idelta = header.index("energy"), header.index("delta_energy")
             idist = header.index("distance") if "distance" in header else None
             iscf = header.index("scf") if "scf" in header else None
+            ihomo = header.index("homo") if "homo" in header else None
+            ilumo = header.index("lumo") if "lumo" in header else None
             for line in handle:
                 if not line.strip():
                     continue
@@ -344,6 +374,8 @@ class Result:
                         float(cells[idelta]),
                         float(cells[idist]) if idist is not None else None,
                         _converged(cells[iscf]) if iscf is not None else None,
+                        _number(cells, ihomo),
+                        _number(cells, ilumo),
                     )
                 )
         return rows
@@ -365,9 +397,10 @@ class Result:
 class Term:
     """One term of the expansion, as read back from a breakdown."""
 
-    __slots__ = ("monomers", "energy", "delta", "distance", "converged")
+    __slots__ = ("monomers", "energy", "delta", "distance", "converged", "homo", "lumo")
 
-    def __init__(self, monomers, energy, delta, distance, converged=None):
+    def __init__(self, monomers, energy, delta, distance, converged=None,
+                 homo=None, lumo=None):
         self.monomers = monomers  # 1-based, as the expansion counts them
         self.energy = energy
         self.delta = delta  #: n-body contribution -- what a threshold is on
@@ -375,6 +408,25 @@ class Term:
         self.converged = converged
             #: True, False, or None when the method did not report. None is
             #: not a claim that it converged.
+        self.homo = homo   #: Hartree, or None if the method reported no pair
+        self.lumo = lumo   #: Hartree, or None
+
+    @property
+    def gap_ev(self):
+        """HOMO-LUMO gap of *this fragment*, in eV, or None.
+
+        Per fragment, and there is no system-wide counterpart: gaps are not
+        additive, so no sum of these is the molecule's gap. For that, run the
+        system unfragmented and read `Result.gap_ev`.
+
+        What these are good for is finding the fragments worth worrying
+        about. A small gap is where an SCF struggles to converge and where a
+        single determinant is the weakest description, so the tail of this
+        column and the `NO` rows of the scf column tend to be the same rows.
+        """
+        if self.homo is None or self.lumo is None:
+            return None
+        return (self.lumo - self.homo) * HARTREE_TO_EV
 
     @property
     def level(self):
@@ -612,6 +664,19 @@ def _check_label(label):
             f"{name.replace('/', '_').replace('.', '_')!r} instead."
         )
     return name
+
+
+def _number(cells, index):
+    """A float from a breakdown cell, or None when the column is blank."""
+    if index is None or index >= len(cells):
+        return None
+    text = cells[index].strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
 
 
 def _converged(cell):

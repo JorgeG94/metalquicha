@@ -49,6 +49,18 @@ module mqc_json_output_types
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
       real(dp), allocatable :: sum_by_level(:)        !! Energy sum per level
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
+      real(dp) :: homo = 0.0_dp          !! Whole-system HOMO, unfragmented runs only
+      real(dp) :: lumo = 0.0_dp          !! Whole-system LUMO, unfragmented runs only
+      logical :: has_orbitals = .false.
+         !! Set only where a gap means something -- one SCF over one system.
+         !! A fragmented run leaves this false on purpose: gaps do not add,
+         !! so there is no expansion of them to report.
+      logical, allocatable :: fragment_has_orbitals(:)
+         !! Whether that fragment reported a frontier pair. Not inferred from
+         !! the values: homo == lumo == 0 is what a method that said nothing
+         !! leaves behind, and printing it as a gap of zero is a claim.
+      real(dp), allocatable :: fragment_homo(:)   !! Per-fragment HOMO (Hartree)
+      real(dp), allocatable :: fragment_lumo(:)   !! Per-fragment LUMO (Hartree)
       integer, allocatable :: fragment_scf_status(:)
          !! Per-fragment SCF convergence, as SCF_* from mqc_result_types.
          !! Recorded because a non-converged fragment still yields a number of

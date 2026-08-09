@@ -6,6 +6,7 @@ contains
       !! This is a simple single-process calculation without MPI distribution
       !! If result_out is present, returns result instead of writing JSON and destroying it
       !! If json_data is present, populates it for centralized JSON output
+      use mqc_physical_constants, only: HARTREE_TO_EV
       use mqc_error, only: error_t
       use mqc_vibrational_analysis, only: compute_vibrational_frequencies, &
                                           compute_vibrational_analysis, print_vibrational_analysis
@@ -80,6 +81,15 @@ contains
             write (result_line, "(a,3f15.8)") "  Dipole (e*Bohr): ", result%dipole
             call logger%info(trim(result_line))
             write (result_line, "(a,f15.8)") "  Dipole magnitude (Debye): ", norm2(result%dipole)*2.541746_dp
+            call logger%info(trim(result_line))
+         end if
+
+         if (result%has_orbitals) then
+            write (result_line, "(a,f15.8,a,f15.8)") "  HOMO (Hartree): ", result%homo, &
+               "   LUMO: ", result%lumo
+            call logger%info(trim(result_line))
+            write (result_line, "(a,f12.6)") "  HOMO-LUMO gap (eV): ", &
+               (result%lumo - result%homo)*HARTREE_TO_EV
             call logger%info(trim(result_line))
          end if
 
@@ -198,6 +208,9 @@ contains
                      if (present(json_data)) then
                         json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
                         json_data%total_energy = result%energy%total()
+                        json_data%has_orbitals = result%has_orbitals
+                        json_data%homo = result%homo
+                        json_data%lumo = result%lumo
                         json_data%has_energy = result%has_energy
                         json_data%has_vibrational = .true.
 
@@ -260,6 +273,9 @@ contains
          if (present(json_data) .and. .not. result%has_hessian) then
             json_data%output_mode = OUTPUT_MODE_UNFRAGMENTED
             json_data%total_energy = result%energy%total()
+            json_data%has_orbitals = result%has_orbitals
+            json_data%homo = result%homo
+            json_data%lumo = result%lumo
             json_data%has_energy = result%has_energy
 
             if (result%has_dipole) then

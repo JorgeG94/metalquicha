@@ -454,6 +454,8 @@ contains
       integer :: reuse_status
       integer :: reuse_atoms
       real(dp), allocatable :: reuse_gradient(:, :), reuse_hessian(:, :)
+      real(dp) :: reuse_homo, reuse_lumo
+      logical :: reuse_orbitals
       type(group_shard_t), allocatable :: group_shards(:)
 
       ! MPI request handles for non-blocking operations
@@ -525,11 +527,15 @@ contains
             call ctx%checkpoint%lookup(task_rows(task_idx, :), &
                                        reuse_found, reuse_energy, reuse_status, &
                                        n_atoms=reuse_atoms, gradient=reuse_gradient, &
-                                       hessian=reuse_hessian)
+                                       hessian=reuse_hessian, homo=reuse_homo, &
+                                       lumo=reuse_lumo, has_orbitals=reuse_orbitals)
             if (.not. reuse_found) cycle
             results(task_idx)%energy%scf = reuse_energy
             results(task_idx)%has_energy = .true.
             results(task_idx)%scf_status = reuse_status
+            results(task_idx)%homo = reuse_homo
+            results(task_idx)%lumo = reuse_lumo
+            results(task_idx)%has_orbitals = reuse_orbitals
             if (allocated(reuse_gradient)) then
                call move_alloc(reuse_gradient, results(task_idx)%gradient)
                results(task_idx)%has_gradient = .true.
@@ -849,14 +855,20 @@ contains
       if (result%has_gradient .and. result%has_hessian) then
          call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
                                     result%scf_status, size(result%gradient, 2), &
-                                    result%gradient, result%hessian)
+                                    result%gradient, result%hessian, &
+                                    homo=result%homo, lumo=result%lumo, &
+                                    has_orbitals=result%has_orbitals)
       else if (result%has_gradient) then
          call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
                                     result%scf_status, size(result%gradient, 2), &
-                                    gradient=result%gradient)
+                                    gradient=result%gradient, &
+                                    homo=result%homo, lumo=result%lumo, &
+                                    has_orbitals=result%has_orbitals)
       else
          call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
-                                    result%scf_status)
+                                    result%scf_status, &
+                                    homo=result%homo, lumo=result%lumo, &
+                                    has_orbitals=result%has_orbitals)
       end if
    end subroutine record_task
 
