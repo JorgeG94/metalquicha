@@ -542,6 +542,13 @@ class MBE:
         Generated on demand and cached, so screening is read-modify-write on
         one list rather than a new one each time.
         """
+        if self._terms is None and self.level < 2:
+            # `fraglist_generate` starts at pairs, so a monomers-only
+            # expansion has no n-mers for it to make and it refuses. That is
+            # right for the generator and wrong as an answer: MBE(1) is a
+            # legitimate calculation -- it is the first term of every other
+            # one -- and its term list is just the monomers.
+            self._terms = [(i,) for i in range(1, self.system.n_monomers + 1)]
         if self._terms is None:
             handle = _ffi.fraglist_new()
             try:
