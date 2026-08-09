@@ -223,8 +223,16 @@ if(MQC_ENABLE_LIBCINT)
   FetchContent_Declare(
     libcint
     GIT_REPOSITORY https://github.com/JorgeG94/libcint.git
-    GIT_TAG master
-    GIT_SHALLOW TRUE)
+    # Pinned to a commit, not to master. A branch is a moving target: a push
+    # to libcint would change what this program builds against, with nothing
+    # here recording that it changed. Worth replacing with a tag once the
+    # fork has one -- a tag says what it is, a hash does not. GIT_SHALLOW is
+    # off because a shallow fetch cannot resolve a bare commit hash.
+    GIT_TAG ef51512689e32f6a6693bbeab83966db5dbc4d15)
+  # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone
+  # and no network is touched. Compute nodes on most clusters have none, and
+  # a configure step that reaches for GitHub fails there in a way that reads
+  # like a compiler problem.
   FetchContent_MakeAvailable(libcint)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
   # BUILD_INTERFACE, not just PRIVATE: a static library records even its private
