@@ -445,6 +445,11 @@ contains
       integer, allocatable :: group_leader_by_group(:)
       integer, allocatable :: group_node_counts(:)
       integer :: n_cols
+      logical, allocatable :: task_done(:)
+      integer(int64) :: n_reused
+      logical :: reuse_found
+      real(dp) :: reuse_energy
+      integer :: reuse_status
       type(group_shard_t), allocatable :: group_shards(:)
 
       ! MPI request handles for non-blocking operations
@@ -502,12 +507,40 @@ contains
       end do
       group0_node_count = group_node_counts(1)
 
+      ! Fragments an earlier run already finished are taken from the
+      ! checkpoint here, before anything is scheduled: a term that is never
+      ! enqueued is never sent to a worker, so the saving is the whole
+      ! calculation and not merely the arithmetic. `results_received` starts
+      ! at the number reclaimed because the main loop below counts up to
+      ! total_tasks, and those results are already in hand.
+      allocate (task_done(max(total_tasks, 1_int64)))
+      task_done = .false.
+      n_reused = 0_int64
+      if (ctx%checkpoint%active .and. total_tasks > 0) then
+         do task_idx = 1_int64, total_tasks
+            call ctx%checkpoint%lookup(task_rows(task_idx, 1:ctx%max_level), &
+                                       reuse_found, reuse_energy, reuse_status)
+            if (.not. reuse_found) cycle
+            results(task_idx)%energy%scf = reuse_energy
+            results(task_idx)%has_energy = .true.
+            results(task_idx)%scf_status = reuse_status
+            task_done(task_idx) = .true.
+            n_reused = n_reused + 1_int64
+         end do
+         results_received = n_reused
+         if (n_reused > 0_int64) then
+            call logger%info("Reused "//to_char(n_reused)//" fragment(s) from the "// &
+                             "checkpoint; computing "//to_char(total_tasks - n_reused))
+         end if
+      end if
+
       ! Partition tasks into group shards (chunked round-robin)
       allocate (group_counts(ctx%global_groups))
       group_counts = 0_int64
       if (total_tasks > 0) then
          chunk_size = max(1_int64, total_tasks/int(ctx%global_groups, int64))
          do task_idx = 1_int64, total_tasks
+            if (task_done(task_idx)) cycle
             chunk_id = (task_idx - 1_int64)/chunk_size + 1_int64
             group_id = int(mod(chunk_id - 1_int64, int(ctx%global_groups, int64)) + 1_int64)
             group_counts(group_id) = group_counts(group_id) + 1_int64
@@ -527,6 +560,7 @@ contains
 
       if (total_tasks > 0) then
          do task_idx = 1_int64, total_tasks
+            if (task_done(task_idx)) cycle
             chunk_id = (task_idx - 1_int64)/chunk_size + 1_int64
             group_id = int(mod(chunk_id - 1_int64, int(ctx%global_groups, int64)) + 1_int64)
             group_fill(group_id) = group_fill(group_id) + 1_int64
@@ -774,6 +808,25 @@ contains
       end if
    end subroutine handle_local_worker_requests_group
 
+   subroutine record_task(ctx, task_idx, result)
+      !! Append one finished task to the checkpoint, if there is one
+      !!
+      !! Only for energy runs, and `checkpoint%open` refuses anything else, so
+      !! one task is one fragment here and the row is its monomers. Once
+      !! derivatives are stored the mapping stops being one-to-one and this
+      !! needs the fragment index rather than the task index.
+      use mqc_many_body_expansion, only: mbe_context_t
+      type(mbe_context_t), intent(in) :: ctx
+      integer(int64), intent(in) :: task_idx
+      type(calculation_result_t), intent(in) :: result
+
+      if (.not. ctx%checkpoint%active) return
+      if (.not. allocated(ctx%polymers)) return
+      if (task_idx < 1_int64 .or. task_idx > size(ctx%polymers, 1, kind=int64)) return
+      call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+                                 result%scf_status)
+   end subroutine record_task
+
    subroutine handle_local_worker_results(ctx, worker_fragment_map, results, results_received, total_items, coord_timer)
       !! Drain results from local workers and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
@@ -804,6 +857,9 @@ contains
         call result_irecv(results(worker_fragment_map(worker_source)), ctx%resources%mpi_comms%node_comm, worker_source, &
                            TAG_WORKER_SCALAR_RESULT, req)
          call wait(req)
+
+         call record_task(ctx, worker_fragment_map(worker_source), &
+                          results(worker_fragment_map(worker_source)))
 
          if (results(worker_fragment_map(worker_source))%has_error) then
             call logger%error("Fragment "//to_char(worker_fragment_map(worker_source))// &
@@ -846,6 +902,12 @@ contains
          call result_irecv(results(fragment_idx), ctx%resources%mpi_comms%world_comm, status%MPI_SOURCE, &
                            TAG_NODE_SCALAR_RESULT, req)
          call wait(req)
+
+         ! Recorded the moment rank 0 owns it. This is the only rank that sees
+         ! every result -- its own workers below, and forwarded ones here -- so
+         ! it is the only one that can write a single complete file, and it
+         ! already holds the rows to key them by.
+         call record_task(ctx, fragment_idx, results(fragment_idx))
 
          if (results(fragment_idx)%has_error) then
             call logger%error("Fragment "//to_char(fragment_idx)//" calculation failed: "// &

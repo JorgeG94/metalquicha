@@ -571,22 +571,19 @@ contains
       ! Opened on rank 0 only: it is the rank that collects every result, so
       ! it is the only one with anything to write, and N ranks appending to one
       ! file would interleave.
-      ! Not yet wired into the distributed path, and saying so is not
-      ! optional. A twelve-hour MPI job launched in the belief that it is
-      ! resumable, that then is not, costs exactly what this feature exists to
-      ! save -- so it is announced rather than quietly skipped. The insertion
-      ! point is the fragment queue in mqc_mbe_mpi_fragment_distribution_scheme:
-      ! known terms must not be enqueued, and their results pre-filled.
-      if (len_trim(config%checkpoint_file) > 0 .and. &
-          resources%mpi_comms%world_comm%size() > 1 .and. &
+      ! GMBE keys its terms by atom set, not by monomer tuple, so the file
+      ! this writes would not describe them. Announced rather than opened and
+      ! left unused -- a checkpoint that silently records nothing is worse
+      ! than no checkpoint, because it is believed.
+      if (len_trim(config%checkpoint_file) > 0 .and. allow_overlapping_fragments .and. &
           resources%mpi_comms%world_comm%rank() == 0) then
-         call logger%warning("Checkpointing is not yet supported for distributed runs; "// &
-                             "this run will write nothing and resume nothing. Run on one "// &
-                             "rank to use "//trim(config%checkpoint_file)//".")
+         call logger%warning("Checkpointing does not support GMBE; this run will write "// &
+                             "nothing and resume nothing. Its PIE terms are atom sets "// &
+                             "rather than monomer tuples, which the file cannot express.")
       end if
 
       if (resources%mpi_comms%world_comm%rank() == 0 .and. &
-          resources%mpi_comms%world_comm%size() == 1 .and. &
+          .not. allow_overlapping_fragments .and. &
           len_trim(config%checkpoint_file) > 0) then
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &

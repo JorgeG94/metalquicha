@@ -206,7 +206,9 @@ contains
       !! Flushed every time. A buffered checkpoint is a checkpoint that loses
       !! whatever was in the buffer, which is precisely the work a resume most
       !! wants back.
-      class(checkpoint_t), intent(inout) :: this
+      class(checkpoint_t), intent(in) :: this
+         !! Only the unit is touched, so a coordinator holding the context by
+         !! value can still record.
       integer, intent(in) :: term(:)
       real(dp), intent(in) :: energy
       integer, intent(in) :: scf_status
