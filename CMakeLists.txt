@@ -67,6 +67,9 @@ option(
   MQC_ENABLE_HDF5
   "Link to HDF5 for binary checkpoints (needed for gradient/Hessian restart)"
   OFF)
+option(MQC_ENABLE_LIBCINT
+       "Fetch libcint for CPU Gaussian integrals (real ab initio without a GPU)"
+       OFF)
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -196,6 +199,45 @@ if(MQC_ENABLE_TBLITE)
   list(APPEND libraries_to_link tblite::tblite)
 endif()
 
+# libcint, for Gaussian integrals on the CPU.
+#
+# The point is not speed. Everything ab initio here runs through cuEST, which
+# needs an A100 -- so the HF and DFT paths are compile-checked and never
+# executed anywhere the developer is sitting, which is how they got this far
+# unverified. A CPU backend makes them runnable on a laptop, and gives cuEST a
+# second implementation to disagree with, which is the check it has never had.
+#
+# JorgeG94's fork rather than upstream sunqm: it adds `libcint_fortran`, a
+# Fortran API over the C one, so this program needs no hand-written bindings at
+# all -- including libcint_gto_norm, which is the easy thing to get wrong
+# (libcint wants contraction coefficients pre-multiplied by the primitive
+# normalisation, and an overlap diagonal that is not 1 is the symptom).
+#
+# libcint rather than libint, measured rather than assumed: clean clone to
+# libcint.so in 9 seconds against 46 MB of pre-generated source and a long
+# build. For a backend whose job is to be correct and always available, build
+# time is the property that matters; if throughput ever does, libint can sit
+# behind the same interface later.
+if(MQC_ENABLE_LIBCINT)
+  include(FetchContent)
+  FetchContent_Declare(
+    libcint
+    GIT_REPOSITORY https://github.com/JorgeG94/libcint.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE)
+  FetchContent_MakeAvailable(libcint)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBCINT)
+  # BUILD_INTERFACE, not just PRIVATE: a static library records even its private
+  # dependencies in its interface as $<LINK_ONLY:...>, so CMake wants them in
+  # this project's export set -- which a fetched third-party library is never
+  # going to join. Scoping them to the build keeps the integrals backend
+  # internal, which it is.
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:cint_fortran>
+                                            $<BUILD_INTERFACE:cint>)
+  message(
+    STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
+endif()
+
 # HDF5, for checkpoints that carry derivatives. Only the C library is needed:
 # the bindings are hand-written against the C ABI precisely so that no
 # compiler-specific hdf5.mod has to exist. Optional, because a laptop build
@@ -245,6 +287,14 @@ if(MQC_ENABLE_HDF5)
   target_include_directories(check_hdf5_checkpoint
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
+endif()
+
+if(MQC_ENABLE_LIBCINT)
+  add_executable(check_libcint
+                 ${PROJECT_SOURCE_DIR}/validation/check_libcint.f90)
+  target_include_directories(check_libcint
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_libcint PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run
