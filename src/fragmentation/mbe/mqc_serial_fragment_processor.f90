@@ -13,6 +13,7 @@ contains
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
       use mqc_checkpoint, only: checkpoint_t
+      use mqc_calculation_defaults, only: DISP_WHOLE_FRAGMENT
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) ::  max_level
       integer, intent(in) :: polymers(:, :)
@@ -63,7 +64,8 @@ contains
          ! monomers rather than the index, so a resumed list that is screened
          ! differently still matches the right fragment.
          if (present(checkpoint)) then
-            call checkpoint%lookup(polymers(frag_idx, :), known, known_energy, known_status, &
+            call checkpoint%lookup([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                   known, known_energy, known_status, &
                                    n_atoms=known_atoms, gradient=known_gradient, &
                                    hessian=known_hessian)
             if (known) then
@@ -107,15 +109,18 @@ contains
          ! not cost this one.
          if (present(checkpoint)) then
             if (results(frag_idx)%has_gradient .and. results(frag_idx)%has_hessian) then
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
                                       results(frag_idx)%scf_status, phys_frag%n_atoms, &
                                       results(frag_idx)%gradient, results(frag_idx)%hessian)
             else if (results(frag_idx)%has_gradient) then
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
                                       results(frag_idx)%scf_status, phys_frag%n_atoms, &
                                       gradient=results(frag_idx)%gradient)
             else
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
                                       results(frag_idx)%scf_status, phys_frag%n_atoms)
             end if
          end if

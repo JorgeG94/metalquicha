@@ -522,7 +522,7 @@ contains
       n_reused = 0_int64
       if (ctx%checkpoint%active .and. total_tasks > 0) then
          do task_idx = 1_int64, total_tasks
-            call ctx%checkpoint%lookup(task_rows(task_idx, 1:ctx%max_level), &
+            call ctx%checkpoint%lookup(task_rows(task_idx, :), &
                                        reuse_found, reuse_energy, reuse_status, &
                                        n_atoms=reuse_atoms, gradient=reuse_gradient, &
                                        hessian=reuse_hessian)
@@ -636,12 +636,12 @@ contains
 
          ! PRIORITY 2: Check for incoming results from local workers
          if (ctx%resources%mpi_comms%node_comm%size() > 1) then
-            call handle_local_worker_results(ctx, worker_fragment_map, results, results_received, &
+            call handle_local_worker_results(ctx, task_rows, worker_fragment_map, results, results_received, &
                                              total_tasks, coord_timer)
          end if
 
          ! PRIORITY 3: Check for incoming results from node coordinators (group 0 only)
-         call handle_node_results(ctx, results, results_received, total_tasks, coord_timer)
+         call handle_node_results(ctx, task_rows, results, results_received, total_tasks, coord_timer)
 
          ! Fold any fragment whose displacements have all landed, releasing its
          ! task gradients while the rest of the queue is still running.
@@ -822,39 +822,50 @@ contains
       end if
    end subroutine handle_local_worker_requests_group
 
-   subroutine record_task(ctx, task_idx, result)
+   subroutine record_task(ctx, task_rows, task_idx, result)
       !! Append one finished task to the checkpoint, if there is one
       !!
-      !! Only for energy runs, and `checkpoint%open` refuses anything else, so
-      !! one task is one fragment here and the row is its monomers. Once
-      !! derivatives are stored the mapping stops being one-to-one and this
-      !! needs the fragment index rather than the task index.
+      !! **Keyed on the task row, not on the fragment.** A Hessian run expands
+      !! each fragment into 1 + 6N schedulable tasks -- a reference point and a
+      !! forward/backward gradient per Cartesian coordinate -- so `task_idx` is
+      !! not a fragment index, and `polymers(task_idx, :)` is somebody else's
+      !! monomers. It was, briefly, and the checkpoint it wrote carried a
+      !! plausible tuple on every record with the wrong data underneath.
+      !!
+      !! The task row already holds what tells them apart: the monomers, plus
+      !! the displacement code in the last column (DISP_WHOLE_FRAGMENT when
+      !! nothing is displaced). Keying on the whole row makes each displaced
+      !! gradient its own resumable unit, which is the granularity a
+      !! finite-difference Hessian wants -- a killed job keeps the
+      !! displacements it finished instead of losing the fragment.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(inout) :: ctx
+      integer, intent(in) :: task_rows(:, :)
       integer(int64), intent(in) :: task_idx
       type(calculation_result_t), intent(in) :: result
 
       if (.not. ctx%checkpoint%active) return
-      if (.not. allocated(ctx%polymers)) return
-      if (task_idx < 1_int64 .or. task_idx > size(ctx%polymers, 1, kind=int64)) return
+      if (task_idx < 1_int64 .or. task_idx > size(task_rows, 1, kind=int64)) return
       if (result%has_gradient .and. result%has_hessian) then
-         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+         call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
                                     result%scf_status, size(result%gradient, 2), &
                                     result%gradient, result%hessian)
       else if (result%has_gradient) then
-         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+         call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
                                     result%scf_status, size(result%gradient, 2), &
                                     gradient=result%gradient)
       else
-         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+         call ctx%checkpoint%record(task_rows(task_idx, :), result%energy%total(), &
                                     result%scf_status)
       end if
    end subroutine record_task
 
-   subroutine handle_local_worker_results(ctx, worker_fragment_map, results, results_received, total_items, coord_timer)
+   subroutine handle_local_worker_results(ctx, task_rows, worker_fragment_map, results, &
+                                          results_received, total_items, coord_timer)
       !! Drain results from local workers and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(inout) :: ctx
+      integer, intent(in) :: task_rows(:, :)
       integer(int64), intent(inout) :: worker_fragment_map(:)
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
@@ -882,7 +893,7 @@ contains
                            TAG_WORKER_SCALAR_RESULT, req)
          call wait(req)
 
-         call record_task(ctx, worker_fragment_map(worker_source), &
+         call record_task(ctx, task_rows, worker_fragment_map(worker_source), &
                           results(worker_fragment_map(worker_source)))
 
          if (results(worker_fragment_map(worker_source))%has_error) then
@@ -903,10 +914,11 @@ contains
       end do
    end subroutine handle_local_worker_results
 
-   subroutine handle_node_results(ctx, results, results_received, total_items, coord_timer)
+   subroutine handle_node_results(ctx, task_rows, results, results_received, total_items, coord_timer)
       !! Drain results from remote node coordinators and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
       type(mbe_context_t), intent(inout) :: ctx
+      integer, intent(in) :: task_rows(:, :)
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
       integer(int64), intent(in) :: total_items
@@ -931,7 +943,7 @@ contains
          ! every result -- its own workers below, and forwarded ones here -- so
          ! it is the only one that can write a single complete file, and it
          ! already holds the rows to key them by.
-         call record_task(ctx, fragment_idx, results(fragment_idx))
+         call record_task(ctx, task_rows, fragment_idx, results(fragment_idx))
 
          if (results(fragment_idx)%has_error) then
             call logger%error("Fragment "//to_char(fragment_idx)//" calculation failed: "// &
