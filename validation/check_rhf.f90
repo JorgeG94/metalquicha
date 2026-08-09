@@ -3,6 +3,10 @@
 !!     cmake -B build -DMQC_ENABLE_LIBCINT=ON && ./build/check_rhf
 !!
 !! Two systems, both with answers that exist independently of this program.
+!! The references below are PySCF 2.14 on the same geometries and the same
+!! basis data -- not the textbook roundings the tolerances were first written
+!! against. Fed the same BSE numbers, the two codes agree to about 1e-11,
+!! which is the SCF convergence floor rather than a difference of method.
 !!
 !!   * H2 / STO-3G at R = 1.4 bohr, -1.1167 Ha. s functions only, so it tests
 !!     the SCF itself: orthogonalisation, the Fock build, the density, the
@@ -74,8 +78,9 @@ contains
          "   nuclear ", scf%nuclear_repulsion
       call expect(abs(scf%nuclear_repulsion - 1.0_dp/1.4_dp) < 1.0e-12_dp, &
                   "H2 nuclear repulsion is 1/R")
-      call expect(abs(scf%energy - (-1.1167_dp)) < 1.0e-3_dp, &
-                  "H2 total energy matches the reference -1.1167")
+      ! PySCF 2.14, same geometry and basis: -1.1167143251
+      call expect(abs(scf%energy - (-1.1167143251_dp)) < 1.0e-9_dp, &
+                  "H2 total energy matches PySCF to 1e-9")
 
       call mol%destroy()
       call basis%destroy()
@@ -133,8 +138,9 @@ contains
          "  (", scf%iterations, " iterations)"
       write (*, "(A,F16.10,A,F16.10)") "              electronic ", scf%electronic, &
          "   nuclear ", scf%nuclear_repulsion
-      call expect(abs(scf%energy - (-74.9659_dp)) < 5.0e-3_dp, &
-                  "H2O total energy matches the reference -74.9659")
+      ! PySCF 2.14, same geometry and basis: -74.9658162796
+      call expect(abs(scf%energy - (-74.9658162796_dp)) < 1.0e-9_dp, &
+                  "H2O total energy matches PySCF to 1e-9")
 
       call mol%destroy()
       call basis%destroy()
