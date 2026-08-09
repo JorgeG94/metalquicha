@@ -26,6 +26,7 @@ module mqc_hdf5_bindings
    implicit none
    private
 
+   public :: h5_version, h5_version_text
    public :: hid_t, herr_t, hsize_t, H5F_ACC_RDONLY, H5F_ACC_RDWR, H5F_ACC_TRUNC, &
               H5F_ACC_EXCL, H5P_DEFAULT, H5S_ALL, H5S_UNLIMITED, H5D_CHUNKED, H5S_SELECT_SET, &
               H5F_SCOPE_LOCAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_LLONG, &
@@ -85,6 +86,14 @@ module mqc_hdf5_bindings
          implicit none
          integer(herr_t) :: status
       end function H5open
+
+      function H5get_libversion(major, minor, release) result(status) &
+         bind(C, name="H5get_libversion")
+         import :: herr_t, c_int
+         implicit none
+         integer(c_int), intent(out) :: major, minor, release
+         integer(herr_t) :: status
+      end function H5get_libversion
 
       ! -- files ------------------------------------------------------------
       function H5Fcreate(name, flags, fcpl, fapl) result(file) bind(C, name="H5Fcreate")
@@ -348,6 +357,32 @@ module mqc_hdf5_bindings
 
 contains
 
+   subroutine h5_version(major, minor, release)
+      !! Which HDF5 is actually loaded
+      integer, intent(out) :: major, minor, release
+
+      integer(c_int) :: c_major, c_minor, c_release
+
+      major = 0
+      minor = 0
+      release = 0
+      if (H5get_libversion(c_major, c_minor, c_release) < 0) return
+      major = int(c_major)
+      minor = int(c_minor)
+      release = int(c_release)
+   end subroutine h5_version
+
+   function h5_version_text() result(text)
+      !! The loaded version, for a log line or an error message
+      character(len=:), allocatable :: text
+      character(len=32) :: buffer
+      integer :: major, minor, release
+
+      call h5_version(major, minor, release)
+      write (buffer, "(i0,'.',i0,'.',i0)") major, minor, release
+      text = trim(buffer)
+   end function h5_version_text
+
    function h5_start() result(ok)
       !! Initialise the library, so the datatype globals are real ids
       !!
@@ -355,8 +390,22 @@ contains
       !! Fortran interface each smuggle this in; a raw binding does not, and
       !! the failure -- a zero type id -- is accepted by the library as a
       !! different type rather than rejected as an error.
+      !! It also refuses HDF5 older than 1.10, and that check is not
+      !! decoration. `hid_t` was `int` until 1.10 and has been `int64_t`
+      !! since; the declarations above assume the latter. Built or run
+      !! against 1.8, every id would be assembled from the wrong eight bytes
+      !! and the failure would be a wrong file rather than a bad status. A
+      !! newer library is fine -- the C ABI has been stable since 1.10 for
+      !! everything used here -- so this is a floor, not a pin.
       logical :: ok
+
+      integer :: major, minor, release
+
       ok = (H5open() >= 0)
+      if (.not. ok) return
+
+      call h5_version(major, minor, release)
+      ok = (major > 1) .or. (major == 1 .and. minor >= 10)
    end function h5_start
 
    pure function c_string(text) result(buffer)

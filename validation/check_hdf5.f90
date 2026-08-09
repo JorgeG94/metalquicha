@@ -16,7 +16,7 @@
 program check_hdf5
    use, intrinsic :: iso_c_binding, only: c_loc, c_null_ptr, c_size_t, c_char
    use pic_types, only: dp
-   use mqc_hdf5_bindings, only: hid_t, hsize_t, h5_start, c_string, &
+   use mqc_hdf5_bindings, only: hid_t, hsize_t, h5_start, c_string, h5_version_text, &
                                H5F_ACC_TRUNC, H5F_ACC_RDONLY, H5P_DEFAULT, H5S_ALL, &
                                H5S_UNLIMITED, H5S_SELECT_SET, H5F_SCOPE_LOCAL, &
                                H5T_NATIVE_DOUBLE, H5T_C_S1, H5P_CLS_DATASET_CREATE_ID, &
@@ -50,7 +50,10 @@ program check_hdf5
    ! Without this the datatype globals below are zero, which the library
    ! accepts as a different type rather than rejecting.
    ok = h5_start()
-   call expect(ok, "H5open")
+   call expect(ok, "H5open, and HDF5 at least 1.10")
+   write (*, "(A)") "[hdf5] linked against "//h5_version_text()// &
+      " (hid_t is int64_t from 1.10 on; these bindings assume that)"
+   if (.not. ok) error stop 1
 
    ! ---- create, with an unlimited first dimension ---------------------------
    file = H5Fcreate(c_string(PATH), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT)
