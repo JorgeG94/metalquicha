@@ -17,5 +17,5 @@ target_sources(
 # H5open undefined. That does not fail the link of a shared library, it fails
 # the dlopen, which is to say it fails in Python rather than in CMake.
 if(MQC_ENABLE_HDF5)
-  target_sources(${main_lib} PRIVATE mqc_hdf5_bindings.f90)
+  target_sources(${main_lib} PRIVATE mqc_hdf5_bindings.f90 mqc_hdf5_checkpoint.f90)
 endif()

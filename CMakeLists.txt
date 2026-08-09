@@ -200,6 +200,10 @@ if(MQC_ENABLE_HDF5)
   add_executable(check_hdf5 ${PROJECT_SOURCE_DIR}/validation/check_hdf5.f90)
   target_include_directories(check_hdf5 PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5 PRIVATE ${main_lib})
+
+  add_executable(check_hdf5_checkpoint ${PROJECT_SOURCE_DIR}/validation/check_hdf5_checkpoint.f90)
+  target_include_directories(check_hdf5_checkpoint PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
 endif()
 
 add_executable(check_session_run
