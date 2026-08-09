@@ -16,6 +16,11 @@ target_sources(
 # the real ones -- so pulling this object into a build without libhdf5 leaves
 # H5open undefined. That does not fail the link of a shared library, it fails
 # the dlopen, which is to say it fails in Python rather than in CMake.
+# One of these two always provides `mqc_hdf5_checkpoint`, so the checkpoint
+# code resolves it without a preprocessor conditional at every call site --
+# the same arrangement as mqc_cuest_bridge_stub.
 if(MQC_ENABLE_HDF5)
   target_sources(${main_lib} PRIVATE mqc_hdf5_bindings.f90 mqc_hdf5_checkpoint.f90)
+else()
+  target_sources(${main_lib} PRIVATE mqc_hdf5_checkpoint_stub.f90)
 endif()

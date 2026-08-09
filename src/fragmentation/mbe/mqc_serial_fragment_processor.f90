@@ -37,6 +37,8 @@ contains
       logical :: known
       real(dp) :: known_energy
       integer :: known_status
+      integer :: known_atoms
+      real(dp), allocatable :: known_gradient(:, :), known_hessian(:, :)
       integer(int64) :: n_reused
 
       calc_type_local = calc_type
@@ -61,11 +63,25 @@ contains
          ! monomers rather than the index, so a resumed list that is screened
          ! differently still matches the right fragment.
          if (present(checkpoint)) then
-            call checkpoint%lookup(polymers(frag_idx, :), known, known_energy, known_status)
+            call checkpoint%lookup(polymers(frag_idx, :), known, known_energy, known_status, &
+                                   n_atoms=known_atoms, gradient=known_gradient, &
+                                   hessian=known_hessian)
             if (known) then
                results(frag_idx)%energy%scf = known_energy
                results(frag_idx)%has_energy = .true.
                results(frag_idx)%scf_status = known_status
+               ! The assembly rebuilds the fragment from sys_geom and
+               ! redistributes cap gradients itself, so all it needs back is
+               ! an array of the right shape -- which is why the atom count
+               ! is stored alongside.
+               if (allocated(known_gradient)) then
+                  call move_alloc(known_gradient, results(frag_idx)%gradient)
+                  results(frag_idx)%has_gradient = .true.
+               end if
+               if (allocated(known_hessian)) then
+                  call move_alloc(known_hessian, results(frag_idx)%hessian)
+                  results(frag_idx)%has_hessian = .true.
+               end if
                n_reused = n_reused + 1_int64
                deallocate (fragment_indices)
                cycle
@@ -90,9 +106,18 @@ contains
          ! Recorded the moment it exists, so a kill on the next fragment does
          ! not cost this one.
          if (present(checkpoint)) then
-            call checkpoint%record(polymers(frag_idx, :), &
-                                   results(frag_idx)%energy%total(), &
-                                   results(frag_idx)%scf_status)
+            if (results(frag_idx)%has_gradient .and. results(frag_idx)%has_hessian) then
+               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+                                      results(frag_idx)%scf_status, phys_frag%n_atoms, &
+                                      results(frag_idx)%gradient, results(frag_idx)%hessian)
+            else if (results(frag_idx)%has_gradient) then
+               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+                                      results(frag_idx)%scf_status, phys_frag%n_atoms, &
+                                      gradient=results(frag_idx)%gradient)
+            else
+               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+                                      results(frag_idx)%scf_status, phys_frag%n_atoms)
+            end if
          end if
 
          ! Debug output for gradients

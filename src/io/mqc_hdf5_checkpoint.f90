@@ -44,8 +44,22 @@ module mqc_hdf5_checkpoint
 
    integer, parameter :: FP_LEN = 17          !! 16 hex digits and a terminator
    integer(hsize_t), parameter :: CHUNK = 1024
-      !! Records per chunk, and so the most a kill can cost. Small enough that
-      !! losing one is cheap, large enough that the metadata is not the file.
+      !! Dataset chunk, a storage decision: big enough that HDF5's per-chunk
+      !! metadata stays small against the data.
+
+   integer(int64), parameter :: COMMIT_EVERY = 1024_int64
+   real(dp), parameter :: COMMIT_SECONDS = 30.0_dp
+      !! How much a kill may cost, which is a different question from how the
+      !! data is laid out and must not share its answer. Whichever comes
+      !! first: a thousand records, or half a minute.
+      !!
+      !! Count alone is wrong at both ends. Fragments that take milliseconds
+      !! make a commit-per-record cost more than the science -- at a hundred
+      !! million records a millisecond flush each is a day of flushing. And
+      !! fragments that take seconds, which is what DFT on a trimer costs,
+      !! make a thousand records several hours, so a count-only rule would
+      !! quietly reintroduce exactly the loss this file exists to prevent.
+      !! The clock covers the expensive case, the count covers the cheap one.
 
    type :: hdf5_checkpoint_t
       !! One open HDF5 checkpoint
@@ -56,6 +70,8 @@ module mqc_hdf5_checkpoint
       integer :: max_level = 0
 
       integer(int64) :: n_written = 0     !! Records appended this session
+      integer(int64) :: n_committed = 0   !! Records a reader would be told about
+      integer(int64) :: last_tick = 0     !! system_clock at the last commit
       integer(int64) :: n_grad = 0        !! Doubles in /gradients
       integer(int64) :: n_hess = 0        !! Doubles in /hessians
 
@@ -129,6 +145,7 @@ contains
 
       call write_string_attr(this%file, "fingerprint", fingerprint)
       call write_count(this%file, 0_int64)
+      call system_clock(this%last_tick)
 
       this%d_terms = make_2d("terms", this%file, int(this%max_level, hsize_t), H5T_STD_I32LE)
       this%d_energy = make_1d("energies", this%file, H5T_NATIVE_DOUBLE)
@@ -190,6 +207,8 @@ contains
 
       this%n_loaded = n
       this%n_written = n
+      this%n_committed = n
+      call system_clock(this%last_tick)
       if (n <= 0) return
 
       allocate (this%terms(n, this%max_level))
@@ -288,17 +307,38 @@ contains
 
       this%n_written = at + 1_int64
 
-      ! Flush before the count, on a chunk boundary. Doing this per record
-      ! would make the checkpoint cost more than the science.
-      if (mod(this%n_written, CHUNK) == 0_int64) call commit(this)
+      if (due(this)) call commit(this)
    end subroutine h5ck_record
+
+   function due(this) result(now)
+      !! Whether enough records, or enough time, have passed to commit
+      class(hdf5_checkpoint_t), intent(in) :: this
+      logical :: now
+
+      integer(int64) :: tick, rate
+
+      now = (this%n_written - this%n_committed >= COMMIT_EVERY)
+      if (now) return
+
+      call system_clock(tick, rate)
+      if (rate <= 0) return
+      now = (real(tick - this%last_tick, dp)/real(rate, dp) >= COMMIT_SECONDS)
+   end function due
 
    subroutine commit(this)
       !! Get the data down, then say how much of it is real
+      !!
+      !! This order is the entire guarantee. A count raised before the flush
+      !! would promise records that are not on disk, and a reader that
+      !! believed it would splice uninitialised numbers into an expansion.
       class(hdf5_checkpoint_t), intent(inout) :: this
+
+      integer(int64) :: rate
 
       if (H5Fflush(this%file, H5F_SCOPE_LOCAL) < 0) return
       call write_count(this%file, this%n_written)
+      this%n_committed = this%n_written
+      call system_clock(this%last_tick, rate)
    end subroutine commit
 
    subroutine h5ck_lookup(this, term, found, energy, scf_status, n_atoms, gradient, hessian)
