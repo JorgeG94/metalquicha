@@ -4,6 +4,7 @@ module mqc_gmbe_fragment_distribution_scheme
    !! Handles both serial and MPI-parallelized distribution of monomers and intersection fragments
    use pic_types, only: int32, int64, dp
    use pic_timer, only: timer_type
+   use omp_lib, only: omp_set_num_threads, omp_get_max_threads
    use mqc_calc_types, only: CALC_TYPE_GRADIENT
    use pic_mpi_lib, only: comm_t, send, recv, isend, irecv, &
                           wait, iprobe, MPI_Status, request_t, MPI_ANY_SOURCE, MPI_ANY_TAG, abort_comm
@@ -67,6 +68,7 @@ contains
       type(calculation_result_t), allocatable :: results(:)
       type(error_t) :: error
       integer :: n_atoms, max_atoms, iatom, current_log_level, hess_dim
+      integer :: outer_threads  !! Thread count to put back when the terms are done
       integer(int64) :: term_idx
       integer, allocatable :: atom_list(:)
       real(dp) :: total_energy, term_energy
@@ -111,6 +113,16 @@ contains
          allocate (term_dipole_derivs(3, hess_dim))
          total_dipole_derivs = 0.0_dp
       end if
+
+      ! One thread per term, as every MBE path already does. The methods
+      ! underneath are not safe to run threaded -- tblite's generalized
+      ! eigensolve fails on more than one thread, reproducibly, and it fails
+      ! by corrupting a result rather than by stopping. This was the last
+      ! route to fragment work that did not pin: the distributed GMBE workers
+      ! pin, the MBE processors pin, and this one did not, so serial GMBE was
+      ! the only way to reach a method with threads live.
+      outer_threads = omp_get_max_threads()
+      call omp_set_num_threads(1)
 
       do term_idx = 1_int64, n_pie_terms
          coeff = pie_coefficients(term_idx)
@@ -196,6 +208,12 @@ contains
          deallocate (atom_list)
          call phys_frag%destroy()
       end do
+
+      ! Saved and restored rather than set to omp_get_max_threads(), which is
+      ! what the MBE processor does and which cannot work: after
+      ! omp_set_num_threads(1), omp_get_max_threads() reports 1, so that
+      ! "restore" hands back the value it just clamped.
+      call omp_set_num_threads(outer_threads)
 
       call logger%info(" ")
       call logger%info("GMBE PIE calculation completed successfully")
