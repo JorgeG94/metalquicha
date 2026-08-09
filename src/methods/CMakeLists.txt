@@ -23,3 +23,8 @@ endif()
 
 # Factory must come after method types are defined
 target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
+
+# CPU integrals and SCF, only when libcint is fetched.
+if(MQC_ENABLE_LIBCINT)
+  target_sources(${main_lib} PRIVATE mqc_libcint_integrals.f90 mqc_libcint_rhf.f90)
+endif()

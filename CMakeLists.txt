@@ -303,6 +303,10 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_libcint
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_libcint PRIVATE ${main_lib} cint_fortran cint)
+
+  add_executable(check_rhf ${PROJECT_SOURCE_DIR}/validation/check_rhf.f90)
+  target_include_directories(check_rhf PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_rhf PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run
