@@ -41,6 +41,7 @@ module mqc_method_hf
          !! Initial guess: 'core', 'gwh' or 'sac'
 
       ! SCF settings (from shared scf_config_t)
+      logical :: allow_crap_scf = .false.  !! Keep a non-converged SCF instead of failing
       integer :: max_iter = 100
          !! Maximum SCF iterations
       real(dp) :: conv_tol = 1.0e-8_dp
@@ -91,6 +92,7 @@ contains
       settings%unrestricted = this%options%unrestricted
       settings%guess = this%options%guess
       settings%max_iter = this%options%max_iter
+      settings%allow_crap_scf = this%options%allow_crap_scf
       settings%energy_tol = this%options%conv_tol
       settings%density_tol = this%options%density_tol
       settings%use_diis = this%options%use_diis

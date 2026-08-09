@@ -155,6 +155,7 @@ contains
       ! no complaint. Two structures named scf, one of them wired up.
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
+      driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess

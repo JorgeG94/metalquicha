@@ -310,6 +310,7 @@ class Result:
             mcols = [i for i, name in enumerate(header) if name.startswith("m")]
             ie, idelta = header.index("energy"), header.index("delta_energy")
             idist = header.index("distance") if "distance" in header else None
+            iscf = header.index("scf") if "scf" in header else None
             for line in handle:
                 if not line.strip():
                     continue
@@ -320,9 +321,20 @@ class Result:
                         float(cells[ie]),
                         float(cells[idelta]),
                         float(cells[idist]) if idist is not None else None,
+                        _converged(cells[iscf]) if iscf is not None else None,
                     )
                 )
         return rows
+
+    def unconverged(self):
+        """Terms whose SCF did not converge, from the breakdown.
+
+        Empty is the answer you want. Non-empty means this energy was built
+        from those terms anyway -- which only happens when the run asked for
+        it with allow_crap_scf, and is exactly the list to screen out or
+        recompute.
+        """
+        return [t for t in self.breakdown() if t.converged is False]
 
     def __repr__(self):
         return f"<mqc.Result {self.energy:.10f} Ha>"
@@ -331,13 +343,16 @@ class Result:
 class Term:
     """One term of the expansion, as read back from a breakdown."""
 
-    __slots__ = ("monomers", "energy", "delta", "distance")
+    __slots__ = ("monomers", "energy", "delta", "distance", "converged")
 
-    def __init__(self, monomers, energy, delta, distance):
+    def __init__(self, monomers, energy, delta, distance, converged=None):
         self.monomers = monomers  # 1-based, as the expansion counts them
         self.energy = energy
         self.delta = delta  #: n-body contribution -- what a threshold is on
         self.distance = distance
+        self.converged = converged
+            #: True, False, or None when the method did not report. None is
+            #: not a claim that it converged.
 
     @property
     def level(self):
@@ -371,6 +386,7 @@ class MBE:
         driver="Energy",
         cutoffs=None,
         unchecked=False,
+        allow_crap_scf=False,
         verbosity="info",
         keywords=None,
     ):
@@ -382,6 +398,7 @@ class MBE:
         self.driver = driver
         self.cutoffs = dict(cutoffs) if cutoffs else None
         self.unchecked = bool(unchecked)
+        self.allow_crap_scf = bool(allow_crap_scf)
         self.verbosity = verbosity
         self.keywords = dict(keywords) if keywords else {}
         self._terms = None
@@ -396,6 +413,13 @@ class MBE:
         if self.functional:
             model["functional"] = self.functional
 
+        scf = {}
+        if self.allow_crap_scf:
+            # Off unless asked for. A non-converged SCF yields a number of the
+            # right magnitude, so the run must stop rather than quietly fold it
+            # into the total; this says "I know, keep going, tell me at the end".
+            scf["allow_crap_scf"] = True
+
         fragmentation = {"method": "MBE", "level": self.level}
         if self.cutoffs:
             fragmentation["cutoff_method"] = "distance"
@@ -405,7 +429,7 @@ class MBE:
             "schema": {"name": "mqc-python", "version": "1.0"},
             "model": model,
             "driver": self.driver,
-            "keywords": {"fragmentation": fragmentation},
+            "keywords": {"fragmentation": fragmentation, **({"scf": scf} if scf else {})},
             "system": {
                 "logger": {"level": self.verbosity},
                 "unchecked_input": self.unchecked,
@@ -547,6 +571,16 @@ def _check_label(label):
             f"{name.replace('/', '_').replace('.', '_')!r} instead."
         )
     return name
+
+
+def _converged(cell):
+    """Map the table's scf column back to a tri-state."""
+    text = cell.strip().lower()
+    if text == "yes":
+        return True
+    if text == "no":
+        return False
+    return None
 
 
 def _read_terms(handle):

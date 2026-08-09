@@ -39,6 +39,7 @@ contains
                   new_unittest("xtb_method_spelling", test_method_xtb), &
                   new_unittest("logger_level", test_log_level), &
                   new_unittest("hessian_settings", test_hessian), &
+                  new_unittest("allow_crap_scf", test_allow_crap_scf), &
                   new_unittest("hessian_defaults", test_hessian_defaults), &
                   new_unittest("aimd_settings", test_aimd), &
                   new_unittest("fragmentation_settings", test_fragmentation), &
@@ -270,6 +271,35 @@ contains
       call check(error, config%fragment_breakdown, "csv", &
                  "fragment_breakdown defaults to csv")
    end subroutine test_log_level
+
+   subroutine test_allow_crap_scf(error)
+      !! The escape hatch is off unless the deck says otherwise
+      !!
+      !! Both directions are checked. The default matters more than the set
+      !! value: it decides whether a non-converged SCF stops the run or is
+      !! folded into the total, and a default that drifted to true would put
+      !! this program back to reporting numbers built from SCFs that never
+      !! settled -- which is the failure it exists to prevent.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"scf": {"maxiter": 40}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error,.not. config%allow_crap_scf, &
+                 "allow_crap_scf must default to false when the deck is silent")
+      if (allocated(error)) return
+
+      call write_deck('"method": "XTB-GFN2"', "Energy", &
+                      '"scf": {"maxiter": 40, "allow_crap_scf": true}', "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%allow_crap_scf, "allow_crap_scf was not read")
+   end subroutine test_allow_crap_scf
 
    subroutine test_hessian(error)
       type(error_type), allocatable, intent(out) :: error

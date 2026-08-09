@@ -37,6 +37,7 @@ module mqc_method_xtb
       character(len=:), allocatable :: variant  !! XTB variant: "gfn1" or "gfn2"
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
+      logical :: allow_crap_scf = .false.       !! Keep a non-converged SCF instead of stopping
       integer :: max_iter = 250                 !! SCF cycles before tblite gives up
          !! There was no field for this, so `keywords.scf.maxiter` reached the
          !! config and stopped there -- a deck asking for a different budget
@@ -159,10 +160,11 @@ contains
       ! asking meant taking an energy tblite had just disowned and adding it
       ! to the expansion as though it were fine.
       if (ctx%failed()) then
-         call record_context_failure(ctx, result)
-         return
+         call record_context_failure(ctx, result, this%allow_crap_scf)
+         if (result%has_error) return
+      else
+         result%scf_status = SCF_CONVERGED
       end if
-      result%scf_status = SCF_CONVERGED
 
       ! Compute molecular dipole moment from wavefunction
       dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
@@ -292,10 +294,11 @@ contains
       ! gradient that is wrong in a way no norm reveals, so this matters more
       ! here rather than less.
       if (ctx%failed()) then
-         call record_context_failure(ctx, result)
-         return
+         call record_context_failure(ctx, result, this%allow_crap_scf)
+         if (result%has_error) return
+      else
+         result%scf_status = SCF_CONVERGED
       end if
-      result%scf_status = SCF_CONVERGED
 
       ! Compute molecular dipole moment from wavefunction
       dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
@@ -704,25 +707,46 @@ contains
       end select
    end function get_solvent_dielectric
 
-   subroutine record_context_failure(ctx, result)
-      !! Turn a tblite context error into a failed result
+   subroutine record_context_failure(ctx, result, allow_crap_scf)
+      !! Turn a tblite context error into a failed -- or merely flagged -- result
+      !!
+      !! **Every error is drained, not just the first.** tblite logs each one
+      !! and pops them in order, and a failed eigensolve has been seen to leave
+      !! both "(sygvd) failed to solve eigenvalue problem" and an
+      !! "SCF not converged" behind it. Reading one and stopping would let the
+      !! wrong message decide: a run allowed to tolerate non-convergence would
+      !! then also tolerate a corrupted eigensolve, whose energy is not a poor
+      !! answer but a meaningless one.
+      !!
+      !! So the concession applies only when *nothing else* went wrong. Not
+      !! converging is a number that has not settled; anything else is a number
+      !! that means nothing, and `allow_crap_scf` is not a licence for that.
       type(context_type), intent(inout) :: ctx
       type(calculation_result_t), intent(inout) :: result
+      logical, intent(in) :: allow_crap_scf
 
       type(error_type), allocatable :: ctx_error
-      character(len=:), allocatable :: text
+      character(len=:), allocatable :: text, first
+      logical :: only_convergence
 
-      call ctx%get_error(ctx_error)
-      text = "XTB calculation failed"
-      if (allocated(ctx_error)) text = ctx_error%message
+      first = "XTB calculation failed"
+      only_convergence = .true.
+      do while (ctx%failed())
+         call ctx%get_error(ctx_error)
+         if (.not. allocated(ctx_error)) exit
+         text = ctx_error%message
+         deallocate (ctx_error)
+         if (index(text, "not converged") == 0) only_convergence = .false.
+         if (first == "XTB calculation failed") first = text
+      end do
 
-      ! Non-convergence is called out separately because it is the one that
-      ! still produces a number, and so the one that would otherwise pass for
-      ! a result.
-      if (index(text, "not converged") > 0) then
+      if (only_convergence) then
          result%scf_status = SCF_NOT_CONVERGED
+         ! Kept, and named at the end of the run. The caller asked for this.
+         if (allow_crap_scf) return
       end if
-      call result%error%set(ERROR_GENERIC, text)
+
+      call result%error%set(ERROR_GENERIC, first)
       result%has_error = .true.
    end subroutine record_context_failure
 

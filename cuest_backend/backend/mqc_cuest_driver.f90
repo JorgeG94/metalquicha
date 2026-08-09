@@ -6,7 +6,8 @@ module mqc_cuest_driver
    !! so both methods funnel through here rather than each carrying its own
    !! copy of the basis loading, context acquisition and teardown.
    use pic_types, only: dp
-   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
+   use pic_io, only: to_char
    use mqc_cgto, only: molecular_basis_type
    use mqc_elements, only: element_number_to_symbol
    use mqc_basis_utils, only: find_basis_file
@@ -219,6 +220,17 @@ contains
          result%scf_status = SCF_NOT_CONVERGED
       end if
       result%scf_iterations = scf%iterations
+
+      ! Same policy as xTB, deliberately. One physical condition -- an SCF that
+      ! ran out of iterations -- must not stop the job on one backend and pass
+      ! silently on the other, which is what it did while this was only
+      ! recorded here.
+      if (.not. scf%converged .and. .not. settings%allow_crap_scf) then
+         call error%set(ERROR_GENERIC, "SCF not converged in "// &
+                        to_char(scf%iterations)//" cycles")
+         call record_failure(result, error)
+         return
+      end if
 
       ! The dipole is what IR intensities are built from: the Hessian path
       ! collects it at every displacement and differences it.

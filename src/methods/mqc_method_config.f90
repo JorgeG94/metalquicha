@@ -29,6 +29,8 @@ module mqc_method_config
          !! Number of Fock matrices for DIIS
       character(len=16) :: guess = "gwh"
          !! Initial guess: 'core', 'gwh' or 'sac'
+      logical :: allow_crap_scf = .false.
+         !! Accept a non-converged SCF rather than stopping. See mqc_config_types.
       logical :: unrestricted = .false.
          !! Force an unrestricted (UHF/UKS) treatment even for a closed shell.
          !! Needed for broken-symmetry singlets, and the cleanest check that
