@@ -3,7 +3,7 @@
 module mqc_config_adapter
    !! Provides conversion utilities from mqc_config_t to driver-compatible structures
    use pic_types, only: dp, int32
-   use mqc_config_parser, only: mqc_config_t
+   use mqc_config_types, only: mqc_config_t
    use mqc_physical_fragment, only: system_geometry_t, to_bohr
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_VALIDATION
@@ -243,7 +243,7 @@ contains
       !! Shared helper to initialize system_geometry_t for fragmented calculations
       !! Handles fragment allocation, size checking, and overlap validation
       use mqc_geometry, only: geometry_type
-      use mqc_config_parser, only: input_fragment_t
+      use mqc_config_types, only: input_fragment_t
 
       integer, intent(in) :: nfrag
       type(geometry_type), intent(in) :: geom
@@ -345,7 +345,7 @@ contains
    subroutine molecule_to_system_geometry(mol, sys_geom, use_angstrom, allow_overlapping, error)
       !! Convert a molecule_t to system_geometry_t
       !! Handles both unfragmented (nfrag=0) and fragmented molecules
-      use mqc_config_parser, only: molecule_t
+      use mqc_config_types, only: molecule_t
 
       type(molecule_t), intent(in) :: mol
       type(system_geometry_t), intent(out) :: sys_geom
@@ -407,7 +407,7 @@ contains
    subroutine check_fragment_overlap(fragments, nfrag, error)
       !! Check if any atoms appear in multiple fragments
       !! This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes
-      use mqc_config_parser, only: input_fragment_t
+      use mqc_config_types, only: input_fragment_t
       use pic_io, only: to_char
 
       type(input_fragment_t), intent(in) :: fragments(:)

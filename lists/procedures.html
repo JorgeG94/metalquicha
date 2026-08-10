@@ -115,10 +115,28 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Add implicit solvation model to XTB calculator</p><a href="../proc/add_solvation_to_calc.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/aimd_keys.html'>aimd_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/allocate_basis_shells.html'>allocate_basis_shells</a></td>
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Subroutine</td>
                  <td><p>Allocate array of shells in an atomic basis</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/allow.html'>allow</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Record a key an object may contain</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/allowed_list.html'>allowed_list</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>The allowed keys, for an error message that says what to write instead</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/append_result_to_batch.html'>append_result_to_batch</a></td>
@@ -192,6 +210,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
                  <td><p>Compute binomial coefficient C(n,r) = n! / (r! * (n-r)!)</p><a href="../proc/binomial.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bond_is_broken.html'>bond_is_broken</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Whether fragmentation severs the bond between two atoms</p><a href="../proc/bond_is_broken.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_fragment_from_atom_list.html'>build_fragment_from_atom_list</a></td>
@@ -304,6 +328,18 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>Get number of basis functions in a shell (Cartesian)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_child_object.html'>check_child_object</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate <code>parent.name</code> if it is there; absent is fine</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_cutoffs.html'>check_cutoffs</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Cutoff keys are n-mer names or decimal levels, so they get their own rule</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_duplicate_atoms.html'>check_duplicate_atoms</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -317,6 +353,42 @@ This catches bugs in geometry construction or fragment building</p></td>
                  <td>Subroutine</td>
                  <td><p>Check if any atoms appear in multiple fragments
 This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment sizes</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_grandchild_object.html'>check_grandchild_object</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate <code>parent_name.name</code> if both levels are there</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_molecule_fragments.html'>check_molecule_fragments</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Parallel list lengths, and charges that add up</p><a href="../proc/check_molecule_fragments.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_molecule_geometry.html'>check_molecule_geometry</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Exactly one of <code>xyz</code> or <code>symbols</code> + <code>geometry</code></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_molecules.html'>check_molecules</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every molecule&rsquo;s keys, plus the cross-checks between its lists</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_object.html'>check_object</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every key of <code>object</code> must be in <code>keys</code>, and every required one present</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/child_count.html'>child_count</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>Entries in <code>object.name</code>, or 0 when it is absent</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cli_args_destroy.html'>cli_args_destroy</a></td>
@@ -478,7 +550,7 @@ polymer(:) contains base fragment indices (1-based)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/config_destroy.html'>config_destroy</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up allocated memory in mqc_config_t</p></td>
                </tr>
@@ -639,6 +711,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>Slot holding the age-th oldest entry, age = 1 .. n_stored</p><a href="../proc/diis_slot_of_age.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/directory_of.html'>directory_of</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>The directory part of a path, or &ldquo;.&rdquo; when there is none</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/displaced_geometry_destroy.html'>displaced_geometry_destroy</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -694,6 +772,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Function</td>
                  <td><p>Compute total energy from all components</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ensure_valid_json.html'>ensure_valid_json</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate a loaded deck, setting <code>error</code> on the first problem found</p><a href="../proc/ensure_valid_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/error_add_context.html'>error_add_context</a></td>
@@ -862,6 +946,12 @@ the corresponding k-mer cutoff. This ensures MBE subset consistency.</p></td>
                  <td><a href='../module/mqc_fragment_table_writer.html'>mqc_fragment_table_writer</a></td>
                  <td>Function</td>
                  <td><p>Sidecar name derived from the JSON output name: output_w1.json -&gt; output_w1_fragments.csv</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fragmentation_keys.html'>fragmentation_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/generate_fragment_list.html'>generate_fragment_list</a></td>
@@ -1130,9 +1220,21 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Drain pending node-level results and append them to the outbound batch.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/has_key.html'>has_key</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/hessian_coordinator.html'>hessian_coordinator</a></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hessian_keys.html'>hessian_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
@@ -1180,9 +1282,21 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/input_fragment_destroy.html'>input_fragment_destroy</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up allocated memory in input_fragment_t</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/int_text.html'>int_text</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/int_to_key.html'>int_to_key</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string json-fortran&rsquo;s paths and keys want</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_to_string.html'>int_to_string</a></td>
@@ -1203,6 +1317,18 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Compute intersection of two atom lists</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/is_allowed.html'>is_allowed</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/join_path.html'>join_path</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Join a directory and a relative path</p><a href="../proc/join_path.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/json_output_data_destroy.html'>json_output_data_destroy</a></td>
                  <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
                  <td>Subroutine</td>
@@ -1213,6 +1339,18 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Reset all flags and scalar values to defaults</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/keywords_keys.html'>keywords_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/logger_keys.html'>logger_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mass_weight_hessian.html'>mass_weight_hessian</a></td>
@@ -1329,6 +1467,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Convert method type integer constant to string</p><a href="../proc/method_type_to_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/model_keys.html'>model_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/molecular_basis_num_basis_functions.html'>molecular_basis_num_basis_functions</a></td>
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Function</td>
@@ -1336,9 +1480,21 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/molecule_destroy.html'>molecule_destroy</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../module/mqc_config_types.html'>mqc_config_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up allocated memory in molecule_t</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecule_keys.html'>molecule_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecule_path.html'>molecule_path</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/molecule_to_system_geometry.html'>molecule_to_system_geometry</a></td>
@@ -1393,6 +1549,18 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Find next prime number &gt;= n (simple implementation)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/nmer_level.html'>nmer_level</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>The n-mer level a cutoff key names, or 0 if it names none</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/nmer_name.html'>nmer_name</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Function</td>
+                 <td><p>The spelled-out key for an n-mer level, or &ldquo;&rdquo; past the named range</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/node_coordinator.html'>node_coordinator</a></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
@@ -1435,10 +1603,28 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Normalized contraction coefficients for a single shell</p><a href="../proc/normalized_coefficients.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../interface/parse_aimd_section.html'>parse_aimd_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
+                 <td><a href='../proc/optional_int.html'>optional_int</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch an integer if present, leaving <code>value</code> at its default otherwise</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/optional_logical.html'>optional_logical</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch a boolean if present, leaving <code>value</code> at its default otherwise</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/optional_real.html'>optional_real</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch a real if present, leaving <code>value</code> at its default otherwise</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/optional_string.html'>optional_string</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch a string if present, leaving <code>value</code> untouched otherwise</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/parse_command_line.html'>parse_command_line</a></td>
@@ -1447,154 +1633,16 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>Parse command line arguments for geometry file and basis set</p><a href="../proc/parse_command_line.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../interface/parse_connectivity_generic.html'>parse_connectivity_generic</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_connectivity_section.html'>parse_connectivity_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_driver_section.html'>parse_driver_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_fragment.html'>parse_fragment</a></td>
-                 <td><a href='../module/mqc_config_parser_fragments.html'>mqc_config_parser_fragments</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_fragmentation_section.html'>parse_fragmentation_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_fragments_generic.html'>parse_fragments_generic</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_fragments_section.html'>parse_fragments_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_geometry_generic.html'>parse_geometry_generic</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_geometry_section.html'>parse_geometry_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_hessian_section.html'>parse_hessian_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_indices_line.html'>parse_indices_line</a></td>
-                 <td><a href='../module/mqc_config_parser_fragments.html'>mqc_config_parser_fragments</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/parse_method_string.html'>parse_method_string</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Function</td>
                  <td><p>Parse method string from input file (e.g., &ldquo;XTB-GFN1&rdquo; -&gt; gfn1)</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../interface/parse_model_section.html'>parse_model_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_molecule_connectivity.html'>parse_molecule_connectivity</a></td>
-                 <td><a href='../module/mqc_config_parser_molecules.html'>mqc_config_parser_molecules</a></td>
+                 <td><a href='../proc/populate_config.html'>populate_config</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
-                 <td><p>Parse %connectivity section for a molecule</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_molecule_fragments.html'>parse_molecule_fragments</a></td>
-                 <td><a href='../module/mqc_config_parser_molecules.html'>mqc_config_parser_molecules</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse %fragments section for a molecule</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_molecule_geometry.html'>parse_molecule_geometry</a></td>
-                 <td><a href='../module/mqc_config_parser_molecules.html'>mqc_config_parser_molecules</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse %geometry section for a molecule</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_molecule_structure.html'>parse_molecule_structure</a></td>
-                 <td><a href='../module/mqc_config_parser_molecules.html'>mqc_config_parser_molecules</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse %structure section for a molecule</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_molecules_section.html'>parse_molecules_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_scf_section.html'>parse_scf_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_schema_section.html'>parse_schema_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/parse_single_molecule.html'>parse_single_molecule</a></td>
-                 <td><a href='../module/mqc_config_parser_molecules.html'>mqc_config_parser_molecules</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Parse a single %molecule block with its sections</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_structure_generic.html'>parse_structure_generic</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_structure_section.html'>parse_structure_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_system_section.html'>parse_system_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../interface/parse_xtb_section.html'>parse_xtb_section</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Interface</td>
-                 <td></td>
+                 <td><p>Fill every section of the config from an already-loaded document</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/populate_unfragmented_json_data.html'>populate_unfragmented_json_data</a></td>
@@ -1726,10 +1774,46 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/quoted.html'>quoted</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td><p>A key named as the user would write it, with its parent path</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_connectivity.html'>read_connectivity</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The connectivity list, deriving which bonds fragmentation breaks</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_cutoffs.html'>read_cutoffs</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Per-level distance cutoffs from keywords.fragmentation.cutoffs</p><a href="../proc/read_cutoffs.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_fragmentation.html'>read_fragmentation</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The keywords.fragmentation block, including per-level cutoffs</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_fragments.html'>read_fragments</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The fragments array, with its parallel charge and multiplicity lists</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_json_basis_element.html'>read_json_basis_element</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Parse the basis definition for one element from a BSE JSON file</p><a href="../proc/read_json_basis_element.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_json_config_file.html'>read_json_config_file</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read and parse a JSON format input file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_json_content.html'>read_json_content</a></td>
@@ -1739,10 +1823,16 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
 Properly handles nested structures from fragmented calculations</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/read_mqc_file.html'>read_mqc_file</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../proc/read_molecule.html'>read_molecule</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
-                 <td><p>Read and parse a .mqc format input file</p></td>
+                 <td><p>One entry of the molecules array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_molecule_geometry.html'>read_molecule_geometry</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Either an xyz file reference or inline symbols plus a flat coordinate list</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_xyz_file.html'>read_xyz_file</a></td>
@@ -1791,6 +1881,24 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
                  <td>Subroutine</td>
                  <td><p>Check the translational sum rule on the dipole derivatives</p><a href="../proc/report_translational_sum_rule.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/require.html'>require</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Record a key an object must contain</p><a href="../proc/require.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/require_int.html'>require_int</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch an integer, or record a missing-key error</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/require_string.html'>require_string</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fetch a string, or record a missing-key error</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/resources_finalize.html'>resources_finalize</a></td>
@@ -1845,6 +1953,12 @@ Receives energy components and conditionally receives gradient based on flag</p>
 Sends energy components and conditionally sends gradient based on has_gradient flag</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/root_keys.html'>root_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/run_calculation.html'>run_calculation</a></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
@@ -1874,6 +1988,18 @@ Each molecule is independent, so assign one molecule per rank</p></td>
                  <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle unfragmented calculation (nlevel=0)</p><a href="../proc/run_unfragmented_calculation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/scf_keys.html'>scf_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/schema_keys.html'>schema_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/send_error_state.html'>send_error_state</a></td>
@@ -1937,12 +2063,6 @@ Example: &ldquo;water.mqc&rdquo; -&gt; &ldquo;output_water.json&rdquo;</p></td>
                  <td><p>Angular momenta carried by one shell entry</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/skip_to_end.html'>skip_to_end</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Skip lines until &lsquo;end&rsquo; marker is found</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/slot_of_age.html'>slot_of_age</a></td>
                  <td><a href='../module/mqc_diis.html'>mqc_diis</a></td>
                  <td>Function</td>
@@ -1970,10 +2090,10 @@ Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimer
 Trailing newlines do not create empty lines</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/strip_comment.html'>strip_comment</a></td>
-                 <td><a href='../module/mqc_config_parser.html'>mqc_config_parser</a></td>
+                 <td><a href='../proc/sum_integer_array.html'>sum_integer_array</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
-                 <td><p>Remove comments (! or #) from a line and trim result</p></td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/sync_geometry_to_workers.html'>sync_geometry_to_workers</a></td>
@@ -1987,6 +2107,12 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up allocated memory in system_geometry_t</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/system_keys.html'>system_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/to_angstrom.html'>to_angstrom</a></td>
@@ -2005,13 +2131,6 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/validate_cutoffs.html'>validate_cutoffs</a></td>
-                 <td><a href='../module/mqc_config_parser_calc_settings.html'>mqc_config_parser_calc_settings</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Validate that fragment cutoffs are monotonically decreasing
-For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_fragment_table.html'>write_fragment_table</a></td>
@@ -2091,6 +2210,12 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
                  <td>Function</td>
                  <td><p>Check if solvation is configured for XTB</p></td>
                </tr>
+			   <tr>
+                 <td><a href='../proc/xtb_keys.html'>xtb_keys</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
 			 </tbody></table>
              
         </div>
@@ -2110,7 +2235,7 @@ For n-mer level N, cutoff(N) must be &lt;= cutoff(N-1)</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-06 14:52 +0000             </p>
+ on 2026-08-10 00:56 +0000             </p>
           </div>
         </div>
         <br>

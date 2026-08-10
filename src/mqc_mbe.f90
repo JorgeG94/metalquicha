@@ -842,7 +842,7 @@ contains
       use mqc_physical_fragment, only: build_fragment_from_indices, build_fragment_from_atom_list, &
                                        redistribute_cap_gradients, redistribute_cap_hessian
       use mqc_gmbe_utils, only: find_fragment_intersection
-      use mqc_config_parser, only: bond_t
+      use mqc_config_types, only: bond_t
       use mqc_error, only: error_t
 
       ! Required arguments
@@ -1014,7 +1014,7 @@ contains
       use mqc_physical_fragment, only: build_fragment_from_atom_list, &
                                        redistribute_cap_gradients, redistribute_cap_hessian
       use mqc_gmbe_utils, only: find_fragment_intersection
-      use mqc_config_parser, only: bond_t
+      use mqc_config_types, only: bond_t
       use mqc_error, only: error_t
 
       integer, intent(in) :: inter_idx, k

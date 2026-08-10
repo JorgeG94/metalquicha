@@ -1,0 +1,1085 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>read_molecule &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>read_molecule
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">30 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_config_reader.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_config_reader.f90.html'>mqc_json_config_reader.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></li>
+            <li class="breadcrumb-item active" aria-current="page">read_molecule</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_molecule.html#src">read_molecule</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine read_molecule(json, prefix, base_dir, charge, multiplicity, geom, nfrag, fragments, nbonds, nbroken, bonds, error)  
+</h2>
+    
+
+    <p>One entry of the molecules array</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~5"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-prefix"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>prefix</strong></td>
+            <td>
+                <p>e.g. &ldquo;molecules(1)&rdquo;</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-base_dir~2"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>base_dir</strong></td>
+            <td>
+                <p>For resolving a relative xyz path</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-charge"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>charge</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-multiplicity"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>multiplicity</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-geom~3"></span>
+              type(<a href='../type/geometry_type.html'>geometry_type</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nfrag"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nfrag</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragments"></span>
+              type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragments</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nbonds"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nbonds</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nbroken"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nbroken</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bonds"></span>
+              type(<a href='../type/bond_t.html'>bond_t</a>),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bonds</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~7"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_molecule~~CallsGraph Pages: 1 -->
+<svg id="procread_moleculeCallsGraph" width="641pt" height="627pt"
+ viewBox="0.00 0.00 641.00 627.46" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_molecule~~CallsGraph" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 725.26)">
+<title>proc~~read_molecule~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-725.26 741,-725.26 741,4 -4,4"/>
+<!-- proc~read_molecule -->
+<g id="proc~~read_molecule~~CallsGraph_node1" class="node">
+<title>proc~read_molecule</title>
+<polygon fill="none" stroke="black" points="91,-397.88 0,-397.88 0,-373.88 91,-373.88 91,-397.88"/>
+<text text-anchor="middle" x="45.5" y="-383.48" font-family="Helvetica,sans-Serif" font-size="10.50">read_molecule</text>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~read_molecule~~CallsGraph_node2" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node2"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="588.5,-47.88 449.5,-47.88 449.5,-23.88 588.5,-23.88 588.5,-47.88"/>
+<text text-anchor="middle" x="519" y="-33.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~error_has_error -->
+<g id="proc~~read_molecule~~CallsGraph_edge1" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M47.57,-373.64C52.6,-318.85 75.93,-97.06 127,-54.88 224.36,25.54 386.36,-0.77 467.89,-21.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="467.34,-24.72 477.89,-23.83 469.09,-17.94 467.34,-24.72"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_node3" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node3"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="737,-297.88 632,-297.88 632,-273.88 737,-273.88 737,-297.88"/>
+<text text-anchor="middle" x="684.5" y="-283.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge2" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M52.88,-373.7C65.2,-350.91 93.97,-300.94 127,-265.88 197.47,-191.09 213.63,-158.71 311,-125.88 373.58,-104.78 590.1,-147.16 596,-150.88 638.43,-177.68 664.41,-233.37 676.12,-264.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="672.84,-265.41 679.55,-273.61 679.42,-263.02 672.84,-265.41"/>
+</g>
+<!-- proc~read_connectivity -->
+<g id="proc~~read_molecule~~CallsGraph_node4" class="node">
+<title>proc~read_connectivity</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node4"><a xlink:href="../proc/read_connectivity.html" xlink:title="read_connectivity">
+<polygon fill="#d9534f" stroke="#d9534f" points="254,-578.88 148,-578.88 148,-554.88 254,-554.88 254,-578.88"/>
+<text text-anchor="middle" x="201" y="-564.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_connectivity</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~read_connectivity -->
+<g id="proc~~read_molecule~~CallsGraph_edge3" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~read_connectivity</title>
+<path fill="none" stroke="#ff0000" d="M56.81,-398.04C82.81,-428.69 151.23,-509.38 183.15,-547.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="180.6,-549.41 189.73,-554.78 185.94,-544.89 180.6,-549.41"/>
+</g>
+<!-- proc~read_fragments -->
+<g id="proc~~read_molecule~~CallsGraph_node5" class="node">
+<title>proc~read_fragments</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node5"><a xlink:href="../proc/read_fragments.html" xlink:title="read_fragments">
+<polygon fill="#d9534f" stroke="#d9534f" points="249.5,-456.88 152.5,-456.88 152.5,-432.88 249.5,-432.88 249.5,-456.88"/>
+<text text-anchor="middle" x="201" y="-442.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_fragments</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~read_fragments -->
+<g id="proc~~read_molecule~~CallsGraph_edge4" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~read_fragments</title>
+<path fill="none" stroke="#ff0000" d="M77.93,-397.96C101.42,-406.99 133.73,-419.41 159.21,-429.2"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.02,-432.5 168.61,-432.82 160.53,-425.96 158.02,-432.5"/>
+</g>
+<!-- proc~read_molecule_geometry -->
+<g id="proc~~read_molecule~~CallsGraph_node6" class="node">
+<title>proc~read_molecule_geometry</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node6"><a xlink:href="../proc/read_molecule_geometry.html" xlink:title="read_molecule_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="275,-298.88 127,-298.88 127,-274.88 275,-274.88 275,-298.88"/>
+<text text-anchor="middle" x="201" y="-284.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_molecule_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~read_molecule_geometry -->
+<g id="proc~~read_molecule~~CallsGraph_edge5" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~read_molecule_geometry</title>
+<path fill="none" stroke="#ff0000" d="M65.32,-373.74C92.14,-356.45 141.5,-324.61 172.44,-304.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="174.52,-307.48 181.02,-299.12 170.72,-301.6 174.52,-307.48"/>
+</g>
+<!-- proc~require_int -->
+<g id="proc~~read_molecule~~CallsGraph_node7" class="node">
+<title>proc~require_int</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node7"><a xlink:href="../proc/require_int.html" xlink:title="require_int">
+<polygon fill="#d9534f" stroke="#d9534f" points="393,-718.88 324,-718.88 324,-694.88 393,-694.88 393,-718.88"/>
+<text text-anchor="middle" x="358.5" y="-704.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">require_int</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule&#45;&gt;proc~require_int -->
+<g id="proc~~read_molecule~~CallsGraph_edge6" class="edge">
+<title>proc~read_molecule&#45;&gt;proc~require_int</title>
+<path fill="none" stroke="#ff0000" d="M48.28,-397.9C53.88,-431.79 73.99,-529.44 127,-587.88 178.34,-644.48 262.89,-678.33 314.07,-694.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="313.25,-698.14 323.84,-697.77 315.34,-691.45 313.25,-698.14"/>
+</g>
+<!-- proc~read_connectivity&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge10" class="edge">
+<title>proc~read_connectivity&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff00" d="M254.24,-573.4C261.67,-575.89 268.86,-579.27 275,-583.88 301.11,-603.47 282.83,-631.41 311,-647.88 347.45,-669.2 366.82,-663.62 406,-647.88 562.59,-584.98 650.77,-375.96 675.93,-307.67"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="679.33,-308.56 679.42,-297.97 672.74,-306.19 679.33,-308.56"/>
+</g>
+<!-- get -->
+<g id="proc~~read_molecule~~CallsGraph_node8" class="node">
+<title>get</title>
+<polygon fill="#777777" stroke="#777777" points="546,-456.88 492,-456.88 492,-432.88 546,-432.88 546,-456.88"/>
+<text text-anchor="middle" x="519" y="-442.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+</g>
+<!-- proc~read_connectivity&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge7" class="edge">
+<title>proc~read_connectivity&#45;&gt;get</title>
+<path fill="none" stroke="#00ff00" d="M254.26,-578.51C296.95,-585.4 357.89,-589.14 406,-567.88 453.23,-547.01 489.12,-495.3 506.47,-466"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="509.69,-467.42 511.63,-457 503.62,-463.94 509.69,-467.42"/>
+</g>
+<!-- info -->
+<g id="proc~~read_molecule~~CallsGraph_node9" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="385.5,-516.88 331.5,-516.88 331.5,-492.88 385.5,-492.88 385.5,-516.88"/>
+<text text-anchor="middle" x="358.5" y="-502.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~read_connectivity&#45;&gt;info -->
+<g id="proc~~read_molecule~~CallsGraph_edge8" class="edge">
+<title>proc~read_connectivity&#45;&gt;info</title>
+<path fill="none" stroke="#00ff00" d="M232.35,-554.78C258.01,-544.55 294.82,-529.87 321.87,-519.09"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="323.37,-522.26 331.36,-515.3 320.77,-515.76 323.37,-522.26"/>
+</g>
+<!-- proc~bond_is_broken -->
+<g id="proc~~read_molecule~~CallsGraph_node10" class="node">
+<title>proc~bond_is_broken</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node10"><a xlink:href="../proc/bond_is_broken.html" xlink:title="bond_is_broken">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="406,-638.88 311,-638.88 311,-614.88 406,-614.88 406,-638.88"/>
+<text text-anchor="middle" x="358.5" y="-624.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bond_is_broken</text>
+</a>
+</g>
+</g>
+<!-- proc~read_connectivity&#45;&gt;proc~bond_is_broken -->
+<g id="proc~~read_molecule~~CallsGraph_edge9" class="edge">
+<title>proc~read_connectivity&#45;&gt;proc~bond_is_broken</title>
+<path fill="none" stroke="#00ff00" d="M233.47,-579.02C257.47,-588.28 290.72,-601.11 316.75,-611.16"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="315.76,-614.53 326.34,-614.86 318.28,-608 315.76,-614.53"/>
+</g>
+<!-- proc~int_to_key -->
+<g id="proc~~read_molecule~~CallsGraph_node12" class="node">
+<title>proc~int_to_key</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node12"><a xlink:href="../proc/int_to_key.html" xlink:title="int_to_key">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="391.5,-558.88 325.5,-558.88 325.5,-534.88 391.5,-534.88 391.5,-558.88"/>
+<text text-anchor="middle" x="358.5" y="-544.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_key</text>
+</a>
+</g>
+</g>
+<!-- proc~read_connectivity&#45;&gt;proc~int_to_key -->
+<g id="proc~~read_molecule~~CallsGraph_edge11" class="edge">
+<title>proc~read_connectivity&#45;&gt;proc~int_to_key</title>
+<path fill="none" stroke="#00ff00" d="M254.21,-560.17C274.01,-557.62 296.3,-554.75 315.09,-552.34"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="315.66,-555.79 325.13,-551.04 314.77,-548.85 315.66,-555.79"/>
+</g>
+<!-- proc~read_fragments&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge14" class="edge">
+<title>proc~read_fragments&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffff" d="M232.85,-432.78C254.59,-424.37 284.44,-413.08 311,-403.88 425.49,-364.25 561.54,-322.48 633.33,-300.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="634.46,-304.17 643.03,-297.93 632.45,-297.46 634.46,-304.17"/>
+</g>
+<!-- proc~read_fragments&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge12" class="edge">
+<title>proc~read_fragments&#45;&gt;get</title>
+<path fill="none" stroke="#00ffff" d="M249.75,-445.41C268.8,-445.6 290.94,-445.79 311,-445.88 353.22,-446.08 363.78,-446.07 406,-445.88 431.23,-445.77 459.66,-445.51 481.56,-445.29"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="481.79,-448.79 491.75,-445.18 481.71,-441.79 481.79,-448.79"/>
+</g>
+<!-- proc~read_fragments&#45;&gt;info -->
+<g id="proc~~read_molecule~~CallsGraph_edge13" class="edge">
+<title>proc~read_fragments&#45;&gt;info</title>
+<path fill="none" stroke="#00ffff" d="M233.47,-457.02C259.08,-466.9 295.22,-480.85 321.88,-491.14"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="320.65,-494.42 331.24,-494.75 323.17,-487.88 320.65,-494.42"/>
+</g>
+<!-- proc~read_fragments&#45;&gt;proc~int_to_key -->
+<g id="proc~~read_molecule~~CallsGraph_edge15" class="edge">
+<title>proc~read_fragments&#45;&gt;proc~int_to_key</title>
+<path fill="none" stroke="#00ffff" d="M216.12,-456.93C236.26,-473.76 274.83,-504.61 311,-525.88 313.51,-527.36 316.13,-528.8 318.81,-530.19"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="317.48,-533.43 327.99,-534.71 320.57,-527.15 317.48,-533.43"/>
+</g>
+<!-- proc~optional_int -->
+<g id="proc~~read_molecule~~CallsGraph_node14" class="node">
+<title>proc~optional_int</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node14"><a xlink:href="../proc/optional_int.html" xlink:title="optional_int">
+<polygon fill="#d9534f" stroke="#d9534f" points="396,-436.88 321,-436.88 321,-412.88 396,-412.88 396,-436.88"/>
+<text text-anchor="middle" x="358.5" y="-422.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optional_int</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fragments&#45;&gt;proc~optional_int -->
+<g id="proc~~read_molecule~~CallsGraph_edge16" class="edge">
+<title>proc~read_fragments&#45;&gt;proc~optional_int</title>
+<path fill="none" stroke="#00ffff" d="M249.5,-438.77C268.88,-436.28 291.23,-433.4 310.56,-430.92"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="311.18,-434.37 320.65,-429.62 310.28,-427.43 311.18,-434.37"/>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~error_has_error -->
+<g id="proc~~read_molecule~~CallsGraph_edge20" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0000ff" d="M207.72,-274.48C221.7,-245.31 260.2,-171.36 311,-125.88 353.07,-88.21 413.37,-64.44 458.04,-50.85"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="459.29,-54.12 467.89,-47.93 457.31,-47.41 459.29,-54.12"/>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge21" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0000ff" d="M275.29,-286.12C287.22,-286.02 299.46,-285.93 311,-285.88 420.48,-285.38 548.06,-285.54 621.92,-285.71"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="621.97,-289.21 631.98,-285.73 621.99,-282.21 621.97,-289.21"/>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge17" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;get</title>
+<path fill="none" stroke="#0000ff" d="M226.01,-298.89C281.77,-326.77 420.14,-395.95 484.32,-428.04"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="483.08,-431.34 493.59,-432.68 486.21,-425.08 483.08,-431.34"/>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;info -->
+<g id="proc~~read_molecule~~CallsGraph_edge18" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;info</title>
+<path fill="none" stroke="#0000ff" d="M209.94,-299.04C227.56,-325.91 271.54,-392.23 311,-445.88 320.73,-459.11 332.14,-473.6 341.22,-484.91"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="338.64,-487.28 347.64,-492.86 344.08,-482.88 338.64,-487.28"/>
+</g>
+<!-- proc~error_add_context -->
+<g id="proc~~read_molecule~~CallsGraph_node11" class="node">
+<title>proc~error_add_context</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node11"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="596,-234.88 442,-234.88 442,-210.88 596,-210.88 596,-234.88"/>
+<text text-anchor="middle" x="519" y="-220.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~error_add_context -->
+<g id="proc~~read_molecule~~CallsGraph_edge19" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#0000ff" d="M235.99,-274.75C257.3,-267.53 285.48,-258.67 311,-252.88 350.17,-243.99 394.13,-237.19 431.43,-232.32"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="432.29,-235.74 441.77,-231 431.4,-228.8 432.29,-235.74"/>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~int_to_key -->
+<g id="proc~~read_molecule~~CallsGraph_edge22" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~int_to_key</title>
+<path fill="none" stroke="#0000ff" d="M209.28,-299.04C223.2,-322.58 254.06,-376.27 275,-423.88 294.36,-467.89 278.48,-490.48 311,-525.88 312.73,-527.77 314.66,-529.49 316.73,-531.07"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="314.9,-534.05 325.21,-536.46 318.65,-528.15 314.9,-534.05"/>
+</g>
+<!-- proc~join_path -->
+<g id="proc~~read_molecule~~CallsGraph_node13" class="node">
+<title>proc~join_path</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node13"><a xlink:href="../proc/join_path.html" xlink:title="join_path">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="389,-200.88 328,-200.88 328,-176.88 389,-176.88 389,-200.88"/>
+<text text-anchor="middle" x="358.5" y="-186.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">join_path</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~join_path -->
+<g id="proc~~read_molecule~~CallsGraph_edge23" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~join_path</title>
+<path fill="none" stroke="#0000ff" d="M219.49,-274.75C240.81,-260.1 278.07,-234.93 311,-214.88 315.84,-211.94 321.02,-208.91 326.11,-206.01"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="328.07,-208.93 335.07,-200.98 324.64,-202.83 328.07,-208.93"/>
+</g>
+<!-- proc~read_xyz_file -->
+<g id="proc~~read_molecule~~CallsGraph_node15" class="node">
+<title>proc~read_xyz_file</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node15"><a xlink:href="../proc/read_xyz_file.html" xlink:title="read_xyz_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="399,-158.88 318,-158.88 318,-134.88 399,-134.88 399,-158.88"/>
+<text text-anchor="middle" x="358.5" y="-144.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_xyz_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~read_xyz_file -->
+<g id="proc~~read_molecule~~CallsGraph_edge24" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~read_xyz_file</title>
+<path fill="none" stroke="#0000ff" d="M210.6,-274.57C227.49,-251.13 267.2,-199.59 311,-167.88 312.87,-166.53 314.83,-165.24 316.86,-164"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="318.93,-166.86 326.01,-158.99 315.56,-160.72 318.93,-166.86"/>
+</g>
+<!-- proc~require_string -->
+<g id="proc~~read_molecule~~CallsGraph_node16" class="node">
+<title>proc~require_string</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node16"><a xlink:href="../proc/require_string.html" xlink:title="require_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="401,-318.88 316,-318.88 316,-294.88 401,-294.88 401,-318.88"/>
+<text text-anchor="middle" x="358.5" y="-304.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">require_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_molecule_geometry&#45;&gt;proc~require_string -->
+<g id="proc~~read_molecule~~CallsGraph_edge25" class="edge">
+<title>proc~read_molecule_geometry&#45;&gt;proc~require_string</title>
+<path fill="none" stroke="#0000ff" d="M275.2,-296.3C285.49,-297.62 295.88,-298.96 305.66,-300.21"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="305.23,-303.69 315.6,-301.49 306.13,-296.75 305.23,-303.69"/>
+</g>
+<!-- proc~require_int&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge27" class="edge">
+<title>proc~require_int&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff00ff" d="M393.33,-714.2C444.11,-723.04 540.04,-731.08 596,-680.88 652.45,-630.25 675.92,-384.04 681.89,-308.18"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="685.4,-308.13 682.67,-297.89 678.42,-307.6 685.4,-308.13"/>
+</g>
+<!-- proc~require_int&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge26" class="edge">
+<title>proc~require_int&#45;&gt;get</title>
+<path fill="none" stroke="#ff00ff" d="M370.09,-694.67C379.94,-683.04 394.75,-664.83 406,-647.88 448.08,-584.46 489.11,-503.97 507.67,-466.23"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="510.85,-467.7 512.1,-457.18 504.56,-464.63 510.85,-467.7"/>
+</g>
+<!-- proc~optional_int&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge28" class="edge">
+<title>proc~optional_int&#45;&gt;get</title>
+<path fill="none" stroke="#0000ff" d="M396.26,-429.52C421.98,-432.77 456.18,-437.08 481.78,-440.31"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="481.47,-443.8 491.83,-441.58 482.34,-436.85 481.47,-443.8"/>
+</g>
+<!-- proc~read_xyz_file&#45;&gt;proc~error_has_error -->
+<g id="proc~~read_molecule~~CallsGraph_edge30" class="edge">
+<title>proc~read_xyz_file&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#aa00ff" d="M386.82,-134.87C393.6,-131.05 400.5,-126.37 406,-120.88 429.11,-97.83 416.3,-76.99 442,-56.88 443.84,-55.44 445.77,-54.1 447.78,-52.85"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="449.79,-55.74 456.96,-47.94 446.49,-49.57 449.79,-55.74"/>
+</g>
+<!-- proc~read_xyz_file&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge31" class="edge">
+<title>proc~read_xyz_file&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#aa00ff" d="M399.02,-149.64C447.9,-154.45 532.44,-167.43 596,-201.88 625.51,-217.88 652.2,-246.52 668.13,-265.86"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="665.49,-268.16 674.48,-273.77 670.95,-263.78 665.49,-268.16"/>
+</g>
+<!-- proc~read_xyz_file&#45;&gt;proc~error_add_context -->
+<g id="proc~~read_molecule~~CallsGraph_edge29" class="edge">
+<title>proc~read_xyz_file&#45;&gt;proc~error_add_context</title>
+<path fill="none" stroke="#aa00ff" d="M387.22,-158.94C393.44,-161.78 399.98,-164.86 406,-167.88 422.35,-176.1 425.68,-179.6 442,-187.88 454.6,-194.27 468.58,-200.85 481.09,-206.56"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="479.77,-209.8 490.32,-210.74 482.66,-203.43 479.77,-209.8"/>
+</g>
+<!-- proc~read_xyz_string -->
+<g id="proc~~read_molecule~~CallsGraph_node17" class="node">
+<title>proc~read_xyz_string</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node17"><a xlink:href="../proc/read_xyz_string.html" xlink:title="read_xyz_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="566,-89.88 472,-89.88 472,-65.88 566,-65.88 566,-89.88"/>
+<text text-anchor="middle" x="519" y="-75.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_xyz_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_xyz_file&#45;&gt;proc~read_xyz_string -->
+<g id="proc~~read_molecule~~CallsGraph_edge32" class="edge">
+<title>proc~read_xyz_file&#45;&gt;proc~read_xyz_string</title>
+<path fill="none" stroke="#aa00ff" d="M387.11,-134.86C413.09,-123.55 452.18,-106.54 480.88,-94.04"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="482.4,-97.19 490.18,-89.99 479.61,-90.78 482.4,-97.19"/>
+</g>
+<!-- proc~require_string&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge34" class="edge">
+<title>proc~require_string&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff00aa" d="M401.19,-304.18C457.16,-300.55 557.03,-294.08 621.74,-289.88"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="622.06,-293.37 631.81,-289.23 621.6,-286.39 622.06,-293.37"/>
+</g>
+<!-- proc~require_string&#45;&gt;get -->
+<g id="proc~~read_molecule~~CallsGraph_edge33" class="edge">
+<title>proc~require_string&#45;&gt;get</title>
+<path fill="none" stroke="#ff00aa" d="M373.29,-318.89C400.92,-342.95 463.27,-397.23 496.38,-426.06"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="494.29,-428.88 504.13,-432.81 498.89,-423.6 494.29,-428.88"/>
+</g>
+<!-- proc~read_xyz_string&#45;&gt;proc~error_set -->
+<g id="proc~~read_molecule~~CallsGraph_edge35" class="edge">
+<title>proc~read_xyz_string&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M566.15,-87.21C576.84,-91.02 587.55,-96.38 596,-103.88 645.39,-147.74 669.47,-225.62 678.75,-263.69"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="675.41,-264.77 681.07,-273.73 682.23,-263.2 675.41,-264.77"/>
+</g>
+<!-- proc~int_to_string -->
+<g id="proc~~read_molecule~~CallsGraph_node18" class="node">
+<title>proc~int_to_string</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node18"><a xlink:href="../proc/int_to_string.html" xlink:title="int_to_string">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="723,-68.88 646,-68.88 646,-44.88 723,-44.88 723,-68.88"/>
+<text text-anchor="middle" x="684.5" y="-54.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_to_string</text>
+</a>
+</g>
+</g>
+<!-- proc~read_xyz_string&#45;&gt;proc~int_to_string -->
+<g id="proc~~read_molecule~~CallsGraph_edge36" class="edge">
+<title>proc~read_xyz_string&#45;&gt;proc~int_to_string</title>
+<path fill="none" stroke="#ff0000" d="M566.42,-71.92C588.09,-69.14 613.88,-65.82 635.73,-63.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="636.31,-66.47 645.78,-61.73 635.41,-59.53 636.31,-66.47"/>
+</g>
+<!-- proc~split_lines -->
+<g id="proc~~read_molecule~~CallsGraph_node19" class="node">
+<title>proc~split_lines</title>
+<g id="a_proc~~read_molecule~~CallsGraph_node19"><a xlink:href="../proc/split_lines.html" xlink:title="split_lines">
+<polygon fill="#d9534f" stroke="#d9534f" points="716.5,-110.88 652.5,-110.88 652.5,-86.88 716.5,-86.88 716.5,-110.88"/>
+<text text-anchor="middle" x="684.5" y="-96.48" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">split_lines</text>
+</a>
+</g>
+</g>
+<!-- proc~read_xyz_string&#45;&gt;proc~split_lines -->
+<g id="proc~~read_molecule~~CallsGraph_edge37" class="edge">
+<title>proc~read_xyz_string&#45;&gt;proc~split_lines</title>
+<path fill="none" stroke="#ff0000" d="M566.42,-83.84C590.32,-86.91 619.22,-90.63 642.33,-93.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="642.13,-97.1 652.49,-94.9 643.02,-90.15 642.13,-97.1"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocread_moleculeCallsGraph = svgPanZoom('#procread_moleculeCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_molecule~~CalledByGraph Pages: 1 -->
+<svg id="procread_moleculeCalledByGraph" width="483pt" height="32pt"
+ viewBox="0.00 0.00 483.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_molecule~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~read_molecule~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 479,-28 479,4 -4,4"/>
+<!-- proc~read_molecule -->
+<g id="proc~~read_molecule~~CalledByGraph_node1" class="node">
+<title>proc~read_molecule</title>
+<polygon fill="none" stroke="black" points="475,-24 384,-24 384,0 475,0 475,-24"/>
+<text text-anchor="middle" x="429.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_molecule</text>
+</g>
+<!-- proc~populate_config -->
+<g id="proc~~read_molecule~~CalledByGraph_node2" class="node">
+<title>proc~populate_config</title>
+<g id="a_proc~~read_molecule~~CalledByGraph_node2"><a xlink:href="../proc/populate_config.html" xlink:title="populate_config">
+<polygon fill="#d9534f" stroke="#d9534f" points="348,-24 250,-24 250,0 348,0 348,-24"/>
+<text text-anchor="middle" x="299" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">populate_config</text>
+</a>
+</g>
+</g>
+<!-- proc~populate_config&#45;&gt;proc~read_molecule -->
+<g id="proc~~read_molecule~~CalledByGraph_edge1" class="edge">
+<title>proc~populate_config&#45;&gt;proc~read_molecule</title>
+<path fill="none" stroke="#ff0000" d="M348.21,-12C356.52,-12 365.2,-12 373.66,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="373.84,-15.5 383.84,-12 373.84,-8.5 373.84,-15.5"/>
+</g>
+<!-- proc~read_json_config_file -->
+<g id="proc~~read_molecule~~CalledByGraph_node3" class="node">
+<title>proc~read_json_config_file</title>
+<g id="a_proc~~read_molecule~~CalledByGraph_node3"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="214,-24 90,-24 90,0 214,0 214,-24"/>
+<text text-anchor="middle" x="152" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_file&#45;&gt;proc~populate_config -->
+<g id="proc~~read_molecule~~CalledByGraph_edge2" class="edge">
+<title>proc~read_json_config_file&#45;&gt;proc~populate_config</title>
+<path fill="none" stroke="#ff0000" d="M214.07,-12C222.55,-12 231.23,-12 239.66,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.77,-15.5 249.77,-12 239.77,-8.5 239.77,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~read_molecule~~CalledByGraph_node4" class="node">
+<title>program~main</title>
+<g id="a_proc~~read_molecule~~CalledByGraph_node4"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_json_config_file -->
+<g id="proc~~read_molecule~~CalledByGraph_edge3" class="edge">
+<title>program~main&#45;&gt;proc~read_json_config_file</title>
+<path fill="none" stroke="#ff0000" d="M54.09,-12C61.72,-12 70.46,-12 79.49,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.78,-15.5 89.78,-12 79.78,-8.5 79.78,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">read_molecule</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">nbonds</span><span class="p">,</span><span class="w"> </span><span class="n">nbroken</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! One entry of the molecules array</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prefix</span><span class="w">    </span><span class="c">!! e.g. &quot;molecules(1)&quot;</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">base_dir</span><span class="w">  </span><span class="c">!! For resolving a relative xyz path</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">geometry_type</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nfrag</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">input_fragment_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">fragments</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nbonds</span><span class="p">,</span><span class="w"> </span><span class="n">nbroken</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">bond_t</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bonds</span><span class="p">(:)</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">nfrag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">nbonds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">nbroken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">read_molecule_geometry</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">base_dir</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_charge&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">require_int</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_multiplicity&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">multiplicity</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="o">//</span><span class="s2">&quot;.molecular_multiplicity must be &gt;= 1&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">read_fragments</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">read_connectivity</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">prefix</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">%</span><span class="n">natoms</span><span class="p">,</span><span class="w"> </span><span class="n">nfrag</span><span class="p">,</span><span class="w"> </span><span class="n">fragments</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                             </span><span class="n">nbonds</span><span class="p">,</span><span class="w"> </span><span class="n">nbroken</span><span class="p">,</span><span class="w"> </span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">read_molecule</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 00:56 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

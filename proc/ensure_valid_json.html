@@ -1,0 +1,1411 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>ensure_valid_json &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>ensure_valid_json
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">37 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_json_schema.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_schema.f90.html'>mqc_json_schema.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></li>
+            <li class="breadcrumb-item active" aria-current="page">ensure_valid_json</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-core">core</a>
+            <a class="list-group-item" href="../proc/ensure_valid_json.html#variable-root~5">root</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/ensure_valid_json.html#src">ensure_valid_json</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine ensure_valid_json(json, error)  
+</h2>
+    
+
+    <p>Validate a loaded deck, setting <code>error</code> on the first problem found</p>
+<p>Reports one problem rather than all of them: the first unknown key is
+usually the whole story, and a reader that stops there gives a
+message short enough to act on.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~21"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~39"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~ensure_valid_json~~CallsGraph Pages: 1 -->
+<svg id="procensure_valid_jsonCallsGraph" width="641pt" height="1127pt"
+ viewBox="0.00 0.00 641.00 1126.71" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~ensure_valid_json~~CallsGraph" class="graph" transform="scale(0.87 0.87) rotate(0) translate(4 1287.94)">
+<title>proc~~ensure_valid_json~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1287.94 731,-1287.94 731,4 -4,4"/>
+<!-- proc~ensure_valid_json -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node1" class="node">
+<title>proc~ensure_valid_json</title>
+<polygon fill="none" stroke="black" points="106,-407 0,-407 0,-383 106,-383 106,-407"/>
+<text text-anchor="middle" x="53" y="-392.6" font-family="Helvetica,sans-Serif" font-size="10.50">ensure_valid_json</text>
+</g>
+<!-- get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node2" class="node">
+<title>get</title>
+<polygon fill="#777777" stroke="#777777" points="723.5,-883 669.5,-883 669.5,-859 723.5,-859 723.5,-883"/>
+<text text-anchor="middle" x="696.5" y="-868.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get</text>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge1" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;get</title>
+<path fill="none" stroke="#ff0000" d="M54.34,-407.2C56.75,-487.33 73.24,-938.44 142,-1054 192.91,-1139.56 233.87,-1141.62 323,-1186 447.38,-1247.93 523.62,-1334.37 630,-1245 684.25,-1199.43 693.58,-966.68 695.17,-893.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="698.67,-893.3 695.36,-883.23 691.67,-893.16 698.67,-893.3"/>
+</g>
+<!-- get_core -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node3" class="node">
+<title>get_core</title>
+<polygon fill="#777777" stroke="#777777" points="243.5,-1045 185.5,-1045 185.5,-1021 243.5,-1021 243.5,-1045"/>
+<text text-anchor="middle" x="214.5" y="-1030.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_core</text>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;get_core -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge2" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;get_core</title>
+<path fill="none" stroke="#ff0000" d="M54.01,-407.24C54.3,-485.62 59.69,-916.89 142,-1012 150.33,-1021.63 162.83,-1026.96 175.06,-1029.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="174.69,-1033.36 185.16,-1031.79 175.99,-1026.49 174.69,-1033.36"/>
+</g>
+<!-- proc~aimd_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node4" class="node">
+<title>proc~aimd_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node4"><a xlink:href="../proc/aimd_keys.html" xlink:title="aimd_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="437,-257 368,-257 368,-233 437,-233 437,-257"/>
+<text text-anchor="middle" x="402.5" y="-242.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">aimd_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~aimd_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge3" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~aimd_keys</title>
+<path fill="none" stroke="#ff0000" d="M61.89,-382.98C75.64,-363.04 106,-323.31 142,-303 210.79,-264.18 303.54,-251.35 357.5,-247.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="358.03,-250.57 367.75,-246.36 357.53,-243.59 358.03,-250.57"/>
+</g>
+<!-- proc~check_child_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node5" class="node">
+<title>proc~check_child_object</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node5"><a xlink:href="../proc/check_child_object.html" xlink:title="check_child_object">
+<polygon fill="#d9534f" stroke="#d9534f" points="271,-1003 158,-1003 158,-979 271,-979 271,-1003"/>
+<text text-anchor="middle" x="214.5" y="-988.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_child_object</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_child_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge4" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_child_object</title>
+<path fill="none" stroke="#ff0000" d="M54.15,-407.37C55.31,-482.95 65.05,-882 142,-970 144.04,-972.33 146.32,-974.4 148.77,-976.26"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="147.38,-979.5 157.74,-981.72 151.02,-973.53 147.38,-979.5"/>
+</g>
+<!-- proc~check_cutoffs -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node6" class="node">
+<title>proc~check_cutoffs</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node6"><a xlink:href="../proc/check_cutoffs.html" xlink:title="check_cutoffs">
+<polygon fill="#d9534f" stroke="#d9534f" points="445,-863 360,-863 360,-839 445,-839 445,-863"/>
+<text text-anchor="middle" x="402.5" y="-848.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_cutoffs</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_cutoffs -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge5" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_cutoffs</title>
+<path fill="none" stroke="#ff0000" d="M54.61,-407.22C58.09,-471.18 77.52,-766.79 142,-825 198.11,-875.66 291.43,-871.3 349.54,-862.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="350.33,-865.55 359.61,-860.44 349.17,-858.65 350.33,-865.55"/>
+</g>
+<!-- proc~check_grandchild_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node7" class="node">
+<title>proc~check_grandchild_object</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node7"><a xlink:href="../proc/check_grandchild_object.html" xlink:title="check_grandchild_object">
+<polygon fill="#d9534f" stroke="#d9534f" points="287,-961 142,-961 142,-937 287,-937 287,-961"/>
+<text text-anchor="middle" x="214.5" y="-946.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_grandchild_object</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_grandchild_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge6" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_grandchild_object</title>
+<path fill="none" stroke="#ff0000" d="M54.61,-407.33C58.31,-477.74 79.66,-828.63 142,-913 147.95,-921.05 156.2,-927.42 165,-932.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="163.42,-935.53 173.91,-936.97 166.6,-929.3 163.42,-935.53"/>
+</g>
+<!-- proc~check_molecules -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node8" class="node">
+<title>proc~check_molecules</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node8"><a xlink:href="../proc/check_molecules.html" xlink:title="check_molecules">
+<polygon fill="#d9534f" stroke="#d9534f" points="266.5,-623 162.5,-623 162.5,-599 266.5,-599 266.5,-623"/>
+<text text-anchor="middle" x="214.5" y="-608.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecules</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_molecules -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge7" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_molecules</title>
+<path fill="none" stroke="#ff0000" d="M63.03,-407.23C89.3,-442.8 165.84,-546.46 198.48,-590.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.81,-592.94 204.57,-598.9 201.44,-588.78 195.81,-592.94"/>
+</g>
+<!-- proc~check_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node9" class="node">
+<title>proc~check_object</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node9"><a xlink:href="../proc/check_object.html" xlink:title="check_object">
+<polygon fill="#d9534f" stroke="#d9534f" points="443.5,-1003 361.5,-1003 361.5,-979 443.5,-979 443.5,-1003"/>
+<text text-anchor="middle" x="402.5" y="-988.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_object</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~check_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge8" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~check_object</title>
+<path fill="none" stroke="#ff0000" d="M54.84,-407.38C59.53,-473.6 84.47,-785.82 142,-860 185.62,-916.25 223.56,-895.72 287,-928 316.15,-942.83 348.77,-960.94 371.72,-973.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="370.19,-977.08 380.61,-978.98 373.65,-971 370.19,-977.08"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node10" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node10"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="472,-783 333,-783 333,-759 472,-759 472,-783"/>
+<text text-anchor="middle" x="402.5" y="-768.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~error_has_error -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge9" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M55.69,-407.21C61.44,-444.68 83.19,-559.89 142,-632 195.43,-697.52 288.17,-736.41 347.1,-755.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="346.39,-759.17 356.98,-758.88 348.52,-752.5 346.39,-759.17"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node11" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node11"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="626.5,-746 521.5,-746 521.5,-722 626.5,-722 626.5,-746"/>
+<text text-anchor="middle" x="574" y="-731.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge10" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M54.32,-407.1C56.09,-450.89 67.58,-603.36 142,-695 241.06,-816.98 338.85,-856.81 482,-792 504.09,-782 497.65,-764.19 518,-751 518.09,-750.94 518.18,-750.88 518.27,-750.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="519.99,-753.88 527.09,-746.01 516.63,-747.73 519.99,-753.88"/>
+</g>
+<!-- proc~fragmentation_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node12" class="node">
+<title>proc~fragmentation_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node12"><a xlink:href="../proc/fragmentation_keys.html" xlink:title="fragmentation_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="461.5,-341 343.5,-341 343.5,-317 461.5,-317 461.5,-341"/>
+<text text-anchor="middle" x="402.5" y="-326.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragmentation_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~fragmentation_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge11" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~fragmentation_keys</title>
+<path fill="none" stroke="#ff0000" d="M106.06,-383.46C117.86,-380.93 130.35,-378.31 142,-376 206.87,-363.13 281.15,-349.82 333.57,-340.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="334.17,-344.11 343.42,-338.95 332.97,-337.21 334.17,-344.11"/>
+</g>
+<!-- proc~hessian_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node13" class="node">
+<title>proc~hessian_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node13"><a xlink:href="../proc/hessian_keys.html" xlink:title="hessian_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="255.5,-150 173.5,-150 173.5,-126 255.5,-126 255.5,-150"/>
+<text text-anchor="middle" x="214.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">hessian_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~hessian_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge12" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~hessian_keys</title>
+<path fill="none" stroke="#ff0000" d="M54.82,-382.91C58.11,-344.27 73.68,-222.62 142,-159 148.13,-153.3 155.72,-149.13 163.65,-146.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="164.99,-149.34 173.42,-142.93 162.83,-142.69 164.99,-149.34"/>
+</g>
+<!-- proc~keywords_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node14" class="node">
+<title>proc~keywords_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node14"><a xlink:href="../proc/keywords_keys.html" xlink:title="keywords_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="260.5,-108 168.5,-108 168.5,-84 260.5,-84 260.5,-108"/>
+<text text-anchor="middle" x="214.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">keywords_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~keywords_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge13" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~keywords_keys</title>
+<path fill="none" stroke="#ff0000" d="M54.04,-382.96C54.86,-340.17 63.51,-193.86 142,-117 146.84,-112.26 152.7,-108.57 158.95,-105.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="160.26,-108.97 168.33,-102.1 157.74,-102.44 160.26,-108.97"/>
+</g>
+<!-- proc~logger_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node15" class="node">
+<title>proc~logger_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node15"><a xlink:href="../proc/logger_keys.html" xlink:title="logger_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="252.5,-66 176.5,-66 176.5,-42 252.5,-42 252.5,-66"/>
+<text text-anchor="middle" x="214.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">logger_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~logger_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge14" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~logger_keys</title>
+<path fill="none" stroke="#ff0000" d="M53.45,-382.84C52.03,-335.98 53.35,-165.2 142,-75 148.66,-68.22 157.38,-63.61 166.44,-60.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="167.68,-63.75 176.31,-57.61 165.73,-57.03 167.68,-63.75"/>
+</g>
+<!-- proc~model_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node16" class="node">
+<title>proc~model_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node16"><a xlink:href="../proc/model_keys.html" xlink:title="model_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="440.5,-299 364.5,-299 364.5,-275 440.5,-275 440.5,-299"/>
+<text text-anchor="middle" x="402.5" y="-284.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">model_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~model_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge15" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~model_keys</title>
+<path fill="none" stroke="#ff0000" d="M72.13,-382.88C89.42,-371.82 116.53,-355.76 142,-346 213.59,-318.58 301.4,-301.91 354.33,-293.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="355.08,-297.01 364.43,-292.03 354.02,-290.09 355.08,-297.01"/>
+</g>
+<!-- proc~root_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node17" class="node">
+<title>proc~root_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node17"><a xlink:href="../proc/root_keys.html" xlink:title="root_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="434,-425 371,-425 371,-401 434,-401 434,-425"/>
+<text text-anchor="middle" x="402.5" y="-410.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">root_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~root_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge16" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~root_keys</title>
+<path fill="none" stroke="#ff0000" d="M106.02,-397.69C175.61,-401.3 297.55,-407.62 360.83,-410.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="360.66,-414.39 370.83,-411.41 361.02,-407.4 360.66,-414.39"/>
+</g>
+<!-- proc~scf_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node18" class="node">
+<title>proc~scf_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node18"><a xlink:href="../proc/scf_keys.html" xlink:title="scf_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="243,-192 186,-192 186,-168 243,-168 243,-192"/>
+<text text-anchor="middle" x="214.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">scf_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~scf_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge17" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~scf_keys</title>
+<path fill="none" stroke="#ff0000" d="M55.91,-382.91C61.92,-348.92 83.65,-251.69 142,-201 151.46,-192.78 164,-187.77 175.93,-184.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="176.7,-188.14 185.73,-182.6 175.22,-181.3 176.7,-188.14"/>
+</g>
+<!-- proc~schema_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node19" class="node">
+<title>proc~schema_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node19"><a xlink:href="../proc/schema_keys.html" xlink:title="schema_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="444.5,-383 360.5,-383 360.5,-359 444.5,-359 444.5,-383"/>
+<text text-anchor="middle" x="402.5" y="-368.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">schema_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~schema_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge18" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~schema_keys</title>
+<path fill="none" stroke="#ff0000" d="M106.02,-391.41C171.89,-386.86 284.66,-379.07 350.19,-374.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="350.55,-378.03 360.29,-373.85 350.07,-371.04 350.55,-378.03"/>
+</g>
+<!-- proc~system_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node20" class="node">
+<title>proc~system_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node20"><a xlink:href="../proc/system_keys.html" xlink:title="system_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="254,-234 175,-234 175,-210 254,-210 254,-234"/>
+<text text-anchor="middle" x="214.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">system_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~system_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge19" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~system_keys</title>
+<path fill="none" stroke="#ff0000" d="M58.06,-382.83C67.94,-354.97 95.89,-286.06 142,-248 148.88,-242.32 157.11,-237.82 165.5,-234.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.87,-237.51 174.97,-230.69 164.38,-230.97 166.87,-237.51"/>
+</g>
+<!-- proc~xtb_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node21" class="node">
+<title>proc~xtb_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node21"><a xlink:href="../proc/xtb_keys.html" xlink:title="xtb_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="243.5,-24 185.5,-24 185.5,0 243.5,0 243.5,-24"/>
+<text text-anchor="middle" x="214.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~ensure_valid_json&#45;&gt;proc~xtb_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge20" class="edge">
+<title>proc~ensure_valid_json&#45;&gt;proc~xtb_keys</title>
+<path fill="none" stroke="#ff0000" d="M55.35,-382.68C61.86,-325.39 91.78,-85.65 142,-33 150.72,-23.86 163.19,-18.63 175.28,-15.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="176.14,-19.07 185.26,-13.68 174.77,-12.2 176.14,-19.07"/>
+</g>
+<!-- proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node24" class="node">
+<title>proc~allow</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node24"><a xlink:href="../proc/allow.html" xlink:title="allow">
+<polygon fill="#d9534f" stroke="#d9534f" points="601,-237 547,-237 547,-213 601,-213 601,-237"/>
+<text text-anchor="middle" x="574" y="-222.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allow</text>
+</a>
+</g>
+</g>
+<!-- proc~aimd_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge21" class="edge">
+<title>proc~aimd_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#ff9900" d="M437.39,-241C466.13,-237.61 507.25,-232.76 536.66,-229.29"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="537.41,-232.72 546.93,-228.08 536.58,-225.77 537.41,-232.72"/>
+</g>
+<!-- proc~check_child_object&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge22" class="edge">
+<title>proc~check_child_object&#45;&gt;get</title>
+<path fill="none" stroke="#ffe500" d="M271.01,-1001.55C276.85,-1004.28 282.34,-1007.7 287,-1012 319.87,-1042.34 293.52,-1072.35 323,-1106 418.11,-1214.59 518.72,-1303.94 630,-1212 679.42,-1171.17 691.93,-962.86 694.75,-893.5"/>
+<polygon fill="#ffe500" stroke="#ffe500" points="698.26,-893.39 695.14,-883.26 691.26,-893.12 698.26,-893.39"/>
+</g>
+<!-- proc~check_child_object&#45;&gt;proc~check_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge23" class="edge">
+<title>proc~check_child_object&#45;&gt;proc~check_object</title>
+<path fill="none" stroke="#ffe500" d="M271.05,-991C296.44,-991 326.29,-991 351.03,-991"/>
+<polygon fill="#ffe500" stroke="#ffe500" points="351.29,-994.5 361.29,-991 351.29,-987.5 351.29,-994.5"/>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge24" class="edge">
+<title>proc~check_cutoffs&#45;&gt;get</title>
+<path fill="none" stroke="#cbff00" d="M420.29,-863.16C441.72,-877.86 480.52,-901.77 518,-911 566.34,-922.9 582.08,-924.47 630,-911 645.48,-906.65 660.93,-897.51 672.93,-889.06"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="675.03,-891.86 681.01,-883.11 670.88,-886.22 675.03,-891.86"/>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge27" class="edge">
+<title>proc~check_cutoffs&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#cbff00" d="M445.14,-843.42C457.99,-839.53 471.5,-833.71 482,-825 507.42,-803.92 493.91,-782.59 518,-760 521.57,-756.65 525.65,-753.67 529.93,-751.02"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="531.86,-753.95 538.92,-746.06 528.48,-747.83 531.86,-753.95"/>
+</g>
+<!-- get_child -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node22" class="node">
+<title>get_child</title>
+<polygon fill="#777777" stroke="#777777" points="727,-703 666,-703 666,-679 727,-679 727,-703"/>
+<text text-anchor="middle" x="696.5" y="-688.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_child</text>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;get_child -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge25" class="edge">
+<title>proc~check_cutoffs&#45;&gt;get_child</title>
+<path fill="none" stroke="#cbff00" d="M445.23,-848.04C493.72,-842.77 574.19,-828.19 630,-788 656.88,-768.64 676.09,-734.6 686.5,-712.43"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="689.75,-713.73 690.65,-703.17 683.36,-710.86 689.75,-713.73"/>
+</g>
+<!-- info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node23" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="723.5,-582 669.5,-582 669.5,-558 723.5,-558 723.5,-582"/>
+<text text-anchor="middle" x="696.5" y="-567.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge26" class="edge">
+<title>proc~check_cutoffs&#45;&gt;info</title>
+<path fill="none" stroke="#cbff00" d="M445.09,-841.29C457.52,-837.34 470.81,-832.01 482,-825 501.45,-812.82 498.35,-799.85 518,-788 562.43,-761.19 592.33,-790.7 630,-755 642.3,-743.34 675.06,-638.02 689.03,-591.7"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="692.42,-592.6 691.94,-582.02 685.71,-590.59 692.42,-592.6"/>
+</g>
+<!-- proc~nmer_level -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node31" class="node">
+<title>proc~nmer_level</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node31"><a xlink:href="../proc/nmer_level.html" xlink:title="nmer_level">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="610,-902 538,-902 538,-878 610,-878 610,-902"/>
+<text text-anchor="middle" x="574" y="-887.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">nmer_level</text>
+</a>
+</g>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;proc~nmer_level -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge28" class="edge">
+<title>proc~check_cutoffs&#45;&gt;proc~nmer_level</title>
+<path fill="none" stroke="#cbff00" d="M445.4,-860.64C470.5,-866.42 502.4,-873.76 528.03,-879.65"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="527.34,-883.09 537.87,-881.92 528.91,-876.26 527.34,-883.09"/>
+</g>
+<!-- proc~quoted -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node32" class="node">
+<title>proc~quoted</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node32"><a xlink:href="../proc/quoted.html" xlink:title="quoted">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="601,-982 547,-982 547,-958 601,-958 601,-982"/>
+<text text-anchor="middle" x="574" y="-967.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">quoted</text>
+</a>
+</g>
+</g>
+<!-- proc~check_cutoffs&#45;&gt;proc~quoted -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge29" class="edge">
+<title>proc~check_cutoffs&#45;&gt;proc~quoted</title>
+<path fill="none" stroke="#cbff00" d="M416.45,-863.28C436.87,-882.24 478.34,-919.03 518,-944 524.07,-947.82 530.78,-951.44 537.37,-954.7"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="536.32,-958.07 546.86,-959.2 539.32,-951.75 536.32,-958.07"/>
+</g>
+<!-- proc~check_grandchild_object&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge30" class="edge">
+<title>proc~check_grandchild_object&#45;&gt;get</title>
+<path fill="none" stroke="#7fff00" d="M269.33,-961.09C275.53,-963.55 281.57,-966.49 287,-970 307.65,-983.35 305.86,-994.37 323,-1012 404.58,-1095.93 408.81,-1146.84 518,-1189 564.44,-1206.93 591.41,-1220.45 630,-1189 676.16,-1151.38 690.74,-959.26 694.43,-893.28"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="697.93,-893.32 694.96,-883.15 690.94,-892.95 697.93,-893.32"/>
+</g>
+<!-- proc~check_grandchild_object&#45;&gt;proc~check_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge31" class="edge">
+<title>proc~check_grandchild_object&#45;&gt;proc~check_object</title>
+<path fill="none" stroke="#7fff00" d="M268.8,-961.04C294.86,-966.92 326.04,-973.96 351.63,-979.74"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="350.97,-983.18 361.5,-981.97 352.52,-976.35 350.97,-983.18"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge32" class="edge">
+<title>proc~check_molecules&#45;&gt;get</title>
+<path fill="none" stroke="#33ff00" d="M266.68,-617.06C274.04,-619.6 281.1,-623.12 287,-628 317.05,-652.84 293.26,-682.79 323,-708 378.76,-755.26 414.31,-722.42 482,-750 553.04,-778.95 629.77,-827.04 669.04,-853.02"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="667.48,-856.18 677.74,-858.82 671.36,-850.36 667.48,-856.18"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~check_object -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge37" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~check_object</title>
+<path fill="none" stroke="#33ff00" d="M219.54,-623.07C232.37,-660.89 274.27,-779.97 323,-872 342.22,-908.3 369.51,-947.55 386.33,-970.67"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="383.69,-972.99 392.43,-978.98 389.34,-968.84 383.69,-972.99"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~error_has_error -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge38" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#33ff00" d="M225.88,-623.09C239.97,-639.59 265.82,-670.18 287,-697 303.53,-717.93 301.35,-729.43 323,-745 328.4,-748.89 334.42,-752.22 340.66,-755.07"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="339.33,-758.3 349.91,-758.91 342.01,-751.84 339.33,-758.3"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge39" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#33ff00" d="M232.56,-623.15C253.1,-637.26 289.09,-660.34 323,-674 356.73,-687.58 448.79,-708.18 511.27,-721.36"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="510.91,-724.86 521.42,-723.49 512.35,-718.01 510.91,-724.86"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;get_child -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge33" class="edge">
+<title>proc~check_molecules&#45;&gt;get_child</title>
+<path fill="none" stroke="#33ff00" d="M232.12,-598.78C252.53,-584.35 288.67,-560.59 323,-547 390.28,-520.37 420.13,-549.53 482,-512 503.31,-499.07 495.42,-479.55 518,-469 563.1,-447.94 590.13,-439.2 630,-469 630,-469 672.5,-613.04 689.03,-669.07"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="685.7,-670.15 691.89,-678.75 692.41,-668.17 685.7,-670.15"/>
+</g>
+<!-- proc~check_molecules&#45;&gt;info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge34" class="edge">
+<title>proc~check_molecules&#45;&gt;info</title>
+<path fill="none" stroke="#33ff00" d="M226.16,-598.91C244.16,-579.24 282.6,-540.34 323,-519 387.73,-484.81 419.63,-514.33 482,-476 502.38,-463.48 496.15,-445.73 518,-436 563.47,-415.75 587.77,-409.64 630,-436 669.49,-460.66 685.82,-516.78 692.04,-548"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="688.61,-548.71 693.84,-557.92 695.5,-547.45 688.61,-548.71"/>
+</g>
+<!-- proc~check_molecule_fragments -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node26" class="node">
+<title>proc~check_molecule_fragments</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node26"><a xlink:href="../proc/check_molecule_fragments.html" xlink:title="check_molecule_fragments">
+<polygon fill="#d9534f" stroke="#d9534f" points="482,-623 323,-623 323,-599 482,-599 482,-623"/>
+<text text-anchor="middle" x="402.5" y="-608.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecule_fragments</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~check_molecule_fragments -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge35" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~check_molecule_fragments</title>
+<path fill="none" stroke="#33ff00" d="M266.82,-611C281.02,-611 296.86,-611 312.54,-611"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="312.8,-614.5 322.8,-611 312.8,-607.5 312.8,-614.5"/>
+</g>
+<!-- proc~check_molecule_geometry -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node27" class="node">
+<title>proc~check_molecule_geometry</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node27"><a xlink:href="../proc/check_molecule_geometry.html" xlink:title="check_molecule_geometry">
+<polygon fill="#d9534f" stroke="#d9534f" points="480.5,-665 324.5,-665 324.5,-641 480.5,-641 480.5,-665"/>
+<text text-anchor="middle" x="402.5" y="-650.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_molecule_geometry</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~check_molecule_geometry -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge36" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~check_molecule_geometry</title>
+<path fill="none" stroke="#33ff00" d="M266.82,-622.59C288.93,-627.58 315,-633.47 338.29,-638.73"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="337.55,-642.15 348.08,-640.94 339.1,-635.32 337.55,-642.15"/>
+</g>
+<!-- proc~molecule_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node29" class="node">
+<title>proc~molecule_keys</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node29"><a xlink:href="../proc/molecule_keys.html" xlink:title="molecule_keys">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="448,-467 357,-467 357,-443 448,-443 448,-467"/>
+<text text-anchor="middle" x="402.5" y="-452.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecule_keys</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~molecule_keys -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge40" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~molecule_keys</title>
+<path fill="none" stroke="#33ff00" d="M222.41,-598.66C237.39,-573 275.38,-513.57 323,-481 330.32,-475.99 338.67,-471.89 347.14,-468.55"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="348.49,-471.78 356.7,-465.08 346.1,-465.2 348.49,-471.78"/>
+</g>
+<!-- proc~molecule_path -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node30" class="node">
+<title>proc~molecule_path</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node30"><a xlink:href="../proc/molecule_path.html" xlink:title="molecule_path">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="619.5,-502 528.5,-502 528.5,-478 619.5,-478 619.5,-502"/>
+<text text-anchor="middle" x="574" y="-487.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecule_path</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecules&#45;&gt;proc~molecule_path -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge41" class="edge">
+<title>proc~check_molecules&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#33ff00" d="M266.56,-600.79C332.54,-587.25 443.5,-563.17 482,-547 506,-536.92 530.9,-520.87 548.57,-508.37"/>
+<polygon fill="#33ff00" stroke="#33ff00" points="551.05,-510.9 557.11,-502.21 546.95,-505.22 551.05,-510.9"/>
+</g>
+<!-- proc~check_object&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge42" class="edge">
+<title>proc~check_object&#45;&gt;get</title>
+<path fill="none" stroke="#00ff19" d="M417.32,-1003.03C454.83,-1034.19 560.42,-1111.7 630,-1062 684.87,-1022.81 694.26,-934.67 695.54,-893.27"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="699.04,-893.2 695.72,-883.14 692.05,-893.08 699.04,-893.2"/>
+</g>
+<!-- proc~check_object&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge46" class="edge">
+<title>proc~check_object&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff19" d="M411.45,-978.95C438.25,-938.31 525.53,-805.98 559.39,-754.63"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="562.49,-756.3 565.07,-746.02 556.64,-752.45 562.49,-756.3"/>
+</g>
+<!-- proc~check_object&#45;&gt;get_child -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge43" class="edge">
+<title>proc~check_object&#45;&gt;get_child</title>
+<path fill="none" stroke="#00ff19" d="M423.75,-1003.01C466.97,-1026.91 569.23,-1073.98 630,-1024 633.06,-1021.48 677.36,-787.36 691.32,-713.24"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="694.81,-713.62 693.22,-703.14 687.93,-712.32 694.81,-713.62"/>
+</g>
+<!-- proc~check_object&#45;&gt;info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge44" class="edge">
+<title>proc~check_object&#45;&gt;info</title>
+<path fill="none" stroke="#00ff19" d="M436.36,-1003.09C485.18,-1018.69 576.79,-1038.57 630,-991 683.51,-943.16 651.79,-740.36 666,-670 671.53,-642.63 681.11,-611.93 687.85,-591.86"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="691.24,-592.74 691.16,-582.14 684.62,-590.47 691.24,-592.74"/>
+</g>
+<!-- proc~allowed_list -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node25" class="node">
+<title>proc~allowed_list</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node25"><a xlink:href="../proc/allowed_list.html" xlink:title="allowed_list">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="611,-1138 537,-1138 537,-1114 611,-1114 611,-1138"/>
+<text text-anchor="middle" x="574" y="-1123.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allowed_list</text>
+</a>
+</g>
+</g>
+<!-- proc~check_object&#45;&gt;proc~allowed_list -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge45" class="edge">
+<title>proc~check_object&#45;&gt;proc~allowed_list</title>
+<path fill="none" stroke="#00ff19" d="M413.83,-1003.12C432.76,-1024.75 475,-1070.5 518,-1100 522.91,-1103.37 528.33,-1106.51 533.78,-1109.37"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="532.42,-1112.6 542.93,-1113.9 535.52,-1106.33 532.42,-1112.6"/>
+</g>
+<!-- proc~is_allowed -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node28" class="node">
+<title>proc~is_allowed</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node28"><a xlink:href="../proc/is_allowed.html" xlink:title="is_allowed">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="607.5,-1180 540.5,-1180 540.5,-1156 607.5,-1156 607.5,-1180"/>
+<text text-anchor="middle" x="574" y="-1165.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">is_allowed</text>
+</a>
+</g>
+</g>
+<!-- proc~check_object&#45;&gt;proc~is_allowed -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge47" class="edge">
+<title>proc~check_object&#45;&gt;proc~is_allowed</title>
+<path fill="none" stroke="#00ff19" d="M409.43,-1003.4C423.94,-1032.52 464.02,-1105.87 518,-1147 521.91,-1149.98 526.29,-1152.58 530.83,-1154.84"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="529.7,-1158.17 540.27,-1159.01 532.53,-1151.77 529.7,-1158.17"/>
+</g>
+<!-- proc~check_object&#45;&gt;proc~quoted -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge48" class="edge">
+<title>proc~check_object&#45;&gt;proc~quoted</title>
+<path fill="none" stroke="#00ff19" d="M443.67,-986.02C471.97,-982.52 509.54,-977.86 536.89,-974.47"/>
+<polygon fill="#00ff19" stroke="#00ff19" points="537.34,-977.95 546.83,-973.24 536.48,-971 537.34,-977.95"/>
+</g>
+<!-- proc~fragmentation_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge49" class="edge">
+<title>proc~fragmentation_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#00ffff" d="M461.34,-316.95C468.5,-314.48 475.56,-311.52 482,-308 511.74,-291.73 539.55,-263.78 556.41,-244.86"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="559.22,-246.96 563.14,-237.12 553.94,-242.36 559.22,-246.96"/>
+</g>
+<!-- proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node33" class="node">
+<title>proc~require</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node33"><a xlink:href="../proc/require.html" xlink:title="require">
+<polygon fill="#d9534f" stroke="#d9534f" points="601,-346 547,-346 547,-322 601,-322 601,-346"/>
+<text text-anchor="middle" x="574" y="-331.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">require</text>
+</a>
+</g>
+</g>
+<!-- proc~fragmentation_keys&#45;&gt;proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge50" class="edge">
+<title>proc~fragmentation_keys&#45;&gt;proc~require</title>
+<path fill="none" stroke="#00ffff" d="M461.83,-330.72C486.69,-331.45 514.91,-332.29 536.7,-332.93"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="536.73,-336.43 546.83,-333.23 536.94,-329.43 536.73,-336.43"/>
+</g>
+<!-- proc~hessian_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge51" class="edge">
+<title>proc~hessian_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#00b2ff" d="M255.71,-143.92C308.3,-152.14 403.05,-168.56 482,-191 500.58,-196.28 520.75,-203.64 537.36,-210.16"/>
+<polygon fill="#00b2ff" stroke="#00b2ff" points="536.11,-213.43 546.7,-213.89 538.71,-206.93 536.11,-213.43"/>
+</g>
+<!-- proc~keywords_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge52" class="edge">
+<title>proc~keywords_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#0066ff" d="M260.92,-99.08C315.66,-104.23 409.34,-117.65 482,-152 510.11,-165.29 537.22,-188.88 554.43,-205.65"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="552.06,-208.23 561.61,-212.81 557,-203.27 552.06,-208.23"/>
+</g>
+<!-- proc~logger_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge53" class="edge">
+<title>proc~logger_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#0019ff" d="M252.53,-52.78C306.94,-52.7 409.82,-59.17 482,-104 520.98,-128.21 549.11,-175.66 563.07,-203.4"/>
+<polygon fill="#0019ff" stroke="#0019ff" points="560.04,-205.19 567.56,-212.65 566.34,-202.13 560.04,-205.19"/>
+</g>
+<!-- proc~model_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge54" class="edge">
+<title>proc~model_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#3200ff" d="M440.62,-278.39C453.83,-274.98 468.71,-270.74 482,-266 501.51,-259.05 522.64,-249.65 539.63,-241.6"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="541.61,-244.53 549.1,-237.05 538.58,-238.22 541.61,-244.53"/>
+</g>
+<!-- proc~model_keys&#45;&gt;proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge55" class="edge">
+<title>proc~model_keys&#45;&gt;proc~require</title>
+<path fill="none" stroke="#3200ff" d="M440.67,-296.81C453.75,-300.29 468.54,-304.28 482,-308 500.1,-313.01 520.17,-318.72 536.85,-323.52"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="536.17,-326.97 546.75,-326.37 538.11,-320.24 536.17,-326.97"/>
+</g>
+<!-- proc~root_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge56" class="edge">
+<title>proc~root_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#7f00ff" d="M434.32,-410.96C450.11,-408.5 468.75,-403.21 482,-392 511.45,-367.07 499.74,-346.99 518,-313 530.78,-289.21 547.45,-263.12 559.07,-245.57"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="562,-247.49 564.64,-237.23 556.18,-243.6 562,-247.49"/>
+</g>
+<!-- proc~root_keys&#45;&gt;proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge57" class="edge">
+<title>proc~root_keys&#45;&gt;proc~require</title>
+<path fill="none" stroke="#7f00ff" d="M434.18,-408.23C449.22,-405.06 467.22,-399.96 482,-392 500.85,-381.85 500.14,-371.81 518,-360 524.18,-355.92 531.1,-352.12 537.89,-348.76"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="539.45,-351.89 546.99,-344.46 536.46,-345.56 539.45,-351.89"/>
+</g>
+<!-- proc~scf_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge58" class="edge">
+<title>proc~scf_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#cc00ff" d="M243.25,-183.49C307.23,-191.55 465.05,-211.41 536.64,-220.42"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="536.6,-223.95 546.96,-221.72 537.48,-217 536.6,-223.95"/>
+</g>
+<!-- proc~schema_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge59" class="edge">
+<title>proc~schema_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#ff00e5" d="M444.89,-365.43C457.58,-362.33 471.07,-357.5 482,-350 502.35,-336.04 540.4,-277.66 560.24,-245.86"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="563.26,-247.64 565.54,-237.29 557.3,-243.95 563.26,-247.64"/>
+</g>
+<!-- proc~schema_keys&#45;&gt;proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge60" class="edge">
+<title>proc~schema_keys&#45;&gt;proc~require</title>
+<path fill="none" stroke="#ff00e5" d="M444.53,-362.04C472.77,-355.88 509.92,-347.77 537,-341.86"/>
+<polygon fill="#ff00e5" stroke="#ff00e5" points="537.83,-345.26 546.85,-339.71 536.33,-338.42 537.83,-345.26"/>
+</g>
+<!-- proc~system_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge61" class="edge">
+<title>proc~system_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#ff0098" d="M254.34,-222.25C306.23,-222.59 401.03,-223.25 482,-224 499.88,-224.17 519.75,-224.38 536.34,-224.57"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="536.68,-228.07 546.72,-224.69 536.76,-221.07 536.68,-228.07"/>
+</g>
+<!-- proc~xtb_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge62" class="edge">
+<title>proc~xtb_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#ff004c" d="M243.82,-8.6C296.07,-3.87 408.96,-1.03 482,-53 533.86,-89.9 558.67,-165.64 568.16,-203.07"/>
+<polygon fill="#ff004c" stroke="#ff004c" points="564.8,-204.06 570.54,-212.96 571.61,-202.42 564.8,-204.06"/>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge63" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;get</title>
+<path fill="none" stroke="#00ff00" d="M460.15,-623.05C523.08,-636.9 617.52,-659.22 630,-671 680.86,-719.02 692.28,-807.07 694.81,-848.42"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="691.32,-848.73 695.3,-858.55 698.31,-848.39 691.32,-848.73"/>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge66" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff00" d="M468.46,-623.17C473.33,-625.61 477.92,-628.52 482,-632 511.95,-657.59 489.41,-685.9 518,-713 519.27,-714.21 520.63,-715.35 522.04,-716.43"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="520.36,-719.51 530.68,-721.92 524.12,-713.6 520.36,-719.51"/>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge64" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;info</title>
+<path fill="none" stroke="#00ff00" d="M451.99,-598.86C462.3,-595.22 472.84,-590.65 482,-585 501.26,-573.12 497.09,-557.66 518,-549 564.25,-529.84 622.7,-543.17 659.61,-555.65"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="658.82,-559.08 669.42,-559.12 661.16,-552.48 658.82,-559.08"/>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~molecule_path -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge68" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#00ff00" d="M458.33,-598.94C466.86,-595.41 475.11,-590.86 482,-585 508.35,-562.59 493.07,-539.97 518,-516 521.48,-512.65 525.47,-509.67 529.68,-507.03"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="531.51,-510.02 538.53,-502.09 528.1,-503.91 531.51,-510.02"/>
+</g>
+<!-- proc~child_count -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node34" class="node">
+<title>proc~child_count</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node34"><a xlink:href="../proc/child_count.html" xlink:title="child_count">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="610.5,-582 537.5,-582 537.5,-558 610.5,-558 610.5,-582"/>
+<text text-anchor="middle" x="574" y="-567.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">child_count</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~child_count -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge65" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~child_count</title>
+<path fill="none" stroke="#00ff00" d="M453.44,-598.92C476.92,-593.24 504.71,-586.52 527.59,-580.99"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="528.49,-584.37 537.39,-578.61 526.85,-577.56 528.49,-584.37"/>
+</g>
+<!-- proc~int_text -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node36" class="node">
+<title>proc~int_text</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node36"><a xlink:href="../proc/int_text.html" xlink:title="int_text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="723.5,-444 669.5,-444 669.5,-420 723.5,-420 723.5,-444"/>
+<text text-anchor="middle" x="696.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">int_text</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~int_text -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge67" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~int_text</title>
+<path fill="none" stroke="#00ff00" d="M409.56,-598.75C424.08,-570.81 463.7,-502.21 518,-469 561.69,-442.28 621.55,-434.58 659.37,-432.51"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="659.58,-436.01 669.42,-432.07 659.28,-429.01 659.58,-436.01"/>
+</g>
+<!-- proc~sum_integer_array -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node37" class="node">
+<title>proc~sum_integer_array</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node37"><a xlink:href="../proc/sum_integer_array.html" xlink:title="sum_integer_array">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="630,-624 518,-624 518,-600 630,-600 630,-624"/>
+<text text-anchor="middle" x="574" y="-609.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sum_integer_array</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_fragments&#45;&gt;proc~sum_integer_array -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge69" class="edge">
+<title>proc~check_molecule_fragments&#45;&gt;proc~sum_integer_array</title>
+<path fill="none" stroke="#00ff00" d="M482.3,-611.46C490.68,-611.51 499.15,-611.56 507.36,-611.61"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="507.59,-615.11 517.61,-611.67 507.63,-608.11 507.59,-615.11"/>
+</g>
+<!-- proc~check_molecule_geometry&#45;&gt;proc~error_set -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge70" class="edge">
+<title>proc~check_molecule_geometry&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ff7f" d="M451.05,-665.05C461.63,-668.72 472.51,-673.33 482,-679 500.9,-690.28 499.36,-701.3 518,-713 520.6,-714.63 523.35,-716.17 526.17,-717.62"/>
+<polygon fill="#00ff7f" stroke="#00ff7f" points="524.82,-720.85 535.36,-721.91 527.78,-714.5 524.82,-720.85"/>
+</g>
+<!-- proc~check_molecule_geometry&#45;&gt;proc~molecule_path -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge72" class="edge">
+<title>proc~check_molecule_geometry&#45;&gt;proc~molecule_path</title>
+<path fill="none" stroke="#00ff7f" d="M468.49,-640.87C473.36,-638.42 477.94,-635.5 482,-632 512.45,-605.75 495.97,-582.64 518,-549 527.6,-534.34 540.95,-519.92 552.1,-509"/>
+<polygon fill="#00ff7f" stroke="#00ff7f" points="554.57,-511.48 559.39,-502.04 549.74,-506.42 554.57,-511.48"/>
+</g>
+<!-- proc~has_key -->
+<g id="proc~~ensure_valid_json~~CallsGraph_node35" class="node">
+<title>proc~has_key</title>
+<g id="a_proc~~ensure_valid_json~~CallsGraph_node35"><a xlink:href="../proc/has_key.html" xlink:title="has_key">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="601.5,-704 546.5,-704 546.5,-680 601.5,-680 601.5,-704"/>
+<text text-anchor="middle" x="574" y="-689.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">has_key</text>
+</a>
+</g>
+</g>
+<!-- proc~check_molecule_geometry&#45;&gt;proc~has_key -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge71" class="edge">
+<title>proc~check_molecule_geometry&#45;&gt;proc~has_key</title>
+<path fill="none" stroke="#00ff7f" d="M455.74,-665.02C481.84,-671.02 512.78,-678.14 536.33,-683.56"/>
+<polygon fill="#00ff7f" stroke="#00ff7f" points="535.73,-687.02 546.26,-685.85 537.3,-680.19 535.73,-687.02"/>
+</g>
+<!-- proc~molecule_keys&#45;&gt;proc~allow -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge73" class="edge">
+<title>proc~molecule_keys&#45;&gt;proc~allow</title>
+<path fill="none" stroke="#007fff" d="M448.23,-451.13C460.49,-448.08 472.9,-442.85 482,-434 522.22,-394.88 494.92,-364.14 518,-313 529.04,-288.53 545.87,-262.73 558,-245.44"/>
+<polygon fill="#007fff" stroke="#007fff" points="560.9,-247.4 563.86,-237.22 555.2,-243.33 560.9,-247.4"/>
+</g>
+<!-- proc~molecule_keys&#45;&gt;proc~require -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge74" class="edge">
+<title>proc~molecule_keys&#45;&gt;proc~require</title>
+<path fill="none" stroke="#007fff" d="M448.18,-449.94C460.15,-446.85 472.42,-441.9 482,-434 510.21,-410.73 491.99,-385.72 518,-360 523.52,-354.54 530.42,-350.07 537.43,-346.47"/>
+<polygon fill="#007fff" stroke="#007fff" points="539.33,-349.45 546.96,-342.09 536.41,-343.09 539.33,-349.45"/>
+</g>
+<!-- proc~molecule_path&#45;&gt;proc~int_text -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge75" class="edge">
+<title>proc~molecule_path&#45;&gt;proc~int_text</title>
+<path fill="none" stroke="#0000ff" d="M599.97,-477.98C617.74,-469.43 641.84,-457.83 661.38,-448.42"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="663.07,-451.49 670.56,-444 660.04,-445.19 663.07,-451.49"/>
+</g>
+<!-- proc~child_count&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge76" class="edge">
+<title>proc~child_count&#45;&gt;get</title>
+<path fill="none" stroke="#ff0000" d="M610.76,-577.87C617.97,-580.92 624.89,-585.15 630,-591 647.23,-610.73 680.24,-786.34 691.57,-848.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="688.15,-849.72 693.37,-858.95 695.04,-848.48 688.15,-849.72"/>
+</g>
+<!-- proc~child_count&#45;&gt;info -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge77" class="edge">
+<title>proc~child_count&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M610.5,-570C625.84,-570 643.78,-570 659.21,-570"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="659.43,-573.5 669.43,-570 659.43,-566.5 659.43,-573.5"/>
+</g>
+<!-- proc~has_key&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge78" class="edge">
+<title>proc~has_key&#45;&gt;get</title>
+<path fill="none" stroke="#7fff00" d="M601.52,-697.4C611.47,-700.55 622.23,-705.45 630,-713 668.83,-750.75 685.58,-814.91 692,-848.68"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="688.62,-849.65 693.8,-858.89 695.51,-848.43 688.62,-849.65"/>
+</g>
+<!-- proc~sum_integer_array&#45;&gt;get -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge79" class="edge">
+<title>proc~sum_integer_array&#45;&gt;get</title>
+<path fill="none" stroke="#7f00ff" d="M612.07,-624.14C618.77,-627.72 625.16,-632.27 630,-638 657.42,-670.44 682.38,-796.95 691.67,-848.73"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="688.27,-849.61 693.45,-858.85 695.16,-848.39 688.27,-849.61"/>
+</g>
+<!-- proc~sum_integer_array&#45;&gt;get_child -->
+<g id="proc~~ensure_valid_json~~CallsGraph_edge80" class="edge">
+<title>proc~sum_integer_array&#45;&gt;get_child</title>
+<path fill="none" stroke="#7f00ff" d="M603.95,-624.11C612.56,-628.12 621.86,-632.89 630,-638 645.85,-647.96 662.22,-661.2 674.63,-671.96"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="672.36,-674.62 682.17,-678.61 676.99,-669.37 672.36,-674.62"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocensure_valid_jsonCallsGraph = svgPanZoom('#procensure_valid_jsonCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~ensure_valid_json~~CalledByGraph Pages: 1 -->
+<svg id="procensure_valid_jsonCalledByGraph" width="364pt" height="32pt"
+ viewBox="0.00 0.00 364.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~ensure_valid_json~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~ensure_valid_json~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 360,-28 360,4 -4,4"/>
+<!-- proc~ensure_valid_json -->
+<g id="proc~~ensure_valid_json~~CalledByGraph_node1" class="node">
+<title>proc~ensure_valid_json</title>
+<polygon fill="none" stroke="black" points="356,-24 250,-24 250,0 356,0 356,-24"/>
+<text text-anchor="middle" x="303" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">ensure_valid_json</text>
+</g>
+<!-- proc~read_json_config_file -->
+<g id="proc~~ensure_valid_json~~CalledByGraph_node2" class="node">
+<title>proc~read_json_config_file</title>
+<g id="a_proc~~ensure_valid_json~~CalledByGraph_node2"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="214,-24 90,-24 90,0 214,0 214,-24"/>
+<text text-anchor="middle" x="152" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+</a>
+</g>
+</g>
+<!-- proc~read_json_config_file&#45;&gt;proc~ensure_valid_json -->
+<g id="proc~~ensure_valid_json~~CalledByGraph_edge1" class="edge">
+<title>proc~read_json_config_file&#45;&gt;proc~ensure_valid_json</title>
+<path fill="none" stroke="#ff0000" d="M214.03,-12C222.49,-12 231.19,-12 239.67,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="239.87,-15.5 249.87,-12 239.87,-8.5 239.87,-15.5"/>
+</g>
+<!-- program~main -->
+<g id="proc~~ensure_valid_json~~CalledByGraph_node3" class="node">
+<title>program~main</title>
+<g id="a_proc~~ensure_valid_json~~CalledByGraph_node3"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;proc~read_json_config_file -->
+<g id="proc~~ensure_valid_json~~CalledByGraph_edge2" class="edge">
+<title>program~main&#45;&gt;proc~read_json_config_file</title>
+<path fill="none" stroke="#ff0000" d="M54.09,-12C61.72,-12 70.46,-12 79.49,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.78,-15.5 89.78,-12 79.78,-8.5 79.78,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core"></span>
+              type(json_core),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>core</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~5"></span>
+              type(json_value),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">ensure_valid_json</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Validate a loaded deck, setting `error` on the first problem found</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Reports one problem rather than all of them: the first unknown key is</span>
+<span class="w">      </span><span class="c">!! usually the whole story, and a reader that stops there gives a</span>
+<span class="w">      </span><span class="c">!! message short enough to act on.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_core</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">core</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_value</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get_core</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">get</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">associated</span><span class="p">(</span><span class="n">root</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Input file contains no JSON document&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="k">      call </span><span class="n">check_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">root_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;schema&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">schema_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;model&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">model_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;system&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">system_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;system&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;logger&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">logger_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">check_child_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">keywords_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;scf&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">scf_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hessian&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">hessian_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;aimd&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">aimd_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;xtb&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">xtb_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_grandchild_object</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fragmentation&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                   </span><span class="n">fragmentation_keys</span><span class="p">(),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      call </span><span class="n">check_cutoffs</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      call </span><span class="n">check_molecules</span><span class="p">(</span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">ensure_valid_json</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 00:56 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
