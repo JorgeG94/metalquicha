@@ -135,11 +135,11 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-message_len~4">MESSAGE_LEN</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_bad_handle~3">MQC_BAD_HANDLE</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_error~4">MQC_ERROR</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_ok~4">MQC_OK</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-last_message~4">last_message</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-message_len">MESSAGE_LEN</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_bad_handle">MQC_BAD_HANDLE</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_error">MQC_ERROR</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-mqc_ok">MQC_OK</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#variable-last_message">last_message</a>
         </div>
       </div>
     </div>
@@ -182,8 +182,8 @@
             <a class="list-group-item" href="../module/mqc_capi_system.html#proc-mqc_system_set_bonds">mqc_system_set_bonds</a>
             <a class="list-group-item" href="../module/mqc_capi_system.html#proc-mqc_system_set_geometry">mqc_system_set_geometry</a>
             <a class="list-group-item" href="../module/mqc_capi_system.html#proc-mqc_system_set_monomers">mqc_system_set_monomers</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#proc-int_text">int_text</a>
-            <a class="list-group-item" href="../module/mqc_capi_system.html#proc-monomer_of">monomer_of</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#proc-int_text~2">int_text</a>
+            <a class="list-group-item" href="../module/mqc_capi_system.html#proc-monomer_of~2">monomer_of</a>
         </div>
       </div>
     </div>
@@ -253,11 +253,11 @@ the rest of the code works in <code>system_geometry_t</code>.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
-                  <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -735,7 +735,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-message_len~4"></span>
+              <span class="anchor" id="variable-message_len"></span>
               integer,
             </td>
               <td>private,</td>
@@ -752,7 +752,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_bad_handle~3"></span>
+              <span class="anchor" id="variable-mqc_bad_handle"></span>
               integer(kind=c_int),
             </td>
               <td>private,</td>
@@ -769,7 +769,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_error~4"></span>
+              <span class="anchor" id="variable-mqc_error"></span>
               integer(kind=c_int),
             </td>
               <td>private,</td>
@@ -786,7 +786,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mqc_ok~4"></span>
+              <span class="anchor" id="variable-mqc_ok"></span>
               integer(kind=c_int),
             </td>
               <td>private,</td>
@@ -803,7 +803,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-last_message~4"></span>
+              <span class="anchor" id="variable-last_message"></span>
               character(len=MESSAGE_LEN),
             </td>
               <td>private,</td>
@@ -871,7 +871,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-geom~5"></span>
+              <span class="anchor" id="variable-geom"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
               <td>public</td>
@@ -920,7 +920,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~15"></span>
+              <span class="anchor" id="variable-handle~7"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -935,7 +935,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance"></span>
+              <span class="anchor" id="variable-tolerance~5"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -980,7 +980,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~14"></span>
+              <span class="anchor" id="variable-handle~6"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1025,7 +1025,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~17"></span>
+              <span class="anchor" id="variable-handle~9"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1040,7 +1040,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~3"></span>
+              <span class="anchor" id="variable-tolerance~7"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1085,7 +1085,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~18"></span>
+              <span class="anchor" id="variable-handle~10"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1130,7 +1130,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~20"></span>
+              <span class="anchor" id="variable-handle~12"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1175,7 +1175,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~19"></span>
+              <span class="anchor" id="variable-handle~11"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1238,7 +1238,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~16"></span>
+              <span class="anchor" id="variable-handle~8"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1253,7 +1253,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tolerance~2"></span>
+              <span class="anchor" id="variable-tolerance~6"></span>
               real(kind=c_double),
             </td>
 <td></td>
@@ -1298,7 +1298,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~13"></span>
+              <span class="anchor" id="variable-handle~5"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1313,7 +1313,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_bonds"></span>
+              <span class="anchor" id="variable-n_bonds~3"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1328,7 +1328,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_i~5"></span>
+              <span class="anchor" id="variable-atom_i"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1343,7 +1343,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_j~5"></span>
+              <span class="anchor" id="variable-atom_j"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1358,7 +1358,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-order~4"></span>
+              <span class="anchor" id="variable-order"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1373,7 +1373,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-is_broken~2"></span>
+              <span class="anchor" id="variable-is_broken"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1418,7 +1418,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~11"></span>
+              <span class="anchor" id="variable-handle~3"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1433,7 +1433,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~30"></span>
+              <span class="anchor" id="variable-n_atoms~4"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1463,7 +1463,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coordinates~7"></span>
+              <span class="anchor" id="variable-coordinates"></span>
               real(kind=c_double),
             </td>
 <td>intent(in)</td>
@@ -1478,7 +1478,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~8"></span>
+              <span class="anchor" id="variable-charge~2"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1493,7 +1493,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1538,7 +1538,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~12"></span>
+              <span class="anchor" id="variable-handle~4"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1553,7 +1553,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_monomers~10"></span>
+              <span class="anchor" id="variable-n_monomers~2"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1583,7 +1583,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sizes"></span>
+              <span class="anchor" id="variable-sizes~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1598,7 +1598,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atoms~2"></span>
+              <span class="anchor" id="variable-atoms"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1613,7 +1613,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charges"></span>
+              <span class="anchor" id="variable-charges~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1654,7 +1654,7 @@ parameter
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-int_text"></span> <h3>private pure function <a href='../proc/int_text.html'>int_text</a>(value) result(text)  
+    <div class="card-header codesum"><span class="anchor" id="proc-int_text~2"></span> <h3>private pure function <a href='../proc/int_text~2.html'>int_text</a>(value) result(text)  
 </h3></div>
     <div class="card-body">
           
@@ -1673,7 +1673,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~12"></span>
+              <span class="anchor" id="variable-value~7"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1699,11 +1699,11 @@ parameter
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-monomer_of"></span> <h3>private pure function <a href='../proc/monomer_of.html'>monomer_of</a>(sys, atom) result(imon)  
+    <div class="card-header codesum"><span class="anchor" id="proc-monomer_of~2"></span> <h3>private pure function <a href='../proc/monomer_of~2.html'>monomer_of</a>(sys, atom) result(imon)  
 </h3></div>
     <div class="card-body">
           
-  <p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1733,7 +1733,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom"></span>
+              <span class="anchor" id="variable-atom~3"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -1783,7 +1783,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-handle~10"></span>
+              <span class="anchor" id="variable-handle~2"></span>
               type(c_ptr),
             </td>
 <td></td>
@@ -1823,7 +1823,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer_len~4"></span>
+              <span class="anchor" id="variable-buffer_len"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -1838,7 +1838,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-buffer~12"></span>
+              <span class="anchor" id="variable-buffer~7"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(inout)</td>
@@ -1921,7 +1921,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 08:06 +0000             </p>
+ on 2026-08-10 08:24 +0000             </p>
           </div>
         </div>
         <br>
