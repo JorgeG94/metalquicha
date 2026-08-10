@@ -1,0 +1,18 @@
+{
+    "description": "CPU Hartree-Fock through the libcint backend. Reference energies are PySCF RHF on the same geometry and basis, not values this program produced -- a manifest of its own output would only detect change, not error. Kept separate from validation_tests.json because that one is xTB and needs tblite, while these need libcint and nothing else.",
+    "tolerance": 1e-06,
+    "tests": [
+        {
+            "name": "RHF water sto-3g (CPU)",
+            "input": "inputs/hf_water_sto-3g.json",
+            "expected_energy": -74.962005687948,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RHF water def2-svp (CPU)",
+            "input": "inputs/hf_water_def2-svp.json",
+            "expected_energy": -75.960720417508,
+            "type": "unfragmented"
+        }
+    ]
+}
