@@ -215,6 +215,10 @@ endif()
 # The tarball rather than the git repository: libxc's history carries the
 # generated functional sources and is far larger than any release. URL_HASH pins
 # it, which a tag would not -- a tag can be moved and a hash cannot.
+add_executable(check_lebedev ${PROJECT_SOURCE_DIR}/validation/check_lebedev.f90)
+target_include_directories(check_lebedev PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_lebedev PRIVATE ${main_lib})
+
 if(MQC_ENABLE_LIBXC)
   include(FetchContent)
   # Static, so nothing has to be found on the library path at run time; the
