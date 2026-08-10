@@ -45,7 +45,7 @@ contains
       type(error_t) :: read_error
 
       call read_json_ecp_element(ECP_FILE, "Rb", ecp, read_error)
-      call check(error, .not. read_error%has_error(), read_error%get_message())
+      call check(error,.not. read_error%has_error(), read_error%get_message())
       if (allocated(error)) return
 
       call check(error, ecp%has_ecp, "Rb should carry an ECP")
@@ -100,7 +100,7 @@ contains
       symbols = ["Rb", "Ag", "Au", "Rn"]
       do isym = 1, size(symbols)
          call read_json_ecp_element(ECP_FILE, trim(symbols(isym)), ecp, read_error)
-         call check(error, .not. read_error%has_error(), read_error%get_message())
+         call check(error,.not. read_error%has_error(), read_error%get_message())
          if (allocated(error)) return
          call check(error, ecp%has_ecp, trim(symbols(isym))//" should carry an ECP")
          if (allocated(error)) return
@@ -121,7 +121,7 @@ contains
       type(error_t) :: read_error
 
       call read_json_ecp_element(ECP_FILE, "Au", ecp, read_error)
-      call check(error, .not. read_error%has_error(), read_error%get_message())
+      call check(error,.not. read_error%has_error(), read_error%get_message())
       if (allocated(error)) return
       call check(error, ecp%core_electrons, 60, "Au ECP replaces 60 electrons")
       if (allocated(error)) return
@@ -139,11 +139,11 @@ contains
       type(error_t) :: read_error
 
       call read_json_ecp_element(ECP_FILE, "O", ecp, read_error)
-      call check(error, .not. read_error%has_error(), &
+      call check(error,.not. read_error%has_error(), &
                  "an element without an ECP should not be an error: "// &
                  read_error%get_message())
       if (allocated(error)) return
-      call check(error, .not. ecp%has_ecp, "oxygen should carry no ECP")
+      call check(error,.not. ecp%has_ecp, "oxygen should carry no ECP")
       if (allocated(error)) return
       call check(error, ecp%core_electrons, 0, "an absent ECP replaces no electrons")
 
@@ -160,7 +160,7 @@ contains
       ! Au-O-Au-H: heavy, light, heavy again, light.
       symbols = ["Au", "O ", "Au", "H "]
       call build_molecular_ecp_json(ECP_FILE, symbols, mol_ecp, read_error)
-      call check(error, .not. read_error%has_error(), read_error%get_message())
+      call check(error,.not. read_error%has_error(), read_error%get_message())
       if (allocated(error)) return
 
       call check(error, mol_ecp%natoms, 4, "one entry per atom")
@@ -172,11 +172,11 @@ contains
       ! downstream indexes coordinates and charges the same way.
       call check(error, mol_ecp%atoms(1)%has_ecp, "atom 1 (Au) should carry an ECP")
       if (allocated(error)) return
-      call check(error, .not. mol_ecp%atoms(2)%has_ecp, "atom 2 (O) should not")
+      call check(error,.not. mol_ecp%atoms(2)%has_ecp, "atom 2 (O) should not")
       if (allocated(error)) return
       call check(error, mol_ecp%atoms(3)%has_ecp, "atom 3 (Au) should carry an ECP")
       if (allocated(error)) return
-      call check(error, .not. mol_ecp%atoms(4)%has_ecp, "atom 4 (H) should not")
+      call check(error,.not. mol_ecp%atoms(4)%has_ecp, "atom 4 (H) should not")
       if (allocated(error)) return
 
       ! The repeated element must be a real copy, not a shared or empty one.
@@ -202,7 +202,7 @@ contains
 
       symbols = ["Au", "Au", "O "]
       call build_molecular_ecp_json(ECP_FILE, symbols, mol_ecp, read_error)
-      call check(error, .not. read_error%has_error(), read_error%get_message())
+      call check(error,.not. read_error%has_error(), read_error%get_message())
       if (allocated(error)) return
 
       call check(error, mol_ecp%core_electrons(), 120, &
