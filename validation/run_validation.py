@@ -92,7 +92,7 @@ def run_calculation(input_file: str, exe_path: str = "./build/mqc", verbose: boo
 
 def get_output_filename(input_file: str) -> str:
     """Get the output JSON filename from the input filename"""
-    basename = Path(input_file).stem  # Remove .mqc extension
+    basename = Path(input_file).stem  # Remove the .json extension
     return f"output_{basename}.json"
 
 
@@ -235,45 +235,6 @@ def cleanup_output_files(verbose: bool = False) -> None:
                 print(f"  Removed: {output_file}")
         except Exception as e:
             print(f"  {Colors.YELLOW}Warning: Could not remove {output_file}: {e}{Colors.RESET}")
-
-    print()
-
-
-def prepare_mqc_files(validation_dir: str = "validation", prep_script: str = "mqc_prep.py", verbose: bool = False) -> None:
-    """Run mqc_prep.py on all JSON files in validation/inputs/"""
-    inputs_dir = Path(validation_dir) / "inputs"
-
-    if not inputs_dir.exists():
-        print(f"{Colors.YELLOW}Warning: {inputs_dir} does not exist{Colors.RESET}")
-        return
-
-    json_files = list(inputs_dir.glob("*.json"))
-
-    if not json_files:
-        print(f"{Colors.YELLOW}No JSON files found in {inputs_dir}{Colors.RESET}")
-        return
-
-    print(f"\n{Colors.BOLD}Preparing .mqc files from {len(json_files)} JSON inputs...{Colors.RESET}\n")
-
-    for json_file in json_files:
-        output_mqc = inputs_dir / f"{json_file.stem}.mqc"
-
-        if verbose:
-            print(f"  {json_file.name} -> {output_mqc.name}")
-
-        try:
-            result = subprocess.run(
-                ["python3", prep_script, str(json_file)],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            if result.returncode != 0:
-                print(f"  {Colors.RED}✗ Failed to prepare {json_file.name}{Colors.RESET}")
-                if verbose:
-                    print(f"    {result.stderr}")
-        except Exception as e:
-            print(f"  {Colors.RED}✗ Error preparing {json_file.name}: {e}{Colors.RESET}")
 
     print()
 
@@ -557,12 +518,8 @@ def main():
                        help="Path to validation manifest JSON")
     parser.add_argument("--exe", default="../build/mqc",
                        help="Path to metalquicha executable")
-    parser.add_argument("--prep-script", default="../mqc_prep.py",
-                       help="Path to mqc_prep.py script")
     parser.add_argument("--validation-dir", default=".",
                        help="Path to validation directory containing inputs/")
-    parser.add_argument("--skip-prep", action="store_true",
-                       help="Skip .mqc file preparation step")
     parser.add_argument("--mpi", action="store_true",
                        help="Run tests using mpirun (fragmented: -np N, unfragmented: -np 1)")
     parser.add_argument("--np", type=int, default=4,
@@ -576,14 +533,6 @@ def main():
 
     # Clean up any existing output files to ensure fresh test runs
     cleanup_output_files(verbose=args.verbose)
-
-    # Prepare .mqc files from JSON inputs (unless skipped)
-    if not args.skip_prep:
-        prepare_mqc_files(
-            validation_dir=args.validation_dir,
-            prep_script=args.prep_script,
-            verbose=args.verbose
-        )
 
     # Run tests
     passed, failed, errors = run_validation_tests(

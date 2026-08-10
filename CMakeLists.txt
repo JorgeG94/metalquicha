@@ -4,7 +4,7 @@ cmake_policy(SET CMP0144 NEW)
 project(
   "metalquicha"
   LANGUAGES Fortran C
-  VERSION 0.1.0
+  VERSION 0.2.0
   DESCRIPTION "A hastily put together fragmentation quantum chemistry program")
 
 set(project_name metalquicha)

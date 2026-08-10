@@ -20,10 +20,10 @@ cmake ..
 make -j
 
 # Run (serial)
-./mqc input.mqc
+./mqc input.json
 
 # Run (parallel)
-mpirun -np 4 ./mqc input.mqc
+mpirun -np 4 ./mqc input.json
 
 # Run tests
 ctest -R "mqc"
@@ -57,7 +57,9 @@ metalquicha/
 |------|---------|
 | `app/main.f90` | Entry point, MPI init, input parsing |
 | `src/mqc_driver.f90` | Routes to fragmented/unfragmented workflows |
-| `src/io/mqc_config_parser.f90` | Parses `.mqc` input files |
+| `src/io/mqc_json_config_reader.f90` | Parses JSON input decks |
+| `src/io/mqc_json_schema.f90` | Validates a deck before it is read |
+| `src/io/mqc_config_types.f90` | `mqc_config_t` and the types it is built from |
 | `src/fragmentation/mqc_mbe.f90` | Core MBE implementation (62KB) |
 | `src/fragmentation/mqc_physical_fragment.f90` | Fragment representation, H-capping |
 | `src/fragmentation/mqc_gmbe_utils.f90` | GMBE with PIE (overlapping fragments) |
@@ -66,49 +68,38 @@ metalquicha/
 | `src/vibrational/mqc_vibrational_analysis.f90` | Frequency calculations |
 | `src/vibrational/mqc_thermochemistry.f90` | Thermochemistry (RRHO) |
 
-## Input Format (.mqc)
+## Input Format (JSON)
 
-Section-based format parsed by `mqc_config_parser.f90`:
+Read by `mqc_json_config_reader.f90` straight into `mqc_config_t`:
 
-```
-%schema
-name = example
-version = 1.0
-index_base = 1
-end
-
-%model
-method = gfn2
-end
-
-%driver
-type = Energy
-end
-
-%structure
-charge = 0
-multiplicity = 1
-end
-
-%geometry
-O  0.000  0.000  0.117
-H  0.000  0.757 -0.469
-H  0.000 -0.757 -0.469
-end
-
-%fragmentation
-method = MBE
-level = 2
-cutoff_method = distance
-end
-
-%cutoffs
-dimer = 5.0
-trimer = 4.0
-end
+```json
+{
+  "schema": {"name": "example", "version": "1.0"},
+  "model": {"method": "gfn2"},
+  "driver": "Energy",
+  "molecules": [{
+    "xyz": "water.xyz",
+    "molecular_charge": 0,
+    "molecular_multiplicity": 1
+  }],
+  "keywords": {
+    "fragmentation": {
+      "method": "MBE",
+      "level": 2,
+      "cutoff_method": "distance",
+      "cutoffs": {"dimer": 5.0, "trimer": 4.0}
+    }
+  }
+}
 ```
 
-Use `python mqc_prep.py input.json` to convert JSON to `.mqc` format.
+A molecule gives either `xyz` (a path, resolved relative to the deck) or
+`symbols` plus a flat `geometry` list. Atom indices are 0-based. Bonds listed
+in `connectivity` are marked broken automatically when their two atoms fall in
+different fragments -- that is derived, not declared.
+
+The `.mqc` format and its `mqc_prep.py` generator were removed in 0.2.0; see
+`mqc_docs/source/input_files.rst` for the migration table.
 
 ## Core Concepts
 
@@ -249,9 +240,14 @@ See `FORTRAN_STYLE.md` for the complete style guide. Key points:
 4. Register in method factory
 
 ### Add a new input keyword
-1. Add to appropriate section in `mqc_config_parser.f90`
-2. Add field to relevant config type
-3. Handle in `mqc_config_adapter.f90`
+1. Add the field to the relevant type in `mqc_config_types.f90`, with its default
+2. Add the key to its object's allow-list in `mqc_json_schema.f90` — the
+   validator rejects anything it does not know, so a key added anywhere else
+   first will be refused before the reader ever sees it
+3. Read it in `mqc_json_config_reader.f90` (`optional_*` leaves the default alone
+   when the key is absent, so there is no second table of defaults)
+4. Handle in `mqc_config_adapter.f90`
+5. Add a case to `test/test_mqc_json_reader.f90`
 
 ### Add a new test
 1. Create `test/test_mqc_feature.f90`
@@ -261,10 +257,10 @@ See `FORTRAN_STYLE.md` for the complete style guide. Key points:
 ## Validation Tests
 
 Located in `validation/` directory:
-- `h3o.mqc` - Unfragmented hydronium
-- `prism.mqc` - Water prism MBE(2)
-- `overlapping_gly3.mqc` - Glycine tripeptide GMBE(1)
-- `w20_isomer.mqc` - Water 20-mer MBE(2)
+- `h3o.json` - Unfragmented hydronium
+- `prism.json` - Water prism MBE(2)
+- `overlapping_gly3.json` - Glycine tripeptide GMBE(1)
+- `w20_isomer.json` - Water 20-mer MBE(2)
 
 ## Output Format
 
@@ -298,7 +294,7 @@ rm -rf build && cmake -B build && cmake --build build -j
 cmake -DCMAKE_BUILD_TYPE=Coverage-mqc -B build && cmake --build build && cmake --build build --target coverage
 
 # Run with verbose output
-./build/mqc input.mqc --verbose
+./build/mqc input.json --verbose
 
 # Run linter
 fortitude check

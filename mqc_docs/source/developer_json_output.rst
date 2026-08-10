@@ -111,7 +111,7 @@ If your field applies to multiple calculation types, add it to each relevant sub
 .. code-block:: bash
 
    cmake --build build -j
-   ./build/mqc your_input.mqc
+   ./build/mqc your_input.json
    cat output_your_input.json
 
 Example: Adding Orbital Energies

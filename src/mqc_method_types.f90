@@ -20,6 +20,7 @@ module mqc_method_types
 
    ! Public functions
    public :: method_type_from_string, method_type_to_string
+   public :: parse_method_string  !! Input-file spelling -> method type
 
    ! Method type constants
    integer(int32), parameter :: METHOD_TYPE_UNKNOWN = 0
@@ -151,5 +152,38 @@ contains
       end select
 
    end function method_type_to_string
+
+   function parse_method_string(method_str) result(method_type)
+      !! Parse method string from input file (e.g., "XTB-GFN1" -> gfn1)
+      character(len=*), intent(in) :: method_str
+      integer(int32) :: method_type
+
+      character(len=:), allocatable :: lower_str, method_part
+      integer :: dash_pos, i
+
+      ! Convert to lowercase
+      allocate (character(len=len_trim(method_str)) :: lower_str)
+      lower_str = trim(adjustl(method_str))
+      do i = 1, len(lower_str)
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
+            lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
+         end if
+      end do
+
+      ! Handle "XTB-GFN1" format -> extract "gfn1"
+      if (index(lower_str, "xtb") > 0) then
+         dash_pos = index(lower_str, "-")
+         if (dash_pos > 0) then
+            method_part = lower_str(dash_pos + 1:)
+         else
+            method_part = lower_str
+         end if
+      else
+         method_part = lower_str
+      end if
+
+      method_type = method_type_from_string(method_part)
+
+   end function parse_method_string
 
 end module mqc_method_types

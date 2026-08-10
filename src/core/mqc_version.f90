@@ -6,7 +6,9 @@ module mqc_version
 
    public :: MQC_VERSION_STR, print_version
 
-   character(len=*), parameter :: MQC_VERSION_STR = "0.1.0"
+   character(len=*), parameter :: MQC_VERSION_STR = "0.2.0"
+      !! Kept in step with `VERSION` in the top-level CMakeLists by hand.
+      !! Nothing checks that they agree, and they had already drifted once.
 
 contains
 

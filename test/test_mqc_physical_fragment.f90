@@ -3,7 +3,7 @@ module test_mqc_physical_fragment
    use mqc_physical_fragment, only: to_angstrom, to_bohr, initialize_system_geometry, &
                                     build_fragment_from_indices, &
                                     system_geometry_t, physical_fragment_t
-   use mqc_config_parser, only: bond_t
+   use mqc_config_types, only: bond_t
    use mqc_error, only: error_t
    use pic_types, only: dp
    implicit none

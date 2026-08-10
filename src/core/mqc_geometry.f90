@@ -12,7 +12,10 @@ module mqc_geometry
 
    type :: geometry_type
       !! Molecular geometry data structure
-      integer :: natoms
+      integer :: natoms = 0
+         !! Defaulted because a config in multi-molecule mode leaves its
+         !! top-level geometry untouched, and an undefined atom count there is
+         !! a trap for any consumer that reads it before checking nmol.
       character(len=:), allocatable :: elements(:)
       real(dp), allocatable :: coords(:, :)  ! coords(3, natoms)
       character(len=:), allocatable :: comment

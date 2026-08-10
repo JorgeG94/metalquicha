@@ -6,7 +6,7 @@ module mqc_calculation_interface
    use pic_mpi_lib, only: comm_t, bcast, abort_comm
    use pic_logger, only: logger => global_logger
    use mqc_physical_fragment, only: system_geometry_t
-   use mqc_config_parser, only: bond_t
+   use mqc_config_types, only: bond_t
    use mqc_result_types, only: calculation_result_t
    use mqc_calc_types, only: CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_resources, only: resources_t

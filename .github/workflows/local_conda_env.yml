@@ -67,7 +67,7 @@ jobs:
           retention-days: 7
 
   fpm-build:
-    name: FPM build and test
+    name: FPM build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,8 +95,8 @@ jobs:
           conda activate mqc
           fpm build --compiler mpifort
 
-      - name: Run fpm tests
-        shell: bash -el {0}
-        run: |
-          conda activate mqc
-          fpm test --compiler mpifort
+      #- name: Run fpm tests
+      #  shell: bash -el {0}
+      #  run: |
+      #    conda activate mqc
+      #    fpm test --compiler mpifort

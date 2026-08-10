@@ -25,15 +25,9 @@ if [ ! -x "$MQC" ]; then
     exit 1
 fi
 
-INPUTS="hf_water_sto-3g hf_water_cc-pvdz hf_water_def2-svp uhf_oh uhf_o2
-        dft_water_svwn5 dft_water_pbe dft_water_b3lyp dft_water_pbe0"
-for name in $INPUTS; do
-    python3 mqc_prep.py "validation/inputs/$name.json" > /dev/null || exit 1
-done
-
 run_one() {   # $1 = label, $2 = input stem, $3 = reference
     local out energy
-    out=$($MQC "validation/inputs/$2.mqc" 2>&1)
+    out=$($MQC "validation/inputs/$2.json" 2>&1)
     energy=$(printf '%s' "$out" | grep "Final energy:" | awk '{print $NF}')
     if [ -z "$energy" ]; then
         energy=$(printf '%s' "$out" | grep -i "ERROR:" | head -1 | sed 's/.*: //' | cut -c1-40)

@@ -49,8 +49,6 @@ Build the Code
 Run Your First Calculation
 ---------------------------
 
-First, you need to use the python script ``mqc_prep.py`` to
-generate the ``mqc`` format, from the json files. The reason
 behind not using the json directly is because the json
 libraries in Fortran can be delicate with different
 Fortran compilers, therefore we use a very simple
@@ -60,25 +58,22 @@ To generate an input file, simply run:
 
 .. code-block:: bash
 
-   python mqc_prep.py validation/inputs/h3o.json
-   python mqc_prep.py validation/inputs/prism.json
-
-Then run the calculations:
+      Then run the calculations:
 
 .. code-block:: bash
 
    # Unfragmented calculation (simple hydronium ion)
-   ./build/mqc validation/inputs/h3o.mqc
+   ./build/mqc validation/inputs/h3o.json
 
    # Fragmented calculation (water prism)
-   ./build/mqc validation/inputs/prism.mqc
+   ./build/mqc validation/inputs/prism.json
 
 The output shows energies and computation details. To
 run a parallel calculation, simply use ``mpirun``:
 
 .. code-block:: bash
 
-   mpirun -np nproc ./build/mqc validation/inputs/prism.mqc
+   mpirun -np nproc ./build/mqc validation/inputs/prism.json
 
 Directory Structure
 ===================
@@ -94,7 +89,7 @@ Directory Structure
    │   │   ├── mqc_elements.f90      # Periodic table data
    │   │   └── mqc_result_types.f90  # Energy/gradient results
    │   ├── io/                       # Input/output
-   │   │   ├── mqc_config_parser.f90 # Parse .mqc files
+   │   │   ├── mqc_json_config_reader.f90 # Parse JSON input decks
    │   │   ├── mqc_xyz_reader.f90    # Read .xyz geometries
    │   │   └── mqc_json.f90          # JSON output
    │   ├── fragmentation/            # Fragment generation
@@ -113,7 +108,6 @@ Directory Structure
    │   └── mqc_driver.f90            # Main calculation orchestrator
    ├── test/                         # Unit tests
    ├── validation/                   # Physics validation tests
-   ├── mqc_prep.py                   # Convert JSON → .mqc input
    └── run_validation.py             # Run all validation tests
 
 What Lives Where?
@@ -183,7 +177,7 @@ See ``src/fragmentation/mqc_physical_fragment.f90``
 Code Flow: How a Calculation Works
 ===================================
 
-Here's what happens when you run ``./mqc input.mqc``:
+Here's what happens when you run ``./mqc input.json``:
 
 Step 1: Entry Point (app/main.f90)
 -----------------------------------
@@ -197,7 +191,7 @@ Step 1: Entry Point (app/main.f90)
      ! 2. Parse command line argument (input file)
      call get_command_argument(1, input_file)
 
-     ! 3. Read .mqc input file
+     ! 3. Read the JSON input deck
      call read_mqc_file(input_file, mqc_config, error)
 
      ! 4. Convert config to internal representation
@@ -401,7 +395,7 @@ I/O Modules
 mqc_config_parser.f90
 ^^^^^^^^^^^^^^^^^^^^^
 
-Parses ``.mqc`` input files (section-based format).
+Parses JSON input decks into ``mqc_config_t``.
 
 **Structure**:
 
@@ -473,7 +467,7 @@ For Understanding Fragmentation
 For Understanding I/O
 ---------------------
 
-1. **mqc_config_parser.f90** - How we parse ``.mqc`` files
+1. **mqc_json_config_reader.f90** - How we parse JSON input decks
 2. **mqc_xyz_reader.f90** - How we read geometries
 
 For Understanding Quantum Chemistry Methods
@@ -491,7 +485,7 @@ Example 1: Unfragmented Calculation
 .. code-block:: bash
 
    # Simple hydronium ion
-   ./build/mqc validation/inputs/h3o.mqc
+   ./build/mqc validation/inputs/h3o.json
 
 **What happens**:
 
@@ -505,7 +499,7 @@ Example 2: Fragmented Water Prism
 
 .. code-block:: bash
 
-   ./build/mqc validation/inputs/prism.mqc
+   ./build/mqc validation/inputs/prism.json
 
 **What happens**:
 
@@ -521,7 +515,7 @@ Example 3: GMBE with Overlapping Fragments
 
 .. code-block:: bash
 
-   ./build/mqc validation/inputs/overlapping_gly3.mqc
+   ./build/mqc validation/inputs/overlapping_gly3.json
 
 **What happens**:
 
@@ -551,11 +545,8 @@ Prepare Your Own Input
    }
    EOF
 
-   # Convert to .mqc format
-   python3 mqc_prep.py my_input.json
-
-   # Run calculation
-   ./build/mqc my_input.mqc
+      # Run calculation
+   ./build/mqc my_input.json
 
 Adding New Features
 ===================
@@ -610,7 +601,7 @@ Example: Add a New Quantum Chemistry Method
              ...
    )
 
-4. **Test**: Create validation test in ``validation/inputs/test_mynew.mqc``
+4. **Test**: Create validation test in ``validation/inputs/test_mynew.json``
 
 Example: Add New Fragment Selection Algorithm
 ----------------------------------------------
@@ -664,7 +655,7 @@ Located in ``validation/``. These test physics correctness.
    python3 run_validation.py
 
    # Run specific test
-   ./build/mqc validation/inputs/prism.mqc
+   ./build/mqc validation/inputs/prism.json
 
 **What validation tests check**:
 
@@ -676,7 +667,7 @@ Located in ``validation/``. These test physics correctness.
 Adding a New Test
 -----------------
 
-1. **Create input file**: ``validation/inputs/my_test.mqc``
+1. **Create input file**: ``validation/inputs/my_test.json``
 
 2. **Add to** ``validation_tests.json``:
 
@@ -684,7 +675,7 @@ Adding a New Test
 
    {
      "name": "My test case",
-     "input": "validation/inputs/my_test.mqc",
+     "input": "validation/inputs/my_test.json",
      "expected_energy": -123.456789,
      "type": "fragmented"
    }
@@ -777,7 +768,7 @@ Getting Help
 
 - **Check existing validation tests** in ``validation/inputs/`` for examples
 - **Read module documentation** - each module has detailed comments
-- **Run with verbose logging**: Set ``log_level = Verbose`` in your ``.mqc`` file
+- **Run with verbose logging**: Set ``"system": {"logger": {"level": "Verbose"}}`` in your JSON deck
 - **Check JSON output**: Contains detailed fragment energies and coefficients
 
 Next Steps
@@ -785,8 +776,8 @@ Next Steps
 
 1. **Build and run**: Get the code compiling and run validation tests
 2. **Read** ``app/main.f90``: Understand the entry point
-3. **Trace a simple calculation**: Follow the code path for ``h3o.mqc`` (unfragmented)
-4. **Trace a fragmented calculation**: Follow the code path for ``prism.mqc`` (MBE)
+3. **Trace a simple calculation**: Follow the code path for ``h3o.json`` (unfragmented)
+4. **Trace a fragmented calculation**: Follow the code path for ``prism.json`` (MBE)
 5. **Understand GMBE**: Read ``mqc_gmbe_utils.f90`` (most complex part)
 6. **Add a feature**: Pick something small to modify and experiment
 
