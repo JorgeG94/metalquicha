@@ -170,6 +170,7 @@ if(MQC_ENABLE_HDF5)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_HDF5)
   target_include_directories(${main_lib} PRIVATE ${HDF5_INCLUDE_DIRS})
   target_link_libraries(${main_lib} PUBLIC ${HDF5_C_LIBRARIES})
+  add_subdirectory(hdf5_backend)
   message(STATUS "HDF5 checkpoints enabled: ${HDF5_C_LIBRARIES}")
 endif()
 
