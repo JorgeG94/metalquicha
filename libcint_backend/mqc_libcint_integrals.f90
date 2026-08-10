@@ -27,11 +27,14 @@ module mqc_libcint_integrals
    !! calculation is small by construction -- and the wrong one for anything
    !! else. Direct or density-fitted assembly is a different backend.
    use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_cgto, only: molecular_basis_type
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
+   use pic_lapack_interfaces, only: pic_syev
    use libcint_fortran, only: libcint_1e_ovlp_sph, libcint_1e_kin_sph, &
+                              libcint_3c2e_sph, libcint_2c2e_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
                               libcint_cgto_sph, libcint_tot_cgto_sph, &
                               libcint_gto_norm, &
@@ -45,6 +48,7 @@ module mqc_libcint_integrals
 
    public :: libcint_molecule_t
    public :: build_libcint_molecule
+   public :: build_df_tensor
 
    type :: libcint_molecule_t
       !! One molecule, packed the way libcint wants it
@@ -280,6 +284,170 @@ contains
       end do
       deallocate (buf)
    end subroutine one_electron
+
+   subroutine build_df_tensor(orb, aux, b, error)
+      !! B(mu nu, P) = sum_Q (mu nu | Q) [(P|Q)^(-1/2)]_QP
+      !!
+      !! The fitted J and K are contractions of this one tensor, which is why
+      !! it is formed once and kept rather than recomputed per iteration. It
+      !! is (nao^2, naux) -- large, but n^2 rather than the n^4 of the exact
+      !! integrals, and that is the whole point of fitting.
+      !!
+      !! The metric is inverted through its eigendecomposition rather than a
+      !! Cholesky, and modes below a threshold are dropped. A JKFIT auxiliary
+      !! basis is close to linearly dependent by construction, and a Cholesky
+      !! of a near-singular metric fails outright where this degrades.
+      type(libcint_molecule_t), intent(in) :: orb   !! Orbital basis
+      type(libcint_molecule_t), intent(in) :: aux   !! Auxiliary basis, same atoms
+      real(dp), allocatable, intent(out) :: b(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
+      real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
+      real(dp), allocatable :: three(:, :)
+      integer :: naux, nao, i, j, kept, info
+
+      nao = orb%nao
+      naux = aux%nao
+
+      call two_centre(aux, metric)
+      call three_centre(orb, aux, three)
+
+      allocate (vectors(naux, naux), values(naux))
+      vectors = metric
+      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "density fitting: the metric would not diagonalise")
+         return
+      end if
+
+      kept = count(values > NULL_THRESHOLD)
+      if (kept == 0) then
+         call error%set(ERROR_VALIDATION, "density fitting: the auxiliary metric is singular")
+         return
+      end if
+
+      ! J^(-1/2) = U s^(-1/2) U^T over the surviving modes.
+      allocate (half(naux, naux))
+      half = 0.0_dp
+      do i = 1, naux
+         if (values(i) <= NULL_THRESHOLD) cycle
+         do j = 1, naux
+            half(:, j) = half(:, j) + vectors(:, i)*vectors(j, i)/sqrt(values(i))
+         end do
+      end do
+
+      allocate (b(nao*nao, naux))
+      call pic_gemm(three, half, b)
+   end subroutine build_df_tensor
+
+   subroutine two_centre(aux, metric)
+      !! (P|Q) over the auxiliary basis
+      type(libcint_molecule_t), intent(in) :: aux
+      real(dp), allocatable, intent(out) :: metric(:, :)
+
+      real(dp), allocatable :: buf(:)
+      integer :: shls(2)
+      integer :: ish, jsh, di, dj, i, j, io, jo, ret
+
+      allocate (metric(aux%nao, aux%nao))
+      metric = 0.0_dp
+      allocate (buf(max_block(aux)**2))
+
+      do ish = 1, aux%nbas
+         di = libcint_cgto_sph(ish - 1, aux%bas)
+         io = aux%shell_offset(ish)
+         do jsh = 1, aux%nbas
+            dj = libcint_cgto_sph(jsh - 1, aux%bas)
+            jo = aux%shell_offset(jsh)
+            shls = [ish - 1, jsh - 1]
+            ret = libcint_2c2e_sph(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+            if (ret == 0) cycle
+            do j = 1, dj
+               do i = 1, di
+                  metric(io + i, jo + j) = buf(i + (j - 1)*di)
+               end do
+            end do
+         end do
+      end do
+   end subroutine two_centre
+
+   subroutine three_centre(orb, aux, three)
+      !! (mu nu | P), flattened to (nao*nao, naux)
+      !!
+      !! The orbital and auxiliary shells are concatenated into one bas array,
+      !! because libcint addresses all four centres of a 3c2e call by index
+      !! into a single table. The fourth index names a dummy s shell with a
+      !! zero exponent, which is how libcint spells "only three centres".
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      real(dp), allocatable, intent(out) :: three(:, :)
+
+      integer, allocatable :: bas(:, :)
+      real(dp), allocatable :: env(:), buf(:)
+      integer :: nbas_orb, nbas_aux, dummy, n_env_orb
+      integer :: shls(4)
+      integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
+
+      nbas_orb = orb%nbas
+      nbas_aux = aux%nbas
+
+      ! Orbital shells, then auxiliary shells, then one dummy. The auxiliary
+      ! env offsets are shifted by the orbital env length because both live in
+      ! one array now.
+      n_env_orb = size(orb%env)
+      allocate (bas(LIBCINT_BAS_SLOTS, nbas_orb + nbas_aux + 1))
+      allocate (env(n_env_orb + size(aux%env) + 1))
+      bas = 0
+      env = 0.0_dp
+      env(1:n_env_orb) = orb%env
+      env(n_env_orb + 1:n_env_orb + size(aux%env)) = aux%env
+
+      bas(:, 1:nbas_orb) = orb%bas
+      bas(:, nbas_orb + 1:nbas_orb + nbas_aux) = aux%bas
+      do ish = 1, nbas_aux
+         bas(LIBCINT_PTR_EXP, nbas_orb + ish) = aux%bas(LIBCINT_PTR_EXP, ish) + n_env_orb
+         bas(LIBCINT_PTR_COEFF, nbas_orb + ish) = aux%bas(LIBCINT_PTR_COEFF, ish) + n_env_orb
+      end do
+
+      ! The dummy: one s shell, one primitive, exponent and coefficient zero.
+      dummy = nbas_orb + nbas_aux + 1
+      bas(LIBCINT_ATOM_OF, dummy) = 0
+      bas(LIBCINT_ANG_OF, dummy) = 0
+      bas(LIBCINT_NPRIM_OF, dummy) = 1
+      bas(LIBCINT_NCTR_OF, dummy) = 1
+      bas(LIBCINT_PTR_EXP, dummy) = size(env) - 1
+      bas(LIBCINT_PTR_COEFF, dummy) = size(env) - 1
+      env(size(env)) = 0.0_dp
+
+      allocate (three(orb%nao*orb%nao, aux%nao))
+      three = 0.0_dp
+      allocate (buf(max_block(orb)**2*max_block(aux)))
+
+      do ish = 1, nbas_orb
+         di = libcint_cgto_sph(ish - 1, bas)
+         io = orb%shell_offset(ish)
+         do jsh = 1, nbas_orb
+            dj = libcint_cgto_sph(jsh - 1, bas)
+            jo = orb%shell_offset(jsh)
+            do ksh = 1, nbas_aux
+               dk = libcint_cgto_sph(nbas_orb + ksh - 1, bas)
+               ko = aux%shell_offset(ksh)
+               shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
+               ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                      nbas_orb + nbas_aux + 1, env)
+               if (ret == 0) cycle
+               do k = 1, dk
+                  do j = 1, dj
+                     do i = 1, di
+                        idx = i + (j - 1)*di + (k - 1)*di*dj
+                        three((jo + j - 1)*orb%nao + io + i, ko + k) = buf(idx)
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+   end subroutine three_centre
 
    subroutine molecule_eris(this, eri)
       !! Every two-electron integral, in core, as (ij|kl)

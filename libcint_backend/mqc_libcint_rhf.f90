@@ -16,7 +16,7 @@ module mqc_libcint_rhf
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
    implicit none
    private
 
@@ -39,7 +39,7 @@ module mqc_libcint_rhf
 contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
-                              verbose, result, error, diis_vectors)
+                              verbose, result, error, aux, diis_vectors)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -48,6 +48,11 @@ contains
       logical, intent(in) :: verbose
       type(rhf_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Auxiliary basis. Present means density-fitted J and K, which is
+         !! what cuEST always does -- so a comparison against the GPU path
+         !! needs this, and a comparison against an exact-ERI code needs it
+         !! absent. Both are worth being able to ask for.
       integer, intent(in), optional :: diis_vectors
          !! Subspace size. Zero turns DIIS off, which is worth being able to
          !! do: the two paths should agree with and without it, and if they
@@ -55,7 +60,7 @@ contains
 
       integer :: diis_size
 
-      real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :)
+      real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :), bmat(:, :)
       real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
       real(dp), allocatable :: coeff(:, :), eigenvalues(:)
       real(dp), allocatable :: err(:, :), fock_flat(:)
@@ -82,7 +87,12 @@ contains
 
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
-      call mol%eris(eri)
+      if (present(aux)) then
+         call build_df_tensor(mol, aux, bmat, error)
+         if (error%has_error()) return
+      else
+         call mol%eris(eri)
+      end if
 
       call build_orthogonalizer(s, x, n_mo, error)
       if (error%has_error()) return
@@ -112,7 +122,11 @@ contains
 
       do iter = 1, max_iter
          density_old = density
-         call build_fock(h, eri, density, fock)
+         if (allocated(bmat)) then
+            call build_fock_df(h, bmat, density, fock)
+         else
+            call build_fock(h, eri, density, fock)
+         end if
 
          ! The energy belongs to the Fock built from this density, so it is
          ! taken before extrapolation. A DIIS-mixed Fock is a convergence
@@ -151,7 +165,11 @@ contains
       ! The energy that goes out is the one belonging to the density that
       ! satisfied the test, so it is recomputed from the final Fock rather
       ! than carried over from the loop.
-      call build_fock(h, eri, density, fock)
+      if (allocated(bmat)) then
+         call build_fock_df(h, bmat, density, fock)
+      else
+         call build_fock(h, eri, density, fock)
+      end if
       result%electronic = electronic_energy(h, fock, density)
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
@@ -297,6 +315,42 @@ contains
          end do
       end do
    end subroutine build_fock
+
+   subroutine build_fock_df(h, b, density, fock)
+      !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
+      !!
+      !! J is one contraction: c_P = sum_uv B(uv,P) D_uv, then J_uv = sum_P
+      !! B(uv,P) c_P. K needs the half-transformed intermediate, which is why
+      !! exchange is the expensive half of a fitted SCF as well as an exact
+      !! one -- fitting removes the n^4 storage, not the n^3 work.
+      real(dp), intent(in) :: h(:, :), b(:, :), density(:, :)
+      real(dp), intent(out) :: fock(:, :)
+
+      real(dp), allocatable :: c(:), j(:, :), k(:, :), t(:, :)
+      integer :: n, naux, p
+
+      n = size(h, 1)
+      naux = size(b, 2)
+      allocate (c(naux), j(n, n), k(n, n), t(n, n))
+
+      do p = 1, naux
+         c(p) = sum(reshape(b(:, p), [n, n])*density)
+      end do
+
+      j = 0.0_dp
+      do p = 1, naux
+         j = j + c(p)*reshape(b(:, p), [n, n])
+      end do
+
+      ! K_uv = sum_P sum_ls B(ul,P) D_ls B(sv,P)
+      k = 0.0_dp
+      do p = 1, naux
+         t = matmul(reshape(b(:, p), [n, n]), density)
+         k = k + matmul(t, reshape(b(:, p), [n, n]))
+      end do
+
+      fock = h + j - 0.5_dp*k
+   end subroutine build_fock_df
 
    pure function electronic_energy(h, fock, density) result(energy)
       !! E = 1/2 sum_uv D_uv (H_uv + F_uv)
