@@ -40,25 +40,25 @@ endif()
 
 # Architecture tuning, overridable.
 #
-# `-march=native` tunes for the machine doing the *build*, which on a cluster
-# is rarely the machine doing the running. Two ways that bites:
+# `-march=native` tunes for the machine doing the *build*, which on a cluster is
+# rarely the machine doing the running. Two ways that bites:
 #
-#   * A build node newer than the compute nodes produces a binary that dies
-#     with SIGILL on an instruction the compute node has never heard of.
-#   * A compiler newer than the assembler produces instructions the assembler
-#     has never heard of. On Gadi, `-march=native` on a Sapphire Rapids node
-#     enables AVX512-FP16, GCC then uses `vmovw` for ordinary 16-bit moves --
-#     in tblite's zip writer, whose headers are full of 2-byte fields -- and
-#     binutils older than 2.38 rejects it. The fix there is a newer binutils
-#     if the module exists, and this variable if it does not.
+# * A build node newer than the compute nodes produces a binary that dies with
+#   SIGILL on an instruction the compute node has never heard of.
+# * A compiler newer than the assembler produces instructions the assembler has
+#   never heard of. On Gadi, `-march=native` on a Sapphire Rapids node enables
+#   AVX512-FP16, GCC then uses `vmovw` for ordinary 16-bit moves -- in tblite's
+#   zip writer, whose headers are full of 2-byte fields -- and binutils older
+#   than 2.38 rejects it. The fix there is a newer binutils if the module
+#   exists, and this variable if it does not.
 #
-# Kept as the default because it is what this project has always done and it
-# is right for a workstation. Override for anything shared:
+# Kept as the default because it is what this project has always done and it is
+# right for a workstation. Override for anything shared:
 #
-#   -DMQC_ARCH_FLAGS=                       portable, no tuning
-#   -DMQC_ARCH_FLAGS=-march=x86-64-v3       AVX2, runs on anything since 2015
-#   -DMQC_ARCH_FLAGS="-march=native -mno-avx512fp16"   native minus the bit
-#                                                      the assembler lacks
+# -DMQC_ARCH_FLAGS=                       portable, no tuning
+# -DMQC_ARCH_FLAGS=-march=x86-64-v3       AVX2, runs on anything since 2015
+# -DMQC_ARCH_FLAGS="-march=native -mno-avx512fp16"   native minus the bit the
+# assembler lacks
 set(MQC_ARCH_FLAGS
     "DEFAULT"
     CACHE STRING "Architecture flags for Release builds; empty for portable")
