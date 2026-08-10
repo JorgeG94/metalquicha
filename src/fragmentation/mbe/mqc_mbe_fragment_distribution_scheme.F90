@@ -56,7 +56,7 @@ module mqc_mbe_fragment_distribution_scheme
 
       module subroutine global_coordinator(ctx, json_data)
          implicit none
-         class(*), intent(in) :: ctx
+         class(*), intent(inout) :: ctx
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
       end subroutine global_coordinator
 

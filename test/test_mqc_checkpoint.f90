@@ -13,6 +13,7 @@ module test_mqc_checkpoint
    use testdrive, only: new_unittest, unittest_type, error_type, check
    use pic_types, only: dp, int64
    use mqc_checkpoint, only: checkpoint_t
+   use mqc_hdf5_checkpoint, only: hdf5_checkpoint_available
    use mqc_error, only: error_t
    use mqc_result_types, only: SCF_CONVERGED, SCF_NOT_CONVERGED
    implicit none
@@ -190,18 +191,34 @@ contains
    end subroutine test_not_a_checkpoint
 
    subroutine test_derivative_refused(error)
-      !! A checkpoint line holds an energy and nothing else
+      !! A derivative run gets a checkpoint only if HDF5 can hold one
       !!
-      !! A gradient run that reused one would come back without the gradient
-      !! and die assembling the total -- which it did, before this refused.
+      !! A text checkpoint line holds an energy and nothing else, so a gradient
+      !! run reusing one comes back without the gradient and dies assembling
+      !! the total -- which it did, before this was refused.
+      !!
+      !! With HDF5 compiled in that refusal is wrong: storing derivatives is
+      !! the entire reason the backend exists, and open() routes a derivative
+      !! run to it. So which outcome is correct depends on the build, and the
+      !! test asks rather than assumes. Asserting refusal unconditionally
+      !! passed for as long as nothing built with HDF5 enabled, and failed the
+      !! moment something did.
       type(error_type), allocatable, intent(out) :: error
       type(checkpoint_t) :: ck
       type(error_t) :: err
 
       call fresh()
       call ck%open(PATH, FP, 2, .false., err)
-      call check(error, err%has_error(), &
-                 "a run needing derivatives must be refused a checkpoint")
+
+      if (hdf5_checkpoint_available()) then
+         call check(error,.not. err%has_error(), &
+                    "with HDF5 built in, a derivative run must get a checkpoint: "// &
+                    err%get_message())
+      else
+         call check(error, err%has_error(), &
+                    "without HDF5, a run needing derivatives must be refused a checkpoint")
+      end if
+
       call ck%close()
       call cleanup()
    end subroutine test_derivative_refused
@@ -224,7 +241,7 @@ contains
       logical :: exists
       inquire (file=PATH, exist=exists)
       if (exists) then
-         open (newunit=unit, file=PATH, status="old")
+         open (newunit=unit, file=PATH, status="old", action="readwrite")
          close (unit, status="delete")
       end if
    end subroutine cleanup
