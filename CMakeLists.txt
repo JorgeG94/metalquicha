@@ -28,7 +28,10 @@ include(demo_status)
 
 option(MQC_ENABLE_TESTING "Enable testing for ${project_name}" ON)
 option(MQC_ENABLE_TBLITE "Link to tblite for xTB calculations" ON)
-option(MQC_ENABLE_HDF5 "Link to HDF5 for binary checkpoints (needed for gradient/Hessian restart)" OFF)
+option(
+  MQC_ENABLE_HDF5
+  "Link to HDF5 for binary checkpoints (needed for gradient/Hessian restart)"
+  OFF)
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -201,8 +204,10 @@ if(MQC_ENABLE_HDF5)
   target_include_directories(check_hdf5 PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5 PRIVATE ${main_lib})
 
-  add_executable(check_hdf5_checkpoint ${PROJECT_SOURCE_DIR}/validation/check_hdf5_checkpoint.f90)
-  target_include_directories(check_hdf5_checkpoint PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  add_executable(check_hdf5_checkpoint
+                 ${PROJECT_SOURCE_DIR}/validation/check_hdf5_checkpoint.f90)
+  target_include_directories(check_hdf5_checkpoint
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
 endif()
 

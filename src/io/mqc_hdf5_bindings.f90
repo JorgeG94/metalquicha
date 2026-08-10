@@ -28,14 +28,14 @@ module mqc_hdf5_bindings
 
    public :: h5_version, h5_version_text
    public :: hid_t, herr_t, hsize_t, H5F_ACC_RDONLY, H5F_ACC_RDWR, H5F_ACC_TRUNC, &
-              H5F_ACC_EXCL, H5P_DEFAULT, H5S_ALL, H5S_UNLIMITED, H5D_CHUNKED, H5S_SELECT_SET, &
-              H5F_SCOPE_LOCAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_LLONG, &
-              H5T_STD_I32LE, H5T_STD_I64LE, H5T_C_S1, H5P_CLS_DATASET_CREATE_ID, h5_start, &
-              c_string, H5Aclose, H5Acreate2, H5Aexists, H5Aopen, H5Aread, H5Awrite, &
-              H5Dclose, H5Dcreate2, H5Dget_space, H5Dopen2, H5Dread, H5Dset_extent, H5Dwrite, &
-              H5Fclose, H5Fcreate, H5Fflush, H5Fopen, H5Lexists, H5Pclose, H5Pcreate, &
-              H5Pset_chunk, H5Sclose, H5Screate, H5Screate_simple, H5Sselect_hyperslab, &
-              H5Tclose, H5Tcopy, H5Tset_size, H5open
+             H5F_ACC_EXCL, H5P_DEFAULT, H5S_ALL, H5S_UNLIMITED, H5D_CHUNKED, H5S_SELECT_SET, &
+             H5F_SCOPE_LOCAL, H5T_NATIVE_DOUBLE, H5T_NATIVE_INT, H5T_NATIVE_LLONG, &
+             H5T_STD_I32LE, H5T_STD_I64LE, H5T_C_S1, H5P_CLS_DATASET_CREATE_ID, h5_start, &
+             c_string, H5Aclose, H5Acreate2, H5Aexists, H5Aopen, H5Aread, H5Awrite, &
+             H5Dclose, H5Dcreate2, H5Dget_space, H5Dopen2, H5Dread, H5Dset_extent, H5Dwrite, &
+             H5Fclose, H5Fcreate, H5Fflush, H5Fopen, H5Lexists, H5Pclose, H5Pcreate, &
+             H5Pset_chunk, H5Sclose, H5Screate, H5Screate_simple, H5Sselect_hyperslab, &
+             H5Tclose, H5Tcopy, H5Tset_size, H5open
 
    !> Assumed-size dummies below are allowed deliberately and individually.
    !  `dimension(*)` is the correct interop declaration for a C parameter that
