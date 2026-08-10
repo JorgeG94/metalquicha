@@ -456,6 +456,8 @@ class MBE:
         level=2,
         method="gfn2",
         basis=None,
+        aux_basis=None,
+        density_fitting=False,
         functional=None,
         driver="Energy",
         cutoffs=None,
@@ -470,6 +472,8 @@ class MBE:
         self.level = int(level)
         self.method = method
         self.basis = basis
+        self.aux_basis = aux_basis
+        self.density_fitting = density_fitting
         self.functional = functional
         self.driver = driver
         self.cutoffs = dict(cutoffs) if cutoffs else None
@@ -495,6 +499,8 @@ class MBE:
         model = {"method": self.method}
         if self.basis:
             model["basis"] = self.basis
+        if self.aux_basis:
+            model["aux_basis"] = self.aux_basis
         if self.functional:
             model["functional"] = self.functional
 
@@ -504,6 +510,12 @@ class MBE:
             # right magnitude, so the run must stop rather than quietly fold it
             # into the total; this says "I know, keep going, tell me at the end".
             scf["allow_crap_scf"] = True
+        if self.density_fitting:
+            # Asked for, never inferred from aux_basis being set: that name
+            # carries a default, so inferring would mean every Hartree-Fock
+            # quietly fitted. The difference is around 5e-5 Hartree -- big
+            # enough to matter, small enough to pass for convergence noise.
+            scf["density_fitting"] = True
 
         fragmentation = {"method": "MBE", "level": self.level}
         if self.cutoffs:

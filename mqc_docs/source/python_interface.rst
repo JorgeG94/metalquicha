@@ -70,6 +70,28 @@ system is computed at once. For a molecule made of separate pieces,
 ``auto_monomers()`` finds them; it refuses a single covalently bonded molecule,
 because where to cut such a thing is a chemical decision and not one to guess.
 
+Density fitting
+===============
+
+Hartree-Fock on the CPU can fit J and K against an auxiliary basis instead of
+computing exact four-index integrals:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="hf", basis="sto-3g",
+           aux_basis="def2-universal-jkfit", density_fitting=True)
+
+It has to be asked for. Setting ``aux_basis`` alone does not turn it on,
+because that name carries a default -- inferring the request from its presence
+would mean every Hartree-Fock quietly fitted. The difference on water/sto-3g is
+8.6e-5 Hartree: large enough to matter, small enough to be mistaken for
+convergence noise.
+
+cuEST is the other way round. It has no four-index path at all, so it fits
+whether or not the flag is set, and the flag is ignored there.
+
+In a deck the same switch is ``keywords.scf.density_fitting``.
+
 Fragmenting
 ===========
 
@@ -107,7 +129,17 @@ Examples
 What it cannot do
 =================
 
-Gradients are not available from the CPU Hartree-Fock backend; it refuses them
-rather than returning something untested. Density fitting is likewise not
-reachable from the Python side yet -- the auxiliary basis is accepted and
-ignored, and the calculation runs with exact integrals.
+Gradients are not available from the CPU Hartree-Fock backend. libcint has the
+derivative entry points, so this is a gap rather than a wall, but an untested
+gradient is worse than an absent one -- so it raises:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="hf", driver="gradient").run()
+   MQCError: the CPU backend has no gradients yet; run an energy, or build with cuEST
+
+xTB gradients work normally, and so do cuEST's. Only the CPU Hartree-Fock path
+refuses.
+
+The CPU backend is also closed-shell only: an unrestricted reference is refused
+in the same way rather than approximated.

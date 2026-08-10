@@ -43,6 +43,12 @@ DIMER = dict(
 #: disagrees, one of the two codes is wrong, which is the point.
 HF_WATER_STO3G = -74.962005687948
 
+#: PySCF density-fitted RHF/sto-3g, def2-universal-jkfit, on WATER. Fitting is
+#: an approximation, so this differs from the exact number by 8.6e-5 -- which
+#: is the point: a wired-up fitting path must reproduce the fitted reference,
+#: not the exact one.
+HF_WATER_STO3G_DF = -74.962092123400
+
 #: PySCF RHF/sto-3g on the whole DIMER. Not a monomer sum -- see
 #: fragmented_hf() for why that is the reference an MBE(2) must reproduce.
 HF_DIMER_STO3G = -149.922856255009
@@ -78,6 +84,44 @@ def standalone_hf():
     system.set_monomers([[0, 1, 2]])
     return mqc.MBE(system, level=0, method="hf", basis="sto-3g").run(
         label="py_standalone_hf", write_to_file=False).energy
+
+
+def standalone_hf_df():
+    """One molecule, density-fitted J and K on the CPU."""
+    system = mqc.System(**WATER)
+    system.set_monomers([[0, 1, 2]])
+    return mqc.MBE(system, level=0, method="hf", basis="sto-3g",
+                   aux_basis="def2-universal-jkfit", density_fitting=True).run(
+        label="py_standalone_hf_df", write_to_file=False).energy
+
+
+def gradient_support():
+    """Gradients work through tblite and are refused by libcint.
+
+    Not a limitation being papered over -- the CPU backend says so and stops,
+    which is the right behaviour for a derivative nobody has tested. What this
+    checks is that it stays a clean refusal rather than becoming a wrong
+    number, and that asking xTB for the same thing still works.
+    """
+    system = mqc.System(**WATER)
+    system.set_monomers([[0, 1, 2]])
+
+    refused = False
+    try:
+        mqc.MBE(system, level=0, method="hf", basis="sto-3g", driver="gradient").run(
+            label="py_grad_hf", write_to_file=False)
+    except mqc.MQCError as exc:
+        refused = "gradient" in str(exc).lower()
+
+    worked = False
+    try:
+        mqc.MBE(system, level=0, method="gfn2", driver="gradient").run(
+            label="py_grad_xtb", write_to_file=False)
+        worked = True
+    except mqc.MQCError:
+        worked = False
+
+    return refused, worked
 
 
 def fragmented_xtb():
@@ -131,6 +175,7 @@ def main(argv):
         cases = [
             ("standalone xtb", standalone_xtb, XTB_WATER, TOL_XTB, "ours"),
             ("standalone hf", standalone_hf, HF_WATER_STO3G, TOL_HF, "PySCF"),
+            ("standalone hf/df", standalone_hf_df, HF_WATER_STO3G_DF, TOL_HF, "PySCF fitted"),
             ("fragmented xtb", fragmented_xtb, None, TOL_CLOSURE, "same dimer, whole"),
             ("fragmented hf", fragmented_hf, HF_DIMER_STO3G, TOL_HF, "PySCF dimer"),
         ]
@@ -148,6 +193,13 @@ def main(argv):
                   f"({source})   diff {delta:.2e}   {'ok' if ok else 'FAIL'}")
             if not ok:
                 failures.append(f"{name}: {energy} vs {expected}, diff {delta:.2e} > {tol:.1e}")
+
+        refused, worked = gradient_support()
+        print(f"  {'gradients':<18} libcint refuses: {refused}   tblite provides: {worked}")
+        if not refused:
+            failures.append("the CPU backend must refuse gradients, not return one")
+        if not worked:
+            failures.append("tblite must still provide gradients")
 
     if failures:
         print("\nFAILED:")

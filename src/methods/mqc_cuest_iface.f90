@@ -21,6 +21,8 @@ module mqc_cuest_iface
       character(len=32) :: basis_set = "sto-3g"
          !! Orbital basis set name
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
+      logical :: density_fitting = .false.
+         !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""
          !! Exchange-correlation functional; empty means Hartree-Fock

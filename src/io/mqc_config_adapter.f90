@@ -161,6 +161,7 @@ contains
       end if
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
+      driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess
       end if

@@ -132,6 +132,18 @@ contains
          return
       end if
 
+      ! A failure inside a fragment lands on the result, not on the session
+      ! error: the driver keeps going so it can report every bad term at the
+      ! end rather than the first. Checking only `error` therefore returned
+      ! MQC_OK with whatever total had accumulated -- for a gradient the CPU
+      ! backend refuses, that was a clean 0.0 handed back as a success, which
+      ! is the worst shape a failure can take.
+      if (result%has_error) then
+         last_message = result%error%get_message()
+         status = MQC_ERROR
+         return
+      end if
+
       energy = real(result%energy%total(), c_double)
       status = MQC_OK
    end function mqc_run

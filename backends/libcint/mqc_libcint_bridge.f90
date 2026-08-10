@@ -43,7 +43,7 @@ contains
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
 
-      type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
@@ -85,9 +85,31 @@ contains
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
 
-      call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
-                           settings%density_tol, settings%verbose, scf, error, &
-                           diis_vectors=diis_size)
+      ! Density fitting is asked for, not inferred. aux_basis_set carries a
+      ! default, so treating its presence as the request would mean every
+      ! calculation quietly fitted -- and the difference is 5e-5 Hartree, large
+      ! enough to matter and small enough to look like convergence noise.
+      if (settings%density_fitting) then
+         call build_libcint_molecule(fragment%element_numbers, symbols, &
+                                     fragment%coordinates, trim(settings%aux_basis_set), &
+                                     aux, error)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, "auxiliary basis '"// &
+                                  trim(settings%aux_basis_set)//"': "//error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+
+         call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+                              settings%density_tol, settings%verbose, scf, error, &
+                              aux=aux, diis_vectors=diis_size)
+         call aux%destroy()
+      else
+         call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
+                              settings%density_tol, settings%verbose, scf, error, &
+                              diis_vectors=diis_size)
+      end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
          result%has_error = .true.
