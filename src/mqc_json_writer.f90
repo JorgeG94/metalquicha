@@ -6,6 +6,7 @@ module mqc_json_writer
    use mqc_json_output_types, only: json_output_data_t, &
                                     OUTPUT_MODE_UNFRAGMENTED, OUTPUT_MODE_MBE, OUTPUT_MODE_GMBE_PIE
    use mqc_io_helpers, only: get_output_json_filename, get_basename
+   use mqc_physical_constants, only: HARTREE_TO_EV
    use mqc_physical_constants, only: HARTREE_TO_CALMOL, R_CALMOLK, AU_TO_DEBYE, CAL_TO_J
    use mqc_program_limits, only: JSON_REAL_FORMAT
    use mqc_mbe_io, only: get_frag_level_name
@@ -83,6 +84,15 @@ contains
       end if
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
+
+      ! Only where one SCF covered one system. A fragmented run never sets
+      ! this, because a gap assembled from fragment gaps would be arithmetic
+      ! without a meaning.
+      if (data%has_orbitals) then
+         call json%add(main_obj, "homo", data%homo)
+         call json%add(main_obj, "lumo", data%lumo)
+         call json%add(main_obj, "homo_lumo_gap_ev", (data%lumo - data%homo)*HARTREE_TO_EV)
+      end if
 
       if (data%has_dipole .and. allocated(data%dipole)) then
          call json%create_object(dipole_obj, "dipole")
@@ -363,6 +373,15 @@ contains
 
       ! Total energy
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
+
+      ! Only where one SCF covered one system. A fragmented run never sets
+      ! this, because a gap assembled from fragment gaps would be arithmetic
+      ! without a meaning.
+      if (data%has_orbitals) then
+         call json%add(main_obj, "homo", data%homo)
+         call json%add(main_obj, "lumo", data%lumo)
+         call json%add(main_obj, "homo_lumo_gap_ev", (data%lumo - data%homo)*HARTREE_TO_EV)
+      end if
 
       ! Dipole
       if (data%has_dipole .and. allocated(data%dipole)) then

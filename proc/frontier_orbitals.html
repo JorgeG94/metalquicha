@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>next_index_set &ndash; metalquicha</title>
+    <title>frontier_orbitals &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,7 +83,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>next_index_set
+    <h1>frontier_orbitals
       <small>Subroutine</small>
       
     </h1>
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">17 statements</a>
+                 title=" 0.1% of total for procedures.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_fraglist.f90"> Source File</a>
+              <a href="../src/mqc_result_types.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_fraglist.f90.html'>mqc_fraglist.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></li>
-            <li class="breadcrumb-item active" aria-current="page">next_index_set</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_result_types.f90.html'>mqc_result_types.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
+            <li class="breadcrumb-item active" aria-current="page">frontier_orbitals</li>
           </ol>
         </nav>
       </div>
@@ -136,8 +136,8 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/next_index_set.html#variable-i~74">i</a>
-            <a class="list-group-item" href="../proc/next_index_set.html#variable-j~27">j</a>
+            <a class="list-group-item" href="../proc/frontier_orbitals.html#variable-i~120">i</a>
+            <a class="list-group-item" href="../proc/frontier_orbitals.html#variable-i_homo">i_homo</a>
         </div>
       </div>
     </div>
@@ -163,7 +163,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/next_index_set.html#src">next_index_set</a>
+        <a class="list-group-item" href="../proc/frontier_orbitals.html#src">frontier_orbitals</a>
       </div>
     </div>
 
@@ -173,11 +173,17 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private pure subroutine next_index_set(indices, k, n, has_next)  
+    <h2>public pure subroutine frontier_orbitals(energies, occupations, homo, lumo, found)  
 </h2>
     
 
-    <p>Advance k chosen positions out of n, lexicographically</p>
+    <p>Pick HOMO and LUMO out of an ascending orbital spectrum</p>
+<p>Occupation-driven rather than counting electrons, so the same routine
+serves restricted and unrestricted spectra. The threshold is half an
+electron: with Fermi smearing the frontier occupations are fractional
+rather than 0 or 2, and any cut inside that range names the same pair
+for a molecule with a real gap. It is arbitrary for a system without
+one, which is a system whose gap was not going to mean much anyway.</p>
 
 
     <h3>Arguments</h3>
@@ -193,52 +199,67 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-indices~4"></span>
-              integer(kind=default_int),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>indices</strong>(:)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-k~22"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-energies~5"></span>
+              real(kind=dp),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>k</strong></td>
+            <td><strong>energies</strong>(:)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~26"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-occupations"></span>
+              real(kind=dp),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>n</strong></td>
+            <td><strong>occupations</strong>(:)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_next~4"></span>
+              <span class="anchor" id="variable-homo~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>homo</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lumo~6"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lumo</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-found~29"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -246,7 +267,7 @@
               
             </td>
             <td>::</td>
-            <td><strong>has_next</strong></td>
+            <td><strong>found</strong></td>
             <td>
                 
             </td>
@@ -265,47 +286,62 @@
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~next_index_set~~CalledByGraph Pages: 1 -->
-<svg id="procnext_index_setCalledByGraph" width="509pt" height="32pt"
- viewBox="0.00 0.00 509.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~next_index_set~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
-<title>proc~~next_index_set~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 505,-28 505,4 -4,4"/>
-<!-- proc~next_index_set -->
-<g id="proc~~next_index_set~~CalledByGraph_node1" class="node">
-<title>proc~next_index_set</title>
-<polygon fill="none" stroke="black" points="501,-24 411,-24 411,0 501,0 501,-24"/>
-<text text-anchor="middle" x="456" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">next_index_set</text>
+<!-- Title: proc~~frontier_orbitals~~CalledByGraph Pages: 1 -->
+<svg id="procfrontier_orbitalsCalledByGraph" width="549pt" height="74pt"
+ viewBox="0.00 0.00 549.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~frontier_orbitals~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~frontier_orbitals~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 545,-70 545,4 -4,4"/>
+<!-- proc~frontier_orbitals -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_node1" class="node">
+<title>proc~frontier_orbitals</title>
+<polygon fill="none" stroke="black" points="541,-45 444,-45 444,-21 541,-21 541,-45"/>
+<text text-anchor="middle" x="492.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">frontier_orbitals</text>
 </g>
-<!-- proc~fraglist_close_subsets -->
-<g id="proc~~next_index_set~~CalledByGraph_node2" class="node">
-<title>proc~fraglist_close_subsets</title>
-<g id="a_proc~~next_index_set~~CalledByGraph_node2"><a xlink:href="../proc/fraglist_close_subsets.html" xlink:title="fraglist_t%fraglist_close_subsets">
-<polygon fill="#d9534f" stroke="#d9534f" points="375,-24 192,-24 192,0 375,0 375,-24"/>
-<text text-anchor="middle" x="283.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_close_subsets</text>
+<!-- proc~xtb_calc_energy -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_node2" class="node">
+<title>proc~xtb_calc_energy</title>
+<g id="a_proc~~frontier_orbitals~~CalledByGraph_node2"><a xlink:href="../proc/xtb_calc_energy.html" xlink:title="xtb_method_t%xtb_calc_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="404.5,-66 223.5,-66 223.5,-42 404.5,-42 404.5,-66"/>
+<text text-anchor="middle" x="314" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_energy</text>
 </a>
 </g>
 </g>
-<!-- proc~fraglist_close_subsets&#45;&gt;proc~next_index_set -->
-<g id="proc~~next_index_set~~CalledByGraph_edge1" class="edge">
-<title>proc~fraglist_close_subsets&#45;&gt;proc~next_index_set</title>
-<path fill="none" stroke="#ff0000" d="M375.24,-12C383.96,-12 392.61,-12 400.81,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="400.94,-15.5 410.94,-12 400.94,-8.5 400.94,-15.5"/>
+<!-- proc~xtb_calc_energy&#45;&gt;proc~frontier_orbitals -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_edge1" class="edge">
+<title>proc~xtb_calc_energy&#45;&gt;proc~frontier_orbitals</title>
+<path fill="none" stroke="#ff0000" d="M404.54,-43.35C414.34,-42.18 424.11,-41.02 433.38,-39.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="434.09,-43.35 443.61,-38.7 433.27,-36.4 434.09,-43.35"/>
 </g>
-<!-- proc~mqc_fraglist_close_subsets -->
-<g id="proc~~next_index_set~~CalledByGraph_node3" class="node">
-<title>proc~mqc_fraglist_close_subsets</title>
-<g id="a_proc~~next_index_set~~CalledByGraph_node3"><a xlink:href="../proc/mqc_fraglist_close_subsets.html" xlink:title="mqc_fraglist_close_subsets">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="156,-24 0,-24 0,0 156,0 156,-24"/>
-<text text-anchor="middle" x="78" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist_close_subsets</text>
+<!-- proc~xtb_calc_gradient -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_node3" class="node">
+<title>proc~xtb_calc_gradient</title>
+<g id="a_proc~~frontier_orbitals~~CalledByGraph_node3"><a xlink:href="../proc/xtb_calc_gradient.html" xlink:title="xtb_method_t%xtb_calc_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="408,-24 220,-24 220,0 408,0 408,-24"/>
+<text text-anchor="middle" x="314" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_gradient</text>
 </a>
 </g>
 </g>
-<!-- proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets -->
-<g id="proc~~next_index_set~~CalledByGraph_edge2" class="edge">
-<title>proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets</title>
-<path fill="none" stroke="#ff0000" d="M156.22,-12C164.55,-12 173.11,-12 181.65,-12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="181.67,-15.5 191.67,-12 181.67,-8.5 181.67,-15.5"/>
+<!-- proc~xtb_calc_gradient&#45;&gt;proc~frontier_orbitals -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_edge2" class="edge">
+<title>proc~xtb_calc_gradient&#45;&gt;proc~frontier_orbitals</title>
+<path fill="none" stroke="#ff0000" d="M408.16,-23.08C416.78,-24.11 425.34,-25.13 433.51,-26.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="433.28,-29.6 443.62,-27.3 434.11,-22.65 433.28,-29.6"/>
+</g>
+<!-- proc~xtb_calc_hessian -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_node4" class="node">
+<title>proc~xtb_calc_hessian</title>
+<g id="a_proc~~frontier_orbitals~~CalledByGraph_node4"><a xlink:href="../proc/xtb_calc_hessian.html" xlink:title="xtb_method_t%xtb_calc_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="184,-24 0,-24 0,0 184,0 184,-24"/>
+<text text-anchor="middle" x="92" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xtb_method_t%xtb_calc_hessian</text>
+</a>
+</g>
+</g>
+<!-- proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient -->
+<g id="proc~~frontier_orbitals~~CalledByGraph_edge3" class="edge">
+<title>proc~xtb_calc_hessian&#45;&gt;proc~xtb_calc_gradient</title>
+<path fill="none" stroke="#00ffff" d="M184.07,-12C192.57,-12 201.22,-12 209.81,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="209.87,-15.5 219.87,-12 209.87,-8.5 209.87,-15.5"/>
 </g>
 </g>
 </svg>
@@ -407,8 +443,8 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~74"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-i~120"></span>
+              integer,
             </td>
               <td>private</td>
             <td>
@@ -424,15 +460,15 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j~27"></span>
-              integer(kind=default_int),
+              <span class="anchor" id="variable-i_homo"></span>
+              integer,
             </td>
               <td>private</td>
             <td>
               
             </td>
             <td>::</td>
-            <td><strong>j</strong></td>
+            <td><strong>i_homo</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -455,25 +491,38 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure subroutine </span><span class="n">next_index_set</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span>
-<span class="w">      </span><span class="c">!! Advance k chosen positions out of n, lexicographically</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">indices</span><span class="p">(:)</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
-<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span>
-<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure subroutine </span><span class="n">frontier_orbitals</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span><span class="w"> </span><span class="n">occupations</span><span class="p">,</span><span class="w"> </span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span><span class="p">,</span><span class="w"> </span><span class="n">found</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Pick HOMO and LUMO out of an ascending orbital spectrum</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Occupation-driven rather than counting electrons, so the same routine</span>
+<span class="w">      </span><span class="c">!! serves restricted and unrestricted spectra. The threshold is half an</span>
+<span class="w">      </span><span class="c">!! electron: with Fermi smearing the frontier occupations are fractional</span>
+<span class="w">      </span><span class="c">!! rather than 0 or 2, and any cut inside that range names the same pair</span>
+<span class="w">      </span><span class="c">!! for a molecule with a real gap. It is arbitrary for a system without</span>
+<span class="w">      </span><span class="c">!! one, which is a system whose gap was not going to mean much anyway.</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energies</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">occupations</span><span class="p">(:)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
 
-<span class="w">      </span><span class="n">has_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
-<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span>
-<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            </span><span class="n">indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">k</span>
-<span class="w">               </span><span class="n">indices</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">indices</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">            </span><span class="k">end do</span>
-<span class="k">            </span><span class="n">has_next</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
-<span class="w">            </span><span class="k">return</span>
-<span class="k">         end if</span>
-<span class="k">      end do</span>
-<span class="k">   end subroutine </span><span class="n">next_index_set</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">i_homo</span>
+
+<span class="w">      </span><span class="n">homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">lumo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">      </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="n">i_homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">energies</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">occupations</span><span class="p">))</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">occupations</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="p">)</span><span class="w"> </span><span class="n">i_homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="w">      </span><span class="c">! Nothing occupied, or nothing empty: no frontier pair to report, and</span>
+<span class="w">      </span><span class="c">! saying so beats inventing one from an end of the spectrum.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i_homo</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">i_homo</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">energies</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">homo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energies</span><span class="p">(</span><span class="n">i_homo</span><span class="p">)</span>
+<span class="w">      </span><span class="n">lumo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">energies</span><span class="p">(</span><span class="n">i_homo</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="n">found</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">frontier_orbitals</span>
 </pre></div>
 
     </section>

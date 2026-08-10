@@ -13,6 +13,7 @@ contains
       use mqc_result_types, only: mbe_result_t
       use mqc_json_output_types, only: json_output_data_t
       use mqc_checkpoint, only: checkpoint_t
+      use mqc_calculation_defaults, only: DISP_WHOLE_FRAGMENT
       integer(int64), intent(in) :: total_fragments
       integer, intent(in) ::  max_level
       integer, intent(in) :: polymers(:, :)
@@ -39,6 +40,8 @@ contains
       integer :: known_status
       integer :: known_atoms
       real(dp), allocatable :: known_gradient(:, :), known_hessian(:, :)
+      real(dp) :: known_homo, known_lumo
+      logical :: known_orbitals
       integer(int64) :: n_reused
 
       calc_type_local = calc_type
@@ -63,13 +66,18 @@ contains
          ! monomers rather than the index, so a resumed list that is screened
          ! differently still matches the right fragment.
          if (present(checkpoint)) then
-            call checkpoint%lookup(polymers(frag_idx, :), known, known_energy, known_status, &
+            call checkpoint%lookup([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                   known, known_energy, known_status, &
                                    n_atoms=known_atoms, gradient=known_gradient, &
-                                   hessian=known_hessian)
+                                   hessian=known_hessian, homo=known_homo, &
+                                   lumo=known_lumo, has_orbitals=known_orbitals)
             if (known) then
                results(frag_idx)%energy%scf = known_energy
                results(frag_idx)%has_energy = .true.
                results(frag_idx)%scf_status = known_status
+               results(frag_idx)%homo = known_homo
+               results(frag_idx)%lumo = known_lumo
+               results(frag_idx)%has_orbitals = known_orbitals
                ! The assembly rebuilds the fragment from sys_geom and
                ! redistributes cap gradients itself, so all it needs back is
                ! an array of the right shape -- which is why the atom count
@@ -107,16 +115,28 @@ contains
          ! not cost this one.
          if (present(checkpoint)) then
             if (results(frag_idx)%has_gradient .and. results(frag_idx)%has_hessian) then
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
                                       results(frag_idx)%scf_status, phys_frag%n_atoms, &
-                                      results(frag_idx)%gradient, results(frag_idx)%hessian)
+                                      results(frag_idx)%gradient, results(frag_idx)%hessian, &
+                                      homo=results(frag_idx)%homo, &
+                                      lumo=results(frag_idx)%lumo, &
+                                      has_orbitals=results(frag_idx)%has_orbitals)
             else if (results(frag_idx)%has_gradient) then
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
                                       results(frag_idx)%scf_status, phys_frag%n_atoms, &
-                                      gradient=results(frag_idx)%gradient)
+                                      gradient=results(frag_idx)%gradient, &
+                                      homo=results(frag_idx)%homo, &
+                                      lumo=results(frag_idx)%lumo, &
+                                      has_orbitals=results(frag_idx)%has_orbitals)
             else
-               call checkpoint%record(polymers(frag_idx, :), results(frag_idx)%energy%total(), &
-                                      results(frag_idx)%scf_status, phys_frag%n_atoms)
+               call checkpoint%record([polymers(frag_idx, :), DISP_WHOLE_FRAGMENT], &
+                                      results(frag_idx)%energy%total(), &
+                                      results(frag_idx)%scf_status, phys_frag%n_atoms, &
+                                      homo=results(frag_idx)%homo, &
+                                      lumo=results(frag_idx)%lumo, &
+                                      has_orbitals=results(frag_idx)%has_orbitals)
             end if
          end if
 

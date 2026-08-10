@@ -13,6 +13,7 @@ module mqc_result_types
    public :: energy_t              !! Energy components type
    public :: calculation_result_t  !! Main result container type
    public :: SCF_UNKNOWN, SCF_CONVERGED, SCF_NOT_CONVERGED
+   public :: frontier_orbitals
    public :: scf_status_label
 
    integer, parameter :: SCF_UNKNOWN = 0
@@ -89,6 +90,21 @@ module mqc_result_types
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
       logical :: has_dipole_derivatives = .false.  !! Dipole derivatives have been computed
+
+      ! Frontier orbitals
+      !
+      ! HOMO and LUMO rather than the whole spectrum: the gap is what anyone
+      ! asks for, and a per-fragment orbital array would be the largest thing
+      ! in the result by a wide margin.
+      !
+      ! **These do not add up.** Energies and dipoles are additive and the
+      ! expansion sums them; a gap is not, and there is no combination of
+      ! fragment gaps that is the system's. So these stay per fragment and no
+      ! total is formed anywhere -- a summed gap would look like a number and
+      ! be nothing at all. For the gap of a molecule, run it unfragmented.
+      real(dp) :: homo = 0.0_dp          !! Highest occupied orbital energy (Hartree)
+      real(dp) :: lumo = 0.0_dp          !! Lowest unoccupied orbital energy (Hartree)
+      logical :: has_orbitals = .false.  !! Whether homo/lumo were reported
 
       ! SCF convergence
       !
@@ -253,6 +269,9 @@ contains
       this%has_error = .false.
       this%scf_status = SCF_UNKNOWN
       this%scf_iterations = 0
+      this%homo = 0.0_dp
+      this%lumo = 0.0_dp
+      this%has_orbitals = .false.
    end subroutine result_reset
 
    !---------------------------------------------------------------------------
@@ -396,6 +415,9 @@ contains
       ! leaves every parallel run reporting the default.
       call send(comm, result%scf_status, dest, tag)
       call send(comm, result%scf_iterations, dest, tag)
+      call send(comm, result%has_orbitals, dest, tag)
+      call send(comm, result%homo, dest, tag)
+      call send(comm, result%lumo, dest, tag)
 
       ! Send gradient flag and data if present
       call send(comm, result%has_gradient, dest, tag)
@@ -452,6 +474,9 @@ contains
       ! leaves every parallel run reporting the default.
       call send(comm, result%scf_status, dest, tag)
       call send(comm, result%scf_iterations, dest, tag)
+      call send(comm, result%has_orbitals, dest, tag)
+      call send(comm, result%homo, dest, tag)
+      call send(comm, result%lumo, dest, tag)
 
       ! Send gradient flag and data (blocking to avoid needing multiple request handles)
       call send(comm, result%has_gradient, dest, tag)
@@ -506,6 +531,9 @@ contains
       call recv(comm, result%distance, source, tag, status)
       call recv(comm, result%scf_status, source, tag, status)
       call recv(comm, result%scf_iterations, source, tag, status)
+      call recv(comm, result%has_orbitals, source, tag, status)
+      call recv(comm, result%homo, source, tag, status)
+      call recv(comm, result%lumo, source, tag, status)
 
       ! Receive gradient flag and data if present
       call recv(comm, result%has_gradient, source, tag, status)
@@ -572,6 +600,9 @@ contains
       call recv(comm, result%distance, source, tag, status)
       call recv(comm, result%scf_status, source, tag, status)
       call recv(comm, result%scf_iterations, source, tag, status)
+      call recv(comm, result%has_orbitals, source, tag, status)
+      call recv(comm, result%homo, source, tag, status)
+      call recv(comm, result%lumo, source, tag, status)
 
       ! Receive gradient flag and data (blocking to avoid needing multiple request handles)
       call recv(comm, result%has_gradient, source, tag, status)
@@ -618,5 +649,38 @@ contains
          text = "?  "
       end select
    end function scf_status_label
+
+   pure subroutine frontier_orbitals(energies, occupations, homo, lumo, found)
+      !! Pick HOMO and LUMO out of an ascending orbital spectrum
+      !!
+      !! Occupation-driven rather than counting electrons, so the same routine
+      !! serves restricted and unrestricted spectra. The threshold is half an
+      !! electron: with Fermi smearing the frontier occupations are fractional
+      !! rather than 0 or 2, and any cut inside that range names the same pair
+      !! for a molecule with a real gap. It is arbitrary for a system without
+      !! one, which is a system whose gap was not going to mean much anyway.
+      real(dp), intent(in) :: energies(:)
+      real(dp), intent(in) :: occupations(:)
+      real(dp), intent(out) :: homo, lumo
+      logical, intent(out) :: found
+
+      integer :: i, i_homo
+
+      homo = 0.0_dp
+      lumo = 0.0_dp
+      found = .false.
+      i_homo = 0
+      do i = 1, min(size(energies), size(occupations))
+         if (occupations(i) > 0.5_dp) i_homo = i
+      end do
+
+      ! Nothing occupied, or nothing empty: no frontier pair to report, and
+      ! saying so beats inventing one from an end of the spectrum.
+      if (i_homo < 1 .or. i_homo >= size(energies)) return
+
+      homo = energies(i_homo)
+      lumo = energies(i_homo + 1)
+      found = .true.
+   end subroutine frontier_orbitals
 
 end module mqc_result_types

@@ -588,7 +588,8 @@ contains
          call expansion%checkpoint%open(trim(config%checkpoint_file), &
                                         calculation_fingerprint(sys_geom, config%method_config, &
                                                                 config%calc_type), &
-                                        max_level, config%calc_type == CALC_TYPE_ENERGY, &
+                                        max_level + 1, &
+                                        config%calc_type == CALC_TYPE_ENERGY, &
                                         checkpoint_error)
          if (checkpoint_error%has_error()) then
             ! A checkpoint from another calculation is not a warning. Its

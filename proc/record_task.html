@@ -161,7 +161,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine record_task(ctx, task_idx, result)  
+    <h2> subroutine record_task(ctx, task_rows, task_idx, result)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -902,10 +902,18 @@ large graphs.</div>
 
 
     <p>Append one finished task to the checkpoint, if there is one</p>
-<p>Only for energy runs, and <code>checkpoint%open</code> refuses anything else, so
-one task is one fragment here and the row is its monomers. Once
-derivatives are stored the mapping stops being one-to-one and this
-needs the fragment index rather than the task index.</p>
+<p><strong>Keyed on the task row, not on the fragment.</strong> A Hessian run expands
+each fragment into 1 + 6N schedulable tasks &ndash; a reference point and a
+forward/backward gradient per Cartesian coordinate &ndash; so <code>task_idx</code> is
+not a fragment index, and <code>polymers(task_idx, :)</code> is somebody else&rsquo;s
+monomers. It was, briefly, and the checkpoint it wrote carried a
+plausible tuple on every record with the wrong data underneath.</p>
+<p>The task row already holds what tells them apart: the monomers, plus
+the displacement code in the last column (DISP_WHOLE_FRAGMENT when
+nothing is displaced). Keying on the whole row makes each displaced
+gradient its own resumable unit, which is the granularity a
+finite-difference Hessian wants &ndash; a killed job keeps the
+displacements it finished instead of losing the fragment.</p>
 
 
     <h3>Arguments</h3>
@@ -921,7 +929,7 @@ needs the fragment index rather than the task index.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~5"></span>
+              <span class="anchor" id="variable-ctx~11"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -930,6 +938,21 @@ needs the fragment index rather than the task index.</p>
             </td>
             <td>::</td>
             <td><strong>ctx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-task_rows~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_rows</strong>(:,:)</td>
             <td>
                 
             </td>
@@ -951,7 +974,7 @@ needs the fragment index rather than the task index.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~5"></span>
+              <span class="anchor" id="variable-result~28"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1352,32 +1375,47 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">record_task</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">record_task</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">task_rows</span><span class="p">,</span><span class="w"> </span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Append one finished task to the checkpoint, if there is one</span>
 <span class="w">      </span><span class="c">!!</span>
-<span class="w">      </span><span class="c">!! Only for energy runs, and `checkpoint%open` refuses anything else, so</span>
-<span class="w">      </span><span class="c">!! one task is one fragment here and the row is its monomers. Once</span>
-<span class="w">      </span><span class="c">!! derivatives are stored the mapping stops being one-to-one and this</span>
-<span class="w">      </span><span class="c">!! needs the fragment index rather than the task index.</span>
+<span class="w">      </span><span class="c">!! **Keyed on the task row, not on the fragment.** A Hessian run expands</span>
+<span class="w">      </span><span class="c">!! each fragment into 1 + 6N schedulable tasks -- a reference point and a</span>
+<span class="w">      </span><span class="c">!! forward/backward gradient per Cartesian coordinate -- so `task_idx` is</span>
+<span class="w">      </span><span class="c">!! not a fragment index, and `polymers(task_idx, :)` is somebody else&#39;s</span>
+<span class="w">      </span><span class="c">!! monomers. It was, briefly, and the checkpoint it wrote carried a</span>
+<span class="w">      </span><span class="c">!! plausible tuple on every record with the wrong data underneath.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The task row already holds what tells them apart: the monomers, plus</span>
+<span class="w">      </span><span class="c">!! the displacement code in the last column (DISP_WHOLE_FRAGMENT when</span>
+<span class="w">      </span><span class="c">!! nothing is displaced). Keying on the whole row makes each displaced</span>
+<span class="w">      </span><span class="c">!! gradient its own resumable unit, which is the granularity a</span>
+<span class="w">      </span><span class="c">!! finite-difference Hessian wants -- a killed job keeps the</span>
+<span class="w">      </span><span class="c">!! displacements it finished instead of losing the fragment.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_many_body_expansion</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">mbe_context_t</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mbe_context_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ctx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_rows</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_idx</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="k">result</span>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">active</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">polymers</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
-<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">task_idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1_int64</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">task_idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">polymers</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">task_idx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1_int64</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">task_idx</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">task_rows</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">))</span><span class="w"> </span><span class="k">return</span>
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">has_hessian</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">task_rows</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">scf_status</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">)</span>
+<span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">hessian</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">homo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">has_orbitals</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">)</span>
 <span class="w">      </span><span class="k">else if</span><span class="w"> </span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">has_gradient</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">task_rows</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">scf_status</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                    </span><span class="n">gradient</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">)</span>
+<span class="w">                                    </span><span class="n">gradient</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">homo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">has_orbitals</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">)</span>
 <span class="w">      </span><span class="k">else</span>
-<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">ctx</span><span class="p">%</span><span class="n">polymers</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
-<span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">scf_status</span><span class="p">)</span>
+<span class="k">         call </span><span class="n">ctx</span><span class="p">%</span><span class="n">checkpoint</span><span class="p">%</span><span class="n">record</span><span class="p">(</span><span class="n">task_rows</span><span class="p">(</span><span class="n">task_idx</span><span class="p">,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="k">result</span><span class="p">%</span><span class="n">energy</span><span class="p">%</span><span class="n">total</span><span class="p">(),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="k">result</span><span class="p">%</span><span class="n">scf_status</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">homo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">homo</span><span class="p">,</span><span class="w"> </span><span class="n">lumo</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">lumo</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                    </span><span class="n">has_orbitals</span><span class="o">=</span><span class="k">result</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end if</span>
 <span class="k">   end subroutine </span><span class="n">record_task</span>
 </pre></div>
@@ -1403,7 +1441,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 05:57 +0000             </p>
+ on 2026-08-10 06:23 +0000             </p>
           </div>
         </div>
         <br>

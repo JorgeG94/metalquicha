@@ -21,6 +21,7 @@ module mqc_fragment_table_writer
    use pic_io, only: to_char
    use mqc_json_output_types, only: json_output_data_t
    use mqc_result_types, only: scf_status_label
+   use mqc_physical_constants, only: HARTREE_TO_EV
    use mqc_io_helpers, only: get_basename
    implicit none
    private
@@ -47,6 +48,7 @@ contains
       integer :: unit, ios, j, level
       integer(int64) :: i
       logical :: have_scf
+      logical :: have_orbitals
       logical :: have_energy, have_delta, have_distance
       type(timer_type) :: table_timer
       character(len=256) :: filename
@@ -71,7 +73,7 @@ contains
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
-      write (unit, "(a)") ",energy,delta_energy,distance,scf"
+      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev"
 
       ! Presence of the value columns is fixed for the whole run, so decide once
       ! rather than per row.
@@ -79,6 +81,9 @@ contains
       have_delta = allocated(data%delta_energies)
       have_distance = allocated(data%fragment_distances)
       have_scf = allocated(data%fragment_scf_status)
+      have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo) &
+                      .and. allocated(data%fragment_has_orbitals)
+      have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo)
 
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
@@ -107,9 +112,21 @@ contains
          ! as by program, and "NO" in a spreadsheet is harder to scroll past
          ! than a 2.
          if (have_scf) then
-            write (unit, "(a)") ","//trim(scf_status_label(data%fragment_scf_status(i)))
+            write (unit, "(a)", advance="no") ","//trim(scf_status_label(data%fragment_scf_status(i)))
          else
-            write (unit, "(a)") ",?"
+            write (unit, "(a)", advance="no") ",?"
+         end if
+
+         ! Repeated in eV because that is the unit a gap gets compared in, and
+         ! converting a column of Hartrees by hand is how a factor of 27 ends
+         ! up in a plot. Blank, not zero, where the method reported no pair:
+         ! a gap of zero is a claim about the fragment.
+         if (have_orbitals .and. data%fragment_has_orbitals(i)) then
+            write (unit, '(2(",",es24.16),",",f12.6)') data%fragment_homo(i), &
+               data%fragment_lumo(i), &
+               (data%fragment_lumo(i) - data%fragment_homo(i))*HARTREE_TO_EV
+         else
+            write (unit, "(a)") ",,,"
          end if
       end do
 

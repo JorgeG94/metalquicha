@@ -4,7 +4,8 @@ module mqc_method_xtb
    !! implementing the abstract method interface for energy and gradient calculations.
    use pic_types, only: dp
    use mqc_method_base, only: qc_method_t
-   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
+   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
+                               frontier_orbitals
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_GENERIC, ERROR_VALIDATION
    use pic_logger, only: logger => global_logger
@@ -166,6 +167,15 @@ contains
          result%scf_status = SCF_CONVERGED
       end if
 
+      ! emo is ascending and focc holds occupations, so the frontier pair
+      ! falls out. Spin channel 1: for a restricted fragment that is the whole
+      ! story, and for an unrestricted one it is the alpha gap, which is what
+      ! a single number can honestly be.
+      if (allocated(wfn%emo) .and. allocated(wfn%focc)) then
+         call frontier_orbitals(wfn%emo(:, 1), wfn%focc(:, 1), &
+                                result%homo, result%lumo, result%has_orbitals)
+      end if
+
       ! Compute molecular dipole moment from wavefunction
       dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
 
@@ -298,6 +308,15 @@ contains
          if (result%has_error) return
       else
          result%scf_status = SCF_CONVERGED
+      end if
+
+      ! emo is ascending and focc holds occupations, so the frontier pair
+      ! falls out. Spin channel 1: for a restricted fragment that is the whole
+      ! story, and for an unrestricted one it is the alpha gap, which is what
+      ! a single number can honestly be.
+      if (allocated(wfn%emo) .and. allocated(wfn%focc)) then
+         call frontier_orbitals(wfn%emo(:, 1), wfn%focc(:, 1), &
+                                result%homo, result%lumo, result%has_orbitals)
       end if
 
       ! Compute molecular dipole moment from wavefunction

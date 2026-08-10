@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">29 statements</a>
+                 title=" 0.2% of total for procedures.">30 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,10 +136,10 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/handle_node_results.html#variable-fragment_idx~4">fragment_idx</a>
-            <a class="list-group-item" href="../proc/handle_node_results.html#variable-has_pending~5">has_pending</a>
-            <a class="list-group-item" href="../proc/handle_node_results.html#variable-req~8">req</a>
-            <a class="list-group-item" href="../proc/handle_node_results.html#variable-status~4">status</a>
+            <a class="list-group-item" href="../proc/handle_node_results.html#variable-fragment_idx~6">fragment_idx</a>
+            <a class="list-group-item" href="../proc/handle_node_results.html#variable-has_pending~8">has_pending</a>
+            <a class="list-group-item" href="../proc/handle_node_results.html#variable-req~12">req</a>
+            <a class="list-group-item" href="../proc/handle_node_results.html#variable-status~20">status</a>
         </div>
       </div>
     </div>
@@ -175,7 +175,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine handle_node_results(ctx, results, results_received, total_items, coord_timer)  
+    <h2> subroutine handle_node_results(ctx, task_rows, results, results_received, total_items, coord_timer)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -931,7 +931,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ctx~7"></span>
+              <span class="anchor" id="variable-ctx~13"></span>
               type(<a href='../type/mbe_context_t.html'>mbe_context_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -946,7 +946,22 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-task_rows~5"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>task_rows</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-results~4"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -961,7 +976,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results_received~3"></span>
+              <span class="anchor" id="variable-results_received~6"></span>
               integer(kind=int64),
             </td>
 <td>intent(inout)</td>
@@ -976,7 +991,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_items~2"></span>
+              <span class="anchor" id="variable-total_items~3"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -991,7 +1006,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~4"></span>
+              <span class="anchor" id="variable-coord_timer~5"></span>
               type(timer_type),
             </td>
 <td>intent(in)</td>
@@ -1627,7 +1642,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_idx~4"></span>
+              <span class="anchor" id="variable-fragment_idx~6"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -1644,7 +1659,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_pending~5"></span>
+              <span class="anchor" id="variable-has_pending~8"></span>
               logical,
             </td>
               <td>private</td>
@@ -1661,7 +1676,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~8"></span>
+              <span class="anchor" id="variable-req~12"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -1678,7 +1693,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~4"></span>
+              <span class="anchor" id="variable-status~20"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -1709,10 +1724,11 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">handle_node_results</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="n">total_items</span><span class="p">,</span><span class="w"> </span><span class="n">coord_timer</span><span class="p">)</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">handle_node_results</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">task_rows</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w"> </span><span class="n">results_received</span><span class="p">,</span><span class="w"> </span><span class="n">total_items</span><span class="p">,</span><span class="w"> </span><span class="n">coord_timer</span><span class="p">)</span>
 <span class="w">      </span><span class="c">!! Drain results from remote node coordinators and update tracking state.</span>
 <span class="w">      </span><span class="k">use </span><span class="n">mqc_many_body_expansion</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">mbe_context_t</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mbe_context_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ctx</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">task_rows</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">calculation_result_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results</span><span class="p">(:)</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">results_received</span>
 <span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">total_items</span>
@@ -1737,7 +1753,7 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! every result -- its own workers below, and forwarded ones here -- so</span>
 <span class="w">         </span><span class="c">! it is the only one that can write a single complete file, and it</span>
 <span class="w">         </span><span class="c">! already holds the rows to key them by.</span>
-<span class="w">         </span><span class="k">call </span><span class="n">record_task</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">))</span>
+<span class="w">         </span><span class="k">call </span><span class="n">record_task</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">task_rows</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_idx</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">))</span>
 
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">results</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">)%</span><span class="n">has_error</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
 <span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Fragment &quot;</span><span class="o">//</span><span class="n">to_char</span><span class="p">(</span><span class="n">fragment_idx</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; calculation failed: &quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
@@ -1777,7 +1793,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 05:57 +0000             </p>
+ on 2026-08-10 06:23 +0000             </p>
           </div>
         </div>
         <br>

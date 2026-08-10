@@ -842,9 +842,21 @@ contains
          ! Copy fragment distances if available
          allocate (json_data%fragment_distances(fragment_count))
          allocate (json_data%fragment_scf_status(fragment_count))
+         allocate (json_data%fragment_homo(fragment_count))
+         allocate (json_data%fragment_lumo(fragment_count))
+         allocate (json_data%fragment_has_orbitals(fragment_count))
          do i = 1_int64, fragment_count
             json_data%fragment_distances(i) = results(i)%distance
             json_data%fragment_scf_status(i) = results(i)%scf_status
+            ! Zero when the method did not report a pair, which the table
+            ! writes as a blank rather than as a gap of zero.
+            json_data%fragment_homo(i) = 0.0_dp
+            json_data%fragment_lumo(i) = 0.0_dp
+            json_data%fragment_has_orbitals(i) = results(i)%has_orbitals
+            if (results(i)%has_orbitals) then
+               json_data%fragment_homo(i) = results(i)%homo
+               json_data%fragment_lumo(i) = results(i)%lumo
+            end if
          end do
 
          ! Said once, at the end, where it cannot be scrolled past. A warning

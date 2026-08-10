@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">42 statements</a>
+                 title=" 0.3% of total for procedures.">47 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -138,12 +138,12 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-basename~4">basename</a>
             <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-dipole_obj">dipole_obj</a>
-            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-io_stat~5">io_stat</a>
+            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-io_stat~3">io_stat</a>
             <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-iunit">iunit</a>
-            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-json~22">json</a>
+            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-json">json</a>
             <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-main_obj">main_obj</a>
             <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-output_file~2">output_file</a>
-            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-root~15">root</a>
+            <a class="list-group-item" href="../proc/write_unfragmented_json_impl.html#variable-root~11">root</a>
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-data~5"></span>
+              <span class="anchor" id="variable-data~6"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(in)</td>
@@ -739,7 +739,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-io_stat~5"></span>
+              <span class="anchor" id="variable-io_stat~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -773,7 +773,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~22"></span>
+              <span class="anchor" id="variable-json"></span>
               type(json_core),
             </td>
               <td>private</td>
@@ -824,7 +824,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-root~15"></span>
+              <span class="anchor" id="variable-root~11"></span>
               type(json_value),
             </td>
               <td>private,</td>
@@ -879,7 +879,16 @@ large graphs.</div>
 
 <span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_energy</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;total_energy&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">total_energy</span><span class="p">)</span>
 
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="c">! Only where one SCF covered one system. A fragmented run never sets</span>
+<span class="w">      </span><span class="c">! this, because a gap assembled from fragment gaps would be arithmetic</span>
+<span class="w">      </span><span class="c">! without a meaning.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_orbitals</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;homo&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">homo</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;lumo&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">lumo</span><span class="p">)</span>
+<span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;homo_lumo_gap_ev&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">lumo</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">homo</span><span class="p">)</span><span class="o">*</span><span class="n">HARTREE_TO_EV</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">has_dipole</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         call </span><span class="n">json</span><span class="p">%</span><span class="n">create_object</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dipole&quot;</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">main_obj</span><span class="p">,</span><span class="w"> </span><span class="n">dipole_obj</span><span class="p">)</span>
 <span class="w">         </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">dipole_obj</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">dipole</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
@@ -932,7 +941,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 05:57 +0000             </p>
+ on 2026-08-10 06:23 +0000             </p>
           </div>
         </div>
         <br>
