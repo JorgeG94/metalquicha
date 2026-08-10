@@ -41,13 +41,17 @@ module mqc_checkpoint
       !! One checkpoint file, open for appending and holding what it loaded
       character(len=:), allocatable :: path
       logical :: active = .false.
-      integer :: unit = -1
+      integer :: unit = 0
+         !! Meaningful only while `active`; `newunit=` values are negative,
+         !! so the sign of this says nothing about whether it is open.
 
       integer(int64) :: n_loaded = 0
       integer :: max_level = 0
       integer, allocatable :: terms(:, :)      !! (n_loaded, max_level), sorted
       real(dp), allocatable :: energies(:)
       integer, allocatable :: scf_status(:)
+      real(dp), allocatable :: homo(:), lumo(:)
+      logical, allocatable :: has_orbitals(:)
 
       logical :: use_hdf5 = .false.
          !! Which backend is in use. Text holds one energy per record and
@@ -153,6 +157,8 @@ contains
       integer :: row(this%max_level)
       real(dp) :: energy
       integer :: status_code
+      real(dp) :: homo_in, lumo_in
+      integer :: orbitals_in
 
       open (newunit=unit, file=this%path, status="old", action="read", iostat=ios)
       if (ios /= 0) then
@@ -181,6 +187,7 @@ contains
       allocate (this%terms(capacity, this%max_level))
       allocate (this%energies(capacity))
       allocate (this%scf_status(capacity))
+      allocate (this%homo(capacity), this%lumo(capacity), this%has_orbitals(capacity))
       n = 0
 
       do
@@ -189,8 +196,18 @@ contains
          if (len_trim(line) == 0) cycle
          ! A short read here is the last line of a job that was killed while
          ! writing it. Expected, and not an error.
+         ! Orbitals are read separately so a checkpoint written before this
+         ! column existed still loads -- it simply has no frontier pair.
+         orbitals_in = 0
+         homo_in = 0.0_dp
+         lumo_in = 0.0_dp
          read (line, *, iostat=ios) level, (row(islot), islot=1, this%max_level), &
-            energy, status_code
+            energy, status_code, orbitals_in, homo_in, lumo_in
+         if (ios /= 0) then
+            orbitals_in = 0
+            read (line, *, iostat=ios) level, (row(islot), islot=1, this%max_level), &
+               energy, status_code
+         end if
          if (ios /= 0) cycle
          if (level < 1 .or. level > this%max_level) cycle
 
@@ -199,6 +216,9 @@ contains
          this%terms(n, :) = row
          this%energies(n) = energy
          this%scf_status(n) = status_code
+         this%homo(n) = homo_in
+         this%lumo(n) = lumo_in
+         this%has_orbitals(n) = (orbitals_in /= 0)
       end do
       close (unit)
 
@@ -223,10 +243,22 @@ contains
       call move_alloc(t, this%terms)
       call move_alloc(e, this%energies)
       call move_alloc(s, this%scf_status)
+      block
+         real(dp), allocatable :: h(:), l(:)
+         logical, allocatable :: o(:)
+         allocate (h(2*capacity), l(2*capacity), o(2*capacity))
+         h(1:capacity) = this%homo
+         l(1:capacity) = this%lumo
+         o(1:capacity) = this%has_orbitals
+         call move_alloc(h, this%homo)
+         call move_alloc(l, this%lumo)
+         call move_alloc(o, this%has_orbitals)
+      end block
       capacity = 2*capacity
    end subroutine grow
 
-   subroutine checkpoint_record(this, term, energy, scf_status, n_atoms, gradient, hessian)
+   subroutine checkpoint_record(this, term, energy, scf_status, n_atoms, gradient, hessian, &
+                                homo, lumo, has_orbitals)
       !! Append one finished fragment, and make it survive a kill
       !!
       !! Flushed every time. A buffered checkpoint is a checkpoint that loses
@@ -241,8 +273,15 @@ contains
          !! gradient its shape back; ignored by the text backend.
       real(dp), intent(in), optional :: gradient(:, :)
       real(dp), intent(in), optional :: hessian(:, :)
+      real(dp), intent(in), optional :: homo, lumo
+      logical, intent(in), optional :: has_orbitals
+         !! Whether the method reported a frontier pair. Passed as a flag
+         !! rather than by omitting the values, so a caller forwards three
+         !! arguments unconditionally instead of branching -- and a resumed
+         !! fragment does not come back claiming a gap of zero.
 
       integer :: level, islot, natoms_local
+      logical :: orbitals_out
 
       if (.not. this%active) return
 
@@ -263,11 +302,19 @@ contains
       level = count(term > 0)
       write (this%unit, "(i0,*(1x,i0))", advance="no") level, &
          (term(islot), islot=1, this%max_level)
-      write (this%unit, "(1x,es24.16,1x,i0)") energy, scf_status
+      write (this%unit, "(1x,es24.16,1x,i0)", advance="no") energy, scf_status
+      orbitals_out = .false.
+      if (present(has_orbitals)) orbitals_out = has_orbitals
+      if (orbitals_out .and. present(homo) .and. present(lumo)) then
+         write (this%unit, "(1x,i0,2(1x,es24.16))") 1, homo, lumo
+      else
+         write (this%unit, "(1x,i0,2(1x,es24.16))") 0, 0.0_dp, 0.0_dp
+      end if
       flush (this%unit)
    end subroutine checkpoint_record
 
-   subroutine checkpoint_lookup(this, term, found, energy, scf_status, n_atoms, gradient, hessian)
+   subroutine checkpoint_lookup(this, term, found, energy, scf_status, n_atoms, gradient, &
+                                hessian, homo, lumo, has_orbitals)
       !! Is this term already done, and with what energy
       !!
       !! Bisection over the sorted load rather than a scan: a resume asks this
@@ -281,6 +328,8 @@ contains
       integer, intent(out), optional :: n_atoms
       real(dp), allocatable, intent(out), optional :: gradient(:, :)
       real(dp), allocatable, intent(out), optional :: hessian(:, :)
+      real(dp), intent(out), optional :: homo, lumo
+      logical, intent(out), optional :: has_orbitals
 
       integer(int64) :: lo, hi, mid
       integer :: order, natoms_local
@@ -289,6 +338,9 @@ contains
       energy = 0.0_dp
       scf_status = SCF_UNKNOWN
       if (present(n_atoms)) n_atoms = 0
+      if (present(homo)) homo = 0.0_dp
+      if (present(lumo)) lumo = 0.0_dp
+      if (present(has_orbitals)) has_orbitals = .false.
 
       if (this%use_hdf5) then
          if (present(gradient) .and. present(hessian)) then
@@ -316,6 +368,9 @@ contains
             found = .true.
             energy = this%energies(mid)
             scf_status = this%scf_status(mid)
+            if (present(homo)) homo = this%homo(mid)
+            if (present(lumo)) lumo = this%lumo(mid)
+            if (present(has_orbitals)) has_orbitals = this%has_orbitals(mid)
             return
          end if
          if (order < 0) then
@@ -390,22 +445,33 @@ contains
       integer :: key_term(this%max_level)
       integer :: key_status
       real(dp) :: key_energy
+      real(dp) :: key_homo, key_lumo
+      logical :: key_orbitals
 
       do i = 2, this%n_loaded
          key_term = this%terms(i, :)
          key_energy = this%energies(i)
          key_status = this%scf_status(i)
+         key_homo = this%homo(i)
+         key_lumo = this%lumo(i)
+         key_orbitals = this%has_orbitals(i)
          j = i - 1
          do while (j >= 1)
             if (compare(this%terms(j, :), key_term, this%max_level) <= 0) exit
             this%terms(j + 1, :) = this%terms(j, :)
             this%energies(j + 1) = this%energies(j)
             this%scf_status(j + 1) = this%scf_status(j)
+            this%homo(j + 1) = this%homo(j)
+            this%lumo(j + 1) = this%lumo(j)
+            this%has_orbitals(j + 1) = this%has_orbitals(j)
             j = j - 1
          end do
          this%terms(j + 1, :) = key_term
          this%energies(j + 1) = key_energy
          this%scf_status(j + 1) = key_status
+         this%homo(j + 1) = key_homo
+         this%lumo(j + 1) = key_lumo
+         this%has_orbitals(j + 1) = key_orbitals
       end do
    end subroutine sort_terms
 
@@ -415,11 +481,18 @@ contains
 
       if (this%use_hdf5) then
          call this%h5%close()
-      else if (this%active .and. this%unit >= 0) then
+      else if (this%active) then
+         ! Not `this%unit >= 0`: `newunit=` hands back *negative* unit
+         ! numbers, so that test was never true and the file was never
+         ! closed. A program that runs once and exits does not notice --
+         ! the process closes it -- but a session runs many calculations
+         ! in one process, and the second one asking for the same
+         ! checkpoint got "already opened on another unit" instead of a
+         ! resume. `active` is the thing that actually says a unit is open.
          close (this%unit)
       end if
       this%active = .false.
-      this%unit = -1
+      this%unit = 0
    end subroutine checkpoint_close
 
 end module mqc_checkpoint

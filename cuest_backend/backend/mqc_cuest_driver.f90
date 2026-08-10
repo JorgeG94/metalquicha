@@ -13,7 +13,8 @@ module mqc_cuest_driver
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use mqc_physical_fragment, only: physical_fragment_t
-   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
+   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED, &
+                               frontier_orbitals
    use mqc_cuest_context, only: cuest_context_t, get_cuest_context
    use mqc_cuest_integrals, only: cuest_system_t
    use mqc_cuest_functionals, only: functional_name_to_id
@@ -220,6 +221,34 @@ contains
          result%scf_status = SCF_NOT_CONVERGED
       end if
       result%scf_iterations = scf%iterations
+
+      ! cuEST reports eigenvalues but not occupations, so they are rebuilt
+      ! from the electron count: doubly occupied up to nelec/2 for a closed
+      ! shell, singly up to n_alpha when unrestricted. Same routine as the
+      ! xTB path picks the pair, so one definition of "frontier" serves both.
+      if (allocated(scf%orbital_energies)) then
+         block
+            real(dp), allocatable :: occupations(:)
+            integer :: n_orb, n_filled, iorb
+
+            n_orb = size(scf%orbital_energies)
+            allocate (occupations(n_orb))
+            occupations = 0.0_dp
+            if (unrestricted) then
+               n_filled = (fragment%nelec + (fragment%multiplicity - 1))/2
+               do iorb = 1, min(n_filled, n_orb)
+                  occupations(iorb) = 1.0_dp
+               end do
+            else
+               n_filled = fragment%nelec/2
+               do iorb = 1, min(n_filled, n_orb)
+                  occupations(iorb) = 2.0_dp
+               end do
+            end if
+            call frontier_orbitals(scf%orbital_energies, occupations, &
+                                   result%homo, result%lumo, result%has_orbitals)
+         end block
+      end if
 
       ! Same policy as xTB, deliberately. One physical condition -- an SCF that
       ! ran out of iterations -- must not stop the job on one backend and pass
