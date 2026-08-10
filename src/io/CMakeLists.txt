@@ -11,7 +11,7 @@ target_sources(
           mqc_fragment_table_writer.f90
           mqc_checkpoint.f90)
 
-# The real backend lives in hdf5_backend/, outside src/, because fpm globs src/
+# The real backend lives in backends/hdf5/, outside src/, because fpm globs src/
 # and cannot choose between two files defining mqc_hdf5_checkpoint -- having
 # both here is a hard error there whatever CMake is told. Only one of the two is
 # ever compiled, the same arrangement as mqc_cuest_bridge_stub.

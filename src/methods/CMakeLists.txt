@@ -17,7 +17,7 @@ target_sources(
           mqc_dft_prune.f90
           mqc_dft_grid.f90)
 
-# The cuEST bridge has two forms. The real one, in cuest_backend/, is compiled
+# The cuEST bridge has two forms. The real one, in backends/cuest/, is compiled
 # only with the backend; the stub here stands in otherwise, so the method files
 # always resolve `mqc_cuest_bridge` without a preprocessor conditional.
 if(NOT MQC_ENABLE_CUEST)
@@ -31,7 +31,7 @@ endif()
 # Factory must come after method types are defined
 target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
 
-# The CPU integrals, SCF and bridge live in libcint_backend/, outside src/,
+# The CPU integrals, SCF and bridge live in backends/libcint/, outside src/,
 # because they use libcint_fortran and fpm -- which globs src/ -- has no source
 # for it. The stub stays here and is compiled when the backend is not, so
 # `mqc_libcint_bridge` resolves without a preprocessor guard at the call site --

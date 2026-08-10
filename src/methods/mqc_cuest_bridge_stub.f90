@@ -3,7 +3,7 @@ module mqc_cuest_bridge
    !! The fpm build, and any CMake build with MQC_ENABLE_CUEST=OFF, compiles
    !! this. It reports that no integral backend is present rather than
    !! computing anything. The real implementation, compiled only by CMake with
-   !! the backend, lives in `cuest_backend/backend/mqc_cuest_bridge.f90` and
+   !! the backend, lives in `backends/cuest/backend/mqc_cuest_bridge.f90` and
    !! provides the same module and the same `run_cuest_scf` interface.
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_physical_fragment, only: physical_fragment_t
