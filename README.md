@@ -33,7 +33,7 @@ calculations. Two chemistry engines are available:
 - [NVIDIA cuEST](https://developer.nvidia.com/cuda/cuda-x-libraries/cuest) for
   Hartree-Fock and Kohn-Sham DFT on the GPU — energies, analytic gradients and
   Hessians, for whole molecules and for every fragment of an MBE/GMBE expansion.
-  See **[CUEST.md](CUEST.md)** for the full story: build instructions, the 20
+  See **[CUEST.md](backends/cuest/CUEST.md)** for the full story: build instructions, the 20
   available functionals, and the validation numbers.
 
 Both plug in behind the same `qc_method_t` interface, so fragmentation, screening
@@ -78,7 +78,18 @@ You will need an internet connection to download the dependencies. The main depe
 - An MPI installation
 - A BLAS/LAPACK install
 - TBLITE (will be downloaded automatically), for xTB
-- NVIDIA cuEST and CUDA 12, for GPU Hartree-Fock/DFT (optional; see [CUEST.md](CUEST.md))
+- NVIDIA cuEST and CUDA 12, for GPU Hartree-Fock/DFT (optional; see [CUEST.md](backends/cuest/CUEST.md))
+
+Optional, each off by default and each fetched automatically when switched on:
+
+| Option | What it adds |
+| --- | --- |
+| `-DMQC_ENABLE_LIBCINT=ON` | Gaussian integrals and Hartree-Fock on the CPU, no GPU needed |
+| `-DMQC_ENABLE_LIBXC=ON` | Exchange-correlation functionals |
+| `-DMQC_ENABLE_HDF5=ON` | Binary checkpoints, needed to restart a gradient or Hessian |
+
+The CPU Hartree-Fock backend exists mainly so results can be checked without a
+GPU; it is validated against PySCF rather than tuned for speed.
 
 You can then simply:
 
@@ -102,7 +113,7 @@ cmake --build build -j
 Only the cuEST shared library is needed; the Fortran bindings are pre-generated
 and vendored, and can optionally be fetched from
 [mod_cuest](https://github.com/JorgeG94/mod_cuest) instead. Running needs a GPU
-of compute capability 8.0 or newer. Full details in [CUEST.md](CUEST.md).
+of compute capability 8.0 or newer. Full details in [CUEST.md](backends/cuest/CUEST.md).
 
 ### Notes on Fortran compiler compatibility
 
@@ -137,64 +148,111 @@ Install the FPM following the [instructions](https://fpm.fortran-lang.org/instal
 
 ## Running a calculation
 
-To run a calculation you need to process the JSON input into our `mqc` format. To do this, you can simply do:
+Input is a JSON deck. Run it in serial:
 
 ```bash
+./build/mqc validation/inputs/prism.json
 ```
 
-And this will generate a `prism.json`. Which can be simply run as `./build/mqc validation/inputs/prism.json` to be run
-in serial mode. Or `mpirun -np 4 ./build/mqc validation/inputs/prism.json`.
+or across ranks, which is how fragmented calculations are meant to be run:
 
-A sample `mqc` file is shown below:
-
-```
-%schema
-name = mqc-frag
-version = 1.0
-index_base = 0
-units = angstrom
-end  ! schema
-
-%model
-method = XTB-GFN1
-basis = cc-pVDZ
-aux_basis = cc-pVDZ-RIFIT
-end  ! model
-
-%driver
-type = Energy
-end  ! driver
-
-%structure
-charge = 0
-multiplicity = 1
-end  ! structure
-
-%geometry
-3
-
-O 0 0 0.119262
-H 0 0.763239 -0.477047
-H 0 -0.763239 -0.477047
-end  ! geometry
-
-%scf
-maxiter = 300
-tolerance = 1e-06
-end  ! scf
+```bash
+mpirun -np 4 ./build/mqc validation/inputs/prism.json
 ```
 
-If you don't want to use the python script, you can modify this file by adding an xyz formatted geometry. Supported calculations are `Energy`, `Gradient`, and `Hessian`.
+A minimal deck:
 
-For a GPU Hartree-Fock or DFT calculation, change the `%model` section to:
-
+```json
+{
+    "schema": { "name": "example", "version": "1.0" },
+    "molecules": [
+        { "xyz": "water.xyz", "molecular_charge": 0, "molecular_multiplicity": 1 }
+    ],
+    "model": { "method": "gfn2" },
+    "driver": "Energy",
+    "keywords": {
+        "fragmentation": { "method": "MBE", "level": 2 }
+    }
+}
 ```
-%model
-method     = dft                    ! or hf
-basis      = def2-svp
-aux_basis  = def2-universal-jkfit   ! required: cuEST always density-fits J and K
-functional = pbe0                   ! dft only
-end  ! model
+
+A molecule gives either `xyz` (a path, resolved relative to the deck) or
+`symbols` plus a flat `geometry` list. Atom indices are 0-based. Bonds listed in
+`connectivity` are marked broken automatically when their two atoms land in
+different fragments -- that is derived, not declared.
+
+`driver` is `Energy`, `Gradient` or `Hessian`.
+
+For Hartree-Fock or DFT rather than xTB:
+
+```json
+"model": {
+    "method": "hf",
+    "basis": "def2-svp",
+    "aux_basis": "def2-universal-jkfit",
+    "functional": "pbe0"
+}
 ```
 
-Everything else — fragmentation, driver type, SCF settings — is unchanged.
+`functional` applies to `dft` only. Which backend runs depends on the build:
+cuEST when it is compiled in, otherwise libcint on the CPU. cuEST always
+density-fits J and K, so `aux_basis` is required there. libcint has both paths
+and uses exact integrals unless asked:
+
+```json
+"keywords": { "scf": { "density_fitting": true } }
+```
+
+The full keyword reference is in
+[the documentation](https://metalquicha.readthedocs.io/en/latest/).
+
+The `.mqc` text format and its `mqc_prep.py` generator were removed in 0.2.0.
+See `mqc_docs/source/input_files.rst` for the migration table.
+
+## Driving it from Python
+
+The program can be driven from Python. Fortran still does the calculation and
+still owns MPI; Python sets up the molecule, decides what to compute, and reads
+the answers back.
+
+Python runs on rank 0 and nowhere else. When it asks for a calculation, the
+Fortran side spreads the work over the whole job and returns when it is done --
+so a script that reads as single-threaded runs on as many nodes as it was
+launched with, and `mpirun -np 64 python script.py` is a valid way to start one.
+
+The interface loads `libmqc.so`, which is a separate target from the executable:
+
+```bash
+cmake -B build -DMQC_ENABLE_TBLITE=ON -DMQC_ENABLE_LIBCINT=ON
+cmake --build build --target mqc_shared
+export PYTHONPATH=$PWD/python
+```
+
+The package looks for the library next to an in-tree `build/`; `MQC_LIBRARY`
+overrides that with an explicit path.
+
+```python
+import mqc
+
+with mqc.session():
+    cluster = mqc.System.from_xyz("water20.xyz")
+    cluster.auto_monomers()
+    result = mqc.MBE(cluster, level=2, method="gfn2").run(label="w20")
+    print(result.energy)
+```
+
+Everything happens inside `mqc.session()`, which starts MPI on entry and stops
+it on exit.
+
+Runnable examples are in `python/examples/`: `backends.py` covers standalone and
+fragmented calculations for both xTB and Hartree-Fock and asserts against
+reference energies, and `energy_screened_mbe.py` shows a two-pass calculation
+that recomputes only the terms whose contribution exceeded a threshold.
+
+Which methods are available depends on the build: `gfn1`/`gfn2` need
+`MQC_ENABLE_TBLITE`, and `hf` on the CPU needs `MQC_ENABLE_LIBCINT`. Gradients
+come from xTB and cuEST; the CPU Hartree-Fock backend refuses them rather than
+returning something untested.
+
+Details, including density fitting and the current limitations, are in
+[the Python interface documentation](https://metalquicha.readthedocs.io/en/latest/python_interface.html).
