@@ -66,7 +66,8 @@ module mqc_mbe_fragment_distribution_scheme
       end subroutine node_coordinator
 
       module subroutine serial_fragment_processor(total_fragments, polymers, max_level, sys_geom, &
-                                                  method_config, calc_type, json_data)
+                                                  method_config, calc_type, json_data, checkpoint)
+         use mqc_checkpoint, only: checkpoint_t
          implicit none
          integer(int64), intent(in) :: total_fragments
          integer, intent(in) ::  max_level
@@ -75,6 +76,7 @@ module mqc_mbe_fragment_distribution_scheme
          type(method_config_t), intent(in) :: method_config  !! Method configuration
          integer(int32), intent(in) :: calc_type
          type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+         type(checkpoint_t), intent(inout), optional :: checkpoint
       end subroutine serial_fragment_processor
 
       module subroutine node_worker(ctx)

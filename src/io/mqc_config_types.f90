@@ -158,6 +158,10 @@ module mqc_config_types
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
+      character(len=:), allocatable :: checkpoint_file
+         !! Where to append each fragment energy as it finishes, and where to
+         !! resume from. Absent means neither. An existing file whose
+         !! fingerprint disagrees with this run is refused, not overwritten.
       logical :: unchecked_input = .false.
          !! Downgrade semantic validation to warnings.
          !!

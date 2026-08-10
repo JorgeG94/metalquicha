@@ -45,6 +45,8 @@ addtest(mqc_json_schema)
 addtest(mqc_ecp_reader)
 addtest(mqc_fraglist)
 addtest(mqc_bond_perception)
+addtest(mqc_fingerprint)
+addtest(mqc_checkpoint)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
 # bundle. Only the CMake build does that, so the test compiles to a skip stub

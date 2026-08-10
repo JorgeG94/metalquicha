@@ -12,4 +12,5 @@ target_sources(
           mqc_mpi_comms.f90
           mqc_resources.f90
           mqc_result_types.f90
+          mqc_fingerprint.f90
           mqc_json_output_types.f90)

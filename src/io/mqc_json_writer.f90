@@ -76,6 +76,11 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
+      ! Stamped by every writer, so no output format is the one that forgets.
+      ! A restart reads this before it reuses anything.
+      if (len_trim(data%fingerprint) > 0) then
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+      end if
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
 
@@ -134,6 +139,11 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
+      ! Stamped by every writer, so no output format is the one that forgets.
+      ! A restart reads this before it reuses anything.
+      if (len_trim(data%fingerprint) > 0) then
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+      end if
 
       call json%add(main_obj, "total_energy", data%total_energy)
 
@@ -245,6 +255,11 @@ contains
       call json%create_object(root, "")
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
+      ! Stamped by every writer, so no output format is the one that forgets.
+      ! A restart reads this before it reuses anything.
+      if (len_trim(data%fingerprint) > 0) then
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+      end if
 
       call json%add(main_obj, "total_energy", data%total_energy)
 
@@ -340,6 +355,11 @@ contains
       ! Create main object with basename as key
       call json%create_object(main_obj, trim(basename))
       call json%add(root, main_obj)
+      ! Stamped by every writer, so no output format is the one that forgets.
+      ! A restart reads this before it reuses anything.
+      if (len_trim(data%fingerprint) > 0) then
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+      end if
 
       ! Total energy
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)

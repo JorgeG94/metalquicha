@@ -20,11 +20,13 @@ module mqc_driver
                                     build_fragment_from_indices, build_fragment_from_atom_list
    use mqc_config_adapter, only: driver_config_t, config_to_driver, config_to_system_geometry
    use mqc_method_types, only: method_type_to_string
-   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
+   use mqc_calc_types, only: calc_type_to_string, CALC_TYPE_ENERGY, CALC_TYPE_GRADIENT, CALC_TYPE_HESSIAN
    use mqc_config_types, only: bond_t, mqc_config_t
    use mqc_mbe, only: compute_gmbe
    use mqc_result_types, only: calculation_result_t
    use mqc_error, only: error_t
+   use mqc_fingerprint, only: calculation_fingerprint
+   use mqc_checkpoint, only: checkpoint_t
    use mqc_io_helpers, only: set_molecule_suffix, get_output_json_filename
    use mqc_json, only: merge_multi_molecule_json
    use mqc_json_output_types, only: json_output_data_t, OUTPUT_MODE_NONE
@@ -135,6 +137,12 @@ contains
                                          n_supplied_terms=n_supplied_terms)
          if (present(result_out)) call result_from_json(json_data, result_out)
       end if
+
+      ! Stamped whether or not it is written, because the fingerprint is part
+      ! of the result rather than part of the reporting -- a caller taking the
+      ! energy back without files still needs to know what produced it.
+      json_data%fingerprint = calculation_fingerprint(sys_geom, config%method_config, &
+                                                      config%calc_type)
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
       wants_output = .true.
@@ -254,6 +262,7 @@ contains
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
       integer(default_int) :: supplied_width  !! Columns the caller actually provided
+      type(error_t) :: checkpoint_error
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
@@ -559,6 +568,37 @@ contains
          end select
       end if
 
+      ! Opened on rank 0 only: it is the rank that collects every result, so
+      ! it is the only one with anything to write, and N ranks appending to one
+      ! file would interleave.
+      ! GMBE keys its terms by atom set, not by monomer tuple, so the file
+      ! this writes would not describe them. Announced rather than opened and
+      ! left unused -- a checkpoint that silently records nothing is worse
+      ! than no checkpoint, because it is believed.
+      if (len_trim(config%checkpoint_file) > 0 .and. allow_overlapping_fragments .and. &
+          resources%mpi_comms%world_comm%rank() == 0) then
+         call logger%warning("Checkpointing does not support GMBE; this run will write "// &
+                             "nothing and resume nothing. Its PIE terms are atom sets "// &
+                             "rather than monomer tuples, which the file cannot express.")
+      end if
+
+      if (resources%mpi_comms%world_comm%rank() == 0 .and. &
+          .not. allow_overlapping_fragments .and. &
+          len_trim(config%checkpoint_file) > 0) then
+         call expansion%checkpoint%open(trim(config%checkpoint_file), &
+                                        calculation_fingerprint(sys_geom, config%method_config, &
+                                                                config%calc_type), &
+                                        max_level, config%calc_type == CALC_TYPE_ENERGY, &
+                                        checkpoint_error)
+         if (checkpoint_error%has_error()) then
+            ! A checkpoint from another calculation is not a warning. Its
+            ! energies would be spliced into this one and the total would come
+            ! out converged and meaningless.
+            call logger%error(checkpoint_error%get_message())
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end if
+
       ! Execute calculation using polymorphic dispatch
       if (resources%mpi_comms%world_comm%size() == 1) then
          call logger%info("Running in serial mode (single MPI rank)")
@@ -566,6 +606,7 @@ contains
       else
          call expansion%run_distributed(json_data)
       end if
+      call expansion%checkpoint%close()
 
       ! Clean up expansion context
       select type (expansion)
