@@ -5,20 +5,19 @@
     },
     "molecules": [
         {
-            "xyz": "sample_inputs/w1_cart.xyz",
+            "xyz": "sample_inputs/nh3.xyz",
             "molecular_charge": 0,
             "molecular_multiplicity": 1
         }
     ],
     "model": {
         "method": "hf",
-        "basis": "6-31g*",
-        "aux_basis": "6-31g*"
+        "basis": "aug-cc-pvdz"
     },
     "keywords": {
         "scf": {
             "maxiter": 100,
-            "tolerance": 1e-10
+            "tolerance": 1e-08
         }
     },
     "system": {
