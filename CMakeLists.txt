@@ -356,6 +356,10 @@ if(MQC_ENABLE_LIBXC)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
+  add_executable(bench_df_k ${PROJECT_SOURCE_DIR}/validation/bench_df_k.f90)
+  target_include_directories(bench_df_k PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_df_k PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_direct ${PROJECT_SOURCE_DIR}/validation/check_direct.f90)
   target_include_directories(check_direct PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_direct PRIVATE ${main_lib} cint_fortran cint)

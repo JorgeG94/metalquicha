@@ -140,7 +140,7 @@ contains
       do iter = 1, max_iter
          density_old = density
          if (allocated(bmat)) then
-            call build_fock_df(h, bmat, density, fock)
+            call build_fock_df(h, bmat, density, coeff, n_occ, fock)
          else if (allocated(eri)) then
             call build_fock(h, eri, density, fock)
          else
@@ -186,7 +186,7 @@ contains
       ! satisfied the test, so it is recomputed from the final Fock rather
       ! than carried over from the loop.
       if (allocated(bmat)) then
-         call build_fock_df(h, bmat, density, fock)
+         call build_fock_df(h, bmat, density, coeff, n_occ, fock)
       else if (allocated(eri)) then
          call build_fock(h, eri, density, fock)
       else
@@ -339,22 +339,41 @@ contains
       end do
    end subroutine build_fock
 
-   subroutine build_fock_df(h, b, density, fock)
+   subroutine build_fock_df(h, b, density, coeff, n_occ, fock)
       !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
       !!
-      !! J is one contraction: c_P = sum_uv B(uv,P) D_uv, then J_uv = sum_P
-      !! B(uv,P) c_P. K needs the half-transformed intermediate, which is why
-      !! exchange is the expensive half of a fitted SCF as well as an exact
-      !! one -- fitting removes the n^4 storage, not the n^3 work.
+      !! Neither term ever forms a four-index object. Density fitting is not the
+      !! opposite of a direct build -- it removes the four-index integrals
+      !! altogether, so the direct/stored distinction does not apply to it. What
+      !! is stored is B, which is n^2 by n_aux: 40 MB where the exact tensor is
+      !! 800 MB, and n^3 rather than n^4.
+      !!
+      !! J is two contractions with the density: c_P = sum_uv B(uv,P) D_uv, then
+      !! J_uv = sum_P B(uv,P) c_P.
+      !!
+      !! K goes through the occupied orbitals rather than the density. Writing
+      !! D = 2 sum_i C_ui C_vi and substituting,
+      !!
+      !!    K_uv = sum_P sum_ls B(ul,P) D_ls B(sv,P)
+      !!         = 2 sum_P sum_i W(u,i,P) W(v,i,P),   W^P = B^P C_occ
+      !!
+      !! which costs 2 n^2 n_occ per auxiliary function instead of the 2 n^3 of
+      !! contracting the full density. The saving is a factor of n/n_occ, and it
+      !! grows with basis size at fixed electron count -- which is the regime
+      !! density fitting is used in. On water/cc-pVDZ that is already 4.8x.
       real(dp), intent(in) :: h(:, :), b(:, :), density(:, :)
+      real(dp), intent(in) :: coeff(:, :)   !! MO coefficients; only the occupied block is read
+      integer, intent(in) :: n_occ
       real(dp), intent(out) :: fock(:, :)
 
-      real(dp), allocatable :: c(:), j(:, :), k(:, :), t(:, :)
+      real(dp), allocatable :: c(:), j(:, :), k(:, :), w(:, :), c_occ(:, :)
       integer :: n, naux, p
 
       n = size(h, 1)
       naux = size(b, 2)
-      allocate (c(naux), j(n, n), k(n, n), t(n, n))
+      allocate (c(naux), j(n, n), k(n, n), w(n, n_occ), c_occ(n, n_occ))
+
+      c_occ = coeff(:, 1:n_occ)
 
       do p = 1, naux
          c(p) = sum(reshape(b(:, p), [n, n])*density)
@@ -365,11 +384,16 @@ contains
          j = j + c(p)*reshape(b(:, p), [n, n])
       end do
 
-      ! K_uv = sum_P sum_ls B(ul,P) D_ls B(sv,P)
       k = 0.0_dp
       do p = 1, naux
-         t = matmul(reshape(b(:, p), [n, n]), density)
-         k = k + matmul(t, reshape(b(:, p), [n, n]))
+         ! `associate` gives a view of the column rather than a copy: b(:,p) is
+         ! contiguous, so reshaping it is free as long as nothing forces a
+         ! temporary, and going through gemm keeps it out of matmul's hands.
+         associate (b_p => reshape(b(:, p), [n, n]))
+            w = 0.0_dp
+            call pic_gemm(b_p, c_occ, w)
+            call pic_gemm(w, w, k, transb="T", alpha=2.0_dp, beta=1.0_dp)
+         end associate
       end do
 
       fock = h + j - 0.5_dp*k
