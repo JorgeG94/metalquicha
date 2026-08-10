@@ -12,6 +12,11 @@ set(main_lib ${project_name})
 set(exe_name mqc)
 set(all_targets ${main_lib} ${exe_name})
 
+# Set before the dependencies are declared, so they are built PIC too: the
+# ctypes shared library links every one of them into a .so, and a dependency
+# built without it fails the link outright rather than degrading.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
@@ -171,8 +176,58 @@ if(MQC_ENABLE_CUEST)
   target_link_libraries(check_gradient PRIVATE ${main_lib})
 endif()
 
+# Manual check that a session splits rank 0 from the workers. Not a ctest case:
+# it is only meaningful under mpirun with more than one rank, and ctest here has
+# no MPI harness.
+add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
+target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_run PRIVATE ${main_lib})
+
+add_executable(check_session_run
+               ${PROJECT_SOURCE_DIR}/validation/check_session_run.f90)
+target_include_directories(check_session_run
+                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_session_run PRIVATE ${main_lib})
+
+add_executable(check_bcast_system
+               ${PROJECT_SOURCE_DIR}/validation/check_bcast_system.f90)
+target_include_directories(check_bcast_system
+                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_bcast_system PRIVATE ${main_lib})
+
+add_executable(check_bcast ${PROJECT_SOURCE_DIR}/validation/check_bcast.f90)
+target_include_directories(check_bcast PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_bcast PRIVATE ${main_lib})
+
+add_executable(check_session ${PROJECT_SOURCE_DIR}/validation/check_session.f90)
+target_include_directories(check_session PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_link_libraries(check_session PRIVATE ${main_lib})
+
 target_include_directories(${exe_name} PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(${exe_name} PRIVATE ${main_lib})
+
+# Shared library for ctypes. The C entry points live in the static archive and
+# nothing in it references them -- they are called from outside -- so a normal
+# archive link would take none of them and produce an empty .so.
+add_library(mqc_shared SHARED
+            ${PROJECT_SOURCE_DIR}/src/interface/mqc_capi_export.f90)
+set_target_properties(
+  mqc_shared PROPERTIES OUTPUT_NAME mqc Fortran_MODULE_DIRECTORY
+                                        "${CMAKE_BINARY_DIR}/modules_shared")
+# Forcing the whole archive in is spelled differently per linker: GNU ld (Linux)
+# brackets the archive with --whole-archive/--no-whole-archive, while Apple's ld
+# takes the archive path directly via -force_load and has no closing flag.
+# Linking ${main_lib} again in both cases pulls in its transitive dependencies
+# (BLAS, MPI, tblite, ...); the force-load only covers the archive itself.
+if(APPLE)
+  target_link_libraries(
+    mqc_shared PRIVATE "-Wl,-force_load,$<TARGET_FILE:${main_lib}>" ${main_lib})
+else()
+  target_link_libraries(
+    mqc_shared PRIVATE "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>"
+                       "-Wl,--no-whole-archive" ${main_lib})
+endif()
+add_dependencies(mqc_shared ${main_lib})
 
 foreach(tgt ${all_targets})
   message(STATUS "${tgt}")
@@ -231,7 +286,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage-mqc")
     COMMAND ${CMAKE_COMMAND} -E remove -f coverage.info
     COMMAND lcov --directory . --capture --output-file coverage.info
     COMMAND lcov --ignore-errors unused --remove coverage.info '/usr/*'
-            '*/build/*' --output-file coverage_filtered.info
+            '*/build/*' '*/validation/*' --output-file coverage_filtered.info
     COMMAND genhtml coverage_filtered.info --output-directory coverage_report
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating code coverage report")

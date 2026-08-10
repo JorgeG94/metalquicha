@@ -2,7 +2,7 @@
 module mqc_driver
    !! Handles both fragmented (many-body expansion) and unfragmented calculations
    !! with MPI parallelization and node-based work distribution.
-   use pic_types, only: int32, int64, dp
+   use pic_types, only: int32, int64, dp, default_int
    use pic_mpi_lib, only: comm_t, abort_comm, bcast, allgather
    use mqc_resources, only: resources_t
    use pic_logger, only: logger => global_logger
@@ -12,6 +12,8 @@ module mqc_driver
    use mqc_many_body_expansion, only: many_body_expansion_t, mbe_context_t, gmbe_context_t
    use mqc_method_config, only: method_config_t
    ! GMBE functions are now called via type-bound procedures in gmbe_context_t
+   use mqc_validate, only: validate_system, validate_terms
+   use mqc_fraglist, only: fraglist_t
    use mqc_frag_utils, only: get_nfrags, create_monomer_list, generate_fragment_list, generate_intersections, &
                              gmbe_enumerate_pie_terms, binomial, combine, apply_distance_screening, sort_fragments_by_size
    use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, &
@@ -35,24 +37,53 @@ module mqc_driver
 
 contains
 
-   subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json)
+   subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
+                              supplied_terms, n_supplied_terms, write_output)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
       !!
       !! Determines calculation type based on nlevel and dispatches to appropriate
       !! calculation routine with proper MPI setup and validation.
-      !! If result_out is present, returns result instead of writing JSON (for dynamics/optimization)
+      !! `result_out` and `write_output` are independent. A caller can take the
+      !! energy back, write the files, or both -- the common case for a driven
+      !! run being both, so a script can print or branch on a number without
+      !! re-reading the file this just wrote. They used to be one switch, which
+      !! meant asking for the result silently suppressed the output.
+      !!
+      !! `supplied_terms` hands over a term list instead of generating one, which
+      !! is how a caller applies a criterion this code knows nothing about --
+      !! an energy threshold from a previous run's breakdown, the terms a dead
+      !! run never reached, a hand-picked set. Distance screening and sorting
+      !! are skipped with it: the list is taken as given, in the order given.
+      !!
+      !! Only rank 0 needs it. The coordinator hands individual fragment
+      !! definitions to workers as tasks and they build them from `sys_geom`,
+      !! so the list itself never leaves rank 0 -- but every rank must already
+      !! have `sys_geom`, which the normal program gets by having every rank
+      !! parse the input and a session gets by broadcasting it.
+      !!
+      !! **The list must be closed under subsets.** An n-body term's delta is
+      !! its energy less every proper subset's delta, so keeping a trimer whose
+      !! dimers were screened away fails the lookup rather than approximating
+      !! anything. `fraglist_t%close_subsets` exists for this.
       type(resources_t), intent(in) :: resources  !! Resources container (MPI comms, etc.)
       type(driver_config_t), intent(in) :: config  !! Driver configuration
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(calculation_result_t), intent(out), optional :: result_out  !! Optional result output
       logical, intent(in), optional :: all_ranks_write_json  !! If true, all ranks write JSON (for multi-molecule)
+      logical, intent(in), optional :: write_output
+         !! Write the JSON summary and fragment breakdown. Default true.
+         !! `skip_json_output` in the config still overrides it.
+      integer, intent(in), optional :: supplied_terms(:, :)
+         !! (n_terms, max_level), 1-based monomer indices, zero-padded. Rank 0 only.
+      integer(int64), intent(in), optional :: n_supplied_terms
 
       ! Local variables
       integer :: max_level   !! Maximum fragment level (nlevel from config)
       integer :: i  !! Loop counter
       type(json_output_data_t) :: json_data  !! Cached output data for centralized JSON writing
       logical :: should_write_json  !! Whether this rank should write JSON
+      logical :: wants_output       !! Whether the caller asked for files at all
 
       ! Set max_level from config
       max_level = config%nlevel
@@ -89,24 +120,26 @@ contains
       if (max_level == 0) then
          call omp_set_num_threads(1)
          if (present(result_out)) then
-            ! For dynamics/optimization: return result directly, no JSON output
-            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, result_out)
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, &
+                                              result_out, json_data=json_data)
          else
-            ! Normal mode: collect json_data for centralized output
-            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, json_data=json_data)
+            call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, &
+                                              json_data=json_data)
          end if
       else
-         if (present(result_out)) then
-            ! For fragmented calculations with result_out (future use)
-            call run_fragmented_calculation(resources, config, sys_geom, bonds)
-         else
-            ! Normal mode: collect json_data for centralized output
-            call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data)
-         end if
+         ! json_data is collected whether or not it will be written, because it
+         ! is also where a fragmented result comes from -- the expansion has no
+         ! other route back to a calculation_result_t.
+         call run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
+                                         supplied_terms=supplied_terms, &
+                                         n_supplied_terms=n_supplied_terms)
+         if (present(result_out)) call result_from_json(json_data, result_out)
       end if
 
       ! Centralized JSON output (rank 0 only by default, or all ranks if all_ranks_write_json is set)
-      if (.not. present(result_out)) then
+      wants_output = .true.
+      if (present(write_output)) wants_output = write_output
+      if (wants_output) then
          ! Check if JSON output should be skipped
          if (config%skip_json_output) then
             if (resources%mpi_comms%world_comm%rank() == 0) then
@@ -130,6 +163,30 @@ contains
       end if
 
    end subroutine run_calculation
+
+   subroutine result_from_json(json_data, result_out)
+      !! Take a fragmented run's headline numbers back to the caller
+      !!
+      !! The expansion assembles into `json_output_data_t` and has no other
+      !! route to a `calculation_result_t`, so this reads across rather than
+      !! recomputing. Only what a driving script would branch on: the total,
+      !! and the gradient and dipole when the run produced them. The
+      !! per-fragment detail stays in the CSV, where twenty million rows
+      !! belong.
+      type(json_output_data_t), intent(in) :: json_data
+      type(calculation_result_t), intent(inout) :: result_out
+
+      ! energy_t computes its total from components; an expansion total has
+      ! no correlation breakdown to put in the others, so it lands in scf --
+      ! which is what `total()` will then report.
+      result_out%energy%scf = json_data%total_energy
+      result_out%has_energy = json_data%has_energy
+      if (allocated(json_data%gradient)) then
+         result_out%gradient = json_data%gradient
+         result_out%has_gradient = .true.
+      end if
+      if (allocated(json_data%dipole)) result_out%dipole = json_data%dipole
+   end subroutine result_from_json
 
    subroutine run_unfragmented_calculation(world_comm, sys_geom, config, result_out, json_data)
       !! Handle unfragmented calculation (nlevel=0)
@@ -174,7 +231,8 @@ contains
 
    end subroutine run_unfragmented_calculation
 
-   subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data)
+   subroutine run_fragmented_calculation(resources, config, sys_geom, bonds, json_data, &
+                                         supplied_terms, n_supplied_terms)
       !! Handle fragmented calculation (nlevel > 0)
       !!
       !! Generates fragments, distributes work across MPI processes organized in nodes,
@@ -185,6 +243,9 @@ contains
       type(system_geometry_t), intent(in) :: sys_geom  !! System geometry and fragment info
       type(bond_t), intent(in), optional :: bonds(:)  !! Bond connectivity information
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
+      integer, intent(in), optional :: supplied_terms(:, :)
+         !! (n_terms, max_level), 1-based monomer indices, zero-padded. Rank 0 only.
+      integer(int64), intent(in), optional :: n_supplied_terms
 
       ! Local variables extracted from config for readability
       integer :: max_level    !! Maximum fragment level for MBE
@@ -192,6 +253,7 @@ contains
       integer :: max_intersection_level  !! Maximum k-way intersection depth for GMBE
 
       integer(int64) :: total_fragments  !! Total number of fragments generated (int64 to handle large systems)
+      integer(default_int) :: supplied_width  !! Columns the caller actually provided
       integer, allocatable :: polymers(:, :)  !! Fragment composition array (fragment, monomer_indices)
       integer :: num_nodes   !! Number of compute nodes
       integer :: i, j        !! Loop counters
@@ -218,14 +280,74 @@ contains
       integer, allocatable :: pie_coefficients(:)  !! PIE coefficient for each term
       integer(int64) :: n_pie_terms  !! Number of unique PIE terms
       type(error_t) :: pie_error  !! Error from PIE enumeration
+      type(error_t) :: validation_error  !! Error from semantic validation
+      type(fraglist_t) :: supplied_check  !! Supplied terms, for validation only
 
       ! Extract values from config for readability
       max_level = config%nlevel
       allow_overlapping_fragments = config%allow_overlapping_fragments
       max_intersection_level = config%max_intersection_level
 
-      ! Generate fragments
+      ! Every input path arrives here, so this is where the system is checked:
+      ! the JSON reader, the C interface and a supplied term list alike.
       if (resources%mpi_comms%world_comm%rank() == 0) then
+         call validate_system(sys_geom,.not. config%unchecked_input, validation_error, &
+                              check_bonds=allocated(sys_geom%bonds))
+         if (validation_error%has_error()) then
+            call logger%error("invalid system: "//validation_error%get_message())
+            call abort_comm(resources%mpi_comms%world_comm, 1)
+         end if
+      end if
+
+      ! Generate fragments -- unless the caller brought their own
+      if (present(supplied_terms) .and. present(n_supplied_terms)) then
+         if (resources%mpi_comms%world_comm%rank() == 0) then
+            total_fragments = n_supplied_terms
+            allocate (polymers(max(total_fragments, 1_int64), max_level))
+            polymers = 0
+            ! The caller's array is as wide as their highest term, which need
+            ! not be `max_level`: a screen that keeps no trimers hands over a
+            ! two-column list for a level-3 expansion, and copying `max_level`
+            ! columns from it reads off the end. That produced a monomer index
+            ! of 0 the once, which the validator caught; it is undefined
+            ! memory and could as easily have been a plausible index.
+            supplied_width = int(size(supplied_terms, 2), default_int)
+            if (supplied_width > max_level) then
+               ! Wider than the expansion allows. Truncating would silently
+               ! turn an n-mer into a smaller one, so refuse instead -- but
+               ! only if the extra columns actually hold anything.
+               if (any(supplied_terms(1:total_fragments, max_level + 1:supplied_width) /= 0)) then
+                  call logger%error("invalid fragment list: a term names more than "// &
+                                    to_char(max_level)//" monomers, which is the level "// &
+                                    "this expansion was configured for")
+                  call abort_comm(resources%mpi_comms%world_comm, 1)
+               end if
+               supplied_width = max_level
+            end if
+            if (total_fragments > 0) then
+               polymers(1:total_fragments, 1:supplied_width) = &
+                  supplied_terms(1:total_fragments, 1:supplied_width)
+            end if
+            ! A supplied list has had no screening or sorting applied to it and
+            ! comes from outside, so it is checked before anything is spent on
+            ! it -- above all for subset closure, which a reasonable-looking
+            ! screen breaks silently.
+            call supplied_check%replace(polymers, total_fragments, max_level, validation_error)
+            if (.not. validation_error%has_error()) then
+               call validate_terms(supplied_check, sys_geom,.not. config%unchecked_input, &
+                                   validation_error)
+            end if
+            call supplied_check%destroy()
+            if (validation_error%has_error()) then
+               call logger%error("invalid fragment list: "//validation_error%get_message())
+               call abort_comm(resources%mpi_comms%world_comm, 1)
+            end if
+
+            call logger%info("Using a supplied fragment list:")
+            call logger%info("  Total fragments: "//to_char(total_fragments))
+            call logger%info("  Max level: "//to_char(max_level))
+         end if
+      else if (resources%mpi_comms%world_comm%rank() == 0) then
          if (allow_overlapping_fragments) then
             ! GMBE mode: PIE-based inclusion-exclusion
             ! GMBE(1): primaries are monomers

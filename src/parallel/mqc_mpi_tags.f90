@@ -37,6 +37,11 @@ module mqc_mpi_tags
    integer(default_int), parameter, public :: TAG_GROUP_RESULT = 402
       !! Group global forwards batched results to super-global
    integer(default_int), parameter, public :: TAG_GROUP_DONE = 403
+
+   !> Setup-time broadcasts from rank 0 -- system, bonds, term list, config.
+   !  A range of its own so it cannot collide with work distribution, which is
+   !  in flight at a different phase but on the same communicator.
+   integer(default_int), parameter, public :: TAG_BCAST_PAYLOAD = 500
       !! Group global signals completion to super-global
 
 end module mqc_mpi_tags

@@ -41,12 +41,13 @@ module mqc_config_adapter
 
       ! Output control
       logical :: skip_json_output = .false.  !! Skip JSON output for large calculations
+      logical :: unchecked_input = .false.   !! Validation warns instead of refusing
       character(len=16) :: fragment_breakdown = "csv"  !! Per-fragment table: csv, json or none
    end type driver_config_t
 
 contains
 
-   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank)
+   subroutine config_to_driver(mqc_config, driver_config, molecule_index, node_rank, n_fragments)
       !! Convert mqc_config_t to minimal driver_config_t
       !! Extracts only the fields needed by the driver
       !! If molecule_index is provided, uses that molecule's fragment count
@@ -54,6 +55,13 @@ contains
       type(driver_config_t), intent(out) :: driver_config
       integer, intent(in), optional :: molecule_index  !! Which molecule to use (for multi-molecule mode)
       integer, intent(in), optional :: node_rank  !! Node-local MPI rank, for GPU binding
+      integer, intent(in), optional :: n_fragments
+         !! How many fragments the system actually has, when the config does
+         !! not say. A settings-only document -- the form a session broadcasts
+         !! -- carries no molecules, so its own `nfrag` is 0, and the rule
+         !! below would read that as "unfragmented" and quietly compute the
+         !! whole system as one piece. It converges and it looks right. Pass
+         !! the count from wherever the geometry came from instead.
 
       integer :: nfrag_to_use
 
@@ -92,7 +100,9 @@ contains
       driver_config%calc_type = mqc_config%calc_type
 
       ! Determine fragment count
-      if (present(molecule_index)) then
+      if (present(n_fragments)) then
+         nfrag_to_use = n_fragments
+      else if (present(molecule_index)) then
          ! Multi-molecule mode: use specific molecule's fragment count
          if (molecule_index < 1 .or. molecule_index > mqc_config%nmol) then
             nfrag_to_use = 0
@@ -144,6 +154,7 @@ contains
 
       ! Output control
       driver_config%skip_json_output = mqc_config%skip_json_output
+      driver_config%unchecked_input = mqc_config%unchecked_input
       if (allocated(mqc_config%fragment_breakdown)) then
          driver_config%fragment_breakdown = mqc_config%fragment_breakdown
       end if

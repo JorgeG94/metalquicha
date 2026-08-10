@@ -43,6 +43,8 @@ addtest(mqc_json_config)
 addtest(mqc_json_reader)
 addtest(mqc_json_schema)
 addtest(mqc_ecp_reader)
+addtest(mqc_fraglist)
+addtest(mqc_bond_perception)
 
 # Parses basis_sets/*.json, which mqc_extract_basis_sets() unpacks from the BSE
 # bundle. Only the CMake build does that, so the test compiles to a skip stub
@@ -77,6 +79,14 @@ addtest(mqc_thermochemistry)
 addtest(mqc_method_types)
 addtest(mqc_method_placeholders)
 addtest(mqc_work_queue)
+
+# C-API / external-interface layer. These call the bind(C) entry points the way
+# a C or Python caller would; none of them needs MPI or a QC backend.
+addtest(mqc_validate)
+addtest(mqc_capi_system)
+addtest(mqc_capi_fraglist)
+addtest(mqc_capi_session)
+addtest(mqc_capi_run)
 
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)
