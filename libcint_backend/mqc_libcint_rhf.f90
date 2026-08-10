@@ -16,6 +16,7 @@ module mqc_libcint_rhf
    use pic_lapack_interfaces, only: pic_syev
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
+   use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
    implicit none
    private
@@ -39,7 +40,7 @@ module mqc_libcint_rhf
 contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
-                              verbose, result, error, aux, diis_vectors)
+                              verbose, result, error, aux, diis_vectors, in_core)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -57,8 +58,17 @@ contains
          !! Subspace size. Zero turns DIIS off, which is worth being able to
          !! do: the two paths should agree with and without it, and if they
          !! do not, the extrapolation is where to look.
+      logical, intent(in), optional :: in_core
+         !! Store every integral and contract from the tensor, instead of
+         !! rebuilding the Fock matrix directly each iteration. Default is
+         !! direct. This exists because the in-core path is the one validated
+         !! against PySCF, so it is what the direct build is checked against --
+         !! not because anything should run with it. It is n^4 in memory.
 
       integer :: diis_size
+      logical :: use_in_core
+      real(dp), allocatable :: bounds(:, :)
+      type(direct_stats_t) :: stats
 
       real(dp), allocatable :: s(:, :), h(:, :), eri(:, :, :, :), bmat(:, :)
       real(dp), allocatable :: x(:, :), fock(:, :), density(:, :), density_old(:, :)
@@ -77,6 +87,8 @@ contains
 
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
+      use_in_core = .false.
+      if (present(in_core)) use_in_core = in_core
 
       n_ao = mol%nao
       n_occ = nelec/2
@@ -90,8 +102,13 @@ contains
       if (present(aux)) then
          call build_df_tensor(mol, aux, bmat, error)
          if (error%has_error()) return
-      else
+      else if (use_in_core) then
          call mol%eris(eri)
+      else
+         ! The bounds depend on the basis and the geometry, not the density, so
+         ! one set serves every iteration of the SCF.
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
       end if
 
       call build_orthogonalizer(s, x, n_mo, error)
@@ -124,8 +141,11 @@ contains
          density_old = density
          if (allocated(bmat)) then
             call build_fock_df(h, bmat, density, fock)
-         else
+         else if (allocated(eri)) then
             call build_fock(h, eri, density, fock)
+         else
+            call build_fock_direct(mol, h, density, bounds, fock, stats, error)
+            if (error%has_error()) return
          end if
 
          ! The energy belongs to the Fock built from this density, so it is
@@ -167,8 +187,11 @@ contains
       ! than carried over from the loop.
       if (allocated(bmat)) then
          call build_fock_df(h, bmat, density, fock)
-      else
+      else if (allocated(eri)) then
          call build_fock(h, eri, density, fock)
+      else
+         call build_fock_direct(mol, h, density, bounds, fock, stats, error)
+         if (error%has_error()) return
       end if
       result%electronic = electronic_energy(h, fock, density)
       result%nuclear_repulsion = mol%nuclear_repulsion()

@@ -12,5 +12,5 @@
 # builds the xTB path and CMake adds this directory when MQC_ENABLE_LIBCINT is
 # ON.
 target_sources(
-  ${main_lib} PRIVATE mqc_libcint_bridge.f90 mqc_libcint_integrals.f90
-                      mqc_libcint_rhf.f90)
+  ${main_lib} PRIVATE mqc_libcint_bridge.f90 mqc_libcint_direct.f90
+                      mqc_libcint_integrals.f90 mqc_libcint_rhf.f90)

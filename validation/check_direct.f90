@@ -15,6 +15,7 @@ program check_direct
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, direct_stats_t, &
                                  DEFAULT_SCREEN_TOL
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -42,6 +43,8 @@ program check_direct
                  water_chain(4), &
                  [8, 1, 1, 8, 1, 1, 8, 1, 1, 8, 1, 1], "cc-pvdz", .true., n_bad)
 
+   call run_scf_comparison(n_bad)
+
    if (n_bad > 0) then
       write (*, "(a)") "FAILED"
       stop 1
@@ -49,6 +52,79 @@ program check_direct
    write (*, "(a)") "direct Fock matches the in-core build"
 
 contains
+
+   subroutine run_scf_comparison(n_bad)
+      !! A full SCF both ways: the converged energies must agree
+      !!
+      !! The elementwise Fock comparison above is the sharper test, but it uses
+      !! one fixed density. This runs the whole iteration, so it also catches
+      !! anything that only goes wrong once the density starts changing -- and
+      !! it is the number a user actually sees.
+      integer, intent(inout) :: n_bad
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: res_direct, res_incore
+      type(error_t) :: error
+      real(dp) :: t0, t1, t_direct, t_incore, de
+
+      write (*, "(a)") ""
+      write (*, "(a)") "== full SCF, water/cc-pvdz"
+
+      call build_libcint_molecule([8, 1, 1], ["O", "H", "H"], &
+                                  reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                                           0.0_dp, -1.4308_dp, 1.1078_dp, &
+                                           0.0_dp, 1.4308_dp, 1.1078_dp], [N_DIM, 3]), &
+                                  "cc-pvdz", mol, error)
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      call cpu_time(t0)
+      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                           res_direct, error)
+      call cpu_time(t1)
+      t_direct = t1 - t0
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL direct SCF: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      call cpu_time(t0)
+      call run_libcint_rhf(mol, 10, 100, 1.0e-10_dp, 1.0e-8_dp, .false., &
+                           res_incore, error, in_core=.true.)
+      call cpu_time(t1)
+      t_incore = t1 - t0
+      if (error%has_error()) then
+         write (*, "(a,a)") "FAIL in-core SCF: ", error%get_message()
+         n_bad = n_bad + 1
+         return
+      end if
+
+      de = abs(res_direct%energy - res_incore%energy)
+      write (*, "(a,f20.12,a,i0,a,f7.3,a)") "  direct  E = ", res_direct%energy, &
+         "  (", res_direct%iterations, " iters, ", t_direct, " s)"
+      write (*, "(a,f20.12,a,i0,a,f7.3,a)") "  in-core E = ", res_incore%energy, &
+         "  (", res_incore%iterations, " iters, ", t_incore, " s)"
+      write (*, "(a,es12.3)") "  difference  ", de
+
+      if (.not. res_direct%converged) then
+         write (*, "(a)") "   FAIL: direct SCF did not converge"
+         n_bad = n_bad + 1
+      end if
+      if (de > 1.0e-10_dp) then
+         write (*, "(a)") "   FAIL: converged energies differ"
+         n_bad = n_bad + 1
+      end if
+      if (res_direct%iterations /= res_incore%iterations) then
+         write (*, "(a)") "   FAIL: the two paths took different iteration counts"
+         n_bad = n_bad + 1
+      end if
+
+      call mol%destroy()
+   end subroutine run_scf_comparison
 
    function water_chain(n_units) result(coords)
       !! `n_units` waters along z, far enough apart that screening has work to do
