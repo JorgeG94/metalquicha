@@ -176,6 +176,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Set the logger verbosity the settings asked for</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/apply_partition.html'>apply_partition</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Multiply the product weights by the Becke cell weights</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/arrays_equal_internal.html'>arrays_equal_internal</a></td>
                  <td><a href='../module/mqc_fragment_lookup.html'>mqc_fragment_lookup</a></td>
                  <td>Function</td>
@@ -198,6 +204,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Function</td>
                  <td><p>Check if two atom sets are equal (assuming sorted)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/atom_sizes.html'>atom_sizes</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Radial and angular counts for one atom, honouring any override</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/atomic_basis_destroy.html'>atomic_basis_destroy</a></td>
@@ -330,6 +342,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_dft_radial.html'>mqc_dft_radial</a></td>
                  <td>Function</td>
                  <td><p>Bragg-Slater atomic radius in Bohr</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_dft_grid.html'>build_dft_grid</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Build the molecular grid</p><a href="../proc/build_dft_grid.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_fragment_from_atom_list.html'>build_fragment_from_atom_list</a></td>
@@ -563,6 +581,12 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td><p>Entries in <code>object.name</code>, or 0 when it is absent</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clamp_level.html'>clamp_level</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/cli_args_destroy.html'>cli_args_destroy</a></td>
@@ -873,6 +897,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><p>Hessian by central differences of the analytic gradients</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/dft_grid_destroy.html'>dft_grid_destroy</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release the grid</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/dft_run.html'>dft_run</a></td>
                  <td><a href='../module/mqc_method_dft.html'>mqc_method_dft</a></td>
                  <td>Subroutine</td>
@@ -977,6 +1007,12 @@ Uses standard atomic weights from IUPAC</p></td>
 Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/element_period.html'>element_period</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Function</td>
+                 <td><p>Period of an element, 1 to 7, for indexing the level tables</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/element_symbol_to_number.html'>element_symbol_to_number</a></td>
                  <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
                  <td>Function</td>
@@ -985,15 +1021,15 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
-                 <td>Function</td>
-                 <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Check if string ends with suffix</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Function</td>
+                 <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/energy_reset.html'>energy_reset</a></td>
@@ -1448,6 +1484,18 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Run serial GMBE calculation</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/grid_level_angular.html'>grid_level_angular</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Function</td>
+                 <td><p>Lebedev points this element gets at this level</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/grid_level_radial.html'>grid_level_radial</a></td>
+                 <td><a href='../module/mqc_dft_grid.html'>mqc_dft_grid</a></td>
+                 <td>Function</td>
+                 <td><p>Radial shells this element gets at this level</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/group_global_coordinator_impl.html'>group_global_coordinator_impl</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
@@ -1491,15 +1539,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1509,27 +1557,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1539,15 +1587,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1678,13 +1726,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -1702,15 +1750,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Function</td>
                  <td><p>An integer as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -3123,7 +3171,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 11:40 +0000             </p>
+ on 2026-08-10 11:50 +0000             </p>
           </div>
         </div>
         <br>
