@@ -36,6 +36,14 @@ jobs:
             tblite: false
             legacy_mpi: false
             libcint: true
+          # The Python interface needs both backends in one library: the
+          # examples cover standalone and fragmented, xTB and Hartree-Fock, and
+          # three of those four paths can break without the others noticing.
+          - name: "python interface"
+            tblite: true
+            legacy_mpi: false
+            libcint: true
+            python: true
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -71,6 +79,19 @@ jobs:
       # checked against PySCF rather than against numbers this program printed
       # earlier. Separate from the xTB validation below because that one needs
       # tblite and this one needs libcint, and neither job has both.
+      # Builds the shared library and runs the examples, which assert rather
+      # than print. Nothing else here loads libmqc.so through ctypes, so a
+      # renamed C entry point or a changed signature is a segfault at call
+      # time and compiles perfectly until then.
+      - name: Run Python interface examples
+        if: matrix.python
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cmake --build build --target mqc_shared
+          MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
+            python3 python/examples/backends.py
+
       - name: Run CPU validation tests (libcint)
         if: matrix.libcint
         shell: bash -el {0}
