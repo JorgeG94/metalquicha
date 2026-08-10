@@ -10,7 +10,7 @@
     <meta name="author" content="Jorge Luis Galvez Vallejo" >
     <link rel="icon" href="../favicon.png">
 
-    <title>schema_keys &ndash; metalquicha</title>
+    <title>shell_contractions &ndash; metalquicha</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -83,7 +83,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>schema_keys
+    <h1>shell_contractions
       <small>Function</small>
       
     </h1>
@@ -94,21 +94,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">9 statements</a>
+                 title=" 0.1% of total for procedures.">14 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/mqc_json_schema.f90"> Source File</a>
+              <a href="../src/mqc_json_basis_reader.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_schema.f90.html'>mqc_json_schema.f90</a></li>
-                <li class="breadcrumb-item"><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></li>
-            <li class="breadcrumb-item active" aria-current="page">schema_keys</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_json_basis_reader.f90.html'>mqc_json_basis_reader.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></li>
+            <li class="breadcrumb-item active" aria-current="page">shell_contractions</li>
           </ol>
         </nav>
       </div>
@@ -129,7 +129,19 @@
       <div id="sidebar">
       <h3>Contents</h3>
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/shell_contractions.html#variable-found~33">found</a>
+            <a class="list-group-item" href="../proc/shell_contractions.html#variable-n_children~3">n_children</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -151,7 +163,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="../proc/schema_keys.html#src">schema_keys</a>
+        <a class="list-group-item" href="../proc/shell_contractions.html#src">shell_contractions</a>
       </div>
     </div>
 
@@ -161,19 +173,96 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>private  function schema_keys() result(keys)  
+    <h2>private  function shell_contractions(json, element_key, ishell, n_angular) result(n)  
 </h2>
     
 
+    <p>How many contracted functions one shell entry defines</p>
+<p>The length of the <code>coefficients</code> array, which is the number of
+columns &ndash; one per contracted function sharing this shell&rsquo;s
+exponents. Falls back to the angular momentum count if the key
+cannot be read, which keeps a malformed file behaving as it did
+rather than silently producing no shells at all.</p>
 
 
     <h3>Arguments</h3>
-    <em>None</em>
-    <br>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~26"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_key~4"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>element_key</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ishell~4"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ishell</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_angular"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_angular</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
       <h3>Return Value
         <small>
-          <span class="anchor" id="variable-keys~2"></span>
-          type(<a href='../type/key_set_t.html'>key_set_t</a>)
+          <span class="anchor" id="variable-n~39"></span>
+          integer
         </small>
       </h3>
       
@@ -188,47 +277,44 @@
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~schema_keys~~CallsGraph Pages: 1 -->
-<svg id="procschema_keysCallsGraph" width="182pt" height="74pt"
- viewBox="0.00 0.00 182.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~schema_keys~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
-<title>proc~~schema_keys~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 178,-70 178,4 -4,4"/>
-<!-- proc~schema_keys -->
-<g id="proc~~schema_keys~~CallsGraph_node1" class="node">
-<title>proc~schema_keys</title>
-<polygon fill="none" stroke="black" points="84,-45 0,-45 0,-21 84,-21 84,-45"/>
-<text text-anchor="middle" x="42" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">schema_keys</text>
+<!-- Title: proc~~shell_contractions~~CallsGraph Pages: 1 -->
+<svg id="procshell_contractionsCallsGraph" width="244pt" height="74pt"
+ viewBox="0.00 0.00 244.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~shell_contractions~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~shell_contractions~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 240,-70 240,4 -4,4"/>
+<!-- proc~shell_contractions -->
+<g id="proc~~shell_contractions~~CallsGraph_node1" class="node">
+<title>proc~shell_contractions</title>
+<polygon fill="none" stroke="black" points="109,-45 0,-45 0,-21 109,-21 109,-45"/>
+<text text-anchor="middle" x="54.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">shell_contractions</text>
 </g>
-<!-- proc~allow -->
-<g id="proc~~schema_keys~~CallsGraph_node2" class="node">
-<title>proc~allow</title>
-<g id="a_proc~~schema_keys~~CallsGraph_node2"><a xlink:href="../proc/allow.html" xlink:title="allow">
-<polygon fill="#d9534f" stroke="#d9534f" points="174,-66 120,-66 120,-42 174,-42 174,-66"/>
-<text text-anchor="middle" x="147" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">allow</text>
+<!-- info -->
+<g id="proc~~shell_contractions~~CallsGraph_node2" class="node">
+<title>info</title>
+<polygon fill="#777777" stroke="#777777" points="217.5,-66 163.5,-66 163.5,-42 217.5,-42 217.5,-66"/>
+<text text-anchor="middle" x="190.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+</g>
+<!-- proc~shell_contractions&#45;&gt;info -->
+<g id="proc~~shell_contractions~~CallsGraph_edge1" class="edge">
+<title>proc~shell_contractions&#45;&gt;info</title>
+<path fill="none" stroke="#ff0000" d="M109.23,-41.42C124.08,-43.75 139.84,-46.22 153.43,-48.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="152.92,-51.81 163.35,-49.9 154.01,-44.89 152.92,-51.81"/>
+</g>
+<!-- proc~integer_to_key~2 -->
+<g id="proc~~shell_contractions~~CallsGraph_node3" class="node">
+<title>proc~integer_to_key~2</title>
+<g id="a_proc~~shell_contractions~~CallsGraph_node3"><a xlink:href="../proc/integer_to_key~2.html" xlink:title="integer_to_key">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="236,-24 145,-24 145,0 236,0 236,-24"/>
+<text text-anchor="middle" x="190.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">integer_to_key</text>
 </a>
 </g>
 </g>
-<!-- proc~schema_keys&#45;&gt;proc~allow -->
-<g id="proc~~schema_keys~~CallsGraph_edge1" class="edge">
-<title>proc~schema_keys&#45;&gt;proc~allow</title>
-<path fill="none" stroke="#ff0000" d="M84,-41.36C92.62,-43.12 101.64,-44.96 110.06,-46.67"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="109.45,-50.12 119.95,-48.69 110.85,-43.26 109.45,-50.12"/>
-</g>
-<!-- proc~require -->
-<g id="proc~~schema_keys~~CallsGraph_node3" class="node">
-<title>proc~require</title>
-<g id="a_proc~~schema_keys~~CallsGraph_node3"><a xlink:href="../proc/require.html" xlink:title="require">
-<polygon fill="#d9534f" stroke="#d9534f" points="174,-24 120,-24 120,0 174,0 174,-24"/>
-<text text-anchor="middle" x="147" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">require</text>
-</a>
-</g>
-</g>
-<!-- proc~schema_keys&#45;&gt;proc~require -->
-<g id="proc~~schema_keys~~CallsGraph_edge2" class="edge">
-<title>proc~schema_keys&#45;&gt;proc~require</title>
-<path fill="none" stroke="#ff0000" d="M84,-24.64C92.62,-22.88 101.64,-21.04 110.06,-19.33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="110.85,-22.74 119.95,-17.31 109.45,-15.88 110.85,-22.74"/>
+<!-- proc~shell_contractions&#45;&gt;proc~integer_to_key~2 -->
+<g id="proc~~shell_contractions~~CallsGraph_edge2" class="edge">
+<title>proc~shell_contractions&#45;&gt;proc~integer_to_key~2</title>
+<path fill="none" stroke="#ff0000" d="M109.23,-24.58C117.62,-23.27 126.29,-21.91 134.7,-20.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="135.45,-24.01 144.79,-19.01 134.37,-17.1 135.45,-24.01"/>
 </g>
 </g>
 </svg>
@@ -323,160 +409,51 @@ large graphs.</div>
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
-<!-- Title: proc~~schema_keys~~CalledByGraph Pages: 1 -->
-<svg id="procschema_keysCalledByGraph" width="641pt" height="81pt"
- viewBox="0.00 0.00 641.00 81.09" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~schema_keys~~CalledByGraph" class="graph" transform="scale(0.7 0.7) rotate(0) translate(4 112)">
-<title>proc~~schema_keys~~CalledByGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 913,-112 913,4 -4,4"/>
-<!-- proc~schema_keys -->
-<g id="proc~~schema_keys~~CalledByGraph_node1" class="node">
-<title>proc~schema_keys</title>
-<polygon fill="none" stroke="black" points="909,-87 825,-87 825,-63 909,-63 909,-87"/>
-<text text-anchor="middle" x="867" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">schema_keys</text>
+<!-- Title: proc~~shell_contractions~~CalledByGraph Pages: 1 -->
+<svg id="procshell_contractionsCalledByGraph" width="491pt" height="32pt"
+ viewBox="0.00 0.00 491.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~shell_contractions~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~shell_contractions~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 487,-28 487,4 -4,4"/>
+<!-- proc~shell_contractions -->
+<g id="proc~~shell_contractions~~CalledByGraph_node1" class="node">
+<title>proc~shell_contractions</title>
+<polygon fill="none" stroke="black" points="483,-24 374,-24 374,0 483,0 483,-24"/>
+<text text-anchor="middle" x="428.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">shell_contractions</text>
 </g>
-<!-- proc~ensure_valid_json -->
-<g id="proc~~schema_keys~~CalledByGraph_node2" class="node">
-<title>proc~ensure_valid_json</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node2"><a xlink:href="../proc/ensure_valid_json.html" xlink:title="ensure_valid_json">
-<polygon fill="#d9534f" stroke="#d9534f" points="789,-87 683,-87 683,-63 789,-63 789,-87"/>
-<text text-anchor="middle" x="736" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">ensure_valid_json</text>
+<!-- proc~read_json_basis_element -->
+<g id="proc~~shell_contractions~~CalledByGraph_node2" class="node">
+<title>proc~read_json_basis_element</title>
+<g id="a_proc~~shell_contractions~~CalledByGraph_node2"><a xlink:href="../proc/read_json_basis_element.html" xlink:title="read_json_basis_element">
+<polygon fill="#d9534f" stroke="#d9534f" points="338,-24 193,-24 193,0 338,0 338,-24"/>
+<text text-anchor="middle" x="265.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_basis_element</text>
 </a>
 </g>
 </g>
-<!-- proc~ensure_valid_json&#45;&gt;proc~schema_keys -->
-<g id="proc~~schema_keys~~CalledByGraph_edge1" class="edge">
-<title>proc~ensure_valid_json&#45;&gt;proc~schema_keys</title>
-<path fill="none" stroke="#ff0000" d="M789.1,-75C797.55,-75 806.3,-75 814.73,-75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="814.81,-78.5 824.81,-75 814.81,-71.5 814.81,-78.5"/>
+<!-- proc~read_json_basis_element&#45;&gt;proc~shell_contractions -->
+<g id="proc~~shell_contractions~~CalledByGraph_edge1" class="edge">
+<title>proc~read_json_basis_element&#45;&gt;proc~shell_contractions</title>
+<path fill="none" stroke="#ff0000" d="M338.05,-12C346.53,-12 355.15,-12 363.51,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="363.56,-15.5 373.56,-12 363.56,-8.5 363.56,-15.5"/>
 </g>
-<!-- proc~read_json_config_file -->
-<g id="proc~~schema_keys~~CalledByGraph_node3" class="node">
-<title>proc~read_json_config_file</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node3"><a xlink:href="../proc/read_json_config_file.html" xlink:title="read_json_config_file">
-<polygon fill="#d9534f" stroke="#d9534f" points="645.5,-108 521.5,-108 521.5,-84 645.5,-84 645.5,-108"/>
-<text text-anchor="middle" x="583.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_file</text>
+<!-- proc~build_molecular_basis_json -->
+<g id="proc~~shell_contractions~~CalledByGraph_node3" class="node">
+<title>proc~build_molecular_basis_json</title>
+<g id="a_proc~~shell_contractions~~CalledByGraph_node3"><a xlink:href="../proc/build_molecular_basis_json.html" xlink:title="build_molecular_basis_json">
+<polygon fill="#d9534f" stroke="#d9534f" points="157,-24 0,-24 0,0 157,0 157,-24"/>
+<text text-anchor="middle" x="78.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_molecular_basis_json</text>
 </a>
 </g>
 </g>
-<!-- proc~read_json_config_file&#45;&gt;proc~ensure_valid_json -->
-<g id="proc~~schema_keys~~CalledByGraph_edge2" class="edge">
-<title>proc~read_json_config_file&#45;&gt;proc~ensure_valid_json</title>
-<path fill="none" stroke="#ff0000" d="M645.71,-87.46C654.7,-86.2 663.97,-84.91 672.97,-83.66"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="673.58,-87.1 683,-82.26 672.61,-80.17 673.58,-87.1"/>
-</g>
-<!-- proc~read_json_config_text -->
-<g id="proc~~schema_keys~~CalledByGraph_node4" class="node">
-<title>proc~read_json_config_text</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node4"><a xlink:href="../proc/read_json_config_text.html" xlink:title="read_json_config_text">
-<polygon fill="#d9534f" stroke="#d9534f" points="647,-66 520,-66 520,-42 647,-42 647,-66"/>
-<text text-anchor="middle" x="583.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_json_config_text</text>
-</a>
-</g>
-</g>
-<!-- proc~read_json_config_text&#45;&gt;proc~ensure_valid_json -->
-<g id="proc~~schema_keys~~CalledByGraph_edge3" class="edge">
-<title>proc~read_json_config_text&#45;&gt;proc~ensure_valid_json</title>
-<path fill="none" stroke="#ff0000" d="M647.02,-62.72C655.61,-63.92 664.43,-65.15 673.01,-66.35"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="672.56,-69.82 682.95,-67.74 673.53,-62.89 672.56,-69.82"/>
-</g>
-<!-- proc~session_run -->
-<g id="proc~~schema_keys~~CalledByGraph_node5" class="node">
-<title>proc~session_run</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node5"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
-<polygon fill="#d9534f" stroke="#d9534f" points="484,-66 323,-66 323,-42 484,-42 484,-66"/>
-<text text-anchor="middle" x="403.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
-</a>
-</g>
-</g>
-<!-- proc~session_run&#45;&gt;proc~read_json_config_text -->
-<g id="proc~~schema_keys~~CalledByGraph_edge5" class="edge">
-<title>proc~session_run&#45;&gt;proc~read_json_config_text</title>
-<path fill="none" stroke="#00ffff" d="M484.13,-54C492.62,-54 501.22,-54 509.63,-54"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="509.76,-57.5 519.76,-54 509.76,-50.5 509.76,-57.5"/>
-</g>
-<!-- proc~worker_run -->
-<g id="proc~~schema_keys~~CalledByGraph_node6" class="node">
-<title>proc~worker_run</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node6"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
-<polygon fill="#d9534f" stroke="#d9534f" points="440,-24 367,-24 367,0 440,0 440,-24"/>
-<text text-anchor="middle" x="403.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_run&#45;&gt;proc~read_json_config_text -->
-<g id="proc~~schema_keys~~CalledByGraph_edge6" class="edge">
-<title>proc~worker_run&#45;&gt;proc~read_json_config_text</title>
-<path fill="none" stroke="#00ffff" d="M440.09,-20.4C463.41,-25.9 494.48,-33.23 521.65,-39.64"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="520.92,-43.07 531.46,-41.96 522.53,-36.25 520.92,-43.07"/>
-</g>
-<!-- program~main -->
-<g id="proc~~schema_keys~~CalledByGraph_node7" class="node">
-<title>program~main</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
-<polygon fill="#f0ad4e" stroke="#f0ad4e" points="430.5,-108 376.5,-108 376.5,-84 430.5,-84 430.5,-108"/>
-<text text-anchor="middle" x="403.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
-</a>
-</g>
-</g>
-<!-- program~main&#45;&gt;proc~read_json_config_file -->
-<g id="proc~~schema_keys~~CalledByGraph_edge4" class="edge">
-<title>program~main&#45;&gt;proc~read_json_config_file</title>
-<path fill="none" stroke="#ff0000" d="M430.76,-96C451.95,-96 482.79,-96 511.14,-96"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="511.45,-99.5 521.45,-96 511.45,-92.5 511.45,-99.5"/>
-</g>
-<!-- proc~mqc_run -->
-<g id="proc~~schema_keys~~CalledByGraph_node8" class="node">
-<title>proc~mqc_run</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node8"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="277.5,-66 218.5,-66 218.5,-42 277.5,-42 277.5,-66"/>
-<text text-anchor="middle" x="248" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
-</a>
-</g>
-</g>
-<!-- proc~mqc_run&#45;&gt;proc~session_run -->
-<g id="proc~~schema_keys~~CalledByGraph_edge7" class="edge">
-<title>proc~mqc_run&#45;&gt;proc~session_run</title>
-<path fill="none" stroke="#ff0000" d="M277.51,-54C287.77,-54 299.97,-54 312.66,-54"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="312.91,-57.5 322.91,-54 312.91,-50.5 312.91,-57.5"/>
-</g>
-<!-- proc~worker_loop -->
-<g id="proc~~schema_keys~~CalledByGraph_node9" class="node">
-<title>proc~worker_loop</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node9"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
-<polygon fill="#d9534f" stroke="#d9534f" points="287,-24 209,-24 209,0 287,0 287,-24"/>
-<text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
-</a>
-</g>
-</g>
-<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
-<g id="proc~~schema_keys~~CalledByGraph_edge8" class="edge">
-<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
-<path fill="none" stroke="#00ff00" d="M287.34,-12C308.34,-12 334.52,-12 356.61,-12"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="356.75,-15.5 366.75,-12 356.75,-8.5 356.75,-15.5"/>
-</g>
-<!-- proc~session_begin -->
-<g id="proc~~schema_keys~~CalledByGraph_node10" class="node">
-<title>proc~session_begin</title>
-<g id="a_proc~~schema_keys~~CalledByGraph_node10"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
-<polygon fill="#d9534f" stroke="#d9534f" points="173,-24 0,-24 0,0 173,0 173,-24"/>
-<text text-anchor="middle" x="86.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
-</a>
-</g>
-</g>
-<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
-<g id="proc~~schema_keys~~CalledByGraph_edge9" class="edge">
-<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
-<path fill="none" stroke="#00ffff" d="M173.32,-12C181.93,-12 190.45,-12 198.47,-12"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="198.69,-15.5 208.69,-12 198.69,-8.5 198.69,-15.5"/>
+<!-- proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element -->
+<g id="proc~~shell_contractions~~CalledByGraph_edge2" class="edge">
+<title>proc~build_molecular_basis_json&#45;&gt;proc~read_json_basis_element</title>
+<path fill="none" stroke="#ff0000" d="M157.15,-12C165.59,-12 174.19,-12 182.68,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.95,-15.5 192.95,-12 182.95,-8.5 182.95,-15.5"/>
 </g>
 </g>
 </svg>
-</div>                <script>
-                  var panprocschema_keysCalledByGraph = svgPanZoom('#procschema_keysCalledByGraph',
-                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
-                  );
-                </script>          <div>
+</div>          <div>
             <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
           </div>
           <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
@@ -560,6 +537,57 @@ large graphs.</div>
     <br>
 
 
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-found~33"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>found</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_children~3"></span>
+              integer,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_children</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
     
     
 
@@ -571,15 +599,31 @@ large graphs.</div>
     
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
-    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">schema_keys</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">key_set_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">keys</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;version&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;index_base&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">allow</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;units&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-<span class="w">      </span><span class="k">call </span><span class="n">require</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;version&quot;</span><span class="p">)</span>
-<span class="w">   </span><span class="k">end function </span><span class="n">schema_keys</span>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">shell_contractions</span><span class="p">(</span><span class="n">json</span><span class="p">,</span><span class="w"> </span><span class="n">element_key</span><span class="p">,</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">n_angular</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! How many contracted functions one shell entry defines</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The length of the `coefficients` array, which is the number of</span>
+<span class="w">      </span><span class="c">!! columns -- one per contracted function sharing this shell&#39;s</span>
+<span class="w">      </span><span class="c">!! exponents. Falls back to the angular momentum count if the key</span>
+<span class="w">      </span><span class="c">!! cannot be read, which keeps a malformed file behaving as it did</span>
+<span class="w">      </span><span class="c">!! rather than silently producing no shells at all.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">json_file</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">json</span>
+<span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">element_key</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ishell</span><span class="p">,</span><span class="w"> </span><span class="n">n_angular</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span>
+
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">found</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_children</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">json</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;elements.&quot;</span><span class="o">//</span><span class="n">element_key</span><span class="o">//</span><span class="s2">&quot;.electron_shells(&quot;</span><span class="o">//</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="n">integer_to_key</span><span class="p">(</span><span class="n">ishell</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;).coefficients&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="n">found</span><span class="o">=</span><span class="n">found</span><span class="p">,</span><span class="w"> </span><span class="n">n_children</span><span class="o">=</span><span class="n">n_children</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">found</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">n_children</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_children</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_angular</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">   end function </span><span class="n">shell_contractions</span>
 </pre></div>
 
     </section>
