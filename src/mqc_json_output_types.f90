@@ -57,6 +57,10 @@ module mqc_json_output_types
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
       character(len=16) :: fragment_breakdown = "csv"
+      character(len=16) :: fingerprint = ""
+         !! Identity of the calculation that produced this output. Stamped so a
+         !! restart can check what it is about to reuse -- see mqc_fingerprint.
+         !! Empty when nothing computed it.
          !! Where the per-fragment table goes: "csv", "json" or "none"
 
       !----- GMBE PIE-specific data -----

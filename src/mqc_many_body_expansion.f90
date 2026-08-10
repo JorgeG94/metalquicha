@@ -8,6 +8,7 @@ module mqc_many_body_expansion
    use mqc_resources, only: resources_t
    use mqc_config_adapter, only: driver_config_t
    use mqc_json_output_types, only: json_output_data_t
+   use mqc_checkpoint, only: checkpoint_t
    implicit none
    private
 
@@ -33,6 +34,10 @@ module mqc_many_body_expansion
 
       ! System geometry (includes connectivity via sys_geom%bonds)
       type(system_geometry_t), allocatable :: sys_geom
+      type(checkpoint_t) :: checkpoint
+         !! Fragments already computed by an earlier run, and where the ones
+         !! computed by this run are appended. Inactive unless a path was
+         !! configured, in which case everything below behaves as before.
          !! System geometry (coordinates, elements, fragments, bonds)
 
       ! MPI configuration (optional - for distributed calculations)
@@ -217,7 +222,8 @@ contains
       end if
 
       call serial_fragment_processor(this%total_fragments, this%polymers, this%max_level, &
-                                     this%sys_geom, this%method_config, this%calc_type, json_data)
+                                     this%sys_geom, this%method_config, this%calc_type, json_data, &
+                                     this%checkpoint)
    end subroutine mbe_run_serial
 
    subroutine mbe_run_distributed(this, json_data)

@@ -25,6 +25,7 @@ module mqc_config_adapter
 
       ! Method configuration (includes XTB solvation, DFT settings, etc.)
       type(method_config_t) :: method_config  !! Complete method configuration
+      character(len=:), allocatable :: checkpoint_file  !! Append/resume path, empty for neither
 
       ! Fragmentation settings
       integer :: nlevel = 0         !! Fragmentation level (0 = unfragmented)
@@ -155,6 +156,9 @@ contains
       ! no complaint. Two structures named scf, one of them wired up.
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
+      if (allocated(mqc_config%checkpoint_file)) then
+         driver_config%checkpoint_file = mqc_config%checkpoint_file
+      end if
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
       if (allocated(mqc_config%scf_guess)) then

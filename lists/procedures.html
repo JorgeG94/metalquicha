@@ -109,10 +109,22 @@
 Caps are placed at the position of the atom outside the fragment</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_method.html'>add_method</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything that decides what number a fragment gets</p><a href="../proc/add_method.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/add_solvation_to_calc.html'>add_solvation_to_calc</a></td>
                  <td><a href='../module/mqc_method_xtb.html'>mqc_method_xtb</a></td>
                  <td>Subroutine</td>
                  <td><p>Add implicit solvation model to XTB calculator</p><a href="../proc/add_solvation_to_calc.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/add_system.html'>add_system</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Everything about the molecule and how it is cut up</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/add_unique.html'>add_unique</a></td>
@@ -381,6 +393,12 @@ For multi-monomer fragments, returns minimal distance between atoms in different
 Result is in Angstrom</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/calculation_fingerprint.html'>calculation_fingerprint</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Function</td>
+                 <td><p>The identity of a calculation: what it computes, and on what</p><a href="../proc/calculation_fingerprint.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/cc_check_stability.html'>cc_check_stability</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
@@ -499,6 +517,30 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><p>Run a supplied term list past the validator without committing to it</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/checkpoint_close.html'>checkpoint_close</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Close the file. Loaded entries stay readable.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/checkpoint_lookup.html'>checkpoint_lookup</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Is this term already done, and with what energy</p><a href="../proc/checkpoint_lookup.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/checkpoint_open.html'>checkpoint_open</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Load an existing checkpoint if there is one, then open for appending</p><a href="../proc/checkpoint_open.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/checkpoint_record.html'>checkpoint_record</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Append one finished fragment, and make it survive a kill</p><a href="../proc/checkpoint_record.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/child_count.html'>child_count</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -523,6 +565,12 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
                  <td>Subroutine</td>
                  <td><p>Utility for generating combinations recursively
 Uses int64 for count to handle large numbers of combinations that overflow int32.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compare.html'>compare</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Function</td>
+                 <td><p>Lexicographic order on two zero-padded monomer rows</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/complain.html'>complain</a></td>
@@ -1370,6 +1418,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Group-global coordinator for distributing a fragment shard to node coordinators.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/grow.html'>grow</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Double the loaded arrays</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/grow_pie_storage.html'>grow_pie_storage</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
@@ -1448,6 +1502,54 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/hash_byte.html'>hash_byte</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold one byte in</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_flag.html'>hash_flag</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_hex.html'>hash_hex</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Function</td>
+                 <td><p>The accumulated hash, as 16 lowercase hex digits</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_int.html'>hash_int</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_int_array.html'>hash_int_array</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_real.html'>hash_real</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fold a double in by its bits, not its digits</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_real_array.html'>hash_real_array</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hash_text.html'>hash_text</a></td>
+                 <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/hessian_coordinator.html'>hessian_coordinator</a></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
@@ -1510,13 +1612,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -1534,15 +1636,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
-                 <td>Function</td>
-                 <td><p>An integer as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Function</td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -1585,6 +1687,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_existing.html'>load_existing</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read the header and every complete line</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/logger_keys.html'>logger_keys</a></td>
@@ -2357,6 +2465,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Turn a tblite context error into a failed &ndash; or merely flagged &ndash; result</p><a href="../proc/record_context_failure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/record_task.html'>record_task</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Append one finished task to the checkpoint, if there is one</p><a href="../proc/record_task.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/recv_error_state.html'>recv_error_state</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
@@ -2653,6 +2767,12 @@ Uses in-place sorting to reorder the polymers array
 Larger fragments (e.g., tetramers) are computed before smaller ones (e.g., dimers)</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/sort_terms.html'>sort_terms</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Insertion sort by monomer tuple</p><a href="../proc/sort_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/split_lines.html'>split_lines</a></td>
                  <td><a href='../module/mqc_xyz_reader.html'>mqc_xyz_reader</a></td>
                  <td>Subroutine</td>
@@ -2841,7 +2961,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 04:46 +0000             </p>
+ on 2026-08-10 05:07 +0000             </p>
           </div>
         </div>
         <br>

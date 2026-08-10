@@ -1,0 +1,1603 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_fingerprint &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_fingerprint
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.2% of total for modules and submodules.">182 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_fingerprint.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_fingerprint.f90.html'>mqc_fingerprint.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_fingerprint</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#variable-fingerprint_len">FINGERPRINT_LEN</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#variable-fnv_offset">FNV_OFFSET</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#variable-fnv_prime">FNV_PRIME</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#types-0"
+         aria-expanded="false" aria-controls="types-0">
+         <h4 class="card-header bg-primary text-white">Derived Types</h4>
+      </a>
+      <div id="types-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#type-hasher_t">hasher_t</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-calculation_fingerprint">calculation_fingerprint</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_hex">hash_hex</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-add_method">add_method</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-add_system">add_system</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_byte">hash_byte</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_flag">hash_flag</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_int">hash_int</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_int_array">hash_int_array</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_real">hash_real</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_real_array">hash_real_array</a>
+            <a class="list-group-item" href="../module/mqc_fingerprint.html#proc-hash_text">hash_text</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>A short hash of everything that decides a fragment energy, so a stored
+energy can be matched against the calculation asking to reuse it.</p>
+<p><strong>This exists so that restart cannot lie.</strong> Reusing energies is the one
+feature whose failure looks like success: a resume that quietly mixes
+terms from a different geometry, basis or functional finishes early and
+reports a converged total, and there is nothing in the number to see. A
+checkpoint carrying this hash can be refused instead.</p>
+<p>Two rules decide what goes in.</p>
+<ul>
+<li><strong>In, if it changes the number.</strong> Coordinates, elements, charge and
+    multiplicity; the monomer partition, because a term names monomers by
+    index and a repartition silently renames every one of them; the
+    bonds, because they decide where caps go; the method, basis,
+    functional and the thresholds the SCF converges to.</li>
+<li><strong>Out, if it does not.</strong> Log level, output paths, rank counts,
+    verbosity, GPU binding. These change between the run that wrote a
+    checkpoint and the run that resumes it as a matter of course, and a
+    hash that rejected those would be a hash nobody could use.</li>
+</ul>
+<p>When in doubt a field goes in. A false mismatch costs a recomputation; a
+false match costs a wrong answer that nothing will catch.</p>
+<p>Reals are hashed as their IEEE bits rather than as text, so no formatting
+choice can round two different geometries onto one hash. The single
+exception is negative zero, normalised to positive, because it compares
+equal to zero everywhere else in the program and would otherwise make an
+identical geometry hash differently depending on how it was built.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_fingerprint~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_fingerprintUsesGraph" width="641pt" height="345pt"
+ viewBox="0.00 0.00 641.00 345.02" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_fingerprint~~UsesGraph" class="graph" transform="scale(0.94 0.94) rotate(0) translate(4 364.17)">
+<title>module~~mqc_fingerprint~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-364.17 680,-364.17 680,4 -4,4"/>
+<!-- module~mqc_fingerprint -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node1" class="node">
+<title>module~mqc_fingerprint</title>
+<polygon fill="none" stroke="black" points="676,-304 579,-304 579,-280 676,-280 676,-304"/>
+<text text-anchor="middle" x="627.5" y="-289.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_fingerprint</text>
+</g>
+<!-- module~mqc_method_config -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node2" class="node">
+<title>module~mqc_method_config</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node2"><a xlink:href="../module/mqc_method_config.html" xlink:title="mqc_method_config">
+<polygon fill="#337ab7" stroke="#337ab7" points="534,-304 413,-304 413,-280 534,-280 534,-304"/>
+<text text-anchor="middle" x="473.5" y="-289.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_config</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fingerprint&#45;&gt;module~mqc_method_config -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge1" class="edge">
+<title>module~mqc_fingerprint&#45;&gt;module~mqc_method_config</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M578.82,-292C567.85,-292 555.95,-292 544.25,-292"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="544.05,-288.5 534.05,-292 544.05,-295.5 544.05,-288.5"/>
+</g>
+<!-- module~mqc_method_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node3" class="node">
+<title>module~mqc_method_types</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node3"><a xlink:href="../module/mqc_method_types.html" xlink:title="mqc_method_types">
+<polygon fill="#337ab7" stroke="#337ab7" points="355.5,-324 239.5,-324 239.5,-300 355.5,-300 355.5,-324"/>
+<text text-anchor="middle" x="297.5" y="-309.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_method_types</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fingerprint&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge2" class="edge">
+<title>module~mqc_fingerprint&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M605.75,-304.03C577.29,-319.62 524.02,-345.57 474.5,-352"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-352C448.47,-355.12 388.91,-339.52 346.17,-326.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="347.09,-323.51 336.51,-324 345.09,-330.22 347.09,-323.51"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node4" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node4"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="543,-164 404,-164 404,-140 543,-140 543,-164"/>
+<text text-anchor="middle" x="473.5" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fingerprint&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge3" class="edge">
+<title>module~mqc_fingerprint&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M613.28,-279.82C586.78,-255.41 526.99,-200.35 495.23,-171.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="497.53,-168.45 487.8,-164.25 492.79,-173.6 497.53,-168.45"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node5" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-164 0,-164 0,-140 62,-140 62,-164"/>
+<text text-anchor="middle" x="31" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_fingerprint&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge4" class="edge">
+<title>module~mqc_fingerprint&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-352C363.97,-366.1 332.57,-361.85 227,-333 188.08,-322.36 181.69,-310.84 145.5,-293"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;module~mqc_method_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge5" class="edge">
+<title>module~mqc_method_config&#45;&gt;module~mqc_method_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M412.62,-298.88C397.46,-300.63 381.08,-302.51 365.59,-304.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="365.09,-300.82 355.56,-305.44 365.89,-307.78 365.09,-300.82"/>
+</g>
+<!-- module~mqc_method_config&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge6" class="edge">
+<title>module~mqc_method_config&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M412.82,-291.33C398.16,-291.19 382.51,-291.07 368,-291 305.33,-290.7 289.66,-290.23 227,-291 190.77,-291.44 178.23,-308.54 145.5,-293"/>
+</g>
+<!-- module~mqc_method_types&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge7" class="edge">
+<title>module~mqc_method_types&#45;&gt;pic_types</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M239.27,-313.18C209.99,-311.75 174.5,-306.77 145.5,-293"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-32C231.81,-12.05 208.83,-28.08 145.5,-52"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M143.5,-52C101.9,-67.71 66.13,-107.05 46.96,-131.44"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="43.95,-129.61 40.66,-139.68 49.52,-133.86 43.95,-129.61"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node6" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node6"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-24 112.5,-24 112.5,0 176.5,0 176.5,-24"/>
+<text text-anchor="middle" x="144.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge8" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M463.29,-139.72C446.65,-118.4 409.44,-74.6 368,-51 340.17,-35.16 329.1,-41.44 298.5,-32"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-32C260.45,-20.88 217.68,-15.94 186.88,-13.75"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="186.72,-10.23 176.51,-13.08 186.27,-17.22 186.72,-10.23"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node7" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node7"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-244 252,-244 252,-220 343,-220 343,-244"/>
+<text text-anchor="middle" x="297.5" y="-229.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge9" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M450.85,-164.15C429.97,-175.64 397.31,-193 368,-206 359.87,-209.61 351.07,-213.16 342.56,-216.42"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="341.24,-213.18 333.12,-219.97 343.71,-219.73 341.24,-213.18"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node8" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node8"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-124 111,-124 111,-100 178,-100 178,-124"/>
+<text text-anchor="middle" x="144.5" y="-109.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M418.73,-139.98C402.5,-136.68 384.58,-133.37 368,-131 305.82,-122.13 233.23,-116.87 188.31,-114.21"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.24,-110.7 178.06,-113.62 187.84,-117.69 188.24,-110.7"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node9" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node9"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-204 98,-204 98,-180 191,-180 191,-204"/>
+<text text-anchor="middle" x="144.5" y="-189.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M418.73,-164.02C402.5,-167.32 384.58,-170.63 368,-173 311.56,-181.05 246.55,-186.12 201.43,-188.98"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="201.03,-185.5 191.27,-189.61 201.46,-192.49 201.03,-185.5"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node10" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node10"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-84 227,-84 227,-60 368,-60 368,-84"/>
+<text text-anchor="middle" x="297.5" y="-69.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M450.85,-139.85C429.97,-128.36 397.31,-111 368,-98 359.87,-94.39 351.07,-90.84 342.56,-87.58"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="343.71,-84.27 333.12,-84.03 341.24,-90.82 343.71,-84.27"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node11" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_fingerprint~~UsesGraph_node11"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-164 248,-164 248,-140 347,-140 347,-164"/>
+<text text-anchor="middle" x="297.5" y="-149.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M403.73,-152C388.37,-152 372.22,-152 357.31,-152"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="357.2,-148.5 347.2,-152 357.2,-155.5 357.2,-148.5"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge15" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M116.82,-24.14C110.18,-27.96 103.42,-32.61 98,-38 70.76,-65.09 50.85,-105.72 40.38,-130.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="37.02,-129.41 36.47,-139.99 43.5,-132.06 37.02,-129.41"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge17" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M263.15,-244.11C251.65,-248.38 238.72,-253.3 227,-258 190.42,-272.69 181.11,-309.91 145.5,-293"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M143.5,-293C91.64,-268.38 56.73,-206.33 41.2,-173.36"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="44.33,-171.79 37,-164.13 37.96,-174.69 44.33,-171.79"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_fingerprint~~UsesGraph_node12" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-246 115.5,-246 115.5,-222 173.5,-222 173.5,-246"/>
+<text text-anchor="middle" x="144.5" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge16" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M251.6,-232.59C230.13,-232.88 204.69,-233.22 184.1,-233.49"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="183.78,-229.99 173.83,-233.62 183.87,-236.99 183.78,-229.99"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge18" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M110.05,-180C98,-175.68 84.29,-170.76 71.76,-166.26"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="72.61,-162.85 62.02,-162.77 70.25,-169.44 72.61,-162.85"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge19" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M267.16,-59.97C236.01,-49.04 185.82,-36.77 145.5,-52"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge22" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M247.99,-152C197.52,-152 119.41,-152 72.24,-152"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="72.1,-148.5 62.1,-152 72.1,-155.5 72.1,-148.5"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge20" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M251.2,-140C231.22,-134.71 207.87,-128.52 188.21,-123.31"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="188.86,-119.87 178.3,-120.69 187.07,-126.63 188.86,-119.87"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_fingerprint~~UsesGraph_edge21" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M251.2,-164C235.44,-168.17 217.59,-172.9 201.09,-177.27"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="199.8,-173.99 191.03,-179.94 201.6,-180.76 199.8,-173.99"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_fingerprintUsesGraph = svgPanZoom('#modulemqc_fingerprintUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_fingerprint~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_fingerprintUsedByGraph" width="641pt" height="109pt"
+ viewBox="0.00 0.00 641.00 108.87" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_fingerprint~~UsedByGraph" class="graph" transform="scale(0.94 0.94) rotate(0) translate(4 112)">
+<title>module~~mqc_fingerprint~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 679,-112 679,4 -4,4"/>
+<!-- module~mqc_fingerprint -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node1" class="node">
+<title>module~mqc_fingerprint</title>
+<polygon fill="none" stroke="black" points="97,-66 0,-66 0,-42 97,-42 97,-66"/>
+<text text-anchor="middle" x="48.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_fingerprint</text>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node2" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node2"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="206,-66 133,-66 133,-42 206,-42 206,-66"/>
+<text text-anchor="middle" x="169.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_fingerprint -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_fingerprint</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M132.8,-54C124.73,-54 115.96,-54 107.24,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="107.07,-50.5 97.07,-54 107.07,-57.5 107.07,-50.5"/>
+</g>
+<!-- module~mqc_session -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node3" class="node">
+<title>module~mqc_session</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node3"><a xlink:href="../module/mqc_session.html" xlink:title="mqc_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="365,-108 285,-108 285,-84 365,-84 365,-108"/>
+<text text-anchor="middle" x="325" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M284.72,-86.24C271.16,-82.79 255.89,-78.82 242,-75 233.48,-72.66 224.42,-70.07 215.71,-67.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.65,-64.17 206.07,-64.71 214.68,-70.88 216.65,-64.17"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node4" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node4"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="408,-66 242,-66 242,-42 408,-42 408,-66"/>
+<text text-anchor="middle" x="325" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge3" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M241.86,-54C233.13,-54 224.5,-54 216.42,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.15,-50.5 206.15,-54 216.15,-57.5 216.15,-50.5"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node5" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node5"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="352,-24 298,-24 298,0 352,0 352,-24"/>
+<text text-anchor="middle" x="325" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge4" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M297.72,-18.48C281.6,-22.52 260.56,-27.9 242,-33 233.48,-35.34 224.42,-37.93 215.71,-40.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="214.68,-37.12 206.07,-43.29 216.65,-43.83 214.68,-37.12"/>
+</g>
+<!-- module~mqc_capi_run -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node6" class="node">
+<title>module~mqc_capi_run</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node6"><a xlink:href="../module/mqc_capi_run.html" xlink:title="mqc_capi_run">
+<polygon fill="#337ab7" stroke="#337ab7" points="675,-108 588,-108 588,-84 675,-84 675,-108"/>
+<text text-anchor="middle" x="631.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge5" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M587.72,-96.64C576.13,-96.79 563.58,-96.93 552,-97 491.21,-97.39 421.22,-96.94 375.44,-96.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="375.23,-93.02 365.2,-96.43 375.16,-100.02 375.23,-93.02"/>
+</g>
+<!-- module~mqc_capi_session -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_node7" class="node">
+<title>module~mqc_capi_session</title>
+<g id="a_module~~mqc_fingerprint~~UsedByGraph_node7"><a xlink:href="../module/mqc_capi_session.html" xlink:title="mqc_capi_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="552,-88 444,-88 444,-64 552,-64 552,-88"/>
+<text text-anchor="middle" x="498" y="-73.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_session -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge7" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_session</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M587.81,-89.51C579.61,-88.26 570.87,-86.93 562.19,-85.61"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="562.48,-82.11 552.07,-84.07 561.43,-89.03 562.48,-82.11"/>
+</g>
+<!-- module~mqc_capi_session&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_fingerprint~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_capi_session&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M443.83,-82.22C421.93,-84.78 396.7,-87.73 375.22,-90.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="374.54,-86.8 365.01,-91.44 375.35,-93.75 374.54,-86.8"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_fingerprintUsedByGraph = svgPanZoom('#modulemqc_fingerprintUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fingerprint_len"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>FINGERPRINT_LEN</strong></td>
+<td> =</td>
+                <td>16</td>
+            <td>
+                <p>Hex digits in a fingerprint: 64 bits</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fnv_offset"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>FNV_OFFSET</strong></td>
+<td> =</td>
+                <td>-3750763034362895579_int64</td>
+            <td>
+                <p>14695981039346656037 as a signed 64-bit value</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fnv_prime"></span>
+              integer(kind=int64),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>FNV_PRIME</strong></td>
+<td> =</td>
+                <td>1099511628211_int64</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+        <section>
+          <h2>Derived Types</h2>
+              <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="type-hasher_t"></span>
+      <h3>
+        type, public&nbsp;::&nbsp;
+        <a href='../type/hasher_t.html'>hasher_t</a>
+        
+      </h3>
+    </div>
+    <div class="card-body">
+      <p>FNV-1a, accumulated field by field</p><a href="../type/hasher_t.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+        <h4>Components</h4>
+          <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-state"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>state</strong></td>
+<td> =</td>
+                <td>FNV_OFFSET</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+
+        <h4>Type-Bound Procedures</h4>
+        <table class="table table-striped varlist">
+          <tbody>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-byte'>byte</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_byte.html'>hash_byte</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-flag'>flag</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_flag.html'>hash_flag</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-hex'>hex</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_hex.html'>hash_hex</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-int'>int</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_int.html'>hash_int</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-int_array'>int_array</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_int_array.html'>hash_int_array</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-real'>real</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_real.html'>hash_real</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-real_array'>real_array</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_real_array.html'>hash_real_array</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/hasher_t.html#boundprocedure-text~6'>text</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/hash_text.html'>hash_text</a></td>
+                  <td></td>
+              </tr>
+          </tbody>
+        </table>
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-calculation_fingerprint"></span> <h3>public  function <a href='../proc/calculation_fingerprint.html'>calculation_fingerprint</a>(sys_geom, config, calc_type) result(hex)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The identity of a calculation: what it computes, and on what</p><a href="../proc/calculation_fingerprint.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~10"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~3"></span>
+              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-calc_type~8"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>calc_type</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=FINGERPRINT_LEN)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_hex"></span> <h3>private  function <a href='../proc/hash_hex.html'>hash_hex</a>(this) result(hex)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>The accumulated hash, as 16 lowercase hex digits</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~39"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=FINGERPRINT_LEN)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-add_method"></span> <h3>private  subroutine <a href='../proc/add_method.html'>add_method</a>(h, config)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Everything that decides what number a fragment gets</p><a href="../proc/add_method.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h~3"></span>
+              type(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>h</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-config~4"></span>
+              type(<a href='../type/method_config_t.html'>method_config_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>config</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-add_system"></span> <h3>private  subroutine <a href='../proc/add_system.html'>add_system</a>(h, sys)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Everything about the molecule and how it is cut up</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h~2"></span>
+              type(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>h</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_byte"></span> <h3>private  subroutine <a href='../proc/hash_byte.html'>hash_byte</a>(this, value)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fold one byte in</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~32"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~5"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_flag"></span> <h3>private  subroutine <a href='../proc/hash_flag.html'>hash_flag</a>(this, value)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~38"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~9"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_int"></span> <h3>private  subroutine <a href='../proc/hash_int.html'>hash_int</a>(this, value)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~33"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~6"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_int_array"></span> <h3>private  subroutine <a href='../proc/hash_int_array.html'>hash_int_array</a>(this, values)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~34"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-values~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>values</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_real"></span> <h3>private  subroutine <a href='../proc/hash_real.html'>hash_real</a>(this, value)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fold a double in by its bits, not its digits</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~35"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~7"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_real_array"></span> <h3>private  subroutine <a href='../proc/hash_real_array.html'>hash_real_array</a>(this, values)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~36"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-values~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>values</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-hash_text"></span> <h3>private  subroutine <a href='../proc/hash_text.html'>hash_text</a>(this, value)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~37"></span>
+              class(<a href='../type/hasher_t.html'>hasher_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~8"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 05:07 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
