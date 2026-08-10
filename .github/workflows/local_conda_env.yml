@@ -19,6 +19,15 @@ jobs:
           - name: "with tblite + legacy MPI"
             tblite: true
             legacy_mpi: true
+          # libxc is fetched and built from source, and it is large -- several
+          # thousand generated functional files. Nothing here compiles it
+          # otherwise, so a change that breaks the fetch or the linkage would
+          # only surface on someone's machine. tblite is off so this job is
+          # only libxc.
+          - name: "with libxc"
+            tblite: false
+            legacy_mpi: false
+            libxc: true
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -39,6 +48,7 @@ jobs:
           export FC=gfortran
           cmake -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
                 -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
+                -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
                 -B build
           cmake --build build
 

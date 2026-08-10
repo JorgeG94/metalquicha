@@ -70,6 +70,8 @@ option(
 option(MQC_ENABLE_LIBCINT
        "Fetch libcint for CPU Gaussian integrals (real ab initio without a GPU)"
        OFF)
+option(MQC_ENABLE_LIBXC
+       "Fetch libxc for exchange-correlation functionals (CPU DFT)" OFF)
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -199,6 +201,52 @@ if(MQC_ENABLE_TBLITE)
   list(APPEND libraries_to_link tblite::tblite)
 endif()
 
+# libxc, for exchange-correlation functionals.
+#
+# FetchContent rather than ExternalProject, which is what the sample beside this
+# file used. The difference is when the subproject is configured:
+# ExternalProject builds at *build* time, so its targets do not exist while this
+# project is being configured and a caller has to name the .a files by hand,
+# guess the module directory and add_dependencies to force an order.
+# FetchContent configures it now, so `xc` and `xcf03` are ordinary targets --
+# their include directories, their link order and their build order all come
+# along on their own.
+#
+# The tarball rather than the git repository: libxc's history carries the
+# generated functional sources and is far larger than any release. URL_HASH pins
+# it, which a tag would not -- a tag can be moved and a hash cannot.
+if(MQC_ENABLE_LIBXC)
+  include(FetchContent)
+  # Static, so nothing has to be found on the library path at run time; the
+  # global POSITION_INDEPENDENT_CODE above keeps it usable from libmqc.so.
+  set(BUILD_SHARED_LIBS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(ENABLE_FORTRAN
+      ON
+      CACHE BOOL "" FORCE)
+  set(BUILD_TESTING
+      OFF
+      CACHE BOOL "" FORCE)
+  set(ENABLE_PYTHON
+      OFF
+      CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    libxc
+    URL https://gitlab.com/libxc/libxc/-/archive/7.1.2/libxc-7.1.2.tar.gz
+    URL_HASH
+      SHA256=c517ce61820ea8114664a4280b6a6bc74a4f22f1fd1ea4ddecd6df0caeeae4f4
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+  FetchContent_MakeAvailable(libxc)
+  target_compile_definitions(${main_lib} PRIVATE MQC_WITH_LIBXC)
+  # xcf03 first, then xc: the Fortran interface depends on the C library, and a
+  # static link resolves left to right.
+  target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:xcf03>
+                                            $<BUILD_INTERFACE:xc>)
+  target_include_directories(${main_lib} PRIVATE ${libxc_BINARY_DIR})
+  message(STATUS "libxc enabled: exchange-correlation functionals available")
+endif()
+
 # libcint, for Gaussian integrals on the CPU.
 #
 # The point is not speed. Everything ab initio here runs through cuEST, which
@@ -223,12 +271,14 @@ if(MQC_ENABLE_LIBCINT)
   FetchContent_Declare(
     libcint
     GIT_REPOSITORY https://github.com/JorgeG94/libcint.git
-    # Pinned to a commit, not to master. A branch is a moving target: a push to
-    # libcint would change what this program builds against, with nothing here
-    # recording that it changed. Worth replacing with a tag once the fork has
-    # one -- a tag says what it is, a hash does not. GIT_SHALLOW is off because
-    # a shallow fetch cannot resolve a bare commit hash.
-    GIT_TAG ef51512689e32f6a6693bbeab83966db5dbc4d15)
+    # A commit, not a branch. libcint develops on `develop`, so tracking that
+    # would change what this program builds against on every push there, with
+    # nothing here recording that it changed. This hash is reachable from
+    # develop and carries libcint_3c2e_sph and libcint_2c2e_sph, without which
+    # the density-fitting path will not compile. Worth replacing with a tag once
+    # the fork has one -- a tag says what it is, a hash does not, and a tag also
+    # lets GIT_SHALLOW come back, which a bare hash cannot resolve.
+    GIT_TAG 36e6da1fd88c2ff25144502e24201aed8e197079)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
@@ -296,6 +346,13 @@ if(MQC_ENABLE_HDF5)
   target_include_directories(check_hdf5_checkpoint
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
+endif()
+
+if(MQC_ENABLE_LIBXC)
+  add_executable(check_libxc ${PROJECT_SOURCE_DIR}/validation/check_libxc.f90)
+  target_include_directories(check_libxc PRIVATE "${CMAKE_BINARY_DIR}/modules"
+                                                 ${libxc_BINARY_DIR})
+  target_link_libraries(check_libxc PRIVATE ${main_lib} xcf03 xc)
 endif()
 
 if(MQC_ENABLE_LIBCINT)
