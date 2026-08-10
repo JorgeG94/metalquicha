@@ -136,19 +136,19 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-atom_idx~2">atom_idx</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-calculator~2">calculator</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-atom_idx~3">atom_idx</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-calculator~3">calculator</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-coord">coord</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-disp_idx~3">disp_idx</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-displaced_geom~2">displaced_geom</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~2">dummy_msg</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~2">full_system</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~7">dummy_msg</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~3">full_system</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-grad_result">grad_result</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-gradient_type~2">gradient_type</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-local_config~2">local_config</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~27">n_atoms</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~6">req</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~24">status</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-local_config~3">local_config</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~28">n_atoms</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~23">req</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~18">status</a>
         </div>
       </div>
     </div>
@@ -1187,7 +1187,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~16"></span>
+              <span class="anchor" id="variable-world_comm~26"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1202,7 +1202,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~52"></span>
+              <span class="anchor" id="variable-sys_geom~48"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1217,7 +1217,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~17"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1868,7 +1868,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_idx~2"></span>
+              <span class="anchor" id="variable-atom_idx~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1885,7 +1885,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calculator~2"></span>
+              <span class="anchor" id="variable-calculator~3"></span>
               class(<a href='../type/qc_method_t.html'>qc_method_t</a>),
             </td>
               <td>private,</td>
@@ -1953,7 +1953,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dummy_msg~2"></span>
+              <span class="anchor" id="variable-dummy_msg~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -1970,7 +1970,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_system~2"></span>
+              <span class="anchor" id="variable-full_system~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -2021,7 +2021,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-local_config~2"></span>
+              <span class="anchor" id="variable-local_config~3"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
               <td>private</td>
@@ -2038,7 +2038,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~27"></span>
+              <span class="anchor" id="variable-n_atoms~28"></span>
               integer,
             </td>
               <td>private</td>
@@ -2055,7 +2055,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~6"></span>
+              <span class="anchor" id="variable-req~23"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -2072,7 +2072,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~24"></span>
+              <span class="anchor" id="variable-status~18"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -2243,7 +2243,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 11:50 +0000             </p>
+ on 2026-08-10 12:23 +0000             </p>
           </div>
         </div>
         <br>

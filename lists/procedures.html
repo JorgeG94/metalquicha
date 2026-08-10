@@ -1021,15 +1021,15 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
-                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
-                 <td>Function</td>
-                 <td><p>Check if string ends with suffix</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
+                 <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
+                 <td>Function</td>
+                 <td><p>Check if string ends with suffix</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/energy_reset.html'>energy_reset</a></td>
@@ -1726,13 +1726,13 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
-                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text~2.html'>int_text</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2039,15 +2039,15 @@ Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
-                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
                  <td>Function</td>
-                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of~2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
@@ -2371,6 +2371,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><p>The seed point of an orbit, on the unit sphere by construction</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/order_index.html'>order_index</a></td>
+                 <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
+                 <td>Function</td>
+                 <td><p>Position of an order in the prunable sequence, or 0 if absent</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/parse_command_line.html'>parse_command_line</a></td>
                  <td><a href='../module/mqc_cli_parser.html'>mqc_cli_parser</a></td>
                  <td>Subroutine</td>
@@ -2504,6 +2510,18 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><a href='../module/mqc_vibrational_analysis.html'>mqc_vibrational_analysis</a></td>
                  <td>Subroutine</td>
                  <td><p>Project out translation and rotation modes from mass-weighted Hessian.</p><a href="../proc/project_translation_rotation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/prune_angular_orders.html'>prune_angular_orders</a></td>
+                 <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Lebedev order for each radial shell of one atom</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/prune_scheme_name.html'>prune_scheme_name</a></td>
+                 <td><a href='../module/mqc_dft_prune.html'>mqc_dft_prune</a></td>
+                 <td>Function</td>
+                 <td><p>Human-readable scheme name</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/queue_destroy.html'>queue_destroy</a></td>
@@ -3171,7 +3189,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 11:50 +0000             </p>
+ on 2026-08-10 12:23 +0000             </p>
           </div>
         </div>
         <br>
