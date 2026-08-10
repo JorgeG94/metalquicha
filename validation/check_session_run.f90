@@ -30,14 +30,14 @@ program check_session_run
    !> prism.json with the molecules removed. Kept on one logical line per
    !  section so a mismatch against the deck is easy to see by eye.
    character(len=*), parameter :: SETTINGS = &
-      '{"schema":{"name":"mqc-frag","version":"1.0"},'// &
-      '"model":{"method":"XTB-GFN1","basis":"cc-pVDZ","aux_basis":"cc-pVDZ-RIFIT"},'// &
-      '"keywords":{"scf":{"maxiter":300,"tolerance":1e-06},'// &
-      '"fragmentation":{"method":"MBE","allow_overlapping_fragments":false,'// &
-      '"level":2,"embedding":"none","cutoff_method":"distance",'// &
-      '"distance_metric":"min"}},'// &
-      '"system":{"logger":{"level":"info"}},'// &
-      '"driver":"Energy"}'
+                                  '{"schema":{"name":"mqc-frag","version":"1.0"},'// &
+                                  '"model":{"method":"XTB-GFN1","basis":"cc-pVDZ","aux_basis":"cc-pVDZ-RIFIT"},'// &
+                                  '"keywords":{"scf":{"maxiter":300,"tolerance":1e-06},'// &
+                                  '"fragmentation":{"method":"MBE","allow_overlapping_fragments":false,'// &
+                                  '"level":2,"embedding":"none","cutoff_method":"distance",'// &
+                                  '"distance_metric":"min"}},'// &
+                                  '"system":{"logger":{"level":"info"}},'// &
+                                  '"driver":"Energy"}'
 
    type(mqc_session_t) :: session
    type(mqc_config_t) :: config

@@ -291,7 +291,7 @@ contains
       ! Every input path arrives here, so this is where the system is checked:
       ! the JSON reader, the C interface and a supplied term list alike.
       if (resources%mpi_comms%world_comm%rank() == 0) then
-         call validate_system(sys_geom, .not. config%unchecked_input, validation_error, &
+         call validate_system(sys_geom,.not. config%unchecked_input, validation_error, &
                               check_bonds=allocated(sys_geom%bonds))
          if (validation_error%has_error()) then
             call logger%error("invalid system: "//validation_error%get_message())
@@ -334,7 +334,7 @@ contains
             ! screen breaks silently.
             call supplied_check%replace(polymers, total_fragments, max_level, validation_error)
             if (.not. validation_error%has_error()) then
-               call validate_terms(supplied_check, sys_geom, .not. config%unchecked_input, &
+               call validate_terms(supplied_check, sys_geom,.not. config%unchecked_input, &
                                    validation_error)
             end if
             call supplied_check%destroy()

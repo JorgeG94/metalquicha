@@ -97,7 +97,7 @@ contains
       call partition_all_together(sys, 4)
       call perceive_bonds(sys, bonds, n_bonds)
       do ibond = 1, n_bonds
-         call check(error, .not. bonds(ibond)%is_broken, &
+         call check(error,.not. bonds(ibond)%is_broken, &
                     "with one monomer no bond is cut")
          if (allocated(error)) return
       end do
@@ -213,7 +213,7 @@ contains
 
       call water_dimer(sys)
       call auto_monomers(sys, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
 
       call check(error, sys%n_monomers, 2, "two waters, two monomers")

@@ -29,7 +29,7 @@ module mqc_capi_system
    !!     valence: an uncapped radical treated as a closed shell, which
    !!     converges to a plausible number and warns about nothing.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double, c_char, c_null_char, &
-                                          c_f_pointer, c_loc, c_associated
+                                                                             c_f_pointer, c_loc, c_associated
    use pic_types, only: dp
    use mqc_physical_fragment, only: system_geometry_t, bond_t, to_bohr
    use mqc_bond_perception, only: perceive_bonds, missing_broken_bonds, &

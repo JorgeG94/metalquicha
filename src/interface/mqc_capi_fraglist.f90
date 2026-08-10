@@ -32,7 +32,7 @@ module mqc_capi_fraglist
    !! retrievable through `mqc_fraglist_last_error` while it is still the most
    !! recent thing that happened.
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr, c_int, c_int64_t, c_double, &
-                                          c_char, c_null_char, c_f_pointer, c_loc, c_associated
+                                                                     c_char, c_null_char, c_f_pointer, c_loc, c_associated
    use pic_types, only: dp, default_int, int64
    use mqc_fraglist, only: fraglist_t
    use mqc_error, only: error_t

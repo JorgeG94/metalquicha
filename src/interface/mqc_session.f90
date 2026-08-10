@@ -245,7 +245,7 @@ contains
       ! bad list comes back as an error the caller can act on, and the workers
       ! never learn anything was attempted. The driver's copy stays as the
       ! backstop for every other entry path.
-      call validate_system(sys_geom, .not. config%unchecked_input, error, &
+      call validate_system(sys_geom,.not. config%unchecked_input, error, &
                            check_bonds=allocated(sys_geom%bonds))
       if (error%has_error()) return
       if (n_terms > 0) then

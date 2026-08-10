@@ -43,7 +43,7 @@ contains
       type(error_t) :: err
 
       call list%create(5_default_int, 2_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 10, "C(5,2) = 10 dimers")
       if (allocated(error)) return
@@ -61,7 +61,7 @@ contains
       type(error_t) :: err
 
       call list%create(5_default_int, 3_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 20, "C(5,2) + C(5,3) = 20 terms")
 
@@ -80,7 +80,7 @@ contains
       integer :: n_dimers, n_trimers
 
       call list%create(5_default_int, 3_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
 
       n_dimers = 0
@@ -120,7 +120,7 @@ contains
       integer(default_int) :: first_kept(3), third_kept(3)
 
       call list%create(5_default_int, 3_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
 
       ! Keep terms 2, 5 and 9, and remember what they were.
@@ -133,7 +133,7 @@ contains
       third_kept = list%terms(9, :)
 
       call list%keep(mask, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 3, "three terms survive")
       if (allocated(error)) return
@@ -162,7 +162,7 @@ contains
       mask = .true.
 
       call list%keep(mask, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), int(before), "keeping everything changes nothing")
 
@@ -182,7 +182,7 @@ contains
       mask = .false.
 
       call list%keep(mask, err)
-      call check(error, .not. err%has_error(), &
+      call check(error,.not. err%has_error(), &
                  "screening everything away should not be an error: "//err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 0, "no terms survive")
@@ -204,7 +204,7 @@ contains
       mine(3, :) = [3, 9]
 
       call list%replace(mine, 3_int64, 2_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 3)
       if (allocated(error)) return
@@ -237,12 +237,12 @@ contains
 
       mine(1, :) = [1, 2]
       call list%replace(mine, 1_int64, 2_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
-      call check(error, .not. list%has_distances, &
+      call check(error,.not. list%has_distances, &
                  "distances from the old list must not be read as the new one's")
       if (allocated(error)) return
-      call check(error, .not. allocated(list%distances), &
+      call check(error,.not. allocated(list%distances), &
                  "the stale distance array should be gone")
 
       call list%destroy()
@@ -297,11 +297,11 @@ contains
       ! monomers as well: seven terms in total.
       mine(1, :) = [1, 2, 3]
       call list%replace(mine, 1_int64, 3_default_int, err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
 
       call list%close_subsets(err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       call check(error, int(list%n_terms), 7, &
                  "a lone trimer needs 3 monomers + 3 dimers + itself")
@@ -325,7 +325,7 @@ contains
 
       call list%create(4_default_int, 2_default_int, err)
       call list%close_subsets(err)
-      call check(error, .not. err%has_error(), err%get_message())
+      call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
       after_first = list%n_terms
 

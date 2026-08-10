@@ -183,13 +183,16 @@ add_executable(check_run ${PROJECT_SOURCE_DIR}/validation/check_run.f90)
 target_include_directories(check_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_run PRIVATE ${main_lib})
 
-add_executable(check_session_run ${PROJECT_SOURCE_DIR}/validation/check_session_run.f90)
-target_include_directories(check_session_run PRIVATE "${CMAKE_BINARY_DIR}/modules")
+add_executable(check_session_run
+               ${PROJECT_SOURCE_DIR}/validation/check_session_run.f90)
+target_include_directories(check_session_run
+                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_session_run PRIVATE ${main_lib})
 
 add_executable(check_bcast_system
                ${PROJECT_SOURCE_DIR}/validation/check_bcast_system.f90)
-target_include_directories(check_bcast_system PRIVATE "${CMAKE_BINARY_DIR}/modules")
+target_include_directories(check_bcast_system
+                           PRIVATE "${CMAKE_BINARY_DIR}/modules")
 target_link_libraries(check_bcast_system PRIVATE ${main_lib})
 
 add_executable(check_bcast ${PROJECT_SOURCE_DIR}/validation/check_bcast.f90)
@@ -206,13 +209,14 @@ target_link_libraries(${exe_name} PRIVATE ${main_lib})
 # Shared library for ctypes. The C entry points live in the static archive and
 # nothing in it references them -- they are called from outside -- so a normal
 # archive link would take none of them and produce an empty .so.
-add_library(mqc_shared SHARED ${PROJECT_SOURCE_DIR}/src/interface/mqc_capi_export.f90)
-set_target_properties(mqc_shared PROPERTIES
-  OUTPUT_NAME mqc
-  Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/modules_shared")
-target_link_libraries(mqc_shared PRIVATE
-  "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>" "-Wl,--no-whole-archive"
-  ${main_lib})
+add_library(mqc_shared SHARED
+            ${PROJECT_SOURCE_DIR}/src/interface/mqc_capi_export.f90)
+set_target_properties(
+  mqc_shared PROPERTIES OUTPUT_NAME mqc Fortran_MODULE_DIRECTORY
+                                        "${CMAKE_BINARY_DIR}/modules_shared")
+target_link_libraries(
+  mqc_shared PRIVATE "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>"
+                     "-Wl,--no-whole-archive" ${main_lib})
 add_dependencies(mqc_shared ${main_lib})
 
 foreach(tgt ${all_targets})
