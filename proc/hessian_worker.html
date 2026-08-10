@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.8% of total for procedures.">83 statements</a>
+                 title=" 0.7% of total for procedures.">83 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,19 +136,19 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-atom_idx~2">atom_idx</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-atom_idx~3">atom_idx</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-calculator~3">calculator</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-coord">coord</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-disp_idx~2">disp_idx</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-displaced_geom">displaced_geom</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~5">dummy_msg</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~2">full_system</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-disp_idx~3">disp_idx</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-displaced_geom~2">displaced_geom</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-dummy_msg~7">dummy_msg</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-full_system~3">full_system</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-grad_result">grad_result</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-gradient_type~2">gradient_type</a>
             <a class="list-group-item" href="../proc/hessian_worker.html#variable-local_config~3">local_config</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~11">n_atoms</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~13">req</a>
-            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~10">status</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-n_atoms~22">n_atoms</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-req~23">req</a>
+            <a class="list-group-item" href="../proc/hessian_worker.html#variable-status~11">status</a>
         </div>
       </div>
     </div>
@@ -193,9 +193,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_method_factory.html'>mqc_method_factory</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1147,7 +1147,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~13"></span>
+              <span class="anchor" id="variable-world_comm~22"></span>
               type(comm_t),
             </td>
 <td>intent(in)</td>
@@ -1162,7 +1162,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~22"></span>
+              <span class="anchor" id="variable-sys_geom~42"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1177,7 +1177,7 @@ Requests displacement indices, computes gradients, and sends results back</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~15"></span>
+              <span class="anchor" id="variable-config~22"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1828,7 +1828,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-atom_idx~2"></span>
+              <span class="anchor" id="variable-atom_idx~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1879,7 +1879,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-disp_idx~2"></span>
+              <span class="anchor" id="variable-disp_idx~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -1896,7 +1896,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-displaced_geom"></span>
+              <span class="anchor" id="variable-displaced_geom~2"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1913,7 +1913,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dummy_msg~5"></span>
+              <span class="anchor" id="variable-dummy_msg~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -1930,7 +1930,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-full_system~2"></span>
+              <span class="anchor" id="variable-full_system~3"></span>
               type(<a href='../type/physical_fragment_t.html'>physical_fragment_t</a>),
             </td>
               <td>private</td>
@@ -1998,7 +1998,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_atoms~11"></span>
+              <span class="anchor" id="variable-n_atoms~22"></span>
               integer,
             </td>
               <td>private</td>
@@ -2015,7 +2015,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-req~13"></span>
+              <span class="anchor" id="variable-req~23"></span>
               type(request_t),
             </td>
               <td>private</td>
@@ -2032,7 +2032,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-status~10"></span>
+              <span class="anchor" id="variable-status~11"></span>
               type(MPI_Status),
             </td>
               <td>private</td>
@@ -2203,7 +2203,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 00:56 +0000             </p>
+ on 2026-08-10 01:10 +0000             </p>
           </div>
         </div>
         <br>

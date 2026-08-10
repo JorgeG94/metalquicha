@@ -188,6 +188,18 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Get total number of basis functions for an atom</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/atomic_ecp_allocate.html'>atomic_ecp_allocate</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Size the projected channels</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/atomic_ecp_destroy.html'>atomic_ecp_destroy</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/basis_search_path.html'>basis_search_path</a></td>
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td>Function</td>
@@ -252,6 +264,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
                  <td>Subroutine</td>
                  <td><p>Build a molecular basis from a BSE JSON file for a list of atoms</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_molecular_ecp_json.html'>build_molecular_ecp_json</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Build a per-atom ECP set for a list of atoms</p><a href="../proc/build_molecular_ecp_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_task_payload_from_row.html'>build_task_payload_from_row</a></td>
@@ -326,6 +344,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Function</td>
                  <td><p>Get number of basis functions in a shell (Cartesian)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/channel_angular_momentum.html'>channel_angular_momentum</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The single angular momentum one ECP channel carries</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/check_child_object.html'>check_child_object</a></td>
@@ -620,6 +644,18 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td><p>Deep copy of an atomic basis</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/copy_atomic_ecp.html'>copy_atomic_ecp</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Deep copy of one atom&rsquo;s ECP</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/copy_ecp_shell.html'>copy_ecp_shell</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Deep copy of one channel</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/count_hydrogen_caps.html'>count_hydrogen_caps</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Subroutine</td>
@@ -732,6 +768,18 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../interface/do_fragment_work.html'>do_fragment_work</a></td>
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ecp_shell_allocate.html'>ecp_shell_allocate</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Size one channel for <code>nprim</code> primitives</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ecp_shell_destroy.html'>ecp_shell_destroy</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
@@ -1311,6 +1359,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Atomic number as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Function</td>
+                 <td><p>An integer as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
                  <td><a href='../module/mqc_gmbe_utils.html'>mqc_gmbe_utils</a></td>
                  <td>Subroutine</td>
@@ -1477,6 +1531,30 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_cgto.html'>mqc_cgto</a></td>
                  <td>Function</td>
                  <td><p>Get total number of basis functions for the molecule</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecular_ecp_allocate.html'>molecular_ecp_allocate</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One entry per atom, all of them empty until filled</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecular_ecp_any.html'>molecular_ecp_any</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Function</td>
+                 <td><p>Whether any atom carries a potential at all</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecular_ecp_core_electrons.html'>molecular_ecp_core_electrons</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Function</td>
+                 <td><p>Electrons replaced across the whole molecule</p><a href="../proc/molecular_ecp_core_electrons.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/molecular_ecp_destroy.html'>molecular_ecp_destroy</a></td>
+                 <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/molecule_destroy.html'>molecule_destroy</a></td>
@@ -1780,6 +1858,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p>A key named as the user would write it, with its parent path</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_channel.html'>read_channel</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read one channel&rsquo;s primitives</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_connectivity.html'>read_connectivity</a></td>
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Subroutine</td>
@@ -1821,6 +1905,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td>Subroutine</td>
                  <td><p>Read and write JSON content from an individual molecule file
 Properly handles nested structures from fragmented calculations</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_json_ecp_element.html'>read_json_ecp_element</a></td>
+                 <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Parse the ECP for one element, if the file defines one</p><a href="../proc/read_json_ecp_element.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_molecule.html'>read_molecule</a></td>
@@ -2235,7 +2325,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 00:56 +0000             </p>
+ on 2026-08-10 01:10 +0000             </p>
           </div>
         </div>
         <br>
