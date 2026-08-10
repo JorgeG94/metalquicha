@@ -55,6 +55,18 @@ addtestpp(mqc_json_basis_reader)
 target_compile_definitions(test_mqc_json_basis_reader
                            PRIVATE MQC_HAVE_BASIS_SETS)
 
+# Which angular form the reader takes each basis to be in. Reads the same
+# extracted files, so it is gated the same way.
+addtestpp(mqc_basis_cartesian)
+target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
+
+# That the angular form reaches the integrals, counted in basis functions. Needs
+# libcint, since libcint_molecule_t is the thing it inspects.
+if(MQC_ENABLE_LIBCINT)
+  addtest(mqc_libcint_cartesian)
+  target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
+endif()
+
 # Only meaningful with the cuEST backend compiled in.
 if(MQC_ENABLE_CUEST)
   addtestpp(mqc_cuest_spin)

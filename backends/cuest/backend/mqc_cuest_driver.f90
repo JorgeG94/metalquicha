@@ -300,13 +300,21 @@ contains
       !!
       !! Basis Set Exchange JSON is the only format; `find_basis_file` walks
       !! the search path and reports where it looked if nothing turns up.
+      !!
+      !! A Cartesian basis is refused here, and that one is not a gap waiting to
+      !! be filled the way the CPU backend's was. cuEST builds its AO shells
+      !! pure, every plan and every device buffer is sized from the spherical
+      !! function count, and there is no per-call convention to route on the way
+      !! libcint has. Reading 6-31G* as spherical anyway is precisely the silent
+      !! wrong answer this was all fixed for, so the deck is told to change the
+      !! basis instead.
       character(len=*), intent(in) :: basis_name
       character(len=*), intent(in) :: element_symbols(:)
       type(molecular_basis_type), intent(out) :: mol_basis
       type(error_t), intent(out) :: error
       character(len=*), intent(in), optional :: role  !! "orbital" or "auxiliary", for diagnostics
 
-      character(len=:), allocatable :: basis_path
+      character(len=:), allocatable :: basis_path, what
 
       if (len_trim(basis_name) == 0) then
          call error%set(ERROR_VALIDATION, "No basis set specified")
@@ -318,6 +326,18 @@ contains
 
       call build_molecular_basis_json(basis_path, element_symbols, mol_basis, error)
       if (error%has_error()) return
+
+      if (mol_basis%is_cartesian()) then
+         what = "basis set"
+         if (present(role)) what = trim(role)//" basis set"
+         call error%set(ERROR_VALIDATION, "the "//what//" '"//trim(basis_name)// &
+                        "' is Cartesian -- "//trim(basis_path)//" marks shells "// &
+                        "'gto_cartesian', which is six d functions rather than five. "// &
+                        "cuEST builds spherical shells only, so this basis cannot be "// &
+                        "run on the GPU backend; use a spherical set such as cc-pVDZ "// &
+                        "or def2-SVP, or run it on the CPU backend, which routes both.")
+         return
+      end if
 
       call check_basis_covers_atoms(basis_name, basis_path, element_symbols, mol_basis, error, role)
    end subroutine load_basis

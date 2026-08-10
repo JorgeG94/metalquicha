@@ -101,6 +101,24 @@ contains
             return
          end if
 
+         ! Refused here rather than deeper down, because this is the only place
+         ! that knows both basis set *names* -- and a name is what has to change
+         ! to fix it. 6-31G* is Cartesian while every JKFIT set is spherical, so
+         ! this is the pairing a deck lands on most easily.
+         if (mol%cartesian .neqv. aux%cartesian) then
+            call result%error%set(ERROR_VALIDATION, "density fitting: the orbital basis '"// &
+                                  trim(settings%basis_set)//"' is "// &
+                                  angular_form_name(mol%cartesian)//" and the auxiliary basis '"// &
+                                  trim(settings%aux_basis_set)//"' is "// &
+                                  angular_form_name(aux%cartesian)//". The fitting integrals "// &
+                                  "are built in one angular form for all three centres, so "// &
+                                  "the two bases have to agree.")
+            result%has_error = .true.
+            call mol%destroy()
+            call aux%destroy()
+            return
+         end if
+
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size)
@@ -148,6 +166,18 @@ contains
 
       call mol%destroy()
    end subroutine run_libcint_hf
+
+   pure function angular_form_name(cartesian) result(name)
+      !! "Cartesian" or "spherical", so an error can say which basis is which
+      logical, intent(in) :: cartesian
+      character(len=:), allocatable :: name
+
+      if (cartesian) then
+         name = "Cartesian"
+      else
+         name = "spherical"
+      end if
+   end function angular_form_name
 
    pure function to_text(value) result(out)
       integer, intent(in) :: value

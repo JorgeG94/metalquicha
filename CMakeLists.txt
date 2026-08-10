@@ -293,10 +293,13 @@ if(MQC_ENABLE_LIBCINT)
     # would change what this program builds against on every push there, with
     # nothing here recording that it changed. This hash is reachable from
     # develop and carries libcint_3c2e_sph and libcint_2c2e_sph, without which
-    # the density-fitting path will not compile. Worth replacing with a tag once
-    # the fork has one -- a tag says what it is, a hash does not, and a tag also
-    # lets GIT_SHALLOW come back, which a bare hash cannot resolve.
-    GIT_TAG 36e6da1fd88c2ff25144502e24201aed8e197079)
+    # the density-fitting path will not compile -- and their Cartesian twins
+    # libcint_3c2e_cart, libcint_2c2e_cart and libcint_tot_cgto_cart, without
+    # which a Cartesian basis such as 6-31G* can reach the exact four-index path
+    # but not the density-fitted one. Worth replacing with a tag once the fork
+    # has one -- a tag says what it is, a hash does not, and a tag also lets
+    # GIT_SHALLOW come back, which a bare hash cannot resolve.
+    GIT_TAG 08d1fe0260be815160cd65b29fa5b6585dca3b4e)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
