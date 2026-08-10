@@ -21,6 +21,7 @@ program check_grid
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, grid_level_radial, grid_level_angular
+   use mqc_dft_prune, only: PRUNE_NONE, PRUNE_NWCHEM, prune_scheme_name
    implicit none
 
    integer, parameter :: N_DIM = 3
@@ -41,8 +42,10 @@ program check_grid
 
    n_bad = 0
 
-   call run_case("water", water, [8, 1, 1], n_bad)
-   call run_case("auh  ", auh, [79, 1], n_bad)
+   call run_case("water", water, [8, 1, 1], PRUNE_NONE, n_bad)
+   call run_case("auh  ", auh, [79, 1], PRUNE_NONE, n_bad)
+   call run_case("water", water, [8, 1, 1], PRUNE_NWCHEM, n_bad)
+   call run_case("auh  ", auh, [79, 1], PRUNE_NWCHEM, n_bad)
 
    if (n_bad > 0) then
       write (*, "(a)") "FAILED"
@@ -52,10 +55,11 @@ program check_grid
 
 contains
 
-   subroutine run_case(label, atom_coords, atomic_numbers, n_bad)
+   subroutine run_case(label, atom_coords, atomic_numbers, prune, n_bad)
       character(len=*), intent(in) :: label
       real(dp), intent(in) :: atom_coords(:, :)
       integer, intent(in) :: atomic_numbers(:)
+      integer, intent(in) :: prune
       integer, intent(inout) :: n_bad
 
       type(dft_grid_t) :: grid
@@ -68,18 +72,21 @@ contains
       exact = real(n_atoms, dp)
 
       write (*, "(a)") ""
-      write (*, "(a,a,a,i0,a)") "== ", label, " (", n_atoms, " atoms)"
+      write (*, "(a,a,a,i0,a,a)") "== ", label, " (", n_atoms, " atoms), pruning: ", &
+         prune_scheme_name(prune)
       write (*, "(a)") "level   points      gaussians          slaters"
 
       do level = 1, MAX_LEVEL
-         call build_dft_grid(atom_coords, atomic_numbers, grid, error, level=level)
+         call build_dft_grid(atom_coords, atomic_numbers, grid, error, level=level, &
+                             prune=prune)
          if (error%has_error()) then
             write (*, "(a,a)") "FAIL: ", error%get_message()
             n_bad = n_bad + 1
             return
          end if
 
-         if (level == 3) call dump_grid(label, grid)
+         if (level == 3 .and. prune == PRUNE_NONE) call dump_grid(label, grid)
+         if (level == 3 .and. prune == PRUNE_NWCHEM) call dump_grid("pruned_"//label, grid)
 
          got_gauss = integrate_gaussians(grid, atom_coords)
          got_slater = integrate_slaters(grid, atom_coords)
@@ -95,20 +102,35 @@ contains
          rel(level, 1) = abs(got_gauss - exact)/exact
          rel(level, 2) = abs(got_slater - exact)/exact
 
+         ! Level 3 must reach the same accuracy pruned as unpruned -- that is
+         ! the entire claim pruning makes, and it holds for both molecules.
          if (level == 3) then
             call assert_below("level 3 gaussians", rel(level, 1), 1.0e-8_dp, n_bad)
             call assert_below("level 3 slaters  ", rel(level, 2), 1.0e-8_dp, n_bad)
          end if
-         if (level == 5) then
+
+         ! Refining only reaches machine precision unpruned. NWChem's inner two
+         ! zones are fixed at 50 and 86 points whatever the level, so a pruned
+         ! grid saturates instead of converging -- AuH's Slater integral even
+         ! worsens from level 4 to 5, and PySCF's pruned grid does the identical
+         ! thing to the same digits. Asserting convergence here would be
+         ! asserting something the scheme does not promise.
+         if (level == 5 .and. prune == PRUNE_NONE) then
             call assert_below("level 5 gaussians", rel(level, 1), 1.0e-10_dp, n_bad)
             call assert_below("level 5 slaters  ", rel(level, 2), 1.0e-10_dp, n_bad)
+         end if
+         if (level == 5 .and. prune /= PRUNE_NONE) then
+            call assert_below("level 5 gaussians", rel(level, 1), 1.0e-8_dp, n_bad)
+            call assert_below("level 5 slaters  ", rel(level, 2), 1.0e-8_dp, n_bad)
          end if
 
          call grid%destroy()
       end do
 
       ! A grid that is merely close at one level could be wrong in a way that
-      ! cancels. Refining must improve it, every step, for both integrands.
+      ! cancels. Refining must improve it, every step, for both integrands --
+      ! but only unpruned, for the reason given above.
+      if (prune /= PRUNE_NONE) return
       do k = 2, MAX_LEVEL
          if (rel(k, 1) >= rel(k - 1, 1)) then
             write (*, "(a,i0)") "   FAIL: gaussians did not improve at level ", k
