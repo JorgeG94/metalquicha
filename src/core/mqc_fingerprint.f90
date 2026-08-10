@@ -101,7 +101,7 @@ contains
       call h%int(sys%multiplicity)
       if (allocated(sys%element_numbers)) call h%int_array(sys%element_numbers)
       if (allocated(sys%coordinates)) call h%real_array(reshape(sys%coordinates, &
-                                                               [size(sys%coordinates)]))
+                                                                [size(sys%coordinates)]))
 
       ! The partition. A term list names monomers by index, so two runs that
       ! agree on the atoms and disagree on the grouping agree on nothing that
@@ -118,7 +118,7 @@ contains
       end if
       if (allocated(sys%fragment_charges)) call h%int_array(sys%fragment_charges)
       if (allocated(sys%fragment_multiplicities)) then
-        call h%int_array(sys%fragment_multiplicities)
+         call h%int_array(sys%fragment_multiplicities)
       end if
 
       ! Bonds decide where caps go, and a cap is an atom that was not there

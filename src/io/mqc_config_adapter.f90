@@ -157,7 +157,7 @@ contains
       driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
       driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
       if (allocated(mqc_config%checkpoint_file)) then
-        driver_config%checkpoint_file = mqc_config%checkpoint_file
+         driver_config%checkpoint_file = mqc_config%checkpoint_file
       end if
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted

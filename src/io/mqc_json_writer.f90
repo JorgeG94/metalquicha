@@ -79,7 +79,7 @@ contains
       ! Stamped by every writer, so no output format is the one that forgets.
       ! A restart reads this before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
-        call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
       if (data%has_energy) call json%add(main_obj, "total_energy", data%total_energy)
@@ -142,7 +142,7 @@ contains
       ! Stamped by every writer, so no output format is the one that forgets.
       ! A restart reads this before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
-        call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
       call json%add(main_obj, "total_energy", data%total_energy)
@@ -258,7 +258,7 @@ contains
       ! Stamped by every writer, so no output format is the one that forgets.
       ! A restart reads this before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
-        call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
       call json%add(main_obj, "total_energy", data%total_energy)
@@ -358,7 +358,7 @@ contains
       ! Stamped by every writer, so no output format is the one that forgets.
       ! A restart reads this before it reuses anything.
       if (len_trim(data%fingerprint) > 0) then
-        call json%add(main_obj, "fingerprint", trim(data%fingerprint))
+         call json%add(main_obj, "fingerprint", trim(data%fingerprint))
       end if
 
       ! Total energy
