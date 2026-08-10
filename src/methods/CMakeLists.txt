@@ -24,7 +24,5 @@ endif()
 # Factory must come after method types are defined
 target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
 
-# CPU integrals and SCF, only when libcint is fetched.
-if(MQC_ENABLE_LIBCINT)
-  target_sources(${main_lib} PRIVATE mqc_libcint_integrals.f90 mqc_libcint_rhf.f90)
-endif()
+# The CPU integrals and SCF live in libcint_backend/, outside src/, because they
+# use libcint_fortran and fpm -- which globs src/ -- has no source for it.

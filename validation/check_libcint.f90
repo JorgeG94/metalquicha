@@ -43,9 +43,9 @@ program check_libcint
 
    !> STO-3G hydrogen, as tabulated
    real(dp), parameter :: EXPONENTS(NPRIM) = &
-      [3.42525091_dp, 0.62391373_dp, 0.16885540_dp]
+                          [3.42525091_dp, 0.62391373_dp, 0.16885540_dp]
    real(dp), parameter :: COEFFS(NPRIM) = &
-      [0.15432897_dp, 0.53532814_dp, 0.44463454_dp]
+                          [0.15432897_dp, 0.53532814_dp, 0.44463454_dp]
 
    integer :: atm(LIBCINT_ATM_SLOTS, NATM)
    integer :: bas(LIBCINT_BAS_SLOTS, NBAS)
