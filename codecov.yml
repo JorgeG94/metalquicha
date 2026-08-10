@@ -14,3 +14,10 @@ comment:
   layout: "reach,diff,flags,files"
   behavior: default
   require_changes: false
+
+# The validation/ programs are manual MPI/driver harnesses -- they exist to
+# exercise src/, not to be unit-tested themselves, so their own lines should
+# not count for or against coverage. Also stripped upstream by the `coverage`
+# target's lcov --remove, so this is belt-and-suspenders.
+ignore:
+  - "validation"
