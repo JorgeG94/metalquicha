@@ -105,6 +105,8 @@ contains
       m%variant = method_type_to_string(config%method_type)
       m%verbose = config%verbose
       m%accuracy = real(config%xtb%accuracy, wp)
+      m%max_iter = config%scf%max_iter
+      m%allow_crap_scf = config%scf%allow_crap_scf
 
       ! Electronic temperature (convert K to Hartree)
       ! kt = T * k_B, where k_B = 3.166808578545117e-06 Hartree/K
@@ -143,6 +145,7 @@ contains
       m%options%unrestricted = config%scf%unrestricted
       m%options%guess = config%scf%guess
       m%options%max_iter = config%scf%max_iter
+      m%options%allow_crap_scf = config%scf%allow_crap_scf
       m%options%conv_tol = config%scf%energy_convergence
       m%options%density_tol = config%scf%density_convergence
       m%options%use_diis = config%scf%use_diis

@@ -20,6 +20,7 @@ module mqc_fragment_table_writer
    use pic_timer, only: timer_type
    use pic_io, only: to_char
    use mqc_json_output_types, only: json_output_data_t
+   use mqc_result_types, only: scf_status_label
    use mqc_io_helpers, only: get_basename
    implicit none
    private
@@ -45,6 +46,7 @@ contains
 
       integer :: unit, ios, j, level
       integer(int64) :: i
+      logical :: have_scf
       logical :: have_energy, have_delta, have_distance
       type(timer_type) :: table_timer
       character(len=256) :: filename
@@ -69,13 +71,14 @@ contains
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
-      write (unit, "(a)") ",energy,delta_energy,distance"
+      write (unit, "(a)") ",energy,delta_energy,distance,scf"
 
       ! Presence of the value columns is fixed for the whole run, so decide once
       ! rather than per row.
       have_energy = allocated(data%fragment_energies)
       have_delta = allocated(data%delta_energies)
       have_distance = allocated(data%fragment_distances)
+      have_scf = allocated(data%fragment_scf_status)
 
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
@@ -93,12 +96,20 @@ contains
             i, level, (data%polymers(i, j), j=1, data%max_level)
 
          if (have_energy .and. have_delta .and. have_distance) then
-            write (unit, '(3(",",es24.16))') &
+            write (unit, '(3(",",es24.16))', advance="no") &
                data%fragment_energies(i), data%delta_energies(i), data%fragment_distances(i)
          else
             call write_optional_value(unit, have_energy, data%fragment_energies, i, .false.)
             call write_optional_value(unit, have_delta, data%delta_energies, i, .false.)
-            call write_optional_value(unit, have_distance, data%fragment_distances, i, .true.)
+            call write_optional_value(unit, have_distance, data%fragment_distances, i, .false.)
+         end if
+         ! A word rather than the integer: this column is read by eye as often
+         ! as by program, and "NO" in a spreadsheet is harder to scroll past
+         ! than a 2.
+         if (have_scf) then
+            write (unit, "(a)") ","//trim(scf_status_label(data%fragment_scf_status(i)))
+         else
+            write (unit, "(a)") ",?"
          end if
       end do
 

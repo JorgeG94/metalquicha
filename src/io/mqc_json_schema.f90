@@ -183,6 +183,7 @@ contains
       call allow(keys, "tolerance")
       call allow(keys, "unrestricted")
       call allow(keys, "guess")
+      call allow(keys, "allow_crap_scf")
    end function scf_keys
 
    function hessian_keys() result(keys)

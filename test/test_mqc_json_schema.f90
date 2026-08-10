@@ -56,7 +56,8 @@ contains
                        '"system": {"logger": {"level": "info"}, "skip_json_output": false,', &
                        '           "fragment_breakdown": "csv"},', &
                        '"keywords": {', &
-                       '  "scf": {"maxiter": 40, "tolerance": 1e-8, "unrestricted": false, "guess": "gwh"},', &
+                       '  "scf": {"maxiter": 40, "tolerance": 1e-8, "unrestricted": false, "guess": "gwh",', &
+                       '          "allow_crap_scf": false},', &
                        '  "hessian": {"displacement": 0.005, "temperature": 300.0, "pressure": 1.0},', &
                        '  "aimd": {"dt": 0.5, "nsteps": 10, "initial_temperature": 300.0,', &
                        '           "output_frequency": 1},', &

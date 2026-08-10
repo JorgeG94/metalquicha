@@ -4,6 +4,10 @@ module test_mqc_diis
    use pic_types, only: dp, int64
    use mqc_diis, only: diis_state_t
    implicit none
+
+   !> How far the ring-buffer extrapolation may sit from the reference one.
+   !> Not zero: see test_vs_reference. Observed rounding is 1.3e-16 relative.
+   real(dp), parameter :: REFERENCE_TOL = 1.0e-12_dp
    private
 
    public :: collect_mqc_diis
@@ -151,8 +155,22 @@ contains
    end subroutine test_ring_evicts
 
    subroutine test_vs_reference(error)
-      !! Bit-for-bit against the shift-the-history, rebuild-B implementation the
-      !! SCF driver used before the ring buffer and cached overlaps.
+      !! Against the shift-the-history, rebuild-B implementation the SCF driver
+      !! used before the ring buffer and cached overlaps.
+      !!
+      !! Agreement is to a tolerance, not bit-for-bit. It was written as
+      !! `all(fock == fock_ref)`, which is not a property any compiler
+      !! guarantees: the two solves are the same algorithm compiled separately,
+      !! so a pivot comparison or a vectorised inner loop can round differently.
+      !! The deviation is one ulp -- 2.8e-17 on a Fock element of 0.21 -- and
+      !! whether it appears depends on the optimisation level. Release and Debug
+      !! failed, RelWithDebInfo passed, which is why this reproduced in CI and
+      !! not on a developer's machine.
+      !!
+      !! The B matrix itself *is* compared bit-for-bit, in
+      !! diis_cached_overlap_matches_direct, and that is legitimate: the cached
+      !! and direct overlaps are the same expression over the same data. It is
+      !! only the solve that cannot be held to it.
       type(error_type), allocatable, intent(out) :: error
       type(diis_state_t) :: diis
       integer, parameter :: NF = 12, NE = 12, NMAX = 4, NPUSH = 9
@@ -161,6 +179,7 @@ contains
       real(dp) :: hist_f(NF, NMAX), hist_e(NE, NMAX)
       integer :: n_stored, step, i
       logical :: ok, ok_ref
+      real(dp) :: deviation, scale
 
       call fill_pseudorandom(f_in, 11)
       call fill_pseudorandom(e_in, 29)
@@ -188,8 +207,14 @@ contains
          call check(error, ok .eqv. ok_ref, "solvability disagrees at step "//itoa(step))
          if (allocated(error)) return
          if (ok) then
-            call check(error, all(fock == fock_ref), &
-                       "extrapolated Fock differs from reference at step "//itoa(step))
+            deviation = maxval(abs(fock - fock_ref))
+            scale = max(1.0_dp, maxval(abs(fock_ref)))
+            ! Tight enough that a real change in the extrapolation is caught --
+            ! four orders above the observed rounding, four below anything that
+            ! would move an SCF.
+            call check(error, deviation <= REFERENCE_TOL*scale, &
+                       "extrapolated Fock differs from reference at step "// &
+                       itoa(step)//" by "//dtoa(deviation))
             if (allocated(error)) return
          end if
       end do
@@ -311,6 +336,13 @@ contains
       character(len=12) :: s
       write (s, "(i0)") i
    end function itoa
+
+   pure function dtoa(x) result(s)
+      !! So a failure reports how far off it was, not merely that it was
+      real(dp), intent(in) :: x
+      character(len=12) :: s
+      write (s, "(es12.4)") x
+   end function dtoa
 
 end module test_mqc_diis
 
