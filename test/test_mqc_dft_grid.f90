@@ -6,6 +6,7 @@ module test_mqc_dft_grid
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid, grid_level_radial, &
                            grid_level_angular, MIN_GRID_LEVEL, MAX_GRID_LEVEL, &
                            DEFAULT_GRID_LEVEL
+   use mqc_dft_prune, only: PRUNE_NONE
    implicit none
    private
 
@@ -72,6 +73,11 @@ contains
 
    subroutine test_counts(error)
       !! Unpruned, the count is exactly sum over atoms of n_radial * n_angular
+      !!
+      !! Says PRUNE_NONE explicitly since pruning became the default: the
+      !! identity being checked is the unpruned one, and inheriting whatever
+      !! the default happens to be would make this test silently change meaning
+      !! the next time that default moves.
       type(error_type), allocatable, intent(out) :: error
       real(dp), allocatable :: coords(:, :)
       integer, allocatable :: z(:)
@@ -80,7 +86,7 @@ contains
       integer :: expected, ia
 
       call water(coords, z)
-      call build_dft_grid(coords, z, grid, err, level=1)
+      call build_dft_grid(coords, z, grid, err, level=1, prune=PRUNE_NONE)
       call check(error,.not. err%has_error(), "grid must build")
       if (allocated(error)) return
 
@@ -176,7 +182,8 @@ contains
       type(error_t) :: err
 
       call water(coords, z)
-      call build_dft_grid(coords, z, grid, err, n_radial=20, n_angular=50)
+      call build_dft_grid(coords, z, grid, err, n_radial=20, n_angular=50, &
+                          prune=PRUNE_NONE)
       call check(error,.not. err%has_error(), "an override must be accepted")
       if (allocated(error)) return
       call check(error, grid%n_points, 3*20*50)
