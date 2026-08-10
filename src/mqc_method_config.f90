@@ -39,6 +39,14 @@ module mqc_method_config
          !! Auxiliary (JKFIT) basis for the density-fitted J and K.
          !! Required, not optional, for the cuEST backend: cuEST exposes no
          !! conventional four-index ERI path, so J/K are always fitted.
+      logical :: density_fitting = .false.
+         !! Fit J and K against `aux_basis_set` on the CPU backend.
+         !!
+         !! Off by default, and only the CPU backend reads it: cuEST has no
+         !! four-index path, so it fits whether or not this is set. libcint has
+         !! both, so which one runs has to be asked for rather than inferred
+         !! from an auxiliary basis being present -- that name carries a
+         !! default, so inferring would mean every calculation silently fitted.
    end type scf_config_t
 
    !============================================================================

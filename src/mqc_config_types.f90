@@ -84,6 +84,8 @@ module mqc_config_types
          !! Initial guess name from %scf
       logical :: scf_unrestricted = .false.
       logical :: allow_crap_scf = .false.
+      logical :: scf_density_fitting = .false.
+         !! Fit J and K against the auxiliary basis, on the CPU backend
          !! Let a non-converged SCF into the expansion instead of stopping.
          !! Off by default: the energy of an SCF that ran out of iterations is
          !! of the right magnitude and nothing downstream can tell, so silence

@@ -185,6 +185,7 @@ contains
       call allow(keys, "unrestricted")
       call allow(keys, "guess")
       call allow(keys, "allow_crap_scf")
+      call allow(keys, "density_fitting")
    end function scf_keys
 
    function hessian_keys() result(keys)

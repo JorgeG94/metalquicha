@@ -187,6 +187,8 @@ contains
       call optional_logical(json, "keywords.scf.unrestricted", config%scf_unrestricted)
       call optional_string(json, "keywords.scf.guess", config%scf_guess)
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
+      call optional_logical(json, "keywords.scf.density_fitting", &
+                            config%scf_density_fitting)
 
       ! Both spellings of the displacement key are accepted, as the JSON
       ! generator used to allow.
