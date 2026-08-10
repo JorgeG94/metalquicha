@@ -1,0 +1,1413 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_validate &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_validate
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.2% of total for modules and submodules.">184 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_validate.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_validate.f90.html'>mqc_validate.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_validate</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-contains_term">contains_term</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-first_missing_subset">first_missing_subset</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-text">text</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-text64">text64</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-validate_system">validate_system</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-validate_terms">validate_terms</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-check_subset_closure">check_subset_closure</a>
+            <a class="list-group-item" href="../module/mqc_validate.html#proc-complain">complain</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>Checks that a system and a term list describe a calculation that means
+something, before anything spends a node-hour finding out it did not.</p>
+<p>This is not schema validation. <code>mqc_json_schema</code> checks that a <em>document</em>
+is well formed &ndash; keys spelled right, required ones present. These checks
+are about the thing the document describes, and apply equally to a system
+assembled through the C interface, which never sees a document at all.</p>
+<p><strong>Everything here has bitten somebody.</strong> The checks are not hypothetical
+failure modes; they are the ones this code has actually produced, and
+they share a shape: none of them crashes. A term list that is not closed
+under subsets, fragment charges that do not sum, an atom in no monomer &ndash;
+each yields a converged number that is wrong, which is the most expensive
+kind of bug a calculation can have.</p>
+<p><code>strict</code> is the default and refuses. The permissive mode exists because
+some of these are conventions rather than laws &ndash; a partition that
+deliberately omits atoms, a hand-built term list with a scheme of its own
+&ndash; and a user who knows which one they are breaking should not be stopped
+by a tool that does not. It reports rather than refusing; it does not
+stop checking.
+Check a system describes a fragmentable molecule
+Check a term list can actually be assembled</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item">pic_logger</li>
+                  <li class="list-inline-item"><a href='mqc_bond_perception.html'>mqc_bond_perception</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_validate~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_validateUsesGraph" width="641pt" height="297pt"
+ viewBox="0.00 0.00 641.00 297.44" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_validate~~UsesGraph" class="graph" transform="scale(0.77 0.77) rotate(0) translate(4 384.39)">
+<title>module~~mqc_validate~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-384.39 833,-384.39 833,4 -4,4"/>
+<!-- module~mqc_validate -->
+<g id="module~~mqc_validate~~UsesGraph_node1" class="node">
+<title>module~mqc_validate</title>
+<polygon fill="none" stroke="black" points="829,-106 745,-106 745,-82 829,-82 829,-106"/>
+<text text-anchor="middle" x="787" y="-91.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_validate</text>
+</g>
+<!-- module~mqc_bond_perception -->
+<g id="module~~mqc_validate~~UsesGraph_node2" class="node">
+<title>module~mqc_bond_perception</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node2"><a xlink:href="../module/mqc_bond_perception.html" xlink:title="mqc_bond_perception">
+<polygon fill="#337ab7" stroke="#337ab7" points="709,-146 579,-146 579,-122 709,-122 709,-146"/>
+<text text-anchor="middle" x="644" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_bond_perception</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_validate&#45;&gt;module~mqc_bond_perception -->
+<g id="module~~mqc_validate~~UsesGraph_edge1" class="edge">
+<title>module~mqc_validate&#45;&gt;module~mqc_bond_perception</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M744.84,-105.68C730.04,-109.88 713.13,-114.67 697.5,-119.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="696.1,-115.86 687.44,-121.96 698.01,-122.6 696.1,-115.86"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_node3" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node3"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-108 111,-108 111,-84 178,-84 178,-108"/>
+<text text-anchor="middle" x="144.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_validate&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_edge2" class="edge">
+<title>module~mqc_validate&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M744.93,-92.74C716.78,-92.18 678.6,-92.04 645,-94"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M643,-94C568.24,-98.37 549.26,-89.63 474.5,-94"/>
+</g>
+<!-- module~mqc_fraglist -->
+<g id="module~~mqc_validate~~UsesGraph_node4" class="node">
+<title>module~mqc_fraglist</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node4"><a xlink:href="../module/mqc_fraglist.html" xlink:title="mqc_fraglist">
+<polygon fill="#337ab7" stroke="#337ab7" points="683,-66 605,-66 605,-42 683,-42 683,-66"/>
+<text text-anchor="middle" x="644" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_validate&#45;&gt;module~mqc_fraglist -->
+<g id="module~~mqc_validate~~UsesGraph_edge3" class="edge">
+<title>module~mqc_validate&#45;&gt;module~mqc_fraglist</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M744.84,-82.32C728.53,-77.7 709.67,-72.35 692.77,-67.55"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="693.65,-64.16 683.08,-64.8 691.74,-70.9 693.65,-64.16"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_validate~~UsesGraph_node5" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node5"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="543,-146 404,-146 404,-122 543,-122 543,-146"/>
+<text text-anchor="middle" x="473.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_validate&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_validate~~UsesGraph_edge4" class="edge">
+<title>module~mqc_validate&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M643,-94C600.29,-96.5 553.01,-108.57 519.43,-118.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="517.97,-115.6 509.47,-121.92 520.05,-122.28 517.97,-115.6"/>
+</g>
+<!-- pic_logger -->
+<g id="module~~mqc_validate~~UsesGraph_node6" class="node">
+<title>pic_logger</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="678,-24 610,-24 610,0 678,0 678,-24"/>
+<text text-anchor="middle" x="644" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_logger</text>
+</g>
+<!-- module~mqc_validate&#45;&gt;pic_logger -->
+<g id="module~~mqc_validate~~UsesGraph_edge5" class="edge">
+<title>module~mqc_validate&#45;&gt;pic_logger</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M773.65,-81.9C759.21,-68.34 734.08,-46.49 709,-33 702.42,-29.46 695.13,-26.38 687.9,-23.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="688.74,-20.33 678.15,-20.43 686.49,-26.96 688.74,-20.33"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_node7" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-228 0,-228 0,-204 62,-204 62,-228"/>
+<text text-anchor="middle" x="31" y="-213.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_validate&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge6" class="edge">
+<title>module~mqc_validate&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M778.11,-106.09C751.07,-146.35 657.48,-276.33 543,-330 444.05,-376.38 407.28,-345.56 298.5,-356"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_edge8" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M636.67,-146.03C617.7,-180.61 557.47,-280.04 474.5,-316"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-316C445.98,-327.49 247.28,-250.59 227,-230 191.5,-193.95 223.08,-161.13 191,-122 188.61,-119.08 185.8,-116.43 182.77,-114.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="184.6,-111.04 174.38,-108.27 180.64,-116.81 184.6,-111.04"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_validate~~UsesGraph_edge9" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M578.82,-134C570.55,-134 562.01,-134 553.54,-134"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="553.27,-130.5 543.27,-134 553.27,-137.5 553.27,-130.5"/>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge10" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-316C399.25,-346.52 377.26,-346.38 298.5,-356"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M296.5,-356C208.93,-366.7 172.44,-404.35 98,-357 56.61,-330.67 40.74,-270.81 35,-238.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="38.45,-237.59 33.42,-228.26 31.54,-238.69 38.45,-237.59"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_validate~~UsesGraph_node10" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node10"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-328 252,-328 252,-304 343,-304 343,-328"/>
+<text text-anchor="middle" x="297.5" y="-313.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_bond_perception&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_validate~~UsesGraph_edge7" class="edge">
+<title>module~mqc_bond_perception&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-316C435.04,-332.24 388.63,-331.33 353.17,-326.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="353.39,-323.35 343,-325.44 352.43,-330.28 353.39,-323.35"/>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_edge12" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M608.03,-66.08C574.32,-76.83 521.62,-91.25 474.5,-94"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M472.5,-94C395.3,-98.51 375.74,-97.87 298.5,-94"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M296.5,-94C260.08,-92.18 218.65,-92.92 188.42,-93.99"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="188.08,-90.5 178.22,-94.37 188.34,-97.49 188.08,-90.5"/>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_validate~~UsesGraph_edge13" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M608.3,-66.08C598.56,-70 588.14,-74.72 579,-80 561.44,-90.13 560.67,-98.07 543,-108 536.44,-111.68 529.26,-115.05 522.09,-118.06"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="520.38,-114.97 512.39,-121.92 522.97,-121.47 520.38,-114.97"/>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge14" class="edge">
+<title>module~mqc_fraglist&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M604.83,-44.05C586.31,-39.71 563.64,-35.14 543,-33 481.55,-26.62 465.48,-26.94 404,-33 356.42,-37.69 346.23,-51.3 298.5,-54"/>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M296.5,-54C207.83,-56.89 170.24,-23.51 98,-75 58.43,-103.2 41.88,-161.34 35.54,-193.46"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="32.04,-193.18 33.7,-203.64 38.93,-194.42 32.04,-193.18"/>
+</g>
+<!-- module~mqc_combinatorics -->
+<g id="module~~mqc_validate~~UsesGraph_node9" class="node">
+<title>module~mqc_combinatorics</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node9"><a xlink:href="../module/mqc_combinatorics.html" xlink:title="mqc_combinatorics">
+<polygon fill="#337ab7" stroke="#337ab7" points="532,-66 415,-66 415,-42 532,-42 532,-66"/>
+<text text-anchor="middle" x="473.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_combinatorics -->
+<g id="module~~mqc_validate~~UsesGraph_edge11" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M604.76,-54C586.32,-54 563.64,-54 542.4,-54"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="542.11,-50.5 532.11,-54 542.11,-57.5 542.11,-50.5"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_edge17" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M437.03,-121.98C402.23,-111.11 347.41,-96.45 298.5,-94"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge21" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-216C218.69,-233.24 124.83,-227.1 72.43,-221.36"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="72.54,-217.85 62.21,-220.19 71.74,-224.81 72.54,-217.85"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_validate~~UsesGraph_node8" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node8"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-268 112.5,-268 112.5,-244 176.5,-244 176.5,-268"/>
+<text text-anchor="middle" x="144.5" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_validate~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-216C258.91,-224.33 216.58,-235.72 186.33,-244.21"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="185.22,-240.89 176.55,-246.98 187.13,-247.63 185.22,-240.89"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_validate~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M460.81,-146.22C431.22,-177.18 353.13,-258.86 317.14,-296.5"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="314.52,-294.18 310.14,-303.83 319.58,-299.02 314.52,-294.18"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_validate~~UsesGraph_node11" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node11"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-188 98,-188 98,-164 191,-164 191,-188"/>
+<text text-anchor="middle" x="144.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_validate~~UsesGraph_edge18" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M455.54,-146.25C435.5,-160.23 400.71,-182.99 368,-197 338.56,-209.61 329.76,-209.07 298.5,-216"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-216C254.21,-225.37 205.91,-207.48 175.57,-192.69"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="176.88,-189.44 166.38,-188.04 173.72,-195.68 176.88,-189.44"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_validate~~UsesGraph_node12" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node12"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-146 227,-146 227,-122 368,-122 368,-146"/>
+<text text-anchor="middle" x="297.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_validate~~UsesGraph_edge19" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M403.73,-134C395.42,-134 386.89,-134 378.44,-134"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="378.2,-130.5 368.2,-134 378.2,-137.5 378.2,-130.5"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_validate~~UsesGraph_node13" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_validate~~UsesGraph_node13"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-188 248,-188 248,-164 347,-164 347,-188"/>
+<text text-anchor="middle" x="297.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_validate~~UsesGraph_edge20" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M422.64,-146.04C402.18,-150.97 378.35,-156.73 357.06,-161.86"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="356.07,-158.5 347.17,-164.25 357.71,-165.31 356.07,-158.5"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge22" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M112.44,-244.86C99.79,-240.32 85.01,-235.02 71.6,-230.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.72,-226.89 62.12,-226.81 70.35,-233.48 72.72,-226.89"/>
+</g>
+<!-- module~mqc_combinatorics&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge23" class="edge">
+<title>module~mqc_combinatorics&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M414.85,-52.37C380.94,-51.81 337.26,-51.81 298.5,-54"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge25" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M251.66,-314.16C209.87,-310.87 146.85,-301.81 98,-277 78.65,-267.17 60.84,-250.01 48.61,-236.39"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="50.94,-233.73 41.75,-228.46 45.65,-238.31 50.94,-233.73"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_validate~~UsesGraph_node14" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-348 115.5,-348 115.5,-324 173.5,-324 173.5,-348"/>
+<text text-anchor="middle" x="144.5" y="-333.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_validate~~UsesGraph_edge24" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M251.6,-321.95C230.04,-324.8 204.46,-328.19 183.82,-330.92"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="183.28,-327.47 173.83,-332.25 184.2,-334.4 183.28,-327.47"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge26" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M110.05,-188C98,-192.32 84.29,-197.24 71.76,-201.74"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="70.25,-198.56 62.02,-205.23 72.61,-205.15 70.25,-198.56"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge27" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M226.85,-128.26C200.97,-127.86 171.57,-129.48 145.5,-136"/>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M143.5,-136C122.24,-141.32 116.44,-143.16 98,-155 79.95,-166.59 62.26,-183.32 49.74,-196.33"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="46.95,-194.19 42.66,-203.87 52.05,-198.98 46.95,-194.19"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_validate~~UsesGraph_edge28" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M247.85,-164.37C240.64,-161.78 233.46,-158.68 227,-155 208.14,-144.26 208.53,-134.8 191,-122 186.79,-118.93 182.19,-115.93 177.58,-113.12"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="179.2,-110.02 168.8,-108 175.67,-116.07 179.2,-110.02"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_validate~~UsesGraph_edge30" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M254.88,-163.92C212.09,-151.65 150.93,-134.64 145.5,-136"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_validate~~UsesGraph_edge29" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M247.89,-176C233.11,-176 216.75,-176 201.52,-176"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="201.19,-172.5 191.19,-176 201.19,-179.5 201.19,-172.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_validateUsesGraph = svgPanZoom('#modulemqc_validateUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+          <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_validate~~UsedByGraph Pages: 1 -->
+<svg id="modulemqc_validateUsedByGraph" width="641pt" height="111pt"
+ viewBox="0.00 0.00 641.00 110.98" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_validate~~UsedByGraph" class="graph" transform="scale(0.96 0.96) rotate(0) translate(4 112)">
+<title>module~~mqc_validate~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 666,-112 666,4 -4,4"/>
+<!-- module~mqc_validate -->
+<g id="module~~mqc_validate~~UsedByGraph_node1" class="node">
+<title>module~mqc_validate</title>
+<polygon fill="none" stroke="black" points="84,-87 0,-87 0,-63 84,-63 84,-87"/>
+<text text-anchor="middle" x="42" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_validate</text>
+</g>
+<!-- module~mqc_driver -->
+<g id="module~~mqc_validate~~UsedByGraph_node2" class="node">
+<title>module~mqc_driver</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node2"><a xlink:href="../module/mqc_driver.html" xlink:title="mqc_driver">
+<polygon fill="#337ab7" stroke="#337ab7" points="193,-67 120,-67 120,-43 193,-43 193,-67"/>
+<text text-anchor="middle" x="156.5" y="-52.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_driver</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_driver&#45;&gt;module~mqc_validate -->
+<g id="module~~mqc_validate~~UsedByGraph_edge1" class="edge">
+<title>module~mqc_driver&#45;&gt;module~mqc_validate</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M119.9,-61.33C111.76,-62.78 102.95,-64.34 94.29,-65.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="93.49,-62.47 84.25,-67.67 94.71,-69.36 93.49,-62.47"/>
+</g>
+<!-- module~mqc_session -->
+<g id="module~~mqc_validate~~UsedByGraph_node3" class="node">
+<title>module~mqc_session</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node3"><a xlink:href="../module/mqc_session.html" xlink:title="mqc_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="352,-108 272,-108 272,-84 352,-84 352,-108"/>
+<text text-anchor="middle" x="312" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_validate -->
+<g id="module~~mqc_validate~~UsedByGraph_edge2" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_validate</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M271.74,-92.92C224.82,-89.25 146.15,-83.08 94.41,-79.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="94.37,-75.51 84.12,-78.22 93.82,-82.49 94.37,-75.51"/>
+</g>
+<!-- module~mqc_session&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_validate~~UsedByGraph_edge3" class="edge">
+<title>module~mqc_session&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M271.75,-86.13C258.19,-82.68 242.91,-78.73 229,-75 220.5,-72.72 211.44,-70.24 202.73,-67.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.67,-64.44 193.1,-65.12 201.79,-71.19 203.67,-64.44"/>
+</g>
+<!-- module~mqc_capi_run -->
+<g id="module~~mqc_validate~~UsedByGraph_node4" class="node">
+<title>module~mqc_capi_run</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node4"><a xlink:href="../module/mqc_capi_run.html" xlink:title="mqc_capi_run">
+<polygon fill="#337ab7" stroke="#337ab7" points="662,-108 575,-108 575,-84 662,-84 662,-108"/>
+<text text-anchor="middle" x="618.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_run</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_validate~~UsedByGraph_edge6" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M574.72,-96.64C563.13,-96.79 550.58,-96.93 539,-97 478.21,-97.39 408.22,-96.94 362.44,-96.53"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="362.23,-93.02 352.2,-96.43 362.16,-100.02 362.23,-93.02"/>
+</g>
+<!-- module~mqc_capi_session -->
+<g id="module~~mqc_validate~~UsedByGraph_node5" class="node">
+<title>module~mqc_capi_session</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node5"><a xlink:href="../module/mqc_capi_session.html" xlink:title="mqc_capi_session">
+<polygon fill="#337ab7" stroke="#337ab7" points="539,-88 431,-88 431,-64 539,-64 539,-88"/>
+<text text-anchor="middle" x="485" y="-73.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_capi_session</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_run&#45;&gt;module~mqc_capi_session -->
+<g id="module~~mqc_validate~~UsedByGraph_edge8" class="edge">
+<title>module~mqc_capi_run&#45;&gt;module~mqc_capi_session</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M574.81,-89.51C566.61,-88.26 557.87,-86.93 549.19,-85.61"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="549.48,-82.11 539.07,-84.07 548.43,-89.03 549.48,-82.11"/>
+</g>
+<!-- module~mqc_capi_session&#45;&gt;module~mqc_session -->
+<g id="module~~mqc_validate~~UsedByGraph_edge7" class="edge">
+<title>module~mqc_capi_session&#45;&gt;module~mqc_session</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M430.83,-82.22C408.93,-84.78 383.7,-87.73 362.22,-90.24"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="361.54,-86.8 352.01,-91.44 362.35,-93.75 361.54,-86.8"/>
+</g>
+<!-- proc~compute_energy_and_forces -->
+<g id="module~~mqc_validate~~UsedByGraph_node6" class="node">
+<title>proc~compute_energy_and_forces</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node6"><a xlink:href="../proc/compute_energy_and_forces.html" xlink:title="compute_energy_and_forces">
+<polygon fill="#d9534f" stroke="#d9534f" points="395,-66 229,-66 229,-42 395,-42 395,-66"/>
+<text text-anchor="middle" x="312" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_energy_and_forces</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_energy_and_forces&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_validate~~UsedByGraph_edge4" class="edge">
+<title>proc~compute_energy_and_forces&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M228.86,-54.54C220.04,-54.59 211.31,-54.65 203.15,-54.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="203.13,-51.2 193.15,-54.77 203.17,-58.2 203.13,-51.2"/>
+</g>
+<!-- program~main -->
+<g id="module~~mqc_validate~~UsedByGraph_node7" class="node">
+<title>program~main</title>
+<g id="a_module~~mqc_validate~~UsedByGraph_node7"><a xlink:href="../program/main.html" xlink:title="main">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="339,-24 285,-24 285,0 339,0 339,-24"/>
+<text text-anchor="middle" x="312" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">main</text>
+</a>
+</g>
+</g>
+<!-- program~main&#45;&gt;module~mqc_driver -->
+<g id="module~~mqc_validate~~UsedByGraph_edge5" class="edge">
+<title>program~main&#45;&gt;module~mqc_driver</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M284.69,-18.4C268.57,-22.4 247.53,-27.78 229,-33 220.46,-35.41 211.39,-38.09 202.68,-40.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="201.58,-37.42 193.04,-43.7 203.63,-44.11 201.58,-37.42"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_validateUsedByGraph = svgPanZoom('#modulemqc_validateUsedByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsedByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsedByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      <br>
+
+
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-contains_term"></span> <h3>private pure function <a href='../proc/contains_term.html'>contains_term</a>(terms, wanted, level) result(found)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Whether a term with exactly these monomers is in the list</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~4"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-wanted"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>wanted</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level~4"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-first_missing_subset"></span> <h3>private pure function <a href='../proc/first_missing_subset.html'>first_missing_subset</a>(terms, iterm, level) result(slot)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Which dropped monomer leaves a subset that is not in the list, or 0</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~3"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iterm~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iterm</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level~3"></span>
+              integer(kind=default_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=default_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-text"></span> <h3>private pure function <a href='../proc/text.html'>text</a>(value) result(out)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-text64"></span> <h3>private pure function <a href='../proc/text64.html'>text64</a>(value) result(out)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~3"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>value</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_system"></span> <h3>public  subroutine <a href='../proc/validate_system.html'>validate_system</a>(sys_geom, strict, error, check_bonds)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Check a system before it is fragmented</p><a href="../proc/validate_system.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~3"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~5"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-check_bonds"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>check_bonds</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_terms"></span> <h3>public  subroutine <a href='../proc/validate_terms.html'>validate_terms</a>(terms, sys_geom, strict, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Check a term list can be assembled into an expansion</p><a href="../proc/validate_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~4"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict~2"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~6"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_subset_closure"></span> <h3>private  subroutine <a href='../proc/check_subset_closure.html'>check_subset_closure</a>(terms, strict, error)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Every proper subset of every term must itself be a term</p><a href="../proc/check_subset_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~2"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict~3"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~7"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-complain"></span> <h3>private  subroutine <a href='../proc/complain.html'>complain</a>(strict, error, message)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Record a problem as a refusal or a warning</p><a href="../proc/complain.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict~4"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~8"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-message"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>message</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

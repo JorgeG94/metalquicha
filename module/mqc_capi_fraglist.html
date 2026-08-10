@@ -1,0 +1,1287 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_capi_fraglist &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_capi_fraglist
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 1.1% of total for modules and submodules.">167 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_fraglist.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_fraglist.f90.html'>mqc_capi_fraglist.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_capi_fraglist</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#variable-message_len~2">MESSAGE_LEN</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#variable-mqc_bad_handle~2">MQC_BAD_HANDLE</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#variable-mqc_error~2">MQC_ERROR</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#variable-mqc_ok~2">MQC_OK</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#variable-last_message~2">last_message</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#funcs-0"
+         aria-expanded="false" aria-controls="funcs-0">
+         <h4 class="card-header bg-primary text-white">Functions</h4>
+      </a>
+      <div id="funcs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_close_subsets">mqc_fraglist_close_subsets</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_count">mqc_fraglist_count</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_generate">mqc_fraglist_generate</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_get">mqc_fraglist_get</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_max_level">mqc_fraglist_max_level</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_new">mqc_fraglist_new</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_set">mqc_fraglist_set</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-report">report</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_free">mqc_fraglist_free</a>
+            <a class="list-group-item" href="../module/mqc_capi_fraglist.html#proc-mqc_fraglist_last_error">mqc_fraglist_last_error</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>The fragment list, reachable from C and so from Python.</p>
+<p>Three verbs: create a list, read it out, put a different one back. A
+screen &ndash; by distance, by a previous run&rsquo;s energies, by whatever a caller
+invents &ndash; is read-then-put-back, and needs nothing here to know about
+it. That is the whole point: the criterion lives with the caller and the
+combinatorics stay in Fortran, where they already are.</p>
+<p><strong>Handles are opaque and owned by the caller.</strong> <code>mqc_fraglist_new</code>
+allocates, <code>mqc_fraglist_free</code> releases, and nothing here keeps a
+registry &ndash; a leaked handle leaks its term list, which for a
+twenty-million-term run is not a small leak.</p>
+<p><strong>Reading out is two calls, deliberately.</strong> Ask for the count, allocate,
+then fill. Returning an allocated buffer across the boundary would put
+the free on the wrong side of it, and a term list is large enough that
+getting that wrong matters.</p>
+<p>The array handed back is packed <strong>one term per row</strong>: term <code>i</code> occupies
+elements <code>i*max_level .. i*max_level + max_level - 1</code>, zero-padded. That
+is a C-contiguous <code>(n_terms, max_level)</code> array, and the same shape the
+per-fragment CSV writes its <code>m1..m&lt;max_level&gt;</code> columns in, so a caller
+screening against a previous run&rsquo;s CSV can index the two alike. Note the
+Fortran store is <code>(n_terms, max_level)</code>, so this is a transpose of its
+memory order, not a reinterpretation of it.</p>
+<p>Every entry point returns 0 for success and non-zero for failure rather
+than reporting through <code>error_t</code>: a C caller cannot read one, and a
+Python wrapper turns a status into an exception anyway. The message is
+retrievable through <code>mqc_fraglist_last_error</code> while it is still the most
+recent thing that happened.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item">pic_types</li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+              </ul>
+            </li>
+            <li class="list-group-item">
+              <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~mqc_capi_fraglist~~UsesGraph Pages: 1 -->
+<svg id="modulemqc_capi_fraglistUsesGraph" width="641pt" height="239pt"
+ viewBox="0.00 0.00 641.00 238.90" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~mqc_capi_fraglist~~UsesGraph" class="graph" transform="scale(0.79 0.79) rotate(0) translate(4 299)">
+<title>module~~mqc_capi_fraglist~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-299 809,-299 809,4 -4,4"/>
+<!-- module~mqc_capi_fraglist -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node1" class="node">
+<title>module~mqc_capi_fraglist</title>
+<polygon fill="none" stroke="black" points="805,-185 699,-185 699,-161 805,-161 805,-185"/>
+<text text-anchor="middle" x="752" y="-170.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_capi_fraglist</text>
+</g>
+<!-- iso_c_binding -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node2" class="node">
+<title>iso_c_binding</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node2"><a xlink:href="http://fortranwiki.org/fortran/show/iso_c_binding" xlink:title="iso_c_binding">
+<polygon fill="#337ab7" stroke="#337ab7" points="663,-295 579,-295 579,-271 663,-271 663,-295"/>
+<text text-anchor="middle" x="621" y="-280.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">iso_c_binding</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_fraglist&#45;&gt;iso_c_binding -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge1" class="edge">
+<title>module~mqc_capi_fraglist&#45;&gt;iso_c_binding</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M739.72,-185.19C723.59,-202.28 692.62,-233.84 663,-257 659.39,-259.82 655.47,-262.62 651.52,-265.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="649.47,-262.43 642.98,-270.81 653.27,-268.31 649.47,-262.43"/>
+</g>
+<!-- module~mqc_error -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node3" class="node">
+<title>module~mqc_error</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node3"><a xlink:href="../module/mqc_error.html" xlink:title="mqc_error">
+<polygon fill="#337ab7" stroke="#337ab7" points="178,-24 111,-24 111,0 178,0 178,-24"/>
+<text text-anchor="middle" x="144.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_error</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_fraglist&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge2" class="edge">
+<title>module~mqc_capi_fraglist&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M742.07,-160.8C727.74,-142.27 697.66,-107.57 663,-92 586.19,-57.49 555.41,-96.33 474.5,-73"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M472.5,-73C422.14,-57.48 418.96,-30.4 368,-17 307.16,-1 233.71,-3.33 188.3,-7.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="187.86,-3.67 178.21,-8.06 188.49,-10.64 187.86,-3.67"/>
+</g>
+<!-- module~mqc_fraglist -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node4" class="node">
+<title>module~mqc_fraglist</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node4"><a xlink:href="../module/mqc_fraglist.html" xlink:title="mqc_fraglist">
+<polygon fill="#337ab7" stroke="#337ab7" points="660,-125 582,-125 582,-101 660,-101 660,-125"/>
+<text text-anchor="middle" x="621" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_capi_fraglist&#45;&gt;module~mqc_fraglist -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge3" class="edge">
+<title>module~mqc_capi_fraglist&#45;&gt;module~mqc_fraglist</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M724.89,-160.86C705.4,-151.79 678.54,-139.3 657.16,-129.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="658.61,-126.17 648.07,-125.12 655.66,-132.51 658.61,-126.17"/>
+</g>
+<!-- pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node5" class="node">
+<title>pic_types</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="62,-146 0,-146 0,-122 62,-122 62,-146"/>
+<text text-anchor="middle" x="31" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_types</text>
+</g>
+<!-- module~mqc_capi_fraglist&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge4" class="edge">
+<title>module~mqc_capi_fraglist&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M707.67,-185.13C653.45,-200.03 557.6,-225.5 474.5,-243"/>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge6" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M581.85,-102.57C542.33,-91.75 484.88,-75.99 474.5,-73"/>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge8" class="edge">
+<title>module~mqc_fraglist&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M612.8,-125.15C594.36,-154.66 542.12,-228.76 474.5,-243"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M472.5,-243C396.83,-258.93 375.48,-235.58 298.5,-243"/>
+</g>
+<!-- module~mqc_combinatorics -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node6" class="node">
+<title>module~mqc_combinatorics</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node6"><a xlink:href="../module/mqc_combinatorics.html" xlink:title="mqc_combinatorics">
+<polygon fill="#337ab7" stroke="#337ab7" points="532,-196 415,-196 415,-172 532,-172 532,-196"/>
+<text text-anchor="middle" x="473.5" y="-181.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_combinatorics</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_combinatorics -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge5" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_combinatorics</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M595.32,-125.04C571.49,-136.67 535.21,-154.38 508.62,-167.35"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="506.76,-164.37 499.3,-171.9 509.83,-170.66 506.76,-164.37"/>
+</g>
+<!-- module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node7" class="node">
+<title>module~mqc_physical_fragment</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node7"><a xlink:href="../module/mqc_physical_fragment.html" xlink:title="mqc_physical_fragment">
+<polygon fill="#337ab7" stroke="#337ab7" points="543,-125 404,-125 404,-101 543,-101 543,-125"/>
+<text text-anchor="middle" x="473.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_fragment</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_fraglist&#45;&gt;module~mqc_physical_fragment -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge7" class="edge">
+<title>module~mqc_fraglist&#45;&gt;module~mqc_physical_fragment</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M581.77,-113C572.96,-113 563.27,-113 553.43,-113"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="553.15,-109.5 543.15,-113 553.15,-116.5 553.15,-109.5"/>
+</g>
+<!-- module~mqc_combinatorics&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge9" class="edge">
+<title>module~mqc_combinatorics&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M447.63,-196.12C414.54,-211.38 353.77,-236.4 298.5,-243"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M296.5,-243C208.83,-253.48 174.79,-278.57 98,-235 67.53,-217.71 48.7,-179.9 39.31,-155.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="42.48,-154.24 35.75,-146.06 35.91,-156.65 42.48,-154.24"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge12" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M431.95,-100.95C422.39,-97.22 412.51,-92.58 404,-87 384.82,-74.41 387.76,-61.66 368,-50 340.42,-33.73 329.79,-37.82 298.5,-31"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-31C260.48,-23.14 218.86,-18.21 188.45,-15.34"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="188.46,-11.83 178.19,-14.41 187.83,-18.8 188.46,-11.83"/>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge16" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-31C230.3,-16.56 211.17,-35.31 145.5,-52"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M143.5,-52C122.26,-57.4 116.34,-59.01 98,-71 79.55,-83.06 61.66,-100.62 49.17,-114.14"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="46.23,-112.17 42.14,-121.95 51.43,-116.86 46.23,-112.17"/>
+</g>
+<!-- module~mqc_cgto -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node8" class="node">
+<title>module~mqc_cgto</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node8"><a xlink:href="../module/mqc_cgto.html" xlink:title="mqc_cgto">
+<polygon fill="#337ab7" stroke="#337ab7" points="176.5,-146 112.5,-146 112.5,-122 176.5,-122 176.5,-146"/>
+<text text-anchor="middle" x="144.5" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_cgto</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_cgto -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge10" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_cgto</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-153C259.16,-152.4 217.03,-146.67 186.77,-141.66"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="187.04,-138.15 176.59,-139.93 185.86,-145.05 187.04,-138.15"/>
+</g>
+<!-- module~mqc_elements -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node9" class="node">
+<title>module~mqc_elements</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node9"><a xlink:href="../module/mqc_elements.html" xlink:title="mqc_elements">
+<polygon fill="#337ab7" stroke="#337ab7" points="343,-205 252,-205 252,-181 343,-181 343,-205"/>
+<text text-anchor="middle" x="297.5" y="-190.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_elements</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_elements -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge11" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_elements</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M450.85,-125.15C429.97,-136.64 397.31,-154 368,-167 359.87,-170.61 351.07,-174.16 342.56,-177.42"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="341.24,-174.18 333.12,-180.97 343.71,-180.73 341.24,-174.18"/>
+</g>
+<!-- module~mqc_geometry -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node10" class="node">
+<title>module~mqc_geometry</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node10"><a xlink:href="../module/mqc_geometry.html" xlink:title="mqc_geometry">
+<polygon fill="#337ab7" stroke="#337ab7" points="191,-104 98,-104 98,-80 191,-80 191,-104"/>
+<text text-anchor="middle" x="144.5" y="-89.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_geometry</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge13" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M440.93,-125.1C406.44,-137.17 349.33,-153.82 298.5,-153"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M296.5,-153C264.48,-152.48 256.53,-146.4 227,-134 209.92,-126.83 207.43,-121.56 191,-113 188.07,-111.47 185,-109.94 181.91,-108.43"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="183.19,-105.16 172.65,-104.02 180.18,-111.48 183.19,-105.16"/>
+</g>
+<!-- module~mqc_physical_constants -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node11" class="node">
+<title>module~mqc_physical_constants</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node11"><a xlink:href="../module/mqc_physical_constants.html" xlink:title="mqc_physical_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="368,-83 227,-83 227,-59 368,-59 368,-83"/>
+<text text-anchor="middle" x="297.5" y="-68.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_physical_constants</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge14" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_physical_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M422.64,-100.96C402.53,-96.11 379.15,-90.47 358.15,-85.4"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="358.91,-81.98 348.37,-83.04 357.27,-88.79 358.91,-81.98"/>
+</g>
+<!-- module~mqc_xyz_reader -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node12" class="node">
+<title>module~mqc_xyz_reader</title>
+<g id="a_module~~mqc_capi_fraglist~~UsesGraph_node12"><a xlink:href="../module/mqc_xyz_reader.html" xlink:title="mqc_xyz_reader">
+<polygon fill="#337ab7" stroke="#337ab7" points="347,-125 248,-125 248,-101 347,-101 347,-125"/>
+<text text-anchor="middle" x="297.5" y="-110.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_xyz_reader</text>
+</a>
+</g>
+</g>
+<!-- module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge15" class="edge">
+<title>module~mqc_physical_fragment&#45;&gt;module~mqc_xyz_reader</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M403.73,-113C388.37,-113 372.22,-113 357.31,-113"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="357.2,-109.5 347.2,-113 357.2,-116.5 357.2,-109.5"/>
+</g>
+<!-- module~mqc_cgto&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge17" class="edge">
+<title>module~mqc_cgto&#45;&gt;pic_types</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M112.44,-134C100.03,-134 85.58,-134 72.38,-134"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="72.12,-130.5 62.12,-134 72.12,-137.5 72.12,-130.5"/>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge19" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M251.62,-185.98C211.17,-179.27 150.2,-168.25 98,-155 89.46,-152.83 80.39,-150.18 71.81,-147.51"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="72.6,-144.09 62.01,-144.38 70.47,-150.75 72.6,-144.09"/>
+</g>
+<!-- pic_ascii -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_node13" class="node">
+<title>pic_ascii</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="173.5,-226 115.5,-226 115.5,-202 173.5,-202 173.5,-226"/>
+<text text-anchor="middle" x="144.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_ascii</text>
+</g>
+<!-- module~mqc_elements&#45;&gt;pic_ascii -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge18" class="edge">
+<title>module~mqc_elements&#45;&gt;pic_ascii</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M251.6,-199.24C230.04,-202.24 204.46,-205.8 183.82,-208.67"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="183.25,-205.22 173.83,-210.06 184.21,-212.15 183.25,-205.22"/>
+</g>
+<!-- module~mqc_geometry&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge20" class="edge">
+<title>module~mqc_geometry&#45;&gt;pic_types</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M111.55,-104.04C99.14,-108.71 84.79,-114.11 71.73,-119.04"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="70.17,-115.88 62.04,-122.68 72.63,-122.43 70.17,-115.88"/>
+</g>
+<!-- module~mqc_physical_constants&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge21" class="edge">
+<title>module~mqc_physical_constants&#45;&gt;pic_types</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M260.34,-58.99C229.45,-50.49 184.04,-42.2 145.5,-52"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_error -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge22" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_error</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M247.71,-102.98C240.35,-100.17 233.18,-96.58 227,-92 203.83,-74.82 212.09,-57.68 191,-38 187.69,-34.91 183.95,-32.05 180.08,-29.43"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="181.82,-26.39 171.48,-24.11 178.14,-32.34 181.82,-26.39"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;pic_types -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge24" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;pic_types</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M251.08,-100.96C242.94,-98.33 234.63,-95.32 227,-92 190.01,-75.89 184.61,-42.06 145.5,-52"/>
+</g>
+<!-- module~mqc_xyz_reader&#45;&gt;module~mqc_geometry -->
+<g id="module~~mqc_capi_fraglist~~UsesGraph_edge23" class="edge">
+<title>module~mqc_xyz_reader&#45;&gt;module~mqc_geometry</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M247.89,-106.24C233.11,-104.18 216.75,-101.91 201.52,-99.79"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="201.58,-96.27 191.19,-98.35 200.62,-103.2 201.58,-96.27"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panmodulemqc_capi_fraglistUsesGraph = svgPanZoom('#modulemqc_capi_fraglistUsesGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#UsesGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="UsesGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-message_len~2"></span>
+              integer,
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MESSAGE_LEN</strong></td>
+<td> =</td>
+                <td>512</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_bad_handle~2"></span>
+              integer(kind=c_int),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_BAD_HANDLE</strong></td>
+<td> =</td>
+                <td>2</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_error~2"></span>
+              integer(kind=c_int),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_ERROR</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mqc_ok~2"></span>
+              integer(kind=c_int),
+            </td>
+              <td>private,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>MQC_OK</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-last_message~2"></span>
+              character(len=MESSAGE_LEN),
+            </td>
+              <td>private,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>last_message</strong></td>
+<td> =</td>
+                <td>&#34;&#34;</td>
+            <td>
+                <p>Most recent failure, for a caller that wants to say why. Process-wide
+and overwritten by the next failure &ndash; read it immediately or not at
+all. Python only ever runs on one rank here, so there is no thread or
+rank to race with.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+
+        <section>
+          <h2>Functions</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_close_subsets"></span> <h3>public  function <a href='../proc/mqc_fraglist_close_subsets.html'>mqc_fraglist_close_subsets</a>(handle) result(status) bind(C, name="mqc_fraglist_close_subsets")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Add every proper subset the list is missing</p><a href="../proc/mqc_fraglist_close_subsets.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~20"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_count"></span> <h3>public  function <a href='../proc/mqc_fraglist_count.html'>mqc_fraglist_count</a>(handle) result(n) bind(C, name="mqc_fraglist_count")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Terms currently in the list, or -1 for a bad handle</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~16"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int64_t)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_generate"></span> <h3>public  function <a href='../proc/mqc_fraglist_generate.html'>mqc_fraglist_generate</a>(handle, n_monomers, max_level) result(status) bind(C, name="mqc_fraglist_generate")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Fill the list with every combination from pairs up to max_level</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~15"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_monomers~3"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>n_monomers</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~4"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_get"></span> <h3>public  function <a href='../proc/mqc_fraglist_get.html'>mqc_fraglist_get</a>(handle, terms, n_terms, max_level) result(status) bind(C, name="mqc_fraglist_get")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Copy the terms into a caller&rsquo;s buffer</p><a href="../proc/mqc_fraglist_get.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~18"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~5"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(n_terms*int(max_level,c_int64_t))</td>
+            <td>
+<p>One term per row, row-major</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_terms"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>n_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~5"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_max_level"></span> <h3>public  function <a href='../proc/mqc_fraglist_max_level.html'>mqc_fraglist_max_level</a>(handle) result(level) bind(C, name="mqc_fraglist_max_level")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Row count of the term array, or -1 for a bad handle</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~17"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_new"></span> <h3>public  function <a href='../proc/mqc_fraglist_new.html'>mqc_fraglist_new</a>() result(handle) bind(C, name="mqc_fraglist_new")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Allocate an empty term list and return its handle</p>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+    <h4>
+    Return Value
+    <small>type(c_ptr)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_set"></span> <h3>public  function <a href='../proc/mqc_fraglist_set.html'>mqc_fraglist_set</a>(handle, terms, n_terms, max_level) result(status) bind(C, name="mqc_fraglist_set")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Replace the list with the caller&rsquo;s terms</p><a href="../proc/mqc_fraglist_set.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~19"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~6"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(n_terms*int(max_level,c_int64_t))</td>
+            <td>
+<p>One term per row, row-major</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_terms~2"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>n_terms</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_level~6"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>max_level</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-report"></span> <h3>private  function <a href='../proc/report.html'>report</a>(error) result(status)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Turn an error_t into a status, keeping the message for the caller</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~12"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer(kind=c_int)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_free"></span> <h3>public  subroutine <a href='../proc/mqc_fraglist_free.html'>mqc_fraglist_free</a>(handle) bind(C, name="mqc_fraglist_free")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Release a term list. Safe on a null handle.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~14"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-mqc_fraglist_last_error"></span> <h3>public  subroutine <a href='../proc/mqc_fraglist_last_error.html'>mqc_fraglist_last_error</a>(buffer, buffer_len) bind(C, name="mqc_fraglist_last_error")  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Copy the most recent failure message out as a C string</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-buffer~7"></span>
+              character(kind=c_char, len=1),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>buffer</strong>(buffer_len)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-buffer_len~2"></span>
+              integer(kind=c_int),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>buffer_len</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

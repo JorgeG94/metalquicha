@@ -1,0 +1,594 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_fraglist_close_subsets &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_fraglist_close_subsets
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">14 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_fraglist.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_fraglist.f90.html'>mqc_capi_fraglist.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_fraglist_close_subsets</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/mqc_fraglist_close_subsets.html#variable-error~11">error</a>
+            <a class="list-group-item" href="../proc/mqc_fraglist_close_subsets.html#variable-list~8">list</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/mqc_fraglist_close_subsets.html#src">mqc_fraglist_close_subsets</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  function mqc_fraglist_close_subsets(handle) result(status) bind(C, name="mqc_fraglist_close_subsets")  
+</h2>
+    
+
+    <p>Add every proper subset the list is missing</p>
+<p>The other half of screening, and the half a caller does not think to
+ask for. An n-body term&rsquo;s delta is its energy less the delta of each
+proper subset, so a screen that keeps a trimer and drops one of its
+dimers has not approximated the expansion &ndash; it has made one that
+cannot be assembled. Every route that supplies a list checks for this
+and refuses; this is what makes the list acceptable rather than
+merely diagnosing it.</p>
+<p>It only ever grows the list, so applying it twice does nothing the
+first did not, and applying it to a full list changes nothing at all.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-handle~20"></span>
+              type(c_ptr),
+            </td>
+<td></td>
+              <td></td>            <td>
+              value
+            </td>
+            <td>::</td>
+            <td><strong>handle</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-status~9"></span>
+          integer(kind=c_int)
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~mqc_fraglist_close_subsets~~CallsGraph Pages: 1 -->
+<svg id="procmqc_fraglist_close_subsetsCallsGraph" width="579pt" height="284pt"
+ viewBox="0.00 0.00 579.00 284.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 280)">
+<title>proc~~mqc_fraglist_close_subsets~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-280 575,-280 575,4 -4,4"/>
+<!-- proc~mqc_fraglist_close_subsets -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node1" class="node">
+<title>proc~mqc_fraglist_close_subsets</title>
+<polygon fill="none" stroke="black" points="156,-108 0,-108 0,-84 156,-84 156,-108"/>
+<text text-anchor="middle" x="78" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_fraglist_close_subsets</text>
+</g>
+<!-- proc~fraglist_close_subsets -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node2" class="node">
+<title>proc~fraglist_close_subsets</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node2"><a xlink:href="../proc/fraglist_close_subsets.html" xlink:title="fraglist_t%fraglist_close_subsets">
+<polygon fill="#d9534f" stroke="#d9534f" points="375,-171 192,-171 192,-147 375,-147 375,-171"/>
+<text text-anchor="middle" x="283.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_close_subsets</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge1" class="edge">
+<title>proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets</title>
+<path fill="none" stroke="#ff0000" d="M118.24,-108.15C151.28,-118.38 198.69,-133.05 234.09,-144.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="233.14,-147.38 243.73,-147 235.21,-140.7 233.14,-147.38"/>
+</g>
+<!-- proc~report -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node3" class="node">
+<title>proc~report</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node3"><a xlink:href="../proc/report.html" xlink:title="report">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310.5,-66 256.5,-66 256.5,-42 310.5,-42 310.5,-66"/>
+<text text-anchor="middle" x="283.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">report</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_fraglist_close_subsets&#45;&gt;proc~report -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge2" class="edge">
+<title>proc~mqc_fraglist_close_subsets&#45;&gt;proc~report</title>
+<path fill="none" stroke="#ff0000" d="M137.31,-83.96C172.41,-76.72 215.98,-67.73 246.19,-61.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="247.2,-64.86 256.28,-59.41 245.78,-58 247.2,-64.86"/>
+</g>
+<!-- proc~add_unique -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node4" class="node">
+<title>proc~add_unique</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node4"><a xlink:href="../proc/add_unique.html" xlink:title="add_unique">
+<polygon fill="#d9534f" stroke="#d9534f" points="528.5,-276 453.5,-276 453.5,-252 528.5,-252 528.5,-276"/>
+<text text-anchor="middle" x="491" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_unique</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~add_unique -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge3" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~add_unique</title>
+<path fill="none" stroke="#ff0000" d="M299.13,-171.06C321.77,-189.16 367.25,-223.3 411,-243 421.21,-247.59 432.62,-251.35 443.53,-254.35"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="442.8,-257.78 453.36,-256.89 444.55,-251 442.8,-257.78"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node7" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node7"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="543.5,-234 438.5,-234 438.5,-210 543.5,-210 543.5,-234"/>
+<text text-anchor="middle" x="491" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~error_set -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge4" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M318.95,-171.07C344.29,-179.79 379.63,-191.63 411,-201 418.01,-203.09 425.4,-205.2 432.74,-207.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="432.1,-210.67 442.66,-209.92 433.93,-203.92 432.1,-210.67"/>
+</g>
+<!-- proc~first_combination -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node8" class="node">
+<title>proc~first_combination</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node8"><a xlink:href="../proc/first_combination.html" xlink:title="first_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="543.5,-192 438.5,-192 438.5,-168 543.5,-168 543.5,-192"/>
+<text text-anchor="middle" x="491" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">first_combination</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~first_combination -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge5" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~first_combination</title>
+<path fill="none" stroke="#ff0000" d="M375.23,-168.27C393.13,-170.1 411.52,-171.98 428.19,-173.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="428.03,-177.19 438.33,-174.72 428.74,-170.22 428.03,-177.19"/>
+</g>
+<!-- proc~fraglist_level_of -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node9" class="node">
+<title>proc~fraglist_level_of</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node9"><a xlink:href="../proc/fraglist_level_of.html" xlink:title="fraglist_t%fraglist_level_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="566.5,-150 415.5,-150 415.5,-126 566.5,-126 566.5,-150"/>
+<text text-anchor="middle" x="491" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_level_of</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge6" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#ff0000" d="M375.23,-149.73C385.21,-148.71 395.34,-147.67 405.24,-146.66"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="405.86,-150.12 415.45,-145.62 405.15,-143.15 405.86,-150.12"/>
+</g>
+<!-- proc~next_index_set -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node10" class="node">
+<title>proc~next_index_set</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node10"><a xlink:href="../proc/next_index_set.html" xlink:title="next_index_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="536,-108 446,-108 446,-84 536,-84 536,-108"/>
+<text text-anchor="middle" x="491" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_index_set</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~next_index_set -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge7" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~next_index_set</title>
+<path fill="none" stroke="#ff0000" d="M318.95,-146.93C344.29,-138.21 379.63,-126.37 411,-117 419.11,-114.58 427.73,-112.14 436.19,-109.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="437.25,-113.17 445.99,-107.19 435.42,-106.42 437.25,-113.17"/>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node5" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node5"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="571,-66 411,-66 411,-42 571,-42 571,-66"/>
+<text text-anchor="middle" x="491" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~report&#45;&gt;proc~error_get_message -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge8" class="edge">
+<title>proc~report&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#00ffff" d="M310.53,-54C333.33,-54 367.85,-54 400.55,-54"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="400.62,-57.5 410.62,-54 400.62,-50.5 400.62,-57.5"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_node6" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~mqc_fraglist_close_subsets~~CallsGraph_node6"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="560.5,-24 421.5,-24 421.5,0 560.5,0 560.5,-24"/>
+<text text-anchor="middle" x="491" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~report&#45;&gt;proc~error_has_error -->
+<g id="proc~~mqc_fraglist_close_subsets~~CallsGraph_edge9" class="edge">
+<title>proc~report&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#00ffff" d="M310.53,-48.68C338.19,-43.03 383.08,-33.85 421.05,-26.09"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="421.95,-29.48 431.05,-24.05 420.55,-22.62 421.95,-29.48"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~11"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-list~8"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+              <td>private,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>list</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_fraglist_close_subsets</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">      </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_fraglist_close_subsets&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Add every proper subset the list is missing</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! The other half of screening, and the half a caller does not think to</span>
+<span class="w">      </span><span class="c">!! ask for. An n-body term&#39;s delta is its energy less the delta of each</span>
+<span class="w">      </span><span class="c">!! proper subset, so a screen that keeps a trimer and drops one of its</span>
+<span class="w">      </span><span class="c">!! dimers has not approximated the expansion -- it has made one that</span>
+<span class="w">      </span><span class="c">!! cannot be assembled. Every route that supplies a list checks for this</span>
+<span class="w">      </span><span class="c">!! and refuses; this is what makes the list acceptable rather than</span>
+<span class="w">      </span><span class="c">!! merely diagnosing it.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! It only ever grows the list, so applying it twice does nothing the</span>
+<span class="w">      </span><span class="c">!! first did not, and applying it to a full list changes nothing at all.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="kt">c_ptr</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">handle</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">list</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_BAD_HANDLE</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">c_associated</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;null fragment list handle&quot;</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      call </span><span class="nb">c_f_pointer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">list</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">list</span><span class="p">%</span><span class="n">close_subsets</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">report</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">mqc_fraglist_close_subsets</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

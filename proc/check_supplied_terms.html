@@ -1,0 +1,850 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>check_supplied_terms &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>check_supplied_terms
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">13 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_session.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_session.f90.html'>mqc_session.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_session.html'>mqc_session</a></li>
+            <li class="breadcrumb-item active" aria-current="page">check_supplied_terms</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/check_supplied_terms.html#variable-list~9">list</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/check_supplied_terms.html#src">check_supplied_terms</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine check_supplied_terms(terms, n_terms, sys_geom, strict, error)  
+</h2>
+    
+
+    <p>Run a supplied term list past the validator without committing to it</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-terms~10"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>terms</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_terms~6"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_terms</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~20"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-strict~5"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>strict</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~36"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~check_supplied_terms~~CallsGraph Pages: 1 -->
+<svg id="proccheck_supplied_termsCallsGraph" width="641pt" height="188pt"
+ viewBox="0.00 0.00 641.00 187.83" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~check_supplied_terms~~CallsGraph" class="graph" transform="scale(0.63 0.63) rotate(0) translate(4 296.35)">
+<title>proc~~check_supplied_terms~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-296.35 1021,-296.35 1021,4 -4,4"/>
+<!-- proc~check_supplied_terms -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node1" class="node">
+<title>proc~check_supplied_terms</title>
+<polygon fill="none" stroke="black" points="130,-259.91 0,-259.91 0,-235.91 130,-235.91 130,-259.91"/>
+<text text-anchor="middle" x="65" y="-245.51" font-family="Helvetica,sans-Serif" font-size="10.50">check_supplied_terms</text>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node2" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node2"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="830,-290.91 691,-290.91 691,-266.91 830,-266.91 830,-290.91"/>
+<text text-anchor="middle" x="760.5" y="-276.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~check_supplied_terms&#45;&gt;proc~error_has_error -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge1" class="edge">
+<title>proc~check_supplied_terms&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M112.56,-259.93C129.31,-263.91 148.42,-268.04 166,-270.91 348.4,-300.58 566.51,-292.6 680.78,-285.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="681.09,-288.65 690.84,-284.5 680.63,-281.67 681.09,-288.65"/>
+</g>
+<!-- proc~fraglist_destroy -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node3" class="node">
+<title>proc~fraglist_destroy</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node3"><a xlink:href="../proc/fraglist_destroy.html" xlink:title="fraglist_t%fraglist_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="501,-279.91 352,-279.91 352,-255.91 501,-255.91 501,-279.91"/>
+<text text-anchor="middle" x="426.5" y="-265.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~check_supplied_terms&#45;&gt;proc~fraglist_destroy -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge2" class="edge">
+<title>proc~check_supplied_terms&#45;&gt;proc~fraglist_destroy</title>
+<path fill="none" stroke="#ff0000" d="M130.27,-251.48C189.32,-254.77 277.19,-259.65 341.72,-263.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="341.69,-266.75 351.87,-263.81 342.08,-259.76 341.69,-266.75"/>
+</g>
+<!-- proc~fraglist_replace -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node4" class="node">
+<title>proc~fraglist_replace</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node4"><a xlink:href="../proc/fraglist_replace.html" xlink:title="fraglist_t%fraglist_replace">
+<polygon fill="#d9534f" stroke="#d9534f" points="316,-239.91 166,-239.91 166,-215.91 316,-215.91 316,-239.91"/>
+<text text-anchor="middle" x="241" y="-225.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_replace</text>
+</a>
+</g>
+</g>
+<!-- proc~check_supplied_terms&#45;&gt;proc~fraglist_replace -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge3" class="edge">
+<title>proc~check_supplied_terms&#45;&gt;proc~fraglist_replace</title>
+<path fill="none" stroke="#ff0000" d="M130.3,-240.52C138.65,-239.56 147.3,-238.56 155.91,-237.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="156.44,-241.03 165.98,-236.41 155.65,-234.08 156.44,-241.03"/>
+</g>
+<!-- proc~validate_terms -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node5" class="node">
+<title>proc~validate_terms</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node5"><a xlink:href="../proc/validate_terms.html" xlink:title="validate_terms">
+<polygon fill="#d9534f" stroke="#d9534f" points="286.5,-136.91 195.5,-136.91 195.5,-112.91 286.5,-112.91 286.5,-136.91"/>
+<text text-anchor="middle" x="241" y="-122.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_terms</text>
+</a>
+</g>
+</g>
+<!-- proc~check_supplied_terms&#45;&gt;proc~validate_terms -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge4" class="edge">
+<title>proc~check_supplied_terms&#45;&gt;proc~validate_terms</title>
+<path fill="none" stroke="#ff0000" d="M83,-235.89C113.67,-214.21 178.39,-168.45 214.43,-142.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="216.78,-145.6 222.93,-136.97 212.74,-139.89 216.78,-145.6"/>
+</g>
+<!-- proc~fraglist_replace&#45;&gt;proc~fraglist_destroy -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge6" class="edge">
+<title>proc~fraglist_replace&#45;&gt;proc~fraglist_destroy</title>
+<path fill="none" stroke="#00ffff" d="M297.06,-239.91C316.92,-244.24 339.54,-249.17 360.2,-253.67"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="359.65,-257.13 370.17,-255.84 361.14,-250.29 359.65,-257.13"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node8" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node8"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="813,-219.91 708,-219.91 708,-195.91 813,-195.91 813,-219.91"/>
+<text text-anchor="middle" x="760.5" y="-205.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_replace&#45;&gt;proc~error_set -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge5" class="edge">
+<title>proc~fraglist_replace&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#00ffff" d="M316.15,-225.04C418.75,-221.07 602.16,-213.99 697.74,-210.29"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="697.97,-213.79 707.83,-209.9 697.7,-206.79 697.97,-213.79"/>
+</g>
+<!-- proc~check_subset_closure -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node6" class="node">
+<title>proc~check_subset_closure</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node6"><a xlink:href="../proc/check_subset_closure.html" xlink:title="check_subset_closure">
+<polygon fill="#d9534f" stroke="#d9534f" points="490,-115.91 363,-115.91 363,-91.91 490,-91.91 490,-115.91"/>
+<text text-anchor="middle" x="426.5" y="-101.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_subset_closure</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~check_subset_closure -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge7" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~check_subset_closure</title>
+<path fill="none" stroke="#7f00ff" d="M286.89,-119.77C306.67,-117.5 330.43,-114.79 352.64,-112.24"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="353.18,-115.71 362.72,-111.09 352.38,-108.75 353.18,-115.71"/>
+</g>
+<!-- proc~complain -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node7" class="node">
+<title>proc~complain</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node7"><a xlink:href="../proc/complain.html" xlink:title="complain">
+<polygon fill="#d9534f" stroke="#d9534f" points="627,-157.91 565,-157.91 565,-133.91 627,-133.91 627,-157.91"/>
+<text text-anchor="middle" x="596" y="-143.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">complain</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~complain -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge8" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~complain</title>
+<path fill="none" stroke="#7f00ff" d="M286.71,-127.57C355.92,-131.68 487.93,-139.54 554.49,-143.5"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="554.41,-147 564.6,-144.1 554.82,-140.01 554.41,-147"/>
+</g>
+<!-- proc~fraglist_level_of -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node9" class="node">
+<title>proc~fraglist_level_of</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node9"><a xlink:href="../proc/fraglist_level_of.html" xlink:title="fraglist_t%fraglist_level_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1017,-75.91 866,-75.91 866,-51.91 1017,-51.91 1017,-75.91"/>
+<text text-anchor="middle" x="941.5" y="-61.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_level_of</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge9" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#7f00ff" d="M253.97,-112.76C272.97,-94.22 311.98,-59.13 352,-40.91 428.39,-6.11 453.49,-11.39 537,-2.91 666.68,10.28 818.38,-27 893.46,-49.01"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="892.52,-52.38 903.11,-51.88 894.52,-45.67 892.52,-52.38"/>
+</g>
+<!-- proc~text -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node10" class="node">
+<title>proc~text</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node10"><a xlink:href="../proc/text.html" xlink:title="text">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="623,-35.91 569,-35.91 569,-11.91 623,-11.91 623,-35.91"/>
+<text text-anchor="middle" x="596" y="-21.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">text</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~text -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge10" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~text</title>
+<path fill="none" stroke="#7f00ff" d="M270.6,-112.84C292.6,-103.84 323.89,-91.65 352,-82.91 424.42,-60.39 511.15,-41.13 558.94,-31.17"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="559.73,-34.58 568.81,-29.13 558.31,-27.72 559.73,-34.58"/>
+</g>
+<!-- proc~text64 -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node11" class="node">
+<title>proc~text64</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node11"><a xlink:href="../proc/text64.html" xlink:title="text64">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="623,-199.91 569,-199.91 569,-175.91 623,-175.91 623,-199.91"/>
+<text text-anchor="middle" x="596" y="-185.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">text64</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_terms&#45;&gt;proc~text64 -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge11" class="edge">
+<title>proc~validate_terms&#45;&gt;proc~text64</title>
+<path fill="none" stroke="#7f00ff" d="M286.54,-135.76C306.5,-140.43 330.36,-145.76 352,-149.91 424.91,-163.87 510.86,-176.4 558.52,-182.99"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="558.26,-186.49 568.65,-184.39 559.22,-179.56 558.26,-186.49"/>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~complain -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge12" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~complain</title>
+<path fill="none" stroke="#ff0000" d="M475.5,-115.94C500.71,-122.26 531.23,-129.92 555.12,-135.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="554.37,-139.33 564.92,-138.36 556.07,-132.54 554.37,-139.33"/>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge14" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#ff0000" d="M481.84,-91.9C499.37,-88.45 518.93,-85.05 537,-82.91 646.52,-69.89 773.77,-65.7 855.62,-64.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="855.92,-67.89 865.87,-64.25 855.82,-60.89 855.92,-67.89"/>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~text -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge15" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~text</title>
+<path fill="none" stroke="#ff0000" d="M451.3,-91.85C473.4,-80.74 507.27,-63.89 537,-49.91 544.3,-46.47 552.16,-42.88 559.67,-39.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="561.23,-42.63 568.92,-35.35 558.36,-36.24 561.23,-42.63"/>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~text64 -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge16" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~text64</title>
+<path fill="none" stroke="#ff0000" d="M446.34,-116.1C467.74,-129.63 503.98,-151.57 537,-166.91 544.09,-170.2 551.86,-173.32 559.33,-176.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="558.32,-179.46 568.91,-179.55 560.69,-172.87 558.32,-179.46"/>
+</g>
+<!-- proc~first_missing_subset -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node12" class="node">
+<title>proc~first_missing_subset</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node12"><a xlink:href="../proc/first_missing_subset.html" xlink:title="first_missing_subset">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="655,-115.91 537,-115.91 537,-91.91 655,-91.91 655,-115.91"/>
+<text text-anchor="middle" x="596" y="-101.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">first_missing_subset</text>
+</a>
+</g>
+</g>
+<!-- proc~check_subset_closure&#45;&gt;proc~first_missing_subset -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge13" class="edge">
+<title>proc~check_subset_closure&#45;&gt;proc~first_missing_subset</title>
+<path fill="none" stroke="#ff0000" d="M490.35,-103.91C502.12,-103.91 514.49,-103.91 526.42,-103.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="526.78,-107.41 536.78,-103.91 526.78,-100.41 526.78,-107.41"/>
+</g>
+<!-- proc~complain&#45;&gt;proc~error_has_error -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge17" class="edge">
+<title>proc~complain&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ffff00" d="M627.1,-152.44C636.77,-155.62 647.03,-160.24 655,-166.91 679.45,-187.34 669.68,-205.23 691,-228.91 702.21,-241.35 716.98,-252.61 729.94,-261.28"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="728.25,-264.35 738.55,-266.85 732.05,-258.48 728.25,-264.35"/>
+</g>
+<!-- proc~complain&#45;&gt;proc~error_set -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge18" class="edge">
+<title>proc~complain&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ffff00" d="M627.16,-156.65C636.14,-159.9 645.98,-163.5 655,-166.91 676.53,-175.02 700.42,-184.37 719.92,-192.09"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="718.81,-195.42 729.4,-195.85 721.4,-188.91 718.81,-195.42"/>
+</g>
+<!-- warning -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node13" class="node">
+<title>warning</title>
+<polygon fill="#777777" stroke="#777777" points="788,-157.91 733,-157.91 733,-133.91 788,-133.91 788,-157.91"/>
+<text text-anchor="middle" x="760.5" y="-143.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+</g>
+<!-- proc~complain&#45;&gt;warning -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge19" class="edge">
+<title>proc~complain&#45;&gt;warning</title>
+<path fill="none" stroke="#ffff00" d="M627.18,-145.91C654.24,-145.91 694.01,-145.91 722.87,-145.91"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="722.97,-149.41 732.97,-145.91 722.97,-142.41 722.97,-149.41"/>
+</g>
+<!-- proc~contains_term -->
+<g id="proc~~check_supplied_terms~~CallsGraph_node14" class="node">
+<title>proc~contains_term</title>
+<g id="a_proc~~check_supplied_terms~~CallsGraph_node14"><a xlink:href="../proc/contains_term.html" xlink:title="contains_term">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="804.5,-115.91 716.5,-115.91 716.5,-91.91 804.5,-91.91 804.5,-115.91"/>
+<text text-anchor="middle" x="760.5" y="-101.51" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">contains_term</text>
+</a>
+</g>
+</g>
+<!-- proc~first_missing_subset&#45;&gt;proc~contains_term -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge20" class="edge">
+<title>proc~first_missing_subset&#45;&gt;proc~contains_term</title>
+<path fill="none" stroke="#ff0000" d="M655.21,-103.91C671.79,-103.91 689.77,-103.91 706.06,-103.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="706.48,-107.41 716.48,-103.91 706.48,-100.41 706.48,-107.41"/>
+</g>
+<!-- proc~contains_term&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~check_supplied_terms~~CallsGraph_edge21" class="edge">
+<title>proc~contains_term&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#ff0000" d="M804.83,-94.22C826.38,-89.41 852.84,-83.49 876.66,-78.17"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="877.68,-81.53 886.68,-75.93 876.16,-74.7 877.68,-81.53"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panproccheck_supplied_termsCallsGraph = svgPanZoom('#proccheck_supplied_termsCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~check_supplied_terms~~CalledByGraph Pages: 1 -->
+<svg id="proccheck_supplied_termsCalledByGraph" width="430pt" height="32pt"
+ viewBox="0.00 0.00 430.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~check_supplied_terms~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~check_supplied_terms~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 426,-28 426,4 -4,4"/>
+<!-- proc~check_supplied_terms -->
+<g id="proc~~check_supplied_terms~~CalledByGraph_node1" class="node">
+<title>proc~check_supplied_terms</title>
+<polygon fill="none" stroke="black" points="422,-24 292,-24 292,0 422,0 422,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">check_supplied_terms</text>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~check_supplied_terms~~CalledByGraph_node2" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~check_supplied_terms~~CalledByGraph_node2"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="256,-24 95,-24 95,0 256,0 256,-24"/>
+<text text-anchor="middle" x="175.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~check_supplied_terms -->
+<g id="proc~~check_supplied_terms~~CalledByGraph_edge1" class="edge">
+<title>proc~session_run&#45;&gt;proc~check_supplied_terms</title>
+<path fill="none" stroke="#ff0000" d="M256.02,-12C264.55,-12 273.21,-12 281.68,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="281.89,-15.5 291.89,-12 281.89,-8.5 281.89,-15.5"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~check_supplied_terms~~CalledByGraph_node3" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~check_supplied_terms~~CalledByGraph_node3"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="59,-24 0,-24 0,0 59,0 59,-24"/>
+<text text-anchor="middle" x="29.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~check_supplied_terms~~CalledByGraph_edge2" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#ff0000" d="M59.29,-12C66.87,-12 75.45,-12 84.44,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="84.72,-15.5 94.72,-12 84.72,-8.5 84.72,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-list~9"></span>
+              type(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>list</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">check_supplied_terms</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_terms</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">strict</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Run a supplied term list past the validator without committing to it</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">terms</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n_terms</span>
+<span class="w">      </span><span class="kt">logical</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">strict</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">list</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">list</span><span class="p">%</span><span class="n">replace</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="n">n_terms</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">validate_terms</span><span class="p">(</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">strict</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      call </span><span class="n">list</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">check_supplied_terms</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,836 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>fraglist_close_subsets &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>fraglist_close_subsets
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.3% of total for procedures.">35 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_fraglist.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_fraglist.f90.html'>mqc_fraglist.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></li>
+            <li class="breadcrumb-item active" aria-current="page">fraglist_close_subsets</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-capacity~2">capacity</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-closed">closed</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-has_next~3">has_next</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-i~17">i</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-iterm~8">iterm</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-level~6">level</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-n_closed">n_closed</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-size_wanted">size_wanted</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-subset">subset</a>
+            <a class="list-group-item" href="../proc/fraglist_close_subsets.html#variable-term">term</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/fraglist_close_subsets.html#src">fraglist_close_subsets</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private  subroutine fraglist_close_subsets(this, error)  
+</h2>
+    
+
+    <p>Add back every subset of every surviving term</p>
+<p><strong>A screened list is not usable until this has run.</strong> An n-body term&rsquo;s
+contribution is its energy less the delta of every proper subset, so
+keeping a trimer whose dimers fell below the threshold does not
+approximate anything &ndash; the assembly looks the subsets up and fails.
+Screening therefore selects which <em>high-order</em> terms to keep, and this
+restores what computing them requires.</p>
+<p>That is also why an energy screen saves less than it first appears: a
+trimer kept for its own sake drags in three dimers and three monomers,
+most of which the screen had already rejected on their own account.
+The saving is real but it is in the tail, not the whole list.</p>
+
+    <h3>Type Bound</h3>
+    <p><a href='../type/fraglist_t.html'>fraglist_t</a></p>
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-this~14"></span>
+              class(<a href='../type/fraglist_t.html'>fraglist_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>this</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~19"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fraglist_close_subsets~~CallsGraph Pages: 1 -->
+<svg id="procfraglist_close_subsetsCallsGraph" width="378pt" height="200pt"
+ viewBox="0.00 0.00 378.00 200.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fraglist_close_subsets~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+<title>proc~~fraglist_close_subsets~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-196 374,-196 374,4 -4,4"/>
+<!-- proc~fraglist_close_subsets -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node1" class="node">
+<title>proc~fraglist_close_subsets</title>
+<polygon fill="none" stroke="black" points="183,-108 0,-108 0,-84 183,-84 183,-108"/>
+<text text-anchor="middle" x="91.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50">fraglist_t%fraglist_close_subsets</text>
+</g>
+<!-- proc~add_unique -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node2" class="node">
+<title>proc~add_unique</title>
+<g id="a_proc~~fraglist_close_subsets~~CallsGraph_node2"><a xlink:href="../proc/add_unique.html" xlink:title="add_unique">
+<polygon fill="#d9534f" stroke="#d9534f" points="332,-192 257,-192 257,-168 332,-168 332,-192"/>
+<text text-anchor="middle" x="294.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_unique</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~add_unique -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_edge1" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~add_unique</title>
+<path fill="none" stroke="#ff0000" d="M113.88,-108.2C138.59,-121.93 180.78,-144.24 219,-159 227.84,-162.41 237.46,-165.54 246.76,-168.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="246.1,-171.73 256.68,-171.09 248.01,-164.99 246.1,-171.73"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node3" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~fraglist_close_subsets~~CallsGraph_node3"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="347,-150 242,-150 242,-126 347,-126 347,-150"/>
+<text text-anchor="middle" x="294.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~error_set -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_edge2" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#ff0000" d="M150.1,-108.04C175.6,-113.36 205.64,-119.64 231.61,-125.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="231.22,-128.56 241.72,-127.18 232.65,-121.71 231.22,-128.56"/>
+</g>
+<!-- proc~first_combination -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node4" class="node">
+<title>proc~first_combination</title>
+<g id="a_proc~~fraglist_close_subsets~~CallsGraph_node4"><a xlink:href="../proc/first_combination.html" xlink:title="first_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="347,-108 242,-108 242,-84 347,-84 347,-108"/>
+<text text-anchor="middle" x="294.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">first_combination</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~first_combination -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_edge3" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~first_combination</title>
+<path fill="none" stroke="#ff0000" d="M183,-96C199.43,-96 216.21,-96 231.58,-96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="231.97,-99.5 241.97,-96 231.97,-92.5 231.97,-99.5"/>
+</g>
+<!-- proc~fraglist_level_of -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node5" class="node">
+<title>proc~fraglist_level_of</title>
+<g id="a_proc~~fraglist_close_subsets~~CallsGraph_node5"><a xlink:href="../proc/fraglist_level_of.html" xlink:title="fraglist_t%fraglist_level_of">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="370,-66 219,-66 219,-42 370,-42 370,-66"/>
+<text text-anchor="middle" x="294.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fraglist_t%fraglist_level_of</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~fraglist_level_of -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_edge4" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~fraglist_level_of</title>
+<path fill="none" stroke="#ff0000" d="M150.1,-83.96C173.75,-79.02 201.31,-73.26 225.91,-68.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="226.82,-71.51 235.89,-66.04 225.39,-64.66 226.82,-71.51"/>
+</g>
+<!-- proc~next_index_set -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_node6" class="node">
+<title>proc~next_index_set</title>
+<g id="a_proc~~fraglist_close_subsets~~CallsGraph_node6"><a xlink:href="../proc/next_index_set.html" xlink:title="next_index_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="339.5,-24 249.5,-24 249.5,0 339.5,0 339.5,-24"/>
+<text text-anchor="middle" x="294.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_index_set</text>
+</a>
+</g>
+</g>
+<!-- proc~fraglist_close_subsets&#45;&gt;proc~next_index_set -->
+<g id="proc~~fraglist_close_subsets~~CallsGraph_edge5" class="edge">
+<title>proc~fraglist_close_subsets&#45;&gt;proc~next_index_set</title>
+<path fill="none" stroke="#ff0000" d="M113.88,-83.8C138.59,-70.07 180.78,-47.76 219,-33 225.49,-30.5 232.39,-28.15 239.29,-25.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="240.75,-29.21 249.32,-22.98 238.74,-22.5 240.75,-29.21"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~fraglist_close_subsets~~CalledByGraph Pages: 1 -->
+<svg id="procfraglist_close_subsetsCalledByGraph" width="383pt" height="32pt"
+ viewBox="0.00 0.00 383.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~fraglist_close_subsets~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~fraglist_close_subsets~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 379,-28 379,4 -4,4"/>
+<!-- proc~fraglist_close_subsets -->
+<g id="proc~~fraglist_close_subsets~~CalledByGraph_node1" class="node">
+<title>proc~fraglist_close_subsets</title>
+<polygon fill="none" stroke="black" points="375,-24 192,-24 192,0 375,0 375,-24"/>
+<text text-anchor="middle" x="283.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">fraglist_t%fraglist_close_subsets</text>
+</g>
+<!-- proc~mqc_fraglist_close_subsets -->
+<g id="proc~~fraglist_close_subsets~~CalledByGraph_node2" class="node">
+<title>proc~mqc_fraglist_close_subsets</title>
+<g id="a_proc~~fraglist_close_subsets~~CalledByGraph_node2"><a xlink:href="../proc/mqc_fraglist_close_subsets.html" xlink:title="mqc_fraglist_close_subsets">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="156,-24 0,-24 0,0 156,0 156,-24"/>
+<text text-anchor="middle" x="78" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_fraglist_close_subsets</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets -->
+<g id="proc~~fraglist_close_subsets~~CalledByGraph_edge1" class="edge">
+<title>proc~mqc_fraglist_close_subsets&#45;&gt;proc~fraglist_close_subsets</title>
+<path fill="none" stroke="#ff0000" d="M156.22,-12C164.55,-12 173.11,-12 181.65,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="181.67,-15.5 191.67,-12 181.67,-8.5 181.67,-15.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-capacity~2"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>capacity</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-closed"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>closed</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-has_next~3"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>has_next</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~17"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iterm~8"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iterm</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-level~6"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>level</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_closed"></span>
+              integer(kind=int64),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_closed</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-size_wanted"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>size_wanted</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-subset"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>subset</strong>(MAX_TERM_LEVEL)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-term"></span>
+              integer(kind=default_int),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>term</strong>(MAX_TERM_LEVEL)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">fraglist_close_subsets</span><span class="p">(</span><span class="n">this</span><span class="p">,</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Add back every subset of every surviving term</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! **A screened list is not usable until this has run.** An n-body term&#39;s</span>
+<span class="w">      </span><span class="c">!! contribution is its energy less the delta of every proper subset, so</span>
+<span class="w">      </span><span class="c">!! keeping a trimer whose dimers fell below the threshold does not</span>
+<span class="w">      </span><span class="c">!! approximate anything -- the assembly looks the subsets up and fails.</span>
+<span class="w">      </span><span class="c">!! Screening therefore selects which *high-order* terms to keep, and this</span>
+<span class="w">      </span><span class="c">!! restores what computing them requires.</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! That is also why an energy screen saves less than it first appears: a</span>
+<span class="w">      </span><span class="c">!! trimer kept for its own sake drags in three dimers and three monomers,</span>
+<span class="w">      </span><span class="c">!! most of which the screen had already rejected on their own account.</span>
+<span class="w">      </span><span class="c">!! The saving is real but it is in the tail, not the whole list.</span>
+<span class="w">      </span><span class="k">class</span><span class="p">(</span><span class="n">fraglist_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">this</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">closed</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">MAX_TERM_LEVEL</span><span class="p">),</span><span class="w"> </span><span class="n">term</span><span class="p">(</span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iterm</span><span class="p">,</span><span class="w"> </span><span class="n">n_closed</span><span class="p">,</span><span class="w"> </span><span class="n">capacity</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">default_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">,</span><span class="w"> </span><span class="n">i</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_next</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">MAX_TERM_LEVEL</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">error</span><span class="p">%</span><span class="n">set</span><span class="p">(</span><span class="n">ERROR_VALIDATION</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                        </span><span class="s2">&quot;fraglist: max_level exceeds what subset closure supports&quot;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+
+<span class="w">      </span><span class="c">! Every term of order n contributes at most 2^n - 1 subsets including</span>
+<span class="w">      </span><span class="c">! itself; duplicates are dropped below, so this is a bound, not a count.</span>
+<span class="w">      </span><span class="n">capacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="o">*</span><span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="n">int64</span><span class="p">)</span>
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">closed</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="p">))</span>
+<span class="w">      </span><span class="n">closed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="n">n_closed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">      </span><span class="k">do </span><span class="n">iterm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span>
+<span class="w">         </span><span class="n">term</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">         </span><span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">level_of</span><span class="p">(</span><span class="n">iterm</span><span class="p">)</span>
+<span class="w">         </span><span class="n">term</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">level</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">terms</span><span class="p">(</span><span class="n">iterm</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">level</span><span class="p">)</span>
+<span class="w">         </span><span class="k">do </span><span class="n">size_wanted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">level</span>
+<span class="w">            </span><span class="k">call </span><span class="n">first_combination</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
+<span class="w">            </span><span class="k">do</span>
+<span class="k">               call </span><span class="n">add_unique</span><span class="p">(</span><span class="n">closed</span><span class="p">,</span><span class="w"> </span><span class="n">n_closed</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">max_level</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                               </span><span class="p">[(</span><span class="n">term</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">i</span><span class="p">)),</span><span class="w"> </span><span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)],</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">)</span>
+<span class="w">               </span><span class="k">call </span><span class="n">next_index_set</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span><span class="w"> </span><span class="n">size_wanted</span><span class="p">,</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span>
+<span class="w">               </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">has_next</span><span class="p">)</span><span class="w"> </span><span class="k">exit</span>
+<span class="k">            end do</span>
+<span class="k">         end do</span>
+<span class="k">      end do</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">distances</span><span class="p">))</span><span class="w"> </span><span class="k">deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">distances</span><span class="p">)</span>
+<span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">has_distances</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="k">call </span><span class="nb">move_alloc</span><span class="p">(</span><span class="n">closed</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">terms</span><span class="p">)</span>
+<span class="w">      </span><span class="n">this</span><span class="p">%</span><span class="n">n_terms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_closed</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">fraglist_close_subsets</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,877 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>bcast_system_geometry &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>bcast_system_geometry
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.2% of total for procedures.">29 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_bcast_system.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_bcast_system.f90.html'>mqc_bcast_system.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></li>
+            <li class="breadcrumb-item active" aria-current="page">bcast_system_geometry</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/bcast_system_geometry.html#variable-is_root~2">is_root</a>
+            <a class="list-group-item" href="../proc/bcast_system_geometry.html#variable-scalars">scalars</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/bcast_system_geometry.html#src">bcast_system_geometry</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine bcast_system_geometry(comm, sys_geom, root)  
+</h2>
+    
+
+    <p>Give every rank rank 0&rsquo;s system</p>
+<p>Collective: every rank calls it. On <code>root</code> the argument is read; on
+every other rank it is overwritten, whatever it held before.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-comm~4"></span>
+              type(comm_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>comm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~21"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-root~10"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>root</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~bcast_system_geometry~~CallsGraph Pages: 1 -->
+<svg id="procbcast_system_geometryCallsGraph" width="637pt" height="261pt"
+ viewBox="0.00 0.00 637.00 261.24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~bcast_system_geometry~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 257.24)">
+<title>proc~~bcast_system_geometry~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-257.24 633,-257.24 633,4 -4,4"/>
+<!-- proc~bcast_system_geometry -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node1" class="node">
+<title>proc~bcast_system_geometry</title>
+<polygon fill="none" stroke="black" points="141,-126 0,-126 0,-102 141,-102 141,-126"/>
+<text text-anchor="middle" x="70.5" y="-111.6" font-family="Helvetica,sans-Serif" font-size="10.50">bcast_system_geometry</text>
+</g>
+<!-- bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node2" class="node">
+<title>bcast</title>
+<polygon fill="#777777" stroke="#777777" points="629,-144 575,-144 575,-120 629,-120 629,-144"/>
+<text text-anchor="middle" x="602" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge1" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;bcast</title>
+<path fill="none" stroke="#ff0000" d="M141.02,-113.25C153.02,-113.14 165.37,-113.06 177,-113 269.44,-112.56 292.64,-108.95 385,-113 448.41,-115.78 521.98,-123.14 564.83,-127.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="564.46,-131.32 574.78,-128.95 565.23,-124.36 564.46,-131.32"/>
+</g>
+<!-- proc~bcast_bonds -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node3" class="node">
+<title>proc~bcast_bonds</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node3"><a xlink:href="../proc/bcast_bonds.html" xlink:title="bcast_bonds">
+<polygon fill="#d9534f" stroke="#d9534f" points="320.5,-230 241.5,-230 241.5,-206 320.5,-206 320.5,-230"/>
+<text text-anchor="middle" x="281" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;proc~bcast_bonds -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge2" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;proc~bcast_bonds</title>
+<path fill="none" stroke="#ff0000" d="M82.9,-126.02C101.02,-144.36 138.3,-179.07 177,-197 193.89,-204.82 213.67,-209.75 231.35,-212.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="231.06,-216.34 241.49,-214.46 232.16,-209.42 231.06,-216.34"/>
+</g>
+<!-- proc~bcast_int_1d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node4" class="node">
+<title>proc~bcast_int_1d</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node4"><a xlink:href="../proc/bcast_int_1d.html" xlink:title="bcast_int_1d">
+<polygon fill="#d9534f" stroke="#d9534f" points="320.5,-188 241.5,-188 241.5,-164 320.5,-164 320.5,-188"/>
+<text text-anchor="middle" x="281" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_int_1d</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;proc~bcast_int_1d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge3" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;proc~bcast_int_1d</title>
+<path fill="none" stroke="#ff0000" d="M98.82,-126.09C119.86,-135.04 149.85,-147.02 177,-155 194.56,-160.16 214.18,-164.5 231.54,-167.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="230.99,-171.33 241.47,-169.75 232.29,-164.45 230.99,-171.33"/>
+</g>
+<!-- proc~bcast_int_2d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node5" class="node">
+<title>proc~bcast_int_2d</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node5"><a xlink:href="../proc/bcast_int_2d.html" xlink:title="bcast_int_2d">
+<polygon fill="#d9534f" stroke="#d9534f" points="320.5,-146 241.5,-146 241.5,-122 320.5,-122 320.5,-146"/>
+<text text-anchor="middle" x="281" y="-131.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_int_2d</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;proc~bcast_int_2d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge4" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;proc~bcast_int_2d</title>
+<path fill="none" stroke="#ff0000" d="M141.22,-120.69C170.69,-123.51 204.31,-126.74 231.08,-129.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="231.07,-132.82 241.35,-130.29 231.73,-125.85 231.07,-132.82"/>
+</g>
+<!-- proc~bcast_real_2d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node6" class="node">
+<title>proc~bcast_real_2d</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node6"><a xlink:href="../proc/bcast_real_2d.html" xlink:title="bcast_real_2d">
+<polygon fill="#d9534f" stroke="#d9534f" points="323.5,-66 238.5,-66 238.5,-42 323.5,-42 323.5,-66"/>
+<text text-anchor="middle" x="281" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_real_2d</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;proc~bcast_real_2d -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge5" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;proc~bcast_real_2d</title>
+<path fill="none" stroke="#ff0000" d="M106.97,-101.94C127.36,-95.16 153.51,-86.74 177,-80 193.59,-75.24 211.81,-70.48 228.26,-66.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="229.38,-69.7 238.24,-63.89 227.69,-62.9 229.38,-69.7"/>
+</g>
+<!-- proc~system_destroy -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node7" class="node">
+<title>proc~system_destroy</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node7"><a xlink:href="../proc/system_destroy.html" xlink:title="system_geometry_t%system_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="385,-24 177,-24 177,0 385,0 385,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">system_geometry_t%system_destroy</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_system_geometry&#45;&gt;proc~system_destroy -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge6" class="edge">
+<title>proc~bcast_system_geometry&#45;&gt;proc~system_destroy</title>
+<path fill="none" stroke="#ff0000" d="M83.26,-101.98C101.57,-84.02 138.76,-50.44 177,-33 181.76,-30.83 186.74,-28.88 191.83,-27.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="193.26,-30.36 201.74,-24.02 191.16,-23.68 193.26,-30.36"/>
+</g>
+<!-- proc~bcast_bonds&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge7" class="edge">
+<title>proc~bcast_bonds&#45;&gt;bcast</title>
+<path fill="none" stroke="#ffff00" d="M314.58,-230.12C366,-247.07 467.47,-271.5 539,-231 566.06,-215.68 558.37,-197.28 575,-171 578.77,-165.04 582.96,-158.65 586.87,-152.8"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="589.98,-154.45 592.65,-144.2 584.17,-150.54 589.98,-154.45"/>
+</g>
+<!-- proc~bcast_integer_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node8" class="node">
+<title>proc~bcast_integer_array</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node8"><a xlink:href="../proc/bcast_integer_array.html" xlink:title="bcast_integer_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="539,-222 421,-222 421,-198 539,-198 539,-222"/>
+<text text-anchor="middle" x="480" y="-207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_integer_array</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_bonds&#45;&gt;proc~bcast_integer_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge8" class="edge">
+<title>proc~bcast_bonds&#45;&gt;proc~bcast_integer_array</title>
+<path fill="none" stroke="#ffff00" d="M320.92,-216.42C346.51,-215.38 380.69,-213.99 410.72,-212.77"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="410.88,-216.27 420.73,-212.37 410.6,-209.28 410.88,-216.27"/>
+</g>
+<!-- proc~bcast_int_1d&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge9" class="edge">
+<title>proc~bcast_int_1d&#45;&gt;bcast</title>
+<path fill="none" stroke="#00ff00" d="M320.93,-172.75C371.44,-168.24 462.17,-159.12 539,-146 547.43,-144.56 556.44,-142.71 564.9,-140.83"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="565.91,-144.19 574.88,-138.54 564.35,-137.36 565.91,-144.19"/>
+</g>
+<!-- proc~bcast_int_1d&#45;&gt;proc~bcast_integer_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge10" class="edge">
+<title>proc~bcast_int_1d&#45;&gt;proc~bcast_integer_array</title>
+<path fill="none" stroke="#00ff00" d="M320.92,-182.72C346.51,-187.13 380.69,-193.03 410.72,-198.22"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="410.28,-201.69 420.73,-199.94 411.47,-194.79 410.28,-201.69"/>
+</g>
+<!-- proc~bcast_int_2d&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge11" class="edge">
+<title>proc~bcast_int_2d&#45;&gt;bcast</title>
+<path fill="none" stroke="#00ffff" d="M320.8,-133.76C382.98,-133.37 504.12,-132.61 564.69,-132.23"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="564.94,-135.73 574.92,-132.16 564.9,-128.73 564.94,-135.73"/>
+</g>
+<!-- proc~bcast_int_2d&#45;&gt;proc~bcast_integer_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge12" class="edge">
+<title>proc~bcast_int_2d&#45;&gt;proc~bcast_integer_array</title>
+<path fill="none" stroke="#00ffff" d="M320.51,-138.78C340.24,-141.99 364.37,-147.11 385,-155 409.74,-164.46 435.55,-180.04 453.85,-192.2"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="451.95,-195.14 462.19,-197.86 455.88,-189.35 451.95,-195.14"/>
+</g>
+<!-- proc~bcast_real_2d&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge13" class="edge">
+<title>proc~bcast_real_2d&#45;&gt;bcast</title>
+<path fill="none" stroke="#0000ff" d="M323.52,-45.11C386.6,-32.52 503.07,-13.11 539,-33 568.52,-49.34 585.86,-86.26 594.38,-110.1"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="591.1,-111.35 597.59,-119.72 597.74,-109.13 591.1,-111.35"/>
+</g>
+<!-- proc~bcast_real_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node9" class="node">
+<title>proc~bcast_real_array</title>
+<g id="a_proc~~bcast_system_geometry~~CallsGraph_node9"><a xlink:href="../proc/bcast_real_array.html" xlink:title="bcast_real_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="530,-66 430,-66 430,-42 530,-42 530,-66"/>
+<text text-anchor="middle" x="480" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast_real_array</text>
+</a>
+</g>
+</g>
+<!-- proc~bcast_real_2d&#45;&gt;proc~bcast_real_array -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge14" class="edge">
+<title>proc~bcast_real_2d&#45;&gt;proc~bcast_real_array</title>
+<path fill="none" stroke="#0000ff" d="M323.78,-54C351.68,-54 388.8,-54 419.74,-54"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="419.98,-57.5 429.98,-54 419.98,-50.5 419.98,-57.5"/>
+</g>
+<!-- proc~bcast_integer_array&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge15" class="edge">
+<title>proc~bcast_integer_array&#45;&gt;bcast</title>
+<path fill="none" stroke="#ff0000" d="M512.22,-197.9C521.13,-193.95 530.68,-189.21 539,-184 554.09,-174.55 569.44,-161.71 581.09,-151.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="583.55,-153.64 588.51,-144.28 578.79,-148.5 583.55,-153.64"/>
+</g>
+<!-- recv -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node10" class="node">
+<title>recv</title>
+<polygon fill="#777777" stroke="#777777" points="629,-204 575,-204 575,-180 629,-180 629,-204"/>
+<text text-anchor="middle" x="602" y="-189.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">recv</text>
+</g>
+<!-- proc~bcast_integer_array&#45;&gt;recv -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge16" class="edge">
+<title>proc~bcast_integer_array&#45;&gt;recv</title>
+<path fill="none" stroke="#ff0000" d="M539.24,-201.26C548.06,-199.94 556.93,-198.61 565.08,-197.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="565.61,-200.85 574.98,-195.9 564.57,-193.93 565.61,-200.85"/>
+</g>
+<!-- send -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_node11" class="node">
+<title>send</title>
+<polygon fill="#777777" stroke="#777777" points="629,-246 575,-246 575,-222 629,-222 629,-246"/>
+<text text-anchor="middle" x="602" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">send</text>
+</g>
+<!-- proc~bcast_integer_array&#45;&gt;send -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge17" class="edge">
+<title>proc~bcast_integer_array&#45;&gt;send</title>
+<path fill="none" stroke="#ff0000" d="M539.24,-221.65C548.06,-223.41 556.93,-225.19 565.08,-226.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="564.48,-230.27 574.98,-228.8 565.86,-223.4 564.48,-230.27"/>
+</g>
+<!-- proc~bcast_real_array&#45;&gt;bcast -->
+<g id="proc~~bcast_system_geometry~~CallsGraph_edge18" class="edge">
+<title>proc~bcast_real_array&#45;&gt;bcast</title>
+<path fill="none" stroke="#00ffff" d="M512.22,-66.1C521.13,-70.05 530.68,-74.79 539,-80 554.09,-89.45 569.44,-102.29 581.09,-112.85"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="578.79,-115.5 588.51,-119.72 583.55,-110.36 578.79,-115.5"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~bcast_system_geometry~~CalledByGraph Pages: 1 -->
+<svg id="procbcast_system_geometryCalledByGraph" width="641pt" height="58pt"
+ viewBox="0.00 0.00 641.00 57.85" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~bcast_system_geometry~~CalledByGraph" class="graph" transform="scale(0.78 0.78) rotate(0) translate(4 70)">
+<title>proc~~bcast_system_geometry~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 816,-70 816,4 -4,4"/>
+<!-- proc~bcast_system_geometry -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node1" class="node">
+<title>proc~bcast_system_geometry</title>
+<polygon fill="none" stroke="black" points="812,-45 671,-45 671,-21 812,-21 812,-45"/>
+<text text-anchor="middle" x="741.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">bcast_system_geometry</text>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node2" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node2"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="635,-66 474,-66 474,-42 635,-42 635,-66"/>
+<text text-anchor="middle" x="554.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~session_run&#45;&gt;proc~bcast_system_geometry -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge1" class="edge">
+<title>proc~session_run&#45;&gt;proc~bcast_system_geometry</title>
+<path fill="none" stroke="#ff0000" d="M635.03,-44.97C643.62,-44 652.36,-43.01 660.95,-42.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="661.4,-45.5 670.94,-40.9 660.61,-38.55 661.4,-45.5"/>
+</g>
+<!-- proc~worker_run -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node3" class="node">
+<title>proc~worker_run</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node3"><a xlink:href="../proc/worker_run.html" xlink:title="worker_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="591,-24 518,-24 518,0 591,0 591,-24"/>
+<text text-anchor="middle" x="554.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_run</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_run&#45;&gt;proc~bcast_system_geometry -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge2" class="edge">
+<title>proc~worker_run&#45;&gt;proc~bcast_system_geometry</title>
+<path fill="none" stroke="#ff0000" d="M591.17,-16.05C611.01,-18.3 636.55,-21.2 660.87,-23.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="660.51,-27.44 670.84,-25.09 661.3,-20.49 660.51,-27.44"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node4" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node4"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="428.5,-66 369.5,-66 369.5,-42 428.5,-42 428.5,-66"/>
+<text text-anchor="middle" x="399" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge3" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#ff0000" d="M428.51,-54C438.77,-54 450.97,-54 463.66,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="463.91,-57.5 473.91,-54 463.91,-50.5 463.91,-57.5"/>
+</g>
+<!-- proc~worker_loop -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node5" class="node">
+<title>proc~worker_loop</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node5"><a xlink:href="../proc/worker_loop.html" xlink:title="worker_loop">
+<polygon fill="#d9534f" stroke="#d9534f" points="438,-24 360,-24 360,0 438,0 438,-24"/>
+<text text-anchor="middle" x="399" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">worker_loop</text>
+</a>
+</g>
+</g>
+<!-- proc~worker_loop&#45;&gt;proc~worker_run -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge4" class="edge">
+<title>proc~worker_loop&#45;&gt;proc~worker_run</title>
+<path fill="none" stroke="#00ffff" d="M438.34,-12C459.34,-12 485.52,-12 507.61,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="507.75,-15.5 517.75,-12 507.75,-8.5 507.75,-15.5"/>
+</g>
+<!-- proc~session_begin -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node6" class="node">
+<title>proc~session_begin</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node6"><a xlink:href="../proc/session_begin.html" xlink:title="mqc_session_t%session_begin">
+<polygon fill="#d9534f" stroke="#d9534f" points="324,-24 151,-24 151,0 324,0 324,-24"/>
+<text text-anchor="middle" x="237.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~session_begin&#45;&gt;proc~worker_loop -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge5" class="edge">
+<title>proc~session_begin&#45;&gt;proc~worker_loop</title>
+<path fill="none" stroke="#00ffff" d="M324.32,-12C332.93,-12 341.45,-12 349.47,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="349.69,-15.5 359.69,-12 349.69,-8.5 349.69,-15.5"/>
+</g>
+<!-- proc~mqc_session_begin -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_node7" class="node">
+<title>proc~mqc_session_begin</title>
+<g id="a_proc~~bcast_system_geometry~~CalledByGraph_node7"><a xlink:href="../proc/mqc_session_begin.html" xlink:title="mqc_session_begin">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="115,-24 0,-24 0,0 115,0 115,-24"/>
+<text text-anchor="middle" x="57.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_begin</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_begin&#45;&gt;proc~session_begin -->
+<g id="proc~~bcast_system_geometry~~CalledByGraph_edge6" class="edge">
+<title>proc~mqc_session_begin&#45;&gt;proc~session_begin</title>
+<path fill="none" stroke="#ff0000" d="M115.31,-12C123.43,-12 131.96,-12 140.57,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="140.71,-15.5 150.71,-12 140.71,-8.5 140.71,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocbcast_system_geometryCalledByGraph = svgPanZoom('#procbcast_system_geometryCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-is_root~2"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>is_root</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scalars"></span>
+              integer(kind=int32),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scalars</strong>(N_SCALARS)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">subroutine </span><span class="n">bcast_system_geometry</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Give every rank rank 0&#39;s system</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Collective: every rank calls it. On `root` the argument is read; on</span>
+<span class="w">      </span><span class="c">!! every other rank it is overwritten, whatever it held before.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">comm_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">comm</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">root</span>
+
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="n">N_SCALARS</span><span class="p">)</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_root</span>
+
+<span class="w">      </span><span class="n">is_root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">comm</span><span class="p">%</span><span class="n">rank</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">root</span><span class="p">)</span>
+
+<span class="w">      </span><span class="c">! The five scalars go together: one broadcast rather than five, and they</span>
+<span class="w">      </span><span class="c">! are the sizes everything below is checked against.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">scalars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="nb">int</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="nb">int</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="nb">int</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">charge</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                    </span><span class="nb">int</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">multiplicity</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">)]</span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">         </span><span class="n">scalars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      call </span><span class="n">bcast</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">N_SCALARS</span><span class="p">,</span><span class="w"> </span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="n">root</span><span class="p">)</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         call </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">destroy</span><span class="p">()</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">n_monomers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">atoms_per_monomer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">total_atoms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">charge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="w">         </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">multiplicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scalars</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      call </span><span class="n">bcast_int_1d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_real_2d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_int_1d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_sizes</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_int_2d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_atoms</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_int_1d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_int_1d</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">      </span><span class="k">call </span><span class="n">bcast_bonds</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">bonds</span><span class="p">,</span><span class="w"> </span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">is_root</span><span class="p">)</span>
+<span class="w">   </span><span class="k">end subroutine </span><span class="n">bcast_system_geometry</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

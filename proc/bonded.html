@@ -1,0 +1,832 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>bonded &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>bonded
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">13 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_bond_perception.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_bond_perception.f90.html'>mqc_bond_perception.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></li>
+            <li class="breadcrumb-item active" aria-current="page">bonded</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/bonded.html#variable-distance">distance</a>
+            <a class="list-group-item" href="../proc/bonded.html#variable-r_i">r_i</a>
+            <a class="list-group-item" href="../proc/bonded.html#variable-r_j">r_j</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/bonded.html#src">bonded</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>private pure function bonded(sys_geom, iatom, jatom, tolerance) result(is_bonded)  
+</h2>
+    
+
+    <p>Whether two atoms are within bonding distance</p>
+<p>Indices are 1-based here, into the geometry&rsquo;s own arrays; the bond
+lists this module produces are 0-based, like everything else.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sys_geom~13"></span>
+              type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sys_geom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iatom~13"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iatom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-jatom~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>jatom</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tolerance~4"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tolerance</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-is_bonded"></span>
+          logical
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~bonded~~CallsGraph Pages: 1 -->
+<svg id="procbondedCallsGraph" width="244pt" height="74pt"
+ viewBox="0.00 0.00 244.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~bonded~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~bonded~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 240,-70 240,4 -4,4"/>
+<!-- proc~bonded -->
+<g id="proc~~bonded~~CallsGraph_node1" class="node">
+<title>proc~bonded</title>
+<polygon fill="none" stroke="black" points="54,-45 0,-45 0,-21 54,-21 54,-45"/>
+<text text-anchor="middle" x="27" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">bonded</text>
+</g>
+<!-- proc~element_covalent_radius -->
+<g id="proc~~bonded~~CallsGraph_node2" class="node">
+<title>proc~element_covalent_radius</title>
+<g id="a_proc~~bonded~~CallsGraph_node2"><a xlink:href="../proc/element_covalent_radius.html" xlink:title="element_covalent_radius">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="236,-66 90,-66 90,-42 236,-42 236,-66"/>
+<text text-anchor="middle" x="163" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_covalent_radius</text>
+</a>
+</g>
+</g>
+<!-- proc~bonded&#45;&gt;proc~element_covalent_radius -->
+<g id="proc~~bonded~~CallsGraph_edge1" class="edge">
+<title>proc~bonded&#45;&gt;proc~element_covalent_radius</title>
+<path fill="none" stroke="#ff0000" d="M54.15,-37.1C61.82,-38.3 70.63,-39.68 79.85,-41.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.56,-44.62 89.98,-42.71 80.64,-37.71 79.56,-44.62"/>
+</g>
+<!-- proc~to_angstrom -->
+<g id="proc~~bonded~~CallsGraph_node3" class="node">
+<title>proc~to_angstrom</title>
+<g id="a_proc~~bonded~~CallsGraph_node3"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="202.5,-24 123.5,-24 123.5,0 202.5,0 202.5,-24"/>
+<text text-anchor="middle" x="163" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+</a>
+</g>
+</g>
+<!-- proc~bonded&#45;&gt;proc~to_angstrom -->
+<g id="proc~~bonded~~CallsGraph_edge2" class="edge">
+<title>proc~bonded&#45;&gt;proc~to_angstrom</title>
+<path fill="none" stroke="#ff0000" d="M54.15,-28.9C71.03,-26.26 93.5,-22.74 113.55,-19.59"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="114.14,-23.04 123.48,-18.04 113.05,-16.13 114.14,-23.04"/>
+</g>
+</g>
+</svg>
+</div>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~bonded~~CalledByGraph Pages: 1 -->
+<svg id="procbondedCalledByGraph" width="641pt" height="132pt"
+ viewBox="0.00 0.00 641.00 131.68" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~bonded~~CalledByGraph" class="graph" transform="scale(0.67 0.67) rotate(0) translate(4 193)">
+<title>proc~~bonded~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-193 955,-193 955,4 -4,4"/>
+<!-- proc~bonded -->
+<g id="proc~~bonded~~CalledByGraph_node1" class="node">
+<title>proc~bonded</title>
+<polygon fill="none" stroke="black" points="951,-117 897,-117 897,-93 951,-93 951,-117"/>
+<text text-anchor="middle" x="924" y="-102.6" font-family="Helvetica,sans-Serif" font-size="10.50">bonded</text>
+</g>
+<!-- proc~perceive_bonds -->
+<g id="proc~~bonded~~CalledByGraph_node2" class="node">
+<title>proc~perceive_bonds</title>
+<g id="a_proc~~bonded~~CalledByGraph_node2"><a xlink:href="../proc/perceive_bonds.html" xlink:title="perceive_bonds">
+<polygon fill="#d9534f" stroke="#d9534f" points="861,-117 765,-117 765,-93 861,-93 861,-117"/>
+<text text-anchor="middle" x="813" y="-102.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">perceive_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~perceive_bonds&#45;&gt;proc~bonded -->
+<g id="proc~~bonded~~CalledByGraph_edge1" class="edge">
+<title>proc~perceive_bonds&#45;&gt;proc~bonded</title>
+<path fill="none" stroke="#ff0000" d="M861.18,-105C869.66,-105 878.38,-105 886.5,-105"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="886.76,-108.5 896.76,-105 886.76,-101.5 886.76,-108.5"/>
+</g>
+<!-- proc~auto_monomers -->
+<g id="proc~~bonded~~CalledByGraph_node3" class="node">
+<title>proc~auto_monomers</title>
+<g id="a_proc~~bonded~~CalledByGraph_node3"><a xlink:href="../proc/auto_monomers.html" xlink:title="auto_monomers">
+<polygon fill="#d9534f" stroke="#d9534f" points="695.5,-179 595.5,-179 595.5,-155 695.5,-155 695.5,-179"/>
+<text text-anchor="middle" x="645.5" y="-164.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">auto_monomers</text>
+</a>
+</g>
+</g>
+<!-- proc~auto_monomers&#45;&gt;proc~perceive_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge2" class="edge">
+<title>proc~auto_monomers&#45;&gt;proc~perceive_bonds</title>
+<path fill="none" stroke="#ff0000" d="M678.8,-154.9C704.89,-145.13 741.79,-131.3 770.14,-120.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="771.64,-123.86 779.78,-117.07 769.19,-117.3 771.64,-123.86"/>
+</g>
+<!-- proc~missing_broken_bonds -->
+<g id="proc~~bonded~~CalledByGraph_node4" class="node">
+<title>proc~missing_broken_bonds</title>
+<g id="a_proc~~bonded~~CalledByGraph_node4"><a xlink:href="../proc/missing_broken_bonds.html" xlink:title="missing_broken_bonds">
+<polygon fill="#d9534f" stroke="#d9534f" points="712,-117 579,-117 579,-93 712,-93 712,-117"/>
+<text text-anchor="middle" x="645.5" y="-102.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">missing_broken_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~missing_broken_bonds&#45;&gt;proc~perceive_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge3" class="edge">
+<title>proc~missing_broken_bonds&#45;&gt;proc~perceive_bonds</title>
+<path fill="none" stroke="#ff0000" d="M712.39,-105C726.39,-105 741.07,-105 754.73,-105"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="754.94,-108.5 764.94,-105 754.94,-101.5 754.94,-108.5"/>
+</g>
+<!-- proc~mqc_system_perceive_bonds -->
+<g id="proc~~bonded~~CalledByGraph_node5" class="node">
+<title>proc~mqc_system_perceive_bonds</title>
+<g id="a_proc~~bonded~~CalledByGraph_node5"><a xlink:href="../proc/mqc_system_perceive_bonds.html" xlink:title="mqc_system_perceive_bonds">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="729,-75 562,-75 562,-51 729,-51 729,-75"/>
+<text text-anchor="middle" x="645.5" y="-60.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_system_perceive_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_perceive_bonds&#45;&gt;proc~perceive_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge4" class="edge">
+<title>proc~mqc_system_perceive_bonds&#45;&gt;proc~perceive_bonds</title>
+<path fill="none" stroke="#ff0000" d="M693.93,-75.04C712.96,-79.87 735.07,-85.48 754.98,-90.53"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="754.3,-93.97 764.85,-93.04 756.02,-87.18 754.3,-93.97"/>
+</g>
+<!-- proc~mqc_system_auto_monomers -->
+<g id="proc~~bonded~~CalledByGraph_node6" class="node">
+<title>proc~mqc_system_auto_monomers</title>
+<g id="a_proc~~bonded~~CalledByGraph_node6"><a xlink:href="../proc/mqc_system_auto_monomers.html" xlink:title="mqc_system_auto_monomers">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="513,-189 342,-189 342,-165 513,-165 513,-189"/>
+<text text-anchor="middle" x="427.5" y="-174.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_system_auto_monomers</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_auto_monomers&#45;&gt;proc~auto_monomers -->
+<g id="proc~~bonded~~CalledByGraph_edge5" class="edge">
+<title>proc~mqc_system_auto_monomers&#45;&gt;proc~auto_monomers</title>
+<path fill="none" stroke="#ff0000" d="M513.25,-173.08C537.23,-171.97 562.81,-170.78 584.96,-169.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="585.38,-173.24 595.21,-169.28 585.06,-166.25 585.38,-173.24"/>
+</g>
+<!-- proc~mqc_system_count_missing_bonds -->
+<g id="proc~~bonded~~CalledByGraph_node7" class="node">
+<title>proc~mqc_system_count_missing_bonds</title>
+<g id="a_proc~~bonded~~CalledByGraph_node7"><a xlink:href="../proc/mqc_system_count_missing_bonds.html" xlink:title="mqc_system_count_missing_bonds">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="526,-147 329,-147 329,-123 526,-123 526,-147"/>
+<text text-anchor="middle" x="427.5" y="-132.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_system_count_missing_bonds</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_system_count_missing_bonds&#45;&gt;proc~missing_broken_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge6" class="edge">
+<title>proc~mqc_system_count_missing_bonds&#45;&gt;proc~missing_broken_bonds</title>
+<path fill="none" stroke="#00ff00" d="M515.11,-122.97C532.87,-120.5 551.43,-117.93 568.77,-115.52"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="569.4,-118.96 578.82,-114.12 568.44,-112.03 569.4,-118.96"/>
+</g>
+<!-- proc~refuse_undeclared_cuts -->
+<g id="proc~~bonded~~CalledByGraph_node8" class="node">
+<title>proc~refuse_undeclared_cuts</title>
+<g id="a_proc~~bonded~~CalledByGraph_node8"><a xlink:href="../proc/refuse_undeclared_cuts.html" xlink:title="refuse_undeclared_cuts">
+<polygon fill="#d9534f" stroke="#d9534f" points="280.5,-108 142.5,-108 142.5,-84 280.5,-84 280.5,-108"/>
+<text text-anchor="middle" x="211.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">refuse_undeclared_cuts</text>
+</a>
+</g>
+</g>
+<!-- proc~refuse_undeclared_cuts&#45;&gt;proc~missing_broken_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge7" class="edge">
+<title>proc~refuse_undeclared_cuts&#45;&gt;proc~missing_broken_bonds</title>
+<path fill="none" stroke="#00ff00" d="M280.95,-97.43C359.32,-99.06 487.34,-101.73 568.67,-103.42"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="568.77,-106.92 578.85,-103.63 568.92,-99.92 568.77,-106.92"/>
+</g>
+<!-- proc~validate_system -->
+<g id="proc~~bonded~~CalledByGraph_node9" class="node">
+<title>proc~validate_system</title>
+<g id="a_proc~~bonded~~CalledByGraph_node9"><a xlink:href="../proc/validate_system.html" xlink:title="validate_system">
+<polygon fill="#d9534f" stroke="#d9534f" points="476.5,-66 378.5,-66 378.5,-42 476.5,-42 476.5,-66"/>
+<text text-anchor="middle" x="427.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">validate_system</text>
+</a>
+</g>
+</g>
+<!-- proc~validate_system&#45;&gt;proc~missing_broken_bonds -->
+<g id="proc~~bonded~~CalledByGraph_edge8" class="edge">
+<title>proc~validate_system&#45;&gt;proc~missing_broken_bonds</title>
+<path fill="none" stroke="#00ff00" d="M476.71,-65.38C508.28,-72.84 549.81,-82.64 583.65,-90.63"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="582.89,-94.05 593.43,-92.94 584.5,-87.24 582.89,-94.05"/>
+</g>
+<!-- proc~mqc_run -->
+<g id="proc~~bonded~~CalledByGraph_node10" class="node">
+<title>proc~mqc_run</title>
+<g id="a_proc~~bonded~~CalledByGraph_node10"><a xlink:href="../proc/mqc_run.html" xlink:title="mqc_run">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="76.5,-87 17.5,-87 17.5,-63 76.5,-63 76.5,-87"/>
+<text text-anchor="middle" x="47" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~refuse_undeclared_cuts -->
+<g id="proc~~bonded~~CalledByGraph_edge9" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~refuse_undeclared_cuts</title>
+<path fill="none" stroke="#00ffff" d="M76.68,-78.71C92.27,-80.72 112.38,-83.32 132.25,-85.89"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="131.92,-89.37 142.28,-87.18 132.82,-82.43 131.92,-89.37"/>
+</g>
+<!-- proc~session_run -->
+<g id="proc~~bonded~~CalledByGraph_node12" class="node">
+<title>proc~session_run</title>
+<g id="a_proc~~bonded~~CalledByGraph_node12"><a xlink:href="../proc/session_run.html" xlink:title="mqc_session_t%session_run">
+<polygon fill="#d9534f" stroke="#d9534f" points="292,-66 131,-66 131,-42 292,-42 292,-66"/>
+<text text-anchor="middle" x="211.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_run</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_run&#45;&gt;proc~session_run -->
+<g id="proc~~bonded~~CalledByGraph_edge13" class="edge">
+<title>proc~mqc_run&#45;&gt;proc~session_run</title>
+<path fill="none" stroke="#0000ff" d="M76.68,-71.29C89.28,-69.67 104.84,-67.66 120.83,-65.59"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="121.36,-69.05 130.83,-64.3 120.46,-62.11 121.36,-69.05"/>
+</g>
+<!-- proc~run_fragmented_calculation -->
+<g id="proc~~bonded~~CalledByGraph_node11" class="node">
+<title>proc~run_fragmented_calculation</title>
+<g id="a_proc~~bonded~~CalledByGraph_node11"><a xlink:href="../proc/run_fragmented_calculation.html" xlink:title="run_fragmented_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="293,-24 130,-24 130,0 293,0 293,-24"/>
+<text text-anchor="middle" x="211.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_fragmented_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_fragmented_calculation&#45;&gt;proc~validate_system -->
+<g id="proc~~bonded~~CalledByGraph_edge10" class="edge">
+<title>proc~run_fragmented_calculation&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#7f00ff" d="M273.82,-24.04C303.54,-29.87 339.05,-36.84 368.34,-42.59"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="367.94,-46.07 378.42,-44.56 369.28,-39.2 367.94,-46.07"/>
+</g>
+<!-- proc~session_run&#45;&gt;proc~validate_system -->
+<g id="proc~~bonded~~CalledByGraph_edge11" class="edge">
+<title>proc~session_run&#45;&gt;proc~validate_system</title>
+<path fill="none" stroke="#7f00ff" d="M292.19,-54C317.44,-54 344.88,-54 368.33,-54"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="368.46,-57.5 378.46,-54 368.46,-50.5 368.46,-57.5"/>
+</g>
+<!-- proc~run_calculation -->
+<g id="proc~~bonded~~CalledByGraph_node13" class="node">
+<title>proc~run_calculation</title>
+<g id="a_proc~~bonded~~CalledByGraph_node13"><a xlink:href="../proc/run_calculation.html" xlink:title="run_calculation">
+<polygon fill="#d9534f" stroke="#d9534f" points="94,-24 0,-24 0,0 94,0 94,-24"/>
+<text text-anchor="middle" x="47" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">run_calculation</text>
+</a>
+</g>
+</g>
+<!-- proc~run_calculation&#45;&gt;proc~run_fragmented_calculation -->
+<g id="proc~~bonded~~CalledByGraph_edge12" class="edge">
+<title>proc~run_calculation&#45;&gt;proc~run_fragmented_calculation</title>
+<path fill="none" stroke="#00ff00" d="M94.13,-12C102.24,-12 110.94,-12 119.78,-12"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="119.8,-15.5 129.8,-12 119.8,-8.5 119.8,-15.5"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocbondedCalledByGraph = svgPanZoom('#procbondedCalledByGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CalledByGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CalledByGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-distance"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>distance</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-r_i"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>r_i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-r_j"></span>
+              real(kind=dp),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>r_j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">pure function </span><span class="n">bonded</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">jatom</span><span class="p">,</span><span class="w"> </span><span class="n">tolerance</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">is_bonded</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Whether two atoms are within bonding distance</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Indices are 1-based here, into the geometry&#39;s own arrays; the bond</span>
+<span class="w">      </span><span class="c">!! lists this module produces are 0-based, like everything else.</span>
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">system_geometry_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">sys_geom</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iatom</span><span class="p">,</span><span class="w"> </span><span class="n">jatom</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tolerance</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">is_bonded</span>
+
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">r_i</span><span class="p">,</span><span class="w"> </span><span class="n">r_j</span><span class="p">,</span><span class="w"> </span><span class="n">distance</span>
+
+<span class="w">      </span><span class="n">is_bonded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">      </span><span class="n">r_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_covalent_radius</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">iatom</span><span class="p">))</span>
+<span class="w">      </span><span class="n">r_j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_covalent_radius</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">element_numbers</span><span class="p">(</span><span class="n">jatom</span><span class="p">))</span>
+<span class="w">      </span><span class="c">! No radius, no opinion.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r_i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">r_j</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">return</span>
+
+<span class="k">      </span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to_angstrom</span><span class="p">(</span><span class="nb">norm2</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">iatom</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                   </span><span class="n">sys_geom</span><span class="p">%</span><span class="n">coordinates</span><span class="p">(:,</span><span class="w"> </span><span class="n">jatom</span><span class="p">)))</span>
+<span class="w">      </span><span class="n">is_bonded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">distance</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tolerance</span><span class="o">*</span><span class="p">(</span><span class="n">r_i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r_j</span><span class="p">))</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">bonded</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

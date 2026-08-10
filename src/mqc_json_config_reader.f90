@@ -47,6 +47,7 @@ module mqc_json_config_reader
    private
 
    public :: read_json_config_file  !! Parse a JSON input file into mqc_config_t
+   public :: read_json_config_text  !! Parse settings from a JSON string, no molecules
 
    !> Element symbol width comes from `mqc_program_limits`, the same source
    !  `mqc_xyz_reader` uses, so a geometry given inline and one read from an
@@ -91,16 +92,57 @@ contains
       if (error%has_error()) call error%add_context("mqc_json_config_reader:"//trim(filename))
    end subroutine read_json_config_file
 
-   subroutine populate_config(json, base_dir, config, error)
+   subroutine read_json_config_text(text, config, error)
+      !! Parse settings -- method, driver, keywords -- from a JSON string
+      !!
+      !! The same document a deck uses, less the molecules: this is how a
+      !! caller that already holds a system says what to *do* with it. The
+      !! string form matters because it is what crosses to the workers. A
+      !! `method_config_t` is sixty-odd fields across seven nested sub-configs,
+      !! and transcribing those into a broadcast means a field missed there is
+      !! a worker quietly running a different method than the one asked for.
+      !! Sending the document and parsing it on arrival has no such field list;
+      !! it also puts the workers through the validator rather than around it.
+      !!
+      !! A molecules block is refused rather than ignored. It would otherwise
+      !! be the geometry a caller believed they were running, silently losing
+      !! to the one on the handle.
+      character(len=*), intent(in) :: text
+      type(mqc_config_t), intent(out) :: config
+      type(error_t), intent(out) :: error
+
+      type(json_file) :: json
+
+      call json%initialize()
+      call json%deserialize(text)
+      if (json%failed()) then
+         call error%set(ERROR_PARSE, "Could not parse JSON settings")
+         call json%destroy()
+         return
+      end if
+
+      call ensure_valid_json(json, error, settings_only=.true.)
+      if (.not. error%has_error()) then
+         ! No base directory: an xyz path is only ever reached through a
+         ! molecules block, which this mode does not have.
+         call populate_config(json, "", config, error, settings_only=.true.)
+      end if
+      call json%destroy()
+
+      if (error%has_error()) call error%add_context("mqc_json_config_reader:settings")
+   end subroutine read_json_config_text
+
+   subroutine populate_config(json, base_dir, config, error, settings_only)
       !! Fill every section of the config from an already-loaded document
       type(json_file), intent(inout) :: json
       character(len=*), intent(in) :: base_dir  !! Directory holding the JSON, for xyz paths
       type(mqc_config_t), intent(inout) :: config
       type(error_t), intent(out) :: error
+      logical, intent(in), optional :: settings_only  !! Stop before molecules
 
       character(len=:), allocatable :: text
       integer :: n_mol, imol
-      logical :: found
+      logical :: found, settings
 
       ! The two defaults that are not declared on the type itself.
       config%log_level = "info"
@@ -135,6 +177,7 @@ contains
       ! `optional_string` leaves its target alone rather than clearing it.
       call optional_string(json, "system.logger.level", config%log_level)
       call optional_logical(json, "system.skip_json_output", config%skip_json_output)
+      call optional_logical(json, "system.unchecked_input", config%unchecked_input)
       call optional_string(json, "system.fragment_breakdown", config%fragment_breakdown)
 
       ! ---- keywords --------------------------------------------------------
@@ -176,7 +219,18 @@ contains
       if (error%has_error()) return
 
       ! ---- molecules -------------------------------------------------------
+      settings = .false.
+      if (present(settings_only)) settings = settings_only
+
       call json%info("molecules", found=found, n_children=n_mol)
+      if (settings) then
+         if (found) then
+            call error%set(ERROR_VALIDATION, "settings must not define 'molecules': the "// &
+                           "system comes from the handle, so a geometry given here would "// &
+                           "be read, validated, and then quietly discarded")
+         end if
+         return
+      end if
       if (.not. found .or. n_mol <= 0) then
          call error%set(ERROR_VALIDATION, "Missing or empty required key: molecules")
          return

@@ -115,6 +115,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td><p>Add implicit solvation model to XTB calculator</p><a href="../proc/add_solvation_to_calc.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/add_unique.html'>add_unique</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Append a term unless an identical one is already present</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/aimd_keys.html'>aimd_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -150,6 +156,12 @@ Caps are placed at the position of the atom outside the fragment</p></td>
                  <td>Subroutine</td>
                  <td><p>Apply distance-based screening to filter out fragments that exceed cutoff distances
 Modifies polymers array in-place and updates total_fragments count</p><a href="../proc/apply_distance_screening.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/apply_log_level.html'>apply_log_level</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Set the logger verbosity the settings asked for</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/arrays_equal_internal.html'>arrays_equal_internal</a></td>
@@ -200,6 +212,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/auto_monomers.html'>auto_monomers</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Make each covalently connected molecule a monomer</p><a href="../proc/auto_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/basis_search_path.html'>basis_search_path</a></td>
                  <td><a href='../module/mqc_basis_utils.html'>mqc_basis_utils</a></td>
                  <td>Function</td>
@@ -218,6 +236,54 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><p>Clean up allocated memory in a molecular basis set</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/bcast_bonds.html'>bcast_bonds</a></td>
+                 <td><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The bond list, as four parallel arrays</p><a href="../proc/bcast_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_int_1d.html'>bcast_int_1d</a></td>
+                 <td><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One default-integer array, allocated on arrival if it was on root</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_int_2d.html'>bcast_int_2d</a></td>
+                 <td><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One default-integer matrix, with both extents</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_integer_array.html'>bcast_integer_array</a></td>
+                 <td><a href='../module/mqc_bcast.html'>mqc_bcast</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Send an integer array from <code>root</code> to every other rank</p><a href="../proc/bcast_integer_array.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_real_2d.html'>bcast_real_2d</a></td>
+                 <td><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One double matrix, with both extents &ndash; the coordinates, in Bohr</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_real_array.html'>bcast_real_array</a></td>
+                 <td><a href='../module/mqc_bcast.html'>mqc_bcast</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Send a double array from <code>root</code> to every other rank</p><a href="../proc/bcast_real_array.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_string.html'>bcast_string</a></td>
+                 <td><a href='../module/mqc_bcast.html'>mqc_bcast</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Send a deferred-length string from <code>root</code> to every other rank</p><a href="../proc/bcast_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bcast_system_geometry.html'>bcast_system_geometry</a></td>
+                 <td><a href='../module/mqc_bcast_system.html'>mqc_bcast_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Give every rank rank 0&rsquo;s system</p><a href="../proc/bcast_system_geometry.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/binomial.html'>binomial</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
@@ -228,6 +294,12 @@ Modifies polymers array in-place and updates total_fragments count</p><a href=".
                  <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
                  <td>Function</td>
                  <td><p>Whether fragmentation severs the bond between two atoms</p><a href="../proc/bond_is_broken.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bonded.html'>bonded</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Function</td>
+                 <td><p>Whether two atoms are within bonding distance</p><a href="../proc/bonded.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_fragment_from_atom_list.html'>build_fragment_from_atom_list</a></td>
@@ -352,6 +424,12 @@ Correlation energies should be negative; positive values indicate instability</p
                  <td><p>The single angular momentum one ECP channel carries</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/chars_to_string.html'>chars_to_string</a></td>
+                 <td><a href='../module/mqc_capi_run.html'>mqc_capi_run</a></td>
+                 <td>Function</td>
+                 <td><p>A C character array as a Fortran string</p><a href="../proc/chars_to_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/check_child_object.html'>check_child_object</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Subroutine</td>
@@ -409,6 +487,18 @@ This is O(nfrag * natoms_per_frag^2) which is acceptable for typical fragment si
                  <td><p>Every key of <code>object</code> must be in <code>keys</code>, and every required one present</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/check_subset_closure.html'>check_subset_closure</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every proper subset of every term must itself be a term</p><a href="../proc/check_subset_closure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_supplied_terms.html'>check_supplied_terms</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Run a supplied term list past the validator without committing to it</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/child_count.html'>child_count</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -433,6 +523,12 @@ Uses int64 for count to handle large numbers of combinations that overflow int32
                  <td>Subroutine</td>
                  <td><p>Utility for generating combinations recursively
 Uses int64 for count to handle large numbers of combinations that overflow int32.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/complain.html'>complain</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Record a problem as a refusal or a warning</p><a href="../proc/complain.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_cartesian_displacements.html'>compute_cartesian_displacements</a></td>
@@ -632,6 +728,12 @@ If molecule_index is provided, uses that specific molecule from multi-molecule m
                  <td><p>Configure an XTB method instance from config%xtb</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/contains_term.html'>contains_term</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Function</td>
+                 <td><p>Whether a term with exactly these monomers is in the list</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/copy_and_displace_geometry.html'>copy_and_displace_geometry</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -673,6 +775,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
                  <td><p>Generate a list of monomer indices from 1 to N</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/current_session.html'>current_session</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>The live session, for Fortran code that needs its communicators</p><a href="../proc/current_session.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/dfs_pie_accumulate.html'>dfs_pie_accumulate</a></td>
@@ -781,6 +889,12 @@ A cap is needed when exactly one atom of a broken bond is in the fragment</p></t
                  <td><a href='../module/mqc_ecp.html'>mqc_ecp</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/element_covalent_radius.html'>element_covalent_radius</a></td>
+                 <td><a href='../module/mqc_elements.html'>mqc_elements</a></td>
+                 <td>Function</td>
+                 <td><p>Covalent radius in Angstrom, or 0 where none is tabulated</p><a href="../proc/element_covalent_radius.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/element_mass.html'>element_mass</a></td>
@@ -904,6 +1018,12 @@ Resets the stack trace</p></td>
                  <td><p>Find shared atoms between two fragments (for GMBE with overlapping fragments)</p><a href="../proc/find_fragment_intersection.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/find_root.html'>find_root</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Function</td>
+                 <td><p>Representative of a node&rsquo;s component</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/finite_diff_dipole_derivatives.html'>finite_diff_dipole_derivatives</a></td>
                  <td><a href='../module/mqc_finite_differences.html'>mqc_finite_differences</a></td>
                  <td>Subroutine</td>
@@ -922,6 +1042,18 @@ Resets the stack trace</p></td>
                  <td><p>Hessian of <code>method</code> at <code>fragment</code>, by central differences of gradients</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/first_combination.html'>first_combination</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The lexicographically first choice of k positions</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/first_missing_subset.html'>first_missing_subset</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Function</td>
+                 <td><p>Which dropped monomer leaves a subset that is not in the list, or 0</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/flush_group_results.html'>flush_group_results</a></td>
                  <td><a href='../module/mqc_group_batching.html'>mqc_group_batching</a></td>
                  <td>Subroutine</td>
@@ -938,6 +1070,48 @@ Resets the stack trace</p></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td><p>Fold every PIE term whose displacement results have all landed</p><a href="../proc/fold_completed_pie_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_close_subsets.html'>fraglist_close_subsets</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Add back every subset of every surviving term</p><a href="../proc/fraglist_close_subsets.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_create.html'>fraglist_create</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every combination of monomers from 2 up to max_level</p><a href="../proc/fraglist_create.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_destroy.html'>fraglist_destroy</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_keep.html'>fraglist_keep</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Keep the terms the mask selects, in their existing order</p><a href="../proc/fraglist_keep.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_level_of.html'>fraglist_level_of</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>How many monomers a term actually has</p><a href="../proc/fraglist_level_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_measure.html'>fraglist_measure</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute the minimum inter-monomer distance of every term</p><a href="../proc/fraglist_measure.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fraglist_replace.html'>fraglist_replace</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Take a caller&rsquo;s term list wholesale</p><a href="../proc/fraglist_replace.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/fragment_compute_nelec.html'>fragment_compute_nelec</a></td>
@@ -1203,15 +1377,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1221,27 +1395,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Drain results from local workers and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1251,15 +1425,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1336,6 +1510,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int_text.html'>int_text</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/int_text~2.html'>int_text</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
@@ -1375,6 +1555,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/is_declared.html'>is_declared</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Function</td>
+                 <td><p>Whether a bond appears in the caller&rsquo;s list, either way round</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/join_path.html'>join_path</a></td>
@@ -1521,6 +1707,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                  <td><p>Convert method type integer constant to string</p><a href="../proc/method_type_to_string.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/missing_broken_bonds.html'>missing_broken_bonds</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Bonds the geometry says are cut that the caller never mentioned</p><a href="../proc/missing_broken_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/model_keys.html'>model_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
                  <td>Function</td>
@@ -1582,6 +1774,18 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
 Handles both unfragmented (nfrag=0) and fragmented molecules</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/monomer_of.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p><a href="../proc/monomer_of.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/monomer_of~2.html'>monomer_of</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Function</td>
+                 <td><p>Which monomer holds a 0-based atom, or 0 if the partition omits it</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mp2_check_stability.html'>mp2_check_stability</a></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
@@ -1608,6 +1812,192 @@ SCS-MP2 uses: E_SCS = (1/3)<em>E_SS + 1.2</em>E_OS</p></td>
                  <td><p>Compute total MP2 correlation energy</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/mqc_fraglist_close_subsets.html'>mqc_fraglist_close_subsets</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Add every proper subset the list is missing</p><a href="../proc/mqc_fraglist_close_subsets.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_count.html'>mqc_fraglist_count</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Terms currently in the list, or -1 for a bad handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_free.html'>mqc_fraglist_free</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release a term list. Safe on a null handle.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_generate.html'>mqc_fraglist_generate</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Fill the list with every combination from pairs up to max_level</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_get.html'>mqc_fraglist_get</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Copy the terms into a caller&rsquo;s buffer</p><a href="../proc/mqc_fraglist_get.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_last_error.html'>mqc_fraglist_last_error</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Copy the most recent failure message out as a C string</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_max_level.html'>mqc_fraglist_max_level</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Row count of the term array, or -1 for a bad handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_new.html'>mqc_fraglist_new</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Allocate an empty term list and return its handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_fraglist_set.html'>mqc_fraglist_set</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Replace the list with the caller&rsquo;s terms</p><a href="../proc/mqc_fraglist_set.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_run.html'>mqc_run</a></td>
+                 <td><a href='../module/mqc_capi_run.html'>mqc_capi_run</a></td>
+                 <td>Function</td>
+                 <td><p>Compute, and give the caller back a number</p><a href="../proc/mqc_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_run_last_error.html'>mqc_run_last_error</a></td>
+                 <td><a href='../module/mqc_capi_run.html'>mqc_capi_run</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Copy the most recent failure message out as a C string</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_active.html'>mqc_session_active</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>Whether MPI is up</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_begin.html'>mqc_session_begin</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>Start MPI. Returns on rank 0 only; workers never come back.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_end.html'>mqc_session_end</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>Release the workers and shut MPI down</p><a href="../proc/mqc_session_end.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_is_root.html'>mqc_session_is_root</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this is the rank the caller drives from</p><a href="../proc/mqc_session_is_root.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_last_error.html'>mqc_session_last_error</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Copy the most recent failure message out as a C string</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_rank.html'>mqc_session_rank</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>This rank in the world communicator, or -1 without a session</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_session_size.html'>mqc_session_size</a></td>
+                 <td><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></td>
+                 <td>Function</td>
+                 <td><p>Ranks in the job, or 0 without a session</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_auto_monomers.html'>mqc_system_auto_monomers</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Make each covalently connected molecule a monomer</p><a href="../proc/mqc_system_auto_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_bonds_declared.html'>mqc_system_bonds_declared</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Whether the caller has said anything about bonds at all</p><a href="../proc/mqc_system_bonds_declared.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_count_missing_bonds.html'>mqc_system_count_missing_bonds</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>How many cuts the geometry implies that the declared bonds omit</p><a href="../proc/mqc_system_count_missing_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_free.html'>mqc_system_free</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release a system. Safe on a null handle.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_last_error.html'>mqc_system_last_error</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Copy the most recent failure message out as a C string</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_n_atoms.html'>mqc_system_n_atoms</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Atoms in the system, or -1 for a bad handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_n_bonds.html'>mqc_system_n_bonds</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Bonds recorded, or -1 for a bad handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_n_monomers.html'>mqc_system_n_monomers</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Monomers in the partition, or -1 for a bad handle</p><a href="../proc/mqc_system_n_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_new.html'>mqc_system_new</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Allocate an empty system and return its handle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_perceive_bonds.html'>mqc_system_perceive_bonds</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>Work the connectivity out from the geometry and declare it</p><a href="../proc/mqc_system_perceive_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_set_bonds.html'>mqc_system_set_bonds</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>The connectivity hydrogen capping works from</p><a href="../proc/mqc_system_set_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_set_geometry.html'>mqc_system_set_geometry</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>The atoms, in Angstrom</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/mqc_system_set_monomers.html'>mqc_system_set_monomers</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Function</td>
+                 <td><p>The partition fragments are built from</p><a href="../proc/mqc_system_set_monomers.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/next_combination.html'>next_combination</a></td>
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Function</td>
@@ -1619,6 +2009,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_combinatorics.html'>mqc_combinatorics</a></td>
                  <td>Subroutine</td>
                  <td><p>Initialize combination to [1, 2, &hellip;, k]</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/next_index_set.html'>next_index_set</a></td>
+                 <td><a href='../module/mqc_fraglist.html'>mqc_fraglist</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Advance k chosen positions out of n, lexicographically</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/next_prime_internal.html'>next_prime_internal</a></td>
@@ -1715,6 +2111,12 @@ Returns .true. if there&rsquo;s a next combination, .false. if we&rsquo;ve exhau
                  <td><a href='../module/mqc_method_types.html'>mqc_method_types</a></td>
                  <td>Function</td>
                  <td><p>Parse method string from input file (e.g., &ldquo;XTB-GFN1&rdquo; -&gt; gfn1)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/perceive_bonds.html'>perceive_bonds</a></td>
+                 <td><a href='../module/mqc_bond_perception.html'>mqc_bond_perception</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Every bond the geometry implies, with <code>is_broken</code> set from the partition</p><a href="../proc/perceive_bonds.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/populate_config.html'>populate_config</a></td>
@@ -1900,6 +2302,12 @@ Uses int64 for fragment_count to handle large fragment counts that overflow int3
                  <td><p>Read and parse a JSON format input file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_json_config_text.html'>read_json_config_text</a></td>
+                 <td><a href='../module/mqc_json_config_reader.html'>mqc_json_config_reader</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Parse settings &ndash; method, driver, keywords &ndash; from a JSON string</p><a href="../proc/read_json_config_text.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_json_content.html'>read_json_content</a></td>
                  <td><a href='../module/mqc_json.html'>mqc_json</a></td>
                  <td>Subroutine</td>
@@ -1967,6 +2375,24 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><p>Redistribute hydrogen cap Hessian to original atoms</p><a href="../proc/redistribute_cap_hessian.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/refuse_undeclared_cuts.html'>refuse_undeclared_cuts</a></td>
+                 <td><a href='../module/mqc_capi_run.html'>mqc_capi_run</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Refuse a partition that cuts bonds nobody declared</p><a href="../proc/refuse_undeclared_cuts.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/release.html'>release</a></td>
+                 <td><a href='../module/mqc_capi_system.html'>mqc_capi_system</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Free everything the system owns</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/report.html'>report</a></td>
+                 <td><a href='../module/mqc_capi_fraglist.html'>mqc_capi_fraglist</a></td>
+                 <td>Function</td>
+                 <td><p>Turn an error_t into a status, keeping the message for the caller</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/report_translational_sum_rule.html'>report_translational_sum_rule</a></td>
                  <td><a href='../module/mqc_semi_numerical_hessian.html'>mqc_semi_numerical_hessian</a></td>
                  <td>Subroutine</td>
@@ -2007,6 +2433,12 @@ Properly handles nested structures from fragmented calculations</p></td>
                  <td><a href='../module/mqc_result_types.html'>mqc_result_types</a></td>
                  <td>Subroutine</td>
                  <td><p>Clean up allocated memory in calculation_result_t</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/result_from_json.html'>result_from_json</a></td>
+                 <td><a href='../module/mqc_driver.html'>mqc_driver</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Take a fragmented run&rsquo;s headline numbers back to the caller</p><a href="../proc/result_from_json.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/result_irecv.html'>result_irecv</a></td>
@@ -2133,6 +2565,36 @@ If json_data is present, populates it for centralized JSON output
 Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/session_begin.html'>session_begin</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Start MPI. Returns on rank 0; on any other rank, never returns.</p><a href="../proc/session_begin.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/session_command.html'>session_command</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Tell the workers what to do next. Rank 0 only.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/session_end.html'>session_end</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Release the workers and shut MPI down</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/session_is_root.html'>session_is_root</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this rank is the one the caller drives from</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/session_run.html'>session_run</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Drive a calculation across the job. Rank 0 only.</p><a href="../proc/session_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/set_molecule_suffix.html'>set_molecule_suffix</a></td>
                  <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Subroutine</td>
@@ -2205,6 +2667,18 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/text.html'>text</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/text64.html'>text64</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/to_angstrom.html'>to_angstrom</a></td>
                  <td><a href='../module/mqc_physical_fragment.html'>mqc_physical_fragment</a></td>
                  <td>Function</td>
@@ -2221,6 +2695,30 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
                  <td><a href='../module/mqc_mbe_fragment_distribution_scheme.html'>mqc_mbe_fragment_distribution_scheme</a></td>
                  <td>Interface</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_system.html'>validate_system</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Check a system before it is fragmented</p><a href="../proc/validate_system.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_terms.html'>validate_terms</a></td>
+                 <td><a href='../module/mqc_validate.html'>mqc_validate</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Check a term list can be assembled into an expansion</p><a href="../proc/validate_terms.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/worker_loop.html'>worker_loop</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wait for rank 0&rsquo;s instructions until told to stop, then stop</p><a href="../proc/worker_loop.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/worker_run.html'>worker_run</a></td>
+                 <td><a href='../module/mqc_session.html'>mqc_session</a></td>
+                 <td>Subroutine</td>
+                 <td><p>A worker&rsquo;s half of a calculation</p><a href="../proc/worker_run.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/write_fragment_table.html'>write_fragment_table</a></td>
@@ -2325,7 +2823,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 01:10 +0000             </p>
+ on 2026-08-10 03:43 +0000             </p>
           </div>
         </div>
         <br>

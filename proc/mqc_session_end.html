@@ -1,0 +1,520 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="A demonstration of PIC as a framework for scientific applications targetting quantum chemistry">
+    <meta name="author" content="Jorge Luis Galvez Vallejo" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>mqc_session_end &ndash; metalquicha</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">metalquicha </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/main.html">Program</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>mqc_session_end
+      <small>Function</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 0.1% of total for procedures.">11 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/mqc_capi_session.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/mqc_capi_session.f90.html'>mqc_capi_session.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/mqc_capi_session.html'>mqc_capi_session</a></li>
+            <li class="breadcrumb-item active" aria-current="page">mqc_session_end</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/mqc_session_end.html#variable-error~72">error</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/mqc_session_end.html#src">mqc_session_end</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  function mqc_session_end() result(status) bind(C, name="mqc_session_end")  
+</h2>
+    
+
+    <p>Release the workers and shut MPI down</p>
+<p>Must be called. The workers are blocked waiting for exactly this, and
+a caller that exits without it leaves every other rank in the job
+hanging on a message that never arrives &ndash; which on a batch system
+means burning the wall clock rather than failing.</p>
+
+
+    <h3>Arguments</h3>
+    <em>None</em>
+    <br>
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="variable-status~25"></span>
+          integer(kind=c_int)
+        </small>
+      </h3>
+      
+    <br>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
+      </div>
+      <div class="card-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~mqc_session_end~~CallsGraph Pages: 1 -->
+<svg id="procmqc_session_endCallsGraph" width="641pt" height="203pt"
+ viewBox="0.00 0.00 641.00 203.40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~mqc_session_end~~CallsGraph" class="graph" transform="scale(0.93 0.93) rotate(0) translate(4 214)">
+<title>proc~~mqc_session_end~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-214 683,-214 683,4 -4,4"/>
+<!-- proc~mqc_session_end -->
+<g id="proc~~mqc_session_end~~CallsGraph_node1" class="node">
+<title>proc~mqc_session_end</title>
+<polygon fill="none" stroke="black" points="106,-170 0,-170 0,-146 106,-146 106,-170"/>
+<text text-anchor="middle" x="53" y="-155.6" font-family="Helvetica,sans-Serif" font-size="10.50">mqc_session_end</text>
+</g>
+<!-- proc~error_get_message -->
+<g id="proc~~mqc_session_end~~CallsGraph_node2" class="node">
+<title>proc~error_get_message</title>
+<g id="a_proc~~mqc_session_end~~CallsGraph_node2"><a xlink:href="../proc/error_get_message.html" xlink:title="error_t%error_get_message">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="303.5,-210 143.5,-210 143.5,-186 303.5,-186 303.5,-210"/>
+<text text-anchor="middle" x="223.5" y="-195.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_message</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_end&#45;&gt;proc~error_get_message -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge1" class="edge">
+<title>proc~mqc_session_end&#45;&gt;proc~error_get_message</title>
+<path fill="none" stroke="#ff0000" d="M104.56,-170C122.55,-174.27 143,-179.13 161.76,-183.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="161.15,-187.03 171.69,-185.94 162.77,-180.22 161.15,-187.03"/>
+</g>
+<!-- proc~error_has_error -->
+<g id="proc~~mqc_session_end~~CallsGraph_node3" class="node">
+<title>proc~error_has_error</title>
+<g id="a_proc~~mqc_session_end~~CallsGraph_node3"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="509,-171 370,-171 370,-147 509,-147 509,-171"/>
+<text text-anchor="middle" x="439.5" y="-156.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_end&#45;&gt;proc~error_has_error -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge2" class="edge">
+<title>proc~mqc_session_end&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#ff0000" d="M106.26,-158.14C171.46,-158.31 283.59,-158.6 359.36,-158.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="359.79,-162.3 369.8,-158.82 359.81,-155.3 359.79,-162.3"/>
+</g>
+<!-- proc~session_end -->
+<g id="proc~~mqc_session_end~~CallsGraph_node4" class="node">
+<title>proc~session_end</title>
+<g id="a_proc~~mqc_session_end~~CallsGraph_node4"><a xlink:href="../proc/session_end.html" xlink:title="mqc_session_t%session_end">
+<polygon fill="#d9534f" stroke="#d9534f" points="305,-129 142,-129 142,-105 305,-105 305,-129"/>
+<text text-anchor="middle" x="223.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_end</text>
+</a>
+</g>
+</g>
+<!-- proc~mqc_session_end&#45;&gt;proc~session_end -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge3" class="edge">
+<title>proc~mqc_session_end&#45;&gt;proc~session_end</title>
+<path fill="none" stroke="#ff0000" d="M103.64,-145.92C122.24,-141.39 143.57,-136.21 162.97,-131.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="164.03,-134.83 172.92,-129.06 162.38,-128.03 164.03,-134.83"/>
+</g>
+<!-- proc~session_end&#45;&gt;proc~error_has_error -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge6" class="edge">
+<title>proc~session_end&#45;&gt;proc~error_has_error</title>
+<path fill="none" stroke="#0000ff" d="M285.82,-129.04C311.23,-134.02 340.87,-139.84 367.24,-145.01"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="366.68,-148.47 377.17,-146.96 368.03,-141.6 366.68,-148.47"/>
+</g>
+<!-- finalize -->
+<g id="proc~~mqc_session_end~~CallsGraph_node5" class="node">
+<title>finalize</title>
+<polygon fill="#777777" stroke="#777777" points="466.5,-129 412.5,-129 412.5,-105 466.5,-105 466.5,-129"/>
+<text text-anchor="middle" x="439.5" y="-114.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">finalize</text>
+</g>
+<!-- proc~session_end&#45;&gt;finalize -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge4" class="edge">
+<title>proc~session_end&#45;&gt;finalize</title>
+<path fill="none" stroke="#0000ff" d="M305.1,-117C338.42,-117 375.39,-117 401.94,-117"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="402.29,-120.5 412.29,-117 402.29,-113.5 402.29,-120.5"/>
+</g>
+<!-- pic_mpi_finalize -->
+<g id="proc~~mqc_session_end~~CallsGraph_node6" class="node">
+<title>pic_mpi_finalize</title>
+<polygon fill="#777777" stroke="#777777" points="488,-87 391,-87 391,-63 488,-63 488,-87"/>
+<text text-anchor="middle" x="439.5" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_mpi_finalize</text>
+</g>
+<!-- proc~session_end&#45;&gt;pic_mpi_finalize -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge5" class="edge">
+<title>proc~session_end&#45;&gt;pic_mpi_finalize</title>
+<path fill="none" stroke="#0000ff" d="M285.82,-104.96C315.65,-99.11 351.32,-92.11 380.67,-86.35"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="381.63,-89.73 390.77,-84.37 380.28,-82.86 381.63,-89.73"/>
+</g>
+<!-- proc~session_command -->
+<g id="proc~~mqc_session_end~~CallsGraph_node7" class="node">
+<title>proc~session_command</title>
+<g id="a_proc~~mqc_session_end~~CallsGraph_node7"><a xlink:href="../proc/session_command.html" xlink:title="mqc_session_t%session_command">
+<polygon fill="#d9534f" stroke="#d9534f" points="538,-45 341,-45 341,-21 538,-21 538,-45"/>
+<text text-anchor="middle" x="439.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mqc_session_t%session_command</text>
+</a>
+</g>
+</g>
+<!-- proc~session_end&#45;&gt;proc~session_command -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge7" class="edge">
+<title>proc~session_end&#45;&gt;proc~session_command</title>
+<path fill="none" stroke="#0000ff" d="M243.09,-104.78C265.45,-90.61 304.55,-67.47 341,-54 347.33,-51.66 353.99,-49.55 360.74,-47.65"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="361.89,-50.96 370.65,-45.01 360.09,-44.2 361.89,-50.96"/>
+</g>
+<!-- bcast -->
+<g id="proc~~mqc_session_end~~CallsGraph_node8" class="node">
+<title>bcast</title>
+<polygon fill="#777777" stroke="#777777" points="653.5,-66 599.5,-66 599.5,-42 653.5,-42 653.5,-66"/>
+<text text-anchor="middle" x="626.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">bcast</text>
+</g>
+<!-- proc~session_command&#45;&gt;bcast -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge8" class="edge">
+<title>proc~session_command&#45;&gt;bcast</title>
+<path fill="none" stroke="#0000ff" d="M538.15,-44.08C556.32,-46.15 574.23,-48.18 589.05,-49.86"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="588.93,-53.37 599.26,-51.02 589.72,-46.42 588.93,-53.37"/>
+</g>
+<!-- proc~error_set -->
+<g id="proc~~mqc_session_end~~CallsGraph_node9" class="node">
+<title>proc~error_set</title>
+<g id="a_proc~~mqc_session_end~~CallsGraph_node9"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="679,-24 574,-24 574,0 679,0 679,-24"/>
+<text text-anchor="middle" x="626.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+</a>
+</g>
+</g>
+<!-- proc~session_command&#45;&gt;proc~error_set -->
+<g id="proc~~mqc_session_end~~CallsGraph_edge9" class="edge">
+<title>proc~session_command&#45;&gt;proc~error_set</title>
+<path fill="none" stroke="#0000ff" d="M538.15,-21.92C546.92,-20.92 555.62,-19.93 563.95,-18.99"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="564.36,-22.46 573.9,-17.86 563.57,-15.51 564.36,-22.46"/>
+</g>
+</g>
+</svg>
+</div>                <script>
+                  var panprocmqc_session_endCallsGraph = svgPanZoom('#procmqc_session_endCallsGraph',
+                    {zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}
+                  );
+                </script>          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#CallsGraph-help-text">Help</a>
+          </div>
+          <div class="modal fade" id="CallsGraph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+<p>Nodes of different colours represent the following: </p>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="641pt" height="28pt"
+ viewBox="0.00 0.00 641.00 27.51" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(0.86 0.86) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 741.5,-28 741.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Type Bound Procedure -->
+<g id="node4" class="node">
+<title>Type Bound Procedure</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="374,-24 244,-24 244,0 374,0 374,-24"/>
+<text text-anchor="middle" x="309" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type Bound Procedure</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node5" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="537.5,-24 392.5,-24 392.5,0 537.5,0 537.5,-24"/>
+<text text-anchor="middle" x="465" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node6" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="614,-24 556,-24 556,0 614,0 614,-24"/>
+<text text-anchor="middle" x="585" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node7" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="737.5,-24 632.5,-24 632.5,0 737.5,0 737.5,-24"/>
+<text text-anchor="middle" x="685" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+ Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-error~72"></span>
+              type(<a href='../type/error_t.html'>error_t</a>),
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>error</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">   </span><span class="k">function </span><span class="n">mqc_session_end</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">bind</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mqc_session_end&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="c">!! Release the workers and shut MPI down</span>
+<span class="w">      </span><span class="c">!!</span>
+<span class="w">      </span><span class="c">!! Must be called. The workers are blocked waiting for exactly this, and</span>
+<span class="w">      </span><span class="c">!! a caller that exits without it leaves every other rank in the job</span>
+<span class="w">      </span><span class="c">!! hanging on a message that never arrives -- which on a batch system</span>
+<span class="w">      </span><span class="c">!! means burning the wall clock rather than failing.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">status</span>
+
+<span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">the_session</span><span class="p">%</span><span class="n">end_session</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">error</span><span class="p">%</span><span class="n">has_error</span><span class="p">())</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">last_message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">error</span><span class="p">%</span><span class="n">get_message</span><span class="p">()</span>
+<span class="w">         </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_ERROR</span>
+<span class="w">         </span><span class="k">return</span>
+<span class="k">      end if</span>
+<span class="k">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MQC_OK</span>
+<span class="w">   </span><span class="k">end function </span><span class="n">mqc_session_end</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              metalquicha
+ was developed by Jorge Luis Galvez Vallejo<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-08-10 03:43 +0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
