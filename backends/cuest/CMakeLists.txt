@@ -26,7 +26,7 @@ if(MQC_CUEST_BINDINGS STREQUAL "fetch")
             ${mod_cuest_SOURCE_DIR}/cudafort/cuda_runtime.f90
             ${mod_cuest_SOURCE_DIR}/cudafort/cuda_helpers.f90)
 elseif(MQC_CUEST_BINDINGS STREQUAL "vendored")
-  message(STATUS "cuEST bindings: vendored under cuest_backend/bindings")
+  message(STATUS "cuEST bindings: vendored under backends/cuest/bindings")
   add_subdirectory(bindings)
 else()
   message(

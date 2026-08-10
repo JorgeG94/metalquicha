@@ -160,7 +160,7 @@ if(MQC_ENABLE_CUEST)
   # cuBLAS backs the SCF's own linear algebra (the Fock assembly, the DIIS
   # commutator and the orthogonal-basis transform) and cuSOLVER the Fock
   # diagonalization, both reached through the hand-written bindings in
-  # cuest_backend/bindings/. cuEST links them internally too, but that is its
+  # backends/cuest/bindings/. cuEST links them internally too, but that is its
   # private dependency -- ours has to be requested explicitly.
   list(APPEND libraries_to_link ${CUEST_LIBRARY} CUDA::cudart CUDA::cublas
        CUDA::cusolver)
@@ -184,7 +184,7 @@ add_subdirectory(src)
 # src/, and fpm cannot link the cuEST binary library, so fpm builds the CPU/xTB
 # path only. CMake adds the backend explicitly here.
 if(MQC_ENABLE_CUEST)
-  add_subdirectory(cuest_backend)
+  add_subdirectory(backends/cuest)
 endif()
 
 if(MQC_ENABLE_TESTING)
@@ -310,7 +310,7 @@ if(MQC_ENABLE_LIBCINT)
   # internal, which it is.
   target_link_libraries(${main_lib} PRIVATE $<BUILD_INTERFACE:cint_fortran>
                                             $<BUILD_INTERFACE:cint>)
-  add_subdirectory(libcint_backend)
+  add_subdirectory(backends/libcint)
   message(
     STATUS "libcint enabled: CPU Gaussian integrals via the Fortran interface")
 endif()
@@ -324,7 +324,7 @@ if(MQC_ENABLE_HDF5)
   target_compile_definitions(${main_lib} PRIVATE MQC_WITH_HDF5)
   target_include_directories(${main_lib} PRIVATE ${HDF5_INCLUDE_DIRS})
   target_link_libraries(${main_lib} PUBLIC ${HDF5_C_LIBRARIES})
-  add_subdirectory(hdf5_backend)
+  add_subdirectory(backends/hdf5)
   message(STATUS "HDF5 checkpoints enabled: ${HDF5_C_LIBRARIES}")
 endif()
 

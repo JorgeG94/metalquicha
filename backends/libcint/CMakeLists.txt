@@ -1,5 +1,5 @@
 # CPU Gaussian-integral backend, kept out of src/ so the fpm build never sees it
-# -- the same reason cuest_backend/ and hdf5_backend/ live here.
+# -- the same reason backends/cuest/ and backends/hdf5/ live here.
 #
 # These modules `use libcint_fortran`, which only exists once CMake has fetched
 # libcint. fpm globs src/ and has no such dependency declared, so leaving them
