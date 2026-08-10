@@ -28,6 +28,14 @@ jobs:
             tblite: false
             legacy_mpi: false
             libxc: true
+          # The CPU integrals path. Without this nothing here ever compiles
+          # libcint, so the whole libcint_backend/ directory -- the integrals,
+          # the SCF, the direct Fock build -- is unbuilt in CI and its unit
+          # tests do not run. tblite is off so the job is only this.
+          - name: "with libcint"
+            tblite: false
+            legacy_mpi: false
+            libcint: true
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -49,6 +57,7 @@ jobs:
           cmake -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
                 -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
                 -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
+                -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
                 -B build
           cmake --build build
 
@@ -57,6 +66,18 @@ jobs:
         run: |
           conda activate mqc
           ctest --test-dir build -V -R "mqc"
+
+      # The CPU Hartree-Fock decks, run through mqc the way a user would, and
+      # checked against PySCF rather than against numbers this program printed
+      # earlier. Separate from the xTB validation below because that one needs
+      # tblite and this one needs libcint, and neither job has both.
+      - name: Run CPU validation tests (libcint)
+        if: matrix.libcint
+        shell: bash -el {0}
+        run: |
+          conda activate mqc
+          cd validation
+          python3 run_validation.py --manifest validation_tests_cpu.json -v
 
       - name: Run physics validation tests
         if: matrix.tblite
