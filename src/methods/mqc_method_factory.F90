@@ -142,6 +142,7 @@ contains
 
       ! SCF settings from shared config%scf
       m%options%aux_basis_set = config%scf%aux_basis_set
+      m%options%density_fitting = config%scf%density_fitting
       m%options%unrestricted = config%scf%unrestricted
       m%options%guess = config%scf%guess
       m%options%max_iter = config%scf%max_iter

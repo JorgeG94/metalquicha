@@ -30,6 +30,8 @@ module mqc_method_hf
          !! Orbital basis set name
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
+      logical :: density_fitting = .false.
+         !! Fit J and K rather than computing exact integrals (CPU backend)
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
       logical :: verbose = .false.
@@ -86,6 +88,7 @@ contains
 
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
+      settings%density_fitting = this%options%density_fitting
       settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose
