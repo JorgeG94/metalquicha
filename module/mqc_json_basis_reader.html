@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.3% of total for modules and submodules.">209 statements</a>
+                 title=" 1.6% of total for modules and submodules.">262 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -146,6 +146,7 @@
       <div id="funcs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-integer_to_key">integer_to_key</a>
+            <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-shell_angular_form">shell_angular_form</a>
             <a class="list-group-item" href="../module/mqc_json_basis_reader.html#proc-shell_contractions">shell_contractions</a>
         </div>
       </div>
@@ -196,7 +197,14 @@ It also carries ECP data in the same file, for when that gets wired up.</p>
 <p>Elements are keyed by atomic number as a string, so a symbol is
 converted before lookup. Exponents and coefficients are stored as
 strings to preserve every digit; they are read with list-directed input,
-which accepts the <code>0.1307093214E+03</code> form BSE emits.
+which accepts the <code>0.1307093214E+03</code> form BSE emits.</p>
+<p>Every shell also carries a <code>function_type</code> &ndash; <code>gto</code>, <code>gto_spherical</code> or
+<code>gto_cartesian</code> &ndash; and it is not decoration. 6-31G* specifies Cartesian d
+functions and BSE marks them so; a Cartesian d shell carries six
+functions where a spherical one carries five. Reading one as the other
+computes a different basis under the same name, worth 1.4 mHartree on
+water, with nothing to say it happened. The reader records the convention
+on the basis and the integral layer routes on it.
 Parse one element from a BSE JSON file
 Build a molecular basis from a BSE JSON file</p>
 <br>          <div class="card mb-4">
@@ -205,10 +213,10 @@ Build a molecular basis from a BSE JSON file</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
                   <li class="list-inline-item"><a href='mqc_elements.html'>mqc_elements</a></li>
+                  <li class="list-inline-item"><a href='mqc_cgto.html'>mqc_cgto</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">json_module</li>
               </ul>
             </li>
@@ -433,7 +441,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~2"></span>
+              <span class="anchor" id="variable-value"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -452,6 +460,96 @@ large graphs.</div>
     <h4>
     Return Value
     <small>character(len=:), allocatable</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-shell_angular_form"></span> <h3>private  function <a href='../proc/shell_angular_form.html'>shell_angular_form</a>(json, element_key, ishell, angular_momenta) result(form)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>What one shell entry&rsquo;s <code>function_type</code> says about the angular form</p><a href="../proc/shell_angular_form.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-json~2"></span>
+              type(json_file),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>json</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element_key~2"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>element_key</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ishell~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ishell</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_momenta~2"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>angular_momenta</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>integer</small>
     </h4>
     
 
@@ -478,7 +576,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~3"></span>
+              <span class="anchor" id="variable-json~4"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -493,7 +591,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~3"></span>
+              <span class="anchor" id="variable-element_key~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -508,7 +606,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ishell~3"></span>
+              <span class="anchor" id="variable-ishell~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -523,7 +621,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_angular~4"></span>
+              <span class="anchor" id="variable-n_angular"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -618,7 +716,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~14"></span>
+              <span class="anchor" id="variable-error~6"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -703,7 +801,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~13"></span>
+              <span class="anchor" id="variable-error~5"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -798,7 +896,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~2"></span>
+              <span class="anchor" id="variable-json~3"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -813,7 +911,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-element_key~2"></span>
+              <span class="anchor" id="variable-element_key~3"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -828,7 +926,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ishell~2"></span>
+              <span class="anchor" id="variable-ishell~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -843,7 +941,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_momenta~2"></span>
+              <span class="anchor" id="variable-angular_momenta~3"></span>
               integer,
             </td>
 <td>intent(out),</td>
@@ -858,7 +956,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-found~4"></span>
+              <span class="anchor" id="variable-found~3"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -901,7 +999,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 23:24 +0000             </p>
+ on 2026-08-10 23:38 +0000             </p>
           </div>
         </div>
         <br>

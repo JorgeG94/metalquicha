@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for modules and submodules.">106 statements</a>
+                 title=" 0.7% of total for modules and submodules.">120 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -128,7 +128,20 @@
         <div id="sidebar">
       <h3>Contents</h3>
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/mqc_cgto.html#variable-angular_form_cartesian">ANGULAR_FORM_CARTESIAN</a>
+            <a class="list-group-item" href="../module/mqc_cgto.html#variable-angular_form_spherical">ANGULAR_FORM_SPHERICAL</a>
+            <a class="list-group-item" href="../module/mqc_cgto.html#variable-angular_form_unset">ANGULAR_FORM_UNSET</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -160,6 +173,7 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/mqc_cgto.html#proc-atomic_basis_num_basis_functions">atomic_basis_num_basis_functions</a>
             <a class="list-group-item" href="../module/mqc_cgto.html#proc-cgto_num_basis_functions">cgto_num_basis_functions</a>
+            <a class="list-group-item" href="../module/mqc_cgto.html#proc-molecular_basis_is_cartesian">molecular_basis_is_cartesian</a>
             <a class="list-group-item" href="../module/mqc_cgto.html#proc-molecular_basis_num_basis_functions">molecular_basis_num_basis_functions</a>
         </div>
       </div>
@@ -2057,6 +2071,74 @@ large graphs.</div>
       <br>
 
 
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_form_cartesian"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ANGULAR_FORM_CARTESIAN</strong></td>
+<td> =</td>
+                <td>2</td>
+            <td>
+                <p>6d, 10f: <code>gto_cartesian</code> in Basis Set Exchange JSON</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_form_spherical"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ANGULAR_FORM_SPHERICAL</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                <p>5d, 7f: <code>gto_spherical</code> in Basis Set Exchange JSON</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_form_unset"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ANGULAR_FORM_UNSET</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>No shell above p, so the file says nothing either way</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
 
 
 
@@ -2088,7 +2170,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-element~3"></span>
+              <span class="anchor" id="variable-angular_form"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>angular_form</strong></td>
+<td> =</td>
+                <td>ANGULAR_FORM_UNSET</td>
+            <td>
+<p>Cartesian or spherical, from this element&rsquo;s <code>function_type</code> entries</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-element~4"></span>
               character(len=:),
             </td>
               <td>public,</td>
@@ -2155,7 +2254,7 @@ whatever was on the stack.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/atomic_basis_type.html#boundprocedure-destroy~20'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/atomic_basis_destroy.html'>atomic_basis_destroy</a></td>
+  <strong><a href='../type/atomic_basis_type.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/atomic_basis_destroy.html'>atomic_basis_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2193,7 +2292,7 @@ whatever was on the stack.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ang_mom~3"></span>
+              <span class="anchor" id="variable-ang_mom~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -2210,7 +2309,7 @@ whatever was on the stack.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coefficients~6"></span>
+              <span class="anchor" id="variable-coefficients~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -2275,7 +2374,7 @@ whatever was on the stack.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/cgto_type.html#boundprocedure-destroy~19'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cgto_destroy.html'>cgto_destroy</a></td>
+  <strong><a href='../type/cgto_type.html#boundprocedure-destroy~18'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/cgto_destroy.html'>cgto_destroy</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2311,6 +2410,26 @@ whatever was on the stack.</p>
 <th></th><th scope="col">Initial</th>        <th scope="col"></th>
     </thead>
     <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_form~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>angular_form</strong></td>
+<td> =</td>
+                <td>ANGULAR_FORM_UNSET</td>
+            <td>
+<p>Cartesian or spherical, agreed across every atom in the molecule.
+The integral layer picks one set of entry points from this, so it has
+to be one answer for the whole basis; the reader refuses a basis whose
+atoms disagree rather than choosing for them.</p>
+            </td>
+        </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-elements~2"></span>
@@ -2361,7 +2480,12 @@ whatever was on the stack.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/molecular_basis_type.html#boundprocedure-destroy~21'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/basis_set_destroy.html'>basis_set_destroy</a></td>
+  <strong><a href='../type/molecular_basis_type.html#boundprocedure-destroy~20'>destroy</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/basis_set_destroy.html'>basis_set_destroy</a></td>
+                  <td></td>
+              </tr>
+              <tr>
+                <td>  procedure, public ::
+  <strong><a href='../type/molecular_basis_type.html#boundprocedure-is_cartesian'>is_cartesian</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/molecular_basis_is_cartesian.html'>molecular_basis_is_cartesian</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -2399,7 +2523,7 @@ whatever was on the stack.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-self~8"></span>
+              <span class="anchor" id="variable-self~9"></span>
               class(<a href='../type/atomic_basis_type.html'>atomic_basis_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2444,7 +2568,7 @@ whatever was on the stack.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-self~7"></span>
+              <span class="anchor" id="variable-self~8"></span>
               class(<a href='../type/cgto_type.html'>cgto_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2463,6 +2587,51 @@ whatever was on the stack.</p>
     <h4>
     Return Value
     <small>integer</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-molecular_basis_is_cartesian"></span> <h3>private pure function <a href='../proc/molecular_basis_is_cartesian.html'>molecular_basis_is_cartesian</a>(self) result(cartesian)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Whether the integrals over this basis must be built in the Cartesian form</p><a href="../proc/molecular_basis_is_cartesian.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-self~7"></span>
+              class(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>self</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>logical</small>
     </h4>
     
 
@@ -2489,7 +2658,7 @@ whatever was on the stack.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-self~9"></span>
+              <span class="anchor" id="variable-self~10"></span>
               class(<a href='../type/molecular_basis_type.html'>molecular_basis_type</a>),
             </td>
 <td>intent(in)</td>
@@ -2827,7 +2996,7 @@ whatever was on the stack.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 23:24 +0000             </p>
+ on 2026-08-10 23:38 +0000             </p>
           </div>
         </div>
         <br>

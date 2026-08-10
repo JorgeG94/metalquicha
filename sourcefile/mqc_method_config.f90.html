@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.6% of total for source files.">269 statements</a>
+                 title=" 1.6% of total for source files.">264 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1210,27 +1210,30 @@ large graphs.</div>
 <a id="ln-480" name="ln-480" href="#ln-480"></a><span class="w">         </span><span class="k">end if</span>
 <a id="ln-481" name="ln-481" href="#ln-481"></a><span class="k">         call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Basis set:       &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">basis_set</span><span class="p">))</span>
 <a id="ln-482" name="ln-482" href="#ln-482"></a><span class="w">         </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Auxiliary basis: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">aux_basis_set</span><span class="p">))</span>
-<a id="ln-483" name="ln-483" href="#ln-483"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">use_spherical</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-484" name="ln-484" href="#ln-484"></a><span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Angular form:    spherical (pure)&quot;</span><span class="p">)</span>
-<a id="ln-485" name="ln-485" href="#ln-485"></a><span class="w">         </span><span class="k">else</span>
-<a id="ln-486" name="ln-486" href="#ln-486"></a><span class="k">            call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Angular form:    Cartesian&quot;</span><span class="p">)</span>
-<a id="ln-487" name="ln-487" href="#ln-487"></a><span class="w">         </span><span class="k">end if</span>
-<a id="ln-488" name="ln-488" href="#ln-488"></a><span class="k">         if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_DFT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
-<a id="ln-489" name="ln-489" href="#ln-489"></a><span class="k">            block</span>
-<a id="ln-490" name="ln-490" href="#ln-490"></a><span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid_line</span>
-<a id="ln-491" name="ln-491" href="#ln-491"></a><span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
-<a id="ln-492" name="ln-492" href="#ln-492"></a><span class="w">                  </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; radial x &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span>
-<a id="ln-493" name="ln-493" href="#ln-493"></a><span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">grid_line</span><span class="p">))</span>
-<a id="ln-494" name="ln-494" href="#ln-494"></a><span class="w">            </span><span class="k">end block</span>
-<a id="ln-495" name="ln-495" href="#ln-495"></a><span class="k">         end if</span>
-<a id="ln-496" name="ln-496" href="#ln-496"></a>
-<a id="ln-497" name="ln-497" href="#ln-497"></a><span class="k">      case </span><span class="n">default</span>
-<a id="ln-498" name="ln-498" href="#ln-498"></a><span class="w">         </span><span class="k">return</span>
-<a id="ln-499" name="ln-499" href="#ln-499"></a><span class="k">      end select</span>
-<a id="ln-500" name="ln-500" href="#ln-500"></a>
-<a id="ln-501" name="ln-501" href="#ln-501"></a><span class="k">   end subroutine </span><span class="n">config_log_settings</span>
-<a id="ln-502" name="ln-502" href="#ln-502"></a>
-<a id="ln-503" name="ln-503" href="#ln-503"></a><span class="k">end module </span><span class="n">mqc_method_config</span>
+<a id="ln-483" name="ln-483" href="#ln-483"></a><span class="w">         </span><span class="c">! The angular form is not reported here any more, and deliberately.</span>
+<a id="ln-484" name="ln-484" href="#ln-484"></a><span class="w">         </span><span class="c">! `use_spherical` is the flag cuEST builds its AO shells with, not a</span>
+<a id="ln-485" name="ln-485" href="#ln-485"></a><span class="w">         </span><span class="c">! statement about the basis: the basis file decides, through its</span>
+<a id="ln-486" name="ln-486" href="#ln-486"></a><span class="w">         </span><span class="c">! `function_type` entries, and 6-31G* is Cartesian whatever this says.</span>
+<a id="ln-487" name="ln-487" href="#ln-487"></a><span class="w">         </span><span class="c">! Printing this line beside a Cartesian basis claimed &quot;spherical</span>
+<a id="ln-488" name="ln-488" href="#ln-488"></a><span class="w">         </span><span class="c">! (pure)&quot; for a run that was not, which is the reporting half of the</span>
+<a id="ln-489" name="ln-489" href="#ln-489"></a><span class="w">         </span><span class="c">! bug it sat next to. The SCF prints the form it actually used, along</span>
+<a id="ln-490" name="ln-490" href="#ln-490"></a><span class="w">         </span><span class="c">! with the function count that distinguishes the two.</span>
+<a id="ln-491" name="ln-491" href="#ln-491"></a><span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">this</span><span class="p">%</span><span class="n">method_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_DFT</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-492" name="ln-492" href="#ln-492"></a><span class="k">            block</span>
+<a id="ln-493" name="ln-493" href="#ln-493"></a><span class="k">               </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">grid_line</span>
+<a id="ln-494" name="ln-494" href="#ln-494"></a><span class="w">               </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">grid_line</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0,a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;  XC grid:         &quot;</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<a id="ln-495" name="ln-495" href="#ln-495"></a><span class="w">                  </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">radial_points</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; radial x &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">this</span><span class="p">%</span><span class="n">dft</span><span class="p">%</span><span class="n">angular_points</span>
+<a id="ln-496" name="ln-496" href="#ln-496"></a><span class="w">               </span><span class="k">call </span><span class="n">logger</span><span class="p">%</span><span class="n">info</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">grid_line</span><span class="p">))</span>
+<a id="ln-497" name="ln-497" href="#ln-497"></a><span class="w">            </span><span class="k">end block</span>
+<a id="ln-498" name="ln-498" href="#ln-498"></a><span class="k">         end if</span>
+<a id="ln-499" name="ln-499" href="#ln-499"></a>
+<a id="ln-500" name="ln-500" href="#ln-500"></a><span class="k">      case </span><span class="n">default</span>
+<a id="ln-501" name="ln-501" href="#ln-501"></a><span class="w">         </span><span class="k">return</span>
+<a id="ln-502" name="ln-502" href="#ln-502"></a><span class="k">      end select</span>
+<a id="ln-503" name="ln-503" href="#ln-503"></a>
+<a id="ln-504" name="ln-504" href="#ln-504"></a><span class="k">   end subroutine </span><span class="n">config_log_settings</span>
+<a id="ln-505" name="ln-505" href="#ln-505"></a>
+<a id="ln-506" name="ln-506" href="#ln-506"></a><span class="k">end module </span><span class="n">mqc_method_config</span>
 </pre></div>
 
       </section>
@@ -1252,7 +1255,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 23:24 +0000             </p>
+ on 2026-08-10 23:38 +0000             </p>
           </div>
         </div>
         <br>
