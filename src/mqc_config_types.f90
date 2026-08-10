@@ -83,6 +83,12 @@ module mqc_config_types
       character(len=:), allocatable :: scf_guess
          !! Initial guess name from %scf
       logical :: scf_unrestricted = .false.
+      logical :: allow_crap_scf = .false.
+         !! Let a non-converged SCF into the expansion instead of stopping.
+         !! Off by default: the energy of an SCF that ran out of iterations is
+         !! of the right magnitude and nothing downstream can tell, so silence
+         !! is the one thing it must not be. On, every offender is named at the
+         !! end of the run and marked in the fragment table.
          !! Force UHF/UKS even when the shell is closed
          !! XC functional name, only meaningful when method = dft
 

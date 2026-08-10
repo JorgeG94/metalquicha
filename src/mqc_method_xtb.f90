@@ -4,7 +4,7 @@ module mqc_method_xtb
    !! implementing the abstract method interface for energy and gradient calculations.
    use pic_types, only: dp
    use mqc_method_base, only: qc_method_t
-   use mqc_result_types, only: calculation_result_t
+   use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_error, only: ERROR_GENERIC, ERROR_VALIDATION
    use pic_logger, only: logger => global_logger
@@ -37,6 +37,12 @@ module mqc_method_xtb
       character(len=:), allocatable :: variant  !! XTB variant: "gfn1" or "gfn2"
       logical :: verbose = .false.              !! Print calculation details
       real(wp) :: accuracy = 0.01_wp            !! Numerical accuracy parameter
+      logical :: allow_crap_scf = .false.       !! Keep a non-converged SCF instead of stopping
+      integer :: max_iter = 250                 !! SCF cycles before tblite gives up
+         !! There was no field for this, so `keywords.scf.maxiter` reached the
+         !! config and stopped there -- a deck asking for a different budget
+         !! silently got tblite's default. 250 is that default, so the value
+         !! here changes nothing until a deck says otherwise.
       real(wp) :: kt = 300.0_wp*3.166808578545117e-06_wp  !! Electronic temperature (300 K)
       ! Solvation settings (leave solvent unallocated for gas phase)
       character(len=:), allocatable :: solvent  !! Solvent name: "water", "ethanol", etc.
@@ -119,6 +125,11 @@ contains
          return
       end if
 
+      ! keywords.scf.maxiter had a home on this type and never reached the
+      ! calculator, so it silently did nothing for xTB -- a deck asking for a
+      ! tighter or looser iteration budget got tblite's default either way.
+      calc%max_iter = this%max_iter
+
       ! Add solvation if configured (either solvent name or direct dielectric)
       if (allocated(this%solvent) .or. this%dielectric > 0.0_wp) then
          if (allocated(this%solvation_model)) then
@@ -143,6 +154,17 @@ contains
 
       verbosity = merge(1, 0, this%verbose)
       call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, verbosity=verbosity)
+
+      ! tblite reports a failed SCF by setting an error on the context and
+      ! returning anyway -- "SCF not converged in N cycles" among them. Not
+      ! asking meant taking an energy tblite had just disowned and adding it
+      ! to the expansion as though it were fine.
+      if (ctx%failed()) then
+         call record_context_failure(ctx, result, this%allow_crap_scf)
+         if (result%has_error) return
+      else
+         result%scf_status = SCF_CONVERGED
+      end if
 
       ! Compute molecular dipole moment from wavefunction
       dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
@@ -231,6 +253,11 @@ contains
          return
       end if
 
+      ! keywords.scf.maxiter had a home on this type and never reached the
+      ! calculator, so it silently did nothing for xTB -- a deck asking for a
+      ! tighter or looser iteration budget got tblite's default either way.
+      calc%max_iter = this%max_iter
+
       ! Add solvation if configured (either solvent name or direct dielectric)
       if (allocated(this%solvent) .or. this%dielectric > 0.0_wp) then
          if (allocated(this%solvation_model)) then
@@ -262,6 +289,16 @@ contains
       verbosity = merge(1, 0, this%verbose)
       call xtb_singlepoint(ctx, mol, calc, wfn, this%accuracy, energy, &
                            gradient=gradient, sigma=sigma, verbosity=verbosity)
+
+      ! Same check as the energy path. A non-converged density gives a
+      ! gradient that is wrong in a way no norm reveals, so this matters more
+      ! here rather than less.
+      if (ctx%failed()) then
+         call record_context_failure(ctx, result, this%allow_crap_scf)
+         if (result%has_error) return
+      else
+         result%scf_status = SCF_CONVERGED
+      end if
 
       ! Compute molecular dipole moment from wavefunction
       dipole_wp(:) = matmul(mol%xyz, wfn%qat(:, 1)) + sum(wfn%dpat(:, :, 1), 2)
@@ -669,5 +706,48 @@ contains
          eps = -1.0_wp  ! Unknown solvent
       end select
    end function get_solvent_dielectric
+
+   subroutine record_context_failure(ctx, result, allow_crap_scf)
+      !! Turn a tblite context error into a failed -- or merely flagged -- result
+      !!
+      !! **Every error is drained, not just the first.** tblite logs each one
+      !! and pops them in order, and a failed eigensolve has been seen to leave
+      !! both "(sygvd) failed to solve eigenvalue problem" and an
+      !! "SCF not converged" behind it. Reading one and stopping would let the
+      !! wrong message decide: a run allowed to tolerate non-convergence would
+      !! then also tolerate a corrupted eigensolve, whose energy is not a poor
+      !! answer but a meaningless one.
+      !!
+      !! So the concession applies only when *nothing else* went wrong. Not
+      !! converging is a number that has not settled; anything else is a number
+      !! that means nothing, and `allow_crap_scf` is not a licence for that.
+      type(context_type), intent(inout) :: ctx
+      type(calculation_result_t), intent(inout) :: result
+      logical, intent(in) :: allow_crap_scf
+
+      type(error_type), allocatable :: ctx_error
+      character(len=:), allocatable :: text, first
+      logical :: only_convergence
+
+      first = "XTB calculation failed"
+      only_convergence = .true.
+      do while (ctx%failed())
+         call ctx%get_error(ctx_error)
+         if (.not. allocated(ctx_error)) exit
+         text = ctx_error%message
+         deallocate (ctx_error)
+         if (index(text, "not converged") == 0) only_convergence = .false.
+         if (first == "XTB calculation failed") first = text
+      end do
+
+      if (only_convergence) then
+         result%scf_status = SCF_NOT_CONVERGED
+         ! Kept, and named at the end of the run. The caller asked for this.
+         if (allow_crap_scf) return
+      end if
+
+      call result%error%set(ERROR_GENERIC, first)
+      result%has_error = .true.
+   end subroutine record_context_failure
 
 end module mqc_method_xtb

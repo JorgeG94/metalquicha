@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.8% of total for derived types.</p>Including implementation: 41 statements,  1.7% of total for derived types.">20 statements</a>
+                 title="<p> 3.0% of total for derived types.</p>Including implementation: 45 statements,  1.9% of total for derived types.">22 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,19 +137,21 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-dipole~2">dipole</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-dipole_derivatives~3">dipole_derivatives</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-dipole_derivatives~5">dipole_derivatives</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-distance~5">distance</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-energy~5">energy</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-error~66">error</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-error~81">error</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-gradient~4">gradient</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_dipole~2">has_dipole</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_dipole_derivatives">has_dipole_derivatives</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_energy~2">has_energy</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_error">has_error</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_error~2">has_error</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_gradient~2">has_gradient</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_hessian~2">has_hessian</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-has_sigma">has_sigma</a>
-            <a class="list-group-item" href="../type/calculation_result_t.html#variable-hessian~4">hessian</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-hessian~9">hessian</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-scf_iterations">scf_iterations</a>
+            <a class="list-group-item" href="../type/calculation_result_t.html#variable-scf_status~2">scf_status</a>
             <a class="list-group-item" href="../type/calculation_result_t.html#variable-sigma~5">sigma</a>
         </div>
       </div>
@@ -375,7 +377,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dipole_derivatives~3"></span>
+              <span class="anchor" id="variable-dipole_derivatives~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -426,7 +428,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~66"></span>
+              <span class="anchor" id="variable-error~81"></span>
               type(<a href='error_t.html'>error_t</a>),
             </td>
               <td>public</td>
@@ -511,7 +513,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-has_error"></span>
+              <span class="anchor" id="variable-has_error~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -579,7 +581,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~4"></span>
+              <span class="anchor" id="variable-hessian~9"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -592,6 +594,40 @@ large graphs.</div>
                 <td></td>
             <td>
                 <p>Energy hessian (future implementation)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scf_iterations"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scf_iterations</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>Cycles used, 0 if not reported</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scf_status~2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scf_status</strong></td>
+<td> =</td>
+                <td>SCF_UNKNOWN</td>
+            <td>
+                <p>Whether the SCF reached its thresholds</p>
             </td>
         </tr>
         <tr>
@@ -764,6 +800,16 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">    </span><span class="c">!! Dipole moment has been computed</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_dipole_derivatives</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">  </span><span class="c">!! Dipole derivatives have been computed</span>
 
+<span class="w">      </span><span class="c">! SCF convergence</span>
+<span class="w">      </span><span class="c">!</span>
+<span class="w">      </span><span class="c">! Tri-state rather than a logical, because either default would be a</span>
+<span class="w">      </span><span class="c">! lie: `.true.` makes a method that never reports look converged, and</span>
+<span class="w">      </span><span class="c">! `.false.` makes it look failed. A method that does not say leaves this</span>
+<span class="w">      </span><span class="c">! at SCF_UNKNOWN and the output prints &quot;?&quot; -- which is the truth, and</span>
+<span class="w">      </span><span class="c">! which shows up as something to fix rather than as a clean bill.</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SCF_UNKNOWN</span><span class="w">  </span><span class="c">!! Whether the SCF reached its thresholds</span>
+<span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="c">!! Cycles used, 0 if not reported</span>
+
 <span class="w">      </span><span class="c">! Error handling</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">error_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">error</span><span class="w">             </span><span class="c">!! Calculation error (if any)</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">has_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w">     </span><span class="c">!! True if calculation failed</span>
@@ -793,7 +839,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 03:43 +0000             </p>
+ on 2026-08-10 04:46 +0000             </p>
           </div>
         </div>
         <br>

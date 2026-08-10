@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.4% of total for derived types.</p>Including implementation: 10 statements,  0.4% of total for derived types.">10 statements</a>
+                 title="<p> 1.5% of total for derived types.</p>Including implementation: 11 statements,  0.5% of total for derived types.">11 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,13 +136,14 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/scf_config_t.html#variable-aux_basis_set~2">aux_basis_set</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-allow_crap_scf~6">allow_crap_scf</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-aux_basis_set~3">aux_basis_set</a>
             <a class="list-group-item" href="../type/scf_config_t.html#variable-density_convergence">density_convergence</a>
-            <a class="list-group-item" href="../type/scf_config_t.html#variable-diis_size~2">diis_size</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-diis_size~3">diis_size</a>
             <a class="list-group-item" href="../type/scf_config_t.html#variable-energy_convergence">energy_convergence</a>
-            <a class="list-group-item" href="../type/scf_config_t.html#variable-guess~2">guess</a>
-            <a class="list-group-item" href="../type/scf_config_t.html#variable-max_iter~2">max_iter</a>
-            <a class="list-group-item" href="../type/scf_config_t.html#variable-unrestricted~2">unrestricted</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-guess~3">guess</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-max_iter~4">max_iter</a>
+            <a class="list-group-item" href="../type/scf_config_t.html#variable-unrestricted~3">unrestricted</a>
             <a class="list-group-item" href="../type/scf_config_t.html#variable-use_diis~3">use_diis</a>
         </div>
       </div>
@@ -230,7 +231,7 @@
 </g>
 </g>
 <!-- type~driver_config_t&#45;&gt;type~method_config_t -->
-<g id="type~~scf_config_t~~InheritedByGraph_edge3" class="edge">
+<g id="type~~scf_config_t~~InheritedByGraph_edge2" class="edge">
 <title>type~driver_config_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M332.89,-35.33C304.52,-38.71 267.45,-43.14 236.51,-46.83"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="235.79,-43.4 226.28,-48.06 236.62,-50.35 235.79,-43.4"/>
@@ -246,7 +247,7 @@
 </g>
 </g>
 <!-- type~many_body_expansion_t&#45;&gt;type~method_config_t -->
-<g id="type~~scf_config_t~~InheritedByGraph_edge2" class="edge">
+<g id="type~~scf_config_t~~InheritedByGraph_edge3" class="edge">
 <title>type~many_body_expansion_t&#45;&gt;type~method_config_t</title>
 <path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M521.88,-56.54C515.83,-56.71 509.81,-56.87 504,-57 388.47,-59.58 359.48,-63.27 244,-59 241.48,-58.91 238.91,-58.79 236.32,-58.67"/>
 <polygon fill="#ff0000" stroke="#ff0000" points="236.42,-55.17 226.24,-58.1 236.03,-62.16 236.42,-55.17"/>
@@ -362,7 +363,24 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~2"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_crap_scf</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Accept a non-converged SCF rather than stopping. See mqc_config_types.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -398,7 +416,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~2"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -432,7 +450,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~2"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -449,7 +467,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -466,7 +484,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~2"></span>
+              <span class="anchor" id="variable-unrestricted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -525,6 +543,8 @@ the unrestricted code reduces to the restricted result.</p>
 <span class="w">         </span><span class="c">!! Number of Fock matrices for DIIS</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;gwh&quot;</span>
 <span class="w">         </span><span class="c">!! Initial guess: &#39;core&#39;, &#39;gwh&#39; or &#39;sac&#39;</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Accept a non-converged SCF rather than stopping. See mqc_config_types.</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unrestricted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Force an unrestricted (UHF/UKS) treatment even for a closed shell.</span>
 <span class="w">         </span><span class="c">!! Needed for broken-symmetry singlets, and the cleanest check that</span>
@@ -556,7 +576,7 @@ the unrestricted code reduces to the restricted result.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 03:43 +0000             </p>
+ on 2026-08-10 04:46 +0000             </p>
           </div>
         </div>
         <br>

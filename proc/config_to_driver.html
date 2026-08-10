@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">64 statements</a>
+                 title=" 0.5% of total for procedures.">67 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -209,7 +209,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-driver_config~5"></span>
+              <span class="anchor" id="variable-driver_config"></span>
               type(<a href='../type/driver_config_t.html'>driver_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -239,7 +239,7 @@ If molecule_index is provided, uses that molecule&rsquo;s fragment count</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-node_rank"></span>
+              <span class="anchor" id="variable-node_rank~2"></span>
               integer,
             </td>
 <td>intent(in),</td>
@@ -779,6 +779,15 @@ large graphs.</div>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">aimd</span><span class="p">%</span><span class="n">output_frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">aimd_output_frequency</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">convergence_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance</span>
+<span class="w">      </span><span class="c">! And again into the method&#39;s own SCF settings, which is the copy every</span>
+<span class="w">      </span><span class="c">! backend actually reads -- `configure_hf` takes max_iter and the</span>
+<span class="w">      </span><span class="c">! tolerances from `method_config%scf`, and the xTB calculator now does</span>
+<span class="w">      </span><span class="c">! too. Only `driver_config%scf` was being filled, so a deck asking for</span>
+<span class="w">      </span><span class="c">! more iterations or a tighter threshold got the hardcoded defaults and</span>
+<span class="w">      </span><span class="c">! no complaint. Two structures named scf, one of them wired up.</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_maxiter</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">energy_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_tolerance</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">allow_crap_scf</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">unrestricted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_unrestricted</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_guess</span>
@@ -815,7 +824,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 03:43 +0000             </p>
+ on 2026-08-10 04:46 +0000             </p>
           </div>
         </div>
         <br>

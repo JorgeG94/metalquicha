@@ -147,6 +147,15 @@ contains
       driver_config%aimd%output_frequency = mqc_config%aimd_output_frequency
       driver_config%scf%max_iterations = mqc_config%scf_maxiter
       driver_config%scf%convergence_threshold = mqc_config%scf_tolerance
+      ! And again into the method's own SCF settings, which is the copy every
+      ! backend actually reads -- `configure_hf` takes max_iter and the
+      ! tolerances from `method_config%scf`, and the xTB calculator now does
+      ! too. Only `driver_config%scf` was being filled, so a deck asking for
+      ! more iterations or a tighter threshold got the hardcoded defaults and
+      ! no complaint. Two structures named scf, one of them wired up.
+      driver_config%method_config%scf%max_iter = mqc_config%scf_maxiter
+      driver_config%method_config%scf%energy_convergence = mqc_config%scf_tolerance
+      driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.8% of total for modules and submodules.">267 statements</a>
+                 title=" 1.8% of total for modules and submodules.">268 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1107,7 +1107,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~3"></span>
+              <span class="anchor" id="variable-diis_size~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -1158,7 +1158,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~3"></span>
+              <span class="anchor" id="variable-max_iter~5"></span>
               integer,
             </td>
               <td>public</td>
@@ -1258,7 +1258,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis"></span>
+              <span class="anchor" id="variable-aux_basis~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1478,7 +1478,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points"></span>
+              <span class="anchor" id="variable-angular_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -1495,7 +1495,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~3"></span>
+              <span class="anchor" id="variable-aux_basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1529,7 +1529,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional"></span>
+              <span class="anchor" id="variable-functional~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -1563,7 +1563,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points"></span>
+              <span class="anchor" id="variable-radial_points~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -2033,7 +2033,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~3"></span>
+              <span class="anchor" id="variable-basis_set~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2084,7 +2084,7 @@ Note: SCF settings (convergence, DIIS) come from scf_config_t</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~2"></span>
+              <span class="anchor" id="variable-device_rank~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2171,7 +2171,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-scf"></span>
+              <span class="anchor" id="variable-scf~2"></span>
               type(<a href='../type/scf_config_t.html'>scf_config_t</a>),
             </td>
               <td>public</td>
@@ -2205,7 +2205,7 @@ the real value or every rank binds to device 0.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~6"></span>
+              <span class="anchor" id="variable-verbose~5"></span>
               logical,
             </td>
               <td>public</td>
@@ -2253,7 +2253,7 @@ the real value or every rank binds to device 0.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/method_config_t.html#boundprocedure-reset~2'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
+  <strong><a href='../type/method_config_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/config_reset.html'>config_reset</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -2286,7 +2286,24 @@ the real value or every rank binds to device 0.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~2"></span>
+              <span class="anchor" id="variable-allow_crap_scf~6"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_crap_scf</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+<p>Accept a non-converged SCF rather than stopping. See mqc_config_types.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-aux_basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2322,7 +2339,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~2"></span>
+              <span class="anchor" id="variable-diis_size~3"></span>
               integer,
             </td>
               <td>public</td>
@@ -2356,7 +2373,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~2"></span>
+              <span class="anchor" id="variable-guess~3"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2373,7 +2390,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~2"></span>
+              <span class="anchor" id="variable-max_iter~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2390,7 +2407,7 @@ conventional four-index ERI path, so J/K are always fitted.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~2"></span>
+              <span class="anchor" id="variable-unrestricted~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -2475,7 +2492,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~3"></span>
+              <span class="anchor" id="variable-cpcm_nang~4"></span>
               integer,
             </td>
               <td>public</td>
@@ -2492,7 +2509,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~3"></span>
+              <span class="anchor" id="variable-cpcm_rscale~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2509,7 +2526,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~3"></span>
+              <span class="anchor" id="variable-dielectric~4"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -2543,7 +2560,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~3"></span>
+              <span class="anchor" id="variable-solvation_model~4"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -2560,7 +2577,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~3"></span>
+              <span class="anchor" id="variable-solvent~4"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -2577,7 +2594,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~3"></span>
+              <span class="anchor" id="variable-use_cds~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2594,7 +2611,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~3"></span>
+              <span class="anchor" id="variable-use_shift~4"></span>
               logical,
             </td>
               <td>public</td>
@@ -2663,7 +2680,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~48"></span>
+              <span class="anchor" id="variable-this~50"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2713,7 +2730,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~52"></span>
+              <span class="anchor" id="variable-this~54"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -2753,7 +2770,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~51"></span>
+              <span class="anchor" id="variable-this~53"></span>
               class(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2793,7 +2810,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~49"></span>
+              <span class="anchor" id="variable-this~51"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2808,7 +2825,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_cds~4"></span>
+              <span class="anchor" id="variable-use_cds~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2823,7 +2840,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_shift~4"></span>
+              <span class="anchor" id="variable-use_shift~5"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -2838,7 +2855,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dielectric~4"></span>
+              <span class="anchor" id="variable-dielectric~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2853,7 +2870,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_nang~4"></span>
+              <span class="anchor" id="variable-cpcm_nang~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -2868,7 +2885,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-cpcm_rscale~4"></span>
+              <span class="anchor" id="variable-cpcm_rscale~5"></span>
               real(kind=dp),
             </td>
 <td>intent(in)</td>
@@ -2883,7 +2900,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvent~4"></span>
+              <span class="anchor" id="variable-solvent~5"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -2898,7 +2915,7 @@ the unrestricted code reduces to the restricted result.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-solvation_model~4"></span>
+              <span class="anchor" id="variable-solvation_model~5"></span>
               character(len=*),
             </td>
 <td>intent(in),</td>
@@ -2938,7 +2955,7 @@ the unrestricted code reduces to the restricted result.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~50"></span>
+              <span class="anchor" id="variable-this~52"></span>
               class(<a href='../type/xtb_config_t.html'>xtb_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3011,7 +3028,7 @@ the unrestricted code reduces to the restricted result.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 03:43 +0000             </p>
+ on 2026-08-10 04:46 +0000             </p>
           </div>
         </div>
         <br>

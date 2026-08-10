@@ -12,6 +12,17 @@ module mqc_result_types
    public :: cc_energy_t           !! Coupled cluster energy components type
    public :: energy_t              !! Energy components type
    public :: calculation_result_t  !! Main result container type
+   public :: SCF_UNKNOWN, SCF_CONVERGED, SCF_NOT_CONVERGED
+   public :: scf_status_label
+
+   integer, parameter :: SCF_UNKNOWN = 0
+      !! The method did not say. Not a claim that it converged.
+   integer, parameter :: SCF_CONVERGED = 1
+      !! Reached its energy and density thresholds
+   integer, parameter :: SCF_NOT_CONVERGED = 2
+      !! Ran out of iterations. The energy is whatever the last cycle held,
+      !! and putting it into an expansion poisons the total silently -- it is
+      !! a number of the right magnitude, so nothing downstream notices.
    public :: mbe_result_t          !! MBE aggregated result container type
    public :: result_send, result_isend  !! Send result over MPI
    public :: result_recv, result_irecv  !! Receive result over MPI
@@ -78,6 +89,16 @@ module mqc_result_types
       logical :: has_hessian = .false.   !! Hessian has been computed
       logical :: has_dipole = .false.    !! Dipole moment has been computed
       logical :: has_dipole_derivatives = .false.  !! Dipole derivatives have been computed
+
+      ! SCF convergence
+      !
+      ! Tri-state rather than a logical, because either default would be a
+      ! lie: `.true.` makes a method that never reports look converged, and
+      ! `.false.` makes it look failed. A method that does not say leaves this
+      ! at SCF_UNKNOWN and the output prints "?" -- which is the truth, and
+      ! which shows up as something to fix rather than as a clean bill.
+      integer :: scf_status = SCF_UNKNOWN  !! Whether the SCF reached its thresholds
+      integer :: scf_iterations = 0        !! Cycles used, 0 if not reported
 
       ! Error handling
       type(error_t) :: error             !! Calculation error (if any)
@@ -230,6 +251,8 @@ contains
       this%has_dipole = .false.
       this%has_dipole_derivatives = .false.
       this%has_error = .false.
+      this%scf_status = SCF_UNKNOWN
+      this%scf_iterations = 0
    end subroutine result_reset
 
    !---------------------------------------------------------------------------
@@ -367,6 +390,12 @@ contains
 
       ! Send fragment metadata
       call send(comm, result%distance, dest, tag)
+      ! Convergence travels with the energy or it is not knowable at
+      ! the coordinator, which is the only rank that writes anything.
+      ! A field added to the type and not to these four routines
+      ! leaves every parallel run reporting the default.
+      call send(comm, result%scf_status, dest, tag)
+      call send(comm, result%scf_iterations, dest, tag)
 
       ! Send gradient flag and data if present
       call send(comm, result%has_gradient, dest, tag)
@@ -417,6 +446,12 @@ contains
 
       ! Send fragment metadata
       call send(comm, result%distance, dest, tag)
+      ! Convergence travels with the energy or it is not knowable at
+      ! the coordinator, which is the only rank that writes anything.
+      ! A field added to the type and not to these four routines
+      ! leaves every parallel run reporting the default.
+      call send(comm, result%scf_status, dest, tag)
+      call send(comm, result%scf_iterations, dest, tag)
 
       ! Send gradient flag and data (blocking to avoid needing multiple request handles)
       call send(comm, result%has_gradient, dest, tag)
@@ -469,6 +504,8 @@ contains
 
       ! Receive fragment metadata
       call recv(comm, result%distance, source, tag, status)
+      call recv(comm, result%scf_status, source, tag, status)
+      call recv(comm, result%scf_iterations, source, tag, status)
 
       ! Receive gradient flag and data if present
       call recv(comm, result%has_gradient, source, tag, status)
@@ -533,6 +570,8 @@ contains
 
       ! Receive fragment metadata
       call recv(comm, result%distance, source, tag, status)
+      call recv(comm, result%scf_status, source, tag, status)
+      call recv(comm, result%scf_iterations, source, tag, status)
 
       ! Receive gradient flag and data (blocking to avoid needing multiple request handles)
       call recv(comm, result%has_gradient, source, tag, status)
@@ -564,5 +603,20 @@ contains
 
       call recv_error_state(result, comm, source, tag)
    end subroutine result_irecv
+
+   pure function scf_status_label(status) result(text)
+      !! One word for a status, for a table column or a log line
+      integer, intent(in) :: status
+      character(len=3) :: text
+
+      select case (status)
+      case (SCF_CONVERGED)
+         text = "yes"
+      case (SCF_NOT_CONVERGED)
+         text = "NO "
+      case default
+         text = "?  "
+      end select
+   end function scf_status_label
 
 end module mqc_result_types

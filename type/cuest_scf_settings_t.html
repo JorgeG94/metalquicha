@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 2.4% of total for derived types.</p>Including implementation: 17 statements,  0.7% of total for derived types.">17 statements</a>
+                 title="<p> 2.5% of total for derived types.</p>Including implementation: 18 statements,  0.7% of total for derived types.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -136,21 +136,22 @@
       </a>
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-angular_points~2">angular_points</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-aux_basis_set~4">aux_basis_set</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-basis_set~4">basis_set</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-allow_crap_scf~3">allow_crap_scf</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-angular_points">angular_points</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-aux_basis_set~2">aux_basis_set</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-basis_set~3">basis_set</a>
             <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-density_tol~2">density_tol</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-device_rank~3">device_rank</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-diis_size~4">diis_size</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-device_rank~2">device_rank</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-diis_size~2">diis_size</a>
             <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-energy_tol~2">energy_tol</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-functional~3">functional</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-guess~3">guess</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-max_iter~4">max_iter</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-radial_points~2">radial_points</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-functional~2">functional</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-guess~2">guess</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-max_iter~2">max_iter</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-radial_points">radial_points</a>
             <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-spherical~3">spherical</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-unrestricted~3">unrestricted</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-use_diis~5">use_diis</a>
-            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-verbose~7">verbose</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-unrestricted~2">unrestricted</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-use_diis~2">use_diis</a>
+            <a class="list-group-item" href="../type/cuest_scf_settings_t.html#variable-verbose~3">verbose</a>
         </div>
       </div>
     </div>
@@ -205,7 +206,26 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~2"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>allow_crap_scf</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>Keep a non-converged SCF instead of failing the fragment. Same
+meaning and same default as the xTB path &ndash; one physical condition
+must not have two behaviours depending on which backend ran it.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-angular_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -222,7 +242,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~4"></span>
+              <span class="anchor" id="variable-aux_basis_set~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -239,7 +259,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~4"></span>
+              <span class="anchor" id="variable-basis_set~3"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -273,7 +293,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~3"></span>
+              <span class="anchor" id="variable-device_rank~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -290,7 +310,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~4"></span>
+              <span class="anchor" id="variable-diis_size~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -324,7 +344,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-functional~2"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -341,7 +361,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~3"></span>
+              <span class="anchor" id="variable-guess~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -358,7 +378,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~4"></span>
+              <span class="anchor" id="variable-max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -375,7 +395,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~2"></span>
+              <span class="anchor" id="variable-radial_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -409,7 +429,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~3"></span>
+              <span class="anchor" id="variable-unrestricted~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -426,7 +446,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~5"></span>
+              <span class="anchor" id="variable-use_diis~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -443,7 +463,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~7"></span>
+              <span class="anchor" id="variable-verbose~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -488,6 +508,10 @@
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">unrestricted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
 <span class="w">         </span><span class="c">!! Force UHF/UKS even for a closed shell</span>
 
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">allow_crap_scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span>
+<span class="w">         </span><span class="c">!! Keep a non-converged SCF instead of failing the fragment. Same</span>
+<span class="w">         </span><span class="c">!! meaning and same default as the xTB path -- one physical condition</span>
+<span class="w">         </span><span class="c">!! must not have two behaviours depending on which backend ran it.</span>
 <span class="w">      </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">energy_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-8_dp</span>
 <span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">density_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-6_dp</span>
@@ -519,7 +543,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 03:43 +0000             </p>
+ on 2026-08-10 04:46 +0000             </p>
           </div>
         </div>
         <br>

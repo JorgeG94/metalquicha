@@ -35,6 +35,10 @@ module mqc_cuest_iface
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
 
+      logical :: allow_crap_scf = .false.
+         !! Keep a non-converged SCF instead of failing the fragment. Same
+         !! meaning and same default as the xTB path -- one physical condition
+         !! must not have two behaviours depending on which backend ran it.
       integer :: max_iter = 100
       real(dp) :: energy_tol = 1.0e-8_dp
       real(dp) :: density_tol = 1.0e-6_dp

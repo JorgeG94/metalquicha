@@ -49,6 +49,11 @@ module mqc_json_output_types
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
       real(dp), allocatable :: sum_by_level(:)        !! Energy sum per level
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
+      integer, allocatable :: fragment_scf_status(:)
+         !! Per-fragment SCF convergence, as SCF_* from mqc_result_types.
+         !! Recorded because a non-converged fragment still yields a number of
+         !! the right magnitude, so nothing downstream can tell -- and at
+         !! millions of terms nobody is reading the log.
       integer(int64) :: fragment_count = 0
       integer :: max_level = 0
       character(len=16) :: fragment_breakdown = "csv"
