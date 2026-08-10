@@ -23,3 +23,6 @@ endif()
 
 # Factory must come after method types are defined
 target_sources(${main_lib} PRIVATE mqc_method_factory.F90)
+
+# The CPU integrals and SCF live in libcint_backend/, outside src/, because they
+# use libcint_fortran and fpm -- which globs src/ -- has no source for it.

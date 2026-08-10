@@ -56,7 +56,7 @@ contains
       character(len=:), allocatable :: element_key, shell_path
       character(len=:), allocatable :: value_text
       integer, allocatable :: angular_momenta(:)
-      integer :: atomic_number, n_shells_json, n_shells_total
+      integer :: atomic_number, n_shells_json, n_shells_total, n_contract
       integer :: ishell, imom, iprim, n_prim, shell_index, read_status
       logical :: found
       real(dp) :: value
@@ -96,7 +96,8 @@ contains
       do ishell = 1, n_shells_json
          call shell_angular_momenta(json, element_key, ishell, angular_momenta, found)
          if (.not. found) cycle
-         n_shells_total = n_shells_total + size(angular_momenta)
+         n_shells_total = n_shells_total + shell_contractions(json, element_key, ishell, &
+                                                              size(angular_momenta))
       end do
 
       if (n_shells_total == 0) then
@@ -128,9 +129,23 @@ contains
             return
          end if
 
-         do imom = 1, size(angular_momenta)
+         ! One shell per *coefficient column*, not per angular momentum. The
+         ! two coincide for an SP shell, where each column carries its own l --
+         ! which is why 6-31G was right. They do not for a general contraction:
+         ! cc-pVDZ oxygen is nine s primitives with three columns and a single
+         ! l, so looping over angular momenta read column one and discarded the
+         ! other two. That gave oxygen nine basis functions instead of
+         ! fourteen, and an SCF that converged a full Hartree high.
+         n_contract = shell_contractions(json, element_key, ishell, size(angular_momenta))
+         do imom = 1, n_contract
             shell_index = shell_index + 1
-            atom_basis%shells(shell_index)%ang_mom = angular_momenta(imom)
+            ! Each column has its own l when the file lists one per column;
+            ! a general contraction lists one l for all of them.
+            if (size(angular_momenta) == n_contract) then
+               atom_basis%shells(shell_index)%ang_mom = angular_momenta(imom)
+            else
+               atom_basis%shells(shell_index)%ang_mom = angular_momenta(1)
+            end if
             call atom_basis%shells(shell_index)%allocate_arrays(n_prim)
 
             do iprim = 1, n_prim
@@ -244,6 +259,32 @@ contains
       end do
       deallocate (unique_bases, unique_z)
    end subroutine build_molecular_basis_json
+
+   function shell_contractions(json, element_key, ishell, n_angular) result(n)
+      !! How many contracted functions one shell entry defines
+      !!
+      !! The length of the `coefficients` array, which is the number of
+      !! columns -- one per contracted function sharing this shell's
+      !! exponents. Falls back to the angular momentum count if the key
+      !! cannot be read, which keeps a malformed file behaving as it did
+      !! rather than silently producing no shells at all.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: element_key
+      integer, intent(in) :: ishell, n_angular
+      integer :: n
+
+      logical :: found
+      integer :: n_children
+
+      call json%info("elements."//element_key//".electron_shells("// &
+                     integer_to_key(ishell)//").coefficients", &
+                     found=found, n_children=n_children)
+      if (found .and. n_children > 0) then
+         n = n_children
+      else
+         n = n_angular
+      end if
+   end function shell_contractions
 
    pure subroutine copy_atomic_basis(source, dest)
       !! Deep copy of an atomic basis
