@@ -1,6 +1,8 @@
 target_sources(
-  ${main_lib} PRIVATE mqc_basis_utils.F90 mqc_cgto.f90
-                      mqc_json_basis_reader.f90 mqc_basis_normalization.f90)
+  ${main_lib}
+  PRIVATE mqc_basis_utils.F90 mqc_cgto.f90 mqc_ecp.f90
+          mqc_json_basis_reader.f90 mqc_json_ecp_reader.f90
+          mqc_basis_normalization.f90)
 
 # Where find_basis_file falls back to when neither $MQC_BASIS_PATH nor
 # ./basis_sets has the file -- the tree this build was configured from, which is
