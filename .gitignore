@@ -51,6 +51,21 @@ output_*_fragments.csv
 # Out-of-source build directories
 build*/
 
+# CMake build trees under any name.
+#
+# The rules above match on the directory being called build-something. That is
+# most of them and not all of them: a scratch tree called `tip` or `v1` is
+# invisible to a name-based rule, and `git add -A` in a repository containing
+# one stages tens of thousands of files from _deps/ -- including whole cloned
+# dependencies, which git records as embedded repositories rather than
+# refusing. So match on what a build tree contains instead of what it is
+# called. None of these are ever authored by hand.
+**/CMakeCache.txt
+**/CMakeFiles/
+**/_deps/
+**/cmake_install.cmake
+**/CTestTestfile.cmake
+
 # profiling / scratch
 *.nsys-rep
 *.sqlite
