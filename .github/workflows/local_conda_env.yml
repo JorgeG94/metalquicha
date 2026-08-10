@@ -29,7 +29,7 @@ jobs:
             legacy_mpi: false
             libxc: true
           # The CPU integrals path. Without this nothing here ever compiles
-          # libcint, so the whole libcint_backend/ directory -- the integrals,
+          # libcint, so the whole backends/libcint/ directory -- the integrals,
           # the SCF, the direct Fock build -- is unbuilt in CI and its unit
           # tests do not run. tblite is off so the job is only this.
           - name: "with libcint"
