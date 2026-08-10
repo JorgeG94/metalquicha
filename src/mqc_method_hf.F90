@@ -18,6 +18,7 @@ module mqc_method_hf
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_cuest_bridge, only: run_cuest_scf
+   use mqc_libcint_bridge, only: run_libcint_hf
    implicit none
    private
 
@@ -98,7 +99,19 @@ contains
       settings%use_diis = this%options%use_diis
       settings%diis_size = this%options%diis_size
 
+      ! cuEST when this build has it, because that is the production path and
+      ! the only one with gradients. The CPU backend takes over when it does
+      ! not, which is how a fragmented Hartree-Fock runs on a laptop at all --
+      ! and, when both are built, gives the GPU one something to be compared
+      ! against.
+#ifdef MQC_WITH_CUEST
       call run_cuest_scf(settings, fragment, result, want_gradient)
+#else
+      ! Without cuEST this is the CPU backend's call, real or stubbed. Routing
+      ! a build with neither to the cuEST stub would name only one of the two
+      ! ways to fix it; the libcint stub names both.
+      call run_libcint_hf(settings, fragment, result, want_gradient)
+#endif
    end subroutine hf_run
 
    subroutine hf_calc_gradient(this, fragment, result)
