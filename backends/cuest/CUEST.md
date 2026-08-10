@@ -56,11 +56,17 @@ cmake --build build -j
 
 The cuEST backend is a CMake-only feature. The fpm build (`fpm build`) globs
 `src/` and cannot link the cuEST binary library, so the backend lives in
-`cuest_backend/` outside `src/` where fpm never sees it; fpm builds the CPU/xTB
-path only. The HF and DFT methods fall back to a clear "needs an integral
+`backends/cuest/` outside `src/` where fpm never sees it; fpm builds the CPU/xTB
+path only.
+
+That is now the rule rather than an exception for cuEST: `backends/` holds
+`cuest/`, `hdf5/` and `libcint/`, all out of the glob. Two of them have to be,
+for a second reason -- each pairs a real module with a stub of the same name,
+and fpm has no way to choose between them, so having both under `src/` is a
+hard error whatever CMake is told. The HF and DFT methods fall back to a clear "needs an integral
 backend" error when built without `MQC_WITH_CUEST`.
 
-The Fortran bindings come from the vendored copy under `cuest_backend/bindings/`.
+The Fortran bindings come from the vendored copy under `backends/cuest/bindings/`.
 To pull them from upstream instead:
 
 ```bash
@@ -176,6 +182,21 @@ Water, r(OH) = 0.959 Å, angle 107.3°, def2-universal-JKFIT throughout.
 The cc-pVDZ row differs from the un-fitted reference by 6e-4 Ha, which is the
 expected RI fitting error.
 
+Every row here is density-fitted, because cuEST has no four-index path. The
+comparison to make on the CPU is therefore against the fitted answer too:
+
+```json
+"keywords": { "scf": { "density_fitting": true } }
+```
+
+Without that the libcint backend uses exact integrals and will sit ~1e-4 Ha
+away, which looks like a discrepancy and is not one.
+
+One caveat before treating these as reference values: the geometry is given as
+r(OH) and an angle to four figures, which pins the energy only to about 1e-5 Ha.
+Reproducing a row more tightly than that needs the actual coordinates, and they
+are not recorded here.
+
 def2-SVP sits ~0.066 Ha *above* cc-pVDZ for every method. Both contract to
 `[3s2p1d]`, but oxygen's primitive sets differ — (7s4p1d) vs (9s4p1d) — and the
 total energy is dominated by the 1s core. Applying that single offset reproduces
@@ -280,7 +301,7 @@ overbinding the hydrogen bonds relative to HF is expected GGA behaviour. A water
 ## Architecture
 
 ```
-cuest_backend/                 # kept out of src/ so fpm never builds it
+backends/cuest/                 # kept out of src/ so fpm never builds it
   bindings/                    # generated bindings -- do not hand-edit
     cuest.f90                  #   129 functions, 289 enums, 2 workspace types
     cuest_helpers.f90          #   typed wrappers over the void*+size_t API
