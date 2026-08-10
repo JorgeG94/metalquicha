@@ -480,11 +480,14 @@ contains
          end if
          call logger%info("  Basis set:       "//trim(this%basis_set))
          call logger%info("  Auxiliary basis: "//trim(this%scf%aux_basis_set))
-         if (this%use_spherical) then
-            call logger%info("  Angular form:    spherical (pure)")
-         else
-            call logger%info("  Angular form:    Cartesian")
-         end if
+         ! The angular form is not reported here any more, and deliberately.
+         ! `use_spherical` is the flag cuEST builds its AO shells with, not a
+         ! statement about the basis: the basis file decides, through its
+         ! `function_type` entries, and 6-31G* is Cartesian whatever this says.
+         ! Printing this line beside a Cartesian basis claimed "spherical
+         ! (pure)" for a run that was not, which is the reporting half of the
+         ! bug it sat next to. The SCF prints the form it actually used, along
+         ! with the function count that distinguishes the two.
          if (this%method_type == METHOD_TYPE_DFT) then
             block
                character(len=64) :: grid_line

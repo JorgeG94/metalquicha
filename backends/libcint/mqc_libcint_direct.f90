@@ -34,9 +34,9 @@ module mqc_libcint_direct
    use pic_types, only: dp, int64
    use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t
-   use libcint_fortran, only: libcint_2e_sph, libcint_2e_sph_optimizer, &
-                              libcint_del_optimizer, libcint_cgto_sph
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, &
+                                    two_electron_block, two_electron_optimizer
+   use libcint_fortran, only: libcint_del_optimizer
    implicit none
    private
 
@@ -100,11 +100,12 @@ contains
       bounds = 0.0_dp
 
       do ish = 1, mol%nbas
-         di = libcint_cgto_sph(ish - 1, mol%bas)
+         di = shell_dim(mol%cartesian, ish - 1, mol%bas)
          do jsh = 1, ish
-            dj = libcint_cgto_sph(jsh - 1, mol%bas)
+            dj = shell_dim(mol%cartesian, jsh - 1, mol%bas)
             shls = [ish - 1, jsh - 1, ish - 1, jsh - 1]
-            ret = libcint_2e_sph(buf, shls, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env)
             if (ret == 0) then
                largest = 0.0_dp
             else
@@ -169,16 +170,17 @@ contains
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
-      call libcint_2e_sph_optimizer(opt, mol%atm, mol%natm, mol%bas, mol%nbas, mol%env)
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
+                                  mol%nbas, mol%env)
 
       do s1 = 1, mol%nbas
-         d1 = libcint_cgto_sph(s1 - 1, mol%bas)
+         d1 = shell_dim(mol%cartesian, s1 - 1, mol%bas)
          o1 = mol%shell_offset(s1)
          do s2 = 1, s1
-            d2 = libcint_cgto_sph(s2 - 1, mol%bas)
+            d2 = shell_dim(mol%cartesian, s2 - 1, mol%bas)
             o2 = mol%shell_offset(s2)
             do s3 = 1, s1
-               d3 = libcint_cgto_sph(s3 - 1, mol%bas)
+               d3 = shell_dim(mol%cartesian, s3 - 1, mol%bas)
                o3 = mol%shell_offset(s3)
 
                ! The pair (s3,s4) must not run past (s1,s2), or quartets would
@@ -187,7 +189,7 @@ contains
                if (s3 == s1) s4_max = s2
 
                do s4 = 1, s4_max
-                  d4 = libcint_cgto_sph(s4 - 1, mol%bas)
+                  d4 = shell_dim(mol%cartesian, s4 - 1, mol%bas)
                   o4 = mol%shell_offset(s4)
 
                   stats%quartets_total = stats%quartets_total + 1
@@ -198,8 +200,8 @@ contains
                   end if
 
                   shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
-                  ret = libcint_2e_sph(buf, shls, mol%atm, mol%natm, mol%bas, &
-                                       mol%nbas, mol%env, opt)
+                  ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                           mol%bas, mol%nbas, mol%env, opt)
                   if (ret == 0) then
                      stats%quartets_screened = stats%quartets_screened + 1
                      cycle

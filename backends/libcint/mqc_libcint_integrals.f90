@@ -37,24 +37,45 @@ module mqc_libcint_integrals
                               libcint_3c2e_sph, libcint_2c2e_sph, &
                               libcint_1e_nuc_sph, libcint_2e_sph, &
                               libcint_cgto_sph, libcint_tot_cgto_sph, &
+                              libcint_1e_ovlp_cart, libcint_1e_kin_cart, &
+                              libcint_3c2e_cart, libcint_2c2e_cart, &
+                              libcint_1e_nuc_cart, libcint_2e_cart, &
+                              libcint_cgto_cart, libcint_tot_cgto_cart, &
+                              libcint_2e_sph_optimizer, libcint_2e_cart_optimizer, &
                               libcint_gto_norm, &
                               LIBCINT_ATM_SLOTS, LIBCINT_BAS_SLOTS, &
                               LIBCINT_CHARGE_OF, LIBCINT_PTR_COORD, &
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
                               LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF, &
                               LIBCINT_PTR_ENV_START
+   use, intrinsic :: iso_c_binding, only: c_ptr
    implicit none
    private
 
    public :: libcint_molecule_t
    public :: build_libcint_molecule
    public :: build_df_tensor
+   ! The one place that maps "is this basis Cartesian?" onto libcint's two sets
+   ! of entry points. Exported because the direct Fock build needs the same
+   ! mapping, and two copies of it is two chances to route half the calls.
+   public :: shell_dim
+   public :: two_electron_block
+   public :: two_electron_optimizer
 
    type :: libcint_molecule_t
       !! One molecule, packed the way libcint wants it
       integer :: natm = 0
       integer :: nbas = 0
       integer :: nao = 0
+      logical :: cartesian = .false.
+         !! Whether every integral over this molecule must use libcint's
+         !! Cartesian entry points rather than its spherical ones. Set from the
+         !! basis file's `function_type`, and one value for the whole molecule:
+         !! libcint chooses the form per call, so a d shell cannot be Cartesian
+         !! while an f shell beside it is spherical. It also changes `nao` --
+         !! six functions per d shell instead of five -- so anything sized from
+         !! `nao` follows it automatically, and anything that calls `_sph`
+         !! directly does not.
       integer, allocatable :: atm(:, :)
       integer, allocatable :: bas(:, :)
       real(dp), allocatable :: env(:)
@@ -71,6 +92,103 @@ module mqc_libcint_integrals
    end type libcint_molecule_t
 
 contains
+
+   ! ---------------------------------------------------------------------------
+   ! Convention routing
+   !
+   ! libcint spells the two angular conventions as two families of entry points
+   ! -- cint2e_sph and cint2e_cart, and so on -- with identical signatures. The
+   ! choice is per call, which is why it has to be one choice for a whole
+   ! molecule, and these four functions are the only places the choice is made.
+   ! Everything else asks for "this molecule's" integrals and gets the right
+   ! family.
+   ! ---------------------------------------------------------------------------
+
+   function shell_dim(cartesian, bas_id, bas) result(dim)
+      !! How many functions one shell contributes, in the given convention
+      !!
+      !! Six for a Cartesian d shell against five for a spherical one, and the
+      !! gap widens with l. This is where the basis function count comes from,
+      !! so getting it wrong does not produce a slightly wrong energy -- it
+      !! produces a consistent SCF over the wrong basis.
+      logical, intent(in) :: cartesian
+      integer, intent(in) :: bas_id      !! 0-based, as libcint counts
+      integer, intent(in) :: bas(:, :)
+      integer :: dim
+
+      if (cartesian) then
+         dim = libcint_cgto_cart(bas_id, bas)
+      else
+         dim = libcint_cgto_sph(bas_id, bas)
+      end if
+   end function shell_dim
+
+   function total_shell_dim(cartesian, bas, nbas) result(ntot)
+      !! Total basis functions over all shells, in the given convention
+      logical, intent(in) :: cartesian
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      integer :: ntot
+
+      if (cartesian) then
+         ntot = libcint_tot_cgto_cart(bas, nbas)
+      else
+         ntot = libcint_tot_cgto_sph(bas, nbas)
+      end if
+   end function total_shell_dim
+
+   function two_electron_block(cartesian, buf, shls, atm, natm, bas, nbas, env, opt) result(ret)
+      !! One (ij|kl) shell quartet, in the given convention
+      !!
+      !! `buf` is assumed-shape rather than the assumed-size the libcint
+      !! interface declares. Callers pass a whole contiguous scratch array
+      !! sized for the largest quartet, so the two are interchangeable here,
+      !! and an explicit shape is what the style guide asks for.
+      logical, intent(in) :: cartesian
+      real(dp), intent(out) :: buf(:)
+      integer, intent(in) :: shls(4)
+      integer, intent(in) :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in) :: env(:)
+      type(c_ptr), intent(in), optional :: opt
+      integer :: ret
+
+      if (cartesian) then
+         if (present(opt)) then
+            ret = libcint_2e_cart(buf, shls, atm, natm, bas, nbas, env, opt)
+         else
+            ret = libcint_2e_cart(buf, shls, atm, natm, bas, nbas, env)
+         end if
+      else
+         if (present(opt)) then
+            ret = libcint_2e_sph(buf, shls, atm, natm, bas, nbas, env, opt)
+         else
+            ret = libcint_2e_sph(buf, shls, atm, natm, bas, nbas, env)
+         end if
+      end if
+   end function two_electron_block
+
+   subroutine two_electron_optimizer(cartesian, opt, atm, natm, bas, nbas, env)
+      !! The per-shell-pair precomputation, for the matching convention
+      !!
+      !! The optimizer is not interchangeable between the two families: it
+      !! caches data laid out for the convention it was built for.
+      logical, intent(in) :: cartesian
+      type(c_ptr), intent(inout) :: opt
+      integer, intent(in) :: atm(:, :)
+      integer, intent(in) :: natm
+      integer, intent(in) :: bas(:, :)
+      integer, intent(in) :: nbas
+      real(dp), intent(in) :: env(:)
+
+      if (cartesian) then
+         call libcint_2e_cart_optimizer(opt, atm, natm, bas, nbas, env)
+      else
+         call libcint_2e_sph_optimizer(opt, atm, natm, bas, nbas, env)
+      end if
+   end subroutine two_electron_optimizer
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
                                      basis_name, mol, error)
@@ -127,6 +245,9 @@ contains
       integer :: shell_index
 
       this%natm = size(atomic_numbers)
+      ! What the basis file said, carried through the reader. Every integral
+      ! call below routes on it, and so does nao.
+      this%cartesian = basis%is_cartesian()
       if (basis%nelements /= this%natm) then
          call error%set(ERROR_VALIDATION, "libcint: the basis covers a different "// &
                         "number of atoms than the geometry has")
@@ -199,11 +320,11 @@ contains
       this%shell_offset(1) = 0
       do shell_index = 1, this%nbas
          this%shell_offset(shell_index + 1) = this%shell_offset(shell_index) &
-                                              + libcint_cgto_sph(shell_index - 1, this%bas)
+                                              + shell_dim(this%cartesian, shell_index - 1, this%bas)
       end do
       this%nao = this%shell_offset(this%nbas + 1)
 
-      if (this%nao /= libcint_tot_cgto_sph(this%bas, this%nbas)) then
+      if (this%nao /= total_shell_dim(this%cartesian, this%bas, this%nbas)) then
          call error%set(ERROR_VALIDATION, "libcint: shell offsets disagree with the "// &
                         "basis function count")
       end if
@@ -253,24 +374,38 @@ contains
       allocate (buf(max_block(this)**2))
 
       do ish = 1, this%nbas
-         di = libcint_cgto_sph(ish - 1, this%bas)
+         di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
          do jsh = 1, this%nbas
-            dj = libcint_cgto_sph(jsh - 1, this%bas)
+            dj = shell_dim(this%cartesian, jsh - 1, this%bas)
             jo = this%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
 
-            select case (which)
-            case (1)
-               ret = libcint_1e_ovlp_sph(buf, shls, this%atm, this%natm, &
-                                         this%bas, this%nbas, this%env)
-            case (2)
-               ret = libcint_1e_kin_sph(buf, shls, this%atm, this%natm, &
-                                        this%bas, this%nbas, this%env)
-            case default
-               ret = libcint_1e_nuc_sph(buf, shls, this%atm, this%natm, &
-                                        this%bas, this%nbas, this%env)
-            end select
+            if (this%cartesian) then
+               select case (which)
+               case (1)
+                  ret = libcint_1e_ovlp_cart(buf, shls, this%atm, this%natm, &
+                                             this%bas, this%nbas, this%env)
+               case (2)
+                  ret = libcint_1e_kin_cart(buf, shls, this%atm, this%natm, &
+                                            this%bas, this%nbas, this%env)
+               case default
+                  ret = libcint_1e_nuc_cart(buf, shls, this%atm, this%natm, &
+                                            this%bas, this%nbas, this%env)
+               end select
+            else
+               select case (which)
+               case (1)
+                  ret = libcint_1e_ovlp_sph(buf, shls, this%atm, this%natm, &
+                                            this%bas, this%nbas, this%env)
+               case (2)
+                  ret = libcint_1e_kin_sph(buf, shls, this%atm, this%natm, &
+                                           this%bas, this%nbas, this%env)
+               case default
+                  ret = libcint_1e_nuc_sph(buf, shls, this%atm, this%natm, &
+                                           this%bas, this%nbas, this%env)
+               end select
+            end if
             if (ret == 0) cycle   ! screened away, leave the block zero
 
             ! libcint fills the block in column-major order, which is what
@@ -306,6 +441,20 @@ contains
       real(dp), allocatable :: metric(:, :), vectors(:, :), values(:), half(:, :)
       real(dp), allocatable :: three(:, :)
       integer :: naux, nao, i, j, kept, info
+
+      ! (mu nu | P) has orbital shells on two centres and auxiliary shells on
+      ! the third, in one libcint call -- and that call is spherical or
+      ! Cartesian for all three at once. A Cartesian orbital basis fitted with
+      ! a spherical auxiliary one cannot be expressed, and guessing which side
+      ! to honour would silently fit in a basis neither deck asked for.
+      if (orb%cartesian .neqv. aux%cartesian) then
+         call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
+                        angular_form_name(orb%cartesian)//" and the auxiliary basis is "// &
+                        angular_form_name(aux%cartesian)//". libcint builds all three "// &
+                        "centres of a fitting integral in one form, so the two must "// &
+                        "agree; choose an auxiliary basis of the same kind.")
+         return
+      end if
 
       nao = orb%nao
       naux = aux%nao
@@ -355,13 +504,17 @@ contains
       allocate (buf(max_block(aux)**2))
 
       do ish = 1, aux%nbas
-         di = libcint_cgto_sph(ish - 1, aux%bas)
+         di = shell_dim(aux%cartesian, ish - 1, aux%bas)
          io = aux%shell_offset(ish)
          do jsh = 1, aux%nbas
-            dj = libcint_cgto_sph(jsh - 1, aux%bas)
+            dj = shell_dim(aux%cartesian, jsh - 1, aux%bas)
             jo = aux%shell_offset(jsh)
             shls = [ish - 1, jsh - 1]
-            ret = libcint_2c2e_sph(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+            if (aux%cartesian) then
+               ret = libcint_2c2e_cart(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+            else
+               ret = libcint_2c2e_sph(buf, shls, aux%atm, aux%natm, aux%bas, aux%nbas, aux%env)
+            end if
             if (ret == 0) cycle
             do j = 1, dj
                do i = 1, di
@@ -379,6 +532,10 @@ contains
       !! because libcint addresses all four centres of a 3c2e call by index
       !! into a single table. The fourth index names a dummy s shell with a
       !! zero exponent, which is how libcint spells "only three centres".
+      !!
+      !! One convention runs the whole call, `orb%cartesian`, auxiliary shells
+      !! included. `build_df_tensor` has already refused the case where the two
+      !! bases disagree, so that is not a choice being made here.
       type(libcint_molecule_t), intent(in) :: orb, aux
       real(dp), allocatable, intent(out) :: three(:, :)
 
@@ -424,17 +581,22 @@ contains
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
       do ish = 1, nbas_orb
-         di = libcint_cgto_sph(ish - 1, bas)
+         di = shell_dim(orb%cartesian, ish - 1, bas)
          io = orb%shell_offset(ish)
          do jsh = 1, nbas_orb
-            dj = libcint_cgto_sph(jsh - 1, bas)
+            dj = shell_dim(orb%cartesian, jsh - 1, bas)
             jo = orb%shell_offset(jsh)
             do ksh = 1, nbas_aux
-               dk = libcint_cgto_sph(nbas_orb + ksh - 1, bas)
+               dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
                ko = aux%shell_offset(ksh)
                shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
-               ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
-                                      nbas_orb + nbas_aux + 1, env)
+               if (orb%cartesian) then
+                  ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                          nbas_orb + nbas_aux + 1, env)
+               else
+                  ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                         nbas_orb + nbas_aux + 1, env)
+               end if
                if (ret == 0) cycle
                do k = 1, dk
                   do j = 1, dj
@@ -470,20 +632,20 @@ contains
       allocate (buf(max_block(this)**4))
 
       do ish = 1, this%nbas
-         di = libcint_cgto_sph(ish - 1, this%bas)
+         di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
          do jsh = 1, this%nbas
-            dj = libcint_cgto_sph(jsh - 1, this%bas)
+            dj = shell_dim(this%cartesian, jsh - 1, this%bas)
             jo = this%shell_offset(jsh)
             do ksh = 1, this%nbas
-               dk = libcint_cgto_sph(ksh - 1, this%bas)
+               dk = shell_dim(this%cartesian, ksh - 1, this%bas)
                ko = this%shell_offset(ksh)
                do lsh = 1, this%nbas
-                  dl = libcint_cgto_sph(lsh - 1, this%bas)
+                  dl = shell_dim(this%cartesian, lsh - 1, this%bas)
                   lo = this%shell_offset(lsh)
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
-                  ret = libcint_2e_sph(buf, shls, this%atm, this%natm, &
-                                       this%bas, this%nbas, this%env)
+                  ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
+                                           this%natm, this%bas, this%nbas, this%env)
                   if (ret == 0) cycle
 
                   do l = 1, dl
@@ -520,6 +682,18 @@ contains
       end do
    end function molecule_nuclear_repulsion
 
+   pure function angular_form_name(cartesian) result(name)
+      !! "Cartesian" or "spherical", for an error message to say which is which
+      logical, intent(in) :: cartesian
+      character(len=:), allocatable :: name
+
+      if (cartesian) then
+         name = "Cartesian"
+      else
+         name = "spherical"
+      end if
+   end function angular_form_name
+
    pure function max_block(this) result(n)
       !! Largest number of functions any one shell contributes
       type(libcint_molecule_t), intent(in) :: this
@@ -545,6 +719,7 @@ contains
       this%natm = 0
       this%nbas = 0
       this%nao = 0
+      this%cartesian = .false.
    end subroutine molecule_destroy
 
 end module mqc_libcint_integrals

@@ -97,6 +97,19 @@ contains
          return
       end if
 
+      ! Reported because this is what went unnoticed for as long as it did:
+      ! 6-31G* read as spherical converges just as prettily as 6-31G* read
+      ! Cartesian -- one basis function short and 1.4 mHartree out -- and
+      ! neither the iterations nor the final energy look wrong on their own.
+      ! The count and the angular form together are what name the basis.
+      if (verbose) then
+         if (mol%cartesian) then
+            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (Cartesian, 6d/10f)"
+         else
+            write (*, "(a,i0,a)") "  basis functions: ", n_ao, "  (spherical, 5d/7f)"
+         end if
+      end if
+
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
       if (present(aux)) then

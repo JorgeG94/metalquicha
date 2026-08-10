@@ -19,8 +19,17 @@ module mqc_json_basis_reader
    !! converted before lookup. Exponents and coefficients are stored as
    !! strings to preserve every digit; they are read with list-directed input,
    !! which accepts the `0.1307093214E+03` form BSE emits.
+   !!
+   !! Every shell also carries a `function_type` -- `gto`, `gto_spherical` or
+   !! `gto_cartesian` -- and it is not decoration. 6-31G* specifies Cartesian d
+   !! functions and BSE marks them so; a Cartesian d shell carries six
+   !! functions where a spherical one carries five. Reading one as the other
+   !! computes a different basis under the same name, worth 1.4 mHartree on
+   !! water, with nothing to say it happened. The reader records the convention
+   !! on the basis and the integral layer routes on it.
    use pic_types, only: dp
-   use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type
+   use mqc_cgto, only: cgto_type, atomic_basis_type, molecular_basis_type, &
+                       ANGULAR_FORM_UNSET, ANGULAR_FORM_SPHERICAL, ANGULAR_FORM_CARTESIAN
    use mqc_elements, only: element_symbol_to_number
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE
    use json_module, only: json_file
@@ -58,9 +67,11 @@ contains
       integer, allocatable :: angular_momenta(:)
       integer :: atomic_number, n_shells_json, n_shells_total, n_contract
       integer :: ishell, imom, iprim, n_prim, shell_index, read_status
+      integer :: shell_form
       logical :: found
       real(dp) :: value
       logical :: file_exists
+      logical :: saw_cartesian, saw_spherical
 
       inquire (file=json_path, exist=file_exists)
       if (.not. file_exists) then
@@ -93,11 +104,17 @@ contains
       end if
 
       n_shells_total = 0
+      saw_cartesian = .false.
+      saw_spherical = .false.
       do ishell = 1, n_shells_json
          call shell_angular_momenta(json, element_key, ishell, angular_momenta, found)
          if (.not. found) cycle
          n_shells_total = n_shells_total + shell_contractions(json, element_key, ishell, &
                                                               size(angular_momenta))
+
+         shell_form = shell_angular_form(json, element_key, ishell, angular_momenta)
+         if (shell_form == ANGULAR_FORM_CARTESIAN) saw_cartesian = .true.
+         if (shell_form == ANGULAR_FORM_SPHERICAL) saw_spherical = .true.
       end do
 
       if (n_shells_total == 0) then
@@ -107,8 +124,32 @@ contains
          return
       end if
 
+      ! One element, two conventions. libcint chooses spherical or Cartesian
+      ! per *call*, not per shell, so there is no way to honour both -- and
+      ! silently picking one would be the bug this reader was fixed for, only
+      ! quieter. 6-31G* does this on Sc through Zn, where the d shell is marked
+      ! Cartesian and the f shell spherical.
+      if (saw_cartesian .and. saw_spherical) then
+         call error%set(ERROR_PARSE, "Element "//trim(element_symbol)//" in "// &
+                        trim(json_path)//" mixes Cartesian and spherical shells "// &
+                        "(function_type 'gto_cartesian' on one shell above p and "// &
+                        "'gto_spherical' on another). The integrals are built in one "// &
+                        "form or the other for the whole molecule, so this basis "// &
+                        "cannot be used for this element; choose a set that is "// &
+                        "consistently one or the other.")
+         call json%destroy()
+         return
+      end if
+
       atom_basis%element = trim(adjustl(element_symbol))
       call atom_basis%allocate_shells(n_shells_total)
+      if (saw_cartesian) then
+         atom_basis%angular_form = ANGULAR_FORM_CARTESIAN
+      else if (saw_spherical) then
+         atom_basis%angular_form = ANGULAR_FORM_SPHERICAL
+      else
+         atom_basis%angular_form = ANGULAR_FORM_UNSET
+      end if
 
       ! ---- fill, splitting combined shells ----------------------------------
       shell_index = 0
@@ -188,6 +229,43 @@ contains
       call json%destroy()
    end subroutine read_json_basis_element
 
+   function shell_angular_form(json, element_key, ishell, angular_momenta) result(form)
+      !! What one shell entry's `function_type` says about the angular form
+      !!
+      !! Returns `ANGULAR_FORM_UNSET` for anything at or below p, whatever the
+      !! file calls it. An s shell is one function and a p shell is three in
+      !! both conventions, so those entries carry no information -- and BSE
+      !! labels them the neutral `gto` for exactly that reason. Only d and
+      !! above distinguish 6d from 5d, and only those are evidence.
+      !!
+      !! Anything that is not spelled `gto_cartesian` reads as spherical. That
+      !! is the same default the reader had before it looked at the key at all,
+      !! so an unfamiliar spelling behaves as it always did rather than
+      !! flipping the convention on a typo.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: element_key
+      integer, intent(in) :: ishell
+      integer, intent(in) :: angular_momenta(:)
+      integer :: form
+
+      character(len=:), allocatable :: function_type
+      logical :: found
+
+      form = ANGULAR_FORM_UNSET
+      if (size(angular_momenta) == 0) return
+      if (maxval(angular_momenta) < 2) return
+
+      call json%get("elements."//element_key//".electron_shells("// &
+                    integer_to_key(ishell)//").function_type", function_type, found)
+      if (.not. found) then
+         form = ANGULAR_FORM_SPHERICAL
+      else if (function_type == "gto_cartesian") then
+         form = ANGULAR_FORM_CARTESIAN
+      else
+         form = ANGULAR_FORM_SPHERICAL
+      end if
+   end function shell_angular_form
+
    subroutine shell_angular_momenta(json, element_key, ishell, angular_momenta, found)
       !! Angular momenta carried by one shell entry
       type(json_file), intent(inout) :: json
@@ -214,6 +292,7 @@ contains
       type(atomic_basis_type), allocatable :: unique_bases(:)
       integer, allocatable :: unique_z(:)
       integer :: n_atoms, n_unique, iatom, iunique, match, z
+      integer :: molecule_form
       logical :: is_new
 
       n_atoms = size(element_symbols)
@@ -241,7 +320,29 @@ contains
          end if
       end do
 
+      ! One convention for the molecule, from the atoms that are actually in
+      ! it. Hydrogen in 6-31G* has no shell above s and so votes for nothing;
+      ! oxygen has a Cartesian d and settles it. An element that genuinely
+      ! disagrees with another is refused rather than resolved -- the integrals
+      ! are built one way for every shell at once.
+      molecule_form = ANGULAR_FORM_UNSET
+      do iunique = 1, n_unique
+         if (unique_bases(iunique)%angular_form == ANGULAR_FORM_UNSET) cycle
+         if (molecule_form == ANGULAR_FORM_UNSET) then
+            molecule_form = unique_bases(iunique)%angular_form
+         else if (molecule_form /= unique_bases(iunique)%angular_form) then
+            call error%set(ERROR_PARSE, "the basis in "//trim(json_path)// &
+                           " is Cartesian for some of this molecule's elements and "// &
+                           "spherical for others, and the integrals must be built in "// &
+                           "one form for the whole molecule. Choose a basis that is "// &
+                           "consistently one or the other.")
+            call error%add_context("mqc_json_basis_reader:build_molecular_basis_json")
+            return
+         end if
+      end do
+
       call mol_basis%allocate_elements(n_atoms)
+      mol_basis%angular_form = molecule_form
       do iatom = 1, n_atoms
          z = element_symbol_to_number(trim(adjustl(element_symbols(iatom))))
          match = 1
@@ -293,6 +394,7 @@ contains
       integer :: ishell
 
       dest%element = source%element
+      dest%angular_form = source%angular_form
       call dest%allocate_shells(source%nshells)
       do ishell = 1, source%nshells
          dest%shells(ishell)%ang_mom = source%shells(ishell)%ang_mom
