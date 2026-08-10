@@ -214,9 +214,19 @@ add_library(mqc_shared SHARED
 set_target_properties(
   mqc_shared PROPERTIES OUTPUT_NAME mqc Fortran_MODULE_DIRECTORY
                                         "${CMAKE_BINARY_DIR}/modules_shared")
-target_link_libraries(
-  mqc_shared PRIVATE "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>"
-                     "-Wl,--no-whole-archive" ${main_lib})
+# Forcing the whole archive in is spelled differently per linker: GNU ld (Linux)
+# brackets the archive with --whole-archive/--no-whole-archive, while Apple's ld
+# takes the archive path directly via -force_load and has no closing flag.
+# Linking ${main_lib} again in both cases pulls in its transitive dependencies
+# (BLAS, MPI, tblite, ...); the force-load only covers the archive itself.
+if(APPLE)
+  target_link_libraries(
+    mqc_shared PRIVATE "-Wl,-force_load,$<TARGET_FILE:${main_lib}>" ${main_lib})
+else()
+  target_link_libraries(
+    mqc_shared PRIVATE "-Wl,--whole-archive" "$<TARGET_FILE:${main_lib}>"
+                       "-Wl,--no-whole-archive" ${main_lib})
+endif()
 add_dependencies(mqc_shared ${main_lib})
 
 foreach(tgt ${all_targets})

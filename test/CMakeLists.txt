@@ -80,6 +80,14 @@ addtest(mqc_method_types)
 addtest(mqc_method_placeholders)
 addtest(mqc_work_queue)
 
+# C-API / external-interface layer. These call the bind(C) entry points the way
+# a C or Python caller would; none of them needs MPI or a QC backend.
+addtest(mqc_validate)
+addtest(mqc_capi_system)
+addtest(mqc_capi_fraglist)
+addtest(mqc_capi_session)
+addtest(mqc_capi_run)
+
 if(MQC_ENABLE_TBLITE)
   addtest(mqc_method_api)
   addtest(mqc_hessian_finite_diff)
