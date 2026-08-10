@@ -25,10 +25,6 @@ parsing source. The orbit expansion in `mqc_lebedev.f90` is written from the
 octahedral symmetry, not transliterated -- so the comparison is between two
 independent expansions of the same parameters, and agreement confirms both.
 
-PySCF's own Lebedev code arrived there as Fortran -> C++ -> Python; porting it
-back to Fortran would have been a round trip, and PySCF is Apache-2.0 against
-this project's MIT.
-
 ## Result
 
 32 orders, 46976 points. Coordinates agree with PySCF to 9.0e-16, weights
