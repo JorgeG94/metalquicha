@@ -29,6 +29,7 @@ module mqc_checkpoint
    use mqc_result_types, only: SCF_UNKNOWN
    use pic_logger, only: logger => global_logger
    use pic_io, only: to_char
+   use mqc_hdf5_checkpoint, only: hdf5_checkpoint_t, hdf5_checkpoint_available
    implicit none
    private
 
@@ -47,6 +48,13 @@ module mqc_checkpoint
       integer, allocatable :: terms(:, :)      !! (n_loaded, max_level), sorted
       real(dp), allocatable :: energies(:)
       integer, allocatable :: scf_status(:)
+
+      logical :: use_hdf5 = .false.
+         !! Which backend is in use. Text holds one energy per record and
+         !! needs no dependency, which is right for the screening passes that
+         !! are the common case; HDF5 holds derivatives as well and is chosen
+         !! when the driver needs them, or when the path asks for it by name.
+      type(hdf5_checkpoint_t) :: h5
    contains
       procedure :: open => checkpoint_open
       procedure :: record => checkpoint_record
@@ -83,10 +91,28 @@ contains
       ! rather than half-supported: extending the format to carry gradients
       ! and displacement sets is a real piece of work, and pretending to
       ! support them meanwhile costs a job that thought it was resumable.
-      if (.not. energy_only) then
-         call error%set(ERROR_VALIDATION, "checkpointing only supports energy runs; "// &
-                        "this driver also needs derivatives, which the file does not "// &
-                        "carry. Remove system.checkpoint, or run the energy first.")
+      ! The backend is chosen, not configured. A run needing derivatives has
+      ! to have HDF5 because the text format holds one energy per record; an
+      ! energy-only run gets text because it is crash-proof line by line and
+      ! costs no dependency. A caller can still ask for HDF5 by naming the
+      ! file .h5, which is what a screening pass wants when it is large.
+      this%use_hdf5 = (.not. energy_only) .or. ends_with(this%path, ".h5") &
+                      .or. ends_with(this%path, ".hdf5")
+
+      if (this%use_hdf5 .and. .not. hdf5_checkpoint_available()) then
+         call error%set(ERROR_VALIDATION, "this run needs an HDF5 checkpoint -- a "// &
+                        "derivative run, or a .h5 path -- and this build has none. "// &
+                        "Configure with -DMQC_ENABLE_HDF5=ON, or run the energy "// &
+                        "first and checkpoint that.")
+         return
+      end if
+
+      if (this%use_hdf5) then
+         call this%h5%open(this%path, fingerprint, max_level, error)
+         if (error%has_error()) return
+         this%active = .true.
+         call logger%info("Checkpoint: HDF5 at "//this%path//" ("// &
+                          to_char(this%h5%n_loaded)//" fragment(s) already done)")
          return
       end if
 
@@ -200,22 +226,40 @@ contains
       capacity = 2*capacity
    end subroutine grow
 
-   subroutine checkpoint_record(this, term, energy, scf_status)
+   subroutine checkpoint_record(this, term, energy, scf_status, n_atoms, gradient, hessian)
       !! Append one finished fragment, and make it survive a kill
       !!
       !! Flushed every time. A buffered checkpoint is a checkpoint that loses
       !! whatever was in the buffer, which is precisely the work a resume most
       !! wants back.
-      class(checkpoint_t), intent(in) :: this
-         !! Only the unit is touched, so a coordinator holding the context by
-         !! value can still record.
+      class(checkpoint_t), intent(inout) :: this
       integer, intent(in) :: term(:)
       real(dp), intent(in) :: energy
       integer, intent(in) :: scf_status
+      integer, intent(in), optional :: n_atoms
+         !! Atoms in the fragment, caps included. Needed to give a stored
+         !! gradient its shape back; ignored by the text backend.
+      real(dp), intent(in), optional :: gradient(:, :)
+      real(dp), intent(in), optional :: hessian(:, :)
 
-      integer :: level, islot
+      integer :: level, islot, natoms_local
 
       if (.not. this%active) return
+
+      if (this%use_hdf5) then
+         natoms_local = 0
+         if (present(n_atoms)) natoms_local = n_atoms
+         if (present(gradient) .and. present(hessian)) then
+            call this%h5%record(term, energy, scf_status, natoms_local, gradient, hessian)
+         else if (present(gradient)) then
+            call this%h5%record(term, energy, scf_status, natoms_local, gradient=gradient)
+         else if (present(hessian)) then
+            call this%h5%record(term, energy, scf_status, natoms_local, hessian=hessian)
+         else
+            call this%h5%record(term, energy, scf_status, natoms_local)
+         end if
+         return
+      end if
       level = count(term > 0)
       write (this%unit, "(i0,*(1x,i0))", advance="no") level, &
          (term(islot), islot=1, this%max_level)
@@ -223,24 +267,44 @@ contains
       flush (this%unit)
    end subroutine checkpoint_record
 
-   subroutine checkpoint_lookup(this, term, found, energy, scf_status)
+   subroutine checkpoint_lookup(this, term, found, energy, scf_status, n_atoms, gradient, hessian)
       !! Is this term already done, and with what energy
       !!
       !! Bisection over the sorted load rather than a scan: a resume asks this
       !! once per term, and at the fragment counts this exists for, linear
       !! search would cost more than recomputing everything.
-      class(checkpoint_t), intent(in) :: this
+      class(checkpoint_t), intent(inout) :: this
       integer, intent(in) :: term(:)
       logical, intent(out) :: found
       real(dp), intent(out) :: energy
       integer, intent(out) :: scf_status
+      integer, intent(out), optional :: n_atoms
+      real(dp), allocatable, intent(out), optional :: gradient(:, :)
+      real(dp), allocatable, intent(out), optional :: hessian(:, :)
 
       integer(int64) :: lo, hi, mid
-      integer :: order
+      integer :: order, natoms_local
 
       found = .false.
       energy = 0.0_dp
       scf_status = SCF_UNKNOWN
+      if (present(n_atoms)) n_atoms = 0
+
+      if (this%use_hdf5) then
+         if (present(gradient) .and. present(hessian)) then
+            call this%h5%lookup(term, found, energy, scf_status, natoms_local, &
+                                gradient=gradient, hessian=hessian)
+         else if (present(gradient)) then
+            call this%h5%lookup(term, found, energy, scf_status, natoms_local, gradient=gradient)
+         else if (present(hessian)) then
+            call this%h5%lookup(term, found, energy, scf_status, natoms_local, hessian=hessian)
+         else
+            call this%h5%lookup(term, found, energy, scf_status, natoms_local)
+         end if
+         if (present(n_atoms)) n_atoms = natoms_local
+         return
+      end if
+
       if (this%n_loaded <= 0) return
 
       lo = 1
@@ -261,6 +325,36 @@ contains
          end if
       end do
    end subroutine checkpoint_lookup
+
+   pure function ends_with(text, suffix) result(matches)
+      !! Case-insensitive suffix test, for choosing a backend by filename
+      character(len=*), intent(in) :: text, suffix
+      logical :: matches
+
+      integer :: n, m
+
+      n = len_trim(text)
+      m = len_trim(suffix)
+      matches = .false.
+      if (m > n) return
+      matches = (lower(text(n - m + 1:n)) == lower(suffix))
+   end function ends_with
+
+   pure function lower(text) result(out)
+      character(len=*), intent(in) :: text
+      character(len=len(text)) :: out
+
+      integer :: i, code
+
+      do i = 1, len(text)
+         code = iachar(text(i:i))
+         if (code >= iachar("A") .and. code <= iachar("Z")) then
+            out(i:i) = achar(code + 32)
+         else
+            out(i:i) = text(i:i)
+         end if
+      end do
+   end function lower
 
    pure function compare(a, b, n) result(order)
       !! Lexicographic order on two zero-padded monomer rows
@@ -319,7 +413,11 @@ contains
       !! Close the file. Loaded entries stay readable.
       class(checkpoint_t), intent(inout) :: this
 
-      if (this%active .and. this%unit >= 0) close (this%unit)
+      if (this%use_hdf5) then
+         call this%h5%close()
+      else if (this%active .and. this%unit >= 0) then
+         close (this%unit)
+      end if
       this%active = .false.
       this%unit = -1
    end subroutine checkpoint_close

@@ -967,6 +967,12 @@ Covers the complete periodic table (elements 1-118)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/ends_with.html'>ends_with</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
+                 <td>Function</td>
+                 <td><p>Case-insensitive suffix test, for choosing a backend by filename</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/ends_with~2.html'>ends_with</a></td>
                  <td><a href='../module/mqc_io_helpers.html'>mqc_io_helpers</a></td>
                  <td>Function</td>
                  <td><p>Check if string ends with suffix</p></td>
@@ -1430,16 +1436,40 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><p>Grow PIE term storage arrays when capacity is exceeded.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td><a href='../proc/h5ck_close.html'>h5ck_close</a></td>
+                 <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../proc/h5ck_lookup.html'>h5ck_lookup</a></td>
+                 <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/h5ck_open.html'>h5ck_open</a></td>
+                 <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/h5ck_record.html'>h5ck_record</a></td>
+                 <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests.html'>handle_group_node_requests</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending node coordinator request for a group shard, if any.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_group_node_requests~2.html'>handle_group_node_requests</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_group_results.html'>handle_group_results</a></td>
@@ -1449,27 +1479,27 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_requests_group.html'>handle_local_worker_requests_group</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Handle a single pending local worker request for a group shard, if any.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_requests_group~2.html'>handle_local_worker_requests_group</a></td>
                  <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
                  <td>Subroutine</td>
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../proc/handle_local_worker_results.html'>handle_local_worker_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from local workers and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_local_worker_results~2.html'>handle_local_worker_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_local_worker_results_to_batch.html'>handle_local_worker_results_to_batch</a></td>
@@ -1479,15 +1509,15 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results.html'>handle_node_results</a></td>
-                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
                  <td><a href='../module/mpi_fragment_work_smod.html'>mpi_fragment_work_smod</a></td>
                  <td>Subroutine</td>
                  <td><p>Drain results from remote node coordinators and update tracking state.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/handle_node_results~2.html'>handle_node_results</a></td>
+                 <td><a href='../module/mqc_gmbe_fragment_distribution_scheme.html'>mqc_gmbe_fragment_distribution_scheme</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/handle_node_results_to_batch.html'>handle_node_results_to_batch</a></td>
@@ -1548,6 +1578,12 @@ Bond connectivity is accessed via sys_geom%bonds</p></td>
                  <td><a href='../module/mqc_fingerprint.html'>mqc_fingerprint</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hdf5_checkpoint_available.html'>hdf5_checkpoint_available</a></td>
+                 <td><a href='../module/mqc_hdf5_checkpoint.html'>mqc_hdf5_checkpoint</a></td>
+                 <td>Function</td>
+                 <td><p>Whether this build can write HDF5 checkpoints</p></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/hessian_coordinator.html'>hessian_coordinator</a></td>
@@ -1636,15 +1672,15 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/integer_to_key.html'>integer_to_key</a></td>
-                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
-                 <td>Function</td>
-                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
                  <td><a href='../module/mqc_json_ecp_reader.html'>mqc_json_ecp_reader</a></td>
                  <td>Function</td>
                  <td><p>An integer as the string BSE keys its elements by</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/integer_to_key~2.html'>integer_to_key</a></td>
+                 <td><a href='../module/mqc_json_basis_reader.html'>mqc_json_basis_reader</a></td>
+                 <td>Function</td>
+                 <td><p>Atomic number as the string BSE keys its elements by</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/intersect_atom_lists.html'>intersect_atom_lists</a></td>
@@ -1697,6 +1733,12 @@ Handles fragment allocation, size checking, and overlap validation</p></td>
 			   <tr>
                  <td><a href='../proc/logger_keys.html'>logger_keys</a></td>
                  <td><a href='../module/mqc_json_schema.html'>mqc_json_schema</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/lower.html'>lower</a></td>
+                 <td><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></td>
                  <td>Function</td>
                  <td></td>
                </tr>
@@ -2961,7 +3003,7 @@ This is needed when master rank updates coordinates for optimization/dynamics</p
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-10 05:07 +0000             </p>
+ on 2026-08-10 05:57 +0000             </p>
           </div>
         </div>
         <br>

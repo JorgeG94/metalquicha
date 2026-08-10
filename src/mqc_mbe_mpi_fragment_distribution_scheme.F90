@@ -385,7 +385,7 @@ contains
       !! Bond connectivity is accessed via ctx%sys_geom%bonds
       use mqc_json_output_types, only: json_output_data_t
       use mqc_many_body_expansion, only: mbe_context_t
-      class(*), intent(in) :: ctx
+      class(*), intent(inout) :: ctx
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       ! Cast to mbe_context_t via select type
@@ -402,7 +402,9 @@ contains
       !! Internal implementation of global_coordinator with typed context
       use mqc_json_output_types, only: json_output_data_t
       use mqc_many_body_expansion, only: mbe_context_t
-      type(mbe_context_t), intent(in) :: ctx
+      type(mbe_context_t), intent(inout) :: ctx
+         !! `inout` for the checkpoint alone: recording advances its record
+         !! count, so it is state rather than a side effect on a file.
       type(json_output_data_t), intent(out), optional :: json_data  !! JSON output data
 
       type :: group_shard_t
@@ -450,6 +452,8 @@ contains
       logical :: reuse_found
       real(dp) :: reuse_energy
       integer :: reuse_status
+      integer :: reuse_atoms
+      real(dp), allocatable :: reuse_gradient(:, :), reuse_hessian(:, :)
       type(group_shard_t), allocatable :: group_shards(:)
 
       ! MPI request handles for non-blocking operations
@@ -519,11 +523,21 @@ contains
       if (ctx%checkpoint%active .and. total_tasks > 0) then
          do task_idx = 1_int64, total_tasks
             call ctx%checkpoint%lookup(task_rows(task_idx, 1:ctx%max_level), &
-                                       reuse_found, reuse_energy, reuse_status)
+                                       reuse_found, reuse_energy, reuse_status, &
+                                       n_atoms=reuse_atoms, gradient=reuse_gradient, &
+                                       hessian=reuse_hessian)
             if (.not. reuse_found) cycle
             results(task_idx)%energy%scf = reuse_energy
             results(task_idx)%has_energy = .true.
             results(task_idx)%scf_status = reuse_status
+            if (allocated(reuse_gradient)) then
+               call move_alloc(reuse_gradient, results(task_idx)%gradient)
+               results(task_idx)%has_gradient = .true.
+            end if
+            if (allocated(reuse_hessian)) then
+               call move_alloc(reuse_hessian, results(task_idx)%hessian)
+               results(task_idx)%has_hessian = .true.
+            end if
             task_done(task_idx) = .true.
             n_reused = n_reused + 1_int64
          end do
@@ -816,21 +830,31 @@ contains
       !! derivatives are stored the mapping stops being one-to-one and this
       !! needs the fragment index rather than the task index.
       use mqc_many_body_expansion, only: mbe_context_t
-      type(mbe_context_t), intent(in) :: ctx
+      type(mbe_context_t), intent(inout) :: ctx
       integer(int64), intent(in) :: task_idx
       type(calculation_result_t), intent(in) :: result
 
       if (.not. ctx%checkpoint%active) return
       if (.not. allocated(ctx%polymers)) return
       if (task_idx < 1_int64 .or. task_idx > size(ctx%polymers, 1, kind=int64)) return
-      call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
-                                 result%scf_status)
+      if (result%has_gradient .and. result%has_hessian) then
+         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+                                    result%scf_status, size(result%gradient, 2), &
+                                    result%gradient, result%hessian)
+      else if (result%has_gradient) then
+         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+                                    result%scf_status, size(result%gradient, 2), &
+                                    gradient=result%gradient)
+      else
+         call ctx%checkpoint%record(ctx%polymers(task_idx, :), result%energy%total(), &
+                                    result%scf_status)
+      end if
    end subroutine record_task
 
    subroutine handle_local_worker_results(ctx, worker_fragment_map, results, results_received, total_items, coord_timer)
       !! Drain results from local workers and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
-      type(mbe_context_t), intent(in) :: ctx
+      type(mbe_context_t), intent(inout) :: ctx
       integer(int64), intent(inout) :: worker_fragment_map(:)
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
@@ -882,7 +906,7 @@ contains
    subroutine handle_node_results(ctx, results, results_received, total_items, coord_timer)
       !! Drain results from remote node coordinators and update tracking state.
       use mqc_many_body_expansion, only: mbe_context_t
-      type(mbe_context_t), intent(in) :: ctx
+      type(mbe_context_t), intent(inout) :: ctx
       type(calculation_result_t), intent(inout) :: results(:)
       integer(int64), intent(inout) :: results_received
       integer(int64), intent(in) :: total_items
