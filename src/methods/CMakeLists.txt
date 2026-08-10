@@ -10,7 +10,9 @@ target_sources(
           mqc_cuest_iface.f90
           mqc_diis.f90
           mqc_lebedev_data.f90
-          mqc_lebedev.f90)
+          mqc_lebedev.f90
+          mqc_dft_radial_data.f90
+          mqc_dft_radial.f90)
 
 # The cuEST bridge has two forms. The real one, in cuest_backend/, is compiled
 # only with the backend; the stub here stands in otherwise, so the method files
