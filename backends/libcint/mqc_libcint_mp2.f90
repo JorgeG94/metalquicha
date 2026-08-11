@@ -34,7 +34,7 @@ module mqc_libcint_mp2
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_tensor
    implicit none
    private
 
@@ -169,10 +169,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: n_frozen
 
-      real(dp), allocatable :: b(:, :), bia(:, :, :), g(:, :)
-      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bp(:, :), half(:, :)
+      real(dp), allocatable :: bia(:, :, :), g(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       integer :: n_ao, n_mo, n_o, n_v, n_aux, frozen
-      integer :: i, j, a, bb, p_index
+      integer :: i, j, a, bb
       real(dp) :: iajb, ibja, denom, e_ss, e_os
 
       n_ao = mol%nao
@@ -193,32 +193,18 @@ contains
          return
       end if
 
-      call build_df_tensor(mol, aux, b, error)
-      if (error%has_error()) return
-      n_aux = size(b, 2)
-
       allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
       c_occ = coeff(:, frozen + 1:n_occ)
       c_vir = coeff(:, n_occ + 1:n_mo)
 
-      ! B^P_ia, laid out so that one occupied orbital's block is contiguous:
-      ! the energy step wants (n_v, n_aux) slices to hand straight to a gemm.
-      allocate (bia(n_v, n_aux, n_o))
-      allocate (bp(n_ao, n_ao), half(n_o, n_ao))
-      block
-         real(dp), allocatable :: full(:, :)
-         allocate (full(n_o, n_v))
-         do p_index = 1, n_aux
-            bp = reshape(b(:, p_index), [n_ao, n_ao])
-            call pic_gemm(c_occ, bp, half, transa="T")
-            call pic_gemm(half, c_vir, full)
-            do i = 1, n_o
-               bia(:, p_index, i) = full(i, :)
-            end do
-         end do
-         deallocate (full)
-      end block
-      deallocate (bp, half, b, c_occ, c_vir)
+      ! Transformed before it is fitted, which is where the saving is -- see
+      ! `build_df_mo_tensor`. Fitting the whole AO pair space first and reading
+      ! the occupied-virtual corner out of it costs the same answer several
+      ! times over.
+      call build_df_mo_tensor(mol, aux, c_occ, c_vir, bia, error)
+      deallocate (c_occ, c_vir)
+      if (error%has_error()) return
+      n_aux = size(bia, 2)
 
       ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
       ! g(a,b) = sum_P B^P_ia B^P_jb, which is (ia|jb), and g(b,a) is (ib|ja).
