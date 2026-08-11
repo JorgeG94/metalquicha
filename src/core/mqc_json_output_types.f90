@@ -49,6 +49,8 @@ module mqc_json_output_types
       real(dp), allocatable :: delta_energies(:)      !! MBE delta corrections
       real(dp), allocatable :: sum_by_level(:)        !! Energy sum per level
       real(dp), allocatable :: fragment_distances(:)  !! Per-fragment min distances (Angstrom)
+      integer, allocatable :: fragment_charges(:)         !! Per-fragment total charge
+      integer, allocatable :: fragment_multiplicities(:)  !! Per-fragment spin multiplicity
       real(dp) :: homo = 0.0_dp          !! Whole-system HOMO, unfragmented runs only
       real(dp) :: lumo = 0.0_dp          !! Whole-system LUMO, unfragmented runs only
       logical :: has_orbitals = .false.
@@ -109,6 +111,8 @@ contains
       if (allocated(this%delta_energies)) deallocate (this%delta_energies)
       if (allocated(this%sum_by_level)) deallocate (this%sum_by_level)
       if (allocated(this%fragment_distances)) deallocate (this%fragment_distances)
+      if (allocated(this%fragment_charges)) deallocate (this%fragment_charges)
+      if (allocated(this%fragment_multiplicities)) deallocate (this%fragment_multiplicities)
 
       ! GMBE PIE data
       if (allocated(this%pie_atom_sets)) deallocate (this%pie_atom_sets)

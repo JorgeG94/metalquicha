@@ -116,7 +116,13 @@ contains
          call logger%info("============================================")
          call logger%info("Loaded geometry:")
          call logger%info("  Total monomers: "//to_char(sys_geom%n_monomers))
-         call logger%info("  Atoms per monomer: "//to_char(sys_geom%atoms_per_monomer))
+         ! Zero is the "variable-sized fragments" sentinel, not a count -- say so
+         ! rather than printing "0 atoms per monomer", which reads as nonsense.
+         if (sys_geom%atoms_per_monomer > 0) then
+            call logger%info("  Atoms per monomer: "//to_char(sys_geom%atoms_per_monomer))
+         else
+            call logger%info("  Atoms per monomer: variable")
+         end if
          call logger%info("  Fragment level: "//to_char(max_level))
          call logger%info("  Total atoms: "//to_char(sys_geom%total_atoms))
          call logger%info("============================================")
@@ -561,6 +567,10 @@ contains
             call expansion%init(config%method_config, config%calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
+               ! source=sys_geom above already copies its bonds when the caller
+               ! embeds them there (the C API does), so replace rather than
+               ! allocate -- allocating an allocated component aborts.
+               if (allocated(expansion%sys_geom%bonds)) deallocate (expansion%sys_geom%bonds)
                allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             expansion%n_pie_terms = n_pie_terms
@@ -584,6 +594,10 @@ contains
             call expansion%init(config%method_config, config%calc_type)
             allocate (expansion%sys_geom, source=sys_geom)
             if (present(bonds)) then
+               ! source=sys_geom above already copies its bonds when the caller
+               ! embeds them there (the C API does), so replace rather than
+               ! allocate -- allocating an allocated component aborts.
+               if (allocated(expansion%sys_geom%bonds)) deallocate (expansion%sys_geom%bonds)
                allocate (expansion%sys_geom%bonds, source=bonds)
             end if
             expansion%total_fragments = total_fragments

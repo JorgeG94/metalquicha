@@ -15,7 +15,8 @@ module mqc_mbe
                            TAG_WORKER_SCALAR_RESULT, &
                            TAG_NODE_REQUEST, TAG_NODE_FRAGMENT, TAG_NODE_FINISH, &
                            TAG_NODE_SCALAR_RESULT
-   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, to_angstrom
+   use mqc_physical_fragment, only: system_geometry_t, physical_fragment_t, build_fragment_from_indices, &
+                                    fragment_charge_multiplicity, to_angstrom
    use mqc_frag_utils, only: get_next_combination, fragment_lookup_t
    use mqc_vibrational_analysis, only: compute_vibrational_analysis, print_vibrational_analysis
    use mqc_program_limits, only: MAX_MBE_LEVEL
@@ -845,9 +846,17 @@ contains
          allocate (json_data%fragment_homo(fragment_count))
          allocate (json_data%fragment_lumo(fragment_count))
          allocate (json_data%fragment_has_orbitals(fragment_count))
+         allocate (json_data%fragment_charges(fragment_count))
+         allocate (json_data%fragment_multiplicities(fragment_count))
          do i = 1_int64, fragment_count
             json_data%fragment_distances(i) = results(i)%distance
             json_data%fragment_scf_status(i) = results(i)%scf_status
+            ! Same rule the fragment was built and run with, from the same
+            ! helper, so the table cannot disagree with what the SCF saw.
+            call fragment_charge_multiplicity(sys_geom, &
+                                              pack(polymers(i, 1:max_level), polymers(i, 1:max_level) > 0), &
+                                              json_data%fragment_charges(i), &
+                                              json_data%fragment_multiplicities(i))
             ! Zero when the method did not report a pair, which the table
             ! writes as a blank rather than as a gap of zero.
             json_data%fragment_homo(i) = 0.0_dp
