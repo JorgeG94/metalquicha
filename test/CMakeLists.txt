@@ -76,6 +76,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_uhf)
   target_link_libraries(test_mqc_libcint_uhf PRIVATE cint_fortran cint)
 
+  # The free-atom initial guesses. Chiefly that every guess reaches the same
+  # energy, and that SAD is spherically symmetric where SAC is not -- without
+  # which the two would be one guess under two names.
+  addtest(mqc_libcint_guess)
+  target_link_libraries(test_mqc_libcint_guess PRIVATE cint_fortran cint)
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_libcint_mp2)
