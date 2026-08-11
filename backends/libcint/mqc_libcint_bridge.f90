@@ -97,9 +97,10 @@ contains
       ! a charged or open-shell fragment reads identically to a neutral one
       ! without this, which is exactly the case a fragmented run most needs to
       ! see. Same integers the breakdown CSV carries.
-      if (settings%verbose) &
+      if (settings%verbose) then
          write (*, "(a,i0,a,i0,a,i0)") "  charge ", fragment%charge, &
-         ", multiplicity ", fragment%multiplicity, ", electrons ", fragment%nelec
+            ", multiplicity ", fragment%multiplicity, ", electrons ", fragment%nelec
+      end if
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
