@@ -542,8 +542,8 @@ contains
       type(error_t), intent(inout) :: error
 
       real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
-      real(dp), allocatable :: vectors(:, :), values(:)
-      integer :: naux, i, j, kept, info
+      real(dp), allocatable :: vectors(:, :), values(:), scaled(:, :)
+      integer :: naux, i, kept, info
 
       naux = size(metric, 1)
       allocate (vectors(naux, naux), values(naux))
@@ -560,14 +560,23 @@ contains
          return
       end if
 
-      allocate (half(naux, naux))
-      half = 0.0_dp
+      ! U s^(-1/2) U^T as one gemm rather than an outer-product loop. The loop
+      ! this replaces was naux^2 strided vector updates -- the same arithmetic,
+      ! but memory-bound and invisible to BLAS, and it showed up as the largest
+      ! non-library cost in a profile of RI-MP2. Dropped modes are zeroed in the
+      ! scaled copy, which is how they stay out of the product.
+      allocate (scaled(naux, naux))
       do i = 1, naux
-         if (values(i) <= NULL_THRESHOLD) cycle
-         do j = 1, naux
-            half(:, j) = half(:, j) + vectors(:, i)*vectors(j, i)/sqrt(values(i))
-         end do
+         if (values(i) > NULL_THRESHOLD) then
+            scaled(:, i) = vectors(:, i)/sqrt(values(i))
+         else
+            scaled(:, i) = 0.0_dp
+         end if
       end do
+
+      allocate (half(naux, naux))
+      call pic_gemm(scaled, vectors, half, transb="T")
+      deallocate (scaled)
    end subroutine metric_inverse_sqrt
 
    subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error)
