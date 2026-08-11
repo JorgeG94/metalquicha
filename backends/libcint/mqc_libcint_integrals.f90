@@ -834,46 +834,73 @@ contains
    subroutine molecule_eris(this, eri)
       !! Every two-electron integral, in core, as (ij|kl)
       !!
-      !! Stored as a full n^4 array with no permutational symmetry exploited.
-      !! For a reference implementation that is the right trade: the eightfold
-      !! symmetry saves memory and costs an index map, and an index map is
-      !! exactly the sort of thing that would need its own validation.
+      !! Stored as a full n^4 array. The eightfold symmetry decides which
+      !! integrals to *evaluate*, not how they are stored -- the array stays
+      !! dense, so every consumer indexes it directly and needs no index map.
+      !! That keeps what made this readable as a reference while removing the
+      !! eight times too many calls into libcint that filling it naively cost.
+      !!
+      !! Scattering all eight positions is safe here precisely because this
+      !! assigns rather than accumulates: when shells coincide some permutations
+      !! name the same element, and writing the same value twice is harmless. An
+      !! accumulating version would have to know which had collapsed, which is
+      !! the bookkeeping this routine was written to avoid.
       class(libcint_molecule_t), intent(in) :: this
       real(dp), allocatable, intent(out) :: eri(:, :, :, :)
 
       real(dp), allocatable :: buf(:)
-      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
+      integer :: p, q, r, t
+      real(dp) :: value
+      type(c_ptr) :: opt
 
       allocate (eri(this%nao, this%nao, this%nao, this%nao))
       eri = 0.0_dp
-      ! Four shells, so the fourth power. Same reasoning as the pair above.
       allocate (buf(max_block(this)**4))
+
+      opt = c_null_ptr
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
+                                  this%nbas, this%env)
 
       do ish = 1, this%nbas
          di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
-         do jsh = 1, this%nbas
+         do jsh = 1, ish
             dj = shell_dim(this%cartesian, jsh - 1, this%bas)
             jo = this%shell_offset(jsh)
-            do ksh = 1, this%nbas
+            do ksh = 1, ish
                dk = shell_dim(this%cartesian, ksh - 1, this%bas)
                ko = this%shell_offset(ksh)
-               do lsh = 1, this%nbas
+               lsh_max = ksh
+               if (ksh == ish) lsh_max = jsh
+               do lsh = 1, lsh_max
                   dl = shell_dim(this%cartesian, lsh - 1, this%bas)
                   lo = this%shell_offset(lsh)
                   shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
                   ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
-                                           this%natm, this%bas, this%nbas, this%env)
+                                           this%natm, this%bas, this%nbas, this%env, opt)
                   if (ret == 0) cycle
 
                   do l = 1, dl
+                     t = lo + l
                      do k = 1, dk
+                        r = ko + k
                         do j = 1, dj
+                           q = jo + j
                            do i = 1, di
+                              p = io + i
                               idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
-                              eri(io + i, jo + j, ko + k, lo + l) = buf(idx)
+                              value = buf(idx)
+                              eri(p, q, r, t) = value
+                              eri(q, p, r, t) = value
+                              eri(p, q, t, r) = value
+                              eri(q, p, t, r) = value
+                              eri(r, t, p, q) = value
+                              eri(t, r, p, q) = value
+                              eri(r, t, q, p) = value
+                              eri(t, r, q, p) = value
                            end do
                         end do
                      end do
@@ -882,6 +909,8 @@ contains
             end do
          end do
       end do
+
+      call libcint_del_optimizer(opt)
       deallocate (buf)
    end subroutine molecule_eris
 

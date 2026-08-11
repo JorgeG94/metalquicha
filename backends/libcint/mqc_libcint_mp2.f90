@@ -271,10 +271,13 @@ contains
       c_occ = coeff(:, frozen + 1:n_occ)
       c_vir = coeff(:, n_occ + 1:n_mo)
 
-      ! Quarter 1: (mu nu|la si) -> (i nu|la si). One gemm over the whole
-      ! tensor, mu contracted against the occupied block.
-      allocate (q1(n_o, n_ao*n_ao*n_ao))
-      call pic_gemm(c_occ, reshape(eri, [n_ao, n_ao*n_ao*n_ao]), q1, transa="T")
+      ! Quarter 1: (mu nu|la si) -> (nu la si, i), mu contracted against the
+      ! occupied block. Held with the occupied index *last*, so that the next
+      ! quarter reads one occupied orbital's block contiguously. The obvious
+      ! (i, nu la si) layout makes that read a strided gather of nao^3 elements
+      ! per orbital, which costs more than the gemm it feeds.
+      allocate (q1(n_ao*n_ao*n_ao, n_o))
+      call pic_gemm(reshape(eri, [n_ao, n_ao*n_ao*n_ao]), c_occ, q1, transa="T")
 
       ! Quarter 2: (i nu|la si) -> (i a|la si). nu has to lead, so the i index
       ! is walked and each slice transposed into place. n_o gemms rather than
@@ -285,7 +288,7 @@ contains
          real(dp), allocatable :: slice(:, :)
          allocate (slice(n_v, n_ao*n_ao))
          do i = 1, n_o
-            work = reshape(q1(i, :), [n_ao, n_ao*n_ao])
+            work = reshape(q1(:, i), [n_ao, n_ao*n_ao])
             call pic_gemm(c_vir, work, slice, transa="T")
             do a = 1, n_v
                q2((a - 1)*n_o + i, :) = slice(a, :)
