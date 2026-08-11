@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for modules and submodules.">25 statements</a>
+                 title=" 0.2% of total for modules and submodules.">30 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -776,7 +776,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-allow_crap_scf~5"></span>
+              <span class="anchor" id="variable-allow_crap_scf~3"></span>
               logical,
             </td>
               <td>public</td>
@@ -795,7 +795,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-angular_points~3"></span>
+              <span class="anchor" id="variable-angular_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -812,7 +812,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-aux_basis_set~5"></span>
+              <span class="anchor" id="variable-aux_basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -829,7 +829,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-basis_set~5"></span>
+              <span class="anchor" id="variable-basis_set"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -846,7 +846,7 @@ must not have two behaviours depending on which backend ran it.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_fitting~3"></span>
+              <span class="anchor" id="variable-density_fitting"></span>
               logical,
             </td>
               <td>public</td>
@@ -858,13 +858,12 @@ must not have two behaviours depending on which backend ran it.</p>
 <td> =</td>
                 <td>.false.</td>
             <td>
-<p>Read by the CPU backend only; cuEST always fits.
-Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
+
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-density_tol~3"></span>
+              <span class="anchor" id="variable-density_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -881,7 +880,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-device_rank~4"></span>
+              <span class="anchor" id="variable-device_rank"></span>
               integer,
             </td>
               <td>public</td>
@@ -898,7 +897,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-diis_size~5"></span>
+              <span class="anchor" id="variable-diis_size"></span>
               integer,
             </td>
               <td>public</td>
@@ -915,7 +914,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energy_tol~3"></span>
+              <span class="anchor" id="variable-energy_tol"></span>
               real(kind=dp),
             </td>
               <td>public</td>
@@ -932,7 +931,24 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-functional~3"></span>
+              <span class="anchor" id="variable-freeze_core"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>freeze_core</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-functional"></span>
               character(len=32),
             </td>
               <td>public</td>
@@ -949,7 +965,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-guess~4"></span>
+              <span class="anchor" id="variable-guess"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -966,7 +982,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_iter~6"></span>
+              <span class="anchor" id="variable-max_iter~2"></span>
               integer,
             </td>
               <td>public</td>
@@ -983,7 +999,24 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-radial_points~3"></span>
+              <span class="anchor" id="variable-n_frozen_core"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_frozen_core</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+<p>-1 means count it from the elements</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-radial_points"></span>
               integer,
             </td>
               <td>public</td>
@@ -1000,7 +1033,59 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spherical~4"></span>
+              <span class="anchor" id="variable-run_mp2"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>run_mp2</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scs_os"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scs_os</strong></td>
+<td> =</td>
+                <td>1.0_dp</td>
+            <td>
+<p>Read by the CPU backend only; cuEST always fits.
+Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scs_ss"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>scs_ss</strong></td>
+<td> =</td>
+                <td>1.0_dp</td>
+            <td>
+<p>Spin-component scaling, one for plain MP2</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spherical"></span>
               logical,
             </td>
               <td>public</td>
@@ -1017,7 +1102,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unrestricted~4"></span>
+              <span class="anchor" id="variable-unrestricted"></span>
               logical,
             </td>
               <td>public</td>
@@ -1034,7 +1119,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-use_diis~6"></span>
+              <span class="anchor" id="variable-use_diis"></span>
               logical,
             </td>
               <td>public</td>
@@ -1051,7 +1136,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-verbose~8"></span>
+              <span class="anchor" id="variable-verbose~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -1100,7 +1185,7 @@ Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 12:26 +0000             </p>
+ on 2026-08-11 12:44 +0000             </p>
           </div>
         </div>
         <br>
