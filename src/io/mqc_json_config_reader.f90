@@ -38,7 +38,7 @@ module mqc_json_config_reader
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
-   use mqc_method_types, only: parse_method_string
+   use mqc_method_types, only: parse_method_string, method_spin_scaling
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
@@ -161,6 +161,10 @@ contains
       call require_string(json, "model.method", text, error)
       if (error%has_error()) return
       config%method = parse_method_string(text)
+      ! "scs-mp2" and "sos-mp2" parse to the same method type as "mp2", so the
+      ! spin scaling has to be picked up here, while the spelling still exists.
+      ! Left to the type alone they would run plain MP2 and report it as SCS.
+      call method_spin_scaling(text, config%corr_scs, config%corr_scs_ss, config%corr_scs_os)
       call optional_string(json, "model.basis", config%basis)
       call optional_string(json, "model.aux_basis", config%aux_basis)
       call optional_string(json, "model.functional", config%functional)
@@ -189,6 +193,14 @@ contains
       call optional_logical(json, "keywords.scf.allow_crap_scf", config%allow_crap_scf)
       call optional_logical(json, "keywords.scf.density_fitting", &
                             config%scf_density_fitting)
+      call optional_logical(json, "keywords.correlation.freeze_core", &
+                            config%corr_freeze_core)
+      call optional_int(json, "keywords.correlation.n_frozen_core", &
+                        config%corr_n_frozen_core)
+      ! After the method name, so an explicit keyword wins over the spelling.
+      call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
+      call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
+      call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)
 
       ! Both spellings of the displacement key are accepted, as the JSON
       ! generator used to allow.

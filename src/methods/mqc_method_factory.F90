@@ -5,7 +5,8 @@ module mqc_method_factory
    !! making it easy to add new methods without modifying calling code.
    use pic_types, only: int32, dp
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
-                               METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, method_type_to_string
+                               METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, &
+                               method_type_to_string
    use mqc_method_config, only: method_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_method_hf, only: hf_method_t
@@ -76,6 +77,13 @@ contains
             allocate (method, source=hf)
          end block
 
+      case (METHOD_TYPE_MP2)
+         block
+            type(hf_method_t) :: hf
+            call configure_hf(hf, config, with_mp2=.true.)
+            allocate (method, source=hf)
+         end block
+
       case (METHOD_TYPE_DFT)
          block
             type(dft_method_t) :: dft
@@ -129,10 +137,16 @@ contains
    end subroutine configure_xtb
 #endif
 
-   subroutine configure_hf(m, config)
+   subroutine configure_hf(m, config, with_mp2)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)
       type(hf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
+      logical, intent(in), optional :: with_mp2
+         !! Follow the reference with MP2. MP2 is dispatched onto the same
+         !! method object rather than a class of its own, because that is what
+         !! it is: a Hartree-Fock calculation and a correction built from its
+         !! orbitals. A separate class would duplicate every SCF setting to
+         !! reach the same code.
 
       ! Common settings
       m%options%basis_set = config%basis_set
@@ -141,6 +155,18 @@ contains
       m%options%device_rank = config%device_rank
 
       ! SCF settings from shared config%scf
+      if (present(with_mp2)) m%options%run_mp2 = with_mp2
+      ! From config%corr, not config%scf: the reference and the correlation
+      ! treatment are configured separately and may disagree.
+      m%options%freeze_core = config%corr%freeze_core
+      m%options%n_frozen_core = config%corr%n_frozen_core
+      ! One and one unless scaling was asked for, so an unscaled run cannot
+      ! pick up factors that happen to be sitting in the config.
+      if (config%corr%use_scs) then
+         m%options%scs_ss = config%corr%scs_ss
+         m%options%scs_os = config%corr%scs_os
+      end if
+
       m%options%aux_basis_set = config%scf%aux_basis_set
       m%options%density_fitting = config%scf%density_fitting
       m%options%unrestricted = config%scf%unrestricted

@@ -3,7 +3,7 @@ module mqc_method_types
    !! Defines integer constants for quantum chemistry methods to avoid string comparisons
    !! throughout the codebase. Provides conversion utilities between string
    !! representations and integer constants.
-   use pic_types, only: int32
+   use pic_types, only: int32, dp
    implicit none
    private
 
@@ -21,6 +21,7 @@ module mqc_method_types
    ! Public functions
    public :: method_type_from_string, method_type_to_string
    public :: parse_method_string  !! Input-file spelling -> method type
+   public :: method_spin_scaling  !! Spin-component scaling a spelling implies
 
    ! Method type constants
    integer(int32), parameter :: METHOD_TYPE_UNKNOWN = 0
@@ -152,6 +153,51 @@ contains
       end select
 
    end function method_type_to_string
+
+   subroutine method_spin_scaling(method_str, use_scs, ss_scale, os_scale)
+      !! The spin-component scaling a method name implies, if any
+      !!
+      !! "scs-mp2" and "sos-mp2" both parse to METHOD_TYPE_MP2, so the type
+      !! alone cannot tell them from plain MP2 and a deck asking for either
+      !! would run unscaled and report it as scaled. The spelling is the only
+      !! place the intent survives, so it is read here, beside the parser that
+      !! already has the lowercased string.
+      !!
+      !! SCS-MP2 is Grimme: 1.2 opposite-spin, one third same-spin. SOS-MP2 is
+      !! Head-Gordon: 1.3 opposite-spin with the same-spin term dropped, which
+      !! is what makes it cheaper rather than merely different.
+      character(len=*), intent(in) :: method_str
+      logical, intent(out) :: use_scs
+      real(dp), intent(out) :: ss_scale, os_scale
+
+      character(len=:), allocatable :: lower_str
+      integer :: i
+
+      lower_str = trim(adjustl(method_str))
+      do i = 1, len(lower_str)
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
+            lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
+         end if
+      end do
+
+      use_scs = .false.
+      ss_scale = 1.0_dp
+      os_scale = 1.0_dp
+      select case (lower_str)
+      case ("scs-mp2")
+         use_scs = .true.
+         os_scale = 1.2_dp
+         ss_scale = 1.0_dp/3.0_dp
+      case ("sos-mp2")
+         use_scs = .true.
+         os_scale = 1.3_dp
+         ss_scale = 0.0_dp
+      case default
+         ! Every other spelling, including plain "mp2", is unscaled. The values
+         ! set above the select already say so; this is here to be explicit
+         ! that no scaling is the deliberate answer rather than a gap.
+      end select
+   end subroutine method_spin_scaling
 
    function parse_method_string(method_str) result(method_type)
       !! Parse method string from input file (e.g., "XTB-GFN1" -> gfn1)

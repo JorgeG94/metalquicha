@@ -75,6 +75,11 @@ if(MQC_ENABLE_LIBCINT)
   # closed-shell UHF must equal RHF, direct must equal in-core.
   addtest(mqc_libcint_uhf)
   target_link_libraries(test_mqc_libcint_uhf PRIVATE cint_fortran cint)
+
+  # Conventional MP2: the structural properties a reference energy cannot see,
+  # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
+  addtest(mqc_libcint_mp2)
+  target_link_libraries(test_mqc_libcint_mp2 PRIVATE cint_fortran cint)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.
