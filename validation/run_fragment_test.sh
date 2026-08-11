@@ -20,7 +20,7 @@ for tag in hf pbe; do
     # Anchored patterns, not substrings: a bare case-insensitive "MBE" also
     # matches "nuMBEr of atoms", which buries the result in per-fragment noise.
     /usr/bin/time -f "  wall: %e s   peak RSS: %M kB" \
-        $MQC "validation/inputs/frag_water6_$tag.json" 2>&1 \
+        $MQC "$(find_deck "frag_water6_$tag")" 2>&1 \
         | grep -E "Total fragments:|Computing Many-Body|^ *wall:|ERROR:|Total processing time"
 
     # The MBE totals live in the JSON, not the log.

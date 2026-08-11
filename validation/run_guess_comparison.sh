@@ -18,6 +18,12 @@ set -u
 cd "$(dirname "$0")/.."
 MQC=${1:-./build/mqc}
 
+# Decks live under inputs/<hardware>/<engine>/<method>/ now, so a deck name is
+# resolved rather than assumed. Keeping the lookup here means the layout can move
+# again without touching this script.
+find_deck() { find validation/inputs -name "$1.json" -print -quit; }
+
+
 if [ ! -x "$MQC" ]; then
     echo "No mqc binary at $MQC -- build with -DMQC_ENABLE_CUEST=ON first." >&2
     exit 1
@@ -25,11 +31,8 @@ fi
 
 SYSTEMS="hf_water_def2-svp dft_water_pbe uhf_oh uhf_o2"
 GUESSES="core gwh sac"
-# Temporaries live beside the originals: the `xyz` path inside each JSON is
-# relative to the JSON's own directory, so moving them elsewhere breaks it.
-WORK=validation/inputs
 PREFIX=_guess_tmp_
-trap 'rm -f "$WORK/${PREFIX}"*' EXIT
+trap 'find validation/inputs -name "${PREFIX}*" -delete' EXIT
 
 printf '%-22s %-6s %22s %6s %10s\n' SYSTEM GUESS "TOTAL ENERGY (Ha)" ITERS "<S^2>"
 echo "---------------------------------------------------------------------------"
@@ -38,16 +41,17 @@ for sys in $SYSTEMS; do
     first_energy=""
     for guess in $GUESSES; do
         # Rewrite the input with this guess, keeping everything else identical.
-        stem="${PREFIX}${sys}_${guess}"
-        python3 - "$sys" "$guess" "$WORK/$stem.json" <<'PY'
+        src=$(find_deck "$sys")
+        tmp="$(dirname "$src")/${PREFIX}${sys}_${guess}.json"
+        python3 - "$src" "$guess" "$tmp" <<'PY'
 import json, sys
-name, guess, dest = sys.argv[1], sys.argv[2], sys.argv[3]
-d = json.load(open(f"validation/inputs/{name}.json"))
+src, guess, dest = sys.argv[1], sys.argv[2], sys.argv[3]
+d = json.load(open(src))
 d.setdefault("keywords", {}).setdefault("scf", {"maxiter": 100, "tolerance": 1e-8})["guess"] = guess
 json.dump(d, open(dest, "w"), indent=4)
 PY
 
-        out=$($MQC "$WORK/$stem.json" 2>&1)
+        out=$($MQC "$tmp" 2>&1)
         energy=$(printf '%s' "$out" | grep "Final energy:" | awk '{print $NF}')
         # Iteration lines are "<n> <energy> <dE> <diis>"; the last one wins.
         iters=$(printf '%s' "$out" | awk '/^ *[0-9]+ +-?[0-9]+\.[0-9]+ +-?[0-9]/ {n=$1} END {print n+0}')

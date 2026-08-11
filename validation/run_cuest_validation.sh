@@ -20,6 +20,12 @@ set -u
 cd "$(dirname "$0")/.."
 MQC=${1:-./build/mqc}
 
+# Decks live under inputs/<hardware>/<engine>/<method>/ now, so a deck name is
+# resolved rather than assumed. Keeping the lookup here means the layout can move
+# again without touching this script.
+find_deck() { find validation/inputs -name "$1.json" -print -quit; }
+
+
 if [ ! -x "$MQC" ]; then
     echo "No mqc binary at $MQC -- build with -DMQC_ENABLE_CUEST=ON first." >&2
     exit 1
@@ -27,7 +33,7 @@ fi
 
 run_one() {   # $1 = label, $2 = input stem, $3 = reference
     local out energy
-    out=$($MQC "validation/inputs/$2.json" 2>&1)
+    out=$($MQC "$(find_deck "$2")" 2>&1)
     energy=$(printf '%s' "$out" | grep "Final energy:" | awk '{print $NF}')
     if [ -z "$energy" ]; then
         energy=$(printf '%s' "$out" | grep -i "ERROR:" | head -1 | sed 's/.*: //' | cut -c1-40)
