@@ -979,6 +979,12 @@
             "input": "inputs/cpu_nh3_cc-pvdz_mp2_f1.json",
             "expected_energy": -56.381946912509,
             "type": "unfragmented"
+        },
+        {
+            "name": "MBE(2) MP2 (H2O)2 cc-pvdz (CPU)",
+            "input": "inputs/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
+            "expected_energy": -152.466588405967,
+            "type": "fragmented"
         }
     ]
 }

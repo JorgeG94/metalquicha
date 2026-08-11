@@ -148,11 +148,13 @@ MOLECULES = {
     # Open-shell species. Geometries already in the tree, so they are read
     # rather than written; both are radicals and appear only in OPEN_SHELL.
     "oh": Molecule(label="OH", element="O", xyz="sample_inputs/oh.xyz"),
+    # Two of prism's waters, for the fragmented cases below.
+    "w2dimer": Molecule(label="(H2O)2", element="O", xyz="sample_inputs/w2_dimer.xyz"),
     "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
 }
 
-ALL = [m for m in MOLECULES if m not in ("oh", "o2")]
+ALL = [m for m in MOLECULES if m not in ("oh", "o2", "w2dimer")]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -241,6 +243,26 @@ MP2_CASES = [
     ("water", "def2-svp", "mp2", 1),
     ("ch4", "cc-pvdz", "mp2", 1),
     ("nh3", "cc-pvdz", "mp2", 1),
+]
+
+# Fragmented, as (molecule, basis, method, frozen, fragments).
+#
+# The reference is the supermolecule, and that is not an approximation being
+# waved through: a many-body expansion truncated at the number of monomers it
+# has is exact. Over two fragments E_1 + E_2 + (E_12 - E_1 - E_2) collapses to
+# E_12 term by term, whatever the method, so a fragmented MBE(2) run here has
+# to reproduce the supermolecular MP2 to machine precision or the expansion is
+# wrong.
+#
+# That is what makes this checkable at all. A prism at MBE(2) has no external
+# reference short of running the whole thing, and comparing the expansion to
+# its own output would only detect change.
+#
+# It also exercises a path the unfragmented cases do not: the runner gives
+# fragmented cases several MPI ranks, so this covers fragment distribution as
+# well as the correlation energy surviving the expansion.
+FRAGMENTED_CASES = [
+    ("w2dimer", "cc-pvdz", "mp2", 2, [[0, 1, 2], [3, 4, 5]]),
 ]
 
 DF_CASES = [
@@ -561,6 +583,30 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, method, frozen, fragments in FRAGMENTED_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_mp2(mol.atoms, basis, method, frozen)
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{method}_mbe2.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            d = deck_json(mol.xyz, basis, method=method,
+                          correlation={"freeze_core": True})
+            d["molecules"][0]["fragments"] = fragments
+            d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
+            d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            d["keywords"]["fragmentation"] = {
+                "method": "MBE", "level": len(fragments),
+                "allow_overlapping_fragments": False, "embedding": "none",
+            }
+            (VALIDATION / deck).write_text(json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"MBE({len(fragments)}) {method.upper()} {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "fragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {method:8s} MBE({len(fragments)})  nao={nao:4d} E={energy:.12f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:
