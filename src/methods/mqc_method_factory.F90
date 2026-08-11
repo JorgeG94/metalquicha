@@ -6,6 +6,7 @@ module mqc_method_factory
    use pic_types, only: int32, dp
    use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2, METHOD_TYPE_HF, &
                                METHOD_TYPE_DFT, METHOD_TYPE_MCSCF, METHOD_TYPE_MP2, &
+                               METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T, &
                                method_type_to_string
    use mqc_method_config, only: method_config_t
    use mqc_method_base, only: qc_method_t
@@ -84,6 +85,19 @@ contains
             allocate (method, source=hf)
          end block
 
+         ! Both spellings land on the same method object, as MP2 does, and for
+         ! the same reason: coupled cluster is a Hartree-Fock calculation plus a
+         ! correction built from its orbitals. Which of the two ran is carried by
+         ! config%cc%include_triples, which the adapter set from the method type
+         ! -- so the two cases are identical here on purpose rather than by
+         ! oversight.
+      case (METHOD_TYPE_CCSD, METHOD_TYPE_CCSD_T)
+         block
+            type(hf_method_t) :: hf
+            call configure_hf(hf, config, with_cc=.true.)
+            allocate (method, source=hf)
+         end block
+
       case (METHOD_TYPE_DFT)
          block
             type(dft_method_t) :: dft
@@ -137,10 +151,13 @@ contains
    end subroutine configure_xtb
 #endif
 
-   subroutine configure_hf(m, config, with_mp2)
+   subroutine configure_hf(m, config, with_mp2, with_cc)
       !! Configure a Hartree-Fock method instance from config%scf (shared SCF settings)
       type(hf_method_t), intent(inout) :: m
       type(method_config_t), intent(in) :: config
+      logical, intent(in), optional :: with_cc
+         !! Follow the reference with coupled cluster. Same argument as
+         !! `with_mp2`: a method, not an option.
       logical, intent(in), optional :: with_mp2
          !! Follow the reference with MP2. MP2 is dispatched onto the same
          !! method object rather than a class of its own, because that is what
@@ -156,6 +173,13 @@ contains
 
       ! SCF settings from shared config%scf
       if (present(with_mp2)) m%options%run_mp2 = with_mp2
+      if (present(with_cc)) m%options%run_cc = with_cc
+      m%options%cc_triples = config%cc%include_triples
+      m%options%cc_max_iter = config%cc%max_iter
+      m%options%cc_tolerance = config%cc%amplitude_convergence
+      ! Zero turns DIIS off, which is how the SCF spells the same thing.
+      m%options%cc_diis_size = config%cc%diis_size
+      if (.not. config%cc%use_diis) m%options%cc_diis_size = 0
       ! From config%corr, not config%scf: the reference and the correlation
       ! treatment are configured separately and may disagree.
       m%options%freeze_core = config%corr%freeze_core

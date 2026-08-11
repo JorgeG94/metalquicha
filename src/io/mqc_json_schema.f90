@@ -97,6 +97,8 @@ contains
       call check_grandchild_object(core, root, "keywords", "correlation", &
                                    correlation_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "cc", cc_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "aimd", aimd_keys(), error)
@@ -180,6 +182,7 @@ contains
       call allow(keys, "fragmentation")
       call allow(keys, "xtb")
       call allow(keys, "correlation")
+      call allow(keys, "cc")
    end function keywords_keys
 
    function scf_keys() result(keys)
@@ -209,6 +212,23 @@ contains
       call allow(keys, "scs_ss")
       call allow(keys, "scs_os")
    end function correlation_keys
+
+   function cc_keys() result(keys)
+      !! Coupled-cluster settings, separate from "correlation"
+      !!
+      !! `correlation` holds what every post-Hartree-Fock method shares -- the
+      !! frozen core, the fitting, the auxiliary basis. These are the ones only an
+      !! iterative method has: how long to iterate and how hard, and whether the
+      !! triples correction runs. `triples` is here as an override; ordinarily the
+      !! method name settles it, since "ccsd" and "ccsd(t)" are separate method
+      !! types rather than one type with a flag.
+      type(key_set_t) :: keys
+      call allow(keys, "maxiter")
+      call allow(keys, "tolerance")
+      call allow(keys, "triples")
+      call allow(keys, "diis")
+      call allow(keys, "diis_size")
+   end function cc_keys
 
    function hessian_keys() result(keys)
       type(key_set_t) :: keys

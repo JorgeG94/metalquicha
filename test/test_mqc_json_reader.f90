@@ -51,6 +51,7 @@ contains
                   new_unittest("inline_symbols_and_geometry", test_inline_geometry), &
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
+                  new_unittest("cc_keywords", test_cc_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
                   ]
    end subroutine collect_mqc_json_reader_tests
@@ -473,6 +474,52 @@ contains
       if (allocated(error)) return
       call check(error, config%nodes_per_group, 4)
    end subroutine test_nodes_per_group
+
+   subroutine test_cc_keywords(error)
+      !! keywords.cc, and that "triples" records whether it was named
+      !!
+      !! The presence flag is the part worth testing. The triples default comes
+      !! from the method name rather than from the field's initialiser -- "ccsd"
+      !! and "ccsd(t)" being separate method types -- so a deck writing
+      !! `"triples": false` has to be distinguishable from one that said nothing,
+      !! or the name could never be overridden downward.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+
+      call write_deck('"method": "ccsd(t)", "basis": "sto-3g"', "Energy", &
+                      '"cc": {"maxiter": 40, "tolerance": 1.0e-10, '// &
+                      '"triples": false, "diis": false, "diis_size": 4}', &
+                      "", two_atoms())
+      call read_deck(config, parse_error)
+
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%cc_maxiter, 40)
+      if (allocated(error)) return
+      call check(error, close_enough(config%cc_tolerance, 1.0e-10_dp))
+      if (allocated(error)) return
+      call check(error, config%cc_diis, .false., "cc.diis should be settable")
+      if (allocated(error)) return
+      call check(error, config%cc_diis_size, 4)
+      if (allocated(error)) return
+      call check(error, config%cc_triples, .false., "an explicit triples:false is read")
+      if (allocated(error)) return
+      call check(error, config%cc_triples_set, .true., &
+                 "naming triples must be recorded as named")
+      if (allocated(error)) return
+
+      ! Absent, so the method name decides and the adapter must not be overridden.
+      call write_deck('"method": "ccsd(t)", "basis": "sto-3g"', "Energy", "", "", &
+                      two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, config%cc_triples_set, .false., &
+                 "an absent triples key must not read as named")
+      if (allocated(error)) return
+      call check(error, config%cc_maxiter, 100, "cc.maxiter keeps its default")
+   end subroutine test_cc_keywords
 
    subroutine test_solvation(error)
       !! Every xTB solvation knob, including the two only .mqc could reach

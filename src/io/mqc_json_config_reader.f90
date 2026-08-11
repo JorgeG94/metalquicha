@@ -208,6 +208,16 @@ contains
       call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
       call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
       call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)
+      call optional_int(json, "keywords.cc.maxiter", config%cc_maxiter)
+      call optional_real(json, "keywords.cc.tolerance", config%cc_tolerance)
+      call optional_logical(json, "keywords.cc.diis", config%cc_diis)
+      call optional_int(json, "keywords.cc.diis_size", config%cc_diis_size)
+      ! Recorded as "was it named" as well as "what was it", because the method
+      ! name is the usual source of this and only an explicit keyword may
+      ! override it. `optional_logical` leaves its target alone when the key is
+      ! absent, which cannot distinguish absent from false on its own.
+      call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
+                                 config%cc_triples_set)
 
       ! Both spellings of the displacement key are accepted, as the JSON
       ! generator used to allow.
@@ -717,6 +727,23 @@ contains
       call json%get(path, found_value, found)
       if (found) value = found_value
    end subroutine optional_real
+
+   subroutine optional_logical_seen(json, path, value, seen)
+      !! Fetch a boolean, and say whether the deck named it
+      !!
+      !! Needed wherever a default comes from somewhere other than the field's
+      !! initialiser -- the method name, say -- because "absent" and "false" have
+      !! to be told apart before the name can be allowed to lose to a keyword.
+      type(json_file), intent(inout) :: json
+      character(len=*), intent(in) :: path
+      logical, intent(inout) :: value
+      logical, intent(out) :: seen
+
+      logical :: found_value
+
+      call json%get(path, found_value, seen)
+      if (seen) value = found_value
+   end subroutine optional_logical_seen
 
    subroutine optional_logical(json, path, value)
       !! Fetch a boolean if present, leaving `value` at its default otherwise
