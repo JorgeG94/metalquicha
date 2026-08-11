@@ -173,7 +173,7 @@ contains
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       integer :: n_ao, n_mo, n_o, n_v, n_aux, frozen
       integer :: i, j, a, bb
-      real(dp) :: iajb, ibja, denom, e_ss, e_os
+      real(dp) :: iajb, ibja, denom, e_ss, e_os, weight
 
       n_ao = mol%nao
       n_mo = size(coeff, 2)
@@ -208,20 +208,27 @@ contains
 
       ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
       ! g(a,b) = sum_P B^P_ia B^P_jb, which is (ia|jb), and g(b,a) is (ib|ja).
+      ! Only the lower triangle of occupied pairs. Exchanging i with j and a
+      ! with b leaves every term unchanged -- (ia|jb) becomes (jb|ia), which is
+      ! the same integral -- so the (j,i) pair contributes exactly what (i,j)
+      ! does and is counted by weight instead of by a second gemm. Half the
+      ! work for the same sum, and the gemm is where the time is.
       allocate (g(n_v, n_v))
       e_ss = 0.0_dp
       e_os = 0.0_dp
       do i = 1, n_o
-         do j = 1, n_o
+         do j = 1, i
             call pic_gemm(bia(:, :, i), bia(:, :, j), g, transb="T")
+            weight = 2.0_dp
+            if (i == j) weight = 1.0_dp
             do bb = 1, n_v
                do a = 1, n_v
                   iajb = g(a, bb)
                   ibja = g(bb, a)
                   denom = orbital_energies(frozen + i) + orbital_energies(frozen + j) &
                           - orbital_energies(n_occ + a) - orbital_energies(n_occ + bb)
-                  e_os = e_os + iajb*iajb/denom
-                  e_ss = e_ss + iajb*(iajb - ibja)/denom
+                  e_os = e_os + weight*iajb*iajb/denom
+                  e_ss = e_ss + weight*iajb*(iajb - ibja)/denom
                end do
             end do
          end do
