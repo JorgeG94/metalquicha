@@ -58,6 +58,7 @@ module mqc_libcint_integrals
    public :: build_libcint_molecule
    public :: build_df_tensor
    public :: build_df_mo_tensor
+   public :: build_df_mo_block
    ! The one place that maps "is this basis Cartesian?" onto libcint's two sets
    ! of entry points. Exported because the direct Fock build needs the same
    ! mapping, and two copies of it is two chances to route half the calls.
@@ -611,9 +612,46 @@ contains
       real(dp), allocatable, intent(out) :: bia(:, :, :)
       type(error_t), intent(inout) :: error
 
+      real(dp), allocatable :: fitted(:, :)
+      integer :: naux, n_o, n_v, p_index, i
+
+      n_o = size(c_occ, 2)
+      n_v = size(c_vir, 2)
+
+      call build_df_mo_block(orb, aux, c_occ, c_vir, fitted, error)
+      if (error%has_error()) return
+      naux = size(fitted, 2)
+
+      allocate (bia(n_v, naux, n_o))
+      do p_index = 1, naux
+         do i = 1, n_o
+            ! `fitted` is flattened (i, a), so one occupied orbital's virtuals
+            ! sit at stride n_o.
+            bia(:, p_index, i) = fitted(i::n_o, p_index)
+         end do
+      end do
+      deallocate (fitted)
+   end subroutine build_df_mo_tensor
+
+   subroutine build_df_mo_block(orb, aux, c_left, c_right, b, error)
+      !! B^P_pq for any two coefficient blocks, laid out (pq, P)
+      !!
+      !! The general form of `build_df_mo_tensor`, which assumed
+      !! occupied-virtual because MP2 wants nothing else. Coupled cluster wants
+      !! every block, so the choice moves to the caller -- the same move
+      !! `transform_ovov` made when it became `transform_block`, and for the same
+      !! reason: one routine cannot transpose a half differently in six places.
+      !!
+      !! The compound index runs left-fastest, `pq = (q-1) n_left + p`, which is
+      !! the layout that makes `B B^T` the fitted `(pq|rs)` with no repacking.
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(in) :: c_left(:, :), c_right(:, :)   !! (nao, n_left), (nao, n_right)
+      real(dp), allocatable, intent(out) :: b(:, :)         !! (n_left*n_right, naux)
+      type(error_t), intent(inout) :: error
+
       real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
       real(dp), allocatable :: ovl(:, :), bp(:, :), tmp(:, :), full(:, :)
-      integer :: nao, naux, n_o, n_v, p_index, i
+      integer :: nao, naux, n_l, n_r, p_index
 
       if (orb%cartesian .neqv. aux%cartesian) then
          call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
@@ -626,8 +664,8 @@ contains
 
       nao = orb%nao
       naux = aux%nao
-      n_o = size(c_occ, 2)
-      n_v = size(c_vir, 2)
+      n_l = size(c_left, 2)
+      n_r = size(c_right, 2)
 
       call two_centre(aux, metric)
       call metric_inverse_sqrt(metric, half, error)
@@ -636,34 +674,23 @@ contains
 
       call three_centre(orb, aux, three)
 
-      ! (mu nu|P) -> (ia|P), one auxiliary function at a time.
-      allocate (ovl(n_o*n_v, naux))
-      allocate (bp(nao, nao), tmp(n_o, nao), full(n_o, n_v))
+      ! (mu nu|P) -> (pq|P), one auxiliary function at a time. Transforming
+      ! before fitting rather than after, which is the ordering PySCF uses and
+      ! the one that keeps the metric contraction off the AO pair space.
+      allocate (ovl(n_l*n_r, naux))
+      allocate (bp(nao, nao), tmp(n_l, nao), full(n_l, n_r))
       do p_index = 1, naux
          bp = reshape(three(:, p_index), [nao, nao])
-         call pic_gemm(c_occ, bp, tmp, transa="T")
-         call pic_gemm(tmp, c_vir, full)
-         ovl(:, p_index) = reshape(full, [n_o*n_v])
+         call pic_gemm(c_left, bp, tmp, transa="T")
+         call pic_gemm(tmp, c_right, full)
+         ovl(:, p_index) = reshape(full, [n_l*n_r])
       end do
       deallocate (bp, tmp, full, three)
 
-      ! The fit, now over the occupied-virtual block instead of every AO pair.
-      block
-         real(dp), allocatable :: fitted(:, :)
-         allocate (fitted(n_o*n_v, naux))
-         call pic_gemm(ovl, half, fitted)
-         deallocate (ovl, half)
-         allocate (bia(n_v, naux, n_o))
-         do p_index = 1, naux
-            do i = 1, n_o
-               ! `fitted` is flattened (i, a), so one occupied orbital's
-               ! virtuals sit at stride n_o.
-               bia(:, p_index, i) = fitted(i::n_o, p_index)
-            end do
-         end do
-         deallocate (fitted)
-      end block
-   end subroutine build_df_mo_tensor
+      allocate (b(n_l*n_r, naux))
+      call pic_gemm(ovl, half, b)
+      deallocate (ovl, half)
+   end subroutine build_df_mo_block
 
    subroutine two_centre(aux, metric)
       !! (P|Q) over the auxiliary basis

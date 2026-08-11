@@ -54,9 +54,23 @@ program check_cc
                  -0.211097952217_dp, &
                  -0.003015723855_dp)
 
+   ! RI. References are pyscf.cc.dfccsd.RCCSD on a *conventional* mean field, so
+   ! the comparison isolates the CC-side fitting rather than mixing in a fitted
+   ! Hartree-Fock. The fitting error against conventional CCSD is 1.4e-4 -- three
+   ! orders above the 4e-10 the exact path agrees to -- so conventional CCSD is
+   ! not the yardstick here and cannot be.
+   call ri_case("RI H2O sto-3g    ", "sto-3g", "cc-pvdz-rifit", 0, &
+                -0.049173482895_dp, -0.000072751429_dp)
+   call ri_case("RI H2O sto-3g  f1", "sto-3g", "cc-pvdz-rifit", 1, &
+                -0.049095167549_dp, -0.000072820877_dp)
+   call ri_case("RI H2O cc-pvdz   ", "cc-pvdz", "cc-pvdz-rifit", 0, &
+                -0.213326680500_dp, -0.003041992009_dp)
+   call ri_case("RI H2O cc-pvdz f1", "cc-pvdz", "cc-pvdz-rifit", 1, &
+                -0.211233849569_dp, -0.003019775484_dp)
+
    write (*, "(A)") ""
    if (failures == 0) then
-      write (*, "(A)") "[cc] all ok -- CCSD(T) reproduces PySCF"
+      write (*, "(A)") "[cc] all ok -- CCSD(T) reproduces PySCF, fitted and exact"
    else
       write (*, "(A,I0,A)") "[cc] ", failures, " FAILURE(S)"
       error stop 1
@@ -127,6 +141,62 @@ contains
 
       call mol%destroy()
    end subroutine one_case
+
+   subroutine ri_case(label, basis, auxbasis, frozen, e_ccsd_ref, e_t_ref)
+      !! RI-CCSD and RI-CCSD(T) against pyscf.cc.dfccsd.RCCSD
+      character(len=*), intent(in) :: label, basis, auxbasis
+      integer, intent(in) :: frozen
+      real(dp), intent(in) :: e_ccsd_ref, e_t_ref
+
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(cc_result_t) :: cc
+      type(error_t) :: err
+      real(dp) :: c(3, 3)
+      real(dp) :: e_ccsd
+
+      c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
+                   0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
+                   0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      if (err%has_error()) then
+         write (*, "(A,A,A,A)") "[cc] ", label, " basis failed: ", err%get_message()
+         failures = failures + 1
+         return
+      end if
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, auxbasis, aux, err)
+      if (err%has_error()) then
+         write (*, "(A,A,A,A)") "[cc] ", label, " aux basis failed: ", err%get_message()
+         failures = failures + 1
+         return
+      end if
+
+      ! Exact SCF on purpose, matching how the reference was produced.
+      call run_libcint_rhf(mol, 10, 200, 1.0e-11_dp, 1.0e-9_dp, .false., scf, err, &
+                           in_core=.true.)
+      if (err%has_error() .or. .not. scf%converged) then
+         write (*, "(A,A,A)") "[cc] ", label, " SCF failed"
+         failures = failures + 1
+         return
+      end if
+
+      call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, 5, frozen, &
+                            100, 1.0e-11_dp, .true., .false., cc, err, aux=aux)
+      if (err%has_error()) then
+         write (*, "(A,A,A,A)") "[cc] ", label, " RI-CCSD failed: ", err%get_message()
+         failures = failures + 1
+         call mol%destroy()
+         call aux%destroy()
+         return
+      end if
+
+      e_ccsd = cc%e_singles + cc%e_doubles
+      call report(label//" CCSD", e_ccsd, e_ccsd_ref, 1.0e-8_dp)
+      call report(label//" (T) ", cc%e_triples, e_t_ref, 1.0e-8_dp)
+
+      call mol%destroy()
+      call aux%destroy()
+   end subroutine ri_case
 
    subroutine report(what, got, want, tol)
       character(len=*), intent(in) :: what

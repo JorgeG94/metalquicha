@@ -46,7 +46,7 @@ module mqc_libcint_cc
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_diis, only: diis_state_t
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_block
    use mqc_libcint_mp2, only: transform_block
    implicit none
    private
@@ -140,7 +140,7 @@ contains
 
    subroutine run_libcint_ccsd(mol, coeff, orbital_energies, n_occ, frozen, &
                                max_iter, energy_tol, want_triples, verbose, &
-                               result, error, diis_vectors)
+                               result, error, diis_vectors, aux)
       !! Drive CCSD, and optionally (T), to convergence
       !!
       !! **Memory.** The spin-orbital tensor is (2 n_act)^4, which is sixteen
@@ -161,6 +161,19 @@ contains
       type(cc_result_t), intent(out) :: result
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Auxiliary basis. Present means every MO integral is density-fitted
+         !! rather than transformed exactly -- RI-CCSD.
+         !!
+         !! *Every* class, not just the particle-particle ladder, because that is
+         !! what PySCF's `dfccsd` does and the comparison is only possible against
+         !! the same approximation. Its `ao2mo` returns `_make_df_eris`, which
+         !! builds oooo, ovov, ovvo, oovv and ovvv from the fitted tensor and
+         !! keeps `vvL` for the ladder -- so "it overrides `_add_vvvv`" describes
+         !! where the ladder is contracted, not which integrals are fitted. Fitting
+         !! only the ladder would leave us permanently ~1e-5 from the reference,
+         !! which is close enough to a convergence threshold to be argued about
+         !! rather than diagnosed.
 
       real(dp), allocatable :: eri(:, :), mo(:, :, :, :), w(:, :, :, :)
       real(dp), allocatable :: c_act(:, :), eps(:)
@@ -203,11 +216,17 @@ contains
       end if
 
       ! ---- integrals --------------------------------------------------------
-      call mol%eris_packed(eri)
       allocate (c_act(n_ao, n_act))
       c_act = coeff(:, frozen + 1:n_mo)
-      call transform_block(eri, c_act, c_act, c_act, c_act, mo)
-      deallocate (eri, c_act)
+      if (present(aux)) then
+         call fitted_mo_tensor(mol, aux, c_act, mo, error)
+         if (error%has_error()) return
+      else
+         call mol%eris_packed(eri)
+         call transform_block(eri, c_act, c_act, c_act, c_act, mo)
+         deallocate (eri)
+      end if
+      deallocate (c_act)
 
       call spin_orbital_integrals(mo, n_so, w)
       deallocate (mo)
@@ -278,6 +297,43 @@ contains
 
       result%e_correlation = result%e_singles + result%e_doubles + result%e_triples
    end subroutine run_libcint_ccsd
+
+   subroutine fitted_mo_tensor(mol, aux, c_act, mo, error)
+      !! The active MO tensor from the fitted three-index one
+      !!
+      !!     (pq|rs) = sum_P B^P_pq B^P_rs
+      !!
+      !! One gemm, because `build_df_mo_block` lays B out with the compound index
+      !! leading. That is the whole of RI-CCSD's integral step.
+      !!
+      !! **This does not save memory yet, and is not meant to.** The n_act^4
+      !! tensor is still formed, so the ceiling is where it was; what changes is
+      !! the number, by the fitting error. Never forming it is the optimisation
+      !! that follows, and doing it in this order means the fitting can be
+      !! verified against PySCF before the loop structure changes underneath it --
+      !! the same order the conventional path was built in.
+      type(libcint_molecule_t), intent(in) :: mol, aux
+      real(dp), intent(in) :: c_act(:, :)
+      real(dp), allocatable, intent(out) :: mo(:, :, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: b(:, :), mo2(:, :)
+      integer :: n_act
+
+      n_act = size(c_act, 2)
+      call build_df_mo_block(mol, aux, c_act, c_act, b, error)
+      if (error%has_error()) return
+
+      allocate (mo2(n_act*n_act, n_act*n_act))
+      call pic_gemm(b, b, mo2, transb="T")
+      deallocate (b)
+
+      ! Reshaped rather than aliased: `asym` reads the tensor with four indices,
+      ! and it is the one function in this module worth not touching.
+      allocate (mo(n_act, n_act, n_act, n_act))
+      mo = reshape(mo2, [n_act, n_act, n_act, n_act])
+      deallocate (mo2)
+   end subroutine fitted_mo_tensor
 
    subroutine mp2_amplitudes(w, eps, no, nv, t2, e_mp2)
       !! First-order doubles, and the MP2 energy they give

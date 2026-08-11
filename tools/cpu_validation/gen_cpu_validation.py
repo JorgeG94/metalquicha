@@ -290,6 +290,17 @@ CC_CASES = [
     ("ch4", "sto-3g", "ccsd(t)", 1),
 ]
 
+# RI coupled cluster. The reference fits every MO integral class, not only the
+# particle-particle ladder -- pyscf.cc.dfccsd's ao2mo returns _make_df_eris, which
+# builds oooo, ovov, ovvo, oovv and ovvv from the fitted tensor -- so ours does
+# too, and the (T) is fitted along with the rest because ccsd_t consumes that same
+# object. Fitting a different set would leave us ~1e-5 away permanently.
+RI_CC_CASES = [
+    ("water", "sto-3g", "cc-pvdz-rifit", "ccsd", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "ccsd", 1),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", "ccsd(t)", 1),
+]
+
 RI_MP2_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
@@ -550,6 +561,41 @@ def pyscf_cc(atoms, basis, method, frozen):
     return float(escf + ecorr), mol.nao
 
 
+def pyscf_ri_cc(atoms, basis, aux, method, frozen):
+    """Reference RI-CCSD / RI-CCSD(T), from pyscf.cc.dfccsd.
+
+    Built on a *conventional* mean field so the number isolates the CC-side
+    fitting. A density-fitted Hartree-Fock underneath would fold two different
+    approximations into one comparison, and the SCF one is already covered by the
+    density-fitted RHF cases.
+    """
+    from pyscf import gto, scf
+    from pyscf.cc import dfccsd
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    escf = mf.kernel()
+    mycc = dfccsd.RCCSD(mf, frozen=frozen)
+    mycc.conv_tol = 1e-11
+    mycc.with_df = mycc.with_df.__class__(
+        mol, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+    mycc.kernel()
+    ecorr = mycc.e_corr
+    if method == "ccsd(t)":
+        ecorr += mycc.ccsd_t()
+    return float(escf + ecorr), mol.nao
+
+
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     from pyscf import df, gto, scf
 
@@ -705,6 +751,28 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux, method, frozen in RI_CC_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_ri_cc(mol.atoms, basis, aux, method, frozen)
+        tag = "ri" + method.replace("(", "").replace(")", "")
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            (VALIDATION / deck).write_text(
+                json.dumps(deck_json(mol.xyz, basis, method="ri-" + method,
+                                     correlation={"freeze_core": frozen > 0,
+                                                  "n_frozen_core": frozen,
+                                                  "aux_basis": aux},
+                                     cc={"tolerance": 1e-10}), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"RI-{method.upper()} {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} ri-{method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, aux, frozen in RI_MP2_CASES:
         mol = MOLECULES[name]
