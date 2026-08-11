@@ -162,6 +162,11 @@ contains
       driver_config%method_config%scf%allow_crap_scf = mqc_config%allow_crap_scf
       driver_config%method_config%scf%unrestricted = mqc_config%scf_unrestricted
       driver_config%method_config%scf%density_fitting = mqc_config%scf_density_fitting
+      driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
+      driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
+      driver_config%method_config%corr%use_scs = mqc_config%corr_scs
+      driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
+      driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess
       end if

@@ -22,6 +22,15 @@ module mqc_cuest_iface
          !! Orbital basis set name
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
       logical :: density_fitting = .false.
+      ! Post-Hartree-Fock. Kept beside the SCF settings rather than inside
+      ! them because they are not SCF settings: a density-fitted reference and
+      ! a conventional correlation treatment is a combination someone will ask
+      ! for, and the two flags have to be able to disagree.
+      logical :: run_mp2 = .false.
+      logical :: freeze_core = .false.
+      integer :: n_frozen_core = -1     !! -1 means count it from the elements
+      real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2
+      real(dp) :: scs_os = 1.0_dp
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""

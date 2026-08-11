@@ -31,6 +31,14 @@ module mqc_method_hf
       character(len=32) :: aux_basis_set = "def2-universal-jkfit"
          !! Auxiliary (JKFIT) basis for the density-fitted J and K
       logical :: density_fitting = .false.
+      logical :: run_mp2 = .false.
+         !! Follow the reference with an MP2 correction. Set by the factory
+         !! from the method name rather than by a keyword: "mp2" is a method,
+         !! not an option on Hartree-Fock.
+      logical :: freeze_core = .false.
+      integer :: n_frozen_core = -1
+      real(dp) :: scs_ss = 1.0_dp
+      real(dp) :: scs_os = 1.0_dp
          !! Fit J and K rather than computing exact integrals (CPU backend)
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
@@ -89,6 +97,11 @@ contains
       settings%basis_set = this%options%basis_set
       settings%aux_basis_set = this%options%aux_basis_set
       settings%density_fitting = this%options%density_fitting
+      settings%run_mp2 = this%options%run_mp2
+      settings%freeze_core = this%options%freeze_core
+      settings%n_frozen_core = this%options%n_frozen_core
+      settings%scs_ss = this%options%scs_ss
+      settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock
       settings%spherical = this%options%spherical
       settings%verbose = this%options%verbose

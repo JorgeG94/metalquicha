@@ -22,6 +22,7 @@ module mqc_libcint_bridge
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
    implicit none
    private
 
@@ -168,6 +169,45 @@ contains
       result%energy%scf = scf%energy
       result%has_energy = .true.
 
+      if (settings%run_mp2) then
+         block
+            type(mp2_result_t) :: mp2
+            integer :: frozen
+
+            frozen = settings%n_frozen_core
+            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (.not. settings%freeze_core) frozen = 0
+
+            call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                                 fragment%nelec/2, scf%energy, mp2, error, &
+                                 n_frozen=frozen)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "MP2: "//error%get_message())
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+            ! energy_t sums scf + mp2%total(), so only the components go in.
+            result%energy%mp2%ss = mp2%same_spin
+            result%energy%mp2%os = mp2%opposite_spin
+            result%energy%mp2%ss_scale = settings%scs_ss
+            result%energy%mp2%os_scale = settings%scs_os
+            if (settings%verbose) then
+               write (*, "(a,i0,a,i0,a,i0)") "  MP2: frozen ", mp2%n_frozen, &
+                  "  occupied ", mp2%n_occupied, "  virtual ", mp2%n_virtual
+               write (*, "(a,f20.12)") "  E(OS)          ", mp2%opposite_spin
+               write (*, "(a,f20.12)") "  E(SS)          ", mp2%same_spin
+               write (*, "(a,f20.12)") "  E(corr)        ", mp2%correlation
+               if (settings%scs_ss /= 1.0_dp .or. settings%scs_os /= 1.0_dp) then
+                  write (*, "(a,f6.3,a,f6.3)") "  spin scaling:  SS x", settings%scs_ss, &
+                     "   OS x", settings%scs_os
+                  write (*, "(a,f20.12)") "  E(corr) scaled ", result%energy%mp2%total()
+               end if
+               write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+            end if
+         end block
+      end if
+
       ! The frontier pair, from the orbital energies the SCF already produced.
       if (allocated(scf%orbital_energies)) then
          if (scf%n_occupied >= 1 .and. scf%n_occupied < size(scf%orbital_energies)) then
@@ -199,5 +239,36 @@ contains
       write (buffer, "(i0)") value
       out = trim(adjustl(buffer))
    end function to_text
+
+   pure function core_orbital_count(atomic_numbers) result(n_core)
+      !! How many orbitals a frozen core leaves out, summed over the atoms
+      !!
+      !! The count per element is the number of filled shells below the valence
+      !! one: none for H and He, the 1s for Li through Ne, and so on. This is
+      !! the same convention PySCF and most others use by default, which is the
+      !! point -- an energy computed with a different core is not comparable to
+      !! a published one, and the difference is millihartrees rather than
+      !! anything that looks like a bug.
+      integer, intent(in) :: atomic_numbers(:)
+      integer :: n_core
+
+      integer :: i, z
+
+      n_core = 0
+      do i = 1, size(atomic_numbers)
+         z = atomic_numbers(i)
+         if (z <= 10) then
+            if (z > 2) n_core = n_core + 1   ! 1s, and nothing at all for H and He
+         else if (z <= 18) then
+            n_core = n_core + 5        ! 1s 2s 2p
+         else if (z <= 36) then
+            n_core = n_core + 9        ! + 3s 3p
+         else if (z <= 54) then
+            n_core = n_core + 18       ! + 3d 4s 4p
+         else
+            n_core = n_core + 27       ! + 4d 5s 5p
+         end if
+      end do
+   end function core_orbital_count
 
 end module mqc_libcint_bridge

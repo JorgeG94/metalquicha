@@ -148,11 +148,13 @@ MOLECULES = {
     # Open-shell species. Geometries already in the tree, so they are read
     # rather than written; both are radicals and appear only in OPEN_SHELL.
     "oh": Molecule(label="OH", element="O", xyz="sample_inputs/oh.xyz"),
+    # Two of prism's waters, for the fragmented cases below.
+    "w2dimer": Molecule(label="(H2O)2", element="O", xyz="sample_inputs/w2_dimer.xyz"),
     "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
 }
 
-ALL = [m for m in MOLECULES if m not in ("oh", "o2")]
+ALL = [m for m in MOLECULES if m not in ("oh", "o2", "w2dimer")]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -216,6 +218,51 @@ OPEN_SHELL = [
     # tidily while being wrong.
     ("oh", "def2-svp", 2),
     ("o2", "cc-pvdz", 3),
+]
+
+# Second-order perturbation theory, as (molecule, basis, method, frozen).
+#
+# `frozen` is written into the deck explicitly rather than left to the default,
+# and the reference is generated with the same count. Most programs freeze the
+# core by default and this one does too, but a frozen energy compared against
+# an unfrozen one differs by a couple of millihartree -- inside no tolerance
+# worth having, and for a reason that has nothing to do with the code.
+#
+# The scaled variants share their reference with plain MP2 by construction:
+# SCS is 1.2 E_OS + E_SS/3 and SOS is 1.3 E_OS, both computed from the same
+# two components. They are here because the *dispatch* is what can break --
+# "scs-mp2" parses to the same method type as "mp2", so a deck asking for it
+# could run unscaled and report it as scaled, and only an end-to-end case
+# catches that.
+MP2_CASES = [
+    ("water", "sto-3g", "mp2", 0),
+    ("water", "cc-pvdz", "mp2", 0),
+    ("water", "cc-pvdz", "mp2", 1),
+    ("water", "cc-pvdz", "scs-mp2", 1),
+    ("water", "cc-pvdz", "sos-mp2", 1),
+    ("water", "def2-svp", "mp2", 1),
+    ("ch4", "cc-pvdz", "mp2", 1),
+    ("nh3", "cc-pvdz", "mp2", 1),
+]
+
+# Fragmented, as (molecule, basis, method, frozen, fragments).
+#
+# The reference is the supermolecule, and that is not an approximation being
+# waved through: a many-body expansion truncated at the number of monomers it
+# has is exact. Over two fragments E_1 + E_2 + (E_12 - E_1 - E_2) collapses to
+# E_12 term by term, whatever the method, so a fragmented MBE(2) run here has
+# to reproduce the supermolecular MP2 to machine precision or the expansion is
+# wrong.
+#
+# That is what makes this checkable at all. A prism at MBE(2) has no external
+# reference short of running the whole thing, and comparing the expansion to
+# its own output would only detect change.
+#
+# It also exercises a path the unfragmented cases do not: the runner gives
+# fragmented cases several MPI ranks, so this covers fragment distribution as
+# well as the correlation energy surviving the expansion.
+FRAGMENTED_CASES = [
+    ("w2dimer", "cc-pvdz", "mp2", 2, [[0, 1, 2], [3, 4, 5]]),
 ]
 
 DF_CASES = [
@@ -352,8 +399,8 @@ def write_xyz(path, mol):
     path.write_text("\n".join(body) + "\n")
 
 
-def deck_json(xyz_rel, basis, aux="", multiplicity=1):
-    model = {"method": "hf", "basis": basis}
+def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None):
+    model = {"method": method, "basis": basis}
     if aux:
         model["aux_basis"] = aux
     deck = {
@@ -369,7 +416,39 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1):
     }
     if aux:
         deck["keywords"]["scf"]["density_fitting"] = True
+    if correlation:
+        deck["keywords"]["correlation"] = correlation
     return deck
+
+
+def pyscf_mp2(atoms, basis, method, frozen):
+    """Reference MP2 total energy, scaled the way the method name says."""
+    from pyscf import gto, scf, mp
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    escf = mf.kernel()
+    pt = mp.MP2(mf, frozen=frozen)
+    pt.kernel()
+    # Recombined here rather than taken from pt.e_corr, so the factors this
+    # suite checks against are written down where they can be read.
+    if method == "scs-mp2":
+        ecorr = 1.2*pt.e_corr_os + pt.e_corr_ss/3.0
+    elif method == "sos-mp2":
+        ecorr = 1.3*pt.e_corr_os
+    else:
+        ecorr = pt.e_corr_os + pt.e_corr_ss
+    return float(escf + ecorr), mol.nao
 
 
 def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
@@ -485,6 +564,49 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} mult={mult}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, method, frozen in MP2_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_mp2(mol.atoms, basis, method, frozen)
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{method}_f{frozen}.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            (VALIDATION / deck).write_text(
+                json.dumps(deck_json(mol.xyz, basis, method=method,
+                                     correlation={"freeze_core": frozen > 0,
+                                                  "n_frozen_core": frozen}), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"{method.upper()} {mol.label} {basis} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, method, frozen, fragments in FRAGMENTED_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_mp2(mol.atoms, basis, method, frozen)
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{method}_mbe2.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            d = deck_json(mol.xyz, basis, method=method,
+                          correlation={"freeze_core": True})
+            d["molecules"][0]["fragments"] = fragments
+            d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
+            d["molecules"][0]["fragment_multiplicities"] = [1]*len(fragments)
+            d["keywords"]["fragmentation"] = {
+                "method": "MBE", "level": len(fragments),
+                "allow_overlapping_fragments": False, "embedding": "none",
+            }
+            (VALIDATION / deck).write_text(json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"MBE({len(fragments)}) {method.upper()} {mol.label} {basis} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "fragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {method:8s} MBE({len(fragments)})  nao={nao:4d} E={energy:.12f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

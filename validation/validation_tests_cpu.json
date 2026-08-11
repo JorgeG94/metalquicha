@@ -931,6 +931,60 @@
             "input": "inputs/cpu_o2_cc-pvdz_m3.json",
             "expected_energy": -149.627757503695,
             "type": "unfragmented"
+        },
+        {
+            "name": "MP2 H2O sto-3g frozen 0 (CPU)",
+            "input": "inputs/cpu_water_sto-3g_mp2_f0.json",
+            "expected_energy": -74.997272482595,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 H2O cc-pvdz frozen 0 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_mp2_f0.json",
+            "expected_energy": -76.23027459329,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 H2O cc-pvdz frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_mp2_f1.json",
+            "expected_energy": -76.22793936382,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SCS-MP2 H2O cc-pvdz frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_scs-mp2_f1.json",
+            "expected_energy": -76.224332224847,
+            "type": "unfragmented"
+        },
+        {
+            "name": "SOS-MP2 H2O cc-pvdz frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_sos-mp2_f1.json",
+            "expected_energy": -76.222528655361,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 H2O def2-svp frozen 1 (CPU)",
+            "input": "inputs/cpu_water_def2-svp_mp2_f1.json",
+            "expected_energy": -76.161689337977,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 CH4 cc-pvdz frozen 1 (CPU)",
+            "input": "inputs/cpu_ch4_cc-pvdz_mp2_f1.json",
+            "expected_energy": -40.359760600878,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MP2 NH3 cc-pvdz frozen 1 (CPU)",
+            "input": "inputs/cpu_nh3_cc-pvdz_mp2_f1.json",
+            "expected_energy": -56.381946912509,
+            "type": "unfragmented"
+        },
+        {
+            "name": "MBE(2) MP2 (H2O)2 cc-pvdz (CPU)",
+            "input": "inputs/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
+            "expected_energy": -152.466588405967,
+            "type": "fragmented"
         }
     ]
 }

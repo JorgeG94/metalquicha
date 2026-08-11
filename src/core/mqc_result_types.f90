@@ -36,6 +36,13 @@ module mqc_result_types
       !! Container for MP2 energy components (SS/OS)
       real(dp) :: ss = 0.0_dp  !! Same-spin correlation energy (Hartree)
       real(dp) :: os = 0.0_dp  !! Opposite-spin correlation energy (Hartree)
+      ! Spin-component scaling, applied by `total` rather than folded into ss
+      ! and os. The two components stay the numbers the theory produced, so a
+      ! scaled run still reports what it was scaled from -- and a result read
+      ! back later can be rescaled instead of being stuck at whatever factors
+      ! the run used. Both default to one, which is plain MP2.
+      real(dp) :: ss_scale = 1.0_dp
+      real(dp) :: os_scale = 1.0_dp
    contains
       procedure :: total => mp2_total           !! Compute total MP2 correlation
       procedure :: scs => mp2_scs               !! Compute SCS-MP2 correlation
@@ -154,16 +161,23 @@ module mqc_result_types
 contains
 
    pure function mp2_total(this) result(total)
-      !! Compute total MP2 correlation energy
+      !! The correlation energy as scaled, which for plain MP2 is the sum
+      !!
+      !! `energy_t%total` adds this to the reference, so the scaling has to be
+      !! applied here rather than by the caller -- otherwise a spin-scaled run
+      !! reports a scaled correlation energy and an unscaled total.
       class(mp2_energy_t), intent(in) :: this
       real(dp) :: total
 
-      total = this%ss + this%os
+      total = this%ss_scale*this%ss + this%os_scale*this%os
    end function mp2_total
 
    pure function mp2_scs(this) result(scs_energy)
-      !! Compute SCS-MP2 (Spin-Component Scaled MP2) correlation energy
-      !! SCS-MP2 uses: E_SCS = (1/3)*E_SS + 1.2*E_OS
+      !! Grimme's SCS-MP2 at its published factors, whatever this run used
+      !!
+      !! Fixed on purpose: `total` reports the run's own scaling, and this
+      !! answers "what would SCS-MP2 have given", which is a different
+      !! question and the one worth being able to ask of any MP2 result.
       class(mp2_energy_t), intent(in) :: this
       real(dp) :: scs_energy
 
