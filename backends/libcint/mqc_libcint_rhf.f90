@@ -22,6 +22,25 @@ module mqc_libcint_rhf
    implicit none
    private
 
+   !> First iteration the unrestricted SCF is allowed to extrapolate on.
+   !>
+   !> Extrapolating from the start converges an open-shell system to the wrong
+   !> state. The core guess gives alpha and beta the same spatial orbitals and
+   !> leaves degenerate shells degenerate, and DIIS combines Fock matrices
+   !> linearly -- so a history that begins symmetric stays symmetric, and the
+   !> iteration never reaches a solution that has to break it. OH in def2-SVP
+   !> converges tidily to -75.167538 that way, a sigma hole with its pi pair
+   !> intact to six digits, where the pi-hole ground state is -75.325108.
+   !>
+   !> Measured rather than chosen: on that case start=1 and 2 both give the
+   !> wrong state and every value from 3 to 14 gives the right one, in 14 to 16
+   !> iterations against the 14 the wrong answer took. Four is three there and
+   !> one spare, and the spare is free -- the whole range costs the same.
+   !>
+   !> This is why the restricted path has no such delay. It has no symmetry to
+   !> break, so the undamped iterations would buy it nothing.
+   integer, parameter :: DEFAULT_UHF_DIIS_START = 4
+
    public :: rhf_result_t
    public :: run_libcint_rhf
    public :: run_libcint_uhf
@@ -227,7 +246,7 @@ contains
    end subroutine run_libcint_rhf
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
-                              verbose, result, error, diis_vectors, in_core)
+                              verbose, result, error, diis_vectors, in_core, diis_start)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -250,8 +269,10 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: diis_vectors
       logical, intent(in), optional :: in_core
+      integer, intent(in), optional :: diis_start
+         !! First iteration allowed to extrapolate. See the default below.
 
-      integer :: diis_size
+      integer :: diis_size, start_cycle
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
       type(direct_stats_t) :: stats
@@ -268,6 +289,8 @@ contains
 
       diis_size = 8
       if (present(diis_vectors)) diis_size = diis_vectors
+      start_cycle = DEFAULT_UHF_DIIS_START
+      if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
       if (present(in_core)) use_in_core = in_core
 
@@ -372,7 +395,8 @@ contains
          err_flat(1:msq) = reshape(err_a, [msq])
          err_flat(msq + 1:2*msq) = reshape(err_b, [msq])
          call diis%push(fock_flat, err_flat)
-         call diis%extrapolate(fock_flat, extrapolated)
+         extrapolated = .false.
+         if (iter >= start_cycle) call diis%extrapolate(fock_flat, extrapolated)
          if (extrapolated) then
             fock_a = reshape(fock_flat(1:nsq), [n_ao, n_ao])
             fock_b = reshape(fock_flat(nsq + 1:2*nsq), [n_ao, n_ao])

@@ -39,7 +39,8 @@ contains
                   new_unittest("uhf_direct_matches_in_core", test_direct_vs_in_core), &
                   new_unittest("uhf_spin_squared_is_exact_for_one_electron", test_s2), &
                   new_unittest("uhf_rejects_impossible_multiplicity", test_bad_multiplicity), &
-                  new_unittest("uhf_odd_electron_count_is_allowed", test_odd_allowed) &
+                  new_unittest("uhf_odd_electron_count_is_allowed", test_odd_allowed), &
+                  new_unittest("uhf_diis_delay_finds_the_ground_state", test_diis_delay) &
                   ]
    end subroutine collect_mqc_libcint_uhf_tests
 
@@ -185,6 +186,48 @@ contains
       if (allocated(error)) return
       call check(error, u%converged, "and converge")
    end subroutine test_odd_allowed
+
+   subroutine test_diis_delay(error)
+      !! OH in def2-SVP, the case that made the DIIS start delay necessary
+      !!
+      !! Extrapolating from the first iteration converges it to a sigma-hole
+      !! state 158 mHartree above the ground state, and converges it tidily --
+      !! dE below 1e-9, no warning, an <S^2> of 0.7584 that looks like an
+      !! ordinary doublet. The tell is in the orbital energies: the pi pair
+      !! stays degenerate to six digits, because a symmetric guess extrapolated
+      !! linearly cannot leave the symmetric subspace.
+      !!
+      !! Both halves are asserted. The default has to find the ground state,
+      !! and starting at iteration one has to still find the wrong one --
+      !! otherwise this passes for some unrelated reason and stops guarding
+      !! the delay it exists for.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      type(rhf_result_t) :: good, bad
+      real(dp) :: c(3, 2)
+      real(dp), parameter :: GROUND = -75.325108417978_dp
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.0_dp, 0.9697_dp*ANG], [3, 2])
+      call build_libcint_molecule([8, 1], ["O ", "H "], c, "def2-svp", mol, err)
+      call check(error,.not. err%has_error(), "OH must build")
+      if (allocated(error)) return
+
+      call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., good, err)
+      call check(error, good%converged, "the default must converge")
+      if (allocated(error)) return
+      call check(error, abs(good%energy - GROUND) < 1.0e-8_dp, &
+                 "the default DIIS delay must reach the pi-hole ground state")
+      if (allocated(error)) return
+
+      call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., bad, err, diis_start=1)
+      call check(error, bad%converged, "extrapolating from the start still converges")
+      if (allocated(error)) return
+      call check(error, bad%energy > GROUND + 0.1_dp, &
+                 "extrapolating from the start must still find the higher state; if it "// &
+                 "does not, this test no longer guards the delay")
+   end subroutine test_diis_delay
 
 end module test_mqc_libcint_uhf
 

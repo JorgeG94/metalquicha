@@ -208,21 +208,15 @@ SWEEPS = [
 OPEN_SHELL = [
     ("oh", "sto-3g", 2),
     ("oh", "cc-pvdz", 2),
+    # The case that found the DIIS start delay. Extrapolating from the first
+    # iteration converged it to a sigma-hole state 158 mHartree above the
+    # pi-hole ground state, with the pi pair still degenerate to six digits --
+    # a symmetric guess plus a linear extrapolation never leaves the symmetric
+    # subspace. Worth keeping in the suite precisely because it converged
+    # tidily while being wrong.
+    ("oh", "def2-svp", 2),
     ("o2", "cc-pvdz", 3),
 ]
-
-# Deliberately absent: OH in def2-SVP. It converges tidily to
-# -75.167538347557 where PySCF reaches -75.325108417978, and both are genuine
-# stationary points -- ours is simply 158 mHartree higher. The cause is DIIS
-# steering rather than the Fock build: with diis_vectors=0 the same code
-# converges in 35 iterations to -75.325108417966, which agrees with PySCF to
-# 1.2e-11, and with any subspace size from 4 up it lands on the higher solution
-# instead. sto-3g and cc-pVDZ on the same molecule are unaffected.
-#
-# Left out because a manifest is for checking arithmetic, and this case is not
-# about arithmetic; shipping it red would train people to ignore a red suite.
-# Reinstate when the extrapolation stops choosing this solution -- a start
-# delay, or damping the first few cycles, are the usual answers.
 
 DF_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit"),

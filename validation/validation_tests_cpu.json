@@ -921,6 +921,12 @@
             "type": "unfragmented"
         },
         {
+            "name": "UHF OH def2-svp multiplicity 2 (CPU)",
+            "input": "inputs/cpu_oh_def2-svp_m2.json",
+            "expected_energy": -75.325108417978,
+            "type": "unfragmented"
+        },
+        {
             "name": "UHF O2 cc-pvdz multiplicity 3 (CPU)",
             "input": "inputs/cpu_o2_cc-pvdz_m3.json",
             "expected_energy": -149.627757503695,
