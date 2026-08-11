@@ -42,13 +42,15 @@ module mqc_libcint_integrals
                               libcint_1e_nuc_cart, libcint_2e_cart, &
                               libcint_cgto_cart, libcint_tot_cgto_cart, &
                               libcint_2e_sph_optimizer, libcint_2e_cart_optimizer, &
-                              libcint_gto_norm, &
+                              libcint_3c2e_sph_optimizer, libcint_3c2e_cart_optimizer, &
+                              libcint_2c2e_sph_optimizer, libcint_2c2e_cart_optimizer, &
+                              libcint_gto_norm, libcint_del_optimizer, &
                               LIBCINT_ATM_SLOTS, LIBCINT_BAS_SLOTS, &
                               LIBCINT_CHARGE_OF, LIBCINT_PTR_COORD, &
                               LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
                               LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF, &
                               LIBCINT_PTR_ENV_START
-   use, intrinsic :: iso_c_binding, only: c_ptr
+   use, intrinsic :: iso_c_binding, only: c_ptr, c_null_ptr
    implicit none
    private
 
@@ -605,6 +607,7 @@ contains
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
       integer :: npair, ipair
       integer, allocatable :: pair_i(:), pair_j(:)
+      type(c_ptr) :: opt
 
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
@@ -655,11 +658,25 @@ contains
          end do
       end do
 
+      ! Built once for the combined orbital+auxiliary shell set and read by
+      ! every thread. Without it libcint redoes the per-shell-pair setup on each
+      ! call -- `CINTinit_int3c2e_EnvVars` and `CINTset_pairdata` show up in a
+      ! profile of this loop, which is that work repeating.
+      opt = c_null_ptr
+      if (orb%cartesian) then
+         call libcint_3c2e_cart_optimizer(opt, orb%atm, orb%natm, bas, &
+                                          nbas_orb + nbas_aux + 1, env)
+      else
+         call libcint_3c2e_sph_optimizer(opt, orb%atm, orb%natm, bas, &
+                                         nbas_orb + nbas_aux + 1, env)
+      end if
+
       ! No accumulator to reduce, unlike the Fock build: a shell pair owns its
       ! block of `three` outright, so no two iterations write the same element
-      ! and the threads need nothing shared but a private buffer each.
+      ! and the threads need nothing shared but a private buffer each. `opt` is
+      ! shared and read-only, the same arrangement the Fock build uses.
       !$omp parallel default(none) &
-      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j) &
+      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j, opt) &
       !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf)
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
@@ -678,10 +695,10 @@ contains
             shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
             if (orb%cartesian) then
                ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
-                                       nbas_orb + nbas_aux + 1, env)
+                                       nbas_orb + nbas_aux + 1, env, opt)
             else
                ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
-                                      nbas_orb + nbas_aux + 1, env)
+                                      nbas_orb + nbas_aux + 1, env, opt)
             end if
             if (ret == 0) cycle
             do k = 1, dk
@@ -704,6 +721,7 @@ contains
       deallocate (buf)
       !$omp end parallel
 
+      call libcint_del_optimizer(opt)
       deallocate (pair_i, pair_j)
    end subroutine three_centre
 

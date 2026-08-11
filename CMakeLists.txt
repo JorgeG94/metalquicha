@@ -296,10 +296,13 @@ if(MQC_ENABLE_LIBCINT)
     # the density-fitting path will not compile -- and their Cartesian twins
     # libcint_3c2e_cart, libcint_2c2e_cart and libcint_tot_cgto_cart, without
     # which a Cartesian basis such as 6-31G* can reach the exact four-index path
-    # but not the density-fitted one. Worth replacing with a tag once the fork
-    # has one -- a tag says what it is, a hash does not, and a tag also lets
-    # GIT_SHALLOW come back, which a bare hash cannot resolve.
-    GIT_TAG 08d1fe0260be815160cd65b29fa5b6585dca3b4e)
+    # but not the density-fitted one. It also carries the three- and two-centre
+    # optimizers: libcint exports them, the Fortran interface had no way to make
+    # one, so every fitting integral rebuilt its shell-pair data per call. Worth
+    # replacing with a tag once the fork has one -- a tag says what it is, a
+    # hash does not, and a tag also lets GIT_SHALLOW come back, which a bare
+    # hash cannot resolve.
+    GIT_TAG 525cab503f6134502cf69de42234b5897276dbf8)
   # Offline builds: point FETCHCONTENT_SOURCE_DIR_LIBCINT at a local clone and
   # no network is touched. Compute nodes on most clusters have none, and a
   # configure step that reaches for GitHub fails there in a way that reads like
