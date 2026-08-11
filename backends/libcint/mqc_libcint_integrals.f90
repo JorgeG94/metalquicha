@@ -29,7 +29,7 @@ module mqc_libcint_integrals
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_cgto, only: molecular_basis_type
+   use mqc_cgto, only: molecular_basis_type, atomic_basis_type
    use mqc_basis_utils, only: find_basis_file
    use mqc_json_basis_reader, only: build_molecular_basis_json
    use pic_lapack_interfaces, only: pic_syev
@@ -233,6 +233,44 @@ contains
       call basis%destroy()
    end subroutine build_libcint_molecule
 
+   function contraction_group_size(atom_basis, first) result(nctr)
+      !! How many consecutive shells from `first` are one general contraction
+      !!
+      !! The reader emits one shell per coefficient column, because that is what
+      !! a Basis Set Exchange entry lists. For a general contraction -- cc-pVDZ
+      !! oxygen is nine s primitives carrying three columns -- those columns
+      !! share one set of exponents, and libcint can take them as a single shell
+      !! with `NCTR_OF` set to the column count. It then evaluates the primitives
+      !! once and contracts them into every column, instead of repeating the
+      !! primitive work per column.
+      !!
+      !! Only *consecutive* shells merge, and that is the whole safety argument.
+      !! libcint lays a shell's functions out with the contraction index
+      !! outermost, so merging columns that were already adjacent reproduces the
+      !! basis function order exactly -- the same functions, the same sequence,
+      !! the same matrix. Merging across a gap would silently permute the AO
+      !! basis, and every matrix built on it.
+      !!
+      !! An SP shell never merges: its columns carry different angular momenta,
+      !! which is the first thing tested here.
+      type(atomic_basis_type), intent(in) :: atom_basis
+      integer, intent(in) :: first
+      integer :: nctr
+
+      integer :: k
+
+      nctr = 1
+      do k = first + 1, atom_basis%nshells
+         if (atom_basis%shells(k)%ang_mom /= atom_basis%shells(first)%ang_mom) exit
+         if (atom_basis%shells(k)%nfunc /= atom_basis%shells(first)%nfunc) exit
+         ! Bit-for-bit: both columns were parsed from the same exponent strings
+         ! in the same file, so anything short of equality means they are not
+         ! the same primitives and must not share a shell.
+         if (any(atom_basis%shells(k)%exponents /= atom_basis%shells(first)%exponents)) exit
+         nctr = nctr + 1
+      end do
+   end function contraction_group_size
+
    subroutine molecule_build(this, atomic_numbers, coordinates, basis, error)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(libcint_molecule_t), intent(inout) :: this
@@ -242,7 +280,7 @@ contains
       type(error_t), intent(inout) :: error
 
       integer :: iatom, ishell, iprim, nprim, off, env_size, ang
-      integer :: shell_index
+      integer :: shell_index, ictr, nctr, first
 
       this%natm = size(atomic_numbers)
       ! What the basis file said, carried through the reader. Every integral
@@ -254,13 +292,20 @@ contains
          return
       end if
 
+      ! Count the shells libcint will see, which is fewer than the reader
+      ! produced wherever a general contraction was split into one shell per
+      ! coefficient column. See `contraction_group_size` for why they merge.
       this%nbas = 0
       env_size = LIBCINT_PTR_ENV_START + 3*this%natm
       do iatom = 1, this%natm
-         this%nbas = this%nbas + basis%elements(iatom)%nshells
-         do ishell = 1, basis%elements(iatom)%nshells
-            ! Exponents and coefficients, stored back to back.
-            env_size = env_size + 2*basis%elements(iatom)%shells(ishell)%nfunc
+         ishell = 1
+         do while (ishell <= basis%elements(iatom)%nshells)
+            nctr = contraction_group_size(basis%elements(iatom), ishell)
+            nprim = basis%elements(iatom)%shells(ishell)%nfunc
+            this%nbas = this%nbas + 1
+            ! One set of exponents for the group, one coefficient column each.
+            env_size = env_size + nprim + nprim*nctr
+            ishell = ishell + nctr
          end do
       end do
 
@@ -290,28 +335,42 @@ contains
 
       shell_index = 0
       do iatom = 1, this%natm
-         do ishell = 1, basis%elements(iatom)%nshells
+         first = 1
+         do while (first <= basis%elements(iatom)%nshells)
+            nctr = contraction_group_size(basis%elements(iatom), first)
             shell_index = shell_index + 1
-            ang = basis%elements(iatom)%shells(ishell)%ang_mom
-            nprim = basis%elements(iatom)%shells(ishell)%nfunc
+            ang = basis%elements(iatom)%shells(first)%ang_mom
+            nprim = basis%elements(iatom)%shells(first)%nfunc
 
             this%bas(LIBCINT_ATOM_OF, shell_index) = iatom - 1   ! libcint counts from 0
             this%bas(LIBCINT_ANG_OF, shell_index) = ang
             this%bas(LIBCINT_NPRIM_OF, shell_index) = nprim
-            this%bas(LIBCINT_NCTR_OF, shell_index) = 1
+            this%bas(LIBCINT_NCTR_OF, shell_index) = nctr
 
             this%bas(LIBCINT_PTR_EXP, shell_index) = off
-            this%env(off + 1:off + nprim) = basis%elements(iatom)%shells(ishell)%exponents
+            this%env(off + 1:off + nprim) = basis%elements(iatom)%shells(first)%exponents
             off = off + nprim
 
+            ! libcint reads the coefficients as an (nprim, nctr) matrix with
+            ! stride nprim -- `coeff[nprim*ictr + iprim]` in g1e.c -- so the
+            ! columns go down one after another, in the order the reader
+            ! produced them. That order is what keeps the basis functions where
+            ! they were: a shell with nctr contractions emits its contractions
+            ! outermost, which is the same sequence the split shells gave.
             this%bas(LIBCINT_PTR_COEFF, shell_index) = off
-            do iprim = 1, nprim
-               ! The normalisation libcint expects to have been applied.
-               this%env(off + iprim) = &
-                  basis%elements(iatom)%shells(ishell)%coefficients(iprim) &
-                  *libcint_gto_norm(ang, basis%elements(iatom)%shells(ishell)%exponents(iprim))
+            do ictr = 1, nctr
+               do iprim = 1, nprim
+                  ! The normalisation libcint expects to have been applied. It
+                  ! depends on l and the exponent alone, so every column of a
+                  ! group takes the same factor.
+                  this%env(off + iprim) = &
+                     basis%elements(iatom)%shells(first + ictr - 1)%coefficients(iprim) &
+                     *libcint_gto_norm(ang, basis%elements(iatom)%shells(first)%exponents(iprim))
+               end do
+               off = off + nprim
             end do
-            off = off + nprim
+
+            first = first + nctr
          end do
       end do
 

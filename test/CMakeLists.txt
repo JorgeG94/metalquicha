@@ -65,6 +65,11 @@ target_compile_definitions(test_mqc_basis_cartesian PRIVATE MQC_HAVE_BASIS_SETS)
 if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_cartesian)
   target_link_libraries(test_mqc_libcint_cartesian PRIVATE cint_fortran cint)
+
+  # That a general contraction reaches libcint as one shell rather than one per
+  # coefficient column, and that merging them moves no basis function.
+  addtest(mqc_libcint_contraction)
+  target_link_libraries(test_mqc_libcint_contraction PRIVATE cint_fortran cint)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.
