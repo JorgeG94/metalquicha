@@ -62,6 +62,7 @@ module mqc_libcint_integrals
    ! of entry points. Exported because the direct Fock build needs the same
    ! mapping, and two copies of it is two chances to route half the calls.
    public :: shell_dim
+   public :: pair_index
    public :: two_electron_block
    public :: two_electron_optimizer
 
@@ -90,6 +91,7 @@ module mqc_libcint_integrals
       procedure :: overlap => molecule_overlap
       procedure :: core_hamiltonian => molecule_core_hamiltonian
       procedure :: eris => molecule_eris
+      procedure :: eris_packed => molecule_eris_packed
       procedure :: nuclear_repulsion => molecule_nuclear_repulsion
       procedure :: destroy => molecule_destroy
    end type libcint_molecule_t
@@ -943,6 +945,123 @@ contains
       deallocate (pair_i, pair_j)
    end subroutine molecule_eris
 
+   subroutine molecule_eris_packed(this, eri)
+      !! Every unique two-electron integral, as (pq|rs) over packed AO pairs
+      !!
+      !! The dense n^4 form that `eris` returns costs more to fill than to
+      !! compute: eight positions written per integral, across eight different
+      !! stride patterns. That is bandwidth rather than arithmetic, and it does
+      !! not improve with more cores -- the threaded dense build gets 4.3x on
+      !! forty of them.
+      !!
+      !! Packing the two AO pairs collapses (mu nu) with (nu mu), so of the
+      !! eightfold symmetry only the bra-ket swap is left to write out: two
+      !! stores per integral instead of eight, into an array a quarter the size.
+      !! A water hexamer in cc-pVDZ goes from 3.4 GB to 872 MB.
+      !!
+      !! `eris` stays. The in-core SCF and `check_direct` read the dense form,
+      !! and a reference implementation is worth more readable than packed.
+      class(libcint_molecule_t), intent(in) :: this
+      real(dp), allocatable, intent(out) :: eri(:, :)
+
+      real(dp), allocatable :: buf(:)
+      integer :: ish, jsh, ksh, lsh, di, dj, dk, dl, lsh_max
+      integer :: shls(4)
+      integer :: i, j, k, l, io, jo, ko, lo, ret, idx
+      integer :: p, q, r, t, pq, rt, n_pair
+      integer :: npair_sh, ipair
+      integer, allocatable :: pair_i(:), pair_j(:)
+      real(dp) :: value
+      type(c_ptr) :: opt
+
+      n_pair = this%nao*(this%nao + 1)/2
+      allocate (eri(n_pair, n_pair))
+      eri = 0.0_dp
+
+      opt = c_null_ptr
+      call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
+                                  this%nbas, this%env)
+
+      npair_sh = this%nbas*(this%nbas + 1)/2
+      allocate (pair_i(npair_sh), pair_j(npair_sh))
+      ipair = 0
+      do ish = 1, this%nbas
+         do jsh = 1, ish
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(this, eri, opt, npair_sh, pair_i, pair_j) &
+      !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, p, q, r, t, pq, rt, shls, ret, idx, value, buf)
+      allocate (buf(max_block(this)**4))
+      !$omp do schedule(dynamic)
+      do ipair = 1, npair_sh
+         ish = pair_i(ipair)
+         jsh = pair_j(ipair)
+         di = shell_dim(this%cartesian, ish - 1, this%bas)
+         io = this%shell_offset(ish)
+         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
+         jo = this%shell_offset(jsh)
+         do ksh = 1, ish
+            dk = shell_dim(this%cartesian, ksh - 1, this%bas)
+            ko = this%shell_offset(ksh)
+            lsh_max = ksh
+            if (ksh == ish) lsh_max = jsh
+            do lsh = 1, lsh_max
+               dl = shell_dim(this%cartesian, lsh - 1, this%bas)
+               lo = this%shell_offset(lsh)
+               shls = [ish - 1, jsh - 1, ksh - 1, lsh - 1]
+               ret = two_electron_block(this%cartesian, buf, shls, this%atm, &
+                                        this%natm, this%bas, this%nbas, this%env, opt)
+               if (ret == 0) cycle
+
+               do l = 1, dl
+                  t = lo + l
+                  do k = 1, dk
+                     r = ko + k
+                     rt = pair_index(r, t)
+                     do j = 1, dj
+                        q = jo + j
+                        do i = 1, di
+                           p = io + i
+                           idx = i + (j - 1)*di + (k - 1)*di*dj + (l - 1)*di*dj*dk
+                           value = buf(idx)
+                           pq = pair_index(p, q)
+                           eri(pq, rt) = value
+                           eri(rt, pq) = value
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
+
+      call libcint_del_optimizer(opt)
+      deallocate (pair_i, pair_j)
+   end subroutine molecule_eris_packed
+
+   pure function pair_index(p, q) result(pq)
+      !! Where the AO pair (p,q) sits once the two orderings are collapsed
+      !!
+      !! Lower triangle, one-based: (1,1) is 1, (2,1) is 2, (2,2) is 3. The
+      !! caller need not order its arguments.
+      integer, intent(in) :: p, q
+      integer :: pq
+
+      if (p >= q) then
+         pq = p*(p - 1)/2 + q
+      else
+         pq = q*(q - 1)/2 + p
+      end if
+   end function pair_index
    pure function molecule_nuclear_repulsion(this) result(energy)
       !! Sum of Z_a Z_b / R_ab over pairs
       class(libcint_molecule_t), intent(in) :: this

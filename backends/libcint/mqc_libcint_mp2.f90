@@ -34,7 +34,7 @@ module mqc_libcint_mp2
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_tensor
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_mo_tensor, pair_index
    implicit none
    private
 
@@ -73,7 +73,7 @@ contains
          !! against an unfrozen one disagrees by tens of millihartree for a
          !! reason that has nothing to do with the implementation.
 
-      real(dp), allocatable :: ao_eri(:, :, :, :)
+      real(dp), allocatable :: ao_eri(:, :)
       real(dp), allocatable :: ovov(:, :, :, :)
       integer :: n_ao, n_mo, n_v, n_o, frozen
       integer :: i, j, a, b
@@ -103,7 +103,7 @@ contains
          return
       end if
 
-      call mol%eris(ao_eri)
+      call mol%eris_packed(ao_eri)
       call transform_ovov(ao_eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       deallocate (ao_eri)
 
@@ -246,87 +246,92 @@ contains
    end subroutine run_libcint_ri_mp2
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
-      !! (mu nu|la si) -> (ia|jb), one index at a time, without copying
+      !! (pq|rs) over packed AO pairs -> (ia|jb), in two symmetric halves
       !!
-      !! Each quarter contracts one AO index against one coefficient block, and
-      !! each is a gemm. The care is entirely in the layout: every intermediate
-      !! is held so that the slice the next quarter reads is contiguous, and is
-      !! handed to BLAS through a bounds-remapped pointer rather than `reshape`.
+      !! With the AO pairs packed, the four quarter transforms fall into two
+      !! identical halves. One column of the packed tensor is a whole AO pair
+      !! index held fixed while the other runs, so unpacking it into an nao by
+      !! nao matrix and taking C_occ^T M C_vir transforms that pair to (ia) in
+      !! two gemms. Doing it once down the columns and once down the rows is the
+      !! whole transformation:
       !!
-      !! That distinction is not cosmetic. `reshape` always materialises a
-      !! temporary, so viewing one occupied orbital's block as a matrix copied
-      !! nao^3 elements per orbital -- 573 MB on a water hexamer in cc-pVDZ,
-      !! to feed gemms that together do less work than the copying. Pointer
-      !! remapping is the same view for nothing.
+      !!     (pq|rs) --unpack pq--> (ia|rs) --unpack rs--> (ia|jb)
       !!
-      !! The layouts, in order:
-      !!
-      !!   q1 (nu la si, i)   quarter 1 contracts mu
-      !!   q2 (la si, a, i)   quarter 2 contracts nu
-      !!   q3 (si, j)         quarter 3 contracts la, per (i,a)
-      !!   ovov (i, a, j, b)  quarter 4 contracts si
-      !!
-      !! Each is chosen so the following quarter reads down a column.
-      real(dp), intent(in), target, contiguous :: eri(:, :, :, :)
+      !! The unpack is the price of the packing, and it is a good trade: it
+      !! touches nao^2 elements where the dense form wrote nao^4 across eight
+      !! stride patterns to avoid it.
+      real(dp), intent(in) :: eri(:, :)      !! (n_pair, n_pair), see `pair_index`
       real(dp), intent(in) :: coeff(:, :)
       integer, intent(in) :: frozen, n_occ, n_ao, n_mo
       real(dp), allocatable, intent(out) :: ovov(:, :, :, :)
 
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
-      real(dp), allocatable, target :: q1(:, :), q2(:, :, :)
-      real(dp), allocatable :: q3(:, :), q4(:, :)
-      real(dp), pointer, contiguous :: view(:, :)
-      integer :: n_o, n_v, i, a, j
+      real(dp), allocatable :: half(:, :)
+      real(dp), allocatable :: m(:, :), tmp(:, :), block_ov(:, :)
+      integer :: n_o, n_v, n_pair, pq, i, a, j, b, p, q
 
       n_o = n_occ - frozen
       n_v = n_mo - n_occ
+      n_pair = n_ao*(n_ao + 1)/2
 
       allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
       c_occ = coeff(:, frozen + 1:n_occ)
       c_vir = coeff(:, n_occ + 1:n_mo)
 
-      ! Quarter 1: mu against the occupied block, over the whole tensor at once.
-      ! The occupied index lands last so the next quarter reads columns.
-      allocate (q1(n_ao*n_ao*n_ao, n_o))
-      view(1:n_ao, 1:n_ao*n_ao*n_ao) => eri
-      call pic_gemm(view, c_occ, q1, transa="T")
-
-      ! Quarter 2: nu against the virtual block, one occupied orbital at a time.
-      ! Each step owns its slice of q2, so the threads share nothing but q1,
-      ! which they only read.
-      allocate (q2(n_ao*n_ao, n_v, n_o))
-      !$omp parallel do default(none) shared(q1, q2, c_vir, n_o, n_ao) &
-      !$omp    private(i, view) schedule(static)
-      do i = 1, n_o
-         view(1:n_ao, 1:n_ao*n_ao) => q1(:, i)
-         call pic_gemm(view, c_vir, q2(:, :, i), transa="T")
-      end do
-      !$omp end parallel do
-      deallocate (q1)
-
-      ! Quarters 3 and 4: la then si, per (i,a). Both slices are columns.
-      ! Quarters 3 and 4 likewise: (i,a) indexes a slice of q2 and a slice of
-      ! ovov, both owned outright, so the scratch is per-thread and the rest is
-      ! read-only.
-      allocate (ovov(n_o, n_v, n_o, n_v))
-      !$omp parallel default(none) shared(q2, ovov, c_occ, c_vir, n_o, n_v, n_ao) &
-      !$omp    private(i, a, j, view, q3, q4)
-      allocate (q3(n_o, n_ao), q4(n_o, n_v))
+      ! First half: every packed bra pair transformed to (ia), leaving (ia|rs).
+      ! Held with the packed index first so the second half reads columns.
+      allocate (half(n_pair, n_o*n_v))
+      !$omp parallel default(none) &
+      !$omp    shared(eri, half, c_occ, c_vir, n_pair, n_ao, n_o, n_v) &
+      !$omp    private(pq, p, q, i, a, m, tmp, block_ov)
+      allocate (m(n_ao, n_ao), tmp(n_o, n_ao), block_ov(n_o, n_v))
       !$omp do schedule(static)
-      do i = 1, n_o
+      do pq = 1, n_pair
+         do q = 1, n_ao
+            do p = 1, n_ao
+               m(p, q) = eri(pair_index(p, q), pq)
+            end do
+         end do
+         call pic_gemm(c_occ, m, tmp, transa="T")
+         call pic_gemm(tmp, c_vir, block_ov)
          do a = 1, n_v
-            view(1:n_ao, 1:n_ao) => q2(:, a, i)
-            call pic_gemm(c_occ, view, q3, transa="T")
-            call pic_gemm(q3, c_vir, q4)
-            do j = 1, n_o
-               ovov(i, a, j, :) = q4(j, :)
+            do i = 1, n_o
+               half(pq, (a - 1)*n_o + i) = block_ov(i, a)
             end do
          end do
       end do
       !$omp end do
-      deallocate (q3, q4)
+      deallocate (m, tmp, block_ov)
       !$omp end parallel
-      deallocate (q2, c_occ, c_vir)
+
+      ! Second half: the same operation on the ket pair, for each (ia).
+      allocate (ovov(n_o, n_v, n_o, n_v))
+      !$omp parallel default(none) &
+      !$omp    shared(half, ovov, c_occ, c_vir, n_pair, n_ao, n_o, n_v) &
+      !$omp    private(pq, p, q, i, a, j, b, m, tmp, block_ov)
+      allocate (m(n_ao, n_ao), tmp(n_o, n_ao), block_ov(n_o, n_v))
+      !$omp do schedule(static) collapse(2)
+      do a = 1, n_v
+         do i = 1, n_o
+            do q = 1, n_ao
+               do p = 1, n_ao
+                  m(p, q) = half(pair_index(p, q), (a - 1)*n_o + i)
+               end do
+            end do
+            call pic_gemm(c_occ, m, tmp, transa="T")
+            call pic_gemm(tmp, c_vir, block_ov)
+            do b = 1, n_v
+               do j = 1, n_o
+                  ovov(i, a, j, b) = block_ov(j, b)
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+      deallocate (m, tmp, block_ov)
+      !$omp end parallel
+
+      deallocate (half, c_occ, c_vir)
    end subroutine transform_ovov
 
 end module mqc_libcint_mp2
