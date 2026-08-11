@@ -27,8 +27,13 @@ module mqc_method_config
          !! Use DIIS acceleration
       integer :: diis_size = 8
          !! Number of Fock matrices for DIIS
-      character(len=16) :: guess = "gwh"
-         !! Initial guess: 'core', 'gwh' or 'sac'
+      character(len=16) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+         !!
+         !! 'auto' means the backend picks, because the best starting point
+         !! is a property of the backend rather than of the request: the CPU
+         !! path resolves it to 'sad', and cuEST to 'gwh', each having
+         !! measured its own. An explicit spelling always wins over both.
       logical :: allow_crap_scf = .false.
          !! Accept a non-converged SCF rather than stopping. See mqc_config_types.
       logical :: unrestricted = .false.

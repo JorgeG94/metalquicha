@@ -22,7 +22,10 @@ module mqc_libcint_bridge
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf, &
+                              SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
+   use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
+                                       guess_display_name
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    implicit none
    private
@@ -49,8 +52,13 @@ contains
       type(rhf_result_t) :: scf
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
-      integer :: iatom, diis_size
+      integer :: iatom, diis_size, guess_kind
       logical :: unrestricted
+      ! Left unallocated for the guesses that need no free-atom solutions. An
+      ! unallocated allocatable passed to an optional dummy is an absent
+      ! argument, so the SCF calls below need no branching on which guess ran.
+      real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
+      type(error_t) :: guess_error
 
       if (present(want_gradient)) then
          if (want_gradient) then
@@ -97,13 +105,48 @@ contains
       ! a charged or open-shell fragment reads identically to a neutral one
       ! without this, which is exactly the case a fragmented run most needs to
       ! see. Same integers the breakdown CSV carries.
-      if (settings%verbose) then
-         write (*, "(a,i0,a,i0,a,i0)") "  charge ", fragment%charge, &
-            ", multiplicity ", fragment%multiplicity, ", electrons ", fragment%nelec
-      end if
+      call logger%verbose("charge "//to_text(fragment%charge)// &
+                          ", multiplicity "//to_text(fragment%multiplicity)// &
+                          ", electrons "//to_text(fragment%nelec))
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
+
+      ! ---- which initial guess? ---------------------------------------------
+      call parse_guess_name(settings%guess, guess_kind, error)
+      if (error%has_error()) then
+         call result%error%set(ERROR_VALIDATION, error%get_message())
+         result%has_error = .true.
+         call mol%destroy()
+         return
+      end if
+
+      if (guess_kind == SCF_GUESS_SAC .or. guess_kind == SCF_GUESS_SAD) then
+         call build_atomic_guess(mol, guess_kind, guess_a, guess_b, guess_error)
+         if (guess_error%has_error()) then
+            ! A free atom that will not converge is a reason to start somewhere
+            ! else, not to fail a molecular calculation -- the guess is a
+            ! convergence aid and cannot change what the SCF converges *to*
+            ! except by changing which solution it finds. That exception is why
+            ! this is a warning and not silence: an open-shell system really can
+            ! land on a different state from a different starting point, and a
+            ! quietly substituted guess would be a quietly different answer.
+            call logger%warning("initial guess: "//guess_error%get_message()// &
+                                " -- falling back to gwh")
+            guess_kind = SCF_GUESS_GWH
+            if (allocated(guess_a)) deallocate (guess_a)
+            if (allocated(guess_b)) deallocate (guess_b)
+         else if (.not. unrestricted) then
+            ! The restricted path takes one total density. Summing here rather
+            ! than inside the SCF keeps the spin split where it means something.
+            guess_total = guess_a + guess_b
+         end if
+      end if
+
+      ! Reported rather than inferred from the iteration count. Which guess ran is
+      ! the first thing worth knowing about an SCF that took longer than expected,
+      ! and after a fallback it is the only place the substitution is visible.
+      call logger%verbose("initial guess: "//guess_display_name(guess_kind))
 
       ! Density fitting is asked for, not inferred. aux_basis_set carries a
       ! default, so treating its presence as the request would mean every
@@ -141,16 +184,19 @@ contains
 
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
-                              aux=aux, diis_vectors=diis_size)
+                              aux=aux, diis_vectors=diis_size, guess=guess_kind, &
+                              guess_density=guess_total)
          call aux%destroy()
       else if (unrestricted) then
          call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
                               settings%energy_tol, settings%density_tol, settings%verbose, &
-                              scf, error, diis_vectors=diis_size)
+                              scf, error, diis_vectors=diis_size, guess=guess_kind, &
+                              guess_density_alpha=guess_a, guess_density_beta=guess_b)
       else
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
-                              diis_vectors=diis_size)
+                              diis_vectors=diis_size, guess=guess_kind, &
+                              guess_density=guess_total)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())

@@ -41,8 +41,13 @@ module mqc_cuest_iface
          !! Pure (spherical) vs Cartesian angular functions
       logical :: verbose = .false.
          !! Print the SCF iteration table
-      character(len=16) :: guess = "gwh"
-         !! Initial guess: 'core', 'gwh' or 'sac'
+      character(len=16) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+         !!
+         !! 'auto' means the backend picks, because the best starting point
+         !! is a property of the backend rather than of the request: the CPU
+         !! path resolves it to 'sad', and cuEST to 'gwh', each having
+         !! measured its own. An explicit spelling always wins over both.
       integer :: device_rank = 0
          !! Node-local MPI rank; decides which GPU this rank binds to
       logical :: unrestricted = .false.

@@ -41,9 +41,27 @@ module mqc_libcint_rhf
    !> break, so the undamped iterations would buy it nothing.
    integer, parameter :: DEFAULT_UHF_DIIS_START = 4
 
+   !> Which starting point the SCF is handed.
+   !>
+   !> Named here rather than in the atomic-guess module because that module
+   !> calls this one -- the free-atom solutions an atomic guess is built from
+   !> are themselves unrestricted SCFs -- and Fortran has no circular `use`.
+   !> cuEST splits them the same way and for the same reason.
+   integer, parameter, public :: SCF_GUESS_CORE = 0   !! F = H
+   integer, parameter, public :: SCF_GUESS_GWH = 1    !! Generalized Wolfsberg-Helmholz
+   integer, parameter, public :: SCF_GUESS_SAC = 2    !! Superposed atomic coefficients
+   integer, parameter, public :: SCF_GUESS_SAD = 3    !! Superposed atomic densities
+
+   !> The empirical scale on the GWH off-diagonal. 1.75 is the usual value and
+   !> the one cuEST uses; the two backends have to start from the same matrix or
+   !> comparing their iteration counts means nothing.
+   real(dp), parameter :: GWH_K = 1.75_dp
+
    public :: rhf_result_t
    public :: run_libcint_rhf
    public :: run_libcint_uhf
+   public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
+   public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
    type :: rhf_result_t
       !! What a converged closed-shell SCF leaves behind
@@ -69,7 +87,8 @@ module mqc_libcint_rhf
 contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
-                              verbose, result, error, aux, diis_vectors, in_core)
+                              verbose, result, error, aux, diis_vectors, in_core, &
+                              guess, guess_density)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -93,8 +112,17 @@ contains
          !! direct. This exists because the in-core path is the one validated
          !! against PySCF, so it is what the direct build is checked against --
          !! not because anything should run with it. It is n^4 in memory.
+      integer, intent(in), optional :: guess
+         !! One of SCF_GUESS_*. Defaults to the core guess, which is the only
+         !! one needing nothing but H -- the caller decides policy, because
+         !! `guess_density` has to be built before this routine is entered.
+      real(dp), intent(in), optional :: guess_density(:, :)
+         !! Total starting density, required by SCF_GUESS_SAC and SCF_GUESS_SAD
+         !! and ignored otherwise. Built by `mqc_libcint_atomic_guess`, which
+         !! cannot be reached from here: it runs free-atom SCFs through this
+         !! very module.
 
-      integer :: diis_size
+      integer :: diis_size, guess_kind
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
       type(direct_stats_t) :: stats
@@ -118,6 +146,8 @@ contains
       if (present(diis_vectors)) diis_size = diis_vectors
       use_in_core = .false.
       if (present(in_core)) use_in_core = in_core
+      guess_kind = SCF_GUESS_CORE
+      if (present(guess)) guess_kind = guess
 
       n_ao = mol%nao
       n_occ = nelec/2
@@ -169,9 +199,34 @@ contains
       ! and the reason both converge alike.
       call diis%init(diis_size, n_ao*n_ao, n_mo*n_mo)
 
-      ! Core guess: F = H. Crude, and enough for the small systems this backend
-      ! is for; a better guess is a convergence question, not a correctness one.
-      fock = h
+      ! Every guess ends up as a starting Fock matrix, which is then diagonalised
+      ! and occupied exactly as an iteration's would be. That uniformity is the
+      ! point: the atomic guesses differ from the core guess only in what F is
+      ! built from, so nothing below this line knows which one ran.
+      select case (guess_kind)
+      case (SCF_GUESS_CORE)
+         fock = h
+      case (SCF_GUESS_GWH)
+         call guess_fock(s, h, fock)
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD)
+         if (.not. present(guess_density)) then
+            call error%set(ERROR_VALIDATION, "RHF: an atomic guess was asked for but no "// &
+                           "guess density was supplied")
+            return
+         end if
+         if (size(guess_density, 1) /= n_ao .or. size(guess_density, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "RHF: the guess density is not the size of "// &
+                           "this basis")
+            return
+         end if
+         density = guess_density
+         call atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
+         if (error%has_error()) return
+      case default
+         call error%set(ERROR_VALIDATION, "RHF: unknown initial guess")
+         return
+      end select
+
       call diagonalize(fock, x, n_ao, n_mo, coeff, eigenvalues, error)
       if (error%has_error()) return
       call build_density(coeff, n_occ, density)
@@ -246,7 +301,8 @@ contains
    end subroutine run_libcint_rhf
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
-                              verbose, result, error, diis_vectors, in_core, diis_start)
+                              verbose, result, error, diis_vectors, in_core, diis_start, &
+                              guess, guess_density_alpha, guess_density_beta)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -271,8 +327,20 @@ contains
       logical, intent(in), optional :: in_core
       integer, intent(in), optional :: diis_start
          !! First iteration allowed to extrapolate. See the default below.
+      integer, intent(in), optional :: guess
+         !! One of SCF_GUESS_*. Defaults to the core guess.
+      real(dp), intent(in), optional :: guess_density_alpha(:, :)
+      real(dp), intent(in), optional :: guess_density_beta(:, :)
+         !! Starting spin densities, required by SCF_GUESS_SAC and SCF_GUESS_SAD.
+         !! Both spins are taken separately on purpose: whether they differ is
+         !! the whole difference between the two atomic guesses here. SAC hands
+         !! over the free atom's own spin-polarised densities and so arrives
+         !! already symmetry-broken, which is what gets a radical's sigma/pi
+         !! ordering right. SAD hands over half the spherically averaged total
+         !! twice, and relies on the occupations to break the symmetry -- the
+         !! same position the core guess is in, but from a far better density.
 
-      integer :: diis_size, start_cycle
+      integer :: diis_size, start_cycle, guess_kind
       logical :: use_in_core
       real(dp), allocatable :: bounds(:, :)
       type(direct_stats_t) :: stats
@@ -293,6 +361,8 @@ contains
       if (present(diis_start)) start_cycle = diis_start
       use_in_core = .false.
       if (present(in_core)) use_in_core = in_core
+      guess_kind = SCF_GUESS_CORE
+      if (present(guess)) guess_kind = guess
 
       ! 2S+1 = n_alpha - n_beta + 1, so the unpaired count is multiplicity - 1.
       ! Both have to come out whole and non-negative, and a deck can ask for a
@@ -357,14 +427,44 @@ contains
       ! two commutators likewise.
       call diis%init(diis_size, 2*nsq, 2*msq)
 
-      ! Core guess for both spins. It gives alpha and beta the same orbitals,
-      ! and the occupations are what separate them: n_alpha > n_beta puts an
-      ! electron somewhere beta has none, and the Fock matrices diverge from
-      ! there. For n_alpha == n_beta this converges to the restricted solution,
-      ! which is the right answer rather than a failure -- breaking that
-      ! symmetry deliberately is a different request.
-      fock_a = h
-      fock_b = h
+      ! The symmetric guesses -- core and GWH -- give alpha and beta the same
+      ! orbitals, and the occupations are what separate them: n_alpha > n_beta
+      ! puts an electron somewhere beta has none, and the Fock matrices diverge
+      ! from there. For n_alpha == n_beta they converge to the restricted
+      ! solution, which is the right answer rather than a failure. SAC is the one
+      ! that arrives already asymmetric, because a free atom's own alpha and beta
+      ! densities differ wherever its shell is open.
+      select case (guess_kind)
+      case (SCF_GUESS_CORE)
+         fock_a = h
+         fock_b = h
+      case (SCF_GUESS_GWH)
+         call guess_fock(s, h, fock_a)
+         fock_b = fock_a
+      case (SCF_GUESS_SAC, SCF_GUESS_SAD)
+         if (.not. (present(guess_density_alpha) .and. present(guess_density_beta))) then
+            call error%set(ERROR_VALIDATION, "UHF: an atomic guess was asked for but no "// &
+                           "guess densities were supplied")
+            return
+         end if
+         if (size(guess_density_alpha, 1) /= n_ao .or. size(guess_density_beta, 1) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "UHF: the guess densities are not the size "// &
+                           "of this basis")
+            return
+         end if
+         d_a = guess_density_alpha
+         d_b = guess_density_beta
+         if (allocated(eri)) then
+            call build_fock_uhf(h, eri, d_a, d_b, fock_a, fock_b)
+         else
+            call build_fock_direct_uhf(mol, h, d_a, d_b, bounds, fock_a, fock_b, stats, error)
+            if (error%has_error()) return
+         end if
+      case default
+         call error%set(ERROR_VALIDATION, "UHF: unknown initial guess")
+         return
+      end select
+
       call diagonalize(fock_a, x, n_ao, n_mo, coeff_a, eig_a, error)
       if (error%has_error()) return
       call diagonalize(fock_b, x, n_ao, n_mo, coeff_b, eig_b, error)
@@ -479,6 +579,116 @@ contains
       call pic_gemm(fds, x, work)
       call pic_gemm(x, work, err, transa="T")
    end subroutine commutator
+
+   pure subroutine guess_fock(overlap, h, fock)
+      !! Generalized Wolfsberg-Helmholz starting Fock
+      !!
+      !!   F_ij = 1/2 K S_ij (H_ii + H_jj),   F_ii = H_ii
+      !!
+      !! A crude stand-in for the screening the core guess leaves out, costing
+      !! nothing beyond two matrices already in hand. It is worth having even
+      !! next to the atomic guesses: it needs no free-atom SCF, so it is the
+      !! fallback when one fails, and it is what cuEST starts from -- which makes
+      !! it the only guess under which the two backends' iteration counts are
+      !! comparable.
+      real(dp), intent(in) :: overlap(:, :), h(:, :)
+      real(dp), intent(out) :: fock(:, :)
+
+      integer :: i, j, n
+
+      n = size(h, 1)
+      do j = 1, n
+         do i = 1, n
+            if (i == j) then
+               fock(i, j) = h(i, j)
+            else
+               fock(i, j) = 0.5_dp*GWH_K*overlap(i, j)*(h(i, i) + h(j, j))
+            end if
+         end do
+      end do
+   end subroutine guess_fock
+
+   subroutine atomic_guess_fock(mol, h, density, bmat, eri, bounds, fock, error)
+      !! One Fock build from a guess density, through whichever path is active
+      !!
+      !! Exists so the atomic guesses reach the loop in the same state as the
+      !! core guess: as a Fock matrix waiting to be diagonalised. The
+      !! alternative -- entering the loop with the guess density directly -- was
+      !! rejected because the DF path would then have no orbitals for its
+      !! exchange on the one iteration that has no orbitals to give it.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :), density(:, :)
+      real(dp), allocatable, intent(in) :: bmat(:, :)
+      real(dp), allocatable, intent(in) :: eri(:, :, :, :)
+      real(dp), allocatable, intent(in) :: bounds(:, :)
+      real(dp), intent(out) :: fock(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: pseudo(:, :)
+      integer :: n_modes
+      type(direct_stats_t) :: stats
+
+      if (allocated(bmat)) then
+         call density_pseudo_orbitals(density, pseudo, n_modes, error)
+         if (error%has_error()) return
+         call build_fock_df(h, bmat, density, pseudo, n_modes, fock)
+      else if (allocated(eri)) then
+         call build_fock(h, eri, density, fock)
+      else
+         call build_fock_direct(mol, h, density, bounds, fock, stats, error)
+      end if
+   end subroutine atomic_guess_fock
+
+   subroutine density_pseudo_orbitals(density, coeff, n_modes, error)
+      !! Columns c_i satisfying D = 2 sum_i c_i c_i^T, for a density with no orbitals
+      !!
+      !! `build_fock_df` gets its exchange from occupied orbitals rather than
+      !! from the density, which is a factor of n/n_occ cheaper and the reason
+      !! the fitted path is worth having. A guess density cannot be written that
+      !! way -- superposing atomic densities, or spherically averaging one, gives
+      !! something that is not idempotent, so it has no orbitals in the usual
+      !! sense. Its eigenvectors serve instead: with D = sum_i w_i v_i v_i^T and
+      !! c_i = v_i sqrt(w_i/2), the identity D = 2 sum_i c_i c_i^T holds exactly,
+      !! and K comes out exact through code that never learns the difference.
+      !!
+      !! Costs one n^3 diagonalisation, once, on the guess only.
+      real(dp), intent(in) :: density(:, :)
+      real(dp), allocatable, intent(out) :: coeff(:, :)
+      integer, intent(out) :: n_modes
+      type(error_t), intent(inout) :: error
+
+      !> Occupations below this are dropped. A density built from converged
+      !> atomic solutions is positive semi-definite in exact arithmetic, so
+      !> anything at or below zero here is rounding on an empty mode -- an
+      !> unoccupied polarisation shell, most often -- and contributes nothing to
+      !> K. Keeping them would mean taking the square root of a negative number.
+      real(dp), parameter :: OCCUPATION_FLOOR = 1.0e-12_dp
+      real(dp), allocatable :: vectors(:, :), values(:)
+      integer :: n, i, info
+
+      n = size(density, 1)
+      allocate (vectors(n, n), values(n))
+      vectors = density
+      call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
+      if (info /= 0) then
+         call error%set(ERROR_VALIDATION, "guess: the guess density would not diagonalise")
+         return
+      end if
+
+      n_modes = count(values > OCCUPATION_FLOOR)
+      if (n_modes == 0) then
+         call error%set(ERROR_VALIDATION, "guess: the guess density carries no occupation")
+         return
+      end if
+
+      allocate (coeff(n, n_modes))
+      n_modes = 0
+      do i = 1, n
+         if (values(i) <= OCCUPATION_FLOOR) cycle
+         n_modes = n_modes + 1
+         coeff(:, n_modes) = vectors(:, i)*sqrt(0.5_dp*values(i))
+      end do
+   end subroutine density_pseudo_orbitals
 
    subroutine build_orthogonalizer(overlap, transform, n_mo, error)
       !! Canonical orthogonaliser X = U s^(-1/2), near-null modes dropped
