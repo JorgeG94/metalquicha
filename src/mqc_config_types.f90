@@ -88,6 +88,8 @@ module mqc_config_types
       ! keywords.correlation -- post-Hartree-Fock, kept apart from the SCF ones
       logical :: corr_freeze_core = .true.
       integer :: corr_n_frozen_core = -1   !! -1 counts the core from the elements
+      logical :: corr_density_fitting = .false.  !! RI for the correlation step
+      character(len=:), allocatable :: corr_aux_basis
       logical :: corr_scs = .false.        !! Spin-component scaling
       real(dp) :: corr_scs_ss = 1.0_dp/3.0_dp
       real(dp) :: corr_scs_os = 1.2_dp

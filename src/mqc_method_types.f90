@@ -22,6 +22,7 @@ module mqc_method_types
    public :: method_type_from_string, method_type_to_string
    public :: parse_method_string  !! Input-file spelling -> method type
    public :: method_spin_scaling  !! Spin-component scaling a spelling implies
+   public :: method_wants_density_fitting  !! Whether a spelling asks for RI
 
    ! Method type constants
    integer(int32), parameter :: METHOD_TYPE_UNKNOWN = 0
@@ -198,6 +199,30 @@ contains
          ! that no scaling is the deliberate answer rather than a gap.
       end select
    end subroutine method_spin_scaling
+
+   function method_wants_density_fitting(method_str) result(wants_df)
+      !! Whether a method name asks for the fitted route
+      !!
+      !! "ri-mp2" and "df-mp2" parse to METHOD_TYPE_MP2 exactly as "mp2" does,
+      !! so without this a deck asking for either would run the conventional
+      !! four-index transform and report it as RI -- right answer, wrong method,
+      !! and no way to tell from the output. Same reason `method_spin_scaling`
+      !! exists: the spelling carries intent the type discards.
+      character(len=*), intent(in) :: method_str
+      logical :: wants_df
+
+      character(len=:), allocatable :: lower_str
+      integer :: i
+
+      lower_str = trim(adjustl(method_str))
+      do i = 1, len(lower_str)
+         if (lower_str(i:i) >= "A" .and. lower_str(i:i) <= "Z") then
+            lower_str(i:i) = achar(iachar(lower_str(i:i)) + 32)
+         end if
+      end do
+
+      wants_df = (index(lower_str, "ri-") == 1) .or. (index(lower_str, "df-") == 1)
+   end function method_wants_density_fitting
 
    function parse_method_string(method_str) result(method_type)
       !! Parse method string from input file (e.g., "XTB-GFN1" -> gfn1)
