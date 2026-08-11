@@ -234,15 +234,15 @@ Parse settings from a JSON string, no molecules</p>
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item">pic_types</li>
-                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
                   <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_program_limits.html'>mqc_program_limits</a></li>
                   <li class="list-inline-item"><a href='mqc_json_schema.html'>mqc_json_schema</a></li>
                   <li class="list-inline-item">json_module</li>
                   <li class="list-inline-item"><a href='mqc_geometry.html'>mqc_geometry</a></li>
-                  <li class="list-inline-item"><a href='mqc_calc_types.html'>mqc_calc_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_xyz_reader.html'>mqc_xyz_reader</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -934,7 +934,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~8"></span>
+              <span class="anchor" id="variable-nfrag~6"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -949,7 +949,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~9"></span>
+              <span class="anchor" id="variable-fragments~7"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -994,7 +994,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~14"></span>
+              <span class="anchor" id="variable-path~13"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1039,7 +1039,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~22"></span>
+              <span class="anchor" id="variable-value~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1144,7 +1144,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-level~15"></span>
+              <span class="anchor" id="variable-level~20"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1209,7 +1209,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~25"></span>
+              <span class="anchor" id="variable-config~22"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1224,7 +1224,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~71"></span>
+              <span class="anchor" id="variable-error~74"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1279,7 +1279,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~26"></span>
+              <span class="anchor" id="variable-config~23"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1294,7 +1294,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~72"></span>
+              <span class="anchor" id="variable-error~75"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1334,7 +1334,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~25"></span>
+              <span class="anchor" id="variable-json~22"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1349,7 +1349,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~11"></span>
+              <span class="anchor" id="variable-path~10"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1364,7 +1364,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~19"></span>
+              <span class="anchor" id="variable-value~17"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -1404,7 +1404,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~27"></span>
+              <span class="anchor" id="variable-json~24"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1419,7 +1419,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~13"></span>
+              <span class="anchor" id="variable-path~12"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1434,7 +1434,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~21"></span>
+              <span class="anchor" id="variable-value~19"></span>
               logical,
             </td>
 <td>intent(inout)</td>
@@ -1474,7 +1474,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~26"></span>
+              <span class="anchor" id="variable-json~23"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1489,7 +1489,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~12"></span>
+              <span class="anchor" id="variable-path~11"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1504,7 +1504,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~20"></span>
+              <span class="anchor" id="variable-value~18"></span>
               real(kind=dp),
             </td>
 <td>intent(inout)</td>
@@ -1544,7 +1544,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~24"></span>
+              <span class="anchor" id="variable-json~21"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1559,7 +1559,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~10"></span>
+              <span class="anchor" id="variable-path~9"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -1574,7 +1574,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~18"></span>
+              <span class="anchor" id="variable-value~16"></span>
               character(len=:),
             </td>
 <td>intent(inout),</td>
@@ -1614,7 +1614,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~15"></span>
+              <span class="anchor" id="variable-json~12"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1644,7 +1644,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~27"></span>
+              <span class="anchor" id="variable-config~24"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1659,7 +1659,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~73"></span>
+              <span class="anchor" id="variable-error~76"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1714,7 +1714,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~21"></span>
+              <span class="anchor" id="variable-json~18"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1759,7 +1759,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~7"></span>
+              <span class="anchor" id="variable-nfrag~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -1774,7 +1774,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~8"></span>
+              <span class="anchor" id="variable-fragments~6"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(in),</td>
@@ -1789,7 +1789,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~4"></span>
+              <span class="anchor" id="variable-nbonds~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1804,7 +1804,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~4"></span>
+              <span class="anchor" id="variable-nbroken~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -1819,7 +1819,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~15"></span>
+              <span class="anchor" id="variable-bonds~14"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -1834,7 +1834,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~79"></span>
+              <span class="anchor" id="variable-error~82"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1874,7 +1874,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~17"></span>
+              <span class="anchor" id="variable-json~14"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1889,7 +1889,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~29"></span>
+              <span class="anchor" id="variable-config~26"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1904,7 +1904,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~75"></span>
+              <span class="anchor" id="variable-error~78"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -1944,7 +1944,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~16"></span>
+              <span class="anchor" id="variable-json~13"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -1959,7 +1959,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~28"></span>
+              <span class="anchor" id="variable-config~25"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1974,7 +1974,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~74"></span>
+              <span class="anchor" id="variable-error~77"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2014,7 +2014,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~20"></span>
+              <span class="anchor" id="variable-json~17"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2059,7 +2059,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~6"></span>
+              <span class="anchor" id="variable-nfrag~4"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2074,7 +2074,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~7"></span>
+              <span class="anchor" id="variable-fragments~5"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2089,7 +2089,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~78"></span>
+              <span class="anchor" id="variable-error~81"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2129,7 +2129,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~18"></span>
+              <span class="anchor" id="variable-json~15"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2174,7 +2174,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-charge~9"></span>
+              <span class="anchor" id="variable-charge~6"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2189,7 +2189,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-multiplicity~8"></span>
+              <span class="anchor" id="variable-multiplicity~5"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2219,7 +2219,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nfrag~5"></span>
+              <span class="anchor" id="variable-nfrag~3"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2234,7 +2234,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragments~6"></span>
+              <span class="anchor" id="variable-fragments~4"></span>
               type(<a href='../type/input_fragment_t.html'>input_fragment_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2249,7 +2249,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbonds~3"></span>
+              <span class="anchor" id="variable-nbonds"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2264,7 +2264,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-nbroken~3"></span>
+              <span class="anchor" id="variable-nbroken"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2279,7 +2279,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-bonds~14"></span>
+              <span class="anchor" id="variable-bonds~13"></span>
               type(<a href='../type/bond_t.html'>bond_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2294,7 +2294,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~76"></span>
+              <span class="anchor" id="variable-error~79"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2334,7 +2334,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~19"></span>
+              <span class="anchor" id="variable-json~16"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2394,7 +2394,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~77"></span>
+              <span class="anchor" id="variable-error~80"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2434,7 +2434,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~23"></span>
+              <span class="anchor" id="variable-json~20"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2449,7 +2449,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~9"></span>
+              <span class="anchor" id="variable-path~8"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2464,7 +2464,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~17"></span>
+              <span class="anchor" id="variable-value~15"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -2479,7 +2479,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~81"></span>
+              <span class="anchor" id="variable-error~84"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2519,7 +2519,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-json~22"></span>
+              <span class="anchor" id="variable-json~19"></span>
               type(json_file),
             </td>
 <td>intent(inout)</td>
@@ -2534,7 +2534,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-path~8"></span>
+              <span class="anchor" id="variable-path~7"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -2549,7 +2549,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-value~16"></span>
+              <span class="anchor" id="variable-value~14"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -2564,7 +2564,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~80"></span>
+              <span class="anchor" id="variable-error~83"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(out)</td>
@@ -2607,7 +2607,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 13:22 +0000             </p>
+ on 2026-08-11 14:07 +0000             </p>
           </div>
         </div>
         <br>
