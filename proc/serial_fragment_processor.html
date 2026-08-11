@@ -137,13 +137,13 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-calc_type_local~3">calc_type_local</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~9">coord_timer</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~8">current_log_level</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~90">error</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-coord_timer~8">coord_timer</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-current_log_level~7">current_log_level</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-error~72">error</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-frag_idx~2">frag_idx</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_indices~5">fragment_indices</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~13">fragment_size</a>
-            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~28">iatom</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-fragment_size~15">fragment_size</a>
+            <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-iatom~24">iatom</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-known">known</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-known_atoms">known_atoms</a>
             <a class="list-group-item" href="../proc/serial_fragment_processor.html#variable-known_energy">known_energy</a>
@@ -204,9 +204,9 @@
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/mqc_calculation_defaults.html'>mqc_calculation_defaults</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
-                  <li class="list-inline-item"><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_json_output_types.html'>mqc_json_output_types</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_checkpoint.html'>mqc_checkpoint</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -616,7 +616,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-total_fragments~6"></span>
+              <span class="anchor" id="variable-total_fragments~8"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -631,7 +631,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~16"></span>
+              <span class="anchor" id="variable-polymers~17"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -646,7 +646,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~26"></span>
+              <span class="anchor" id="variable-max_level~27"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -661,7 +661,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~63"></span>
+              <span class="anchor" id="variable-sys_geom~57"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -676,7 +676,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-method_config~10"></span>
+              <span class="anchor" id="variable-method_config~9"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -691,7 +691,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-calc_type~14"></span>
+              <span class="anchor" id="variable-calc_type~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -706,7 +706,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~26"></span>
+              <span class="anchor" id="variable-json_data~22"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -2976,7 +2976,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-coord_timer~9"></span>
+              <span class="anchor" id="variable-coord_timer~8"></span>
               type(timer_type),
             </td>
               <td>private</td>
@@ -2993,7 +2993,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-current_log_level~8"></span>
+              <span class="anchor" id="variable-current_log_level~7"></span>
               integer,
             </td>
               <td>private</td>
@@ -3010,7 +3010,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~90"></span>
+              <span class="anchor" id="variable-error~72"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
               <td>private</td>
@@ -3061,7 +3061,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~13"></span>
+              <span class="anchor" id="variable-fragment_size~15"></span>
               integer,
             </td>
               <td>private</td>
@@ -3078,7 +3078,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-iatom~28"></span>
+              <span class="anchor" id="variable-iatom~24"></span>
               integer,
             </td>
               <td>private</td>
@@ -3577,7 +3577,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 12:13 +0000             </p>
+ on 2026-08-11 12:26 +0000             </p>
           </div>
         </div>
         <br>
