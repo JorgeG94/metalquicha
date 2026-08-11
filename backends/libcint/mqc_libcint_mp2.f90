@@ -73,7 +73,7 @@ contains
          !! against an unfrozen one disagrees by tens of millihartree for a
          !! reason that has nothing to do with the implementation.
 
-      real(dp), allocatable :: eri(:, :, :, :)
+      real(dp), allocatable :: ao_eri(:, :, :, :)
       real(dp), allocatable :: ovov(:, :, :, :)
       integer :: n_ao, n_mo, n_v, n_o, frozen
       integer :: i, j, a, b
@@ -103,9 +103,9 @@ contains
          return
       end if
 
-      call mol%eris(eri)
-      call transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
-      deallocate (eri)
+      call mol%eris(ao_eri)
+      call transform_ovov(ao_eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
+      deallocate (ao_eri)
 
       ! The denominators are all strictly negative for a stable reference, so a
       ! non-negative one means the SCF solution is not a minimum. Rather than
@@ -246,22 +246,36 @@ contains
    end subroutine run_libcint_ri_mp2
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
-      !! (mu nu|la si) -> (ia|jb), one index at a time
+      !! (mu nu|la si) -> (ia|jb), one index at a time, without copying
       !!
-      !! Each quarter is a gemm over a reshaped view: the AO index being
-      !! transformed is made the leading dimension, the remaining three are
-      !! flattened into the trailing one, and the coefficient block multiplies
-      !! from the left. Fortran's column-major order is what makes that free --
-      !! eri(mu, nu, la, si) already has mu contiguous, so the first quarter
-      !! needs no copy at all.
-      real(dp), intent(in) :: eri(:, :, :, :)
+      !! Each quarter contracts one AO index against one coefficient block, and
+      !! each is a gemm. The care is entirely in the layout: every intermediate
+      !! is held so that the slice the next quarter reads is contiguous, and is
+      !! handed to BLAS through a bounds-remapped pointer rather than `reshape`.
+      !!
+      !! That distinction is not cosmetic. `reshape` always materialises a
+      !! temporary, so viewing one occupied orbital's block as a matrix copied
+      !! nao^3 elements per orbital -- 573 MB on a water hexamer in cc-pVDZ,
+      !! to feed gemms that together do less work than the copying. Pointer
+      !! remapping is the same view for nothing.
+      !!
+      !! The layouts, in order:
+      !!
+      !!   q1 (nu la si, i)   quarter 1 contracts mu
+      !!   q2 (la si, a, i)   quarter 2 contracts nu
+      !!   q3 (si, j)         quarter 3 contracts la, per (i,a)
+      !!   ovov (i, a, j, b)  quarter 4 contracts si
+      !!
+      !! Each is chosen so the following quarter reads down a column.
+      real(dp), intent(in), target, contiguous :: eri(:, :, :, :)
       real(dp), intent(in) :: coeff(:, :)
       integer, intent(in) :: frozen, n_occ, n_ao, n_mo
       real(dp), allocatable, intent(out) :: ovov(:, :, :, :)
 
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
-      real(dp), allocatable :: q1(:, :), q2(:, :), q3(:, :), q4(:, :)
-      real(dp), allocatable :: work(:, :)
+      real(dp), allocatable, target :: q1(:, :), q2(:, :, :)
+      real(dp), allocatable :: q3(:, :), q4(:, :)
+      real(dp), pointer, contiguous :: view(:, :)
       integer :: n_o, n_v, i, a, j
 
       n_o = n_occ - frozen
@@ -271,77 +285,34 @@ contains
       c_occ = coeff(:, frozen + 1:n_occ)
       c_vir = coeff(:, n_occ + 1:n_mo)
 
-      ! Quarter 1: (mu nu|la si) -> (nu la si, i), mu contracted against the
-      ! occupied block. Held with the occupied index *last*, so that the next
-      ! quarter reads one occupied orbital's block contiguously. The obvious
-      ! (i, nu la si) layout makes that read a strided gather of nao^3 elements
-      ! per orbital, which costs more than the gemm it feeds.
+      ! Quarter 1: mu against the occupied block, over the whole tensor at once.
+      ! The occupied index lands last so the next quarter reads columns.
       allocate (q1(n_ao*n_ao*n_ao, n_o))
-      call pic_gemm(reshape(eri, [n_ao, n_ao*n_ao*n_ao]), c_occ, q1, transa="T")
+      view(1:n_ao, 1:n_ao*n_ao*n_ao) => eri
+      call pic_gemm(view, c_occ, q1, transa="T")
 
-      ! Quarter 2: (i nu|la si) -> (i a|la si). nu has to lead, so the i index
-      ! is walked and each slice transposed into place. n_o gemms rather than
-      ! one, which is the price of not holding a second full-size copy.
-      allocate (q2(n_o*n_v, n_ao*n_ao))
-      allocate (work(n_ao, n_ao*n_ao))
-      block
-         real(dp), allocatable :: slice(:, :)
-         allocate (slice(n_v, n_ao*n_ao))
-         do i = 1, n_o
-            work = reshape(q1(:, i), [n_ao, n_ao*n_ao])
-            call pic_gemm(c_vir, work, slice, transa="T")
-            do a = 1, n_v
-               q2((a - 1)*n_o + i, :) = slice(a, :)
-            end do
-         end do
-         deallocate (slice)
-      end block
-      deallocate (q1, work)
+      ! Quarter 2: nu against the virtual block, one occupied orbital at a time.
+      allocate (q2(n_ao*n_ao, n_v, n_o))
+      do i = 1, n_o
+         view(1:n_ao, 1:n_ao*n_ao) => q1(:, i)
+         call pic_gemm(view, c_vir, q2(:, :, i), transa="T")
+      end do
+      deallocate (q1)
 
-      ! Quarter 3: (ia|la si) -> (ia|j si), contracting la.
-      allocate (q3(n_o*n_v, n_o*n_ao))
-      block
-         real(dp), allocatable :: m(:, :), r(:, :)
-         integer :: ia
-         allocate (m(n_ao, n_ao), r(n_o, n_ao))
-         do ia = 1, n_o*n_v
-            m = reshape(q2(ia, :), [n_ao, n_ao])
-            call pic_gemm(c_occ, m, r, transa="T")
-            do j = 1, n_o
-               q3(ia, (j - 1)*n_ao + 1:j*n_ao) = r(j, :)
-            end do
-         end do
-         deallocate (m, r)
-      end block
-      deallocate (q2)
-
-      ! Quarter 4: (ia|j si) -> (ia|jb), contracting si.
-      allocate (q4(n_o*n_v, n_o*n_v))
-      block
-         real(dp), allocatable :: m(:, :), r(:, :)
-         integer :: ia
-         allocate (m(n_ao, n_o), r(n_v, n_o))
-         do ia = 1, n_o*n_v
-            m = reshape(q3(ia, :), [n_ao, n_o])
-            call pic_gemm(c_vir, m, r, transa="T")
-            do j = 1, n_o
-               q4(ia, (j - 1)*n_v + 1:j*n_v) = r(:, j)
-            end do
-         end do
-         deallocate (m, r)
-      end block
-      deallocate (q3)
-
-      ! Unpack into the shape the energy loop reads, (i, a, j, b).
+      ! Quarters 3 and 4: la then si, per (i,a). Both slices are columns.
+      allocate (q3(n_o, n_ao), q4(n_o, n_v))
       allocate (ovov(n_o, n_v, n_o, n_v))
-      do j = 1, n_o
+      do i = 1, n_o
          do a = 1, n_v
-            do i = 1, n_o
-               ovov(i, a, j, :) = q4((a - 1)*n_o + i, (j - 1)*n_v + 1:j*n_v)
+            view(1:n_ao, 1:n_ao) => q2(:, a, i)
+            call pic_gemm(c_occ, view, q3, transa="T")
+            call pic_gemm(q3, c_vir, q4)
+            do j = 1, n_o
+               ovov(i, a, j, :) = q4(j, :)
             end do
          end do
       end do
-      deallocate (q4, c_occ, c_vir)
+      deallocate (q2, q3, q4, c_occ, c_vir)
    end subroutine transform_ovov
 
 end module mqc_libcint_mp2
