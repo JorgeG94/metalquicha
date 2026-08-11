@@ -37,6 +37,8 @@ module mqc_method_hf
          !! not an option on Hartree-Fock.
       logical :: freeze_core = .false.
       integer :: n_frozen_core = -1
+      logical :: corr_density_fitting = .false.
+      character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
          !! Fit J and K rather than computing exact integrals (CPU backend)
@@ -100,6 +102,8 @@ contains
       settings%run_mp2 = this%options%run_mp2
       settings%freeze_core = this%options%freeze_core
       settings%n_frozen_core = this%options%n_frozen_core
+      settings%corr_density_fitting = this%options%corr_density_fitting
+      settings%corr_aux_basis = this%options%corr_aux_basis
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock

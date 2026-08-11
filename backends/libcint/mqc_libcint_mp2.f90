@@ -34,11 +34,12 @@ module mqc_libcint_mp2
    use pic_types, only: dp
    use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
-   use mqc_libcint_integrals, only: libcint_molecule_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
    implicit none
    private
 
    public :: run_libcint_mp2
+   public :: run_libcint_ri_mp2
    public :: mp2_result_t
 
    type :: mp2_result_t
@@ -137,6 +138,119 @@ contains
       result%n_occupied = n_o
       result%n_virtual = n_v
    end subroutine run_libcint_mp2
+
+   subroutine run_libcint_ri_mp2(mol, aux, coeff, orbital_energies, n_occ, scf_energy, &
+                                 result, error, n_frozen)
+      !! E(2) from a fitted (ia|jb), never forming the four-index tensor
+      !!
+      !! `build_df_tensor` already returns B(mu nu, P) with the inverse-root
+      !! metric folded in, which is exactly the object this needs:
+      !!
+      !!     (ia|jb) = sum_P B^P_ia B^P_jb
+      !!
+      !! So the work is a transform of the AO pair index into (occupied,
+      !! virtual) and then one gemm per occupied pair. The saving over the
+      !! conventional route is where the memory goes: n_occ*n_vir*n_aux held
+      !! here against the n^4 tensor and its n_occ*n^3 intermediate there. For
+      !! water in cc-pVDZ that is kilobytes against megabytes, and the gap is
+      !! two powers of the system size.
+      !!
+      !! The error against conventional MP2 is the fitting error and nothing
+      !! else -- typically a few tenths of a millihartree with a matched RIFIT
+      !! set, and much worse with a JKFIT one, which is fitted for the Coulomb
+      !! and exchange blocks rather than for this.
+      type(libcint_molecule_t), intent(in) :: mol
+      type(libcint_molecule_t), intent(in) :: aux    !! Auxiliary basis, same atoms
+      real(dp), intent(in) :: coeff(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: scf_energy
+      type(mp2_result_t), intent(out) :: result
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_frozen
+
+      real(dp), allocatable :: b(:, :), bia(:, :, :), g(:, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), bp(:, :), half(:, :)
+      integer :: n_ao, n_mo, n_o, n_v, n_aux, frozen
+      integer :: i, j, a, bb, p_index
+      real(dp) :: iajb, ibja, denom, e_ss, e_os
+
+      n_ao = mol%nao
+      n_mo = size(coeff, 2)
+
+      frozen = 0
+      if (present(n_frozen)) frozen = n_frozen
+      if (frozen < 0 .or. frozen >= n_occ) then
+         call error%set(ERROR_VALIDATION, "RI-MP2: the frozen core must leave at "// &
+                        "least one occupied orbital to correlate")
+         return
+      end if
+
+      n_o = n_occ - frozen
+      n_v = n_mo - n_occ
+      if (n_v < 1) then
+         call error%set(ERROR_VALIDATION, "RI-MP2: no virtual orbitals")
+         return
+      end if
+
+      call build_df_tensor(mol, aux, b, error)
+      if (error%has_error()) return
+      n_aux = size(b, 2)
+
+      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
+      c_occ = coeff(:, frozen + 1:n_occ)
+      c_vir = coeff(:, n_occ + 1:n_mo)
+
+      ! B^P_ia, laid out so that one occupied orbital's block is contiguous:
+      ! the energy step wants (n_v, n_aux) slices to hand straight to a gemm.
+      allocate (bia(n_v, n_aux, n_o))
+      allocate (bp(n_ao, n_ao), half(n_o, n_ao))
+      block
+         real(dp), allocatable :: full(:, :)
+         allocate (full(n_o, n_v))
+         do p_index = 1, n_aux
+            bp = reshape(b(:, p_index), [n_ao, n_ao])
+            call pic_gemm(c_occ, bp, half, transa="T")
+            call pic_gemm(half, c_vir, full)
+            do i = 1, n_o
+               bia(:, p_index, i) = full(i, :)
+            end do
+         end do
+         deallocate (full)
+      end block
+      deallocate (bp, half, b, c_occ, c_vir)
+
+      ! One gemm per occupied pair rebuilds that pair's whole (a,b) block:
+      ! g(a,b) = sum_P B^P_ia B^P_jb, which is (ia|jb), and g(b,a) is (ib|ja).
+      allocate (g(n_v, n_v))
+      e_ss = 0.0_dp
+      e_os = 0.0_dp
+      do i = 1, n_o
+         do j = 1, n_o
+            call pic_gemm(bia(:, :, i), bia(:, :, j), g, transb="T")
+            do bb = 1, n_v
+               do a = 1, n_v
+                  iajb = g(a, bb)
+                  ibja = g(bb, a)
+                  denom = orbital_energies(frozen + i) + orbital_energies(frozen + j) &
+                          - orbital_energies(n_occ + a) - orbital_energies(n_occ + bb)
+                  e_os = e_os + iajb*iajb/denom
+                  e_ss = e_ss + iajb*(iajb - ibja)/denom
+               end do
+            end do
+         end do
+      end do
+      deallocate (g, bia)
+
+      result%same_spin = e_ss
+      result%opposite_spin = e_os
+      result%correlation = e_ss + e_os
+      result%scf_energy = scf_energy
+      result%total = scf_energy + result%correlation
+      result%n_frozen = frozen
+      result%n_occupied = n_o
+      result%n_virtual = n_v
+   end subroutine run_libcint_ri_mp2
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
       !! (mu nu|la si) -> (ia|jb), one index at a time

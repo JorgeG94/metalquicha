@@ -13,6 +13,7 @@ module mqc_libcint_bridge
    !! about the integrals cares which atoms were in the original molecule --
    !! the redistribution of forces back onto the heavy atoms happens later and
    !! elsewhere.
+   use pic_logger, only: logger => global_logger
    use pic_types, only: dp
    use mqc_physical_fragment, only: physical_fragment_t
    use mqc_result_types, only: calculation_result_t, SCF_CONVERGED, SCF_NOT_CONVERGED
@@ -22,7 +23,7 @@ module mqc_libcint_bridge
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    implicit none
    private
 
@@ -44,7 +45,7 @@ contains
       type(calculation_result_t), intent(inout) :: result
       logical, intent(in), optional :: want_gradient
 
-      type(libcint_molecule_t) :: mol, aux
+      type(libcint_molecule_t) :: mol, aux, corr_aux
       type(rhf_result_t) :: scf
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
@@ -178,9 +179,23 @@ contains
             if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
             if (.not. settings%freeze_core) frozen = 0
 
-            call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
-                                 fragment%nelec/2, scf%energy, mp2, error, &
-                                 n_frozen=frozen)
+            if (settings%corr_density_fitting) then
+               call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  call mol%destroy()
+                  return
+               end if
+               call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, scf%orbital_energies, &
+                                       fragment%nelec/2, scf%energy, mp2, error, &
+                                       n_frozen=frozen)
+               call corr_aux%destroy()
+            else
+               call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                                    fragment%nelec/2, scf%energy, mp2, error, &
+                                    n_frozen=frozen)
+            end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "MP2: "//error%get_message())
                result%has_error = .true.
@@ -239,6 +254,46 @@ contains
       write (buffer, "(i0)") value
       out = trim(adjustl(buffer))
    end function to_text
+
+   subroutine correlation_aux_basis(settings, fragment, symbols, aux, error)
+      !! Build the auxiliary basis the correlation step will fit with
+      !!
+      !! Whatever the deck names is used, including sets that have no business
+      !! fitting a (ia|jb) block -- a JKFIT set is fitted for the Coulomb and
+      !! exchange matrices and will give a correlation energy whose error is
+      !! not the RI error it is supposed to be. That is a warning rather than a
+      !! refusal: someone comparing against another program's default, or
+      !! probing how bad it gets, has a real reason to ask for it, and the run
+      !! is not wrong so much as poorly fitted.
+      !!
+      !! `keywords.correlation.aux_basis` is what this reads. It falls back to
+      !! `model.aux_basis` so a deck that already names one for a fitted SCF
+      !! does not have to repeat it -- and that fallback is exactly the case
+      !! the warning is for, since an SCF auxiliary is usually JKFIT.
+      type(cuest_scf_settings_t), intent(in) :: settings
+      type(physical_fragment_t), intent(in) :: fragment
+      character(len=*), intent(in) :: symbols(:)
+      type(libcint_molecule_t), intent(out) :: aux
+      type(error_t), intent(inout) :: error
+
+      character(len=:), allocatable :: name
+
+      name = trim(settings%corr_aux_basis)
+      if (len_trim(name) == 0) name = trim(settings%aux_basis_set)
+      if (len_trim(name) == 0) then
+         call error%set(ERROR_VALIDATION, "density-fitted correlation needs an "// &
+                        "auxiliary basis: set keywords.correlation.aux_basis")
+         return
+      end if
+
+      if (index(name, "rifit") == 0 .and. index(name, "-ri") == 0) then
+         call logger%warning("bad basis set, calculations will be poor: '"//name// &
+                             "' is not a correlation-fitting (RIFIT) set")
+      end if
+
+      call build_libcint_molecule(fragment%element_numbers, symbols, &
+                                  fragment%coordinates, name, aux, error)
+   end subroutine correlation_aux_basis
 
    pure function core_orbital_count(atomic_numbers) result(n_core)
       !! How many orbitals a frozen core leaves out, summed over the atoms

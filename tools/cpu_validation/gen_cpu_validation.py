@@ -261,6 +261,20 @@ MP2_CASES = [
 # It also exercises a path the unfragmented cases do not: the runner gives
 # fragmented cases several MPI ranks, so this covers fragment distribution as
 # well as the correlation energy surviving the expansion.
+# Density-fitted MP2, as (molecule, orbital basis, auxiliary basis, frozen).
+#
+# The auxiliary sets here are RIFIT, which is what fits a (ia|jb) block. A
+# JKFIT set is fitted for the Coulomb and exchange matrices instead; the code
+# accepts one and warns, and that is deliberately not covered by a reference
+# case -- the point of the warning is that the number is poor, and pinning a
+# poor number teaches nothing.
+RI_MP2_CASES = [
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 0),
+    ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
+    ("water", "def2-svp", "def2-svp-rifit", 1),
+    ("ch4", "cc-pvdz", "cc-pvdz-rifit", 1),
+]
+
 FRAGMENTED_CASES = [
     ("w2dimer", "cc-pvdz", "mp2", 2, [[0, 1, 2], [3, 4, 5]]),
 ]
@@ -419,6 +433,35 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
     if correlation:
         deck["keywords"]["correlation"] = correlation
     return deck
+
+
+def pyscf_ri_mp2(atoms, basis, aux, frozen):
+    """Reference DF-MP2 total energy, fitted with the given auxiliary basis.
+
+    Compared against PySCF's own density-fitted MP2 rather than against exact
+    MP2: agreeing with the exact answer to the fitting error would only say the
+    fitting error is the usual size, not that the same fitted quantity is being
+    computed. These agree to 1e-10, which is the stronger statement.
+    """
+    from pyscf import gto, scf, mp
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    escf = mf.kernel()
+    pt = mp.dfmp2.DFMP2(mf, frozen=frozen)
+    pt.with_df = pt.with_df.__class__(mol, auxbasis={s: bse_to_pyscf(aux, s) for s in symbols})
+    ecorr, _ = pt.kernel()
+    return float(escf + ecorr), mol.nao
 
 
 def pyscf_mp2(atoms, basis, method, frozen):
@@ -583,6 +626,26 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, aux, frozen in RI_MP2_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_ri_mp2(mol.atoms, basis, aux, frozen)
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_rimp2_f{frozen}.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            (VALIDATION / deck).write_text(
+                json.dumps(deck_json(mol.xyz, basis, method="ri-mp2",
+                                     correlation={"freeze_core": frozen > 0,
+                                                  "n_frozen_core": frozen,
+                                                  "aux_basis": aux}), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"RI-MP2 {mol.label} {basis}/{aux} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} ri-mp2/{aux:16s} frozen={frozen} E={energy:.12f}", flush=True)
 
     for name, basis, method, frozen, fragments in FRAGMENTED_CASES:
         mol = MOLECULES[name]
