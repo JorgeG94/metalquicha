@@ -15,4 +15,4 @@ target_sources(
   ${main_lib}
   PRIVATE mqc_libcint_atomic_guess.f90 mqc_libcint_bridge.f90
           mqc_libcint_direct.f90 mqc_libcint_integrals.f90 mqc_libcint_rhf.f90
-          mqc_libcint_mp2.f90)
+          mqc_libcint_mp2.f90 mqc_libcint_cc.f90)
