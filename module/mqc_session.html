@@ -231,23 +231,23 @@ the whole setup phase.</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/IEEE+arithmetic'>ieee_exceptions</a></li>
-                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
-                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
-                  <li class="list-inline-item">pic_mpi_lib</li>
-                  <li class="list-inline-item"><a href='mqc_bcast_system.html'>mqc_bcast_system</a></li>
-                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
-                  <li class="list-inline-item"><a href='mqc_bcast.html'>mqc_bcast</a></li>
-                  <li class="list-inline-item"><a href='mqc_driver.html'>mqc_driver</a></li>
-                  <li class="list-inline-item"><a href='mqc_validate.html'>mqc_validate</a></li>
                   <li class="list-inline-item">pic_logger</li>
-                  <li class="list-inline-item"><a href='mqc_json_config_reader.html'>mqc_json_config_reader</a></li>
-                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
                   <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_resources.html'>mqc_resources</a></li>
                   <li class="list-inline-item"><a href='mqc_config_adapter.html'>mqc_config_adapter</a></li>
-                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item"><a href='mqc_io_helpers.html'>mqc_io_helpers</a></li>
+                  <li class="list-inline-item"><a href='mqc_bcast.html'>mqc_bcast</a></li>
                   <li class="list-inline-item"><a href='mqc_result_types.html'>mqc_result_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_fraglist.html'>mqc_fraglist</a></li>
+                  <li class="list-inline-item">pic_mpi_lib</li>
+                  <li class="list-inline-item"><a href='mqc_json_config_reader.html'>mqc_json_config_reader</a></li>
+                  <li class="list-inline-item"><a href='mqc_driver.html'>mqc_driver</a></li>
+                  <li class="list-inline-item"><a href='mqc_physical_fragment.html'>mqc_physical_fragment</a></li>
+                  <li class="list-inline-item"><a href='mqc_config_types.html'>mqc_config_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_validate.html'>mqc_validate</a></li>
+                  <li class="list-inline-item"><a href='mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='mqc_bcast_system.html'>mqc_bcast_system</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/IEEE+arithmetic'>ieee_exceptions</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -2938,7 +2938,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-active~3"></span>
+              <span class="anchor" id="variable-active~2"></span>
               logical,
             </td>
               <td>public</td>
@@ -2989,7 +2989,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resources"></span>
+              <span class="anchor" id="variable-resources~6"></span>
               type(<a href='../type/resources_t.html'>resources_t</a>),
             </td>
               <td>public</td>
@@ -3030,7 +3030,7 @@ parameter
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/mqc_session_t.html#boundprocedure-is_root~6'>is_root</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/session_is_root.html'>session_is_root</a></td>
+  <strong><a href='../type/mqc_session_t.html#boundprocedure-is_root'>is_root</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/session_is_root.html'>session_is_root</a></td>
                   <td></td>
               </tr>
               <tr>
@@ -3068,7 +3068,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~44"></span>
+              <span class="anchor" id="variable-this~67"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3118,7 +3118,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~10"></span>
+              <span class="anchor" id="variable-config~19"></span>
               type(<a href='../type/mqc_config_t.html'>mqc_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3158,7 +3158,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~6"></span>
+              <span class="anchor" id="variable-terms~3"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3173,7 +3173,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~5"></span>
+              <span class="anchor" id="variable-n_terms~2"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3188,7 +3188,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~21"></span>
+              <span class="anchor" id="variable-sys_geom~12"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in)</td>
@@ -3218,7 +3218,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~49"></span>
+              <span class="anchor" id="variable-error~35"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3258,7 +3258,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~38"></span>
+              <span class="anchor" id="variable-this~61"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3273,7 +3273,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~46"></span>
+              <span class="anchor" id="variable-error~32"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3313,7 +3313,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~42"></span>
+              <span class="anchor" id="variable-this~65"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3343,7 +3343,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~50"></span>
+              <span class="anchor" id="variable-error~36"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3383,7 +3383,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~43"></span>
+              <span class="anchor" id="variable-this~66"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3398,7 +3398,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~51"></span>
+              <span class="anchor" id="variable-error~37"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3438,7 +3438,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~41"></span>
+              <span class="anchor" id="variable-this~64"></span>
               class(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3453,7 +3453,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-settings~8"></span>
+              <span class="anchor" id="variable-settings~4"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -3468,7 +3468,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~20"></span>
+              <span class="anchor" id="variable-sys_geom~11"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3484,7 +3484,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-terms~5"></span>
+              <span class="anchor" id="variable-terms~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -3499,7 +3499,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_terms~4"></span>
+              <span class="anchor" id="variable-n_terms"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -3529,7 +3529,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-write_output~2"></span>
+              <span class="anchor" id="variable-write_output~3"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -3544,7 +3544,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result~19"></span>
+              <span class="anchor" id="variable-result~21"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(out)</td>
@@ -3559,7 +3559,7 @@ passed to writes on the receiving ranks.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-error~48"></span>
+              <span class="anchor" id="variable-error~34"></span>
               type(<a href='../type/error_t.html'>error_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3599,7 +3599,7 @@ passed to writes on the receiving ranks.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~39"></span>
+              <span class="anchor" id="variable-this~62"></span>
               type(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3639,7 +3639,7 @@ passed to writes on the receiving ranks.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~40"></span>
+              <span class="anchor" id="variable-this~63"></span>
               type(<a href='../type/mqc_session_t.html'>mqc_session_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -3682,7 +3682,7 @@ passed to writes on the receiving ranks.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 00:14 +0000             </p>
+ on 2026-08-11 11:59 +0000             </p>
           </div>
         </div>
         <br>
