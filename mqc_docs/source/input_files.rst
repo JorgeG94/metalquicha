@@ -183,12 +183,32 @@ Specifies the quantum chemistry method:
      "aux_basis": "cc-pVDZ-RIFIT"
    }
 
-**Supported methods**:
+**Supported methods**. Spelling is case-insensitive, and an ``XTB-`` prefix is
+stripped before matching, so ``XTB-GFN2`` and ``gfn2`` are the same request.
 
-- ``XTB-GFN1``: GFN1-xTB semi-empirical method (default)
-- ``XTB-GFN2``: GFN2-xTB semi-empirical method
+Semi-empirical, through tblite:
 
-**Note**: Basis sets (``basis``, ``aux_basis``) are currently only used for future ab initio methods. XTB methods ignore these fields.
+- ``GFN1`` (also ``GFN1-xTB``, ``XTB-GFN1``)
+- ``GFN2`` (also ``GFN2-xTB``, ``XTB-GFN2``)
+
+Ab initio, on the CPU through libcint:
+
+- ``HF`` (also ``RHF``, ``UHF``, ``Hartree-Fock``) -- an odd electron count or a
+  multiplicity above one selects the unrestricted path whatever the spelling says
+- ``MP2``, and ``SCS-MP2`` / ``SOS-MP2`` for the spin-component-scaled variants
+- ``CCSD`` and ``CCSD(T)``
+- ``RI-`` or ``DF-`` on any correlated method asks for the density-fitted route:
+  ``RI-MP2``, ``RI-CCSD``, ``RI-CCSD(T)``
+
+**Basis sets.** ``basis`` is required by every ab initio method and ignored by the
+semi-empirical ones, which carry their own parameters. ``aux_basis`` is the
+auxiliary set for a density-fitted *reference*; the auxiliary set for a fitted
+*correlation* treatment is ``keywords.correlation.aux_basis``, which is separate
+because the two can legitimately differ.
+
+**Not yet reachable**: ``DFT``, ``MCSCF`` and the F12 variants parse but have no
+CPU implementation. ``RI-CCSD`` needs a restricted reference; unrestricted
+coupled cluster is refused rather than quietly run restricted.
 
 Driver Section
 --------------
@@ -215,12 +235,83 @@ SCF Options
    "keywords": {
      "scf": {
        "maxiter": 300,
-       "tolerance": 1e-6
+       "tolerance": 1e-6,
+       "guess": "auto",
+       "unrestricted": false,
+       "density_fitting": false,
+       "allow_crap_scf": false
      }
    }
 
 - ``maxiter``: Maximum SCF iterations (default: 300)
 - ``tolerance``: Convergence tolerance (default: 1e-6)
+- ``guess``: Initial orbital guess (default: ``auto``). One of:
+
+  - ``core`` -- the core Hamiltonian, ``F = H``. Cheapest and worst; on a
+    46-atom peptide cation it does not converge at all in 100 cycles.
+  - ``gwh`` -- generalized Wolfsberg-Helmholz, needing no atomic calculation.
+  - ``sad`` -- superposition of spherically averaged atomic densities. Each
+    element is solved once as a free atom and cached.
+  - ``sac`` -- superposition of the free atoms' own spin densities. Arrives with
+    its spatial symmetry already broken, which is what a radical wants and a
+    closed shell does not.
+  - ``auto`` -- let the backend choose, since the best starting point is a
+    property of the backend: the CPU path resolves it to ``sad`` and the GPU path
+    to ``gwh``, each having measured its own.
+
+- ``unrestricted``: Force the unrestricted path (default: false). An odd electron
+  count or a multiplicity above one forces it regardless.
+- ``density_fitting``: Fit J and K in the reference (default: false). Asked for
+  explicitly rather than inferred from ``aux_basis`` being present.
+- ``allow_crap_scf``: Accept a non-converged SCF instead of stopping (default:
+  false). Off because the energy of an SCF that ran out of iterations has the
+  right magnitude and nothing downstream can tell.
+
+Correlation Options
+^^^^^^^^^^^^^^^^^^^
+
+Shared by every post-Hartree-Fock method, and deliberately not under ``scf``: a
+density-fitted reference followed by a conventional correlation treatment is a
+combination someone will ask for, and one shared flag could not express it.
+
+.. code-block:: json
+
+   "correlation": {
+     "freeze_core": true,
+     "n_frozen_core": -1,
+     "density_fitting": false,
+     "aux_basis": "cc-pVDZ-RIFIT",
+     "scs": false
+   }
+
+- ``freeze_core``: Leave core orbitals uncorrelated (default: true)
+- ``n_frozen_core``: How many to freeze (default: -1, counted from the elements)
+- ``density_fitting``: Fit the correlation integrals (default: false, or true if
+  the method name carries an ``RI-``/``DF-`` prefix -- an explicit keyword wins)
+- ``aux_basis``: Auxiliary set for the fit; falls back to ``model.aux_basis``
+- ``scs``, ``scs_ss``, ``scs_os``: Spin-component scaling and its factors
+  (defaults 1/3 and 1.2, applied only when ``scs`` is on or the method name asks)
+
+Coupled Cluster Options
+^^^^^^^^^^^^^^^^^^^^^^^
+
+What only an iterative correlation method needs.
+
+.. code-block:: json
+
+   "cc": {
+     "maxiter": 100,
+     "tolerance": 1e-8,
+     "diis": true,
+     "diis_size": 8
+   }
+
+- ``maxiter``: Maximum amplitude iterations (default: 100)
+- ``tolerance``: Correlation energy convergence (default: 1e-8)
+- ``diis`` / ``diis_size``: Extrapolate the amplitudes (default: true, 8)
+- ``triples``: Override whether (T) runs. Ordinarily the method name settles it,
+  since ``ccsd`` and ``ccsd(t)`` are separate methods rather than one method with
+  a flag; set this only to contradict the name.
 
 Fragmentation Options
 ^^^^^^^^^^^^^^^^^^^^^
