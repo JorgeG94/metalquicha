@@ -907,6 +907,24 @@
             "input": "inputs/cpu_ch4_6-31g_st__st__df.json",
             "expected_energy": -40.381603512964,
             "type": "unfragmented"
+        },
+        {
+            "name": "UHF OH sto-3g multiplicity 2 (CPU)",
+            "input": "inputs/cpu_oh_sto-3g_m2.json",
+            "expected_energy": -74.362637545612,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF OH cc-pvdz multiplicity 2 (CPU)",
+            "input": "inputs/cpu_oh_cc-pvdz_m2.json",
+            "expected_energy": -75.393846033475,
+            "type": "unfragmented"
+        },
+        {
+            "name": "UHF O2 cc-pvdz multiplicity 3 (CPU)",
+            "input": "inputs/cpu_o2_cc-pvdz_m3.json",
+            "expected_energy": -149.627757503695,
+            "type": "unfragmented"
         }
     ]
 }

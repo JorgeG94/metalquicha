@@ -70,6 +70,11 @@ if(MQC_ENABLE_LIBCINT)
   # coefficient column, and that merging them moves no basis function.
   addtest(mqc_libcint_contraction)
   target_link_libraries(test_mqc_libcint_contraction PRIVATE cint_fortran cint)
+
+  # The unrestricted SCF, against the properties a reference energy cannot see:
+  # closed-shell UHF must equal RHF, direct must equal in-core.
+  addtest(mqc_libcint_uhf)
+  target_link_libraries(test_mqc_libcint_uhf PRIVATE cint_fortran cint)
 endif()
 
 # Only meaningful with the cuEST backend compiled in.

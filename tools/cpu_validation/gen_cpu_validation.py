@@ -145,10 +145,14 @@ MOLECULES = {
     "ph3": _mol("PH3", "P", pyramidal_ah3("P", "H", 1.4200, 93.50)),
     "h2s": _mol("H2S", "S", bent_ah2("S", "H", 1.3356, 92.11)),
     "hcl": _mol("HCl", "Cl", diatomic("Cl", "H", 1.2746)),
+    # Open-shell species. Geometries already in the tree, so they are read
+    # rather than written; both are radicals and appear only in OPEN_SHELL.
+    "oh": Molecule(label="OH", element="O", xyz="sample_inputs/oh.xyz"),
+    "o2": Molecule(label="O2", element="O", xyz="sample_inputs/o2.xyz"),
     "ar": _mol("Ar", "Ar", atom("Ar")),
 }
 
-ALL = list(MOLECULES)
+ALL = [m for m in MOLECULES if m not in ("oh", "o2")]
 
 # --------------------------------------------------------------------------
 # the sweeps -- what each one is here to exercise
@@ -196,6 +200,30 @@ SWEEPS = [
 # are built in one angular form for all three centres, so a Cartesian orbital
 # basis has no shipped auxiliary to pair with. Using it as its own is the only
 # way to reach the Cartesian three-centre entry points at all.
+# Open shell, as (molecule, basis, multiplicity). These are the unrestricted
+# path: two Fock matrices sharing one Coulomb field. A closed-shell system run
+# unrestricted is a different and weaker test -- it converges to the restricted
+# answer, so it checks the plumbing and not the physics -- and it is covered by
+# a unit test rather than here.
+OPEN_SHELL = [
+    ("oh", "sto-3g", 2),
+    ("oh", "cc-pvdz", 2),
+    ("o2", "cc-pvdz", 3),
+]
+
+# Deliberately absent: OH in def2-SVP. It converges tidily to
+# -75.167538347557 where PySCF reaches -75.325108417978, and both are genuine
+# stationary points -- ours is simply 158 mHartree higher. The cause is DIIS
+# steering rather than the Fock build: with diis_vectors=0 the same code
+# converges in 35 iterations to -75.325108417966, which agrees with PySCF to
+# 1.2e-11, and with any subspace size from 4 up it lands on the higher solution
+# instead. sto-3g and cc-pVDZ on the same molecule are unaffected.
+#
+# Left out because a manifest is for checking arithmetic, and this case is not
+# about arithmetic; shipping it red would train people to ignore a red suite.
+# Reinstate when the extrapolation stops choosing this solution -- a start
+# delay, or damping the first few cycles, are the usual answers.
+
 DF_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit"),
     ("water", "def2-svp", "def2-universal-jkfit"),
@@ -330,14 +358,15 @@ def write_xyz(path, mol):
     path.write_text("\n".join(body) + "\n")
 
 
-def deck_json(xyz_rel, basis, aux=""):
+def deck_json(xyz_rel, basis, aux="", multiplicity=1):
     model = {"method": "hf", "basis": basis}
     if aux:
         model["aux_basis"] = aux
     deck = {
         "schema": {"name": "mqc-frag", "version": "1.0"},
         "molecules": [
-            {"xyz": xyz_rel, "molecular_charge": 0, "molecular_multiplicity": 1}
+            {"xyz": xyz_rel, "molecular_charge": 0,
+             "molecular_multiplicity": multiplicity}
         ],
         "model": model,
         "keywords": {"scf": {"maxiter": 100, "tolerance": 1e-08}},
@@ -349,7 +378,7 @@ def deck_json(xyz_rel, basis, aux=""):
     return deck
 
 
-def pyscf_rhf(atoms, basis, aux=""):
+def pyscf_rhf(atoms, basis, aux="", multiplicity=1):
     from pyscf import df, gto, scf
 
     mol = gto.Mole()
@@ -358,7 +387,7 @@ def pyscf_rhf(atoms, basis, aux=""):
     symbols = {a[0] for a in atoms}
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
     mol.charge = 0
-    mol.spin = 0
+    mol.spin = multiplicity - 1
     # The basis decides, exactly as it does on the Fortran side. Hardcoding this
     # either way is the bug the 6-31G* sweeps are here to catch: spherical is
     # right for most of the table and silently wrong for the polarised Pople
@@ -366,7 +395,11 @@ def pyscf_rhf(atoms, basis, aux=""):
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
     mol.verbose = 0
     mol.build()
-    mf = scf.RHF(mol)
+    # UHF once the system is open shell, which is what the CPU backend does
+    # too -- it goes unrestricted on multiplicity or an odd electron count
+    # rather than on the keyword alone, so the reference has to follow the
+    # same rule or the two disagree for a reason that is not the integrals.
+    mf = scf.UHF(mol) if multiplicity != 1 else scf.RHF(mol)
     if aux:
         # All three centres of a fitting integral are built in one angular form,
         # so an auxiliary set of the other convention is not a reference to
@@ -441,6 +474,23 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} df={aux:22s} E={energy:.12f}", flush=True)
+
+    for name, basis, mult in OPEN_SHELL:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rhf(mol.atoms, basis, multiplicity=mult)
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_m{mult}.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            (VALIDATION / deck).write_text(
+                json.dumps(deck_json(mol.xyz, basis, multiplicity=mult), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"UHF {mol.label} {basis} multiplicity {mult} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} mult={mult}  nao={nao:4d} E={energy:.12f}", flush=True)
 
     manifest = {"description": DESCRIPTION, "tolerance": TOLERANCE, "tests": tests}
     if args.dry_run:

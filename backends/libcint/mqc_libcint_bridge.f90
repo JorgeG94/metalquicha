@@ -21,7 +21,7 @@ module mqc_libcint_bridge
    use mqc_program_limits, only: MAX_ELEMENT_SYMBOL_LEN
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf, run_libcint_uhf
    implicit none
    private
 
@@ -48,6 +48,7 @@ contains
       type(error_t) :: error
       character(len=MAX_ELEMENT_SYMBOL_LEN), allocatable :: symbols(:)
       integer :: iatom, diis_size
+      logical :: unrestricted
 
       if (present(want_gradient)) then
          if (want_gradient) then
@@ -61,9 +62,17 @@ contains
          end if
       end if
 
-      if (settings%unrestricted) then
-         call result%error%set(ERROR_VALIDATION, "the CPU backend is closed-shell only; "// &
-                               "this fragment asks for an unrestricted calculation")
+      ! Same rule the GPU backend applies, so a deck does not change meaning
+      ! when it moves between them: an odd electron count or a multiplicity
+      ! above one has no restricted solution to find, whatever the keyword says.
+      unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
+                     .or. settings%unrestricted
+
+      if (unrestricted .and. settings%density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "unrestricted density fitting is not "// &
+                               "implemented on the CPU backend: the fitted J and K are "// &
+                               "written for one density. Run unrestricted without "// &
+                               "density_fitting, or restricted with it.")
          result%has_error = .true.
          return
       end if
@@ -123,6 +132,10 @@ contains
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size)
          call aux%destroy()
+      else if (unrestricted) then
+         call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
+                              settings%energy_tol, settings%density_tol, settings%verbose, &
+                              scf, error, diis_vectors=diis_size)
       else
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
