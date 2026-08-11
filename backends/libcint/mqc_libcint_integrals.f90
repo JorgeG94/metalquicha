@@ -853,24 +853,50 @@ contains
       integer :: shls(4)
       integer :: i, j, k, l, io, jo, ko, lo, ret, idx
       integer :: p, q, r, t
+      integer :: npair, ipair
+      integer, allocatable :: pair_i(:), pair_j(:)
       real(dp) :: value
       type(c_ptr) :: opt
 
       allocate (eri(this%nao, this%nao, this%nao, this%nao))
       eri = 0.0_dp
-      allocate (buf(max_block(this)**4))
 
       opt = c_null_ptr
       call two_electron_optimizer(this%cartesian, opt, this%atm, this%natm, this%bas, &
                                   this%nbas, this%env)
 
+      ! Threaded over bra pairs, exactly as the direct Fock build is, and for
+      ! once with nothing to reduce: a canonical quartet owns the eight
+      ! positions it scatters into and no other canonical quartet names any of
+      ! them, so the threads write disjoint elements of a shared array.
+      npair = this%nbas*(this%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
       do ish = 1, this%nbas
+         do jsh = 1, ish
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+
+      !$omp parallel default(none) &
+      !$omp    shared(this, eri, opt, npair, pair_i, pair_j) &
+      !$omp    private(ipair, ish, jsh, ksh, lsh, lsh_max, di, dj, dk, dl, io, jo, ko, lo, &
+      !$omp            i, j, k, l, p, q, r, t, shls, ret, idx, value, buf)
+      allocate (buf(max_block(this)**4))
+      !$omp do schedule(dynamic)
+      do ipair = 1, npair
+         ish = pair_i(ipair)
+         jsh = pair_j(ipair)
          di = shell_dim(this%cartesian, ish - 1, this%bas)
          io = this%shell_offset(ish)
-         do jsh = 1, ish
-            dj = shell_dim(this%cartesian, jsh - 1, this%bas)
-            jo = this%shell_offset(jsh)
-            do ksh = 1, ish
+         dj = shell_dim(this%cartesian, jsh - 1, this%bas)
+         jo = this%shell_offset(jsh)
+         block
+            integer :: ksh_local
+            do ksh_local = 1, ish
+               ksh = ksh_local
                dk = shell_dim(this%cartesian, ksh - 1, this%bas)
                ko = this%shell_offset(ksh)
                lsh_max = ksh
@@ -907,11 +933,14 @@ contains
                   end do
                end do
             end do
-         end do
+         end block
       end do
+      !$omp end do
+      deallocate (buf)
+      !$omp end parallel
 
       call libcint_del_optimizer(opt)
-      deallocate (buf)
+      deallocate (pair_i, pair_j)
    end subroutine molecule_eris
 
    pure function molecule_nuclear_repulsion(this) result(energy)

@@ -292,16 +292,27 @@ contains
       call pic_gemm(view, c_occ, q1, transa="T")
 
       ! Quarter 2: nu against the virtual block, one occupied orbital at a time.
+      ! Each step owns its slice of q2, so the threads share nothing but q1,
+      ! which they only read.
       allocate (q2(n_ao*n_ao, n_v, n_o))
+      !$omp parallel do default(none) shared(q1, q2, c_vir, n_o, n_ao) &
+      !$omp    private(i, view) schedule(static)
       do i = 1, n_o
          view(1:n_ao, 1:n_ao*n_ao) => q1(:, i)
          call pic_gemm(view, c_vir, q2(:, :, i), transa="T")
       end do
+      !$omp end parallel do
       deallocate (q1)
 
       ! Quarters 3 and 4: la then si, per (i,a). Both slices are columns.
-      allocate (q3(n_o, n_ao), q4(n_o, n_v))
+      ! Quarters 3 and 4 likewise: (i,a) indexes a slice of q2 and a slice of
+      ! ovov, both owned outright, so the scratch is per-thread and the rest is
+      ! read-only.
       allocate (ovov(n_o, n_v, n_o, n_v))
+      !$omp parallel default(none) shared(q2, ovov, c_occ, c_vir, n_o, n_v, n_ao) &
+      !$omp    private(i, a, j, view, q3, q4)
+      allocate (q3(n_o, n_ao), q4(n_o, n_v))
+      !$omp do schedule(static)
       do i = 1, n_o
          do a = 1, n_v
             view(1:n_ao, 1:n_ao) => q2(:, a, i)
@@ -312,7 +323,10 @@ contains
             end do
          end do
       end do
-      deallocate (q2, q3, q4, c_occ, c_vir)
+      !$omp end do
+      deallocate (q3, q4)
+      !$omp end parallel
+      deallocate (q2, c_occ, c_vir)
    end subroutine transform_ovov
 
 end module mqc_libcint_mp2
