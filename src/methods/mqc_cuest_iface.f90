@@ -29,6 +29,8 @@ module mqc_cuest_iface
       logical :: run_mp2 = .false.
       logical :: freeze_core = .false.
       integer :: n_frozen_core = -1     !! -1 means count it from the elements
+      logical :: corr_density_fitting = .false.  !! RI for the correlation step
+      character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2
       real(dp) :: scs_os = 1.0_dp
          !! Read by the CPU backend only; cuEST always fits.

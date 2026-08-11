@@ -203,6 +203,8 @@ contains
       type(key_set_t) :: keys
       call allow(keys, "freeze_core")
       call allow(keys, "n_frozen_core")
+      call allow(keys, "density_fitting")
+      call allow(keys, "aux_basis")
       call allow(keys, "scs")
       call allow(keys, "scs_ss")
       call allow(keys, "scs_os")

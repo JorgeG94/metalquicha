@@ -38,7 +38,8 @@ module mqc_json_config_reader
    use mqc_geometry, only: geometry_type
    use mqc_error, only: error_t, ERROR_IO, ERROR_PARSE, ERROR_VALIDATION
    use mqc_calc_types, only: calc_type_from_string
-   use mqc_method_types, only: parse_method_string, method_spin_scaling
+   use mqc_method_types, only: parse_method_string, method_spin_scaling, &
+                               method_wants_density_fitting
    use mqc_config_types, only: mqc_config_t, input_fragment_t, bond_t
    use mqc_xyz_reader, only: read_xyz_file
    use mqc_json_schema, only: ensure_valid_json
@@ -165,6 +166,9 @@ contains
       ! spin scaling has to be picked up here, while the spelling still exists.
       ! Left to the type alone they would run plain MP2 and report it as SCS.
       call method_spin_scaling(text, config%corr_scs, config%corr_scs_ss, config%corr_scs_os)
+      ! Likewise "ri-mp2" and "df-mp2", which the method type cannot distinguish
+      ! from "mp2". A later keyword can still turn it off.
+      config%corr_density_fitting = method_wants_density_fitting(text)
       call optional_string(json, "model.basis", config%basis)
       call optional_string(json, "model.aux_basis", config%aux_basis)
       call optional_string(json, "model.functional", config%functional)
@@ -198,6 +202,9 @@ contains
       call optional_int(json, "keywords.correlation.n_frozen_core", &
                         config%corr_n_frozen_core)
       ! After the method name, so an explicit keyword wins over the spelling.
+      call optional_logical(json, "keywords.correlation.density_fitting", &
+                            config%corr_density_fitting)
+      call optional_string(json, "keywords.correlation.aux_basis", config%corr_aux_basis)
       call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
       call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
       call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)

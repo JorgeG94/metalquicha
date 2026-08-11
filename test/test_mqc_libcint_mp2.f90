@@ -20,7 +20,7 @@ module test_mqc_libcint_mp2
    use mqc_result_types, only: mp2_energy_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
-   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2
+   use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    implicit none
    private
    public :: collect_mqc_libcint_mp2_tests
@@ -40,7 +40,8 @@ contains
                   new_unittest("mp2_freezing_core_raises_the_energy", test_frozen), &
                   new_unittest("mp2_rejects_freezing_everything", test_bad_frozen), &
                   new_unittest("mp2_scaling_is_applied_by_total_only", test_scaling), &
-                  new_unittest("mp2_scs_matches_its_published_factors", test_scs) &
+                  new_unittest("mp2_scs_matches_its_published_factors", test_scs), &
+                  new_unittest("ri_mp2_approaches_the_conventional_answer", test_ri) &
                   ]
    end subroutine collect_mqc_libcint_mp2_tests
 
@@ -200,6 +201,55 @@ contains
       call check(error, abs(e%total() - (-0.15_dp*1.3_dp)) < 1.0e-14_dp, &
                  "and total must still use the run's")
    end subroutine test_scs
+
+   subroutine test_ri(error)
+      !! The fitted answer has to be close to the exact one, and not too close
+      !!
+      !! Two bounds rather than one. The upper bound is the obvious check: a
+      !! transform that lost an index would be wrong by millihartree, not by
+      !! the tens of microhartree a fit costs. The lower bound is the one worth
+      !! having -- if the fitted and conventional energies agreed to 1e-12, the
+      !! fitted path would not be fitting anything, which is what a silent
+      !! fallback to the four-index route would look like from outside.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol, aux
+      type(rhf_result_t) :: scf
+      type(mp2_result_t) :: exact, ri
+      type(error_t) :: err
+      real(dp) :: c(3, 3), gap
+
+      c = reshape([0.0_dp, 0.0_dp, 0.0_dp, &
+                   0.0_dp, 0.757_dp*ANG, 0.587_dp*ANG, &
+                   0.0_dp, -0.757_dp*ANG, 0.587_dp*ANG], [3, 3])
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz", mol, err)
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, "cc-pvdz-rifit", aux, err)
+      call check(error,.not. err%has_error(), "water and its auxiliary must build")
+      if (allocated(error)) return
+
+      call run_libcint_rhf(mol, 10, 200, E_TOL, D_TOL, .false., scf, err)
+      call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, 5, scf%energy, &
+                           exact, err, n_frozen=1)
+      call run_libcint_ri_mp2(mol, aux, scf%orbitals, scf%orbital_energies, 5, &
+                              scf%energy, ri, err, n_frozen=1)
+      call check(error,.not. err%has_error(), "both routes must run")
+      if (allocated(error)) return
+
+      gap = abs(ri%correlation - exact%correlation)
+      call check(error, gap < 1.0e-3_dp, &
+                 "the fitting error must be small; a lost index would be millihartree")
+      if (allocated(error)) return
+      call check(error, gap > 1.0e-9_dp, &
+                 "the fitted route must actually fit; exact agreement means it did not")
+      if (allocated(error)) return
+
+      ! The components have to be fitted too, not just their sum.
+      call check(error, abs(ri%opposite_spin - exact%opposite_spin) > 1.0e-9_dp, &
+                 "the opposite-spin component must be fitted as well")
+      if (allocated(error)) return
+      call check(error, ri%n_occupied, exact%n_occupied)
+      if (allocated(error)) return
+      call check(error, ri%n_virtual, exact%n_virtual)
+   end subroutine test_ri
 
 end module test_mqc_libcint_mp2
 

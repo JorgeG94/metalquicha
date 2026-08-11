@@ -981,6 +981,30 @@
             "type": "unfragmented"
         },
         {
+            "name": "RI-MP2 H2O cc-pvdz/cc-pvdz-rifit frozen 0 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_rimp2_f0.json",
+            "expected_energy": -76.230257623944,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_rimp2_f1.json",
+            "expected_energy": -76.227922438697,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 H2O def2-svp/def2-svp-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu_water_def2-svp_rimp2_f1.json",
+            "expected_energy": -76.161602884779,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-MP2 CH4 cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu_ch4_cc-pvdz_rimp2_f1.json",
+            "expected_energy": -40.359711209284,
+            "type": "unfragmented"
+        },
+        {
             "name": "MBE(2) MP2 (H2O)2 cc-pvdz (CPU)",
             "input": "inputs/cpu_w2dimer_cc-pvdz_mp2_mbe2.json",
             "expected_energy": -152.466588405967,

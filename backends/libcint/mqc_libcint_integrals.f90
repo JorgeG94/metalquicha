@@ -57,6 +57,7 @@ module mqc_libcint_integrals
    public :: libcint_molecule_t
    public :: build_libcint_molecule
    public :: build_df_tensor
+   public :: build_df_mo_tensor
    ! The one place that maps "is this basis Cartesian?" onto libcint's two sets
    ! of entry points. Exported because the direct Fock build needs the same
    ! mapping, and two copies of it is two chances to route half the calls.
@@ -523,6 +524,28 @@ contains
       call two_centre(aux, metric)
       call three_centre(orb, aux, three)
 
+      call metric_inverse_sqrt(metric, half, error)
+      if (error%has_error()) return
+
+      allocate (b(nao*nao, naux))
+      call pic_gemm(three, half, b)
+   end subroutine build_df_tensor
+
+   subroutine metric_inverse_sqrt(metric, half, error)
+      !! J^(-1/2) = U s^(-1/2) U^T over the modes that survive the threshold
+      !!
+      !! Through the eigendecomposition rather than a Cholesky. A JKFIT or
+      !! RIFIT set is close to linearly dependent by construction, and a
+      !! Cholesky of a near-singular metric fails outright where this degrades.
+      real(dp), intent(in) :: metric(:, :)
+      real(dp), allocatable, intent(out) :: half(:, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), parameter :: NULL_THRESHOLD = 1.0e-10_dp
+      real(dp), allocatable :: vectors(:, :), values(:)
+      integer :: naux, i, j, kept, info
+
+      naux = size(metric, 1)
       allocate (vectors(naux, naux), values(naux))
       vectors = metric
       call pic_syev(vectors, values, jobz="V", uplo="U", info=info)
@@ -537,7 +560,6 @@ contains
          return
       end if
 
-      ! J^(-1/2) = U s^(-1/2) U^T over the surviving modes.
       allocate (half(naux, naux))
       half = 0.0_dp
       do i = 1, naux
@@ -546,10 +568,85 @@ contains
             half(:, j) = half(:, j) + vectors(:, i)*vectors(j, i)/sqrt(values(i))
          end do
       end do
+   end subroutine metric_inverse_sqrt
 
-      allocate (b(nao*nao, naux))
-      call pic_gemm(three, half, b)
-   end subroutine build_df_tensor
+   subroutine build_df_mo_tensor(orb, aux, c_occ, c_vir, bia, error)
+      !! B^P_ia directly, transforming to MO before fitting rather than after
+      !!
+      !! `build_df_tensor` fits first and hands back B(mu nu, P), which is what
+      !! a Fock build wants because it contracts against a density in the AO
+      !! basis. A correlation treatment does not: it only ever reads the
+      !! occupied-virtual block, and fitting the whole AO pair space to get
+      !! there is most of the work thrown away.
+      !!
+      !! The metric contraction is where it shows. Applied to the AO tensor it
+      !! is nao^2 by naux by naux; applied after the transform it is
+      !! n_occ*n_vir by naux by naux. On a water hexamer in cc-pVDZ that is
+      !! 20736 pair functions against 2736, so the same gemm costs 7.6 times
+      !! less for the same answer.
+      !!
+      !! The result is laid out (n_vir, naux, n_occ) so that one occupied
+      !! orbital's block is contiguous, which is the shape the energy step
+      !! hands to BLAS.
+      type(libcint_molecule_t), intent(in) :: orb, aux
+      real(dp), intent(in) :: c_occ(:, :)   !! (nao, n_occ), correlated occupied only
+      real(dp), intent(in) :: c_vir(:, :)   !! (nao, n_vir)
+      real(dp), allocatable, intent(out) :: bia(:, :, :)
+      type(error_t), intent(inout) :: error
+
+      real(dp), allocatable :: metric(:, :), half(:, :), three(:, :)
+      real(dp), allocatable :: ovl(:, :), bp(:, :), tmp(:, :), full(:, :)
+      integer :: nao, naux, n_o, n_v, p_index, i
+
+      if (orb%cartesian .neqv. aux%cartesian) then
+         call error%set(ERROR_VALIDATION, "density fitting: the orbital basis is "// &
+                        angular_form_name(orb%cartesian)//" and the auxiliary basis is "// &
+                        angular_form_name(aux%cartesian)//". libcint builds all three "// &
+                        "centres of a fitting integral in one form, so the two must "// &
+                        "agree; choose an auxiliary basis of the same kind.")
+         return
+      end if
+
+      nao = orb%nao
+      naux = aux%nao
+      n_o = size(c_occ, 2)
+      n_v = size(c_vir, 2)
+
+      call two_centre(aux, metric)
+      call metric_inverse_sqrt(metric, half, error)
+      if (error%has_error()) return
+      deallocate (metric)
+
+      call three_centre(orb, aux, three)
+
+      ! (mu nu|P) -> (ia|P), one auxiliary function at a time.
+      allocate (ovl(n_o*n_v, naux))
+      allocate (bp(nao, nao), tmp(n_o, nao), full(n_o, n_v))
+      do p_index = 1, naux
+         bp = reshape(three(:, p_index), [nao, nao])
+         call pic_gemm(c_occ, bp, tmp, transa="T")
+         call pic_gemm(tmp, c_vir, full)
+         ovl(:, p_index) = reshape(full, [n_o*n_v])
+      end do
+      deallocate (bp, tmp, full, three)
+
+      ! The fit, now over the occupied-virtual block instead of every AO pair.
+      block
+         real(dp), allocatable :: fitted(:, :)
+         allocate (fitted(n_o*n_v, naux))
+         call pic_gemm(ovl, half, fitted)
+         deallocate (ovl, half)
+         allocate (bia(n_v, naux, n_o))
+         do p_index = 1, naux
+            do i = 1, n_o
+               ! `fitted` is flattened (i, a), so one occupied orbital's
+               ! virtuals sit at stride n_o.
+               bia(:, p_index, i) = fitted(i::n_o, p_index)
+            end do
+         end do
+         deallocate (fitted)
+      end block
+   end subroutine build_df_mo_tensor
 
    subroutine two_centre(aux, metric)
       !! (P|Q) over the auxiliary basis
