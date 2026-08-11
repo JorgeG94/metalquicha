@@ -103,10 +103,12 @@ contains
       real(dp) :: v
 
       v = 0.0_dp
-      if (same_spin(p, r) .and. same_spin(q, s)) &
+      if (same_spin(p, r) .and. same_spin(q, s)) then
          v = v + mo(spatial(p), spatial(r), spatial(q), spatial(s))
-      if (same_spin(p, s) .and. same_spin(q, r)) &
+      end if
+      if (same_spin(p, s) .and. same_spin(q, r)) then
          v = v - mo(spatial(p), spatial(s), spatial(q), spatial(r))
+      end if
    end function asym
 
    subroutine spin_orbital_integrals(mo, n_so, w)
@@ -351,15 +353,39 @@ contains
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       real(dp), intent(out) :: t1n(:, :), t2n(:, :, :, :)
 
-      real(dp), allocatable :: tau(:, :, :, :), taut(:, :, :, :)
+      ! Every contraction over `tau` runs over either the particle pair or the
+      ! hole pair, never a mixture, so `tau` is held as a matrix over those
+      ! compound indices from the start -- ab = (b-1) n_v + a, ij = (j-1) n_o + i.
+      ! That is what turns the four terms it appears in into four gemms. `taut`
+      ! stays four-index: the intermediates it feeds contract over one particle
+      ! and both holes, which is not a matrix product in this layout.
+      real(dp), allocatable :: tau2(:, :), taut(:, :, :, :)
       real(dp), allocatable :: fae(:, :), fmi(:, :), fme(:, :)
-      real(dp), allocatable :: wmnij(:, :, :, :), wabef(:, :, :, :), wmbej(:, :, :, :)
+      real(dp), allocatable :: wmnij(:, :), wabef(:, :), wmbej(:, :, :, :)
+      real(dp), allocatable :: oovv2(:, :), lad(:, :)
       real(dp), allocatable :: gae(:, :), gmi(:, :)
-      integer :: i, j, m, n, a, b, e, f
+      integer :: i, j, m, n, a, b, e, f, ab, ij, mn, ef
       real(dp) :: acc, d, term
 
-      allocate (tau(nv, nv, no, no), taut(nv, nv, no, no))
-      call build_tau(t1, t2, no, nv, tau, taut)
+      allocate (tau2(nv*nv, no*no), taut(nv, nv, no, no))
+      call build_tau(t1, t2, no, nv, tau2, taut)
+
+      ! <mn||ef> as a matrix over the two pairs, which is the shape three of the
+      ! gemms below want it in.
+      allocate (oovv2(no*no, nv*nv))
+      !$omp parallel do default(none) shared(w, oovv2, no, nv) &
+      !$omp    private(m, n, e, f, mn, ef) schedule(static) collapse(2)
+      do f = 1, nv
+         do e = 1, nv
+            ef = (f - 1)*nv + e
+            do n = 1, no
+               do m = 1, no
+                  oovv2((n - 1)*no + m, ef) = w(m, n, no + e, no + f)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
 
       ! ---- one-body intermediates (Stanton 3-5) -----------------------------
       allocate (fae(nv, nv), fmi(no, no), fme(no, nv))
@@ -421,34 +447,35 @@ contains
       end do
 
       ! ---- two-body intermediates (Stanton 6-8) -----------------------------
-      allocate (wmnij(no, no, no, no), wabef(nv, nv, nv, nv), wmbej(no, nv, nv, no))
+      allocate (wmnij(no*no, no*no), wabef(nv*nv, nv*nv), wmbej(no, nv, nv, no))
 
-      !$omp parallel do default(none) shared(w, t1, tau, wmnij, no, nv) &
-      !$omp    private(m, n, i, j, e, f, acc) schedule(static) collapse(2)
+      ! The quadratic term of each ladder intermediate is a gemm, so it goes in
+      ! first and the linear terms are added on top of it.
+      call pic_gemm(oovv2, tau2, wmnij, alpha=0.25_dp, beta=0.0_dp)
+      !$omp parallel do default(none) shared(w, t1, wmnij, no, nv) &
+      !$omp    private(m, n, i, j, e, acc, ij) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
+            ij = (j - 1)*no + i
             do n = 1, no
                do m = 1, no
                   acc = w(m, n, i, j)
                   do e = 1, nv
                      acc = acc + t1(e, j)*w(m, n, i, no + e) - t1(e, i)*w(m, n, j, no + e)
                   end do
-                  do f = 1, nv
-                     do e = 1, nv
-                        acc = acc + 0.25_dp*tau(e, f, i, j)*w(m, n, no + e, no + f)
-                     end do
-                  end do
-                  wmnij(m, n, i, j) = acc
+                  wmnij((n - 1)*no + m, ij) = wmnij((n - 1)*no + m, ij) + acc
                end do
             end do
          end do
       end do
       !$omp end parallel do
 
-      !$omp parallel do default(none) shared(w, t1, tau, wabef, no, nv) &
-      !$omp    private(a, b, e, f, m, n, acc) schedule(static) collapse(2)
+      call pic_gemm(tau2, oovv2, wabef, alpha=0.25_dp, beta=0.0_dp)
+      !$omp parallel do default(none) shared(w, t1, wabef, no, nv) &
+      !$omp    private(a, b, e, f, m, acc, ef) schedule(static) collapse(2)
       do f = 1, nv
          do e = 1, nv
+            ef = (f - 1)*nv + e
             do b = 1, nv
                do a = 1, nv
                   acc = w(no + a, no + b, no + e, no + f)
@@ -458,17 +485,23 @@ contains
                      acc = acc + t1(b, m)*w(m, no + a, no + e, no + f) &
                            - t1(a, m)*w(m, no + b, no + e, no + f)
                   end do
-                  do n = 1, no
-                     do m = 1, no
-                        acc = acc + 0.25_dp*tau(a, b, m, n)*w(m, n, no + e, no + f)
-                     end do
-                  end do
-                  wabef(a, b, e, f) = acc
+                  wabef((b - 1)*nv + a, ef) = wabef((b - 1)*nv + a, ef) + acc
                end do
             end do
          end do
       end do
       !$omp end parallel do
+
+      ! ---- both ladders, one gemm each --------------------------------------
+      !
+      ! The two terms that dominate CCSD: n_o^4 n_v^2 for the holes and
+      ! n_v^4 n_o^2 for the particles. As scalar loops they also had the worst
+      ! access pattern in the module -- for fixed (a,b) the particle ladder walks
+      ! `wabef` down strides of n_v^2 and n_v^3 -- and moving them here took the
+      ! T2 equation from 90 seconds of CPU time to a gemm.
+      allocate (lad(nv*nv, no*no))
+      call pic_gemm(tau2, wmnij, lad, alpha=0.5_dp, beta=0.0_dp)
+      call pic_gemm(wabef, tau2, lad, alpha=0.5_dp, beta=1.0_dp)
 
       !$omp parallel do default(none) shared(w, t1, t2, wmbej, no, nv) &
       !$omp    private(m, b, e, j, f, n, acc) schedule(static) collapse(2)
@@ -567,7 +600,7 @@ contains
       end do
 
       !$omp parallel do default(none) &
-      !$omp    shared(w, eps, t1, t2, tau, wmnij, wabef, wmbej, gae, gmi, t2n, no, nv) &
+      !$omp    shared(w, eps, t1, t2, lad, wmbej, gae, gmi, t2n, no, nv) &
       !$omp    private(a, b, i, j, e, f, m, n, acc, d, term) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
@@ -585,17 +618,8 @@ contains
                      acc = acc - t2(a, b, i, m)*gmi(m, j) + t2(a, b, j, m)*gmi(m, i)
                   end do
 
-                  ! Ladders: hole-hole and particle-particle.
-                  do n = 1, no
-                     do m = 1, no
-                        acc = acc + 0.5_dp*tau(a, b, m, n)*wmnij(m, n, i, j)
-                     end do
-                  end do
-                  do f = 1, nv
-                     do e = 1, nv
-                        acc = acc + 0.5_dp*tau(e, f, i, j)*wabef(a, b, e, f)
-                     end do
-                  end do
+                  ! Both ladders, already contracted above.
+                  acc = acc + lad((b - 1)*nv + a, (j - 1)*no + i)
 
                   ! Rings: P(ij)P(ab) over the four index pairings.
                   do m = 1, no
@@ -634,10 +658,11 @@ contains
       end do
       !$omp end parallel do
 
-      deallocate (tau, taut, fae, fmi, fme, wmnij, wabef, wmbej, gae, gmi)
+      deallocate (tau2, taut, fae, fmi, fme, wmnij, wabef, wmbej, gae, gmi)
+      deallocate (oovv2, lad)
    end subroutine ccsd_iteration
 
-   subroutine build_tau(t1, t2, no, nv, tau, taut)
+   subroutine build_tau(t1, t2, no, nv, tau2, taut)
       !! The two effective doubles the intermediates are written in
       !!
       !!     tau      = t2 + t1 t1 - t1 t1   (transposed)
@@ -648,19 +673,20 @@ contains
       !! millihartree. Built together so the difference is visible in one place.
       real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv
-      real(dp), intent(out) :: tau(:, :, :, :), taut(:, :, :, :)
+      real(dp), intent(out) :: tau2(:, :)          !! (ab, ij)
+      real(dp), intent(out) :: taut(:, :, :, :)
 
       integer :: i, j, a, b
       real(dp) :: cross
 
-      !$omp parallel do default(none) shared(t1, t2, tau, taut, no, nv) &
+      !$omp parallel do default(none) shared(t1, t2, tau2, taut, no, nv) &
       !$omp    private(i, j, a, b, cross) schedule(static) collapse(2)
       do j = 1, no
          do i = 1, no
             do b = 1, nv
                do a = 1, nv
                   cross = t1(a, i)*t1(b, j) - t1(b, i)*t1(a, j)
-                  tau(a, b, i, j) = t2(a, b, i, j) + cross
+                  tau2((b - 1)*nv + a, (j - 1)*no + i) = t2(a, b, i, j) + cross
                   taut(a, b, i, j) = t2(a, b, i, j) + 0.5_dp*cross
                end do
             end do
@@ -695,19 +721,33 @@ contains
       real(dp), intent(out) :: e_triples
 
       real(dp), allocatable :: t3c(:, :, :), t3d(:, :, :)
+      real(dp), allocatable :: ovvv_p(:, :, :), t2bc(:, :, :)
+      real(dp), allocatable :: ovoo_p(:, :, :, :), oovv_p(:, :, :)
+      real(dp), allocatable :: acc(:, :), bcc(:, :), gg(:, :, :), dd(:, :, :)
       integer :: i, j, k, a, b, c
       real(dp) :: d, e_local
 
       e_triples = 0.0_dp
 
-      !$omp parallel default(none) shared(w, eps, t1, t2, no, nv) &
-      !$omp    private(i, j, k, a, b, c, d, t3c, t3d, e_local) reduction(+:e_triples)
+      ! Four integral blocks and one amplitude block, repacked so the
+      ! contractions below are gemms over contiguous memory rather than strided
+      ! reads out of the full spin-orbital tensor. All of them are small -- the
+      ! largest is n_o n_v^3, 4.4 MB at 38 virtuals -- and each is touched
+      ! n_occ^3 times, so packing once is the whole optimisation.
+      call pack_triples_blocks(w, t2, no, nv, ovvv_p, t2bc, ovoo_p, oovv_p)
+
+      !$omp parallel default(none) &
+      !$omp    shared(eps, t1, t2, no, nv, ovvv_p, t2bc, ovoo_p, oovv_p) &
+      !$omp    private(i, j, k, a, b, c, d, t3c, t3d, e_local, acc, bcc, gg, dd) &
+      !$omp    reduction(+:e_triples)
       allocate (t3c(nv, nv, nv), t3d(nv, nv, nv))
+      allocate (acc(nv, nv*nv), bcc(nv*nv, nv), gg(nv, nv, nv), dd(nv, nv, nv))
       !$omp do schedule(dynamic) collapse(2)
       do i = 1, no
          do j = 1, no
             do k = 1, no
-               call triples_block(w, t1, t2, no, nv, i, j, k, t3c, t3d)
+               call triples_block(t1, t2, no, nv, i, j, k, ovvv_p, t2bc, ovoo_p, &
+                                  oovv_p, acc, bcc, gg, dd, t3c, t3d)
                e_local = 0.0_dp
                do c = 1, nv
                   do b = 1, nv
@@ -725,88 +765,164 @@ contains
          end do
       end do
       !$omp end do
-      deallocate (t3c, t3d)
+      deallocate (t3c, t3d, acc, bcc, gg, dd)
       !$omp end parallel
+
+      deallocate (ovvv_p, t2bc, ovoo_p, oovv_p)
    end subroutine triples_correction
 
-   subroutine triples_block(w, t1, t2, no, nv, i, j, k, t3c, t3d)
+   subroutine pack_triples_blocks(w, t2, no, nv, ovvv_p, t2bc, ovoo_p, oovv_p)
+      !! Repack what (T) contracts, so each contraction is a gemm
+      !!
+      !! The compound index is always `bc = (c-1) n_v + b`, which puts it in the
+      !! position a gemm wants: leading for the amplitude block it contracts over,
+      !! trailing for the integral block it indexes.
+      real(dp), intent(in) :: w(:, :, :, :), t2(:, :, :, :)
+      integer, intent(in) :: no, nv
+      real(dp), allocatable, intent(out) :: ovvv_p(:, :, :)    !! (e, bc, i) = <ie||bc>
+      real(dp), allocatable, intent(out) :: t2bc(:, :, :)      !! (bc, m, i) = t2(b,c,i,m)
+      real(dp), allocatable, intent(out) :: ovoo_p(:, :, :, :)  !! (m, a, j, k) = <ma||jk>
+      real(dp), allocatable, intent(out) :: oovv_p(:, :, :)    !! (bc, j, k) = <jk||bc>
+
+      integer :: i, j, k, m, a, b, c, bc
+
+      allocate (ovvv_p(nv, nv*nv, no), t2bc(nv*nv, no, no))
+      allocate (ovoo_p(no, nv, no, no), oovv_p(nv*nv, no, no))
+
+      !$omp parallel do default(none) shared(w, ovvv_p, no, nv) &
+      !$omp    private(i, b, c, bc) schedule(static)
+      do i = 1, no
+         do c = 1, nv
+            do b = 1, nv
+               bc = (c - 1)*nv + b
+               ovvv_p(:, bc, i) = w(i, no + 1:no + nv, no + b, no + c)
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      !$omp parallel do default(none) shared(t2, t2bc, no, nv) &
+      !$omp    private(i, m, b, c, bc) schedule(static) collapse(2)
+      do i = 1, no
+         do m = 1, no
+            do c = 1, nv
+               do b = 1, nv
+                  bc = (c - 1)*nv + b
+                  t2bc(bc, m, i) = t2(b, c, i, m)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+
+      !$omp parallel do default(none) shared(w, ovoo_p, oovv_p, no, nv) &
+      !$omp    private(j, k, m, a, b, c, bc) schedule(static) collapse(2)
+      do k = 1, no
+         do j = 1, no
+            do a = 1, nv
+               do m = 1, no
+                  ovoo_p(m, a, j, k) = w(m, no + a, j, k)
+               end do
+            end do
+            do c = 1, nv
+               do b = 1, nv
+                  bc = (c - 1)*nv + b
+                  oovv_p(bc, j, k) = w(j, k, no + b, no + c)
+               end do
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end subroutine pack_triples_blocks
+
+   subroutine triples_block(t1, t2, no, nv, i, j, k, ovvv_p, t2bc, ovoo_p, oovv_p, &
+                            acc, bcc, gg, dd, t3c, t3d)
       !! The connected and disconnected triples numerators for one (i,j,k)
       !!
       !! P(i/jk) is the three-term permutation f(ijk) - f(jik) - f(kji), and
-      !! P(a/bc) likewise, so each numerator is nine signed contributions. Built
-      !! by looping the nine explicitly rather than by a permutation helper: the
-      !! signs are the whole content of the expression, and a helper would hide
-      !! exactly the thing worth reading.
-      real(dp), intent(in) :: w(:, :, :, :), t1(:, :), t2(:, :, :, :)
+      !! P(a/bc) likewise, so each numerator is nine signed contributions. The
+      !! nine are not nine pieces of work, though, and that is the whole point of
+      !! this arrangement: for a fixed occupied permutation the quantity being
+      !! permuted over the virtuals,
+      !!
+      !!     G(a,b,c) = -sum_e t2(a,e,j,k) <ie||bc> - sum_m t2(b,c,i,m) <ma||jk>
+      !!
+      !! is one object over all (a,b,c), and P(a/bc) then only reads it at
+      !! permuted indices. So three occupied permutations give three pairs of
+      !! gemms, and the virtual permutations cost nothing but the indexing.
+      !!
+      !! Written the direct way -- nine calls to a function computing one element
+      !! -- this was 118 of 260 seconds of the whole program, because every one of
+      !! the nine redid an O(n_vir) sum for every (a,b,c). The equations are
+      !! unchanged; only the order of the loops is.
+      !!
+      !! The scratch arrays come in from the caller rather than being allocated
+      !! here: this runs n_occ^3 times, and four allocations per call was itself
+      !! measurable.
+      real(dp), intent(in) :: t1(:, :), t2(:, :, :, :)
       integer, intent(in) :: no, nv, i, j, k
+      real(dp), intent(in) :: ovvv_p(:, :, :), t2bc(:, :, :)
+      real(dp), intent(in) :: ovoo_p(:, :, :, :), oovv_p(:, :, :)
+      real(dp), intent(inout) :: acc(:, :), bcc(:, :)    !! Scratch, (nv, nv^2) and (nv^2, nv)
+      real(dp), intent(inout) :: gg(:, :, :), dd(:, :, :)  !! Scratch, (nv, nv, nv)
       real(dp), intent(out) :: t3c(:, :, :), t3d(:, :, :)
 
       integer, parameter :: N_PERM = 3
-      integer :: oi(N_PERM), ov(N_PERM), po, pv, a, b, c
-      real(dp) :: sign_o, sign_v
+      integer :: oi(N_PERM)
+      integer :: po, a, b, c, bc, pi, pj, pk
+      real(dp) :: sign_o
 
       t3c = 0.0_dp
       t3d = 0.0_dp
 
-      do c = 1, nv
-         do b = 1, nv
-            do a = 1, nv
-               do po = 1, N_PERM
-                  ! P(i/jk): identity, then i<->j, then i<->k, the last two
-                  ! carrying a minus.
-                  select case (po)
-                  case (1)
-                     oi = [i, j, k]
-                     sign_o = 1.0_dp
-                  case (2)
-                     oi = [j, i, k]
-                     sign_o = -1.0_dp
-                  case default
-                     oi = [k, j, i]
-                     sign_o = -1.0_dp
-                  end select
-                  do pv = 1, N_PERM
-                     select case (pv)
-                     case (1)
-                        ov = [a, b, c]
-                        sign_v = 1.0_dp
-                     case (2)
-                        ov = [b, a, c]
-                        sign_v = -1.0_dp
-                     case default
-                        ov = [c, b, a]
-                        sign_v = -1.0_dp
-                     end select
-                     t3d(a, b, c) = t3d(a, b, c) + sign_o*sign_v &
-                                    *t1(ov(1), oi(1)) &
-                                    *w(oi(2), oi(3), no + ov(2), no + ov(3))
-                     t3c(a, b, c) = t3c(a, b, c) + sign_o*sign_v &
-                                    *connected_term(w, t2, no, nv, oi, ov)
-                  end do
+      do po = 1, N_PERM
+         ! P(i/jk): identity, then i<->j, then i<->k, the last two with a minus.
+         select case (po)
+         case (1)
+            oi = [i, j, k]
+            sign_o = 1.0_dp
+         case (2)
+            oi = [j, i, k]
+            sign_o = -1.0_dp
+         case default
+            oi = [k, j, i]
+            sign_o = -1.0_dp
+         end select
+         pi = oi(1)
+         pj = oi(2)
+         pk = oi(3)
+
+         ! -sum_e t2(a,e,j,k) <ie||bc>, as (nv,nv) x (nv,nv^2). The amplitude
+         ! slice t2(:,:,pj,pk) is already contiguous, so it goes in as it lies.
+         call pic_gemm(t2(:, :, pj, pk), ovvv_p(:, :, pi), acc, alpha=-1.0_dp, beta=0.0_dp)
+
+         ! -sum_m t2(b,c,i,m) <ma||jk>, as (nv^2,no) x (no,nv).
+         call pic_gemm(t2bc(:, :, pi), ovoo_p(:, :, pj, pk), bcc, &
+                       alpha=-1.0_dp, beta=0.0_dp)
+
+         do c = 1, nv
+            do b = 1, nv
+               bc = (c - 1)*nv + b
+               do a = 1, nv
+                  gg(a, b, c) = acc(a, bc) + bcc(bc, a)
+                  dd(a, b, c) = t1(a, pi)*oovv_p(bc, pj, pk)
+               end do
+            end do
+         end do
+
+         ! P(a/bc) reads the same two arrays at permuted indices.
+         do c = 1, nv
+            do b = 1, nv
+               do a = 1, nv
+                  t3c(a, b, c) = t3c(a, b, c) + sign_o &
+                                 *(gg(a, b, c) - gg(b, a, c) - gg(c, b, a))
+                  t3d(a, b, c) = t3d(a, b, c) + sign_o &
+                                 *(dd(a, b, c) - dd(b, a, c) - dd(c, b, a))
                end do
             end do
          end do
       end do
    end subroutine triples_block
-
-   pure function connected_term(w, t2, no, nv, oi, ov) result(v)
-      !! sum_e t2(a,e,j,k) <ei||bc> - sum_m t2(b,c,i,m) <ma||jk>
-      real(dp), intent(in) :: w(:, :, :, :), t2(:, :, :, :)
-      integer, intent(in) :: no, nv, oi(3), ov(3)
-      real(dp) :: v
-
-      integer :: e, m
-
-      v = 0.0_dp
-      do e = 1, nv
-         ! <ei||bc> = -<ie||bc>, one pair swap.
-         v = v - t2(ov(1), e, oi(2), oi(3)) &
-             *w(oi(1), no + e, no + ov(2), no + ov(3))
-      end do
-      do m = 1, no
-         v = v - t2(ov(2), ov(3), oi(1), m)*w(m, no + ov(1), oi(2), oi(3))
-      end do
-   end function connected_term
 
    subroutine pack_amplitudes(t1, t2, no, nv, flat)
       !! t1 and t2 laid end to end, for DIIS

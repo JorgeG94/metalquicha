@@ -82,6 +82,13 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_guess)
   target_link_libraries(test_mqc_libcint_guess PRIVATE cint_fortran cint)
 
+  # Coupled cluster, against the identities a reference energy cannot see:
+  # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the
+  # spin-orbital MP2 equalling the conventional one. PySCF comparison lives in
+  # validation/check_cc.f90, which needs the basis files.
+  addtest(mqc_libcint_cc)
+  target_link_libraries(test_mqc_libcint_cc PRIVATE cint_fortran cint)
+
   # Conventional MP2: the structural properties a reference energy cannot see,
   # chiefly that the four-index transform keeps (ia|jb) == (jb|ia).
   addtest(mqc_libcint_mp2)
