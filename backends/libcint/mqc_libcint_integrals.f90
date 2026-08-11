@@ -603,6 +603,8 @@ contains
       integer :: nbas_orb, nbas_aux, dummy, n_env_orb
       integer :: shls(4)
       integer :: ish, jsh, ksh, di, dj, dk, i, j, k, io, jo, ko, ret, idx
+      integer :: npair, ipair
+      integer, allocatable :: pair_i(:), pair_j(:)
 
       nbas_orb = orb%nbas
       nbas_aux = aux%nbas
@@ -637,37 +639,72 @@ contains
 
       allocate (three(orb%nao*orb%nao, aux%nao))
       three = 0.0_dp
+
+      ! (ij|K) is symmetric in i and j, so only the lower triangle of the
+      ! orbital shell pairs is computed and each block is written into both
+      ! halves. The loop ran the full square before, which evaluated every
+      ! off-diagonal block twice for the same numbers.
+      npair = nbas_orb*(nbas_orb + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do ish = 1, nbas_orb
+         do jsh = 1, ish
+            ipair = ipair + 1
+            pair_i(ipair) = ish
+            pair_j(ipair) = jsh
+         end do
+      end do
+
+      ! No accumulator to reduce, unlike the Fock build: a shell pair owns its
+      ! block of `three` outright, so no two iterations write the same element
+      ! and the threads need nothing shared but a private buffer each.
+      !$omp parallel default(none) &
+      !$omp    shared(orb, aux, bas, env, three, nbas_orb, nbas_aux, dummy, npair, pair_i, pair_j) &
+      !$omp    private(ipair, ish, jsh, ksh, di, dj, dk, io, jo, ko, i, j, k, shls, ret, idx, buf)
       allocate (buf(max_block(orb)**2*max_block(aux)))
 
-      do ish = 1, nbas_orb
+      !$omp do schedule(dynamic)
+      do ipair = 1, npair
+         ish = pair_i(ipair)
+         jsh = pair_j(ipair)
          di = shell_dim(orb%cartesian, ish - 1, bas)
          io = orb%shell_offset(ish)
-         do jsh = 1, nbas_orb
-            dj = shell_dim(orb%cartesian, jsh - 1, bas)
-            jo = orb%shell_offset(jsh)
-            do ksh = 1, nbas_aux
-               dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
-               ko = aux%shell_offset(ksh)
-               shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
-               if (orb%cartesian) then
-                  ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
-                                          nbas_orb + nbas_aux + 1, env)
-               else
-                  ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
-                                         nbas_orb + nbas_aux + 1, env)
-               end if
-               if (ret == 0) cycle
-               do k = 1, dk
-                  do j = 1, dj
-                     do i = 1, di
-                        idx = i + (j - 1)*di + (k - 1)*di*dj
-                        three((jo + j - 1)*orb%nao + io + i, ko + k) = buf(idx)
-                     end do
+         dj = shell_dim(orb%cartesian, jsh - 1, bas)
+         jo = orb%shell_offset(jsh)
+
+         do ksh = 1, nbas_aux
+            dk = shell_dim(orb%cartesian, nbas_orb + ksh - 1, bas)
+            ko = aux%shell_offset(ksh)
+            shls = [ish - 1, jsh - 1, nbas_orb + ksh - 1, dummy - 1]
+            if (orb%cartesian) then
+               ret = libcint_3c2e_cart(buf, shls, orb%atm, orb%natm, bas, &
+                                       nbas_orb + nbas_aux + 1, env)
+            else
+               ret = libcint_3c2e_sph(buf, shls, orb%atm, orb%natm, bas, &
+                                      nbas_orb + nbas_aux + 1, env)
+            end if
+            if (ret == 0) cycle
+            do k = 1, dk
+               do j = 1, dj
+                  do i = 1, di
+                     idx = i + (j - 1)*di + (k - 1)*di*dj
+                     three((jo + j - 1)*orb%nao + io + i, ko + k) = buf(idx)
+                     ! The mirrored element. On a diagonal shell pair this
+                     ! writes the partner entry of the same block, which the
+                     ! loop also visits with i and j exchanged and the same
+                     ! value, so it is a repeat rather than a conflict.
+                     three((io + i - 1)*orb%nao + jo + j, ko + k) = buf(idx)
                   end do
                end do
             end do
          end do
       end do
+      !$omp end do
+
+      deallocate (buf)
+      !$omp end parallel
+
+      deallocate (pair_i, pair_j)
    end subroutine three_centre
 
    subroutine molecule_eris(this, eri)

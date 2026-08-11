@@ -39,6 +39,23 @@ module mqc_driver
 
 contains
 
+   pure function needs_serial_execution(method_type) result(serial)
+      !! Whether this method has to be run on one thread
+      !!
+      !! An allow-list of the safe ones would be the tempting shape and the
+      !! wrong one: a method added later would default to "safe" and inherit a
+      !! silent data race. Naming the unsafe ones means a new method is clamped
+      !! until someone looks at it, which is the failure that costs an hour
+      !! rather than a week.
+      use mqc_method_types, only: METHOD_TYPE_GFN1, METHOD_TYPE_GFN2
+      integer, intent(in) :: method_type
+      logical :: serial
+
+      ! tblite. Threaded it corrupts a result rather than stopping, which is
+      ! why this is not merely a performance choice.
+      serial = (method_type == METHOD_TYPE_GFN1 .or. method_type == METHOD_TYPE_GFN2)
+   end function needs_serial_execution
+
    subroutine run_calculation(resources, config, sys_geom, bonds, result_out, all_ranks_write_json, &
                               supplied_terms, n_supplied_terms, write_output)
       !! Main calculation dispatcher - routes to fragmented or unfragmented calculation
@@ -120,7 +137,23 @@ contains
       ! accumulate PIE coefficients per unique atom set, evaluate each once
 
       if (max_level == 0) then
-         call omp_set_num_threads(1)
+         ! One thread, for the methods that need it rather than for all of them.
+         !
+         ! tblite is the reason this pin exists: run threaded it corrupts a
+         ! result instead of failing, so xTB is clamped here and stays clamped.
+         ! The libcint Hartree-Fock path is a different case -- libcint keeps no
+         ! state across calls, and its Fock build threads its own quartet loop --
+         ! so clamping it does not make it safer, only slower, and on this box
+         ! by a factor of the core count.
+         !
+         ! The clamp is deliberately not restored afterwards. `omp_set_num_threads(1)`
+         ! makes `omp_get_max_threads()` report 1, so the value has to be saved
+         ! before the call to be recoverable; an unfragmented run ends here, and
+         ! the one path that does need the count back saves it first. See
+         ! mqc_serial_fragment_processor.
+         if (needs_serial_execution(config%method_config%method_type)) then
+            call omp_set_num_threads(1)
+         end if
          if (present(result_out)) then
             call run_unfragmented_calculation(resources%mpi_comms%world_comm, sys_geom, config, &
                                               result_out, json_data=json_data)

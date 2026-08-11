@@ -136,12 +136,15 @@ contains
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
 
-      real(dp), allocatable :: buf(:), g(:, :), d_half(:, :)
+      real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
       type(c_ptr) :: opt
-      integer :: s1, s2, s3, s4, s4_max
+      integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
       integer :: shls(4)
       integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n
+      integer :: ij, kl, npair, ipair
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer(int64) :: n_total, n_computed, n_screened
       real(dp) :: tol, deg, value, scaled
 
       n = mol%nao
@@ -153,12 +156,35 @@ contains
       tol = DEFAULT_SCREEN_TOL
       if (present(screen_tol)) tol = screen_tol
 
+      ! Shell dimensions and offsets up front. Both are needed inside the
+      ! parallel region, and looking them up there would mean every thread
+      ! reaching into `bas` for something that does not change.
+      allocate (dims(mol%nbas), offs(mol%nbas))
       block_max = 1
       do s1 = 1, mol%nbas
-         block_max = max(block_max, mol%shell_offset(s1 + 1) - mol%shell_offset(s1))
+         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
+         offs(s1) = mol%shell_offset(s1)
+         block_max = max(block_max, dims(s1))
       end do
 
-      allocate (buf(block_max**4))
+      ! The quartet loop, flattened onto one index so it can be handed out.
+      !
+      ! The nested form -- s3 up to s1, and s4 up to s2 only when s3 equals s1 --
+      ! is exactly "every shell pair (s3,s4) at or before (s1,s2)" in the
+      ! canonical pair ordering, so enumerating pairs and taking kl <= ij covers
+      ! the same quartets once each. Flattening is what makes the outer loop
+      ! divisible; the triangular nest is not.
+      npair = mol%nbas*(mol%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do s1 = 1, mol%nbas
+         do s2 = 1, s1
+            ipair = ipair + 1
+            pair_i(ipair) = s1
+            pair_j(ipair) = s2
+         end do
+      end do
+
       allocate (g(n, n), d_half(n, n))
       g = 0.0_dp
 
@@ -173,85 +199,127 @@ contains
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
                                   mol%nbas, mol%env)
 
-      do s1 = 1, mol%nbas
-         d1 = shell_dim(mol%cartesian, s1 - 1, mol%bas)
-         o1 = mol%shell_offset(s1)
-         do s2 = 1, s1
-            d2 = shell_dim(mol%cartesian, s2 - 1, mol%bas)
-            o2 = mol%shell_offset(s2)
-            do s3 = 1, s1
-               d3 = shell_dim(mol%cartesian, s3 - 1, mol%bas)
-               o3 = mol%shell_offset(s3)
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
 
-               ! The pair (s3,s4) must not run past (s1,s2), or quartets would
-               ! be counted twice under the bra-ket swap.
-               s4_max = s3
-               if (s3 == s1) s4_max = s2
+      ! Threaded over bra pairs. libcint carries no mutable state across calls
+      ! -- the 2e path has no static globals, and `opt` is written once here and
+      ! only read inside -- so the integrals themselves need nothing but a
+      ! private buffer each.
+      !
+      ! The accumulator is the part that does need care. The six updates below
+      ! scatter into `g` at positions that depend on all four shells, so two
+      ! threads holding different quartets can land on the same element. Each
+      ! thread therefore fills its own copy and adds it in once at the end.
+      ! Atomics on the innermost statement would be correct too and far slower:
+      ! six of them per integral, on the hottest line in the program.
+      !
+      ! The cost of that is one n*n array per thread. At forty threads it is 18
+      ! MB for the 237-function case here, and it grows as n^2 -- worth watching
+      ! if this ever meets a few thousand functions, where a blocked scheme
+      ! along the lines of GTFock's would be the answer.
+      !
+      ! `schedule(dynamic)`: pair ij does ij quartets, so the last chunk is
+      ! thousands of times the first, and a static split would leave most
+      ! threads idle waiting for the tail.
+      !$omp parallel default(none) &
+      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max) &
+      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
+      !$omp            buf, g_local) &
+      !$omp    reduction(+:n_total, n_computed, n_screened)
+      allocate (buf(block_max**4))
+      allocate (g_local(n, n))
+      g_local = 0.0_dp
 
-               do s4 = 1, s4_max
-                  d4 = shell_dim(mol%cartesian, s4 - 1, mol%bas)
-                  o4 = mol%shell_offset(s4)
+      !$omp do schedule(dynamic)
+      do ij = 1, npair
+         s1 = pair_i(ij)
+         s2 = pair_j(ij)
+         d1 = dims(s1)
+         o1 = offs(s1)
+         d2 = dims(s2)
+         o2 = offs(s2)
 
-                  stats%quartets_total = stats%quartets_total + 1
+         do kl = 1, ij
+            s3 = pair_i(kl)
+            s4 = pair_j(kl)
+            d3 = dims(s3)
+            o3 = offs(s3)
+            d4 = dims(s4)
+            o4 = offs(s4)
 
-                  if (bounds(s1, s2)*bounds(s3, s4) < tol) then
-                     stats%quartets_screened = stats%quartets_screened + 1
-                     cycle
-                  end if
+            n_total = n_total + 1_int64
 
-                  shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
-                  ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                           mol%bas, mol%nbas, mol%env, opt)
-                  if (ret == 0) then
-                     stats%quartets_screened = stats%quartets_screened + 1
-                     cycle
-                  end if
-                  stats%quartets_computed = stats%quartets_computed + 1
+            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
 
-                  ! Shell equality, not function equality: a block with s1 == s2
-                  ! already contains both orderings of its function pair.
-                  deg = 1.0_dp
-                  if (s1 /= s2) deg = deg*2.0_dp
-                  if (s3 /= s4) deg = deg*2.0_dp
-                  if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
+            shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env, opt)
+            if (ret == 0) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            n_computed = n_computed + 1_int64
 
-                  do f4 = 1, d4
-                     b4 = o4 + f4
-                     do f3 = 1, d3
-                        b3 = o3 + f3
-                        do f2 = 1, d2
-                           b2 = o2 + f2
-                           do f1 = 1, d1
-                              b1 = o1 + f1
+            ! Shell equality, not function equality: a block with s1 == s2
+            ! already contains both orderings of its function pair.
+            deg = 1.0_dp
+            if (s1 /= s2) deg = deg*2.0_dp
+            if (s3 /= s4) deg = deg*2.0_dp
+            if (.not. (s1 == s3 .and. s2 == s4)) deg = deg*2.0_dp
 
-                              idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
-                              value = buf(idx)
-                              scaled = value*deg
+            do f4 = 1, d4
+               b4 = o4 + f4
+               do f3 = 1, d3
+                  b3 = o3 + f3
+                  do f2 = 1, d2
+                     b2 = o2 + f2
+                     do f1 = 1, d1
+                        b1 = o1 + f1
 
-                              ! Two Coulomb and four exchange contributions. g is
-                              ! not symmetric as it stands; symmetrising at the
-                              ! end is what makes these six updates equivalent to
-                              ! the full sum over all eight permutations.
-                              g(b1, b2) = g(b1, b2) + d_half(b3, b4)*scaled
-                              g(b3, b4) = g(b3, b4) + d_half(b1, b2)*scaled
-                              g(b1, b3) = g(b1, b3) - 0.25_dp*d_half(b2, b4)*scaled
-                              g(b2, b4) = g(b2, b4) - 0.25_dp*d_half(b1, b3)*scaled
-                              g(b1, b4) = g(b1, b4) - 0.25_dp*d_half(b2, b3)*scaled
-                              g(b2, b3) = g(b2, b3) - 0.25_dp*d_half(b1, b4)*scaled
-                           end do
-                        end do
+                        idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                        value = buf(idx)
+                        scaled = value*deg
+
+                        ! Two Coulomb and four exchange contributions. g is
+                        ! not symmetric as it stands; symmetrising at the
+                        ! end is what makes these six updates equivalent to
+                        ! the full sum over all eight permutations.
+                        g_local(b1, b2) = g_local(b1, b2) + d_half(b3, b4)*scaled
+                        g_local(b3, b4) = g_local(b3, b4) + d_half(b1, b2)*scaled
+                        g_local(b1, b3) = g_local(b1, b3) - 0.25_dp*d_half(b2, b4)*scaled
+                        g_local(b2, b4) = g_local(b2, b4) - 0.25_dp*d_half(b1, b3)*scaled
+                        g_local(b1, b4) = g_local(b1, b4) - 0.25_dp*d_half(b2, b3)*scaled
+                        g_local(b2, b3) = g_local(b2, b3) - 0.25_dp*d_half(b1, b4)*scaled
                      end do
                   end do
                end do
             end do
          end do
       end do
+      !$omp end do
+
+      !$omp critical(mqc_direct_fock_accumulate)
+      g = g + g_local
+      !$omp end critical(mqc_direct_fock_accumulate)
+
+      deallocate (buf, g_local)
+      !$omp end parallel
+
+      stats%quartets_total = n_total
+      stats%quartets_computed = n_computed
+      stats%quartets_screened = n_screened
 
       call libcint_del_optimizer(opt)
 
       fock = h + 0.5_dp*(g + transpose(g))
 
-      deallocate (buf, g, d_half)
+      deallocate (g, d_half, dims, offs, pair_i, pair_j)
    end subroutine build_fock_direct
 
 end module mqc_libcint_direct
