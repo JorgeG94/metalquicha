@@ -106,6 +106,10 @@ if(MQC_ENABLE_CUEST)
   addtestpp(mqc_cuest_spin)
   target_compile_definitions(test_mqc_cuest_spin PRIVATE MQC_WITH_CUEST)
 endif()
+# What a functional name means as a composition. Unconditional: the
+# double-hybrid coefficients are ours, and libxc is not needed to check them.
+addtest(mqc_xc_spec)
+
 addtest(mqc_basis_utils)
 addtest(mqc_elements)
 addtest(mqc_cgto)
