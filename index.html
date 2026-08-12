@@ -194,31 +194,56 @@ extensive expertise in both.</p>
 <li>TBLITE (will be downloaded automatically), for xTB</li>
 <li>NVIDIA cuEST and CUDA 12, for GPU Hartree-Fock/DFT (optional; see <a href="backends/cuest/CUEST.md">CUEST.md</a>)</li>
 </ul>
-<p>Optional, each off by default and each fetched automatically when switched on:</p>
+<p><code>cmake -B build</code> with no options gives you tblite <strong>and</strong> the CPU ab initio path
+— Hartree-Fock, DFT, MP2 and coupled cluster in a Gaussian basis, no GPU needed.
+All three dependencies are fetched automatically, so <strong>a default configure needs
+network access.</strong> On a machine without it, either point
+<code>FETCHCONTENT_SOURCE_DIR_LIBCINT</code> and <code>FETCHCONTENT_SOURCE_DIR_LIBXC</code> at local
+copies, or turn them off and build the xTB path alone.</p>
 <table>
 <thead>
 <tr>
 <th>Option</th>
-<th>What it adds</th>
+<th>Default</th>
+<th>What it controls</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>-DMQC_ENABLE_LIBCINT=ON</code></td>
-<td>Gaussian integrals and Hartree-Fock on the CPU, no GPU needed</td>
+<td><code>-DMQC_ENABLE_TBLITE=</code></td>
+<td><code>ON</code></td>
+<td>xTB (GFN1/GFN2) through tblite</td>
 </tr>
 <tr>
-<td><code>-DMQC_ENABLE_LIBXC=ON</code></td>
-<td>Exchange-correlation functionals</td>
+<td><code>-DMQC_ENABLE_LIBCINT=</code></td>
+<td><code>ON</code></td>
+<td>Gaussian integrals on the CPU, no GPU needed</td>
 </tr>
 <tr>
-<td><code>-DMQC_ENABLE_HDF5=ON</code></td>
-<td>Binary checkpoints, needed to restart a gradient or Hessian</td>
+<td><code>-DMQC_ENABLE_LIBXC=</code></td>
+<td><code>ON</code></td>
+<td>Exchange-correlation functionals, so DFT</td>
+</tr>
+<tr>
+<td><code>-DMQC_ENABLE_HDF5=</code></td>
+<td><code>OFF</code></td>
+<td>Binary checkpoints, to restart a gradient or Hessian</td>
+</tr>
+<tr>
+<td><code>-DMQC_ENABLE_CUEST=</code></td>
+<td><code>OFF</code></td>
+<td>GPU Hartree-Fock/DFT; also needs <code>-DCUEST_ROOT=</code></td>
 </tr>
 </tbody>
 </table>
-<p>The CPU Hartree-Fock backend exists mainly so results can be checked without a
-GPU; it is validated against PySCF rather than tuned for speed.</p>
+<p>Turning <code>LIBXC</code> off while leaving <code>LIBCINT</code> on is a supported build, but note
+what it means: every deck naming a functional is refused, because there is
+nothing to evaluate it with. That is the reason both default to on.</p>
+<p><strong>tblite needs gfortran, ifort or ifx.</strong> With nvfortran or LLVM Flang the
+configure stops and says so; pass <code>-DMQC_ENABLE_TBLITE=OFF</code> and the rest of the
+program — including the CPU ab initio path — builds normally.</p>
+<p>The CPU backend exists mainly so results can be checked without a GPU; it is
+validated against PySCF rather than tuned for speed.</p>
 <p>You can then simply:</p>
 <div class="codehilite"><pre><span></span><code>mkdir build
 cd build
@@ -313,7 +338,7 @@ Fortran side spreads the work over the whole job and returns when it is done &nd
 so a script that reads as single-threaded runs on as many nodes as it was
 launched with, and <code>mpirun -np 64 python script.py</code> is a valid way to start one.</p>
 <p>The interface loads <code>libmqc.so</code>, which is a separate target from the executable:</p>
-<div class="codehilite"><pre><span></span><code>cmake<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>-DMQC_ENABLE_TBLITE<span class="o">=</span>ON<span class="w"> </span>-DMQC_ENABLE_LIBCINT<span class="o">=</span>ON
+<div class="codehilite"><pre><span></span><code>cmake<span class="w"> </span>-B<span class="w"> </span>build
 cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>mqc_shared
 <span class="nb">export</span><span class="w"> </span><span class="nv">PYTHONPATH</span><span class="o">=</span><span class="nv">$PWD</span>/python
 </code></pre></div>
@@ -335,8 +360,9 @@ it on exit.</p>
 fragmented calculations for both xTB and Hartree-Fock and asserts against
 reference energies, and <code>energy_screened_mbe.py</code> shows a two-pass calculation
 that recomputes only the terms whose contribution exceeded a threshold.</p>
-<p>Which methods are available depends on the build: <code>gfn1</code>/<code>gfn2</code> need
-<code>MQC_ENABLE_TBLITE</code>, while <code>MQC_ENABLE_LIBCINT</code> brings the CPU ab initio path —
+<p>Which methods are available depends on the build, though the default has all of
+them: <code>gfn1</code>/<code>gfn2</code> need <code>MQC_ENABLE_TBLITE</code>, while <code>MQC_ENABLE_LIBCINT</code> brings
+the CPU ab initio path —
 <code>hf</code>, <code>mp2</code>, <code>ccsd</code>, <code>ccsd(t)</code>, and the <code>ri-</code> spellings of the correlated ones.
 Gradients come from xTB and cuEST; the CPU backend refuses them rather than
 returning something untested, and refuses unrestricted coupled cluster on the same
@@ -424,7 +450,7 @@ principle.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-12 10:35 +0000             </p>
+ on 2026-08-12 11:39 +0000             </p>
           </div>
         </div>
         <br>

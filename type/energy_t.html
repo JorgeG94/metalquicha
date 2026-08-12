@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="<p> 1.0% of total for derived types.</p>Including implementation: 19 statements,  0.7% of total for derived types.">8 statements</a>
+                 title="<p> 1.1% of total for derived types.</p>Including implementation: 21 statements,  0.7% of total for derived types.">9 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,6 +137,7 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/energy_t.html#variable-cc~2">cc</a>
+            <a class="list-group-item" href="../type/energy_t.html#variable-dh_pt2">dh_pt2</a>
             <a class="list-group-item" href="../type/energy_t.html#variable-mp2">mp2</a>
             <a class="list-group-item" href="../type/energy_t.html#variable-scf~3">scf</a>
         </div>
@@ -166,7 +167,7 @@
       <div id="boundprocs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../type/energy_t.html#boundprocedure-reset~5">reset</a>
-            <a class="list-group-item" href="../type/energy_t.html#boundprocedure-total~7">total</a>
+            <a class="list-group-item" href="../type/energy_t.html#boundprocedure-total~5">total</a>
         </div>
       </div>
     </div>
@@ -190,7 +191,7 @@
         type, public :: energy_t</h2>
     <p>Container for quantum chemistry energy components</p>
 <p>Stores energy contributions from different levels of theory.
-Total energy is computed as: scf + mp2%total() + cc%total()</p>
+Total energy is computed as: scf + dh_pt2 + mp2%total() + cc%total()</p>
 <br>      <div class="card">
         <div class="card-header">
           <h3 class="card-title">Inherits</h3>
@@ -422,6 +423,33 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-dh_pt2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dh_pt2</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>The perturbative part of a double hybrid&rsquo;s <em>functional</em>.</p>
+<p>Separate from <code>mp2</code> on purpose, and the distinction is not cosmetic. A
+double hybrid&rsquo;s second-order term is a component of its exchange-
+correlation functional, not a correction applied on top of a reference
+&ndash; B2PLYP&rsquo;s energy is not &ldquo;B2PLYP plus MP2&rdquo;. Putting it in <code>mp2</code> would
+give the right total today, for the wrong reason, and the wrong total
+the moment anyone asked for MP2 alongside a double hybrid: <code>total</code>
+would add it twice.</p>
+<p>Belongs with <code>scf</code> conceptually &ndash; it is part of what the functional
+defines &ndash; and is kept as its own field only so a run can report it.
+Already scaled by the functional&rsquo;s coefficient when it is stored.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-mp2"></span>
               type(<a href='mp2_energy_t.html'>mp2_energy_t</a>),
             </td>
@@ -451,7 +479,7 @@ large graphs.</div>
 <td> =</td>
                 <td>0.0_dp</td>
             <td>
-                <p>SCF/HF reference energy (Hartree)</p>
+                <p>SCF/HF/KS reference energy (Hartree)</p>
             </td>
         </tr>
     </tbody>
@@ -525,7 +553,7 @@ large graphs.</div>
           <div class="row">
               <div class="card mt-3">
     <div class="card-header codesum">
-      <span class="anchor" id="boundprocedure-total~7"></span>
+      <span class="anchor" id="boundprocedure-total~5"></span>
       <h3>
           procedure, public ::
   <strong>total</strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/energy_total.html'>energy_total</a>
@@ -593,8 +621,22 @@ large graphs.</div>
 <span class="w">      </span><span class="c">!! Container for quantum chemistry energy components</span>
 <span class="w">      </span><span class="c">!!</span>
 <span class="w">      </span><span class="c">!! Stores energy contributions from different levels of theory.</span>
-<span class="w">      </span><span class="c">!! Total energy is computed as: scf + mp2%total() + cc%total()</span>
-<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">           </span><span class="c">!! SCF/HF reference energy (Hartree)</span>
+<span class="w">      </span><span class="c">!! Total energy is computed as: scf + dh_pt2 + mp2%total() + cc%total()</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">scf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w">           </span><span class="c">!! SCF/HF/KS reference energy (Hartree)</span>
+<span class="w">      </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dh_pt2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
+<span class="w">         </span><span class="c">!! The perturbative part of a double hybrid&#39;s *functional*.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! Separate from `mp2` on purpose, and the distinction is not cosmetic. A</span>
+<span class="w">         </span><span class="c">!! double hybrid&#39;s second-order term is a component of its exchange-</span>
+<span class="w">         </span><span class="c">!! correlation functional, not a correction applied on top of a reference</span>
+<span class="w">         </span><span class="c">!! -- B2PLYP&#39;s energy is not &quot;B2PLYP plus MP2&quot;. Putting it in `mp2` would</span>
+<span class="w">         </span><span class="c">!! give the right total today, for the wrong reason, and the wrong total</span>
+<span class="w">         </span><span class="c">!! the moment anyone asked for MP2 alongside a double hybrid: `total`</span>
+<span class="w">         </span><span class="c">!! would add it twice.</span>
+<span class="w">         </span><span class="c">!!</span>
+<span class="w">         </span><span class="c">!! Belongs with `scf` conceptually -- it is part of what the functional</span>
+<span class="w">         </span><span class="c">!! defines -- and is kept as its own field only so a run can report it.</span>
+<span class="w">         </span><span class="c">!! Already scaled by the functional&#39;s coefficient when it is stored.</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">mp2_energy_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mp2</span><span class="w">          </span><span class="c">!! MP2 correlation components</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">cc_energy_t</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cc</span><span class="w">            </span><span class="c">!! Coupled cluster correlation components</span>
 <span class="w">      </span><span class="c">! add more as needed, also need to modify the total energy function</span>
@@ -624,7 +666,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-12 10:35 +0000             </p>
+ on 2026-08-12 11:39 +0000             </p>
           </div>
         </div>
         <br>
