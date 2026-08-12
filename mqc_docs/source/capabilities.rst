@@ -64,6 +64,25 @@ Semi-empirical quantum chemistry via the `tblite <https://github.com/tblite/tbli
 - **GFN2-xTB**: Latest parametrization, general-purpose, highest accuracy
 - **GFN1-xTB**: Earlier version, faster, good for large systems
 
+Ab Initio (CPU)
+---------------
+
+Gaussian-basis methods over `libcint <https://github.com/sunqm/libcint>`_, on the
+CPU. This path exists to be checked against as much as to be run: it is the second
+implementation the GPU backend is compared with, and everything below is validated
+against PySCF on the same geometries and the same basis data.
+
+- **Hartree-Fock**: restricted and unrestricted, with a direct, in-core or
+  density-fitted Fock build. Initial guesses are core, GWH, and superposition of
+  atomic densities or coefficients.
+- **MP2**: conventional and density-fitted (RI-MP2), with spin-component scaling
+  reported from separately-kept same- and opposite-spin components.
+- **Coupled cluster**: CCSD and CCSD(T), conventional and density-fitted, in the
+  spin-orbital basis over a restricted reference.
+
+Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
+whether a set is Cartesian or spherical is taken from the file rather than assumed.
+
 Implicit Solvation
 ------------------
 
@@ -130,7 +149,8 @@ Energy Calculations
 -------------------
 
 - **Single-point energies**: Total electronic energy
-- **Component breakdown**: SCF, MP2 (future), coupled-cluster (future)
+- **Component breakdown**: SCF, MP2 same/opposite spin, coupled-cluster
+  singles/doubles/triples, kept separately so a total can be taken apart
 - **Output**: Hartrees, per-fragment energies, MBE contributions
 
 Gradient Calculations
@@ -374,9 +394,11 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - Hartree-Fock (via libint)
-   - DFT functionals (via libxc, libint)
-   - Post-HF methods (MP2, CCSD)
+   - DFT functionals on the CPU path (via libxc); DFT currently runs on the GPU
+     backend only
+   - Unrestricted coupled cluster, which needs its own alpha and beta transform
+     and is refused rather than approximated today
+   - F12 variants, and MCSCF: these parse but have no implementation
 
 2. **Advanced dynamics**:
 

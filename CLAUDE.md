@@ -171,8 +171,25 @@ end type
 
 ## Methods Available
 
+Semi-empirical, via tblite:
+
 - `GFN1` - GFN1-xTB (faster, older parametrization)
 - `GFN2` - GFN2-xTB (recommended, more accurate)
+
+Ab initio on the CPU, via libcint (`backends/libcint/`):
+
+- `HF` - restricted and unrestricted; direct, in-core, or density-fitted
+- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2`
+- `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - spin orbital, RHF reference
+
+An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
+intent is recovered in the reader by `method_wants_density_fitting` while the
+spelling still exists. `ccsd` and `ccsd(t)` are separate method types, so the
+triples survive the parse.
+
+Initial guess is `keywords.scf.guess`: `core`, `gwh`, `sac`, `sad`, or `auto`.
+`auto` resolves per backend - `sad` on the CPU path, `gwh` on cuEST - so the two
+can differ without either knowing what the other chose.
 
 ## Solvation Models
 
@@ -240,6 +257,13 @@ See `FORTRAN_STYLE.md` for the complete style guide. Key points:
 4. Register in method factory
 
 ### Add a new input keyword
+Check first whether it already exists. `keywords.scf.density_fitting`,
+`keywords.scf.unrestricted` and most of `correlation_config_t` and `cc_config_t`
+were already present and working when they were asked for.
+
+Keyword objects: `keywords.scf` for the reference, `keywords.correlation` for what
+every post-HF method shares, `keywords.cc` for what only an iterative one needs.
+
 1. Add the field to the relevant type in `mqc_config_types.f90`, with its default
 2. Add the key to its object's allow-list in `mqc_json_schema.f90` — the
    validator rejects anything it does not know, so a key added anywhere else
@@ -256,11 +280,23 @@ See `FORTRAN_STYLE.md` for the complete style guide. Key points:
 
 ## Validation Tests
 
-Located in `validation/` directory:
+Decks live under `validation/inputs/<hardware>/<engine>/<method>/`, with the
+geometries shared at `validation/inputs/sample_inputs/` and reached from a deck
+with `../../../`. The CPU suite is **generated** - edit
+`tools/cpu_validation/gen_cpu_validation.py` and rerun it; a deck added by hand
+under `cpu/mqc/` is deleted by the next regeneration.
+
+Examples, all under `validation/inputs/cpu/tblite/gfn1/`:
 - `h3o.json` - Unfragmented hydronium
 - `prism.json` - Water prism MBE(2)
 - `overlapping_gly3.json` - Glycine tripeptide GMBE(1)
 - `w20_isomer.json` - Water 20-mer MBE(2)
+
+The CPU ab initio suite is 176 generated cases under `cpu/mqc/`: RHF across H-Ar
+and eight basis sets, UHF, density fitting, MP2, RI-MP2, CCSD(T) and RI-CCSD(T),
+and one fragmented case. References are PySCF fed this repository's own basis
+JSON, not PySCF's internal tables - those differ in the eighth decimal on Pople
+sets, which looks exactly like a bug in whichever code you are checking.
 
 ## Output Format
 
