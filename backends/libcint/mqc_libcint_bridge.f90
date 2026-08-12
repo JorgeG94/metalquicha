@@ -82,6 +82,21 @@ contains
       unrestricted = (fragment%multiplicity /= 1) .or. (mod(fragment%nelec, 2) /= 0) &
                      .or. settings%unrestricted
 
+      ! Continuum solvation belongs to cuEST on this side: the CPU path has no
+      ! cavity, no surface charges and no attenuated one-electron integrals over
+      ! them. Refused rather than ignored, because ignoring it returns a
+      ! gas-phase energy for a deck that asked for solvent -- of the right
+      ! magnitude, converged, and with nothing in the output to say the solvent
+      ! was dropped.
+      if (settings%pcm%enabled) then
+         call result%error%set(ERROR_VALIDATION, "continuum solvation (keywords.pcm) is "// &
+                               "implemented on the cuEST backend only; the CPU path has "// &
+                               "no cavity. Refused rather than run in the gas phase, "// &
+                               "which is what ignoring it would silently give you.")
+         result%has_error = .true.
+         return
+      end if
+
       if (unrestricted .and. settings%density_fitting) then
          call result%error%set(ERROR_VALIDATION, "unrestricted density fitting is not "// &
                                "implemented on the CPU backend: the fitted J and K are "// &
