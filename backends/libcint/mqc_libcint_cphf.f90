@@ -60,6 +60,7 @@ module mqc_libcint_cphf
    use mqc_libcint_multipole, only: multipole_matrices
    use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
+   use mqc_libcint_direct, only: build_fock_direct, schwarz_bounds, direct_stats_t
    implicit none
    private
 
@@ -76,7 +77,7 @@ module mqc_libcint_cphf
 contains
 
    subroutine cphf_solve(mol, orbitals, orbital_energies, n_occ, perturbations, &
-                         response, error, max_iter, tol, iterations)
+                         response, error, max_iter, tol, iterations, in_core)
       !! Solve the coupled-perturbed equations for one or more perturbations
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: orbitals(:, :)          !! MO coefficients, (n_ao, n_mo)
@@ -95,12 +96,17 @@ contains
       integer, intent(out), optional :: iterations
          !! Worst iteration count over the perturbations, for a caller that
          !! wants to notice the equations getting harder.
+      logical, intent(in), optional :: in_core
+         !! Store every integral instead of recomputing them. Default is direct.
+         !! Present and true is the reference path, not the production one -- see
+         !! the note where it is used.
 
-      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :)
+      real(dp), allocatable :: eri(:, :, :, :), c_occ(:, :), c_vir(:, :), bounds(:, :)
       real(dp), allocatable :: gaps(:, :), rhs(:, :), x(:, :), r(:, :), z(:, :)
       real(dp), allocatable :: p(:, :), ap(:, :), work(:, :), zero_h(:, :)
       real(dp) :: rz, rz_new, pap, target_norm, step, use_tol
       integer :: n_ao, n_mo, n_vir, n_pert, ipert, a, i, iter, worst, limit
+      logical :: direct
       character(len=32) :: text
 
       n_ao = size(orbitals, 1)
@@ -147,7 +153,22 @@ contains
          return
       end if
 
-      call mol%eris(eri)
+      ! Integral-direct by default. The stored tensor is n_ao^4 -- 2 GB for uracil
+      ! in 6-31G*, where the response equations themselves need tens of MB -- so it
+      ! is the storage that decides how large a fragment can be done, not anything
+      ! about the solver. It is kept because it is the path validated against a
+      ! dense exact solve, and is therefore what the direct build gets checked
+      ! against, exactly as `run_libcint_rhf` keeps its own `in_core`.
+      direct = .true.
+      if (present(in_core)) direct = .not. in_core
+      if (direct) then
+         call schwarz_bounds(mol, bounds, error)
+         if (error%has_error()) return
+         allocate (eri(0, 0, 0, 0))
+      else
+         call mol%eris(eri)
+         allocate (bounds(0, 0))
+      end if
       allocate (zero_h(n_ao, n_ao))
       zero_h = 0.0_dp
 
@@ -182,7 +203,9 @@ contains
 
          iter = 0
          do iter = 1, limit
-            call response_operator(eri, zero_h, c_occ, c_vir, gaps, p, ap)
+            call response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                   gaps, p, ap, error)
+            if (error%has_error()) return
             pap = sum(p*ap)
             if (pap <= 0.0_dp) then
                call error%set(ERROR_VALIDATION, "CPHF: the response operator is not "// &
@@ -212,19 +235,25 @@ contains
       end do
 
       if (present(iterations)) iterations = worst
-      deallocate (eri, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
+      deallocate (eri, bounds, c_occ, c_vir, gaps, rhs, x, r, z, p, ap, work, zero_h)
    end subroutine cphf_solve
 
-   subroutine response_operator(eri, zero_h, c_occ, c_vir, gaps, u, au)
+   subroutine response_operator(mol, direct, eri, bounds, zero_h, c_occ, c_vir, &
+                                gaps, u, au, error)
       !! Apply the coupled-perturbed operator to a trial rotation
-      real(dp), intent(in) :: eri(:, :, :, :)
-      real(dp), intent(in) :: zero_h(:, :)   !! Zero, so `build_fock` returns only G
+      type(libcint_molecule_t), intent(in) :: mol
+      logical, intent(in) :: direct          !! Recompute integrals rather than store them
+      real(dp), intent(in) :: eri(:, :, :, :)   !! Zero-sized when `direct`
+      real(dp), intent(in) :: bounds(:, :)      !! Zero-sized when not `direct`
+      real(dp), intent(in) :: zero_h(:, :)   !! Zero, so the build returns only G
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :)
       real(dp), intent(in) :: gaps(:, :)
       real(dp), intent(in) :: u(:, :)
       real(dp), intent(out) :: au(:, :)
+      type(error_t), intent(inout) :: error
 
       real(dp), allocatable :: dtilde(:, :), g(:, :), half(:, :), work(:, :)
+      type(direct_stats_t) :: stats
       integer :: n_ao, n_occ
 
       n_ao = size(c_occ, 1)
@@ -238,7 +267,12 @@ contains
       call pic_gemm(half, c_occ, dtilde, transb="T")
       dtilde = dtilde + transpose(dtilde)
 
-      call build_fock(zero_h, eri, dtilde, g)
+      if (direct) then
+         call build_fock_direct(mol, zero_h, dtilde, bounds, g, stats, error)
+         if (error%has_error()) return
+      else
+         call build_fock(zero_h, eri, dtilde, g)
+      end if
 
       call pic_gemm(g, c_occ, work)
       call pic_gemm(c_vir, work, au, transa="T")
@@ -249,7 +283,7 @@ contains
 
    subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                          tensors, centroids, error, n_core, &
-                                         max_iter, tol, iterations)
+                                         max_iter, tol, iterations, in_core)
       !! One polarizability tensor per localized orbital, at its centroid
       !!
       !! What an effective fragment potential wants: not the molecule's total
@@ -302,6 +336,7 @@ contains
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
       integer, intent(out), optional :: iterations
+      logical, intent(in), optional :: in_core
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), w(:, :), u_loc(:, :, :), h_loc(:, :, :)
@@ -333,7 +368,8 @@ contains
 
       ! The response over the whole occupied space -- see `n_core` above.
       call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
-                      max_iter=max_iter, tol=tol, iterations=iterations)
+                      max_iter=max_iter, tol=tol, iterations=iterations, &
+                      in_core=in_core)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
@@ -376,7 +412,7 @@ contains
    end subroutine distributed_polarizability
 
    subroutine static_polarizability(mol, orbitals, orbital_energies, n_occ, alpha, &
-                                    error, max_iter, tol, iterations)
+                                    error, max_iter, tol, iterations, in_core)
       !! The dipole polarizability tensor, in Bohr^3
       !!
       !! `alpha_kl = d mu_k / d F_l`, from the response to the three components
@@ -407,6 +443,7 @@ contains
       integer, intent(in), optional :: max_iter
       real(dp), intent(in), optional :: tol
       integer, intent(out), optional :: iterations
+      logical, intent(in), optional :: in_core
 
       real(dp), allocatable :: dip(:, :, :), u(:, :, :), h(:, :), work(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
@@ -420,7 +457,8 @@ contains
       if (error%has_error()) return
 
       call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
-                      max_iter=max_iter, tol=tol, iterations=iterations)
+                      max_iter=max_iter, tol=tol, iterations=iterations, &
+                      in_core=in_core)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))

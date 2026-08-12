@@ -59,7 +59,8 @@ contains
                   new_unittest("distributed_tensors_sum_to_the_total", &
                                test_distributed_sum_rule), &
                   new_unittest("distributed_tensors_are_individually_asymmetric", &
-                               test_distributed_asymmetry) &
+                               test_distributed_asymmetry), &
+                  new_unittest("direct_and_stored_integrals_agree", test_direct) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -558,6 +559,57 @@ contains
 
       deallocate (tensors, centroids)
    end subroutine test_distributed_asymmetry
+
+   subroutine test_direct(error)
+      !! Recomputing the integrals gives the same response as storing them
+      !!
+      !! The direct build is what will actually run: the stored tensor is `n_ao^4`,
+      !! 2 GB for uracil in 6-31G* where the response equations want tens of MB, so
+      !! storage and not the solver is what decides how large a fragment can be
+      !! done. The in-core path stays because it is the one checked against a dense
+      !! exact solve, which makes it the reference for this comparison -- the same
+      !! arrangement `run_libcint_rhf` uses.
+      !!
+      !! Screening is why this is not a formality. The direct build drops shell
+      !! quartets by a Schwarz bound computed from the basis, and a response density
+      !! is not a converged SCF density -- it has a different magnitude and a
+      !! different sparsity -- so a screening threshold that is invisible in an SCF
+      !! can be visible here.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp) :: stored(3, 3), recomputed(3, 3)
+      integer :: k, l
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, stored, err, in_core=.true.)
+      if (.not. err%has_error()) then
+         call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                    scf%n_occupied, recomputed, err, in_core=.false.)
+      end if
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "CPHF failed: "//err%get_message())
+         return
+      end if
+
+      do l = 1, 3
+         do k = 1, 3
+            call check(error, recomputed(k, l), stored(k, l), &
+                       "the direct and stored integral paths disagree", &
+                       thr=1.0e-9_dp)
+            if (allocated(error)) return
+         end do
+      end do
+   end subroutine test_direct
 
    subroutine test_refusals(error)
       !! Bad input is refused rather than answered
