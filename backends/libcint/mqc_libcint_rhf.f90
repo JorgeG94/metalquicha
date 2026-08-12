@@ -62,6 +62,7 @@ module mqc_libcint_rhf
    public :: run_libcint_rhf
    public :: run_libcint_uhf
    public :: guess_fock                !! Starting Fock for the guesses needing no atomic SCF
+   public :: build_fock                !! F = H + J - K/2; with H zero it is the response operator
    public :: density_pseudo_orbitals   !! Factor a guess density for the fitted exchange
 
    type :: rhf_result_t
@@ -89,7 +90,7 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density, xc)
+                              guess, guess_density, xc, h_extra)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -127,6 +128,18 @@ contains
          !! and ignored otherwise. Built by `mqc_libcint_atomic_guess`, which
          !! cannot be reached from here: it runs free-atom SCFs through this
          !! very module.
+      real(dp), intent(in), optional :: h_extra(:, :)
+         !! An extra one-electron operator, added to H before the first Fock
+         !! build and kept there. A uniform electric field is what it is for:
+         !! `F . r` makes this SCF the finite-field reference that `..._cphf`
+         !! is checked against, and a response property computed two ways from
+         !! one code path is worth more than either alone.
+         !!
+         !! `result%energy` then includes the interaction with whatever this
+         !! is, which is why the finite-field check differentiates the *dipole*
+         !! and not the energy: the dipole is unambiguous, one derivative
+         !! better conditioned, and needs no bookkeeping about what the total
+         !! is supposed to contain.
 
       integer :: diis_size, guess_kind
       logical :: use_in_core
@@ -177,6 +190,13 @@ contains
 
       call mol%overlap(s)
       call mol%core_hamiltonian(h)
+      if (present(h_extra)) then
+         if (size(h_extra, 1) /= n_ao .or. size(h_extra, 2) /= n_ao) then
+            call error%set(ERROR_VALIDATION, "RHF: h_extra is not n_ao square")
+            return
+         end if
+         h = h + h_extra
+      end if
       if (present(aux)) then
          call build_df_tensor(mol, aux, bmat, error)
          if (error%has_error()) return

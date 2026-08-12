@@ -474,6 +474,12 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_localize
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_localize PRIVATE ${main_lib} cint_fortran cint)
+
+  # CPHF and the static polarizability against PySCF's own response solver. The
+  # finite-field check lives in the unit tests, needing no reference.
+  add_executable(check_cphf ${PROJECT_SOURCE_DIR}/validation/check_cphf.f90)
+  target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run
