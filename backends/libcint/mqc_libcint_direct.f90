@@ -36,7 +36,7 @@ module mqc_libcint_direct
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim, &
                                     two_electron_block, two_electron_optimizer
-   use libcint_fortran, only: libcint_del_optimizer
+   use libcint_fortran, only: libcint_del_optimizer, LIBCINT_PTR_RANGE_OMEGA
    implicit none
    private
 
@@ -127,7 +127,7 @@ contains
    end subroutine schwarz_bounds
 
    subroutine build_fock_direct(mol, h, density, bounds, fock, stats, error, screen_tol, &
-                                k_scale)
+                                k_scale, j_scale, omega)
       !! F = H + J - K/2, without forming the integral tensor
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian
@@ -142,8 +142,26 @@ contains
          !! default; zero is pure density-functional exchange; a hybrid is between.
          !! Present so a Kohn-Sham build needs no second routine and cannot drift
          !! out of step with this one.
+      real(dp), intent(in), optional :: j_scale
+         !! Fraction of the Coulomb term, default one. Zero is what a
+         !! range-separated hybrid's *second* pass wants: it needs a long-range
+         !! exchange matrix and nothing else, and asking for it here rather than in
+         !! an exchange-only routine avoids a second copy of the quartet loop.
+      real(dp), intent(in), optional :: omega
+         !! Range-separation parameter. Zero, the default, is the full Coulomb
+         !! kernel. Positive gives the long-range erf-attenuated one and negative
+         !! the short-range complement -- libcint switches on this through
+         !! `env(PTR_RANGE_OMEGA)`, so the same entry points and the same optimizer
+         !! serve both and no new integral code is needed.
+         !!
+         !! The Schwarz bounds passed in are the full-kernel ones and stay valid
+         !! here without being rebuilt: erf(omega r)/r <= 1/r pointwise, so an
+         !! attenuated quartet is never larger than the bound screening it, and
+         !! the screening can only become conservative rather than wrong.
 
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
+      real(dp), allocatable :: env_local(:)
+      real(dp) :: jf
       type(c_ptr) :: opt
       integer :: s1, s2, s3, s4
       integer :: d1, d2, d3, d4, o1, o2, o3, o4
@@ -206,11 +224,26 @@ contains
       ! exchange fraction in here scales all four at once at no per-quartet cost.
       kq = 0.25_dp
       if (present(k_scale)) kq = 0.25_dp*k_scale
+      jf = 1.0_dp
+      if (present(j_scale)) jf = j_scale
+
+      ! A copy, because the range-separation parameter lives in `env` and the
+      ! molecule is read-only here. Cheap -- env is a few thousand doubles -- and it
+      ! keeps a range-separated build from mutating state a caller shares.
+      !
+      ! `+ 1` because the `env` pointer constants are libcint's own 0-based
+      ! offsets and are *not* converted by the Fortran interface -- unlike the
+      ! `atm`/`bas` column constants, which are. Getting this wrong is silent:
+      ! slot 8 is `PTR_RINV_ZETA`, which a plain two-electron integral ignores,
+      ! so the attenuated build returns full-range exchange, the two passes sum
+      ! back to unscaled K, and the SCF converges several Hartree out.
+      env_local = mol%env
+      if (present(omega)) env_local(LIBCINT_PTR_RANGE_OMEGA + 1) = omega
 
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
-                                  mol%nbas, mol%env)
+                                  mol%nbas, env_local)
 
       n_total = 0_int64
       n_computed = 0_int64
@@ -237,7 +270,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max, kq) &
+      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max, kq, jf, env_local) &
       !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
       !$omp            buf, g_local) &
@@ -272,7 +305,7 @@ contains
 
             shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
             ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
-                                     mol%bas, mol%nbas, mol%env, opt)
+                                     mol%bas, mol%nbas, env_local, opt)
             if (ret == 0) then
                n_screened = n_screened + 1_int64
                cycle
@@ -303,8 +336,8 @@ contains
                         ! not symmetric as it stands; symmetrising at the
                         ! end is what makes these six updates equivalent to
                         ! the full sum over all eight permutations.
-                        g_local(b1, b2) = g_local(b1, b2) + d_half(b3, b4)*scaled
-                        g_local(b3, b4) = g_local(b3, b4) + d_half(b1, b2)*scaled
+                        g_local(b1, b2) = g_local(b1, b2) + jf*d_half(b3, b4)*scaled
+                        g_local(b3, b4) = g_local(b3, b4) + jf*d_half(b1, b2)*scaled
                         g_local(b1, b3) = g_local(b1, b3) - kq*d_half(b2, b4)*scaled
                         g_local(b2, b4) = g_local(b2, b4) - kq*d_half(b1, b3)*scaled
                         g_local(b1, b4) = g_local(b1, b4) - kq*d_half(b2, b3)*scaled
@@ -332,7 +365,7 @@ contains
 
       fock = h + 0.5_dp*(g + transpose(g))
 
-      deallocate (g, d_half, dims, offs, pair_i, pair_j)
+      deallocate (g, d_half, dims, offs, pair_i, pair_j, env_local)
    end subroutine build_fock_direct
 
    subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, screen_tol)

@@ -82,6 +82,13 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_guess)
   target_link_libraries(test_mqc_libcint_guess PRIVATE cint_fortran cint)
 
+  # Range separation, on the two limits of the erf kernel. The validation
+  # manifest checks the energies; this checks that omega reaches libcint at all,
+  # which is the part that failed silently -- an ignored parameter returns
+  # full-range exchange from the long-range pass and still converges.
+  addtest(mqc_libcint_rsh)
+  target_link_libraries(test_mqc_libcint_rsh PRIVATE cint_fortran cint)
+
   # Basis-function values on the grid, against the identity that the overlap
   # matrix is an integral of them. libcint cannot check these -- it does not
   # evaluate basis functions -- so the quadrature is the check.

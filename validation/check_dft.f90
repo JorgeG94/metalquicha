@@ -51,6 +51,10 @@ program check_dft
    call scf_case("cc-pvdz", "svwn", 3, direct=.true.)
    call scf_case("cc-pvdz", "b3lyp", 3, direct=.true.)
    call scf_case("cc-pvdz", "tpss", 3, direct=.true.)
+   ! Range-separated: a second exchange pass over the erf-attenuated kernel,
+   ! which only the direct build can produce.
+   call scf_case("cc-pvdz", "wb97x", 3, direct=.true.)
+   call scf_case("cc-pvdz", "cam-b3lyp", 3, direct=.true.)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2gp-plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "mpw2plyp", 3)

@@ -307,6 +307,12 @@ DFT_CASES = [
     ("water", "cc-pvdz", "tpss", 3),
     ("water", "cc-pvdz", "m06-l", 3),
     ("ch4", "cc-pvdz", "pbe", 3),
+    # Range-separated hybrids, which reach their exchange by a path nothing else
+    # uses: a second, erf-attenuated quartet loop. Losing it is not a small
+    # error -- omega written into the wrong `env` slot left both of these several
+    # Hartree low, converged and unflagged.
+    ("water", "cc-pvdz", "wb97x", 3),
+    ("water", "cc-pvdz", "cam-b3lyp", 3),
 ]
 
 # Double hybrids. References come from pyscf-forge's `pyscf.dh.DFDH`, and carry a

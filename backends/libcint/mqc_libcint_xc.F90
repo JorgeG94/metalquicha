@@ -57,6 +57,22 @@ module mqc_libcint_xc
          !! How much Fock exchange the functional wants. Zero for pure DFT, one
          !! for Hartree-Fock, in between for a hybrid. Read from libxc where libxc
          !! owns the functional, and from `mqc_xc_spec` only where it does not.
+      logical :: range_separated = .false.
+         !! Whether the exchange splits into short and long range. The Fock matrix
+         !! then needs two exchange passes rather than one, so the SCF has to know.
+      real(dp) :: rs_omega = 0.0_dp
+         !! The range-separation parameter, for libcint's `env(PTR_RANGE_OMEGA)`.
+      real(dp) :: rs_k_lr = 0.0_dp
+         !! Coefficient of the long-range exchange matrix. `exx_fraction` carries
+         !! the coefficient of the full one, so that
+         !!
+         !!     K_eff = exx_fraction * K_full + rs_k_lr * K_lr(rs_omega)
+         !!
+         !! libxc reports (omega, alpha, beta) with alpha the long-range coefficient
+         !! and alpha+beta the short-range one, so exx_fraction is alpha+beta and
+         !! this is -beta. Checked against PySCF's resolved values rather than read
+         !! off the convention: CAM-B3LYP comes out 0.19 short-range and 0.65 long,
+         !! and wB97X 0.157706 and 1.0, which are the published numbers.
       real(dp) :: pt2_fraction = 0.0_dp
          !! MP2 correlation fraction, for a double hybrid. Carried here so the
          !! caller can see it without re-parsing the name; nothing in this module
@@ -175,23 +191,34 @@ contains
             return
          end select
 
-         ! **Range separation is refused, and has to be detected rather than
-         ! asked about.** libxc 7.1.2's Fortran bindings expose no `xc_hyb_type`,
-         ! so the test is on the coefficients themselves: a global hybrid reports
-         ! omega = 0, and anything else splits its exchange into short and long
-         ! range with an erf-attenuated kernel. Those integrals are not computed
-         ! here, and `hyb_exx_coef` does not mean for such a functional what it
-         ! means for a global one -- taking it at face value gave CAM-B3LYP an
-         ! energy 3.4 Hartree low and wB97X 6.4 low, both converged and neither
-         ! flagged. Exactly what this backend exists to refuse.
+         ! **Range separation, detected rather than asked about.** libxc 7.1.2's
+         ! Fortran bindings expose no `xc_hyb_type`, so the test is on the
+         ! coefficients: a global hybrid reports omega = 0, and anything else
+         ! splits its exchange into short and long range over an erf-attenuated
+         ! kernel. Detecting it matters either way, because `hyb_exx_coef` does
+         ! not mean for such a functional what it means for a global one --
+         ! taking it at face value gave CAM-B3LYP an energy 3.4 Hartree low and
+         ! wB97X 6.4 low, both converged and neither flagged.
+         !
+         ! The attenuated integrals need no new integral code: they are the same
+         ! entry points with `env(PTR_RANGE_OMEGA)` set, so a second exchange
+         ! pass and these coefficients are the whole of it.
          call xc_f03_hyb_cam_coef(ctx%func(i), cam_omega, cam_alpha, cam_beta)
-         if (cam_omega /= 0.0_dp .or. cam_beta /= 0.0_dp) then
-            call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
-                           "' is a range-separated hybrid, which needs "// &
-                           "erf-attenuated two-electron integrals the CPU path does "// &
-                           "not compute. Refused rather than treated as a global "// &
-                           "hybrid, which would converge to a badly wrong energy.")
-            return
+         if (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp) then
+            if (ctx%range_separated) then
+               call error%set(ERROR_VALIDATION, "two range-separated components in "// &
+                              "one functional is not something this assembles: their "// &
+                              "omegas would have to agree and nothing checks that.")
+               return
+            end if
+            ctx%range_separated = .true.
+            ctx%rs_omega = cam_omega
+            ! alpha is the long-range coefficient and alpha+beta the short-range
+            ! one; K_full carries the short-range value and the long-range matrix
+            ! carries the difference.
+            ctx%exx_fraction = ctx%exx_fraction &
+                               + spec%component(i)%weight*(cam_alpha + cam_beta)
+            ctx%rs_k_lr = ctx%rs_k_lr - spec%component(i)%weight*cam_beta
          end if
 
          ! Non-local correlation likewise: VV10 is a double integral over the
@@ -210,7 +237,7 @@ contains
          ! composition libxc does not carry may state its own, and `mqc_xc_spec`
          ! leaves that at zero for everything libxc knows -- so the two can never
          ! both be nonzero and disagree.
-         if (spec%from_libxc) then
+         if (spec%from_libxc .and. .not. (cam_omega /= 0.0_dp .and. cam_beta /= 0.0_dp)) then
             libxc_exx = xc_f03_hyb_exx_coef(ctx%func(i))
             ctx%exx_fraction = ctx%exx_fraction + spec%component(i)%weight*libxc_exx
          end if
@@ -234,6 +261,9 @@ contains
       this%active = .false.
       this%exx_fraction = 0.0_dp
       this%pt2_fraction = 0.0_dp
+      this%range_separated = .false.
+      this%rs_omega = 0.0_dp
+      this%rs_k_lr = 0.0_dp
    end subroutine xc_context_destroy
 
    subroutine xc_add_potential(ctx, mol, density, v_xc, e_xc, n_elec, error)

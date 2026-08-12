@@ -32,11 +32,23 @@ sys.path.insert(0, str(REPO / "tools" / "cpu_validation"))
 from gen_cpu_validation import bse_to_pyscf, molecule_form, CARTESIAN  # noqa: E402
 
 CASES = [("cc-pvdz", 3), ("cc-pvdz", 5), ("sto-3g", 4)]
-# Self-consistent Kohn-Sham: functional, basis, grid level.
-KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3), ("svwn", "SVWN", "cc-pvdz", 3),
-            ("gga_x_pbe", "GGA_X_PBE", "cc-pvdz", 3), ("pbe", "PBE", "cc-pvdz", 3),
-            ("b3lyp", "B3LYP", "cc-pvdz", 3), ("pbe0", "PBE0", "cc-pvdz", 3),
-            ("tpss", "TPSS", "cc-pvdz", 3), ("m06-l", "M06-L", "cc-pvdz", 3)]
+# Self-consistent Kohn-Sham: functional, PySCF's name for it, basis, grid level,
+# and whether this is the direct, Schwarz-screened Fock build rather than the
+# in-core one. Both are compared, because the two builds write separate files --
+# screening that changed an answer would show up only in the direct rows.
+KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3, False), ("svwn", "SVWN", "cc-pvdz", 3, False),
+            ("gga_x_pbe", "GGA_X_PBE", "cc-pvdz", 3, False), ("pbe", "PBE", "cc-pvdz", 3, False),
+            ("b3lyp", "B3LYP", "cc-pvdz", 3, False), ("pbe0", "PBE0", "cc-pvdz", 3, False),
+            ("tpss", "TPSS", "cc-pvdz", 3, False), ("m06-l", "M06-L", "cc-pvdz", 3, False),
+            ("svwn", "SVWN", "cc-pvdz", 3, True), ("b3lyp", "B3LYP", "cc-pvdz", 3, True),
+            ("tpss", "TPSS", "cc-pvdz", 3, True),
+            # Range-separated hybrids, and the sharpest test of the attenuated
+            # integrals: omega reaches libcint only through the long-range
+            # exchange pass, and the total is wrong by Hartrees if it fails to
+            # arrive. Direct only -- the in-core path holds one full-range
+            # exchange tensor and has nothing to attenuate.
+            ("wb97x", "wb97x", "cc-pvdz", 3, True),
+            ("cam-b3lyp", "camb3lyp", "cc-pvdz", 3, True)]
 KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
 
 # Double hybrids, against pyscf-forge's DFDH on the same geometry and basis.
@@ -135,8 +147,9 @@ def main():
     # so this is the one comparison where the grids do *not* cancel -- and it
     # still agrees to 2e-11, because the grid tables are the same tables.
     from pyscf import dft
-    for tag, pyscf_xc, basis, level in KS_CASES:
-        path = pathlib.Path(f"/tmp/mqc_ks_{tag}_{basis}_L{level}.txt")
+    for tag, pyscf_xc, basis, level, direct in KS_CASES:
+        mode = "_direct" if direct else ""
+        path = pathlib.Path(f"/tmp/mqc_ks_{tag}_{basis}_L{level}{mode}.txt")
         if not path.exists():
             print(f"  MISSING {path} -- run ./build/check_dft first")
             failures += 1
@@ -158,7 +171,7 @@ def main():
         theirs = mf.kernel()
         d = abs(theirs - ours)
         ok = d < KS_TOL
-        print(f"  {'ok  ' if ok else 'FAIL'} KS {tag:6s}/{basis} L{level}  "
+        print(f"  {'ok  ' if ok else 'FAIL'} KS {tag + mode:16s}/{basis} L{level}  "
               f"ours {ours:.10f}  PySCF {theirs:.10f}  diff {d:.2e} "
               f"(<= {KS_TOL:.0e})  {iters} iterations")
         if not ok:
