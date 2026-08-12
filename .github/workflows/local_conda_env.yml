@@ -10,6 +10,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # The shipped default: `cmake -B build` with no flags at all, which is
+          # what anyone who clones this gets. Every other job below passes all
+          # four options explicitly, so without this one a changed default would
+          # be invisible here -- the one configuration nobody tested would be the
+          # one everybody builds.
+          #
+          # The matrix values below are what the defaults currently *are*, and
+          # they only decide which validation steps run. If a default drifts away
+          # from them this job fails rather than quietly skipping work.
+          - name: "default build (no flags)"
+            defaults: true
+            tblite: true
+            legacy_mpi: false
+            libcint: true
+            libxc: true
           - name: "with tblite"
             tblite: true
             legacy_mpi: false
@@ -28,10 +43,10 @@ jobs:
             tblite: false
             legacy_mpi: false
             libxc: true
-          # The CPU integrals path. Without this nothing here ever compiles
-          # libcint, so the whole backends/libcint/ directory -- the integrals,
-          # the SCF, the direct Fock build -- is unbuilt in CI and its unit
-          # tests do not run. tblite is off so the job is only this.
+          # libcint with libxc explicitly off -- a reduced build now that both are
+          # on by default, and worth keeping: it is what you get asking only for
+          # the integrals, and it is the configuration where the "this build has
+          # no libxc" refusals are the behaviour under test.
           - name: "with libcint"
             tblite: false
             legacy_mpi: false
@@ -62,11 +77,16 @@ jobs:
         run: |
           conda activate mqc
           export FC=gfortran
-          cmake -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
-                -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
-                -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
-                -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
-                -B build
+          if [ "${{ matrix.defaults }}" = "true" ]; then
+            # Deliberately bare: passing any option here would defeat the job.
+            cmake -B build
+          else
+            cmake -DMQC_ENABLE_TBLITE=${{ matrix.tblite && 'ON' || 'OFF' }} \
+                  -DPIC_USE_LEGACY_MPI=${{ matrix.legacy_mpi && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_LIBXC=${{ matrix.libxc && 'ON' || 'OFF' }} \
+                  -DMQC_ENABLE_LIBCINT=${{ matrix.libcint && 'ON' || 'OFF' }} \
+                  -B build
+          fi
           cmake --build build
 
       - name: Run unit tests

@@ -82,6 +82,12 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_guess)
   target_link_libraries(test_mqc_libcint_guess PRIVATE cint_fortran cint)
 
+  # Basis-function values on the grid, against the identity that the overlap
+  # matrix is an integral of them. libcint cannot check these -- it does not
+  # evaluate basis functions -- so the quadrature is the check.
+  addtest(mqc_libcint_ao)
+  target_link_libraries(test_mqc_libcint_ao PRIVATE cint_fortran cint)
+
   # Coupled cluster, against the identities a reference energy cannot see:
   # <pq||rs> antisymmetry, spin-forbidden integrals vanishing exactly, and the
   # spin-orbital MP2 equalling the conventional one. PySCF comparison lives in
@@ -100,6 +106,10 @@ if(MQC_ENABLE_CUEST)
   addtestpp(mqc_cuest_spin)
   target_compile_definitions(test_mqc_cuest_spin PRIVATE MQC_WITH_CUEST)
 endif()
+# What a functional name means as a composition. Unconditional: the
+# double-hybrid coefficients are ours, and libxc is not needed to check them.
+addtest(mqc_xc_spec)
+
 addtest(mqc_basis_utils)
 addtest(mqc_elements)
 addtest(mqc_cgto)

@@ -19,6 +19,7 @@ module mqc_libcint_rhf
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
+   use mqc_libcint_xc, only: xc_context_t, xc_add_potential
    implicit none
    private
 
@@ -88,7 +89,7 @@ contains
 
    subroutine run_libcint_rhf(mol, nelec, max_iter, energy_tol, density_tol, &
                               verbose, result, error, aux, diis_vectors, in_core, &
-                              guess, guess_density)
+                              guess, guess_density, xc)
       !! Drive a closed-shell SCF to convergence
       type(libcint_molecule_t), intent(in) :: mol
       integer, intent(in) :: nelec
@@ -116,6 +117,11 @@ contains
          !! One of SCF_GUESS_*. Defaults to the core guess, which is the only
          !! one needing nothing but H -- the caller decides policy, because
          !! `guess_density` has to be built before this routine is entered.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Exchange-correlation. Present turns this into a Kohn-Sham SCF; absent
+         !! leaves it Hartree-Fock. One argument rather than six, and one loop
+         !! rather than two -- a separate `run_libcint_rks` would have to be kept
+         !! in step with this one for the rest of its life.
       real(dp), intent(in), optional :: guess_density(:, :)
          !! Total starting density, required by SCF_GUESS_SAC and SCF_GUESS_SAD
          !! and ignored otherwise. Built by `mqc_libcint_atomic_guess`, which
@@ -236,19 +242,12 @@ contains
 
       do iter = 1, max_iter
          density_old = density
-         if (allocated(bmat)) then
-            call build_fock_df(h, bmat, density, coeff, n_occ, fock)
-         else if (allocated(eri)) then
-            call build_fock(h, eri, density, fock)
-         else
-            call build_fock_direct(mol, h, density, bounds, fock, stats, error)
-            if (error%has_error()) return
-         end if
-
-         ! The energy belongs to the Fock built from this density, so it is
-         ! taken before extrapolation. A DIIS-mixed Fock is a convergence
-         ! device, not a state anything is the energy of.
-         e_elec = electronic_energy(h, fock, density)
+         ! The energy belongs to the Fock built from this density, so both come
+         ! back together and before extrapolation. A DIIS-mixed Fock is a
+         ! convergence device, not a state anything is the energy of.
+         call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
+                            fock, e_elec, error)
+         if (error%has_error()) return
 
          ! FDS - SDF, projected into the orthogonal basis. It vanishes exactly
          ! when F and D commute, which is what convergence means, so it is the
@@ -282,15 +281,9 @@ contains
       ! The energy that goes out is the one belonging to the density that
       ! satisfied the test, so it is recomputed from the final Fock rather
       ! than carried over from the loop.
-      if (allocated(bmat)) then
-         call build_fock_df(h, bmat, density, coeff, n_occ, fock)
-      else if (allocated(eri)) then
-         call build_fock(h, eri, density, fock)
-      else
-         call build_fock_direct(mol, h, density, bounds, fock, stats, error)
-         if (error%has_error()) return
-      end if
-      result%electronic = electronic_energy(h, fock, density)
+      call assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
+                         fock, result%electronic, error)
+      if (error%has_error()) return
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_occ
@@ -552,6 +545,73 @@ contains
       call diis%destroy()
    end subroutine run_libcint_uhf
 
+   subroutine assemble_fock(mol, h, density, coeff, n_occ, bmat, eri, bounds, xc, &
+                            fock, e_elec, error)
+      !! The Fock matrix for this density, and the electronic energy that belongs to it
+      !!
+      !! One place, because there used to be two: the iteration built its Fock
+      !! matrix through a three-way branch and the final energy rebuilt it through
+      !! an identical copy, which is a duplication that only stays correct by
+      !! attention. Exchange-correlation would have made it three copies.
+      !!
+      !! The energy is returned with the Fock matrix because for Kohn-Sham they
+      !! cannot be separated after the fact. Hartree-Fock's
+      !! `1/2 Tr[D (H + F)]` counts the potential at half weight, which is right
+      !! for a mean field and wrong for a functional: the exchange-correlation
+      !! energy is E_xc, not `1/2 Tr[D V_xc]`. So the energy is taken from the Fock
+      !! matrix *before* V_xc is added, and E_xc is added on top.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :), density(:, :)
+      real(dp), intent(in) :: coeff(:, :)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(in) :: bmat(:, :)
+      real(dp), allocatable, intent(in) :: eri(:, :, :, :)
+      real(dp), allocatable, intent(in) :: bounds(:, :)
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(out) :: fock(:, :)
+      real(dp), intent(out) :: e_elec
+      type(error_t), intent(inout) :: error
+
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: v_xc(:, :)
+      real(dp) :: k_scale, e_xc, n_elec
+      logical :: kohn_sham
+
+      kohn_sham = .false.
+      k_scale = 1.0_dp
+      if (present(xc)) then
+         if (xc%active) then
+            kohn_sham = .true.
+            ! Pure functionals want no Fock exchange at all, hybrids want a
+            ! fraction, and Hartree-Fock is the fraction being one -- which is why
+            ! this is a scale rather than a branch.
+            k_scale = xc%exx_fraction
+         end if
+      end if
+
+      if (allocated(bmat)) then
+         call build_fock_df(h, bmat, density, coeff, n_occ, fock, k_scale=k_scale)
+      else if (allocated(eri)) then
+         call build_fock(h, eri, density, fock, k_scale=k_scale)
+      else
+         call build_fock_direct(mol, h, density, bounds, fock, stats, error, &
+                                k_scale=k_scale)
+         if (error%has_error()) return
+      end if
+
+      ! Taken here, from the Fock matrix that is still a mean field.
+      e_elec = electronic_energy(h, fock, density)
+
+      if (kohn_sham) then
+         allocate (v_xc(size(h, 1), size(h, 2)))
+         call xc_add_potential(xc, mol, density, v_xc, e_xc, n_elec, error)
+         if (error%has_error()) return
+         fock = fock + v_xc
+         e_elec = e_elec + e_xc
+         deallocate (v_xc)
+      end if
+   end subroutine assemble_fock
+
    subroutine commutator(fock, density, overlap, x, err)
       !! e = X^T (F D S - S D F) X, the DIIS error vector
       !!
@@ -774,14 +834,18 @@ contains
       end do
    end subroutine build_density
 
-   pure subroutine build_fock(h, eri, density, fock)
+   pure subroutine build_fock(h, eri, density, fock, k_scale)
       !! F = H + J - K/2, with J and K contracted straight from the ERIs
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), density(:, :)
       real(dp), intent(out) :: fock(:, :)
+      real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
 
       integer :: mu, nu, la, si, n
+      real(dp) :: kf
 
       n = size(h, 1)
+      kf = 0.5_dp
+      if (present(k_scale)) kf = 0.5_dp*k_scale
       fock = h
       do nu = 1, n
          do mu = 1, n
@@ -791,14 +855,14 @@ contains
                   ! and the half is the closed-shell factor -- D already
                   ! carries the two electrons per orbital.
                   fock(mu, nu) = fock(mu, nu) + density(la, si) &
-                                 *(eri(mu, nu, la, si) - 0.5_dp*eri(mu, la, nu, si))
+                                 *(eri(mu, nu, la, si) - kf*eri(mu, la, nu, si))
                end do
             end do
          end do
       end do
    end subroutine build_fock
 
-   subroutine build_fock_df(h, b, density, coeff, n_occ, fock)
+   subroutine build_fock_df(h, b, density, coeff, n_occ, fock, k_scale)
       !! F = H + J - K/2 from the fitted tensor rather than the exact ERIs
       !!
       !! Neither term ever forms a four-index object. Density fitting is not the
@@ -824,7 +888,9 @@ contains
       real(dp), intent(in) :: coeff(:, :)   !! MO coefficients; only the occupied block is read
       integer, intent(in) :: n_occ
       real(dp), intent(out) :: fock(:, :)
+      real(dp), intent(in), optional :: k_scale   !! Exact-exchange fraction, default one
 
+      real(dp) :: kf
       real(dp), allocatable :: c(:), j(:, :), k(:, :), w(:, :), c_occ(:, :)
       integer :: n, naux, p
 
@@ -855,7 +921,9 @@ contains
          end associate
       end do
 
-      fock = h + j - 0.5_dp*k
+      kf = 0.5_dp
+      if (present(k_scale)) kf = 0.5_dp*k_scale
+      fock = h + j - kf*k
    end subroutine build_fock_df
 
    pure subroutine build_density_spin(coeff, n_occ, density)

@@ -126,7 +126,8 @@ contains
       deallocate (buf)
    end subroutine schwarz_bounds
 
-   subroutine build_fock_direct(mol, h, density, bounds, fock, stats, error, screen_tol)
+   subroutine build_fock_direct(mol, h, density, bounds, fock, stats, error, screen_tol, &
+                                k_scale)
       !! F = H + J - K/2, without forming the integral tensor
       type(libcint_molecule_t), intent(in) :: mol
       real(dp), intent(in) :: h(:, :)          !! Core Hamiltonian
@@ -136,6 +137,11 @@ contains
       type(direct_stats_t), intent(out) :: stats
       type(error_t), intent(inout) :: error
       real(dp), intent(in), optional :: screen_tol
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange to keep. One is Hartree-Fock and the
+         !! default; zero is pure density-functional exchange; a hybrid is between.
+         !! Present so a Kohn-Sham build needs no second routine and cannot drift
+         !! out of step with this one.
 
       real(dp), allocatable :: buf(:), g(:, :), g_local(:, :), d_half(:, :)
       type(c_ptr) :: opt
@@ -147,6 +153,7 @@ contains
       integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
       integer(int64) :: n_total, n_computed, n_screened
       real(dp) :: tol, deg, value, scaled
+      real(dp) :: kq
 
       n = mol%nao
       if (size(h, 1) /= n .or. size(density, 1) /= n .or. size(fock, 1) /= n) then
@@ -195,6 +202,11 @@ contains
       ! large -- an error that still converges, to a badly wrong energy.
       d_half = 0.5_dp*density
 
+      ! The four exchange updates below carry a quarter each, so folding the
+      ! exchange fraction in here scales all four at once at no per-quartet cost.
+      kq = 0.25_dp
+      if (present(k_scale)) kq = 0.25_dp*k_scale
+
       ! Created once and reused for every quartet in this build.
       opt = c_null_ptr
       call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
@@ -225,7 +237,7 @@ contains
       ! thousands of times the first, and a static split would leave most
       ! threads idle waiting for the tail.
       !$omp parallel default(none) &
-      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max) &
+      !$omp    shared(mol, bounds, d_half, g, dims, offs, pair_i, pair_j, npair, tol, opt, n, block_max, kq) &
       !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
       !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, deg, value, scaled, &
       !$omp            buf, g_local) &
@@ -293,10 +305,10 @@ contains
                         ! the full sum over all eight permutations.
                         g_local(b1, b2) = g_local(b1, b2) + d_half(b3, b4)*scaled
                         g_local(b3, b4) = g_local(b3, b4) + d_half(b1, b2)*scaled
-                        g_local(b1, b3) = g_local(b1, b3) - 0.25_dp*d_half(b2, b4)*scaled
-                        g_local(b2, b4) = g_local(b2, b4) - 0.25_dp*d_half(b1, b3)*scaled
-                        g_local(b1, b4) = g_local(b1, b4) - 0.25_dp*d_half(b2, b3)*scaled
-                        g_local(b2, b3) = g_local(b2, b3) - 0.25_dp*d_half(b1, b4)*scaled
+                        g_local(b1, b3) = g_local(b1, b3) - kq*d_half(b2, b4)*scaled
+                        g_local(b2, b4) = g_local(b2, b4) - kq*d_half(b1, b3)*scaled
+                        g_local(b1, b4) = g_local(b1, b4) - kq*d_half(b2, b3)*scaled
+                        g_local(b2, b3) = g_local(b2, b3) - kq*d_half(b1, b4)*scaled
                      end do
                   end do
                end do
