@@ -18,6 +18,8 @@ module test_mqc_json_reader
    use mqc_calculation_defaults, only: DEFAULT_DISPLACEMENT, DEFAULT_TEMPERATURE, &
                                        DEFAULT_PRESSURE
    use mqc_error, only: error_t
+   use mqc_cuest_iface, only: parse_backend_name, BACKEND_AUTO, BACKEND_CUEST, &
+                              BACKEND_LIBCINT
    use pic_types, only: dp
    implicit none
    private
@@ -52,6 +54,7 @@ contains
                   new_unittest("error_missing_schema", test_missing_schema), &
                   new_unittest("error_missing_molecules", test_missing_molecules), &
                   new_unittest("cc_keywords", test_cc_keywords), &
+                  new_unittest("backend_keyword", test_backend_keyword), &
                   new_unittest("pcm_keywords", test_pcm_keywords), &
                   new_unittest("dft_keywords", test_dft_keywords), &
                   new_unittest("error_malformed_json", test_malformed) &
@@ -476,6 +479,41 @@ contains
       if (allocated(error)) return
       call check(error, config%nodes_per_group, 4)
    end subroutine test_nodes_per_group
+
+   subroutine test_backend_keyword(error)
+      !! The root-level `backend` key, and that an unknown one is refused
+      !!
+      !! Refused rather than defaulted, because a typo that fell back to "auto"
+      !! would be a deck asking for one backend and silently getting another --
+      !! and the two are independent implementations, so that is a provenance
+      !! error, not a preference ignored.
+      type(error_type), allocatable, intent(out) :: error
+      type(mqc_config_t) :: config
+      type(error_t) :: parse_error
+      integer :: kind
+
+      call write_deck('"method": "hf", "basis": "sto-3g"', "Energy", "", "", two_atoms())
+      call read_deck(config, parse_error)
+      call check(error,.not. parse_error%has_error(), parse_error%get_message())
+      if (allocated(error)) return
+      call check(error, trim(config%backend) == "auto", "the default backend is auto")
+      if (allocated(error)) return
+
+      call parse_backend_name("gpu", kind, parse_error)
+      call check(error, kind == BACKEND_CUEST, "'gpu' must mean cuEST")
+      if (allocated(error)) return
+      call parse_backend_name("cpu", kind, parse_error)
+      call check(error, kind == BACKEND_LIBCINT, "'cpu' must mean libcint")
+      if (allocated(error)) return
+      call parse_backend_name("", kind, parse_error)
+      call check(error, kind == BACKEND_AUTO, "an empty name must mean auto")
+      if (allocated(error)) return
+
+      call parse_error%clear()
+      call parse_backend_name("cuda", kind, parse_error)
+      call check(error, parse_error%has_error(), &
+                 "an unknown backend name must be refused, not defaulted")
+   end subroutine test_backend_keyword
 
    subroutine test_pcm_keywords(error)
       !! keywords.pcm, and that the block's presence is what switches it on

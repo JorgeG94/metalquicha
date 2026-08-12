@@ -183,6 +183,16 @@ gradient is worse than an absent one -- so it raises:
 xTB gradients work normally, and so do cuEST's. Only the CPU Hartree-Fock path
 refuses.
 
+``backend=`` picks the integral backend -- ``"cuest"``/``"gpu"``,
+``"libcint"``/``"cpu"``, or omitted for the build's default. A request the build
+cannot honour raises rather than falling back:
+
+.. code-block:: python
+
+   >>> mqc.MBE(water, level=0, method="hf", basis="sto-3g", backend="gpu").run()
+   MQCError: This calculation needs the cuEST integral backend; build with CMake
+   and -DMQC_ENABLE_CUEST=ON
+
 Continuum solvation is a named argument, and cuEST-only -- the CPU backend has no
 cavity and refuses it rather than returning a gas-phase energy:
 

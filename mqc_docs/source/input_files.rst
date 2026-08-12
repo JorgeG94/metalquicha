@@ -84,6 +84,28 @@ Here is a complete example with all available options:
      "driver": "Energy"
    }
 
+Backend Selection
+-----------------
+
+Which integral backend runs, as a root-level key beside ``driver``:
+
+.. code-block:: json
+
+   "backend": "cuest"
+
+- ``auto`` (default): cuEST when the build has it, the CPU path otherwise. This
+  is the historical behaviour and what every existing deck gets.
+- ``cuest``, or ``gpu``: require the GPU backend. A build without cuEST is
+  **refused**, with the CMake flag that would fix it, rather than falling back --
+  a deck that asked for cuEST and silently ran on the CPU would report a
+  provenance and a timing that were not true. Asking for it alongside MP2 or
+  coupled cluster is refused too, since those have no GPU implementation here.
+- ``libcint``, or ``cpu``: force the CPU path even on a build that has cuEST,
+  which is how the two are compared against each other.
+
+An unrecognised name is refused rather than treated as ``auto``, so a typo
+cannot quietly select a different implementation.
+
 Schema Section
 --------------
 

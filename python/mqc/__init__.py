@@ -481,6 +481,7 @@ class MBE:
         allow_crap_scf=False,
         checkpoint=None,
         verbosity="info",
+        backend=None,
         pcm=None,
         keywords=None,
         system_options=None,
@@ -508,6 +509,9 @@ class MBE:
         # go through `keywords` -- and did, before this existed -- but solvation
         # changes the Hamiltonian, and things that do that are named arguments
         # here alongside `functional` and `basis`.
+        # "cuest"/"gpu", "libcint"/"cpu", or None for the build's default. A
+        # request that cannot be honoured is refused rather than substituted.
+        self.backend = backend
         self.pcm = dict(pcm) if pcm else None
         self.keywords = dict(keywords) if keywords else {}
         self.system_options = dict(system_options) if system_options else {}
@@ -562,6 +566,8 @@ class MBE:
         # added to the deck schema should be reachable from here without
         # waiting for a named argument. `checkpoint` was not, for a while,
         # which made restart invisible from Python.
+        if self.backend is not None:
+            document["backend"] = self.backend
         if self.pcm is not None:
             document["keywords"]["pcm"] = dict(self.pcm)
         _merge(document["keywords"], self.keywords)

@@ -132,6 +132,7 @@ contains
       call allow(keys, "schema")
       call allow(keys, "model")
       call allow(keys, "driver")
+      call allow(keys, "backend")
       call allow(keys, "molecules")
       call allow(keys, "keywords")
       call allow(keys, "system")

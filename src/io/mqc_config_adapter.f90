@@ -170,6 +170,7 @@ contains
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
       driver_config%method_config%dft%grid_level = mqc_config%dft_grid_level
+      driver_config%method_config%backend = mqc_config%backend
       driver_config%method_config%pcm%enabled = mqc_config%pcm_enabled
       driver_config%method_config%pcm%dielectric = mqc_config%pcm_dielectric
       driver_config%method_config%pcm%angular_points = mqc_config%pcm_angular_points

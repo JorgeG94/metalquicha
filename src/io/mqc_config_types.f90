@@ -125,6 +125,11 @@ module mqc_config_types
       ! (cpcm_rscale is 1.0 there, against the 1.2 conventional for a van der
       ! Waals cavity), and routing one implementation's settings into another's
       ! would make two different models look like one keyword.
+      ! Which integral backend to run on: "auto" (default), "cuest"/"gpu", or
+      ! "libcint"/"cpu". A request that the build or the method cannot honour is
+      ! refused, not substituted.
+      character(len=16) :: backend = "auto"
+
       logical :: pcm_enabled = .false.
       real(dp) :: pcm_dielectric = -1.0_dp
          !! Solvent dielectric constant. Required: there is no solvent-name

@@ -221,6 +221,14 @@ contains
       ! The continuum is switched on by the presence of the block rather than by a
       ! flag inside it: a deck that names a dielectric wants solvent, and a
       ! separate "enabled" would let the two disagree.
+      block
+         ! Read into a deferred-length local, since the config field is fixed
+         ! width and `optional_string` takes an allocatable.
+         character(len=:), allocatable :: backend_text
+         logical :: backend_found
+         call json%get("backend", backend_text, backend_found)
+         if (backend_found .and. allocated(backend_text)) config%backend = backend_text
+      end block
       call json%info("keywords.pcm", found=found)
       config%pcm_enabled = found
       call optional_real(json, "keywords.pcm.dielectric", config%pcm_dielectric)
