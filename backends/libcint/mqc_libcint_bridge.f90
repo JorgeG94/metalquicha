@@ -102,15 +102,6 @@ contains
          result%has_error = .true.
          return
       end if
-      if (settings%run_cc .and. settings%corr_density_fitting) then
-         call result%error%set(ERROR_VALIDATION, "RI coupled cluster is not implemented "// &
-                               "on the CPU backend. Ask for 'ccsd' or 'ccsd(t)' rather "// &
-                               "than 'ri-ccsd', or set "// &
-                               "keywords.correlation.density_fitting to false.")
-         result%has_error = .true.
-         return
-      end if
-
       allocate (symbols(fragment%n_atoms))
       do iatom = 1, fragment%n_atoms
          symbols(iatom) = element_number_to_symbol(fragment%element_numbers(iatom))
@@ -315,11 +306,27 @@ contains
             if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
             if (.not. settings%freeze_core) frozen = 0
 
-            call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
-                                  fragment%nelec/2, frozen, settings%cc_max_iter, &
-                                  settings%cc_tolerance, settings%cc_triples, &
-                                  settings%verbose, cc, error, &
-                                  diis_vectors=settings%cc_diis_size)
+            if (settings%corr_density_fitting) then
+               call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, error%get_message())
+                  result%has_error = .true.
+                  call mol%destroy()
+                  return
+               end if
+               call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                     fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                     settings%cc_tolerance, settings%cc_triples, &
+                                     settings%verbose, cc, error, &
+                                     diis_vectors=settings%cc_diis_size, aux=corr_aux)
+               call corr_aux%destroy()
+            else
+               call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                     fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                     settings%cc_tolerance, settings%cc_triples, &
+                                     settings%verbose, cc, error, &
+                                     diis_vectors=settings%cc_diis_size)
+            end if
             if (error%has_error()) then
                call result%error%set(ERROR_VALIDATION, "CCSD: "//error%get_message())
                result%has_error = .true.

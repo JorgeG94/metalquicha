@@ -101,7 +101,7 @@
         {
             "name": "RHF Ar sto-3g (CPU)",
             "input": "inputs/cpu_ar_sto-3g.json",
-            "expected_energy": -521.22288080353,
+            "expected_energy": -521.222880803531,
             "type": "unfragmented"
         },
         {
@@ -179,25 +179,25 @@
         {
             "name": "RHF SiH4 3-21g (CPU)",
             "input": "inputs/cpu_sih4_3-21g.json",
-            "expected_energy": -289.6869142386,
+            "expected_energy": -289.686914238601,
             "type": "unfragmented"
         },
         {
             "name": "RHF PH3 3-21g (CPU)",
             "input": "inputs/cpu_ph3_3-21g.json",
-            "expected_energy": -340.703948109505,
+            "expected_energy": -340.703948109504,
             "type": "unfragmented"
         },
         {
             "name": "RHF H2S 3-21g (CPU)",
             "input": "inputs/cpu_h2s_3-21g.json",
-            "expected_energy": -396.703944112623,
+            "expected_energy": -396.703944112622,
             "type": "unfragmented"
         },
         {
             "name": "RHF HCl 3-21g (CPU)",
             "input": "inputs/cpu_hcl_3-21g.json",
-            "expected_energy": -457.869231987049,
+            "expected_energy": -457.86923198705,
             "type": "unfragmented"
         },
         {
@@ -287,13 +287,13 @@
         {
             "name": "RHF PH3 6-31g (CPU)",
             "input": "inputs/cpu_ph3_6-31g.json",
-            "expected_energy": -342.395943319633,
+            "expected_energy": -342.395943319632,
             "type": "unfragmented"
         },
         {
             "name": "RHF H2S 6-31g (CPU)",
             "input": "inputs/cpu_h2s_6-31g.json",
-            "expected_energy": -398.626664265032,
+            "expected_energy": -398.626664265031,
             "type": "unfragmented"
         },
         {
@@ -305,7 +305,7 @@
         {
             "name": "RHF Ar 6-31g (CPU)",
             "input": "inputs/cpu_ar_6-31g.json",
-            "expected_energy": -526.772151092062,
+            "expected_energy": -526.772151092063,
             "type": "unfragmented"
         },
         {
@@ -377,7 +377,7 @@
         {
             "name": "RHF AlH3 cc-pvdz (CPU)",
             "input": "inputs/cpu_alh3_cc-pvdz.json",
-            "expected_energy": -243.631755712986,
+            "expected_energy": -243.631755712985,
             "type": "unfragmented"
         },
         {
@@ -455,7 +455,7 @@
         {
             "name": "RHF Ne cc-pvtz (CPU)",
             "input": "inputs/cpu_ne_cc-pvtz.json",
-            "expected_energy": -128.531861636321,
+            "expected_energy": -128.531861636322,
             "type": "unfragmented"
         },
         {
@@ -503,13 +503,13 @@
         {
             "name": "RHF H2S aug-cc-pvdz (CPU)",
             "input": "inputs/cpu_h2s_aug-cc-pvdz.json",
-            "expected_energy": -398.698035963354,
+            "expected_energy": -398.698035963353,
             "type": "unfragmented"
         },
         {
             "name": "RHF HCl aug-cc-pvdz (CPU)",
             "input": "inputs/cpu_hcl_aug-cc-pvdz.json",
-            "expected_energy": -460.092615494769,
+            "expected_energy": -460.092615494768,
             "type": "unfragmented"
         },
         {
@@ -521,7 +521,7 @@
         {
             "name": "RHF CH4 def2-svp (CPU)",
             "input": "inputs/cpu_ch4_def2-svp.json",
-            "expected_energy": -40.169157144342,
+            "expected_energy": -40.169157144341,
             "type": "unfragmented"
         },
         {
@@ -551,7 +551,7 @@
         {
             "name": "RHF SiH4 def2-svp (CPU)",
             "input": "inputs/cpu_sih4_def2-svp.json",
-            "expected_energy": -291.153923860553,
+            "expected_energy": -291.153923860552,
             "type": "unfragmented"
         },
         {
@@ -569,7 +569,7 @@
         {
             "name": "RHF HCl def2-svp (CPU)",
             "input": "inputs/cpu_hcl_def2-svp.json",
-            "expected_energy": -459.938287777443,
+            "expected_energy": -459.938287777444,
             "type": "unfragmented"
         },
         {
@@ -653,13 +653,13 @@
         {
             "name": "RHF SiH4 def2-tzvp (CPU)",
             "input": "inputs/cpu_sih4_def2-tzvp.json",
-            "expected_energy": -291.257893577065,
+            "expected_energy": -291.257893577062,
             "type": "unfragmented"
         },
         {
             "name": "RHF PH3 def2-tzvp (CPU)",
             "input": "inputs/cpu_ph3_def2-tzvp.json",
-            "expected_energy": -342.483090810072,
+            "expected_energy": -342.483090810071,
             "type": "unfragmented"
         },
         {
@@ -677,7 +677,7 @@
         {
             "name": "RHF Ar def2-tzvp (CPU)",
             "input": "inputs/cpu_ar_def2-tzvp.json",
-            "expected_energy": -526.802760332526,
+            "expected_energy": -526.802760332527,
             "type": "unfragmented"
         },
         {
@@ -713,13 +713,13 @@
         {
             "name": "RHF NH3 6-31g* (CPU)",
             "input": "inputs/cpu_nh3_6-31g_st_.json",
-            "expected_energy": -56.184108039706,
+            "expected_energy": -56.184108039707,
             "type": "unfragmented"
         },
         {
             "name": "RHF H2O 6-31g* (CPU)",
             "input": "inputs/cpu_water_6-31g_st_.json",
-            "expected_energy": -76.01031794597,
+            "expected_energy": -76.010317945971,
             "type": "unfragmented"
         },
         {
@@ -743,7 +743,7 @@
         {
             "name": "RHF MgH2 6-31g* (CPU)",
             "input": "inputs/cpu_mgh2_6-31g_st_.json",
-            "expected_energy": -200.71545115388,
+            "expected_energy": -200.715451153879,
             "type": "unfragmented"
         },
         {
@@ -755,13 +755,13 @@
         {
             "name": "RHF SiH4 6-31g* (CPU)",
             "input": "inputs/cpu_sih4_6-31g_st_.json",
-            "expected_energy": -291.225102847644,
+            "expected_energy": -291.225102847643,
             "type": "unfragmented"
         },
         {
             "name": "RHF PH3 6-31g* (CPU)",
             "input": "inputs/cpu_ph3_6-31g_st_.json",
-            "expected_energy": -342.447342229634,
+            "expected_energy": -342.447342229633,
             "type": "unfragmented"
         },
         {
@@ -779,7 +779,7 @@
         {
             "name": "RHF Ar 6-31g* (CPU)",
             "input": "inputs/cpu_ar_6-31g_st_.json",
-            "expected_energy": -526.773744920985,
+            "expected_energy": -526.773744920984,
             "type": "unfragmented"
         },
         {
@@ -815,7 +815,7 @@
         {
             "name": "RHF NH3 6-31g** (CPU)",
             "input": "inputs/cpu_nh3_6-31g_st__st_.json",
-            "expected_energy": -56.195199954164,
+            "expected_energy": -56.195199954163,
             "type": "unfragmented"
         },
         {
@@ -851,25 +851,25 @@
         {
             "name": "RHF AlH3 6-31g** (CPU)",
             "input": "inputs/cpu_alh3_6-31g_st__st_.json",
-            "expected_energy": -243.618987027897,
+            "expected_energy": -243.618987027898,
             "type": "unfragmented"
         },
         {
             "name": "RHF SiH4 6-31g** (CPU)",
             "input": "inputs/cpu_sih4_6-31g_st__st_.json",
-            "expected_energy": -291.230819820064,
+            "expected_energy": -291.230819820063,
             "type": "unfragmented"
         },
         {
             "name": "RHF PH3 6-31g** (CPU)",
             "input": "inputs/cpu_ph3_6-31g_st__st_.json",
-            "expected_energy": -342.453623634121,
+            "expected_energy": -342.453623634122,
             "type": "unfragmented"
         },
         {
             "name": "RHF H2S 6-31g** (CPU)",
             "input": "inputs/cpu_h2s_6-31g_st__st_.json",
-            "expected_energy": -398.674799073106,
+            "expected_energy": -398.674799073107,
             "type": "unfragmented"
         },
         {
@@ -995,19 +995,37 @@
         {
             "name": "CCSD H2O cc-pvdz frozen 1 (CPU)",
             "input": "inputs/cpu_water_cc-pvdz_ccsd_f1.json",
-            "expected_energy": -76.237533859112,
+            "expected_energy": -76.237533859115,
             "type": "unfragmented"
         },
         {
             "name": "CCSD(T) H2O cc-pvdz frozen 1 (CPU)",
             "input": "inputs/cpu_water_cc-pvdz_ccsdt_f1.json",
-            "expected_energy": -76.240549582971,
+            "expected_energy": -76.240549582968,
             "type": "unfragmented"
         },
         {
             "name": "CCSD(T) CH4 sto-3g frozen 1 (CPU)",
             "input": "inputs/cpu_ch4_sto-3g_ccsdt_f1.json",
-            "expected_energy": -39.805169969886,
+            "expected_energy": -39.805169969854,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD H2O sto-3g/cc-pvdz-rifit frozen 0 (CPU)",
+            "input": "inputs/cpu_water_sto-3g_riccsd_f0.json",
+            "expected_energy": -75.011179195171,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_riccsd_f1.json",
+            "expected_energy": -76.237669756467,
+            "type": "unfragmented"
+        },
+        {
+            "name": "RI-CCSD(T) H2O cc-pvdz/cc-pvdz-rifit frozen 1 (CPU)",
+            "input": "inputs/cpu_water_cc-pvdz_riccsdt_f1.json",
+            "expected_energy": -76.240689531951,
             "type": "unfragmented"
         },
         {
