@@ -39,6 +39,10 @@ program check_dft
    failures = 0
    call scf_case("cc-pvdz", "lda_x", 3)
    call scf_case("cc-pvdz", "svwn", 3)
+   call scf_case("cc-pvdz", "gga_x_pbe", 3)
+   call scf_case("cc-pvdz", "pbe", 3)
+   call scf_case("cc-pvdz", "b3lyp", 3)
+   call scf_case("cc-pvdz", "pbe0", 3)
    call one_case("cc-pvdz", 3)
    call one_case("cc-pvdz", 5)
    call one_case("sto-3g", 4)

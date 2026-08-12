@@ -43,7 +43,8 @@ contains
                   new_unittest("grid_refinement_reduces_the_error", test_convergence), &
                   new_unittest("value_on_a_nucleus_is_finite", test_on_nucleus), &
                   new_unittest("high_angular_momentum_is_refused", test_l_limit), &
-                  new_unittest("integrated_density_is_the_electron_count", test_rho) &
+                  new_unittest("integrated_density_is_the_electron_count", test_rho), &
+                  new_unittest("ao_gradients_match_finite_differences", test_ao_grad) &
                   ]
    end subroutine collect_mqc_libcint_ao_tests
 
@@ -249,6 +250,58 @@ contains
       call grid%destroy()
       call mol%destroy()
    end subroutine test_rho
+
+   subroutine test_ao_grad(error)
+      !! d chi / d r against a central difference of chi
+      !!
+      !! Worth its own test rather than being folded into a GGA energy: a wrong
+      !! gradient and a wrong potential expression both move a GGA total, and
+      !! separating them afterwards means reasoning about which. Finite differences
+      !! settle the gradient on its own, with no functional in sight.
+      !!
+      !! Central differences at h = 1e-4 are good to about h^2 relative, so the
+      !! tolerance is 1e-6 and not tighter -- a smaller bound would be testing the
+      !! difference formula rather than the derivative.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: ao(:, :), grad(:, :, :), plus(:, :), minus(:, :)
+      real(dp) :: pts(3, 3), shifted(3, 3), fd, worst
+      real(dp), parameter :: H = 1.0e-4_dp
+      integer :: id, ig, mu
+
+      call water(mol, err, "cc-pvdz")
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      ! Off-axis and off-nucleus, so no component is zero by symmetry and the
+      ! difference is not taken across a cusp.
+      pts = reshape([0.31_dp, 0.17_dp, -0.23_dp, &
+                     -0.44_dp, 0.62_dp, 0.11_dp, &
+                     1.30_dp, -0.85_dp, 0.47_dp], [3, 3])
+
+      call eval_ao_block(mol, pts, ao, err, grad=grad)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      worst = 0.0_dp
+      do id = 1, 3
+         shifted = pts
+         shifted(id, :) = pts(id, :) + H
+         call eval_ao_block(mol, shifted, plus, err)
+         shifted(id, :) = pts(id, :) - H
+         call eval_ao_block(mol, shifted, minus, err)
+         do mu = 1, mol%nao
+            do ig = 1, 3
+               fd = (plus(ig, mu) - minus(ig, mu))/(2.0_dp*H)
+               worst = max(worst, abs(fd - grad(ig, mu, id)))
+            end do
+         end do
+      end do
+
+      call check(error, worst < 1.0e-6_dp, "AO gradients disagree with finite differences")
+      call mol%destroy()
+   end subroutine test_ao_grad
 
 end module test_mqc_libcint_ao
 

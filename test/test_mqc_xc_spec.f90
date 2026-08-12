@@ -80,14 +80,18 @@ contains
       type(xc_spec_t) :: spec
       type(error_t) :: err
 
-      call xc_spec_from_name("PBE", spec, err)
+      ! A libxc name, not a friendly one: "pbe" and "svwn" are *compositions* here,
+      ! because libxc carries their exchange and correlation halves without carrying
+      ! that name for the pair. So the pass-through case has to be spelled the way
+      ! libxc spells it.
+      call xc_spec_from_name("GGA_X_PBE", spec, err)
       call check(error,.not. err%has_error(), err%get_message())
       if (allocated(error)) return
-      call check(error, spec%from_libxc, "pbe should be left to libxc")
+      call check(error, spec%from_libxc, "gga_x_pbe should be left to libxc")
       if (allocated(error)) return
-      call check(error, spec%n_components == 1, "pbe should be one component")
+      call check(error, spec%n_components == 1, "gga_x_pbe should be one component")
       if (allocated(error)) return
-      call check(error, spec%name == "pbe", "the name should be lowercased")
+      call check(error, spec%name == "gga_x_pbe", "the name should be lowercased")
       if (allocated(error)) return
       call check(error,.not. spec%is_double_hybrid(), "pbe is not a double hybrid")
       if (allocated(error)) return
@@ -99,6 +103,16 @@ contains
       call xc_spec_from_name("b3lyp", spec, err)
       call check(error, spec%from_libxc .and. .not. spec%needs_exact_exchange(), &
                  "b3lyp is a hybrid but libxc owns its fraction")
+      if (allocated(error)) return
+      ! The complement: a friendly name libxc does not pair is a composition, and
+      ! must still claim no exchange fraction of its own.
+      call xc_spec_from_name("pbe", spec, err)
+      call check(error,.not. spec%from_libxc, "pbe is a composition of x and c")
+      if (allocated(error)) return
+      call check(error, spec%n_components == 2, "pbe should be two components")
+      if (allocated(error)) return
+      call check(error,.not. spec%needs_exact_exchange() .and. .not. spec%is_double_hybrid(), &
+                 "pbe is neither a hybrid nor a double hybrid")
    end subroutine test_passthrough
 
    subroutine test_published(error)

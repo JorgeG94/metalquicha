@@ -173,6 +173,27 @@ contains
          ! evaluator, because "a name libxc lacks, built from parts it has" is
          ! exactly what this table is for; double hybrids are only the hardest
          ! instance of it.
+         ! Hybrid aliases. libxc spells these hyb_gga_xc_b3lyp and hyb_gga_xc_pbeh,
+         ! and carries the exact-exchange fraction itself -- so these rows are pure
+         ! renames and must state no fraction of their own, or there would be two
+         ! sources of truth for it.
+      case ("b3lyp")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_gga_xc_b3lyp", 1.0_dp)
+
+      case ("pbe0", "pbeh")
+         spec%from_libxc = .true.
+         spec%n_components = 1
+         spec%component(1) = xc_component_t("hyb_gga_xc_pbeh", 1.0_dp)
+
+         ! PBE is exchange plus correlation under one name libxc does not pair.
+      case ("pbe")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("gga_x_pbe", 1.0_dp)
+         spec%component(2) = xc_component_t("gga_c_pbe", 1.0_dp)
+
       case ("svwn", "lda", "lsda")
          spec%from_libxc = .false.
          spec%n_components = 2

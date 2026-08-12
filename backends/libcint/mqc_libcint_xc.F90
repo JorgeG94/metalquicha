@@ -35,7 +35,9 @@ module mqc_libcint_xc
                            xc_f03_lda_exc_vxc, xc_f03_func_get_info, &
                            xc_f03_func_info_get_family, xc_f03_hyb_exx_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
-                           XC_UNPOLARIZED, XC_FAMILY_LDA, XC_FAMILY_HYB_LDA
+                           xc_f03_gga_exc_vxc, &
+                           XC_UNPOLARIZED, XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
+                           XC_FAMILY_GGA, XC_FAMILY_HYB_GGA
 #endif
    implicit none
    private
@@ -58,6 +60,13 @@ module mqc_libcint_xc
          !! acts on it, because perturbative correlation is not a grid quantity.
       type(dft_grid_t) :: grid
       integer :: n_func = 0
+      integer :: family(MAX_XC_COMPONENTS) = 0
+         !! libxc's family per component. A composition may mix them -- a hybrid
+         !! GGA exchange beside an LDA correlation is ordinary -- so the block loop
+         !! asks per component rather than once for the whole functional.
+      logical :: any_gga = .false.
+         !! Whether anything here needs density gradients, and so whether the AO
+         !! gradients are worth evaluating at all.
       real(dp) :: weight(MAX_XC_COMPONENTS) = 0.0_dp
 #ifdef MQC_WITH_LIBXC
       type(xc_f03_func_t) :: func(MAX_XC_COMPONENTS)
@@ -129,14 +138,20 @@ contains
 
          info = xc_f03_func_get_info(ctx%func(i))
          family = xc_f03_func_info_get_family(info)
-         if (family /= XC_FAMILY_LDA .and. family /= XC_FAMILY_HYB_LDA) then
-            call error%set(ERROR_VALIDATION, "only LDA functionals are implemented on "// &
-                           "the CPU path so far; '"//trim(spec%component(i)%name)// &
-                           "' needs density gradients. Refused rather than evaluated "// &
-                           "without them, which would silently return an LDA answer "// &
-                           "under a GGA's name.")
+         ctx%family(i) = family
+         select case (family)
+         case (XC_FAMILY_LDA, XC_FAMILY_HYB_LDA)
+            ! nothing extra
+         case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+            ctx%any_gga = .true.
+         case default
+            call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
+                           "' is a meta-GGA or beyond, which the CPU path does not "// &
+                           "implement. Refused rather than evaluated without its "// &
+                           "kinetic-energy density, which would silently return a "// &
+                           "GGA answer under its name.")
             return
-         end if
+         end select
 
          ! libxc owns a hybrid's fraction, so ask rather than assume. Only a
          ! composition libxc does not carry may state its own, and `mqc_xc_spec`
@@ -193,7 +208,9 @@ contains
 
       real(dp), allocatable :: ao(:, :), rho(:), exc(:), vrho(:), scaled(:, :)
       real(dp), allocatable :: exc_i(:), vrho_i(:)
-      integer :: g0, g1, nb, i, mu, ig
+      real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
+      real(dp), allocatable :: vsigma(:), vsigma_i(:)
+      integer :: g0, g1, nb, i, mu, ig, id
 
       v_xc = 0.0_dp
       e_xc = 0.0_dp
@@ -210,21 +227,42 @@ contains
          g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
 
-         call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
-         if (error%has_error()) return
-         call eval_rho(ao, density, rho)
+         if (ctx%any_gga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
+         else
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho)
+         end if
 
          if (allocated(exc)) deallocate (exc, vrho, exc_i, vrho_i)
          allocate (exc(nb), vrho(nb), exc_i(nb), vrho_i(nb))
          exc = 0.0_dp
          vrho = 0.0_dp
+         if (ctx%any_gga) then
+            if (allocated(sigma)) deallocate (sigma, vsigma, vsigma_i)
+            allocate (sigma(nb), vsigma(nb), vsigma_i(nb))
+            vsigma = 0.0_dp
+            do ig = 1, nb
+               sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
+            end do
+         end if
 
          ! Each component contributes its weight of the energy density and of the
          ! potential. One functional with weight one is the ordinary case; more
          ! than one is a composition this repository defines, and a double hybrid
          ! is the only such case in view.
          do i = 1, ctx%n_func
-            call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho, exc_i, vrho_i)
+            select case (ctx%family(i))
+            case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
+               call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
+                                       exc_i, vrho_i, vsigma_i)
+               vsigma = vsigma + ctx%weight(i)*vsigma_i
+            case default
+               call xc_f03_lda_exc_vxc(ctx%func(i), int(nb, 8), rho, exc_i, vrho_i)
+            end select
             exc = exc + ctx%weight(i)*exc_i
             vrho = vrho + ctx%weight(i)*vrho_i
          end do
@@ -241,6 +279,33 @@ contains
             end do
          end do
          call pic_gemm(scaled, ao, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
+
+         ! The gradient term. From differentiating sigma = |grad rho|^2 with
+         ! grad rho = 2 sum_uv D_uv chi_v grad chi_u,
+         !
+         !     V_uv += sum_g w_g 2 vsigma_g grad rho_g . (grad chi_u chi_v
+         !                                                + chi_u grad chi_v)
+         !
+         ! and the two halves are transposes of each other, so one gemm plus a
+         ! symmetrisation does both. The factor of two and that symmetrisation are
+         ! the usual place a GGA is wrong by millihartree while converging
+         ! perfectly, which is why the finite-difference test on the gradients
+         ! exists separately from any energy.
+         if (ctx%any_gga) then
+            do mu = 1, mol%nao
+               do ig = 1, nb
+                  scaled(ig, mu) = 0.0_dp
+                  do id = 1, 3
+                     scaled(ig, mu) = scaled(ig, mu) &
+                                      + 2.0_dp*ctx%grid%weights(g0 + ig - 1) &
+                                      *vsigma(ig)*rho_grad(ig, id)*ao_grad(ig, mu, id)
+                  end do
+               end do
+            end do
+            ! scaled^T ao gives one half; adding its transpose gives the other.
+            call pic_gemm(scaled, ao, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
+            call pic_gemm(ao, scaled, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
+         end if
          deallocate (scaled)
       end do
 #endif

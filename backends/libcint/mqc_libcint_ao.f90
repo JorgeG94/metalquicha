@@ -61,7 +61,7 @@ contains
       end do
    end function max_ao_l
 
-   subroutine eval_ao_block(mol, coords, ao, error)
+   subroutine eval_ao_block(mol, coords, ao, error, grad)
       !! chi_mu(r) for every basis function at every supplied point
       !!
       !! `ao` comes back as (n_points, n_ao), which is the orientation the density
@@ -71,12 +71,22 @@ contains
       real(dp), intent(in) :: coords(:, :)        !! (3, n_points), Bohr
       real(dp), allocatable, intent(out) :: ao(:, :)
       type(error_t), intent(inout) :: error
+      real(dp), allocatable, intent(out), optional :: grad(:, :, :)
+         !! d chi / d r, as (n_points, n_ao, 3). Asked for by GGA and above.
+         !!
+         !! Produced here rather than by a second routine because it shares
+         !! everything expensive: the same exponentials, the same angular
+         !! components, the same spherical transform. A separate `eval_ao_deriv1`
+         !! would duplicate all three and have to be kept in step with them.
 
       integer :: n_points, ish, l, nprim, nctr, ic, ip, ig, off_ao
       integer :: n_cart, n_sph, n_here, comp, i, j, iatom
       integer :: exp_ptr, coef_ptr
-      real(dp) :: dx, dy, dz, r2, radial, fac
+      real(dp) :: dx, dy, dz, r2, radial, fac, dradial
       real(dp), allocatable :: cart(:), sph(:), trans(:, :)
+      real(dp), allocatable :: dcart(:, :), dsph(:, :)
+      logical :: want_grad
+      integer :: id
 
       n_points = size(coords, 2)
 
@@ -88,15 +98,22 @@ contains
          return
       end if
 
+      want_grad = present(grad)
       allocate (ao(n_points, mol%nao))
       ao = 0.0_dp
+      if (want_grad) then
+         allocate (grad(n_points, mol%nao, 3))
+         grad = 0.0_dp
+      end if
 
-      !$omp parallel default(none) shared(mol, coords, ao, n_points) &
+      !$omp parallel default(none) shared(mol, coords, ao, grad, n_points, want_grad) &
       !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, n_cart, n_sph, &
-      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, &
-      !$omp            dx, dy, dz, r2, radial, fac, cart, sph, trans)
+      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, id, &
+      !$omp            dx, dy, dz, r2, radial, dradial, fac, cart, sph, trans, &
+      !$omp            dcart, dsph)
       allocate (cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2), sph(2*C2S_LMAX + 1))
       allocate (trans(2*C2S_LMAX + 1, (C2S_LMAX + 1)*(C2S_LMAX + 2)/2))
+      allocate (dcart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2, 3), dsph(2*C2S_LMAX + 1, 3))
 
       do ish = 1, mol%nbas
          l = mol%bas(LIBCINT_ANG_OF, ish)
@@ -126,18 +143,36 @@ contains
             dz = coords(3, ig) - mol%coords(3, iatom)
             r2 = dx*dx + dy*dy + dz*dz
 
-            ! Angular part, in libcint's Cartesian order.
+            ! Angular part, in libcint's Cartesian order, and its gradient. The
+            ! power rule term vanishes when the exponent is zero, which has to be
+            ! a branch rather than an evaluation: pow(x, -1) is not what it means.
             comp = 0
             do i = 0, l
                do j = 0, i
                   comp = comp + 1
                   cart(comp) = pow(dx, l - i)*pow(dy, i - j)*pow(dz, j)
+                  if (want_grad) then
+                     dcart(comp, :) = 0.0_dp
+                     if (l - i > 0) dcart(comp, 1) = real(l - i, dp) &
+                                                     *pow(dx, l - i - 1)*pow(dy, i - j)*pow(dz, j)
+                     if (i - j > 0) dcart(comp, 2) = real(i - j, dp) &
+                                                     *pow(dx, l - i)*pow(dy, i - j - 1)*pow(dz, j)
+                     if (j > 0) dcart(comp, 3) = real(j, dp) &
+                                                 *pow(dx, l - i)*pow(dy, i - j)*pow(dz, j - 1)
+                  end if
                end do
             end do
 
+            ! The transform is linear and does not depend on position, so it
+            ! applies to the gradient exactly as it does to the value.
             if (.not. mol%cartesian) then
                do comp = 1, n_sph
                   sph(comp) = fac*sum(trans(comp, 1:n_cart)*cart(1:n_cart))
+                  if (want_grad) then
+                     do id = 1, 3
+                        dsph(comp, id) = fac*sum(trans(comp, 1:n_cart)*dcart(1:n_cart, id))
+                     end do
+                  end if
                end do
             end if
 
@@ -146,30 +181,58 @@ contains
             ! preserved that, so the AO offset advances by n_here per column.
             do ic = 1, nctr
                radial = 0.0_dp
+               dradial = 0.0_dp
                do ip = 1, nprim
+                  ! d/dr_k exp(-a r^2) = -2 a r_k exp(-a r^2), so the -2a is
+                  ! accumulated here and the r_k factor applied per component.
                   radial = radial + mol%env(coef_ptr + (ic - 1)*nprim + ip) &
                            *exp(-mol%env(exp_ptr + ip)*r2)
+                  if (want_grad) then
+                     dradial = dradial - 2.0_dp*mol%env(exp_ptr + ip) &
+                               *mol%env(coef_ptr + (ic - 1)*nprim + ip) &
+                               *exp(-mol%env(exp_ptr + ip)*r2)
+                  end if
                end do
                off_ao = mol%shell_offset(ish) + (ic - 1)*n_here
                if (mol%cartesian) then
                   do comp = 1, n_cart
                      ao(ig, off_ao + comp) = fac*radial*cart(comp)
                   end do
+                  if (want_grad) then
+                     do comp = 1, n_cart
+                        grad(ig, off_ao + comp, 1) = fac*(dcart(comp, 1)*radial &
+                                                          + cart(comp)*dradial*dx)
+                        grad(ig, off_ao + comp, 2) = fac*(dcart(comp, 2)*radial &
+                                                          + cart(comp)*dradial*dy)
+                        grad(ig, off_ao + comp, 3) = fac*(dcart(comp, 3)*radial &
+                                                          + cart(comp)*dradial*dz)
+                     end do
+                  end if
                else
                   do comp = 1, n_sph
                      ao(ig, off_ao + comp) = radial*sph(comp)
                   end do
+                  if (want_grad) then
+                     do comp = 1, n_sph
+                        grad(ig, off_ao + comp, 1) = dsph(comp, 1)*radial &
+                                                     + sph(comp)*dradial*dx
+                        grad(ig, off_ao + comp, 2) = dsph(comp, 2)*radial &
+                                                     + sph(comp)*dradial*dy
+                        grad(ig, off_ao + comp, 3) = dsph(comp, 3)*radial &
+                                                     + sph(comp)*dradial*dz
+                     end do
+                  end if
                end if
             end do
          end do
          !$omp end do
       end do
 
-      deallocate (cart, sph, trans)
+      deallocate (cart, sph, trans, dcart, dsph)
       !$omp end parallel
    end subroutine eval_ao_block
 
-   subroutine eval_rho(ao, density, rho)
+   subroutine eval_rho(ao, density, rho, ao_grad, rho_grad)
       !! The electron density at every point, from the density matrix
       !!
       !!     rho(r) = sum_uv D_uv chi_u(r) chi_v(r)
@@ -188,9 +251,18 @@ contains
       real(dp), intent(in) :: ao(:, :)        !! (n_points, n_ao)
       real(dp), intent(in) :: density(:, :)   !! (n_ao, n_ao)
       real(dp), allocatable, intent(out) :: rho(:)
+      real(dp), intent(in), optional :: ao_grad(:, :, :)
+      real(dp), allocatable, intent(out), optional :: rho_grad(:, :)
+         !! d rho / d r, as (n_points, 3). Both optionals or neither.
+         !!
+         !!     grad rho = 2 sum_uv D_uv chi_v grad chi_u
+         !!
+         !! The factor of two is the symmetry of D, not a spin factor, and it is
+         !! the term that a GGA gets wrong by a few millihartree while converging
+         !! perfectly.
 
       real(dp), allocatable :: work(:, :)
-      integer :: n_points, n_ao, ig, mu
+      integer :: n_points, n_ao, ig, mu, id
 
       n_points = size(ao, 1)
       n_ao = size(ao, 2)
@@ -207,6 +279,29 @@ contains
          end do
       end do
       !$omp end parallel do
+
+      if (present(rho_grad)) then
+         allocate (rho_grad(n_points, 3))
+         rho_grad = 0.0_dp
+         if (.not. present(ao_grad)) then
+            ! Nothing to build it from; leaving zeros would be a silently
+            ! LDA-shaped answer under a GGA's name.
+            rho_grad = huge(1.0_dp)
+         else
+            !$omp parallel do default(none) &
+            !$omp    shared(rho_grad, work, ao_grad, n_points, n_ao) &
+            !$omp    private(ig, mu, id) schedule(static)
+            do ig = 1, n_points
+               do id = 1, 3
+                  do mu = 1, n_ao
+                     rho_grad(ig, id) = rho_grad(ig, id) &
+                                        + 2.0_dp*work(ig, mu)*ao_grad(ig, mu, id)
+                  end do
+               end do
+            end do
+            !$omp end parallel do
+         end if
+      end if
 
       deallocate (work)
    end subroutine eval_rho
