@@ -22,7 +22,7 @@ module test_mqc_libcint_cphf
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_multipole, only: multipole_matrices
-   use mqc_libcint_cphf, only: cphf_solve, static_polarizability
+   use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability
    use mqc_error, only: error_t
    implicit none
    private
@@ -55,7 +55,11 @@ contains
                   new_unittest("response_is_orthogonal_to_the_occupied_space", &
                                test_origin_independence), &
                   new_unittest("cphf_refuses_a_closed_shell_it_cannot_solve", &
-                               test_refusals) &
+                               test_refusals), &
+                  new_unittest("distributed_tensors_sum_to_the_total", &
+                               test_distributed_sum_rule), &
+                  new_unittest("distributed_tensors_are_individually_asymmetric", &
+                               test_distributed_asymmetry) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -366,6 +370,194 @@ contains
 
       deallocate (dip, shifted, u, v, ovl)
    end subroutine test_origin_independence
+
+   subroutine test_distributed_sum_rule(error)
+      !! The per-orbital tensors add up to the molecule's total polarizability
+      !!
+      !! Exact by construction rather than approximately true, because the
+      !! decomposition only inserts `W W^T` into a sum that was already there. So
+      !! this is asserted at solver precision, not at chemical precision -- and
+      !! that sharpness is the point: it catches a transposed `W`, a mismatched
+      !! occupied index, or a localization that quietly dropped an orbital, none
+      !! of which would move the total enough to notice any other way.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: tensors(:, :, :), centroids(:, :)
+      real(dp) :: total(3, 3), alpha(3, 3)
+      integer :: i, k, l
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+
+      call static_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                 scf%n_occupied, alpha, err)
+      if (.not. err%has_error()) then
+         call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                         scf%n_occupied, tensors, centroids, err)
+      end if
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "failed: "//err%get_message())
+         return
+      end if
+
+      call check(error, size(tensors, 3), scf%n_occupied, &
+                 "one tensor per occupied orbital was expected with no core excluded")
+      if (allocated(error)) return
+
+      total = 0.0_dp
+      do i = 1, size(tensors, 3)
+         total = total + tensors(:, :, i)
+      end do
+      do l = 1, 3
+         do k = 1, 3
+            call check(error, total(k, l), alpha(k, l), &
+                       "the distributed tensors do not sum to the total "// &
+                       "polarizability", thr=1.0e-10_dp)
+            if (allocated(error)) return
+         end do
+      end do
+
+      ! And with the core excluded the sum must fall *short* of the total, by the
+      ! core's own contribution -- small, and diagonal, since a 1s is spherical.
+      ! GAMESS's water potential excludes it, so this is the arrangement a
+      ! reference comparison actually uses.
+      deallocate (tensors, centroids)
+      call water(mol, scf, err)
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                      scf%n_occupied, tensors, centroids, err, &
+                                      n_core=1)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "failed with a core: "//err%get_message())
+         return
+      end if
+      call check(error, size(tensors, 3), scf%n_occupied - 1, &
+                 "excluding one core orbital did not remove one tensor")
+      if (allocated(error)) return
+
+      total = 0.0_dp
+      do i = 1, size(tensors, 3)
+         total = total + tensors(:, :, i)
+      end do
+      do k = 1, 3
+         call check(error, total(k, k) < alpha(k, k), &
+                    "excluding the core did not reduce the polarizability")
+         if (allocated(error)) return
+      end do
+      call check(error, abs(total(1, 2) - alpha(1, 2)) < 1.0e-4_dp, &
+                 "excluding the core moved an off-diagonal component, but a "// &
+                 "spherical core should contribute only to the diagonal")
+
+      deallocate (tensors, centroids)
+   end subroutine test_distributed_sum_rule
+
+   subroutine test_distributed_asymmetry(error)
+      !! Each tensor is asymmetric; the *complete* sum is symmetric
+      !!
+      !! The contraction pairs perturbation `k` with response `l`, which for one
+      !! orbital are different objects. GAMESS's water reference shows the same
+      !! thing -- 0.17 per O-H bond tensor -- so a well-meaning
+      !! `0.5*(a + transpose(a))` here would agree with the total and disagree with
+      !! every reference file. This test exists to make that temptation fail.
+      !!
+      !! **Which sum is symmetric matters, and only the complete one is.** Writing
+      !! the partial sum over retained orbitals as `4 h^k P A^-1 h^l` with `P` the
+      !! projector onto them, `P` and `A^-1` do not commute, so excluding the core
+      !! leaves a small genuine asymmetry -- 3e-7 here. It is not an error and
+      !! cannot be tightened away: GAMESS's own water potential carries 4.6e-6 in
+      !! the same place. Only `P = 1` gives back the exactly symmetric total, so
+      !! that is where the sharp assertion goes.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: tensors(:, :, :), centroids(:, :)
+      real(dp) :: total(3, 3), worst_single, sum_asym, valence_asym
+      integer :: i
+
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                      scf%n_occupied, tensors, centroids, err)
+      if (err%has_error()) then
+         call check(error, .false., "failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      total = 0.0_dp
+      worst_single = 0.0_dp
+      do i = 1, size(tensors, 3)
+         total = total + tensors(:, :, i)
+         worst_single = max(worst_single, &
+                            maxval(abs(tensors(:, :, i) - transpose(tensors(:, :, i)))))
+      end do
+      sum_asym = maxval(abs(total - transpose(total)))
+
+      call check(error, worst_single > 1.0e-3_dp, &
+                 "the per-orbital tensors came back symmetric, so either they "// &
+                 "were averaged or the occupied index was contracted wrongly")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+      call check(error, sum_asym < 1.0e-10_dp, &
+                 "the sum over every occupied orbital is not symmetric, and that "// &
+                 "one must be exactly so")
+      if (allocated(error)) then
+         call mol%destroy()
+         return
+      end if
+
+      ! Excluding the core leaves a small asymmetry, by the projector argument
+      ! above. Bounded rather than required to vanish -- and required to be *there*,
+      ! since a zero would mean the core had been frozen out of the response too,
+      ! which is a different convention from GAMESS's and would shift every tensor.
+      deallocate (tensors, centroids)
+      call distributed_polarizability(mol, scf%orbitals, scf%orbital_energies, &
+                                      scf%n_occupied, tensors, centroids, err, &
+                                      n_core=1)
+      call mol%destroy()
+      if (err%has_error()) then
+         call check(error, .false., "failed with a core: "//err%get_message())
+         return
+      end if
+      total = 0.0_dp
+      do i = 1, size(tensors, 3)
+         total = total + tensors(:, :, i)
+      end do
+      valence_asym = maxval(abs(total - transpose(total)))
+      call check(error, valence_asym < 1.0e-5_dp, &
+                 "the valence-only sum is more asymmetric than a projector "// &
+                 "artefact can explain")
+      if (allocated(error)) return
+      call check(error, valence_asym > 1.0e-12_dp, &
+                 "the valence-only sum is exactly symmetric, which means the core "// &
+                 "was frozen out of the response rather than only out of the "// &
+                 "distribution -- not the convention GAMESS uses")
+      if (allocated(error)) return
+
+      ! Every centroid must sit inside the molecule -- a crude bound, but it
+      ! catches a centroid array that got out of step with its tensors.
+      do i = 1, size(centroids, 2)
+         call check(error, norm2(centroids(:, i)) < 5.0_dp, &
+                    "a localized orbital centroid is nowhere near the molecule")
+         if (allocated(error)) return
+      end do
+
+      deallocate (tensors, centroids)
+   end subroutine test_distributed_asymmetry
 
    subroutine test_refusals(error)
       !! Bad input is refused rather than answered

@@ -480,6 +480,16 @@ if(MQC_ENABLE_LIBCINT)
   add_executable(check_cphf ${PROJECT_SOURCE_DIR}/validation/check_cphf.f90)
   target_include_directories(check_cphf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cphf PRIVATE ${main_lib} cint_fortran cint)
+
+  # Distributed LMO polarizabilities against a GAMESS MAKEFP potential. The
+  # first milestone whose reference is GAMESS rather than PySCF.
+  add_executable(
+    check_distributed_polarizability
+    ${PROJECT_SOURCE_DIR}/validation/check_distributed_polarizability.f90)
+  target_include_directories(check_distributed_polarizability
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_distributed_polarizability
+                        PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run

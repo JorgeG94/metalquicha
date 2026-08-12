@@ -58,12 +58,14 @@ module mqc_libcint_cphf
    use mqc_error, only: error_t, ERROR_VALIDATION, ERROR_GENERIC
    use mqc_libcint_integrals, only: libcint_molecule_t
    use mqc_libcint_multipole, only: multipole_matrices
+   use mqc_libcint_localize, only: boys_localize
    use mqc_libcint_rhf, only: build_fock
    implicit none
    private
 
    public :: cphf_solve
    public :: static_polarizability
+   public :: distributed_polarizability
 
    !> CG iterations before giving up.
    integer, parameter :: DEFAULT_MAX_ITER = 200
@@ -244,6 +246,134 @@ contains
 
       deallocate (dtilde, g, half, work)
    end subroutine response_operator
+
+   subroutine distributed_polarizability(mol, orbitals, orbital_energies, n_occ, &
+                                         tensors, centroids, error, n_core, &
+                                         max_iter, tol, iterations)
+      !! One polarizability tensor per localized orbital, at its centroid
+      !!
+      !! What an effective fragment potential wants: not the molecule's total
+      !! response but where in the molecule it happens, so that an induced dipole
+      !! can be placed on each bond and lone pair and polarized by the local
+      !! field. This is M5 of the EFP plan.
+      !!
+      !! **The decomposition is exact and needs no new physics.** The occupied
+      !! index of `alpha_kl = -4 sum_ai h^k_ai U^l_ai` is summed over, and a
+      !! rotation `W` among the occupied orbitals is orthogonal, so inserting
+      !! `W W^T` changes nothing:
+      !!
+      !!     alpha_kl = -4 sum_a sum_i' (h^k W)_ai' (U^l W)_ai'
+      !!
+      !! and each `i'` is one localized orbital's share. Nothing is fitted or
+      !! partitioned by distance -- the localization does all the work, which is
+      !! why M2 had to come first.
+      !!
+      !! **Each tensor is asymmetric, and that is not a bug.** The contraction
+      !! pairs perturbation `k` with response `l`, and for a single orbital those
+      !! are different objects; only the sum over orbitals restores symmetry.
+      !! GAMESS's reference potential shows exactly this -- 0.17 asymmetry per
+      !! O-H bond tensor, 4.6e-6 in their sum -- so all nine components are
+      !! returned and none is averaged away. Symmetrizing here would agree with
+      !! the total and disagree with every reference file.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), allocatable, intent(out) :: tensors(:, :, :)
+         !! `(3, 3, n_localized)`, Bohr^3, in the order the localized orbitals
+         !! come back -- which is the order `centroids` uses too.
+      real(dp), allocatable, intent(out) :: centroids(:, :)
+         !! `(3, n_localized)`, Bohr. Where each tensor belongs.
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_core
+         !! Occupied orbitals to leave out, lowest first. Default zero.
+         !!
+         !! GAMESS excludes them: its water potential has five occupied orbitals
+         !! and four polarizable points, and the four tensors sum to 4.865822
+         !! against 4.866587 for the whole occupied space. The missing 7.7e-4 is
+         !! diagonal-only, which is what a spherical 1s should contribute, so
+         !! nothing is wrong with either number -- they are answers to different
+         !! questions. Matching a reference file means asking GAMESS's.
+         !!
+         !! The response itself is always solved over *all* occupied orbitals,
+         !! because the core does polarize; only the distribution drops it. So the
+         !! sum of what comes back is the response projected onto the orbitals
+         !! kept, which is what makes the sum rule exact for any `n_core`.
+      integer, intent(in), optional :: max_iter
+      real(dp), intent(in), optional :: tol
+      integer, intent(out), optional :: iterations
+
+      real(dp), allocatable :: dip(:, :, :), u(:, :, :), localized(:, :)
+      real(dp), allocatable :: s(:, :), w(:, :), u_loc(:, :, :), h_loc(:, :, :)
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :), work(:, :), sc(:, :)
+      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, l, i, a
+      character(len=32) :: text
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      core = 0
+      if (present(n_core)) core = n_core
+      n_lmo = n_occ - core
+
+      if (core < 0 .or. n_lmo < 1) then
+         write (text, "(i0,a,i0)") core, " of ", n_occ
+         call error%set(ERROR_VALIDATION, "cannot distribute a polarizability over "// &
+                        "no orbitals: n_core is "//trim(text))
+         return
+      end if
+
+      ! The localized orbitals to distribute over, and where they sit.
+      call boys_localize(mol, orbitals(:, core + 1:n_occ), n_lmo, localized, &
+                         centroids, error)
+      if (error%has_error()) return
+
+      call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)
+      if (error%has_error()) return
+
+      ! The response over the whole occupied space -- see `n_core` above.
+      call cphf_solve(mol, orbitals, orbital_energies, n_occ, dip, u, error, &
+                      max_iter=max_iter, tol=tol, iterations=iterations)
+      if (error%has_error()) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
+      c_occ = orbitals(:, 1:n_occ)
+      c_vir = orbitals(:, n_occ + 1:n_mo)
+
+      ! W maps the canonical occupied orbitals onto the localized ones. It is an
+      ! isometry rather than a rotation when a core is excluded, and `W W^T` is
+      ! then the projector onto the orbitals kept -- which is exactly why the sum
+      ! rule stays exact instead of becoming approximate.
+      call mol%overlap(s)
+      allocate (sc(n_ao, n_lmo), w(n_occ, n_lmo))
+      call pic_gemm(s, localized, sc)
+      call pic_gemm(c_occ, sc, w, transa="T")
+
+      allocate (h_loc(n_vir, n_lmo, 3), u_loc(n_vir, n_lmo, 3))
+      allocate (work(n_ao, n_lmo))
+      do k = 1, 3
+         ! h in the localized basis, straight from the localized orbitals rather
+         ! than by transforming the canonical block -- fewer places to transpose.
+         call pic_gemm(dip(:, :, k), localized, work)
+         call pic_gemm(c_vir, work, h_loc(:, :, k), transa="T")
+         call pic_gemm(u(:, :, k), w, u_loc(:, :, k))
+      end do
+
+      allocate (tensors(3, 3, n_lmo))
+      do i = 1, n_lmo
+         do l = 1, 3
+            do k = 1, 3
+               tensors(k, l, i) = 0.0_dp
+               do a = 1, n_vir
+                  tensors(k, l, i) = tensors(k, l, i) &
+                                     - 4.0_dp*h_loc(a, i, k)*u_loc(a, i, l)
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (dip, u, localized, s, w, u_loc, h_loc, c_occ, c_vir, work, sc)
+   end subroutine distributed_polarizability
 
    subroutine static_polarizability(mol, orbitals, orbital_energies, n_occ, alpha, &
                                     error, max_iter, tol, iterations)

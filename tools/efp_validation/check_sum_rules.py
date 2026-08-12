@@ -30,9 +30,16 @@ from efp_format import parse_efp  # noqa: E402
 #: asymmetric molecule would be needed to pin them.
 QUAD_ORDER = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2)]
 
-#: `POLARIZABLE POINTS` tensor order. Nine components, not six: the per-LMO
-#: tensors are genuinely asymmetric and only their sum is symmetric.
-POL_ORDER = [(0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2), (1, 0), (2, 0), (2, 1)]
+#: `POLARIZABLE POINTS` tensor order, as (row, column) of `d mu_k / d F_l`. Nine
+#: components, not six: the per-LMO tensors are genuinely asymmetric and only
+#: their sum is symmetric.
+#:
+#: The off-diagonal triples are the transpose of what GAMESS's labels suggest --
+#: see the long note in `validation/check_distributed_polarizability.py`, which is
+#: where it was caught. Nothing computed in *this* file would notice, since a sum
+#: and an asymmetry magnitude are both transpose-invariant; the order is corrected
+#: here so it does not get copied out of here later.
+POL_ORDER = [(0, 0), (1, 1), (2, 2), (1, 0), (2, 0), (2, 1), (0, 1), (0, 2), (1, 2)]
 
 CASES = [
     ("water_6-31gs_boys.efp", "6-31G*",
