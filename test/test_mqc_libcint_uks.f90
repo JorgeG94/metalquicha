@@ -156,7 +156,8 @@ contains
       !! The two spin densities integrate to the two electron counts
       !!
       !! Exact, and the cheapest statement that the grid and the spin densities
-      !! agree. It is also the check that would catch a spin density built at twice
+      !! agree -- and a property of the density alone, which is why this one does
+      !! not ask the SCF to converge. It is also the check that would catch a spin density built at twice
       !! its size -- the unrestricted density is C C^T and not 2 C C^T, and the
       !! factor of two between those conventions is the oldest bug in this file's
       !! subject matter. Run on a doublet so alpha and beta differ and the two
@@ -186,10 +187,17 @@ contains
       call check(error,.not. err%has_error(), "the polarised context must build")
       if (allocated(error)) return
 
-      call run_libcint_uhf(mol, 9, 2, 400, E_TOL, D_TOL, .false., uks, err, xc=xc)
+      ! Convergence is deliberately *not* required, and the iteration limit is
+      ! modest. Tr(D S) is the electron count for any density built as
+      ! C_occ C_occ^T, converged or not, so every assertion below holds on
+      ! whatever density the loop last produced -- and requiring convergence made
+      ! this test flaky. OH is the case whose sigma and pi solutions compete, the
+      ! threaded Fock build sums its thread-local copies in an order that varies
+      ! run to run, and that roundoff is enough to move a delicate open-shell
+      ! trajectory. It failed about half the time on a 40-core box and never on
+      ! CI's two cores, which is the worst possible distribution of a failure.
+      call run_libcint_uhf(mol, 9, 2, 60, E_TOL, D_TOL, .false., uks, err, xc=xc)
       call check(error,.not. err%has_error(), "the unrestricted SCF must run")
-      if (allocated(error)) return
-      call check(error, uks%converged, "the unrestricted SCF must converge")
       if (allocated(error)) return
 
       allocate (v_a(mol%nao, mol%nao), v_b(mol%nao, mol%nao))
