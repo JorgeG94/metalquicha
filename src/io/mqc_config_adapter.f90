@@ -166,9 +166,6 @@ contains
       driver_config%method_config%corr%freeze_core = mqc_config%corr_freeze_core
       driver_config%method_config%corr%n_frozen_core = mqc_config%corr_n_frozen_core
       driver_config%method_config%corr%use_df = mqc_config%corr_density_fitting
-      if (allocated(mqc_config%corr_aux_basis)) then
-         driver_config%method_config%corr%aux_basis = mqc_config%corr_aux_basis
-      end if
       driver_config%method_config%corr%use_scs = mqc_config%corr_scs
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os

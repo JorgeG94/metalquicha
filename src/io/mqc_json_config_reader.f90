@@ -204,7 +204,6 @@ contains
       ! After the method name, so an explicit keyword wins over the spelling.
       call optional_logical(json, "keywords.correlation.density_fitting", &
                             config%corr_density_fitting)
-      call optional_string(json, "keywords.correlation.aux_basis", config%corr_aux_basis)
       call optional_logical(json, "keywords.correlation.scs", config%corr_scs)
       call optional_real(json, "keywords.correlation.scs_ss", config%corr_scs_ss)
       call optional_real(json, "keywords.correlation.scs_os", config%corr_scs_os)

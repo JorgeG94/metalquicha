@@ -251,6 +251,9 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
     with open(manifest_file, 'r') as f:
         manifest = json.load(f)
 
+    # The suite default. A single case may carry its own `tolerance` when its
+    # reference has a known approximation in it -- a density-fitted external number,
+    # say -- which is better than loosening the bound for all 180 of them.
     tolerance = manifest.get("tolerance", 1.0e-9)
     tests = manifest.get("tests", [])
 
@@ -327,11 +330,12 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
                 calculated = calculated_energies[mol_name]
                 diff = abs(calculated - expected)
 
-                if not validate_energy(calculated, expected, tolerance):
+                case_tol = test.get("tolerance", tolerance)
+                if not validate_energy(calculated, expected, case_tol):
                     print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - {mol_name}")
                     print(f"    Expected:   {expected:.12f}")
                     print(f"    Calculated: {calculated:.12f}")
-                    print(f"    Difference: {diff:.2e} (tolerance: {tolerance:.2e})\n")
+                    print(f"    Difference: {diff:.2e} (tolerance: {case_tol:.2e})\n")
                     all_match = False
                     break
                 elif verbose:
@@ -360,7 +364,7 @@ def run_validation_tests(manifest_file: str = "validation_tests.json",
             failure_reasons = []
 
             # Validate energy
-            if not validate_energy(calculated, expected, tolerance):
+            if not validate_energy(calculated, expected, test.get("tolerance", tolerance)):
                 print(f"  {Colors.RED}✗ FAILED{Colors.RESET} - Energy mismatch")
                 print(f"    Expected:   {expected:.12f}")
                 print(f"    Calculated: {calculated:.12f}")

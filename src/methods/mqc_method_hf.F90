@@ -38,7 +38,6 @@ module mqc_method_hf
       logical :: freeze_core = .false.
       integer :: n_frozen_core = -1
       logical :: corr_density_fitting = .false.
-      character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
       logical :: run_cc = .false.
@@ -121,7 +120,6 @@ contains
       settings%cc_max_iter = this%options%cc_max_iter
       settings%cc_tolerance = this%options%cc_tolerance
       settings%cc_diis_size = this%options%cc_diis_size
-      settings%corr_aux_basis = this%options%corr_aux_basis
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os
       settings%functional = ""        ! empty selects pure Hartree-Fock

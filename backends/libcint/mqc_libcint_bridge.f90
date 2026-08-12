@@ -397,6 +397,68 @@ contains
          end block
       end if
 
+      ! ---- a double hybrid's perturbative term -------------------------------
+      !
+      ! Part of the functional, not a correction on top of it, and the reason this
+      ! cannot be left to the caller: a deck asking for B2PLYP that received only
+      ! the Kohn-Sham part would get a converged energy 65 mHartree wrong, which is
+      ! the exact shape of failure this backend is built to refuse.
+      if (kohn_sham) then
+         if (xc%pt2_fraction /= 0.0_dp) then
+            block
+               type(mp2_result_t) :: dh_mp2
+               integer :: dh_frozen
+
+               dh_frozen = settings%n_frozen_core
+               if (dh_frozen < 0) dh_frozen = core_orbital_count(fragment%element_numbers)
+               if (.not. settings%freeze_core) dh_frozen = 0
+
+               ! Fitted when an auxiliary basis is available, exact otherwise. The
+               ! reference implementations of these functionals are density-fitted,
+               ! so fitting is the comparable choice rather than a compromise -- but
+               ! a deck that named no auxiliary basis should get an answer, not a
+               ! refusal, since the conventional transform is the more accurate of
+               ! the two anyway.
+               if (len_trim(settings%aux_basis_set) > 0) then
+                  call correlation_aux_basis(settings, fragment, symbols, corr_aux, error)
+                  if (error%has_error()) then
+                     call result%error%set(ERROR_VALIDATION, error%get_message())
+                     result%has_error = .true.
+                     call xc%destroy()
+                     call mol%destroy()
+                     return
+                  end if
+                  call run_libcint_ri_mp2(mol, corr_aux, scf%orbitals, &
+                                          scf%orbital_energies, fragment%nelec/2, &
+                                          scf%energy, dh_mp2, error, n_frozen=dh_frozen)
+                  call corr_aux%destroy()
+               else
+                  call run_libcint_mp2(mol, scf%orbitals, scf%orbital_energies, &
+                                       fragment%nelec/2, scf%energy, dh_mp2, error, &
+                                       n_frozen=dh_frozen)
+               end if
+               if (error%has_error()) then
+                  call result%error%set(ERROR_VALIDATION, "double hybrid: "// &
+                                        error%get_message())
+                  result%has_error = .true.
+                  call xc%destroy()
+                  call mol%destroy()
+                  return
+               end if
+
+               ! Scaled here and stored already scaled, in the field `total` adds
+               ! beside the SCF rather than in `mp2` -- see `energy_t`. Putting it in
+               ! `mp2` would double count the moment a deck asked for MP2 as well.
+               result%energy%dh_pt2 = xc%pt2_fraction*dh_mp2%correlation
+               if (settings%verbose) then
+                  write (*, "(a,f6.3,a,f20.12)") "  double hybrid: PT2 x", &
+                     xc%pt2_fraction, " = ", result%energy%dh_pt2
+                  write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+               end if
+            end block
+         end if
+      end if
+
       ! The frontier pair, from the orbital energies the SCF already produced.
       if (allocated(scf%orbital_energies)) then
          if (scf%n_occupied >= 1 .and. scf%n_occupied < size(scf%orbital_energies)) then
@@ -441,10 +503,21 @@ contains
       !! probing how bad it gets, has a real reason to ask for it, and the run
       !! is not wrong so much as poorly fitted.
       !!
-      !! `keywords.correlation.aux_basis` is what this reads. It falls back to
-      !! `model.aux_basis` so a deck that already names one for a fitted SCF
-      !! does not have to repeat it -- and that fallback is exactly the case
-      !! the warning is for, since an SCF auxiliary is usually JKFIT.
+      !! `model.aux_basis` is the only place an auxiliary basis is named. It used
+      !! to be settable under `keywords.correlation` as well, which meant two
+      !! places for one thing and a silent preference between them; a basis set
+      !! belongs beside the orbital basis it fits.
+      !!
+      !! So a run that fits both the reference and the correlation uses one set for
+      !! both, which is fine in that direction: a RIFIT set fitting J and K is
+      !! ordinary practice. It is worth about 1.7 mHartree on a total energy here
+      !! against exact J and K -- measured, and largely cancelling in any relative
+      !! quantity, which is why it is a reasonable thing to do rather than a
+      !! compromise.
+      !!
+      !! The other direction is the one to catch, and the warning below is for it: a
+      !! JKFIT set fitting a (ia|jb) block gives a correlation energy whose error is
+      !! not the RI error it is supposed to be.
       type(cuest_scf_settings_t), intent(in) :: settings
       type(physical_fragment_t), intent(in) :: fragment
       character(len=*), intent(in) :: symbols(:)
@@ -453,11 +526,10 @@ contains
 
       character(len=:), allocatable :: name
 
-      name = trim(settings%corr_aux_basis)
-      if (len_trim(name) == 0) name = trim(settings%aux_basis_set)
+      name = trim(settings%aux_basis_set)
       if (len_trim(name) == 0) then
          call error%set(ERROR_VALIDATION, "density-fitted correlation needs an "// &
-                        "auxiliary basis: set keywords.correlation.aux_basis")
+                        "auxiliary basis: set model.aux_basis")
          return
       end if
 

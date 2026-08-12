@@ -204,13 +204,16 @@ contains
       !! The reference and the correlation treatment are configured apart
       !! because they can disagree: a density-fitted Hartree-Fock followed by a
       !! conventional MP2 is a combination someone will ask for, and one
-      !! `density_fitting` shared between them could not express it. RI-MP2
-      !! adds its own here rather than reading the SCF's.
+      !! `density_fitting` shared between them could not express it.
+      !!
+      !! The auxiliary basis is deliberately *not* here. A basis set belongs in
+      !! `model` beside the orbital basis it fits, which is where `model.aux_basis`
+      !! is, and having two places to name one meant a deck could name both and
+      !! silently prefer one.
       type(key_set_t) :: keys
       call allow(keys, "freeze_core")
       call allow(keys, "n_frozen_core")
       call allow(keys, "density_fitting")
-      call allow(keys, "aux_basis")
       call allow(keys, "scs")
       call allow(keys, "scs_ss")
       call allow(keys, "scs_os")

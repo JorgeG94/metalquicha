@@ -81,6 +81,48 @@ computing exact four-index integrals:
    mqc.MBE(water, level=0, method="hf", basis="sto-3g",
            aux_basis="def2-universal-jkfit", density_fitting=True)
 
+Post-Hartree-Fock and DFT
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``method`` is passed through to the deck unchanged, so every method the input
+format accepts is reachable here by name:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="mp2", basis="cc-pvdz").run()
+   mqc.MBE(water, level=0, method="ccsd(t)", basis="cc-pvdz").run()
+   mqc.MBE(water, level=0, method="ri-mp2", basis="cc-pvdz",
+           aux_basis="cc-pvdz-rifit").run()
+
+Kohn-Sham takes the functional as its own argument, because the functional is a
+separate field from the method:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="dft", functional="b3lyp", basis="cc-pvdz").run()
+   mqc.MBE(water, level=0, method="dft", functional="b2plyp", basis="cc-pvdz",
+           aux_basis="cc-pvdz-rifit").run()
+
+See the functional table in :doc:`input_files` for the names, and note that any
+libxc name works too.
+
+Anything without a named argument
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``keywords`` merges straight into the deck's ``keywords`` block, so a setting does
+not have to wait for a Python argument to be reachable:
+
+.. code-block:: python
+
+   mqc.MBE(water, level=0, method="ccsd(t)", basis="cc-pvdz",
+           keywords={"cc": {"tolerance": 1e-10},
+                     "correlation": {"n_frozen_core": 1},
+                     "scf": {"guess": "sad"}}).run()
+
+   mqc.MBE(water, level=0, method="dft", functional="tpss", basis="cc-pvdz",
+           keywords={"dft": {"grid_level": 5}}).run()
+
+
 It has to be asked for. Setting ``aux_basis`` alone does not turn it on,
 because that name carries a default -- inferring the request from its presence
 would mean every Hartree-Fock quietly fitted. The difference on water/sto-3g is

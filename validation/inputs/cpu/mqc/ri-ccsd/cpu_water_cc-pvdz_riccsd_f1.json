@@ -12,7 +12,8 @@
     ],
     "model": {
         "method": "ri-ccsd",
-        "basis": "cc-pvdz"
+        "basis": "cc-pvdz",
+        "aux_basis": "cc-pvdz-rifit"
     },
     "keywords": {
         "scf": {
@@ -21,8 +22,7 @@
         },
         "correlation": {
             "freeze_core": true,
-            "n_frozen_core": 1,
-            "aux_basis": "cc-pvdz-rifit"
+            "n_frozen_core": 1
         },
         "cc": {
             "tolerance": 1e-10

@@ -91,3 +91,7 @@ venv/
 
 # ctest scratch, swept in once by a broad git add
 Testing/
+
+# pyscf-forge DFDH writes a profiler log beside whatever invoked it. Only the
+# validation reference generator ever calls it, and the log is never wanted.
+tmp_timing.log

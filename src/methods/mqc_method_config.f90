@@ -175,8 +175,6 @@ module mqc_method_config
       ! Density fitting for correlation
       logical :: use_df = .true.
          !! Use density fitting (RI) for correlation integrals
-      character(len=32) :: aux_basis = ""
-         !! Auxiliary basis for RI (e.g., "cc-pvdz-ri", "cc-pvtz-ri")
 
       ! Local correlation
       logical :: use_local = .false.
@@ -429,7 +427,6 @@ contains
       this%corr%n_frozen_core = -1
       this%corr%freeze_core = .true.
       this%corr%use_df = .true.
-      this%corr%aux_basis = ""
       this%corr%use_local = .false.
       this%corr%local_type = "dlpno"
       this%corr%pno_threshold = 1.0e-7_dp

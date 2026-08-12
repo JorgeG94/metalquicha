@@ -185,7 +185,6 @@ contains
       m%options%freeze_core = config%corr%freeze_core
       m%options%n_frozen_core = config%corr%n_frozen_core
       m%options%corr_density_fitting = config%corr%use_df
-      m%options%corr_aux_basis = config%corr%aux_basis
       ! One and one unless scaling was asked for, so an unscaled run cannot
       ! pick up factors that happen to be sitting in the config.
       if (config%corr%use_scs) then
