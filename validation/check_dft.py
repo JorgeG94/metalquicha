@@ -49,6 +49,32 @@ KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3, False), ("svwn", "SVWN", "cc-pvdz",
             # exchange tensor and has nothing to attenuate.
             ("wb97x", "wb97x", "cc-pvdz", 3, True),
             ("cam-b3lyp", "camb3lyp", "cc-pvdz", 3, True)]
+
+# Unrestricted Kohn-Sham: molecule, functional, PySCF's name, basis, grid level.
+#
+# The methyl radical for the open-shell cases -- a doublet whose ground state is
+# unambiguous, which matters because two codes' UKS can converge to different
+# stationary points and then disagree for a reason that is not a bug. <S^2> is
+# compared alongside the energy so that a disagreement of that kind says so.
+#
+# Closed-shell water is here for a different reason: it must reproduce the
+# *restricted* energy exactly. That is the sharper test of the interleaved arrays
+# and the cross-spin gradient term, and it is asserted in test_mqc_libcint_uks too.
+UKS_CASES = [("ch3", "svwn", "SVWN", "cc-pvdz", 3),
+             ("ch3", "pbe", "PBE", "cc-pvdz", 3),
+             ("ch3", "b3lyp", "B3LYP", "cc-pvdz", 3),
+             ("ch3", "tpss", "TPSS", "cc-pvdz", 3),
+             ("ch3", "wb97x", "wb97x", "cc-pvdz", 3),
+             ("water", "pbe", "PBE", "cc-pvdz", 3),
+             ("water", "b3lyp", "B3LYP", "cc-pvdz", 3)]
+UKS_S2_TOL = 1e-6
+
+# Geometries the Fortran side uses, repeated because there is no shared reader.
+CH3_ATOMS = [("C", (0.0, 0.0, 0.0)),
+             ("H", (1.079, 0.0, 0.0)),
+             ("H", (-0.5395, 0.93444, 0.0)),
+             ("H", (-0.5395, -0.93444, 0.0))]
+CH3_SPIN = 1   # PySCF counts unpaired electrons, not 2S+1
 KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
 
 # Double hybrids, against pyscf-forge's DFDH on the same geometry and basis.
@@ -174,6 +200,46 @@ def main():
         print(f"  {'ok  ' if ok else 'FAIL'} KS {tag + mode:16s}/{basis} L{level}  "
               f"ours {ours:.10f}  PySCF {theirs:.10f}  diff {d:.2e} "
               f"(<= {KS_TOL:.0e})  {iters} iterations")
+        if not ok:
+            failures += 1
+
+    # ---- unrestricted Kohn-Sham, against PySCF's own UKS ---------------------
+    #
+    # <S^2> as well as the energy. Two codes' UKS can land on different stationary
+    # points, and then the energies differ for a reason that is not a bug in either
+    # -- so a disagreement should be able to say which kind it is.
+    for molecule, tag, pyscf_xc, basis, level in UKS_CASES:
+        path = pathlib.Path(f"/tmp/mqc_uks_{molecule}_{tag}_{basis}_L{level}.txt")
+        if not path.exists():
+            print(f"  MISSING {path} -- run ./build/check_dft first")
+            failures += 1
+            continue
+        v = path.read_text().split()
+        ours, iters, s2 = float(v[0]), int(v[1]), float(v[2])
+
+        case_atoms = CH3_ATOMS if molecule == "ch3" else atoms
+        spin = CH3_SPIN if molecule == "ch3" else 0
+        case_symbols = {a[0] for a in case_atoms}
+        mol = gto.Mole()
+        mol.atom = case_atoms
+        mol.unit = "Angstrom"
+        mol.basis = {t: bse_to_pyscf(basis, t) for t in case_symbols}
+        mol.cart = molecule_form(basis, case_symbols) == CARTESIAN
+        mol.spin = spin
+        mol.verbose = 0
+        mol.build()
+        mf = dft.UKS(mol)
+        mf.xc = pyscf_xc
+        mf.grids.level = level
+        mf.conv_tol = 1e-11
+        theirs = mf.kernel()
+        their_s2 = mf.spin_square()[0]
+        d = abs(theirs - ours)
+        ds2 = abs(their_s2 - s2)
+        ok = d < KS_TOL and ds2 < UKS_S2_TOL
+        print(f"  {'ok  ' if ok else 'FAIL'} UKS {molecule:5s} {tag:9s}/{basis} L{level}  "
+              f"ours {ours:.10f}  PySCF {theirs:.10f}  diff {d:.2e} "
+              f"(<= {KS_TOL:.0e})  <S^2> {s2:.6f} vs {their_s2:.6f}  {iters} iterations")
         if not ok:
             failures += 1
 

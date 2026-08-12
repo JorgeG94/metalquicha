@@ -101,7 +101,26 @@ contains
                                "needs a restricted reference: it is written in spin "// &
                                "orbitals over RHF orbitals, and an unrestricted "// &
                                "reference needs its own alpha and beta transform. Run "// &
-                               "a closed-shell system, or use MP2.")
+                               "a closed-shell system, or use density functional theory.")
+         result%has_error = .true.
+         return
+      end if
+
+      ! And MP2 for the same reason, which it did not used to be. The transform
+      ! takes one set of orbitals and an occupied count, so an unrestricted
+      ! reference gave it the alpha orbitals and `nelec/2` -- which for an odd
+      ! electron count truncates. OH in sto-3g came back as a converged
+      ! -74.416097 computed over three doubly-occupied orbitals instead of nine
+      ! electrons, with nothing in the output to say which. It is the same defect
+      ! the double-hybrid guard below refuses, and it is worse here because MP2 is
+      ! asked for directly.
+      if (settings%run_mp2 .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "MP2 on the CPU backend needs a "// &
+                               "restricted reference: the four-index transform takes one "// &
+                               "set of orbitals with an occupied count, and an "// &
+                               "unrestricted reference needs separate alpha and beta "// &
+                               "transforms. Run a closed-shell system, or use density "// &
+                               "functional theory, which is unrestricted here.")
          result%has_error = .true.
          return
       end if
@@ -145,20 +164,35 @@ contains
             call mol%destroy()
             return
          end if
-         if (unrestricted) then
-            call result%error%set(ERROR_VALIDATION, "unrestricted Kohn-Sham is not "// &
-                                  "implemented on the CPU backend: the functional is "// &
-                                  "evaluated spin-unpolarised. Run a closed-shell "// &
-                                  "system, or use Hartree-Fock.")
+         ! Spin-polarised exactly when the SCF is. libxc fixes the spin channel
+         ! when a functional is initialised, so this cannot be decided later by
+         ! whoever evaluates the potential -- and the two evaluators refuse the
+         ! wrong kind of context rather than reading it with the wrong stride.
+         call xc_context_create(mol, trim(settings%functional), xc, error, &
+                                level=settings%grid_level, polarized=unrestricted)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
             result%has_error = .true.
             call mol%destroy()
             return
          end if
-         call xc_context_create(mol, trim(settings%functional), xc, error, &
-                                level=settings%grid_level)
-         if (error%has_error()) then
-            call result%error%set(ERROR_VALIDATION, error%get_message())
+         ! A double hybrid on an open shell would need an unrestricted MP2, and the
+         ! perturbative term below is written over restricted orbitals. Refused
+         ! here rather than downstream, because downstream it would not fail: it
+         ! would take the alpha orbitals for a closed-shell set, pair them with
+         ! themselves and return a plausible number. The Kohn-Sham half of the
+         ! functional is unrestricted and correct, which is exactly what makes the
+         ! total convincing.
+         if (unrestricted .and. xc%pt2_fraction /= 0.0_dp) then
+            call result%error%set(ERROR_VALIDATION, "'"//trim(settings%functional)// &
+                                  "' is a double hybrid and its perturbative term needs "// &
+                                  "an unrestricted MP2, which the CPU path does not have. "// &
+                                  "The Kohn-Sham part alone would be ~65 mHartree short, "// &
+                                  "so this is refused rather than reported. Run a "// &
+                                  "closed-shell system, or a functional without a "// &
+                                  "perturbative term.")
             result%has_error = .true.
+            call xc%destroy()
             call mol%destroy()
             return
          end if
@@ -247,7 +281,7 @@ contains
          call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
                               settings%energy_tol, settings%density_tol, settings%verbose, &
                               scf, error, diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density_alpha=guess_a, guess_density_beta=guess_b)
+                              guess_density_alpha=guess_a, guess_density_beta=guess_b, xc=xc)
       else
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &

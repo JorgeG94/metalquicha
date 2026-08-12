@@ -31,9 +31,9 @@ calculations. Three chemistry engines are available:
 
 - [tblite](https://github.com/tblite/tblite) for semi-empirical xTB (GFN1, GFN2), on the CPU
 - [libcint](https://github.com/sunqm/libcint) for Gaussian-basis ab initio on the
-  CPU — Hartree-Fock restricted and unrestricted, MP2, and CCSD(T), each
-  conventional or density-fitted. This one exists to be checked against as much as
-  to be run: it gives the GPU path a second, independent implementation to
+  CPU — Hartree-Fock and Kohn-Sham DFT, both restricted and unrestricted, plus
+  MP2 and CCSD(T), each conventional or density-fitted. This one exists to be
+  checked against as much as to be run: it gives the GPU path a second, independent implementation to
   disagree with, and every method in it is validated against PySCF.
 - [NVIDIA cuEST](https://developer.nvidia.com/cuda/cuda-x-libraries/cuest) for
   Hartree-Fock and Kohn-Sham DFT on the GPU — energies, analytic gradients and
@@ -271,11 +271,15 @@ that recomputes only the terms whose contribution exceeded a threshold.
 
 Which methods are available depends on the build, though the default has all of
 them: `gfn1`/`gfn2` need `MQC_ENABLE_TBLITE`, while `MQC_ENABLE_LIBCINT` brings
-the CPU ab initio path —
-`hf`, `mp2`, `ccsd`, `ccsd(t)`, and the `ri-` spellings of the correlated ones.
+the CPU ab initio path — `hf`, `dft`, `mp2`, `ccsd`, `ccsd(t)`, and the `ri-`
+spellings of the correlated ones. `dft` additionally needs `MQC_ENABLE_LIBXC`,
+which is on by default too.
+
 Gradients come from xTB and cuEST; the CPU backend refuses them rather than
-returning something untested, and refuses unrestricted coupled cluster on the same
-principle.
+returning something untested. Open shells run unrestricted for Hartree-Fock and
+DFT, and are refused for MP2 and coupled cluster on the same principle — both
+transforms want one set of orbitals, and an approximate answer is worse than
+none.
 
 Details, including density fitting and the current limitations, are in
 [the Python interface documentation](https://metalquicha.readthedocs.io/en/latest/python_interface.html).

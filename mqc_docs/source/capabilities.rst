@@ -80,7 +80,7 @@ against PySCF on the same geometries and the same basis data.
 - **Coupled cluster**: CCSD and CCSD(T), conventional and density-fitted, in the
   spin-orbital basis over a restricted reference.
 - **Kohn-Sham DFT**: the whole ladder -- LDA, GGA, hybrid, meta-GGA,
-  range-separated hybrid and double hybrid -- over
+  range-separated hybrid and double hybrid -- restricted and unrestricted, over
   `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries is available
   by name, with friendly names and double-hybrid compositions layered on top.
   Range separation uses libcint's erf-attenuated integrals, which puts ωB97X and
@@ -403,10 +403,10 @@ Planned Features
 
 1. **Additional QC methods**:
 
-   - Unrestricted Kohn-Sham on the CPU path, which needs a spin-polarised
-     functional evaluation and paired densities
-   - Unrestricted coupled cluster, which needs its own alpha and beta transform
-     and is refused rather than approximated today
+   - Unrestricted MP2 and unrestricted coupled cluster, which need separate
+     alpha and beta transforms and are refused rather than approximated today.
+     This is also what keeps the double hybrids closed-shell, since their
+     perturbative term is an MP2
    - F12 variants, and MCSCF: these parse but have no implementation
 
 2. **Advanced dynamics**:

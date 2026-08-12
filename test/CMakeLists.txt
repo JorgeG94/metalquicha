@@ -82,6 +82,13 @@ if(MQC_ENABLE_LIBCINT)
   addtest(mqc_libcint_guess)
   target_link_libraries(test_mqc_libcint_guess PRIVATE cint_fortran cint)
 
+  # Unrestricted Kohn-Sham, on the closed-shell limit: with equal spin densities
+  # it must reproduce the restricted energy exactly, for every rung. That is
+  # what catches libxc's interleaved arrays being read with the wrong stride and
+  # the cross-spin gradient term being dropped -- both of which converge.
+  addtest(mqc_libcint_uks)
+  target_link_libraries(test_mqc_libcint_uks PRIVATE cint_fortran cint)
+
   # Range separation, on the two limits of the erf kernel. The validation
   # manifest checks the energies; this checks that omega reaches libcint at all,
   # which is the part that failed silently -- an ignored parameter returns

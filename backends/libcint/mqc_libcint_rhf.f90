@@ -19,7 +19,7 @@ module mqc_libcint_rhf
    use mqc_libcint_direct, only: schwarz_bounds, build_fock_direct, build_fock_direct_uhf, &
                                  direct_stats_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_df_tensor
-   use mqc_libcint_xc, only: xc_context_t, xc_add_potential
+   use mqc_libcint_xc, only: xc_context_t, xc_add_potential, xc_add_potential_uks
    implicit none
    private
 
@@ -295,7 +295,7 @@ contains
 
    subroutine run_libcint_uhf(mol, nelec, multiplicity, max_iter, energy_tol, density_tol, &
                               verbose, result, error, diis_vectors, in_core, diis_start, &
-                              guess, guess_density_alpha, guess_density_beta)
+                              guess, guess_density_alpha, guess_density_beta, xc)
       !! Drive an unrestricted SCF to convergence
       !!
       !! Two Fock matrices sharing one Coulomb field: F_sigma = H + J(D_a + D_b)
@@ -322,6 +322,13 @@ contains
          !! First iteration allowed to extrapolate. See the default below.
       integer, intent(in), optional :: guess
          !! One of SCF_GUESS_*. Defaults to the core guess.
+      type(xc_context_t), intent(inout), optional :: xc
+         !! Exchange-correlation, spin-polarised. Present makes this an
+         !! unrestricted Kohn-Sham SCF; absent leaves it unrestricted
+         !! Hartree-Fock. The context must have been built with polarized=.true.,
+         !! which `xc_add_potential_uks` checks rather than assumes -- libxc fixes
+         !! the spin channel at initialisation and a restricted context would
+         !! otherwise be read with the wrong stride.
       real(dp), intent(in), optional :: guess_density_alpha(:, :)
       real(dp), intent(in), optional :: guess_density_beta(:, :)
          !! Starting spin densities, required by SCF_GUESS_SAC and SCF_GUESS_SAD.
@@ -447,12 +454,9 @@ contains
          end if
          d_a = guess_density_alpha
          d_b = guess_density_beta
-         if (allocated(eri)) then
-            call build_fock_uhf(h, eri, d_a, d_b, fock_a, fock_b)
-         else
-            call build_fock_direct_uhf(mol, h, d_a, d_b, bounds, fock_a, fock_b, stats, error)
-            if (error%has_error()) return
-         end if
+         call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+                                e_elec, error)
+         if (error%has_error()) return
       case default
          call error%set(ERROR_VALIDATION, "UHF: unknown initial guess")
          return
@@ -472,14 +476,9 @@ contains
          d_a_old = d_a
          d_b_old = d_b
 
-         if (allocated(eri)) then
-            call build_fock_uhf(h, eri, d_a, d_b, fock_a, fock_b)
-         else
-            call build_fock_direct_uhf(mol, h, d_a, d_b, bounds, fock_a, fock_b, stats, error)
-            if (error%has_error()) return
-         end if
-
-         e_elec = uhf_electronic_energy(h, fock_a, fock_b, d_a, d_b)
+         call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+                                e_elec, error)
+         if (error%has_error()) return
 
          call commutator(fock_a, d_a, s, x, err_a)
          call commutator(fock_b, d_b, s, x, err_b)
@@ -520,13 +519,9 @@ contains
 
       ! Rebuilt from the density that passed the test, as the restricted path
       ! does, so the reported energy belongs to the reported orbitals.
-      if (allocated(eri)) then
-         call build_fock_uhf(h, eri, d_a, d_b, fock_a, fock_b)
-      else
-         call build_fock_direct_uhf(mol, h, d_a, d_b, bounds, fock_a, fock_b, stats, error)
-         if (error%has_error()) return
-      end if
-      result%electronic = uhf_electronic_energy(h, fock_a, fock_b, d_a, d_b)
+      call assemble_fock_uhf(mol, h, d_a, d_b, eri, bounds, xc, fock_a, fock_b, &
+                             result%electronic, error)
+      if (error%has_error()) return
       result%nuclear_repulsion = mol%nuclear_repulsion()
       result%energy = result%electronic + result%nuclear_repulsion
       result%n_occupied = n_alpha
@@ -650,6 +645,96 @@ contains
          deallocate (v_xc)
       end if
    end subroutine assemble_fock
+
+   subroutine assemble_fock_uhf(mol, h, d_alpha, d_beta, eri, bounds, xc, &
+                                fock_a, fock_b, e_elec, error)
+      !! Both spin Fock matrices for this pair of densities, and their energy
+      !!
+      !! The unrestricted twin of `assemble_fock`, and it exists for the same
+      !! reason: the loop, the initial guess and the final rebuild each built the
+      !! Fock matrices through their own copy of the same branch, so
+      !! exchange-correlation would have become a fourth. The energy comes back with
+      !! the matrices because for Kohn-Sham it cannot be recovered afterwards --
+      !! `uhf_electronic_energy` counts the potential at half weight, which is right
+      !! for a mean field and wrong for a functional, so it is taken before V_xc is
+      !! added and E_xc is added on top.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :), d_alpha(:, :), d_beta(:, :)
+      real(dp), allocatable, intent(in) :: eri(:, :, :, :)
+      real(dp), allocatable, intent(in) :: bounds(:, :)
+      type(xc_context_t), intent(inout), optional :: xc
+      real(dp), intent(out) :: fock_a(:, :), fock_b(:, :)
+      real(dp), intent(out) :: e_elec
+      type(error_t), intent(inout) :: error
+
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: v_a(:, :), v_b(:, :)
+      real(dp) :: k_scale, e_xc, n_elec
+      logical :: kohn_sham
+      integer :: n
+
+      n = size(h, 1)
+      kohn_sham = .false.
+      k_scale = 1.0_dp
+      if (present(xc)) then
+         if (xc%active) then
+            kohn_sham = .true.
+            k_scale = xc%exx_fraction
+         end if
+      end if
+
+      ! As in the closed-shell path: the attenuated exchange matrix is something
+      ! only the direct build can produce, so it is refused rather than dropped.
+      if (present(xc)) then
+         if (xc%range_separated .and. allocated(eri)) then
+            call error%set(ERROR_VALIDATION, "a range-separated functional needs the "// &
+                           "direct Fock build: the in-core integrals are built for the "// &
+                           "full Coulomb kernel, and the long-range exchange would be "// &
+                           "missing. Run without in_core.")
+            return
+         end if
+      end if
+
+      if (allocated(eri)) then
+         call build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale=k_scale)
+      else
+         call build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, &
+                                    stats, error, k_scale=k_scale)
+         if (error%has_error()) return
+         if (kohn_sham) then
+            if (xc%range_separated) then
+               block
+                  real(dp), allocatable :: k_lr_a(:, :), k_lr_b(:, :), h_zero(:, :)
+                  ! Zero core Hamiltonian and no Coulomb, so this pass returns the
+                  ! long-range exchange of each spin and nothing to subtract back.
+                  allocate (k_lr_a(n, n), k_lr_b(n, n), h_zero(n, n))
+                  h_zero = 0.0_dp
+                  call build_fock_direct_uhf(mol, h_zero, d_alpha, d_beta, bounds, &
+                                             k_lr_a, k_lr_b, stats, error, &
+                                             k_scale=xc%rs_k_lr, j_scale=0.0_dp, &
+                                             omega=xc%rs_omega)
+                  if (error%has_error()) return
+                  fock_a = fock_a + k_lr_a
+                  fock_b = fock_b + k_lr_b
+                  deallocate (k_lr_a, k_lr_b, h_zero)
+               end block
+            end if
+         end if
+      end if
+
+      ! Taken here, while the Fock matrices are still a mean field.
+      e_elec = uhf_electronic_energy(h, fock_a, fock_b, d_alpha, d_beta)
+
+      if (kohn_sham) then
+         allocate (v_a(n, n), v_b(n, n))
+         call xc_add_potential_uks(xc, mol, d_alpha, d_beta, v_a, v_b, e_xc, n_elec, error)
+         if (error%has_error()) return
+         fock_a = fock_a + v_a
+         fock_b = fock_b + v_b
+         e_elec = e_elec + e_xc
+         deallocate (v_a, v_b)
+      end if
+   end subroutine assemble_fock_uhf
 
    subroutine commutator(fock, density, overlap, x, err)
       !! e = X^T (F D S - S D F) X, the DIIS error vector
@@ -987,15 +1072,21 @@ contains
       end do
    end subroutine build_density_spin
 
-   pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b)
+   pure subroutine build_fock_uhf(h, eri, d_alpha, d_beta, fock_a, fock_b, k_scale)
       !! F_sigma = H + J(D_alpha + D_beta) - K(D_sigma), straight from the ERIs
       !!
       !! The reference the direct build is checked against, and slow on purpose.
       real(dp), intent(in) :: h(:, :), eri(:, :, :, :), d_alpha(:, :), d_beta(:, :)
       real(dp), intent(out) :: fock_a(:, :), fock_b(:, :)
+      real(dp), intent(in), optional :: k_scale
+         !! Fraction of exact exchange, as in the closed-shell build: one for
+         !! Hartree-Fock and the default, less for a hybrid Kohn-Sham build.
 
       integer :: mu, nu, la, si, n
-      real(dp) :: dt
+      real(dp) :: dt, kf
+
+      kf = 1.0_dp
+      if (present(k_scale)) kf = k_scale
 
       n = size(h, 1)
       fock_a = h
@@ -1007,9 +1098,9 @@ contains
                   dt = d_alpha(la, si) + d_beta(la, si)
                   ! Coulomb from both spins, exchange from the same spin only.
                   fock_a(mu, nu) = fock_a(mu, nu) + dt*eri(mu, nu, la, si) &
-                                   - d_alpha(la, si)*eri(mu, la, nu, si)
+                                   - kf*d_alpha(la, si)*eri(mu, la, nu, si)
                   fock_b(mu, nu) = fock_b(mu, nu) + dt*eri(mu, nu, la, si) &
-                                   - d_beta(la, si)*eri(mu, la, nu, si)
+                                   - kf*d_beta(la, si)*eri(mu, la, nu, si)
                end do
             end do
          end do

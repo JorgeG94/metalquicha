@@ -183,5 +183,20 @@ gradient is worse than an absent one -- so it raises:
 xTB gradients work normally, and so do cuEST's. Only the CPU Hartree-Fock path
 refuses.
 
-The CPU backend is also closed-shell only: an unrestricted reference is refused
-in the same way rather than approximated.
+Correlated methods on the CPU backend are closed-shell only. MP2, coupled
+cluster and the double hybrids each need separate alpha and beta transforms for an
+open-shell reference, and are refused in the same way rather than approximated.
+Hartree-Fock and Kohn-Sham DFT both run unrestricted, and pick it up from the
+multiplicity without being told:
+
+.. code-block:: python
+
+   >>> ch3 = mqc.System.from_xyz("ch3.xyz", multiplicity=2)
+   >>> ch3.set_monomers([[0, 1, 2, 3]])
+   >>> mqc.MBE(ch3, level=0, method="dft", functional="pbe",
+   ...         basis="cc-pvdz").run(write_to_file=False).energy
+   -39.7691396276
+
+Nothing there asks for the unrestricted path: the multiplicity selects it. The
+range-separated hybrids work on an open shell as well, with the attenuated
+exchange pass run once per spin.

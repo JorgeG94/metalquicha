@@ -179,7 +179,10 @@ Semi-empirical, via tblite:
 Ab initio on the CPU, via libcint (`backends/libcint/`):
 
 - `HF` - restricted and unrestricted; direct, in-core, or density-fitted
-- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2`
+- `DFT` - restricted and unrestricted Kohn-Sham over libxc, through
+  `model.functional`. LDA through double hybrid, including range-separated
+  hybrids, whose long-range exchange needs the direct build
+- `MP2`, `SCS-MP2`, `SOS-MP2`, `RI-MP2` - RHF reference only
 - `CCSD`, `CCSD(T)`, `RI-CCSD`, `RI-CCSD(T)` - spin orbital, RHF reference
 
 An `RI-`/`DF-` prefix parses to the same method type as the bare name, so the
