@@ -112,8 +112,11 @@ jobs:
           MQC_LIBRARY=$PWD/build/libmqc.so PYTHONPATH=$PWD/python \
             python3 python/examples/backends.py
 
+      # Needs libxc as well as libcint: twelve of these cases name a functional
+      # and are refused outright without it, which is how this step first went
+      # red -- a libcint-only build, not a broken calculation.
       - name: Run CPU validation tests (libcint)
-        if: matrix.libcint
+        if: matrix.libcint && matrix.libxc
         shell: bash -el {0}
         run: |
           conda activate mqc
