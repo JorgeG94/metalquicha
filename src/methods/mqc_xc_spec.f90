@@ -187,6 +187,19 @@ contains
          spec%n_components = 1
          spec%component(1) = xc_component_t("hyb_gga_xc_pbeh", 1.0_dp)
 
+         ! Meta-GGAs, same pattern: libxc carries the halves, not the pair.
+      case ("tpss")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("mgga_x_tpss", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_tpss", 1.0_dp)
+
+      case ("m06-l", "m06l")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("mgga_x_m06_l", 1.0_dp)
+         spec%component(2) = xc_component_t("mgga_c_m06_l", 1.0_dp)
+
          ! PBE is exchange plus correlation under one name libxc does not pair.
       case ("pbe")
          spec%from_libxc = .false.

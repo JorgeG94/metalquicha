@@ -44,6 +44,8 @@ program check_dft
    call scf_case("cc-pvdz", "pbe", 3)
    call scf_case("cc-pvdz", "b3lyp", 3)
    call scf_case("cc-pvdz", "pbe0", 3)
+   call scf_case("cc-pvdz", "tpss", 3)
+   call scf_case("cc-pvdz", "m06-l", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2gp-plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "mpw2plyp", 3)

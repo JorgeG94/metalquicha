@@ -35,7 +35,8 @@ CASES = [("cc-pvdz", 3), ("cc-pvdz", 5), ("sto-3g", 4)]
 # Self-consistent Kohn-Sham: functional, basis, grid level.
 KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3), ("svwn", "SVWN", "cc-pvdz", 3),
             ("gga_x_pbe", "GGA_X_PBE", "cc-pvdz", 3), ("pbe", "PBE", "cc-pvdz", 3),
-            ("b3lyp", "B3LYP", "cc-pvdz", 3), ("pbe0", "PBE0", "cc-pvdz", 3)]
+            ("b3lyp", "B3LYP", "cc-pvdz", 3), ("pbe0", "PBE0", "cc-pvdz", 3),
+            ("tpss", "TPSS", "cc-pvdz", 3), ("m06-l", "M06-L", "cc-pvdz", 3)]
 KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
 
 # Double hybrids, against pyscf-forge's DFDH on the same geometry and basis.

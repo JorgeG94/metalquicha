@@ -35,9 +35,11 @@ module mqc_libcint_xc
                            xc_f03_lda_exc_vxc, xc_f03_func_get_info, &
                            xc_f03_func_info_get_family, xc_f03_hyb_exx_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
-                           xc_f03_gga_exc_vxc, &
+                           xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
+                           xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
                            XC_UNPOLARIZED, XC_FAMILY_LDA, XC_FAMILY_HYB_LDA, &
-                           XC_FAMILY_GGA, XC_FAMILY_HYB_GGA
+                           XC_FAMILY_GGA, XC_FAMILY_HYB_GGA, &
+                           XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA
 #endif
    implicit none
    private
@@ -67,6 +69,10 @@ module mqc_libcint_xc
       logical :: any_gga = .false.
          !! Whether anything here needs density gradients, and so whether the AO
          !! gradients are worth evaluating at all.
+      logical :: any_mgga = .false.
+         !! Whether anything here needs the kinetic energy density too. Separate
+         !! from `any_gga` because a meta-GGA needs both, and the gradients are the
+         !! expensive half.
       real(dp) :: weight(MAX_XC_COMPONENTS) = 0.0_dp
 #ifdef MQC_WITH_LIBXC
       type(xc_f03_func_t) :: func(MAX_XC_COMPONENTS)
@@ -144,12 +150,26 @@ contains
             ! nothing extra
          case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
             ctx%any_gga = .true.
+         case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+            ! A meta-GGA needs the gradients as well, since sigma appears alongside
+            ! tau in every one of them.
+            ctx%any_gga = .true.
+            ctx%any_mgga = .true.
+            ! Some meta-GGAs want the density Laplacian, which is a second
+            ! derivative of every basis function and not implemented. libxc says
+            ! which, so this is a refusal on the functional's own account rather
+            ! than a guess about which ones are safe.
+            if (iand(xc_f03_func_info_get_flags(info), XC_FLAGS_NEEDS_LAPLACIAN) /= 0) then
+               call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
+                              "' needs the density Laplacian, which the CPU path does "// &
+                              "not compute. Refused rather than passed zeros, which "// &
+                              "would return a different functional under its name.")
+               return
+            end if
          case default
             call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
-                           "' is a meta-GGA or beyond, which the CPU path does not "// &
-                           "implement. Refused rather than evaluated without its "// &
-                           "kinetic-energy density, which would silently return a "// &
-                           "GGA answer under its name.")
+                           "' is beyond meta-GGA, which the CPU path does not "// &
+                           "implement.")
             return
          end select
 
@@ -210,6 +230,7 @@ contains
       real(dp), allocatable :: exc_i(:), vrho_i(:)
       real(dp), allocatable :: ao_grad(:, :, :), rho_grad(:, :), sigma(:)
       real(dp), allocatable :: vsigma(:), vsigma_i(:)
+      real(dp), allocatable :: tau(:), vtau(:), vtau_i(:), lapl(:), vlapl(:)
       integer :: g0, g1, nb, i, mu, ig, id
 
       v_xc = 0.0_dp
@@ -227,7 +248,11 @@ contains
          g1 = min(g0 + AO_POINT_BLOCK - 1, ctx%grid%n_points)
          nb = g1 - g0 + 1
 
-         if (ctx%any_gga) then
+         if (ctx%any_mgga) then
+            call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
+            if (error%has_error()) return
+            call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad, tau=tau)
+         else if (ctx%any_gga) then
             call eval_ao_block(mol, ctx%grid%coords(:, g0:g1), ao, error, grad=ao_grad)
             if (error%has_error()) return
             call eval_rho(ao, density, rho, ao_grad=ao_grad, rho_grad=rho_grad)
@@ -249,6 +274,14 @@ contains
                sigma(ig) = rho_grad(ig, 1)**2 + rho_grad(ig, 2)**2 + rho_grad(ig, 3)**2
             end do
          end if
+         if (ctx%any_mgga) then
+            if (allocated(vtau)) deallocate (vtau, vtau_i, lapl, vlapl)
+            allocate (vtau(nb), vtau_i(nb), lapl(nb), vlapl(nb))
+            vtau = 0.0_dp
+            ! Zero, and only ever read by functionals that do not need it -- the
+            ! ones that do were refused at construction.
+            lapl = 0.0_dp
+         end if
 
          ! Each component contributes its weight of the energy density and of the
          ! potential. One functional with weight one is the ordinary case; more
@@ -256,6 +289,11 @@ contains
          ! is the only such case in view.
          do i = 1, ctx%n_func
             select case (ctx%family(i))
+            case (XC_FAMILY_MGGA, XC_FAMILY_HYB_MGGA)
+               call xc_f03_mgga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, lapl, tau, &
+                                        exc_i, vrho_i, vsigma_i, vlapl, vtau_i)
+               vsigma = vsigma + ctx%weight(i)*vsigma_i
+               vtau = vtau + ctx%weight(i)*vtau_i
             case (XC_FAMILY_GGA, XC_FAMILY_HYB_GGA)
                call xc_f03_gga_exc_vxc(ctx%func(i), int(nb, 8), rho, sigma, &
                                        exc_i, vrho_i, vsigma_i)
@@ -305,6 +343,22 @@ contains
             ! scaled^T ao gives one half; adding its transpose gives the other.
             call pic_gemm(scaled, ao, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
             call pic_gemm(ao, scaled, v_xc, transa="T", alpha=1.0_dp, beta=1.0_dp)
+         end if
+
+         ! The kinetic-energy-density term. d tau / d D_uv is half the sum over
+         ! directions of grad chi_u grad chi_v, which is already symmetric in u and
+         ! v -- so unlike the sigma term this one needs no transpose added.
+         if (ctx%any_mgga) then
+            do id = 1, 3
+               do mu = 1, mol%nao
+                  do ig = 1, nb
+                     scaled(ig, mu) = 0.5_dp*ctx%grid%weights(g0 + ig - 1) &
+                                      *vtau(ig)*ao_grad(ig, mu, id)
+                  end do
+               end do
+               call pic_gemm(scaled, ao_grad(:, :, id), v_xc, transa="T", &
+                             alpha=1.0_dp, beta=1.0_dp)
+            end do
          end if
          deallocate (scaled)
       end do

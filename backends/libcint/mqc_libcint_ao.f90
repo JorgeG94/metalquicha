@@ -232,7 +232,7 @@ contains
       !$omp end parallel
    end subroutine eval_ao_block
 
-   subroutine eval_rho(ao, density, rho, ao_grad, rho_grad)
+   subroutine eval_rho(ao, density, rho, ao_grad, rho_grad, tau)
       !! The electron density at every point, from the density matrix
       !!
       !!     rho(r) = sum_uv D_uv chi_u(r) chi_v(r)
@@ -261,7 +261,17 @@ contains
          !! the term that a GGA gets wrong by a few millihartree while converging
          !! perfectly.
 
-      real(dp), allocatable :: work(:, :)
+      real(dp), allocatable, intent(out), optional :: tau(:)
+         !! The kinetic energy density, for meta-GGA. Needs `ao_grad`.
+         !!
+         !!     tau(r) = 1/2 sum_d sum_uv D_uv d_d chi_u d_d chi_v
+         !!
+         !! The half is libxc's convention and PySCF's, checked against
+         !! `eval_rho(..., xctype='MGGA')` rather than assumed -- the same quantity
+         !! is defined without it elsewhere in the literature, and a factor of two
+         !! in tau converges to a wrong energy like everything else here.
+
+      real(dp), allocatable :: work(:, :), gwork(:, :)
       integer :: n_points, n_ao, ig, mu, id
 
       n_points = size(ao, 1)
@@ -279,6 +289,29 @@ contains
          end do
       end do
       !$omp end parallel do
+
+      if (present(tau)) then
+         allocate (tau(n_points))
+         tau = 0.0_dp
+         if (.not. present(ao_grad)) then
+            tau = huge(1.0_dp)
+         else
+            allocate (gwork(n_points, n_ao))
+            do id = 1, 3
+               call pic_gemm(ao_grad(:, :, id), density, gwork)
+               !$omp parallel do default(none) &
+               !$omp    shared(tau, gwork, ao_grad, n_points, n_ao, id) &
+               !$omp    private(ig, mu) schedule(static)
+               do ig = 1, n_points
+                  do mu = 1, n_ao
+                     tau(ig) = tau(ig) + 0.5_dp*gwork(ig, mu)*ao_grad(ig, mu, id)
+                  end do
+               end do
+               !$omp end parallel do
+            end do
+            deallocate (gwork)
+         end if
+      end if
 
       if (present(rho_grad)) then
          allocate (rho_grad(n_points, 3))
