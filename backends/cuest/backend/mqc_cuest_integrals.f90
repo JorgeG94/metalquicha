@@ -1136,7 +1136,7 @@ contains
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: params, results
       integer(c_int) :: status
-      integer(c_int64_t) :: max_iter, iterations_taken, converged_flag
+      integer(c_int64_t) :: max_iter, iterations_taken
       real(dp) :: residual
 
       pcm_energy = 0.0_dp
@@ -1200,12 +1200,18 @@ contains
                                  "query PCM iteration count", error)
          if (.not. error%has_error()) this%pcm_iterations = int(iterations_taken)
       end if
+      ! Whether it solved, derived from the residual rather than read from
+      ! `CUEST_PCMRESULT_CONVERGED`.
+      !
+      ! That attribute is not eight bytes wide -- querying it as an int64 returns
+      ! CUEST_STATUS_INVALID_SIZE, while the residual and the iteration count
+      ! read back fine as f64 and i64 -- and nothing in the bindings gives its
+      ! type, so reading it means guessing a width. The residual against the
+      ! threshold we asked for is the same statement without the guess: it is
+      ! what "converged" means for an iterative solve, and it is a number this
+      ! call is already known to return.
       if (.not. error%has_error()) then
-         call cuest_status_check(cuest_results_query_i64(CUEST_PCM_RESULTS, results, &
-                                                         CUEST_PCMRESULT_CONVERGED, &
-                                                         converged_flag), &
-                                 "query PCM convergence flag", error)
-         if (.not. error%has_error()) this%pcm_solved = (converged_flag /= 0_c_int64_t)
+         this%pcm_solved = (this%pcm_residual <= this%pcm_tolerance)
       end if
 
       ! This iteration's charges become the next one's starting point.

@@ -451,6 +451,14 @@ contains
          end if
          write (*, "(A,I0,A,I0,A,I0)") "    n_ao = ", n_ao, "   n_mo = ", n_mo, &
             "   n_occ = ", n_occ
+         ! The cavity, when there is one. Worth printing rather than inferring:
+         ! how many surface points survived the switching function is the first
+         ! thing to look at if a solvation energy comes out wrong, and it is not
+         ! recoverable from the total.
+         if (system%has_pcm) then
+            write (*, "(A,I0,A,I0)") "    continuum: ", system%n_pcm_points, &
+               " surface points, active ", system%n_pcm_active
+         end if
          write (*, "(A)") "    iter            energy (Ha)          dE        DIIS error"
       end if
 
@@ -612,6 +620,11 @@ contains
       result%pcm_energy = pcm_energy
       result%pcm_solved = system%pcm_solved
       result%pcm_points = int(system%n_pcm_points)
+      if (verbose .and. system%has_pcm) then
+         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, &
+            "  residual ", system%pcm_residual
+      end if
       ! A continuum that never solved makes the total wrong by however far
       ! the surface charges were off, and the SCF above would still report
       ! itself converged -- its own two criteria know nothing about the
@@ -1017,6 +1030,11 @@ contains
       result%pcm_energy = pcm_energy
       result%pcm_solved = system%pcm_solved
       result%pcm_points = int(system%n_pcm_points)
+      if (verbose .and. system%has_pcm) then
+         write (*, "(A,F18.10,A,I0,A,ES9.2)") "    continuum: E_diel = ", pcm_energy, &
+            "  charge-solve iterations ", system%pcm_iterations, &
+            "  residual ", system%pcm_residual
+      end if
       ! A continuum that never solved makes the total wrong by however far
       ! the surface charges were off, and the SCF above would still report
       ! itself converged -- its own two criteria know nothing about the
