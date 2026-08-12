@@ -121,7 +121,7 @@ contains
       lower = trim(adjustl(name))
       do i = 1, len(lower)
          if (lower(i:i) >= "A" .and. lower(i:i) <= "Z") then
-           lower(i:i) = achar(iachar(lower(i:i)) + 32)
+            lower(i:i) = achar(iachar(lower(i:i)) + 32)
          end if
       end do
 
@@ -164,6 +164,20 @@ contains
          spec%n_components = 2
          spec%component(1) = xc_component_t("gga_x_mpw91", 1.0_dp - spec%exx_fraction)
          spec%component(2) = xc_component_t("gga_c_lyp", 1.0_dp - spec%pt2_fraction)
+
+         ! ---- compositions libxc has the parts for but not the name ----------
+         !
+         ! SVWN is the textbook local functional -- Slater exchange with VWN
+         ! correlation -- and libxc carries both pieces without carrying that
+         ! name for the pair. Listed here rather than made a special case in the
+         ! evaluator, because "a name libxc lacks, built from parts it has" is
+         ! exactly what this table is for; double hybrids are only the hardest
+         ! instance of it.
+      case ("svwn", "lda", "lsda")
+         spec%from_libxc = .false.
+         spec%n_components = 2
+         spec%component(1) = xc_component_t("lda_x", 1.0_dp)
+         spec%component(2) = xc_component_t("lda_c_vwn", 1.0_dp)
 
          ! ---- everything else is libxc's ------------------------------------
       case default

@@ -30,6 +30,7 @@ contains
                   new_unittest("double_hybrid_weights_are_complements", test_complements), &
                   new_unittest("plain_functionals_pass_through_to_libxc", test_passthrough), &
                   new_unittest("published_fractions_are_what_we_think", test_published), &
+                  new_unittest("mpw2plyp_matches_its_paper", test_mpw2plyp), &
                   new_unittest("an_empty_name_is_refused", test_empty) &
                   ]
    end subroutine collect_mqc_xc_spec_tests
@@ -109,7 +110,13 @@ contains
       type(xc_spec_t) :: spec
       type(error_t) :: err
 
-      ! Grimme, JCP 124, 034108 (2006)
+      ! Cross-checked against an independent implementation as well as the paper:
+      ! pyscf-forge's `pyscf.dh.DFDH` reports cx and c_os/c_ss for each of these,
+      ! and all three rows agree exactly with the values below. That matters more
+      ! than the citation does -- a transcription error survives a citation and does
+      ! not survive another code reporting the same numbers.
+      !
+      ! Grimme, JCP 124, 034108 (2006); DFDH cx=0.53, c_os=c_ss=0.27
       call xc_spec_from_name("b2plyp", spec, err)
       call check(error, abs(spec%exx_fraction - 0.53_dp) < 1.0e-12_dp, "B2PLYP a_x is 0.53")
       if (allocated(error)) return
@@ -120,12 +127,27 @@ contains
       call check(error, spec%component(2)%name == "gga_c_lyp", "B2PLYP correlation is LYP")
       if (allocated(error)) return
 
-      ! Karton et al., JPCA 112, 12868 (2008)
+      ! Karton et al., JPCA 112, 12868 (2008); DFDH cx=0.65, c_os=c_ss=0.36
       call xc_spec_from_name("b2gp-plyp", spec, err)
       call check(error, abs(spec%exx_fraction - 0.65_dp) < 1.0e-12_dp, "B2GP-PLYP a_x is 0.65")
       if (allocated(error)) return
       call check(error, abs(spec%pt2_fraction - 0.36_dp) < 1.0e-12_dp, "B2GP-PLYP a_c is 0.36")
    end subroutine test_published
+
+   subroutine test_mpw2plyp(error)
+      !! mPW2-PLYP, the third row, against DFDH's reported composition
+      type(error_type), allocatable, intent(out) :: error
+      type(xc_spec_t) :: spec
+      type(error_t) :: err
+
+      ! Schwabe and Grimme, PCCP 8, 4398 (2006); DFDH cx=0.55, c_os=c_ss=0.25
+      call xc_spec_from_name("mpw2plyp", spec, err)
+      call check(error, abs(spec%exx_fraction - 0.55_dp) < 1.0e-12_dp, "mPW2-PLYP a_x is 0.55")
+      if (allocated(error)) return
+      call check(error, abs(spec%pt2_fraction - 0.25_dp) < 1.0e-12_dp, "mPW2-PLYP a_c is 0.25")
+      if (allocated(error)) return
+      call check(error, spec%component(1)%name == "gga_x_mpw91", "mPW2-PLYP exchange is mPW91")
+   end subroutine test_mpw2plyp
 
    subroutine test_empty(error)
       !! No functional named is an error, not a default

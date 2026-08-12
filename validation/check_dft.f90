@@ -25,6 +25,7 @@ program check_dft
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_ao, only: eval_ao_block, eval_rho
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
    use mqc_error, only: error_t
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
@@ -36,6 +37,8 @@ program check_dft
    integer :: failures
 
    failures = 0
+   call scf_case("cc-pvdz", "lda_x", 3)
+   call scf_case("cc-pvdz", "svwn", 3)
    call one_case("cc-pvdz", 3)
    call one_case("cc-pvdz", 5)
    call one_case("sto-3g", 4)
@@ -49,6 +52,65 @@ program check_dft
    end if
 
 contains
+
+   subroutine scf_case(basis, functional, level)
+      !! A self-consistent Kohn-Sham energy, for the Python side to compare
+      !!
+      !! The point of milestone 2: the potential reaches the Fock matrix and the
+      !! SCF converges on it. Nothing here is new machinery -- it is
+      !! `run_libcint_rhf` with one extra argument, which is the whole design.
+      character(len=*), intent(in) :: basis, functional
+      integer, intent(in) :: level
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(xc_context_t) :: xc
+      type(error_t) :: err
+      real(dp) :: c(3, 3)
+      integer :: unit
+      character(len=8) :: lvl
+
+      c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
+                   0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
+                   0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
+
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+      if (err%has_error()) then
+         write (*, "(A,A)") "[dft] basis failed: ", err%get_message()
+         failures = failures + 1
+         return
+      end if
+
+      call xc_context_create(mol, functional, xc, err, level=level)
+      if (err%has_error()) then
+         write (*, "(A,A,A,A)") "[dft] ", functional, " context failed: ", err%get_message()
+         failures = failures + 1
+         call mol%destroy()
+         return
+      end if
+
+      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                           in_core=.true., xc=xc)
+      if (err%has_error() .or. .not. scf%converged) then
+         write (*, "(A,A,A,A)") "[dft] ", functional, " SCF failed: ", err%get_message()
+         failures = failures + 1
+         call xc%destroy()
+         call mol%destroy()
+         return
+      end if
+
+      write (lvl, "(I0)") level
+      open (newunit=unit, file="/tmp/mqc_ks_"//functional//"_"//basis//"_L"//trim(lvl)// &
+            ".txt", status="replace", action="write")
+      write (unit, "(es25.16e3)") scf%energy
+      write (unit, "(I0)") scf%iterations
+      close (unit)
+
+      write (*, "(A,A,A,A,A,I0,A,F18.10,A,I0)") "  KS ", functional, "/", basis, &
+         " level ", level, ": E = ", scf%energy, "  iterations ", scf%iterations
+      call xc%destroy()
+      call mol%destroy()
+   end subroutine scf_case
 
    subroutine one_case(basis, level)
       character(len=*), intent(in) :: basis

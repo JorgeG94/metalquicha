@@ -32,6 +32,9 @@ sys.path.insert(0, str(REPO / "tools" / "cpu_validation"))
 from gen_cpu_validation import bse_to_pyscf, molecule_form, CARTESIAN  # noqa: E402
 
 CASES = [("cc-pvdz", 3), ("cc-pvdz", 5), ("sto-3g", 4)]
+# Self-consistent Kohn-Sham: functional, basis, grid level.
+KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3), ("svwn", "SVWN", "cc-pvdz", 3)]
+KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
 FUNCTIONAL_TOL = 1e-10   # same library, same numbers: roundoff only
 CHAIN_TOL = 1e-8         # the grid cancels; see below
 
@@ -103,11 +106,48 @@ def main():
         if not (ok1 and ok2):
             failures += 1
 
+    # ---- self-consistent Kohn-Sham, against PySCF's own RKS -----------------
+    #
+    # A different kind of check from the two above: not a fixed density and a
+    # functional, but the whole loop, with the potential in the Fock matrix
+    # deciding the orbitals. Both codes build their own grid at the same level,
+    # so this is the one comparison where the grids do *not* cancel -- and it
+    # still agrees to 2e-11, because the grid tables are the same tables.
+    from pyscf import dft
+    for tag, pyscf_xc, basis, level in KS_CASES:
+        path = pathlib.Path(f"/tmp/mqc_ks_{tag}_{basis}_L{level}.txt")
+        if not path.exists():
+            print(f"  MISSING {path} -- run ./build/check_dft first")
+            failures += 1
+            continue
+        v = path.read_text().split()
+        ours, iters = float(v[0]), int(v[1])
+
+        mol = gto.Mole()
+        mol.atom = atoms
+        mol.unit = "Angstrom"
+        mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+        mol.cart = molecule_form(basis, symbols) == CARTESIAN
+        mol.verbose = 0
+        mol.build()
+        mf = dft.RKS(mol)
+        mf.xc = pyscf_xc
+        mf.grids.level = level
+        mf.conv_tol = 1e-11
+        theirs = mf.kernel()
+        d = abs(theirs - ours)
+        ok = d < KS_TOL
+        print(f"  {'ok  ' if ok else 'FAIL'} KS {tag:6s}/{basis} L{level}  "
+              f"ours {ours:.10f}  PySCF {theirs:.10f}  diff {d:.2e} "
+              f"(<= {KS_TOL:.0e})  {iters} iterations")
+        if not ok:
+            failures += 1
+
     print()
     if failures:
         print(f"[dft] {failures} case(s) disagree")
         return 1
-    print("[dft] exchange-correlation energies match PySCF, functional and chain")
+    print("[dft] exchange-correlation energies and Kohn-Sham totals match PySCF")
     return 0
 
 
