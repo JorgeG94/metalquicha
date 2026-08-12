@@ -165,6 +165,14 @@ def parse_efp(text: str) -> dict:
 
     for line in lines[i:]:
         if not line.strip():
+            # Blank lines are noise everywhere except inside PROJECTION BASIS
+            # SET, where GAMESS's reader uses one as the *mandatory* delimiter
+            # between atoms -- including before the STOP. Dropping them produces
+            # a file GAMESS aborts on, and a parse/render round-trip cannot
+            # notice because both sides drop them symmetrically. Kept for the
+            # raw sections, which is where they can matter.
+            if current in RAW_SECTIONS:
+                body.append(line.rstrip())
             continue
         stripped = line.strip()
         if stripped.upper() == "STOP":
@@ -363,6 +371,27 @@ def main(argv: list[str]) -> int:
         again = parse_efp(render_efp(doc))
         problems = _compare(doc, again)
 
+        # Blank lines preserved? They are load-bearing in PROJECTION BASIS
+        # SET, and invisible to both the structural comparison and the
+        # unfiled-line count, so they need their own check.
+        def _blanks_in_group(body: str) -> int:
+            """Blank lines up to and including $END.
+
+            Counted only inside the group: a file may or may not end with a
+            newline, and may carry a blank line after $END, and neither affects
+            whether GAMESS can read it. Inside the group they are load-bearing.
+            """
+            count = 0
+            for line in body.split("\n"):
+                if not line.strip():
+                    count += 1
+                elif line.strip().upper() == "$END":
+                    break
+            return count
+
+        blank_in = _blanks_in_group(text)
+        blank_out = _blanks_in_group(render_efp(doc))
+
         # Did the parser file everything somewhere? Counted only for lines
         # actually assigned to a section, which is the point: an unrecognised
         # header leaves its records belonging to nothing, and the round-trip
@@ -374,6 +403,9 @@ def main(argv: list[str]) -> int:
         for point in doc["sections"].get("DYNAMIC POLARIZABLE POINTS", []):
             if "frequency" in point:
                 frequencies.add(point["frequency"])
+
+        if blank_in != blank_out:
+            problems.append(f"blank lines {blank_in} in, {blank_out} out")
 
         status = "ok  "
         if problems or missed:
