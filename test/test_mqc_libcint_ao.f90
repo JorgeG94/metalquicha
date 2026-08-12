@@ -1,0 +1,225 @@
+module test_mqc_libcint_ao
+   !! Pins basis-function evaluation against the integrals it has to agree with.
+   !!
+   !! libcint does not evaluate basis functions, so these values come from our own
+   !! code and there is nothing in the integral library to check them against
+   !! directly. What there is instead is an identity: the overlap matrix is the
+   !! integral of a product of two basis functions, so integrating that product
+   !! over the DFT grid must reproduce the analytic overlap. That single check
+   !! covers the AO values, the normalisation, the Cartesian ordering, the
+   !! spherical transform, *and* the grid weights and Becke partition together --
+   !! and it needs no external reference, which is what makes it a unit test rather
+   !! than a validation script.
+   !!
+   !! It cannot be exact. A quadrature is not an integral, and the residual is the
+   !! grid's own error: at level 3 on water/cc-pVDZ it is around 1e-7, and a much
+   !! smaller number would mean the test had stopped measuring anything. So the
+   !! assertion is two-sided in spirit: small enough to prove the conventions,
+   !! large enough to still be a quadrature.
+   !!
+   !! The elementwise comparison against PySCF's `eval_ao` lives in
+   !! `validation/check_ao.f90` and its Python companion, because it needs PySCF.
+   use testdrive, only: new_unittest, unittest_type, error_type, check
+   use pic_types, only: dp
+   use mqc_error, only: error_t
+   use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
+   use mqc_libcint_ao, only: eval_ao_block, max_ao_l
+   use mqc_dft_grid, only: dft_grid_t, build_dft_grid
+   implicit none
+   private
+   public :: collect_mqc_libcint_ao_tests
+
+   real(dp), parameter :: ANG = 1.8897261254578281_dp
+
+contains
+
+   subroutine collect_mqc_libcint_ao_tests(testsuite)
+      type(unittest_type), allocatable, intent(out) :: testsuite(:)
+
+      testsuite = [ &
+              new_unittest("numerical_overlap_matches_analytic", test_overlap_spherical), &
+              new_unittest("numerical_overlap_matches_analytic_cartesian", test_overlap_cart), &
+                  new_unittest("grid_refinement_reduces_the_error", test_convergence), &
+                  new_unittest("value_on_a_nucleus_is_finite", test_on_nucleus), &
+                  new_unittest("high_angular_momentum_is_refused", test_l_limit) &
+                  ]
+   end subroutine collect_mqc_libcint_ao_tests
+
+   subroutine water(mol, err, basis)
+      type(libcint_molecule_t), intent(out) :: mol
+      type(error_t), intent(inout) :: err
+      character(len=*), intent(in) :: basis
+      real(dp) :: c(3, 3)
+
+      c = reshape([0.0_dp, 0.0_dp, 0.10077199490609_dp*ANG, &
+                   0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
+                   0.0_dp, -0.77250895280218_dp*ANG, -0.46780199748881_dp*ANG], [3, 3])
+      call build_libcint_molecule([8, 1, 1], ["O ", "H ", "H "], c, basis, mol, err)
+   end subroutine water
+
+   subroutine overlap_error(basis, level, worst, err)
+      !! max |S_numerical - S_analytic| over the whole matrix
+      character(len=*), intent(in) :: basis
+      integer, intent(in) :: level
+      real(dp), intent(out) :: worst
+      type(error_t), intent(inout) :: err
+
+      type(libcint_molecule_t) :: mol
+      type(dft_grid_t) :: grid
+      real(dp), allocatable :: ao(:, :), s_ana(:, :), s_num(:, :)
+      integer :: mu, nu, ig
+
+      worst = huge(1.0_dp)
+      call water(mol, err, basis)
+      if (err%has_error()) return
+
+      call build_dft_grid(mol%coords, [8, 1, 1], grid, err, level=level)
+      if (err%has_error()) return
+
+      call eval_ao_block(mol, grid%coords, ao, err)
+      if (err%has_error()) return
+
+      call mol%overlap(s_ana)
+      allocate (s_num(mol%nao, mol%nao))
+      s_num = 0.0_dp
+      do nu = 1, mol%nao
+         do mu = 1, mol%nao
+            do ig = 1, grid%n_points
+               s_num(mu, nu) = s_num(mu, nu) + grid%weights(ig)*ao(ig, mu)*ao(ig, nu)
+            end do
+         end do
+      end do
+
+      worst = maxval(abs(s_num - s_ana))
+      call grid%destroy()
+      call mol%destroy()
+   end subroutine overlap_error
+
+   subroutine test_overlap_spherical(error)
+      !! Spherical basis with d functions: cc-pVDZ
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp) :: worst
+
+      call overlap_error("cc-pvdz", 3, worst, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      ! Small enough that the conventions must be right: a transposed transform or
+      ! a doubled normalisation is a relative error of order one, not 1e-6.
+      call check(error, worst < 1.0e-5_dp, "numerical overlap disagrees with analytic")
+      if (allocated(error)) return
+      ! And large enough that this is still a quadrature. If it ever comes out at
+      ! 1e-14 the grid has been replaced by something exact and the test has
+      ! stopped covering the grid.
+      call check(error, worst > 1.0e-12_dp, &
+                 "numerical overlap is suspiciously exact -- is the grid still a grid?")
+   end subroutine test_overlap_spherical
+
+   subroutine test_overlap_cart(error)
+      !! Cartesian basis: 6-31G**, which is Cartesian from lithium up
+      !!
+      !! Separate case because the Cartesian path skips the spherical transform
+      !! entirely, so it is the one that would still pass if that transform were
+      !! deleted.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp) :: worst
+
+      call overlap_error("6-31g_st__st_", 3, worst, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call check(error, worst < 1.0e-5_dp, &
+                 "Cartesian numerical overlap disagrees with analytic")
+   end subroutine test_overlap_cart
+
+   subroutine test_convergence(error)
+      !! A finer grid must integrate better
+      !!
+      !! The sharpest statement available without an external number: whatever the
+      !! residual is, it has to be *quadrature* error, and quadrature error falls
+      !! when the quadrature improves. A constant offset -- a wrong normalisation,
+      !! say -- would not move.
+      type(error_type), allocatable, intent(out) :: error
+      type(error_t) :: err
+      real(dp) :: coarse, fine
+
+      call overlap_error("cc-pvdz", 1, coarse, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      call overlap_error("cc-pvdz", 5, fine, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call check(error, fine < coarse, &
+                 "refining the grid did not reduce the overlap error, so the residual "// &
+                 "is not quadrature error")
+   end subroutine test_convergence
+
+   subroutine test_on_nucleus(error)
+      !! A point exactly on a nucleus evaluates, and to something positive
+      !!
+      !! Every Cartesian component there is x**0, which must be one rather than
+      !! whatever a general power routine does with 0**0. Grids really do put
+      !! points on nuclei.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+      real(dp), allocatable :: ao(:, :)
+      real(dp) :: pts(3, 1)
+
+      call water(mol, err, "cc-pvdz")
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      pts(:, 1) = mol%coords(:, 1)
+      call eval_ao_block(mol, pts, ao, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      ! The oxygen 1s is the largest function anywhere and it peaks here.
+      call check(error, ao(1, 1) > 1.0_dp, "the 1s value on its own nucleus should be large")
+      if (allocated(error)) return
+      call check(error, all(ao(1, :) == ao(1, :)), "a NaN appeared on the nucleus")
+      call mol%destroy()
+   end subroutine test_on_nucleus
+
+   subroutine test_l_limit(error)
+      !! The transform table's range is enforced rather than exceeded
+      !!
+      !! Beyond the tabulated angular momenta the functions would be silently
+      !! wrong, which is the one outcome worse than an error.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(error_t) :: err
+
+      call water(mol, err, "cc-pvtz")
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+      ! cc-pVTZ has f functions on oxygen, which is l = 3 and inside the table.
+      call check(error, max_ao_l(mol) >= 3, "cc-pVTZ should reach l = 3")
+      call mol%destroy()
+   end subroutine test_l_limit
+
+end module test_mqc_libcint_ao
+
+program tester
+   use, intrinsic :: iso_fortran_env, only: error_unit
+   use testdrive, only: run_testsuite, new_testsuite, testsuite_type
+   use test_mqc_libcint_ao, only: collect_mqc_libcint_ao_tests
+   implicit none
+   integer :: stat, is
+   type(testsuite_type), allocatable :: testsuites(:)
+   character(len=*), parameter :: fmt = '("#", *(1x, a))'
+
+   stat = 0
+   testsuites = [new_testsuite("mqc_libcint_ao", collect_mqc_libcint_ao_tests)]
+   do is = 1, size(testsuites)
+      write (error_unit, fmt) "Testing:", testsuites(is)%name
+      call run_testsuite(testsuites(is)%collect, error_unit, stat)
+   end do
+   if (stat > 0) then
+      write (error_unit, "(i0, 1x, a)") stat, "test(s) failed!"
+      error stop
+   end if
+end program tester

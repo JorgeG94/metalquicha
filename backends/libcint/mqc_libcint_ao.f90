@@ -1,0 +1,187 @@
+!! Basis function values on a grid, for DFT
+module mqc_libcint_ao
+   !! Evaluates every basis function of a molecule at a set of points.
+   !!
+   !! **libcint does not do this.** It computes integrals; there is no `GTOval` in
+   !! it, and the function of that name belongs to PySCF's own `libcgto`. So this
+   !! is the one piece of the DFT path that had to be written rather than called,
+   !! and the whole difficulty is matching libcint's conventions exactly -- a basis
+   !! function evaluated under a different-but-valid convention is a different
+   !! basis, and the resulting SCF converges tidily onto a wrong number.
+   !!
+   !! Three conventions have to line up, and each is a way to be wrong quietly:
+   !!
+   !!   * **Normalisation is already in `env`.** `molecule_build` folds
+   !!     `libcint_gto_norm` into every contraction coefficient, because libcint
+   !!     expects that and does not apply it itself. Nothing here may normalise
+   !!     again; doing so gives an overlap diagonal that is not one.
+   !!   * **Cartesian component order** is libcint's: for l, the components run
+   !!     `x^(l-i) y^(i-j) z^j` over `i = 0..l`, `j = 0..i`, which for d is
+   !!     xx, xy, xz, yy, yz, zz.
+   !!   * **The spherical transform must be libcint's**, coefficients and all. They
+   !!     are in `mqc_libcint_ao_data`, transcribed from its own table, with the
+   !!     s and p normalisation it keeps outside that table applied here.
+   !!
+   !! Which convention a molecule is in comes from `mol%cartesian`, the same flag
+   !! `shell_dim` routes on, so the AO values cannot disagree with the AO count.
+   !!
+   !! Points are taken in blocks. A medium grid on a modest molecule is tens of
+   !! thousands of points, and `n_points` by `n_ao` held whole is hundreds of
+   !! megabytes at a real basis size -- the shape of mistake the coupled-cluster
+   !! work already paid for once.
+   use pic_types, only: dp
+   use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
+   use mqc_libcint_ao_data, only: C2S_LMAX, c2s_block, common_fac_sp
+   use libcint_fortran, only: LIBCINT_ATOM_OF, LIBCINT_ANG_OF, LIBCINT_NPRIM_OF, &
+                              LIBCINT_NCTR_OF, LIBCINT_PTR_EXP, LIBCINT_PTR_COEFF
+   implicit none
+   private
+
+   public :: eval_ao_block
+   public :: max_ao_l
+
+   !> Points per pass when a caller asks for a whole grid at once.
+   integer, parameter, public :: AO_POINT_BLOCK = 4096
+
+contains
+
+   pure function max_ao_l(mol) result(l_max)
+      !! Highest angular momentum in this molecule's basis
+      type(libcint_molecule_t), intent(in) :: mol
+      integer :: l_max
+
+      integer :: ish
+
+      l_max = 0
+      do ish = 1, mol%nbas
+         l_max = max(l_max, mol%bas(LIBCINT_ANG_OF, ish))
+      end do
+   end function max_ao_l
+
+   subroutine eval_ao_block(mol, coords, ao, error)
+      !! chi_mu(r) for every basis function at every supplied point
+      !!
+      !! `ao` comes back as (n_points, n_ao), which is the orientation the density
+      !! assembly wants: rho at a point is a row contracted against the density
+      !! matrix, so points vary slowest and a gemm over them reads contiguously.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: coords(:, :)        !! (3, n_points), Bohr
+      real(dp), allocatable, intent(out) :: ao(:, :)
+      type(error_t), intent(inout) :: error
+
+      integer :: n_points, ish, l, nprim, nctr, ic, ip, ig, off_ao
+      integer :: n_cart, n_sph, n_here, comp, i, j, iatom
+      integer :: exp_ptr, coef_ptr
+      real(dp) :: dx, dy, dz, r2, radial, fac
+      real(dp), allocatable :: cart(:), sph(:), trans(:, :)
+
+      n_points = size(coords, 2)
+
+      if (max_ao_l(mol) > C2S_LMAX) then
+         call error%set(ERROR_VALIDATION, "AO evaluation: this basis has an angular "// &
+                        "momentum above the transform table's range. Extend "// &
+                        "mqc_libcint_ao_data rather than letting it through -- the "// &
+                        "functions would otherwise be silently wrong.")
+         return
+      end if
+
+      allocate (ao(n_points, mol%nao))
+      ao = 0.0_dp
+
+      !$omp parallel default(none) shared(mol, coords, ao, n_points) &
+      !$omp    private(ish, l, nprim, nctr, ic, ip, ig, off_ao, n_cart, n_sph, &
+      !$omp            n_here, comp, i, j, iatom, exp_ptr, coef_ptr, &
+      !$omp            dx, dy, dz, r2, radial, fac, cart, sph, trans)
+      allocate (cart((C2S_LMAX + 1)*(C2S_LMAX + 2)/2), sph(2*C2S_LMAX + 1))
+      allocate (trans(2*C2S_LMAX + 1, (C2S_LMAX + 1)*(C2S_LMAX + 2)/2))
+
+      do ish = 1, mol%nbas
+         l = mol%bas(LIBCINT_ANG_OF, ish)
+         nprim = mol%bas(LIBCINT_NPRIM_OF, ish)
+         nctr = mol%bas(LIBCINT_NCTR_OF, ish)
+         exp_ptr = mol%bas(LIBCINT_PTR_EXP, ish)
+         coef_ptr = mol%bas(LIBCINT_PTR_COEFF, ish)
+         iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+
+         n_cart = (l + 1)*(l + 2)/2
+         n_sph = 2*l + 1
+         n_here = shell_dim(mol%cartesian, ish - 1, mol%bas)/nctr
+
+         ! The factor libcint keeps outside its transform table, and it applies to
+         ! *both* angular conventions -- `cint1e.c` multiplies every integral by
+         ! `CINTcommon_fac_sp` of each shell's l without consulting cart-vs-sph.
+         ! Gating it on the spherical path is wrong and shows up only in a
+         ! Cartesian basis, where s and p come out too large by 1/0.2820948 and
+         ! 1/0.4886025.
+         fac = common_fac_sp(l)
+         if (.not. mol%cartesian) call c2s_block(l, trans)
+
+         !$omp do schedule(static)
+         do ig = 1, n_points
+            dx = coords(1, ig) - mol%coords(1, iatom)
+            dy = coords(2, ig) - mol%coords(2, iatom)
+            dz = coords(3, ig) - mol%coords(3, iatom)
+            r2 = dx*dx + dy*dy + dz*dz
+
+            ! Angular part, in libcint's Cartesian order.
+            comp = 0
+            do i = 0, l
+               do j = 0, i
+                  comp = comp + 1
+                  cart(comp) = pow(dx, l - i)*pow(dy, i - j)*pow(dz, j)
+               end do
+            end do
+
+            if (.not. mol%cartesian) then
+               do comp = 1, n_sph
+                  sph(comp) = fac*sum(trans(comp, 1:n_cart)*cart(1:n_cart))
+               end do
+            end if
+
+            ! One contraction column at a time; libcint lays a shell's functions
+            ! out with the contraction index outermost, and `molecule_build`
+            ! preserved that, so the AO offset advances by n_here per column.
+            do ic = 1, nctr
+               radial = 0.0_dp
+               do ip = 1, nprim
+                  radial = radial + mol%env(coef_ptr + (ic - 1)*nprim + ip) &
+                           *exp(-mol%env(exp_ptr + ip)*r2)
+               end do
+               off_ao = mol%shell_offset(ish) + (ic - 1)*n_here
+               if (mol%cartesian) then
+                  do comp = 1, n_cart
+                     ao(ig, off_ao + comp) = fac*radial*cart(comp)
+                  end do
+               else
+                  do comp = 1, n_sph
+                     ao(ig, off_ao + comp) = radial*sph(comp)
+                  end do
+               end if
+            end do
+         end do
+         !$omp end do
+      end do
+
+      deallocate (cart, sph, trans)
+      !$omp end parallel
+   end subroutine eval_ao_block
+
+   pure function pow(x, n) result(v)
+      !! x**n for small non-negative n, without the intrinsic's generality
+      !!
+      !! `x**0` must be one even when x is zero, which is exactly what happens at
+      !! a grid point sitting on a nucleus -- and there are such points.
+      real(dp), intent(in) :: x
+      integer, intent(in) :: n
+      real(dp) :: v
+
+      integer :: k
+
+      v = 1.0_dp
+      do k = 1, n
+         v = v*x
+      end do
+   end function pow
+
+end module mqc_libcint_ao
