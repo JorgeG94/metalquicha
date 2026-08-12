@@ -459,6 +459,14 @@ if(MQC_ENABLE_LIBCINT)
   add_executable(check_ao ${PROJECT_SOURCE_DIR}/validation/check_ao.f90)
   target_include_directories(check_ao PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_ao PRIVATE ${main_lib} cint_fortran cint)
+
+  # Multipole integrals against PySCF's, and the first dipole the CPU path can
+  # produce. Milestone 1 of the EFP work.
+  add_executable(check_multipole
+                 ${PROJECT_SOURCE_DIR}/validation/check_multipole.f90)
+  target_include_directories(check_multipole
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_multipole PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run
