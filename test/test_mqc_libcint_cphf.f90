@@ -22,6 +22,8 @@ module test_mqc_libcint_cphf
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
    use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    use mqc_libcint_multipole, only: multipole_matrices
+   use mqc_libcint_direct, only: build_fock_direct, build_fock_direct_many, &
+                                 schwarz_bounds, direct_stats_t
    use mqc_libcint_cphf, only: cphf_solve, static_polarizability, distributed_polarizability
    use mqc_error, only: error_t
    implicit none
@@ -60,7 +62,9 @@ contains
                                test_distributed_sum_rule), &
                   new_unittest("distributed_tensors_are_individually_asymmetric", &
                                test_distributed_asymmetry), &
-                  new_unittest("direct_and_stored_integrals_agree", test_direct) &
+                  new_unittest("direct_and_stored_integrals_agree", test_direct), &
+                  new_unittest("a_batch_of_densities_equals_one_at_a_time", &
+                               test_density_batch) &
                   ]
    end subroutine collect_mqc_libcint_cphf_tests
 
@@ -610,6 +614,88 @@ contains
          end do
       end do
    end subroutine test_direct
+
+   subroutine test_density_batch(error)
+      !! Contracting many densities in one integral pass matches doing them singly
+      !!
+      !! The amortization the frequency-dependent equations need: an integral is
+      !! computed once and reused across every density in hand. The risk is that
+      !! batching changes an answer -- through a screening decision that depended on
+      !! the density, or an accumulator indexed with the set offset wrong -- and
+      !! both would be invisible in an SCF, which only ever passes one.
+      !!
+      !! Screening here is a Schwarz bound over the basis and so is density
+      !! independent, which is what makes the two routes comparable at all; this test
+      !! is what would notice if that ever stopped being true.
+      !!
+      !! Agreement is to 1e-12 rather than exact because the threads reduce into the
+      !! accumulator in whatever order they finish, so the sums are differently
+      !! ordered in the two routes -- the same reason the SCF has an OpenMP-order
+      !! sensitivity at the last digits.
+      type(error_type), allocatable, intent(out) :: error
+
+      type(libcint_molecule_t) :: mol
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      type(direct_stats_t) :: stats
+      real(dp), allocatable :: bounds(:, :), zero_h(:, :), dens(:, :, :)
+      real(dp), allocatable :: batched(:, :, :), single(:, :)
+      real(dp) :: worst
+      integer :: n, i, nset
+
+      nset = 4
+      call water(mol, scf, err)
+      if (err%has_error() .or. .not. scf%converged) then
+         call check(error, .false., "the reference SCF failed")
+         return
+      end if
+      n = mol%nao
+      call schwarz_bounds(mol, bounds, err)
+      if (err%has_error()) then
+         call check(error, .false., "Schwarz bounds failed")
+         call mol%destroy()
+         return
+      end if
+
+      allocate (zero_h(n, n), dens(n, n, nset), single(n, n))
+      zero_h = 0.0_dp
+      ! A converged density, then progressively scaled and shifted copies, so the
+      ! sets are genuinely different and none is a multiple of another.
+      do i = 1, nset
+         dens(:, :, i) = scf%density/real(i, dp)
+         dens(1, 1, i) = dens(1, 1, i) + 0.1_dp*real(i, dp)
+         dens(:, :, i) = 0.5_dp*(dens(:, :, i) + transpose(dens(:, :, i)))
+      end do
+
+      call build_fock_direct_many(mol, zero_h, dens, bounds, batched, stats, err)
+      if (err%has_error()) then
+         call check(error, .false., "the batched build failed: "//err%get_message())
+         call mol%destroy()
+         return
+      end if
+
+      worst = 0.0_dp
+      do i = 1, nset
+         call build_fock_direct(mol, zero_h, dens(:, :, i), bounds, single, stats, err)
+         if (err%has_error()) then
+            call check(error, .false., "a single build failed: "//err%get_message())
+            call mol%destroy()
+            return
+         end if
+         worst = max(worst, maxval(abs(single - batched(:, :, i))))
+      end do
+      call mol%destroy()
+
+      call check(error, worst < 1.0e-12_dp, &
+                 "a batch of densities does not reproduce the same densities "// &
+                 "contracted one at a time")
+      if (allocated(error)) return
+
+      ! And the batch must not have quietly collapsed to one set.
+      call check(error, size(batched, 3), nset, "the batch lost a density")
+
+      deallocate (bounds, zero_h, dens, batched, single)
+   end subroutine test_density_batch
 
    subroutine test_refusals(error)
       !! Bad input is refused rather than answered
