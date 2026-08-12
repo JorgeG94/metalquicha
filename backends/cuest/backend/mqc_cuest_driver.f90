@@ -154,13 +154,13 @@ contains
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             n_alpha, functional_id, settings%radial_points, &
                             settings%angular_points, error, n_occ_beta=n_beta, &
-                            n_guess_columns=n_guess_columns)
+                            n_guess_columns=n_guess_columns, pcm=settings%pcm)
       else
          call system%create(context, fragment%element_numbers, fragment%coordinates, &
                             orbital_basis, auxiliary_basis, settings%spherical, &
                             fragment%nelec/2, functional_id, settings%radial_points, &
                             settings%angular_points, error, &
-                            n_guess_columns=n_guess_columns)
+                            n_guess_columns=n_guess_columns, pcm=settings%pcm)
       end if
 
       if (.not. error%has_error()) then

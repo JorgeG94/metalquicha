@@ -29,6 +29,8 @@ module mqc_cuest_integrals
                                                                              c_size_t, c_double, c_loc, c_associated
    use pic_types, only: dp
    use mqc_error, only: error_t, ERROR_VALIDATION
+   use mqc_method_config, only: pcm_config_t
+   use mqc_pcm_radii, only: cavity_radius
    use mqc_cgto, only: molecular_basis_type
    use mqc_cuest_basis, only: cuest_shell_set_t, build_cuest_shells
    use mqc_cuest_grid, only: atom_grid_set_t, build_atom_grids
@@ -36,10 +38,24 @@ module mqc_cuest_integrals
    use mqc_cuest_runtime, only: cuest_status_check, cublas_status_check, &
                                 workspace_alloc, workspace_free, &
                                 copy_to_device, copy_to_host, device_sync, &
-                                device_offset
+                                device_offset, &
+                                device_alloc, device_free
    use cublas, only: cublasDaxpy, cublasDcopy, cublasDdot
    use cuest, only: cuestWorkspace_t, cuestWorkspaceDescriptor_t, &
                     cuestParametersCreate, cuestParametersDestroy, &
+                    cuestPCMIntPlanCreate, cuestPCMIntPlanCreateWorkspaceQuery, &
+                    cuestPCMIntPlanDestroy, &
+                    cuestPCMPotentialCompute, cuestPCMPotentialComputeWorkspaceQuery, &
+                    cuestResultsCreate, cuestResultsDestroy, &
+                    CUEST_PCMINTPLAN, CUEST_PCMINTPLAN_NUM_POINT, &
+                    CUEST_PCMINTPLAN_NUM_ACTIVE_POINT, &
+                    CUEST_PCMINTPLAN_PARAMETERS, &
+                    CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, &
+                    CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_CONVERGENCE_THRESHOLD, &
+                    CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_MAX_ITERATIONS, &
+                    CUEST_PCM_RESULTS, CUEST_PCMRESULT_PCM_DIELECTRIC_ENERGY, &
+                    CUEST_PCMRESULT_CONVERGED_RESIDUAL, &
+                    CUEST_PCMRESULT_NUM_ITERATIONS_TAKEN, CUEST_PCMRESULT_CONVERGED, &
                     cuestAOBasisCreate, cuestAOBasisCreateWorkspaceQuery, cuestAOBasisDestroy, &
                     cuestAOPairListCreate, cuestAOPairListCreateWorkspaceQuery, &
                     cuestAOPairListDestroy, &
@@ -88,7 +104,9 @@ module mqc_cuest_integrals
                     CUEST_XCPOTENTIALRKSCOMPUTE_PARAMETERS, &
                     CUEST_XCINTPLAN, CUEST_XCINTPLAN_EXCHANGE_SCALE, &
                     CUEST_XCINTPLAN_LRC_EXCHANGE_SCALE, CUEST_XCINTPLAN_LRC_OMEGA
-   use cuest_helpers, only: cuest_query_i64, cuest_query_f64, cuest_param_set_f64
+   use cuest_helpers, only: cuest_query_i64, cuest_query_f64, cuest_param_set_f64, &
+                            cuest_param_set_i64, cuest_results_query_f64, &
+                            cuest_results_query_i64
    implicit none
    private
 
@@ -117,9 +135,36 @@ module mqc_cuest_integrals
       type(c_ptr) :: df_plan = c_null_ptr     !! Density-fitted integral plan
       type(c_ptr) :: molecular_grid = c_null_ptr  !! XC quadrature grid (DFT only)
       type(c_ptr) :: xc_plan = c_null_ptr     !! XC integral plan (DFT only)
+      type(c_ptr) :: pcm_plan = c_null_ptr    !! Continuum plan (solvated only)
       type(cuestWorkspace_t) :: ws_basis, ws_aux_basis, ws_pair_list
       type(cuestWorkspace_t) :: ws_oe_plan, ws_df_plan
-      type(cuestWorkspace_t) :: ws_grid, ws_xc_plan
+      type(cuestWorkspace_t) :: ws_grid, ws_xc_plan, ws_pcm_plan
+
+      ! ---- polarizable continuum -------------------------------------------
+      logical :: has_pcm = .false.
+         !! Whether a continuum plan exists, and so whether `d_pcm` holds a
+         !! potential this iteration. Read by `assemble_fock`, which skips the
+         !! term rather than adding whatever the last fragment left behind.
+      type(c_ptr) :: d_pcm = c_null_ptr
+         !! The continuum's contribution to the Fock matrix, (n_ao, n_ao).
+         !! Spin-independent -- the surface charges come from the total density --
+         !! so an unrestricted iteration adds the same matrix to both channels,
+         !! which is why this lives on the system rather than being passed in.
+      type(c_ptr) :: d_q_in = c_null_ptr    !! Surface charges, previous iteration
+      type(c_ptr) :: d_q_out = c_null_ptr   !! Surface charges, this iteration
+         !! Two buffers rather than one because the charge solve is iterative and
+         !! is handed the previous solution as its starting point. Aliasing input
+         !! to output would be a bet on cuEST reading before it writes.
+      integer(c_int64_t) :: n_pcm_points = 0      !! Cavity surface points
+      integer(c_int64_t) :: n_pcm_active = 0      !! Of those, the ones not buried
+      real(dp) :: pcm_tolerance = 1.0e-8_dp
+      integer :: pcm_max_iter = 100
+      real(dp) :: pcm_residual = 0.0_dp           !! Last solve's residual
+      integer :: pcm_iterations = 0               !! Last solve's iteration count
+      logical :: pcm_solved = .true.
+         !! Whether the last charge solve converged. False is not fatal on its own
+         !! -- an early SCF iteration need not solve tightly -- but the driver
+         !! refuses a *converged* SCF whose final continuum did not solve.
 
       ! Dimensions
       integer(c_int64_t) :: n_atoms = 0  !! Atoms in this molecule
@@ -216,6 +261,8 @@ module mqc_cuest_integrals
       procedure :: coulomb_device => system_coulomb_device
       procedure :: exchange_device => system_exchange_device
       procedure :: xc_device => system_xc_device
+      procedure :: pcm_device => system_pcm_device
+      procedure :: build_pcm => build_pcm_plan
       procedure :: xc_uks_device => system_xc_uks_device
       procedure :: assemble_fock => system_assemble_fock
       procedure :: add_into => system_add_into
@@ -234,7 +281,7 @@ contains
 
    subroutine system_create(this, context, atomic_numbers, coordinates, mol_basis, &
                             aux_mol_basis, use_spherical, n_occ, functional_id, &
-                            n_radial, n_angular, error, n_occ_beta, n_guess_columns)
+                            n_radial, n_angular, error, n_occ_beta, n_guess_columns, pcm)
       !! Build every cuEST object needed for one molecule
       !!
       !! Coordinates are in Bohr, matching metalquicha's internal units and
@@ -251,6 +298,9 @@ contains
       logical, intent(in) :: use_spherical                     !! Pure vs Cartesian
       integer, intent(in) :: n_occ                             !! Doubly occupied orbitals
       integer, intent(in) :: functional_id                     !! cuEST XC functional, or <0 for pure HF
+      type(pcm_config_t), intent(in), optional :: pcm
+         !! A polarizable continuum, when one was asked for. Absent, or present
+         !! with `enabled` false, leaves the calculation in the gas phase.
       integer, intent(in) :: n_radial                          !! Radial grid points (DFT only)
       integer, intent(in) :: n_angular                         !! Angular grid points (DFT only)
       type(error_t), intent(inout) :: error
@@ -332,6 +382,15 @@ contains
 
       this%needs_exchange = (this%exchange_fraction /= 0.0_dp) .or. &
                             (this%lrc_exchange_fraction /= 0.0_dp)
+
+      ! The continuum, last: it is built on the one-electron plan and is
+      ! independent of everything above it.
+      if (present(pcm)) then
+         if (pcm%enabled) then
+            call this%build_pcm(atomic_numbers, pcm, error)
+            if (error%has_error()) return
+         end if
+      end if
 
       call build_df_plan(this, error)
       if (error%has_error()) return
@@ -900,6 +959,282 @@ contains
                               "query XC plan range-separation parameter", error)
    end subroutine build_xc_plan
 
+   subroutine build_pcm_plan(this, atomic_numbers, pcm, error)
+      !! Build the continuum cavity and the PCM integral plan
+      !!
+      !! cuEST owns the hard part. Given the angular point count per atom, the
+      !! cavity radii and the Gaussian switching exponents it builds the surface
+      !! itself, so there is no tesserae construction here and no switching
+      !! function to get wrong -- which is the half of a PCM implementation that
+      !! is fiddly on the CPU. What is ours is the *input data*: the radii, which
+      !! come from `mqc_pcm_radii` with a citation, and the exponents below.
+      !!
+      !! Done once per geometry. The plan depends on the cavity and the
+      !! dielectric, neither of which moves during an SCF, so the iteration only
+      !! ever calls `pcm_device`.
+      class(cuest_system_t), intent(inout) :: this
+      integer, intent(in) :: atomic_numbers(:)
+      type(pcm_config_t), intent(in) :: pcm
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: persistent_desc, temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: plan_params
+      integer(c_int64_t), allocatable :: angular_per_atom(:)
+      real(dp), allocatable :: radii(:), zetas(:), charges(:)
+      type(c_ptr) :: d_radii, d_zetas, d_charges
+      integer(c_int) :: status
+      integer :: iatom, natm
+      real(dp) :: radius
+
+      if (error%has_error()) return
+
+      ! A dielectric is required rather than defaulted: every solvent has a
+      ! different one, and a default would silently pick a solvent.
+      if (pcm%dielectric <= 1.0_dp) then
+         call error%set(ERROR_VALIDATION, "the polarizable continuum needs a solvent "// &
+                        "dielectric greater than one; set keywords.pcm.dielectric. "// &
+                        "There is no solvent-name table on this path, so nothing can "// &
+                        "be assumed from a name.")
+         return
+      end if
+      if (pcm%angular_points <= 0) then
+         call error%set(ERROR_VALIDATION, "keywords.pcm.angular_points must be positive")
+         return
+      end if
+
+      natm = size(atomic_numbers)
+      allocate (angular_per_atom(natm), radii(natm), zetas(natm), charges(natm))
+
+      do iatom = 1, natm
+         call cavity_radius(atomic_numbers(iatom), pcm%radii_scale, radius, error)
+         if (error%has_error()) then
+            deallocate (angular_per_atom, radii, zetas, charges)
+            return
+         end if
+         radii(iatom) = radius
+         angular_per_atom(iatom) = int(pcm%angular_points, c_int64_t)
+
+         ! The Gaussian that replaces each surface point on a smooth cavity.
+         ! Sharper for a small sphere and for a denser grid, since the exponent
+         ! has to scale with the point spacing -- which on a sphere of radius R
+         ! carrying n points goes as R/sqrt(n).
+         !
+         ! **The convention here is unverified against cuEST's.** It is the
+         ! Lange-Herbert form, and cuEST takes exponents rather than the
+         ! prefactor, so a different definition on its side smooths the cavity by
+         ! the wrong amount and changes the solvation energy without failing.
+         ! `keywords.pcm.zeta` exists so that can be tested on hardware.
+         zetas(iatom) = pcm%zeta*sqrt(real(pcm%angular_points, dp))/radii(iatom)
+
+         ! Effective nuclear charge. Equal to Z because no ECP is wired up on
+         ! this backend; with one, the core electrons it replaces would have to
+         ! come off here or the cavity would see the wrong nuclear potential.
+         charges(iatom) = real(atomic_numbers(iatom), dp)
+      end do
+
+      d_radii = c_null_ptr
+      d_zetas = c_null_ptr
+      d_charges = c_null_ptr
+      call device_alloc(d_radii, int(natm, c_int64_t), "PCM cavity radii", error)
+      call device_alloc(d_zetas, int(natm, c_int64_t), "PCM switching exponents", error)
+      call device_alloc(d_charges, int(natm, c_int64_t), "PCM nuclear charges", error)
+      if (.not. error%has_error()) call copy_to_device(d_radii, radii, "PCM radii", error)
+      if (.not. error%has_error()) call copy_to_device(d_zetas, zetas, "PCM zetas", error)
+      if (.not. error%has_error()) call copy_to_device(d_charges, charges, "PCM charges", error)
+
+      plan_params = c_null_ptr
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestParametersCreate(CUEST_PCMINTPLAN_PARAMETERS, plan_params), &
+                                 "cuestParametersCreate(PCM plan)", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMIntPlanCreateWorkspaceQuery(this%handle, this%oe_plan, &
+                                                                     plan_params, persistent_desc, &
+                                                                     temporary_desc, &
+                                                                     angular_per_atom, &
+                                                                     pcm%dielectric, d_zetas, &
+                                                                     d_radii, d_charges, &
+                                                                     this%pcm_plan), &
+                                 "cuestPCMIntPlanCreateWorkspaceQuery", error)
+      end if
+      if (.not. error%has_error()) then
+         call workspace_alloc(this%ws_pcm_plan, persistent_desc, error)
+         call workspace_alloc(temporary_ws, temporary_desc, error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMIntPlanCreate(this%handle, this%oe_plan, plan_params, &
+                                                       this%ws_pcm_plan, temporary_ws, &
+                                                       angular_per_atom, pcm%dielectric, &
+                                                       d_zetas, d_radii, d_charges, &
+                                                       this%pcm_plan), &
+                                 "cuestPCMIntPlanCreate", error)
+      end if
+      call workspace_free(temporary_ws)
+      if (c_associated(plan_params)) then
+         status = cuestParametersDestroy(CUEST_PCMINTPLAN_PARAMETERS, plan_params)
+         call cuest_status_check(status, "cuestParametersDestroy(PCM plan)", error)
+      end if
+
+      ! The radii, exponents and charges were copied into the plan.
+      call device_free(d_radii)
+      call device_free(d_zetas)
+      call device_free(d_charges)
+      deallocate (angular_per_atom, radii, zetas, charges)
+      if (error%has_error()) return
+
+      ! How many surface points the cavity ended up with, which sizes the charge
+      ! buffers. Asked rather than computed: the buried points are dropped by
+      ! cuEST, so only it knows the answer.
+      call cuest_status_check(cuest_query_i64(this%handle, CUEST_PCMINTPLAN, this%pcm_plan, &
+                                              CUEST_PCMINTPLAN_NUM_POINT, this%n_pcm_points), &
+                              "query PCM plan point count", error)
+      call cuest_status_check(cuest_query_i64(this%handle, CUEST_PCMINTPLAN, this%pcm_plan, &
+                                              CUEST_PCMINTPLAN_NUM_ACTIVE_POINT, &
+                                              this%n_pcm_active), &
+                              "query PCM plan active point count", error)
+      if (error%has_error()) return
+
+      call device_alloc(this%d_pcm, this%n_ao*this%n_ao, "PCM potential matrix", error)
+      call device_alloc(this%d_q_in, this%n_pcm_points, "PCM charges (in)", error)
+      call device_alloc(this%d_q_out, this%n_pcm_points, "PCM charges (out)", error)
+      if (error%has_error()) return
+
+      ! Zero, so the first solve starts from an uncharged surface rather than from
+      ! whatever the allocation happened to contain. Uploaded from the host rather
+      ! than memset on the device: there is no zeroing helper here, and this runs
+      ! once per geometry.
+      block
+         real(dp), allocatable :: zeros(:)
+         allocate (zeros(this%n_pcm_points))
+         zeros = 0.0_dp
+         call copy_to_device(this%d_q_in, zeros, "PCM charges (in)", error)
+         deallocate (zeros)
+      end block
+      if (error%has_error()) return
+
+      this%pcm_tolerance = pcm%tolerance
+      this%pcm_max_iter = pcm%max_iter
+      this%has_pcm = .true.
+   end subroutine build_pcm_plan
+
+   subroutine system_pcm_device(this, d_density, pcm_energy, error)
+      !! Solve for the surface charges and build the continuum's Fock term
+      !!
+      !! One call per SCF iteration, with the same shape as `xc_device`: density
+      !! in, a potential matrix left in a device buffer, and an energy scalar
+      !! back on the host. The energy is the dielectric (polarization) energy and
+      !! already carries its factor of one half, so the caller adds it to the
+      !! total directly -- exactly as it does E_xc, and for the same reason. The
+      !! Fock matrix meanwhile takes the *full* potential, because the surface
+      !! charges are determined variationally and the half does not appear in the
+      !! derivative.
+      !!
+      !! The previous iteration's charges are handed in as the starting point.
+      !! That is not just an optimisation: near convergence the solve then starts
+      !! from an almost-correct surface and takes very few iterations, which is
+      !! what keeps a continuum from doubling the cost of an SCF.
+      class(cuest_system_t), intent(inout) :: this
+      type(c_ptr), intent(in) :: d_density   !! Total density, (n_ao, n_ao) on device
+      real(dp), intent(out) :: pcm_energy    !! Dielectric energy, Hartree
+      type(error_t), intent(inout) :: error
+
+      type(cuestWorkspaceDescriptor_t) :: temporary_desc
+      type(cuestWorkspace_t) :: temporary_ws
+      type(c_ptr) :: params, results
+      integer(c_int) :: status
+      integer(c_int64_t) :: max_iter, iterations_taken, converged_flag
+      real(dp) :: residual
+
+      pcm_energy = 0.0_dp
+      if (error%has_error() .or. .not. this%has_pcm) return
+
+      params = c_null_ptr
+      results = c_null_ptr
+      call cuest_status_check(cuestParametersCreate(CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, params), &
+                              "cuestParametersCreate(PCM potential)", error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_param_set_f64(CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, params, &
+                                                     CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_CONVERGENCE_THRESHOLD, &
+                                                     this%pcm_tolerance), &
+                                 "PCM potential convergence threshold", error)
+      end if
+      if (.not. error%has_error()) then
+         max_iter = int(this%pcm_max_iter, c_int64_t)
+         call cuest_status_check(cuest_param_set_i64(CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, params, &
+                                                     CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS_MAX_ITERATIONS, &
+                                                     max_iter), &
+                                 "PCM potential iteration limit", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestResultsCreate(CUEST_PCM_RESULTS, results), &
+                                 "cuestResultsCreate(PCM)", error)
+      end if
+
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMPotentialComputeWorkspaceQuery(this%handle, this%pcm_plan, &
+                                                                        params, temporary_desc, &
+                                                                        d_density, this%d_q_in, &
+                                                                        this%d_q_out, results, &
+                                                                        this%d_pcm), &
+                                 "cuestPCMPotentialComputeWorkspaceQuery", error)
+      end if
+      if (.not. error%has_error()) call workspace_alloc(temporary_ws, temporary_desc, error)
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuestPCMPotentialCompute(this%handle, this%pcm_plan, params, &
+                                                          temporary_ws, d_density, this%d_q_in, &
+                                                          this%d_q_out, results, this%d_pcm), &
+                                 "cuestPCMPotentialCompute", error)
+      end if
+
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_results_query_f64(CUEST_PCM_RESULTS, results, &
+                                                         CUEST_PCMRESULT_PCM_DIELECTRIC_ENERGY, &
+                                                         pcm_energy), &
+                                 "query PCM dielectric energy", error)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_results_query_f64(CUEST_PCM_RESULTS, results, &
+                                                         CUEST_PCMRESULT_CONVERGED_RESIDUAL, &
+                                                         residual), &
+                                 "query PCM residual", error)
+         if (.not. error%has_error()) this%pcm_residual = residual
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_results_query_i64(CUEST_PCM_RESULTS, results, &
+                                                         CUEST_PCMRESULT_NUM_ITERATIONS_TAKEN, &
+                                                         iterations_taken), &
+                                 "query PCM iteration count", error)
+         if (.not. error%has_error()) this%pcm_iterations = int(iterations_taken)
+      end if
+      if (.not. error%has_error()) then
+         call cuest_status_check(cuest_results_query_i64(CUEST_PCM_RESULTS, results, &
+                                                         CUEST_PCMRESULT_CONVERGED, &
+                                                         converged_flag), &
+                                 "query PCM convergence flag", error)
+         if (.not. error%has_error()) this%pcm_solved = (converged_flag /= 0_c_int64_t)
+      end if
+
+      ! This iteration's charges become the next one's starting point.
+      if (.not. error%has_error()) then
+         call cublas_status_check(cublasDcopy(this%cublas, int(this%n_pcm_points, c_int), &
+                                              this%d_q_out, 1, this%d_q_in, 1), &
+                                  "cublasDcopy(PCM charges out -> in)", error)
+      end if
+
+      call workspace_free(temporary_ws)
+      if (c_associated(results)) then
+         status = cuestResultsDestroy(CUEST_PCM_RESULTS, results)
+         call cuest_status_check(status, "cuestResultsDestroy(PCM)", error)
+      end if
+      if (c_associated(params)) then
+         status = cuestParametersDestroy(CUEST_PCMPOTENTIALCOMPUTE_PARAMETERS, params)
+         call cuest_status_check(status, "cuestParametersDestroy(PCM potential)", error)
+      end if
+
+      if (error%has_error()) pcm_energy = 0.0_dp
+   end subroutine system_pcm_device
+
    subroutine system_xc_device(this, d_c_occ, d_out, xc_energy, error)
       !! RKS exchange-correlation potential, device in and device out
       !!
@@ -1414,6 +1749,14 @@ contains
          call cublas_status_check(cublasDaxpy(this%cublas, n, 1.0_dp, d_xc_term, 1, &
                                               d_out, 1), &
                                   "cublasDaxpy(+Vxc)", error)
+      end if
+      ! The continuum, read from the system's own buffer like H and J rather than
+      ! passed in: the surface charges come from the *total* density, so both spin
+      ! channels see the same potential and there is nothing per-spin to name.
+      if (this%has_pcm) then
+         call cublas_status_check(cublasDaxpy(this%cublas, n, 1.0_dp, this%d_pcm, 1, &
+                                              d_out, 1), &
+                                  "cublasDaxpy(+Vpcm)", error)
       end if
    end subroutine system_assemble_fock
 
@@ -2028,6 +2371,20 @@ contains
       this%d_xc_beta = c_null_ptr
       this%d_fock_beta = c_null_ptr
       this%d_eigenvalues_beta = c_null_ptr
+
+      ! The continuum, before the one-electron plan it was built on.
+      call device_free(this%d_pcm)
+      call device_free(this%d_q_in)
+      call device_free(this%d_q_out)
+      this%d_pcm = c_null_ptr
+      this%d_q_in = c_null_ptr
+      this%d_q_out = c_null_ptr
+      if (c_associated(this%pcm_plan)) status = cuestPCMIntPlanDestroy(this%pcm_plan)
+      this%pcm_plan = c_null_ptr
+      call workspace_free(this%ws_pcm_plan)
+      this%has_pcm = .false.
+      this%n_pcm_points = 0
+      this%n_pcm_active = 0
 
       if (c_associated(this%xc_plan)) status = cuestXCIntPlanDestroy(this%xc_plan)
       this%xc_plan = c_null_ptr

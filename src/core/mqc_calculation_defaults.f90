@@ -36,6 +36,27 @@ module mqc_calculation_defaults
    integer, parameter, public :: DEFAULT_CPCM_NANG = 110
    real(dp), parameter, public :: DEFAULT_CPCM_RSCALE = 1.0_dp
 
+   !> Angular points per atom on a continuum cavity, for the ab initio PCM.
+   !>
+   !> 110 is a Lebedev order and the usual starting point for a cavity, which
+   !> needs far fewer points than an exchange-correlation grid does.
+   integer, parameter, public :: DEFAULT_PCM_NANG = 110
+
+   !> Cavity radius scaling. See `mqc_pcm_radii` for why 1.2 and not 1.0.
+   real(dp), parameter, public :: DEFAULT_PCM_RSCALE = 1.2_dp
+
+   !> Prefactor of the Gaussian switching exponent on a smooth cavity.
+   !>
+   !> **Unverified against cuEST's own convention.** A smooth continuum surface
+   !> replaces each surface point by a normalised Gaussian, and 4.9 is the value
+   !> Lange and Herbert [JCP 133, 244111 (2010)] fit for Lebedev cavities under
+   !> the definition zeta_i = zeta * sqrt(n_angular) / R_i. cuEST takes the
+   !> exponents themselves rather than this prefactor, so if its definition
+   !> differs the cavity is smoothed by the wrong amount -- which changes the
+   !> solvation energy without failing. Exposed as a keyword for exactly that
+   !> reason: it can be checked on hardware without a rebuild.
+   real(dp), parameter, public :: DEFAULT_PCM_ZETA = 4.9_dp
+
    ! =========================================================================
    ! Fragmentation
    ! =========================================================================

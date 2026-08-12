@@ -11,6 +11,7 @@ module mqc_method_config
    public :: method_config_t
    public :: scf_config_t, xtb_config_t, dft_config_t, mcscf_config_t
    public :: correlation_config_t, cc_config_t, f12_config_t
+   public :: pcm_config_t
 
    !============================================================================
    ! SCF Configuration (shared by HF and DFT)
@@ -120,6 +121,29 @@ module mqc_method_config
    !============================================================================
    ! MCSCF/CASSCF Configuration
    !============================================================================
+   type :: pcm_config_t
+      !! A polarizable continuum: the cavity, the solvent, and the charge solve
+      !!
+      !! Backend-neutral in shape, but only the cuEST path implements it. tblite's
+      !! CPCM is configured through `xtb_config_t` and builds its own cavity; the
+      !! two are separate models and share no settings.
+      logical :: enabled = .false.
+      real(dp) :: dielectric = -1.0_dp
+         !! Solvent dielectric. No solvent-name table on this path, on purpose:
+         !! see `mqc_config_types`.
+      integer :: angular_points = 110
+         !! Lebedev points per atom on the cavity surface.
+      real(dp) :: radii_scale = 1.2_dp
+         !! Scaling from van der Waals radii, per `mqc_pcm_radii`.
+      real(dp) :: zeta = 4.9_dp
+         !! Gaussian switching prefactor for the smooth surface. Unverified
+         !! against cuEST's convention -- see `DEFAULT_PCM_ZETA`.
+      real(dp) :: tolerance = 1.0e-8_dp
+         !! Residual the surface-charge solve must reach.
+      integer :: max_iter = 100
+         !! Iterations that solve is allowed.
+   end type pcm_config_t
+
    type :: mcscf_config_t
       !! Configuration for MCSCF/CASSCF method
 
@@ -273,6 +297,7 @@ module mqc_method_config
 
       !----- Shared configurations -----
       type(scf_config_t) :: scf
+      type(pcm_config_t) :: pcm
          !! Shared SCF settings (used by HF and DFT)
       type(correlation_config_t) :: corr
          !! Shared correlation settings (used by MP2, CC, etc.)

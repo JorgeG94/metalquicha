@@ -320,6 +320,50 @@ table above exactly.
 Anything beyond meta-GGA is refused, as is a functional needing the density
 Laplacian -- on libxc's own say-so rather than a guess about which ones are safe.
 
+Continuum Solvation
+^^^^^^^^^^^^^^^^^^^
+
+A polarizable continuum, on the **cuEST (GPU) backend only**:
+
+.. code-block:: json
+
+   "keywords": {
+     "pcm": {
+       "dielectric": 78.39,
+       "angular_points": 110,
+       "radii_scale": 1.2,
+       "zeta": 4.9,
+       "tolerance": 1e-8,
+       "max_iter": 100
+     }
+   }
+
+Naming the block is what turns solvation on -- there is no separate flag, because
+a deck that states a dielectric wants solvent and two switches could disagree.
+
+- ``dielectric``: the solvent's dielectric constant. **Required.** There is no
+  solvent-name table on this path: tblite has one for its own CPCM, and a second
+  table here that disagreed with it would make the same word mean two things.
+- ``angular_points``: Lebedev points per atom on the cavity surface. A cavity
+  needs far fewer than an exchange-correlation grid.
+- ``radii_scale``: multiplies the van der Waals radii in ``mqc_pcm_radii``, which
+  are Bondi's filled in from Mantina's. 1.2 is the usual convention.
+- ``zeta``: the Gaussian switching prefactor for the smooth cavity surface.
+- ``tolerance``, ``max_iter``: the surface-charge solve. A final solve that did
+  not converge is refused rather than reported, because the SCF's own convergence
+  test cannot see the cavity.
+
+This is **not** ``keywords.xtb.solvation_model: cpcm``. That configures tblite's
+continuum, which builds its own cavity with its own defaults, and the two are
+separate models rather than one keyword with two backends.
+
+**Not yet validated against a reference.** The wiring is in place and the energy
+enters the Fock matrix and the total the same way the exchange-correlation term
+does, but the cavity is built by cuEST from radii and switching exponents supplied
+here, and the ``zeta`` convention has not been confirmed against cuEST's own
+definition. A mismatch there smooths the cavity by the wrong amount and moves the
+solvation energy without failing, which is why ``zeta`` is a keyword.
+
 DFT Options
 ^^^^^^^^^^^
 

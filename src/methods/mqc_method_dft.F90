@@ -15,6 +15,7 @@ module mqc_method_dft
    !! it is queried from cuEST's XC plan and handed to the DF plan, so a hybrid
    !! cannot end up with mismatched Coulomb and XC definitions.
    use pic_types, only: dp
+   use mqc_method_config, only: pcm_config_t
    use mqc_method_base, only: qc_method_t
    use mqc_result_types, only: calculation_result_t
    use mqc_physical_fragment, only: physical_fragment_t
@@ -84,6 +85,9 @@ module mqc_method_dft
          !! Use DIIS for SCF convergence
       integer :: diis_size = 8
          !! Number of Fock matrices in DIIS
+      type(pcm_config_t) :: pcm
+         !! Continuum solvation. Only the cuEST path implements it; the CPU
+         !! backend ignores it, which `run_cuest_scf`'s stub makes visible.
    end type dft_options_t
 
    type, extends(qc_method_t) :: dft_method_t
@@ -145,6 +149,7 @@ contains
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
       settings%grid_level = this%options%grid_level
+      settings%pcm = this%options%pcm
 
       ! The same choice Hartree-Fock makes, and made the same way rather than a
       ! second time: cuEST when this build has it, because that is the production

@@ -17,6 +17,7 @@ module cuest_helpers
    use, intrinsic :: iso_c_binding, only: c_ptr, c_char, c_int, c_int32_t, c_int64_t, &
                                                                              c_double, c_loc, c_sizeof, c_null_char
    use cuest, only: cuestParametersConfigure, cuestParametersQuery, cuestQuery, &
+                    cuestResultsQuery, &
                     CUEST_STATUS_SUCCESS, CUEST_STATUS_EXCEPTION, &
                     CUEST_STATUS_NULL_POINTER, CUEST_STATUS_INVALID_ARGUMENT, &
                     CUEST_STATUS_INVALID_SIZE, CUEST_STATUS_INVALID_TYPE, &
@@ -31,6 +32,7 @@ module cuest_helpers
    public :: cuest_param_set_i64, cuest_param_set_i32, cuest_param_set_f64
    public :: cuest_param_get_i64, cuest_param_get_i32, cuest_param_get_f64
    public :: cuest_query_i64, cuest_query_i32, cuest_query_f64
+   public :: cuest_results_query_i64, cuest_results_query_f64
    public :: cuest_param_set_str, cuest_status_name
 
 contains
@@ -144,6 +146,25 @@ contains
       integer(c_int64_t), intent(out), target :: val
       st = cuestQuery(handle, otype, object, attr, c_loc(val), c_sizeof(val))
    end function cuest_query_i64
+
+   ! ---- read a results object -------------------------------------------
+   !
+   ! Separate from the query helpers above because a results object is not a
+   ! cuEST *object*: it carries no handle and is addressed by results type
+   ! rather than object type. Same shape, different call underneath.
+   integer(c_int) function cuest_results_query_f64(rtype, results, attr, val) result(st)
+      integer(c_int), value :: rtype, attr
+      type(c_ptr), value :: results
+      real(c_double), intent(out), target :: val
+      st = cuestResultsQuery(rtype, results, attr, c_loc(val), c_sizeof(val))
+   end function cuest_results_query_f64
+
+   integer(c_int) function cuest_results_query_i64(rtype, results, attr, val) result(st)
+      integer(c_int), value :: rtype, attr
+      type(c_ptr), value :: results
+      integer(c_int64_t), intent(out), target :: val
+      st = cuestResultsQuery(rtype, results, attr, c_loc(val), c_sizeof(val))
+   end function cuest_results_query_i64
 
    integer(c_int) function cuest_query_i32(handle, otype, object, attr, val) result(st)
       type(c_ptr), value :: handle, object

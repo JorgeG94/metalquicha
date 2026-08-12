@@ -228,6 +228,7 @@ contains
       m%options%functional = config%dft%functional
       m%options%grid_type = config%dft%grid_type
       m%options%grid_level = config%dft%grid_level
+      m%options%pcm = config%pcm
       m%options%radial_points = config%dft%radial_points
       m%options%angular_points = config%dft%angular_points
 

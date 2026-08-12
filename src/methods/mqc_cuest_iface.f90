@@ -11,6 +11,7 @@ module mqc_cuest_iface
    !! which has a stub form fpm compiles and a real form CMake compiles -- lets
    !! the method files carry no preprocessor conditionals at all.
    use pic_types, only: dp
+   use mqc_method_config, only: pcm_config_t
    implicit none
    private
 
@@ -44,6 +45,11 @@ module mqc_cuest_iface
       ! from the standard tables; radial_points/angular_points override it for
       ! every atom, which is what a convergence study wants.
       integer :: grid_level = 3
+
+      ! A polarizable continuum, when one was asked for. Carried whole rather
+      ! than field by field: the cavity, the solvent and the charge solve travel
+      ! together, and a backend either builds a continuum or does not.
+      type(pcm_config_t) :: pcm
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""
