@@ -34,7 +34,6 @@ contains
       type(timer_type) :: coord_timer
       integer(int32) :: calc_type_local
       type(error_t) :: error
-      integer :: outer_threads
       logical :: known
       real(dp) :: known_energy
       integer :: known_status
@@ -52,10 +51,11 @@ contains
 
       allocate (results(total_fragments))
 
-      ! One thread per fragment: the methods underneath are not safe to run
-      ! threaded, and they fail by corrupting a result rather than by stopping.
-      outer_threads = omp_get_max_threads()
-      call omp_set_num_threads(1)
+      ! Fragments run one at a time here, so leave the thread count alone and
+      ! let each method's own threading use the whole machine -- the same
+      ! full-width path the unfragmented run takes. This used to pin to a
+      ! single thread, which left a density-fitted HF Fock build on one core
+      ! for the entire expansion.
       call coord_timer%start()
       do frag_idx = 1_int64, total_fragments
          fragment_size = count(polymers(frag_idx, :) > 0)
@@ -177,10 +177,6 @@ contains
       end do
       call coord_timer%stop()
       call logger%info("Time to evaluate all fragments "//to_char(coord_timer%get_elapsed_time())//" s")
-      ! Not omp_get_max_threads(): after omp_set_num_threads(1) that reports 1,
-      ! so the obvious spelling hands back the value it just clamped and the
-      ! rest of the process silently stays single-threaded.
-      call omp_set_num_threads(outer_threads)
 
       if (n_reused > 0_int64) then
          call logger%info("Reused "//to_char(n_reused)//" fragment(s) from the checkpoint; "// &

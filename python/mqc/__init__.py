@@ -209,19 +209,32 @@ class System:
         """Declare the connectivity, as (i, j) pairs of 0-based atoms.
 
         A bond whose atoms land in different monomers is marked broken and
-        capped; that is derived, not declared, so there is no flag to get
-        wrong. What cannot be derived is a bond you never mentioned -- see
-        `missing_bonds`.
+        capped; that is derived here from the declared partition, not
+        declared, so there is no flag to get wrong. What cannot be derived is
+        a bond you never mentioned -- see `missing_bonds`.
+
+        The C entry point below takes the broken flags explicitly rather than
+        deriving them -- an arbitrary term list has no one partition to read
+        them from. This wrapper does have one (`set_monomers`), so it fills
+        them in the way `monomer_of` would: a bond is cut when its atoms have
+        different owners, and an atom in no monomer owns 0, so two unowned
+        atoms are not a cut.
         """
         bonds = [tuple(b) for b in bonds]
         n = len(bonds)
+        owner = {
+            atom: index
+            for index, monomer in enumerate(self._monomers or [], start=1)
+            for atom in monomer
+        }
+        broken = [1 if owner.get(b[0], 0) != owner.get(b[1], 0) else 0 for b in bonds]
         _check(
             _ffi.system_set_bonds(
                 self._handle, n,
                 _ffi.ints(b[0] for b in bonds),
                 _ffi.ints(b[1] for b in bonds),
                 _ffi.ints(orders if orders is not None else [1] * n),
-                _ffi.ints([0] * n),
+                _ffi.ints(broken),
             ),
             _ffi.system_last_error,
         )
@@ -357,7 +370,10 @@ class Result:
         rows = []
         with open(path) as handle:
             header = next(handle).strip().split(",")
-            mcols = [i for i, name in enumerate(header) if name.startswith("m")]
+            # The monomer columns are m1, m2, ... -- m followed by digits.
+            # Matching a bare "m" prefix also swallows sibling columns like
+            # "mult", which would then read as a phantom extra monomer.
+            mcols = [i for i, name in enumerate(header) if name[1:].isdigit() and name.startswith("m")]
             ie, idelta = header.index("energy"), header.index("delta_energy")
             idist = header.index("distance") if "distance" in header else None
             iscf = header.index("scf") if "scf" in header else None
