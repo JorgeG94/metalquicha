@@ -67,11 +67,22 @@ option(
   MQC_ENABLE_HDF5
   "Link to HDF5 for binary checkpoints (needed for gradient/Hessian restart)"
   OFF)
+# On by default, and the pair of them is what makes this program able to do ab
+# initio quantum chemistry on a machine without a GPU. They were opt-in, which
+# had two costs worth naming: `cmake -B build` produced a program that could run
+# xTB and nothing else, and libcint-on/libxc-off -- the natural thing to type if
+# you only wanted integrals -- produced a build where every deck naming a
+# functional is refused. Neither is a good default.
+#
+# The price is that a default configure reaches the network: libxc is a tarball
+# and libcint a clone. For a machine without one, point
+# FETCHCONTENT_SOURCE_DIR_LIBCINT and FETCHCONTENT_SOURCE_DIR_LIBXC at local
+# copies, or turn these off and build the xTB path alone.
 option(MQC_ENABLE_LIBCINT
        "Fetch libcint for CPU Gaussian integrals (real ab initio without a GPU)"
-       OFF)
+       ON)
 option(MQC_ENABLE_LIBXC
-       "Fetch libxc for exchange-correlation functionals (CPU DFT)" OFF)
+       "Fetch libxc for exchange-correlation functionals (CPU DFT)" ON)
 option(MQC_ENABLE_CUEST "Link to NVIDIA cuEST for GPU integrals (HF/DFT)" OFF)
 set(CUEST_ROOT
     ""
@@ -134,6 +145,21 @@ if(MQC_ENABLE_TBLITE)
   endif()
 else()
   target_compile_definitions(${main_lib} PRIVATE MQC_WITHOUT_TBLITE)
+endif()
+
+# tblite does not build with every Fortran compiler, and it is on by default, so
+# an unsupported one fails deep inside somebody else's source rather than here.
+# Refused at configure time instead, naming the flag that gets you the rest of
+# the program: the ab initio path builds fine on all of these.
+if(MQC_ENABLE_TBLITE)
+  if(NOT CMAKE_Fortran_COMPILER_ID MATCHES "^(GNU|Intel|IntelLLVM)$")
+    message(
+      FATAL_ERROR
+        "MQC_ENABLE_TBLITE=ON needs gfortran, ifort or ifx; this is "
+        "${CMAKE_Fortran_COMPILER_ID}. tblite does not build with it. Configure "
+        "with -DMQC_ENABLE_TBLITE=OFF to build everything else -- the CPU ab "
+        "initio path (libcint/libxc) and the GPU path both work here.")
+  endif()
 endif()
 
 # NVIDIA cuEST -- GPU integrals behind the HF/DFT methods.
