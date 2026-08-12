@@ -46,6 +46,11 @@ program check_dft
    call scf_case("cc-pvdz", "pbe0", 3)
    call scf_case("cc-pvdz", "tpss", 3)
    call scf_case("cc-pvdz", "m06-l", 3)
+   ! The same three through the direct, Schwarz-screened Fock build. Screening
+   ! that changed an answer would show up only here.
+   call scf_case("cc-pvdz", "svwn", 3, direct=.true.)
+   call scf_case("cc-pvdz", "b3lyp", 3, direct=.true.)
+   call scf_case("cc-pvdz", "tpss", 3, direct=.true.)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "b2gp-plyp", 3)
    call dh_case("cc-pvdz", "cc-pvdz-rifit", "mpw2plyp", 3)
@@ -168,7 +173,7 @@ contains
       call mol%destroy()
    end subroutine dh_case
 
-   subroutine scf_case(basis, functional, level)
+   subroutine scf_case(basis, functional, level, direct)
       !! A self-consistent Kohn-Sham energy, for the Python side to compare
       !!
       !! The point of milestone 2: the potential reaches the Fock matrix and the
@@ -176,6 +181,12 @@ contains
       !! `run_libcint_rhf` with one extra argument, which is the whole design.
       character(len=*), intent(in) :: basis, functional
       integer, intent(in) :: level
+      logical, intent(in), optional :: direct
+         !! Build the Fock matrix directly rather than in core. Same answer, and
+         !! the point is to prove that: the exchange-correlation potential is added
+         !! after whichever branch built the mean field, so the two routes must
+         !! agree exactly, and the direct one is the one with Schwarz screening in
+         !! it. Screening that changed an answer would show here and nowhere else.
 
       type(libcint_molecule_t) :: mol
       type(rhf_result_t) :: scf
@@ -184,6 +195,8 @@ contains
       real(dp) :: c(3, 3)
       integer :: unit
       character(len=8) :: lvl
+      logical :: use_direct
+      character(len=8) :: mode
 
       c = reshape([0.0_dp, 0.00000000009155_dp*ANG, 0.10077199490609_dp*ANG, &
                    0.0_dp, 0.77250895271063_dp*ANG, -0.46780199741728_dp*ANG, &
@@ -204,8 +217,10 @@ contains
          return
       end if
 
+      use_direct = .false.
+      if (present(direct)) use_direct = direct
       call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
-                           in_core=.true., xc=xc)
+                           in_core=(.not. use_direct), xc=xc)
       if (err%has_error() .or. .not. scf%converged) then
          write (*, "(A,A,A,A)") "[dft] ", functional, " SCF failed: ", err%get_message()
          failures = failures + 1
@@ -215,14 +230,17 @@ contains
       end if
 
       write (lvl, "(I0)") level
+      mode = ""
+      if (use_direct) mode = "_direct"
       open (newunit=unit, file="/tmp/mqc_ks_"//functional//"_"//basis//"_L"//trim(lvl)// &
-            ".txt", status="replace", action="write")
+            trim(mode)//".txt", status="replace", action="write")
       write (unit, "(es25.16e3)") scf%energy
       write (unit, "(I0)") scf%iterations
       close (unit)
 
-      write (*, "(A,A,A,A,A,I0,A,F18.10,A,I0)") "  KS ", functional, "/", basis, &
-         " level ", level, ": E = ", scf%energy, "  iterations ", scf%iterations
+      write (*, "(A,A,A,A,A,I0,A,F18.10,A,I0,A,A)") "  KS ", functional, "/", basis, &
+         " level ", level, ": E = ", scf%energy, "  iterations ", scf%iterations, &
+         "  ", trim(mode)
       call xc%destroy()
       call mol%destroy()
    end subroutine scf_case
