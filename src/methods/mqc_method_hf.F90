@@ -41,6 +41,14 @@ module mqc_method_hf
       character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp
       real(dp) :: scs_os = 1.0_dp
+      logical :: run_cc = .false.
+         !! Follow the reference with coupled cluster. Set by the factory from
+         !! the method name, for the same reason `run_mp2` is: "ccsd" is a
+         !! method, not an option on Hartree-Fock.
+      logical :: cc_triples = .false.
+      integer :: cc_max_iter = 100
+      real(dp) :: cc_tolerance = 1.0e-8_dp
+      integer :: cc_diis_size = 8
          !! Fit J and K rather than computing exact integrals (CPU backend)
       logical :: spherical = .true.
          !! Use spherical (true) or Cartesian (false) basis
@@ -108,6 +116,11 @@ contains
       settings%freeze_core = this%options%freeze_core
       settings%n_frozen_core = this%options%n_frozen_core
       settings%corr_density_fitting = this%options%corr_density_fitting
+      settings%run_cc = this%options%run_cc
+      settings%cc_triples = this%options%cc_triples
+      settings%cc_max_iter = this%options%cc_max_iter
+      settings%cc_tolerance = this%options%cc_tolerance
+      settings%cc_diis_size = this%options%cc_diis_size
       settings%corr_aux_basis = this%options%corr_aux_basis
       settings%scs_ss = this%options%scs_ss
       settings%scs_os = this%options%scs_os

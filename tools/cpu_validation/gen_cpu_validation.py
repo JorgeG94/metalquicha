@@ -268,6 +268,28 @@ MP2_CASES = [
 # accepts one and warns, and that is deliberately not covered by a reference
 # case -- the point of the warning is that the number is poor, and pinning a
 # poor number teaches nothing.
+# Decks under inputs/ that this script must not delete. They are inputs to other
+# things -- run_cpu_guess_comparison.sh drives the peptide one across all four
+# initial guesses -- and are not validation cases, so they have no reference
+# energy and no entry in the manifest. Without this they match the cpu_*.json
+# sweep below and vanish on the next regeneration.
+HAND_MAINTAINED = {
+    "cpu_peptide46_sto-3g.json",
+}
+
+# Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so
+# water/cc-pVDZ is 42 MB and anything much larger stops being a validation case
+# and starts being a benchmark. Both spellings appear because they are separate
+# method types, and a deck asking for "ccsd(t)" that quietly ran CCSD would agree
+# with a CCSD reference perfectly.
+CC_CASES = [
+    ("water", "sto-3g", "ccsd", 0),
+    ("water", "sto-3g", "ccsd(t)", 0),
+    ("water", "cc-pvdz", "ccsd", 1),
+    ("water", "cc-pvdz", "ccsd(t)", 1),
+    ("ch4", "sto-3g", "ccsd(t)", 1),
+]
+
 RI_MP2_CASES = [
     ("water", "cc-pvdz", "cc-pvdz-rifit", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", 1),
@@ -413,7 +435,8 @@ def write_xyz(path, mol):
     path.write_text("\n".join(body) + "\n")
 
 
-def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None):
+def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=None,
+              cc=None):
     model = {"method": method, "basis": basis}
     if aux:
         model["aux_basis"] = aux
@@ -432,6 +455,8 @@ def deck_json(xyz_rel, basis, aux="", multiplicity=1, method="hf", correlation=N
         deck["keywords"]["scf"]["density_fitting"] = True
     if correlation:
         deck["keywords"]["correlation"] = correlation
+    if cc:
+        deck["keywords"]["cc"] = cc
     return deck
 
 
@@ -491,6 +516,37 @@ def pyscf_mp2(atoms, basis, method, frozen):
         ecorr = 1.3*pt.e_corr_os
     else:
         ecorr = pt.e_corr_os + pt.e_corr_ss
+    return float(escf + ecorr), mol.nao
+
+
+def pyscf_cc(atoms, basis, method, frozen):
+    """Reference CCSD or CCSD(T) total energy.
+
+    The triples come from ``ccsd_t()`` rather than from a CCSD(T) driver, which
+    is what PySCF offers and what ``validation/check_cc.f90`` compares against
+    too -- the two references being produced the same way is the point.
+    """
+    from pyscf import cc, gto, scf
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-12
+    escf = mf.kernel()
+    mycc = cc.CCSD(mf, frozen=frozen)
+    mycc.conv_tol = 1e-11
+    mycc.kernel()
+    ecorr = mycc.e_corr
+    if method == "ccsd(t)":
+        ecorr += mycc.ccsd_t()
     return float(escf + ecorr), mol.nao
 
 
@@ -627,6 +683,29 @@ def main():
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
 
+    for name, basis, method, frozen in CC_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_cc(mol.atoms, basis, method, frozen)
+        tag = method.replace("(", "").replace(")", "")
+        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}.json"
+        written.add((VALIDATION / deck).name)
+        if not args.dry_run:
+            # A tighter amplitude tolerance than the default 1e-8, so the case
+            # tests the equations rather than where the iteration was stopped.
+            (VALIDATION / deck).write_text(
+                json.dumps(deck_json(mol.xyz, basis, method=method,
+                                     correlation={"freeze_core": frozen > 0,
+                                                  "n_frozen_core": frozen},
+                                     cc={"tolerance": 1e-10}), indent=4) + "\n"
+            )
+        tests.append({
+            "name": f"{method.upper()} {mol.label} {basis} frozen {frozen} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
     for name, basis, aux, frozen in RI_MP2_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_ri_mp2(mol.atoms, basis, aux, frozen)
@@ -677,8 +756,11 @@ def main():
         return 0
 
     # Drop decks left behind by an earlier, wider case list, so that what is on
-    # disk is exactly what this script produces.
+    # disk is exactly what this script produces -- except the few that are
+    # deliberately hand-maintained and merely happen to share the prefix.
     for stale in sorted(INPUTS.glob("cpu_*.json")):
+        if stale.name in HAND_MAINTAINED:
+            continue
         if stale.name not in written:
             stale.unlink()
             print(f"removed stale {stale.name}")

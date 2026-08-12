@@ -27,6 +27,7 @@ module mqc_libcint_bridge
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
+   use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    implicit none
    private
 
@@ -83,6 +84,29 @@ contains
                                "implemented on the CPU backend: the fitted J and K are "// &
                                "written for one density. Run unrestricted without "// &
                                "density_fitting, or restricted with it.")
+         result%has_error = .true.
+         return
+      end if
+
+      ! Refused rather than quietly downgraded, on the same principle as the
+      ! unrestricted density fitting above. Coupled cluster here is written over a
+      ! restricted reference, and the fitted route does not exist yet at all -- a
+      ! deck asking for either would otherwise get a Hartree-Fock energy, or a
+      ! conventional CCSD reported as RI, and nothing in the output would say so.
+      if (settings%run_cc .and. unrestricted) then
+         call result%error%set(ERROR_VALIDATION, "coupled cluster on the CPU backend "// &
+                               "needs a restricted reference: it is written in spin "// &
+                               "orbitals over RHF orbitals, and an unrestricted "// &
+                               "reference needs its own alpha and beta transform. Run "// &
+                               "a closed-shell system, or use MP2.")
+         result%has_error = .true.
+         return
+      end if
+      if (settings%run_cc .and. settings%corr_density_fitting) then
+         call result%error%set(ERROR_VALIDATION, "RI coupled cluster is not implemented "// &
+                               "on the CPU backend. Ask for 'ccsd' or 'ccsd(t)' rather "// &
+                               "than 'ri-ccsd', or set "// &
+                               "keywords.correlation.density_fitting to false.")
          result%has_error = .true.
          return
       end if
@@ -273,6 +297,53 @@ contains
                      "   OS x", settings%scs_os
                   write (*, "(a,f20.12)") "  E(corr) scaled ", result%energy%mp2%total()
                end if
+               write (*, "(a,f20.12)") "  E total        ", result%energy%total()
+            end if
+         end block
+      end if
+
+      if (settings%run_cc) then
+         block
+            type(cc_result_t) :: cc
+            integer :: frozen
+
+            ! The same frozen-core rule the MP2 block applies, deliberately
+            ! duplicated rather than hoisted: the two blocks are independent, and
+            ! a shared local would silently couple them if one ever wanted a
+            ! different count.
+            frozen = settings%n_frozen_core
+            if (frozen < 0) frozen = core_orbital_count(fragment%element_numbers)
+            if (.not. settings%freeze_core) frozen = 0
+
+            call run_libcint_ccsd(mol, scf%orbitals, scf%orbital_energies, &
+                                  fragment%nelec/2, frozen, settings%cc_max_iter, &
+                                  settings%cc_tolerance, settings%cc_triples, &
+                                  settings%verbose, cc, error, &
+                                  diis_vectors=settings%cc_diis_size)
+            if (error%has_error()) then
+               call result%error%set(ERROR_VALIDATION, "CCSD: "//error%get_message())
+               result%has_error = .true.
+               call mol%destroy()
+               return
+            end if
+
+            ! energy_t sums scf + mp2%total() + cc%total(), so only the components
+            ! go in. All three are filled rather than a lumped correlation energy:
+            ! a total cannot be taken apart afterwards, and the singles/doubles
+            ! split is what says whether the T1 amplitudes are doing anything.
+            result%energy%cc%singles = cc%e_singles
+            result%energy%cc%doubles = cc%e_doubles
+            result%energy%cc%triples = cc%e_triples
+            if (settings%verbose) then
+               write (*, "(a,i0,a,l1)") "  CCSD: iterations ", cc%iterations, &
+                  "  converged ", cc%converged
+               write (*, "(a,f20.12)") "  E(MP2)         ", cc%e_mp2
+               write (*, "(a,f20.12)") "  E(singles)     ", cc%e_singles
+               write (*, "(a,f20.12)") "  E(doubles)     ", cc%e_doubles
+               if (settings%cc_triples) then
+                  write (*, "(a,f20.12)") "  E(T)           ", cc%e_triples
+               end if
+               write (*, "(a,f20.12)") "  E(corr)        ", result%energy%cc%total()
                write (*, "(a,f20.12)") "  E total        ", result%energy%total()
             end if
          end block

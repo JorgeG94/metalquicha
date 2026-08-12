@@ -93,6 +93,17 @@ module mqc_config_types
       logical :: corr_scs = .false.        !! Spin-component scaling
       real(dp) :: corr_scs_ss = 1.0_dp/3.0_dp
       real(dp) :: corr_scs_os = 1.2_dp
+      ! keywords.cc -- what only an iterative correlation method needs
+      integer :: cc_maxiter = 100
+      real(dp) :: cc_tolerance = 1.0e-8_dp
+      logical :: cc_triples_set = .false.
+         !! Whether a deck named `triples` explicitly. Without this there is no
+         !! way to tell "triples: false" from "the key was absent", and the
+         !! method name has to lose to an explicit keyword while winning over an
+         !! absent one.
+      logical :: cc_triples = .false.
+      logical :: cc_diis = .true.
+      integer :: cc_diis_size = 8
          !! Fit J and K against the auxiliary basis, on the CPU backend
          !! Let a non-converged SCF into the expansion instead of stopping.
          !! Off by default: the energy of an SCF that ran out of iterations is
