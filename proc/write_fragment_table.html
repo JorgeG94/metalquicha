@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">58 statements</a>
+                 title=" 0.5% of total for procedures.">65 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,19 +137,20 @@
       <div id="vars-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-col">col</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-filename~2">filename</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-filename~7">filename</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_charmult">have_charmult</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_delta">have_delta</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_distance">have_distance</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_energy">have_energy</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_orbitals">have_orbitals</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-have_scf">have_scf</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-i~5">i</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-ios">ios</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-j">j</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-level">level</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-i~103">i</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-ios~3">ios</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-j~27">j</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-level~17">level</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-row_fmt">row_fmt</a>
             <a class="list-group-item" href="../proc/write_fragment_table.html#variable-table_timer">table_timer</a>
-            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-unit">unit</a>
+            <a class="list-group-item" href="../proc/write_fragment_table.html#variable-unit~6">unit</a>
         </div>
       </div>
     </div>
@@ -749,7 +750,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~2"></span>
+              <span class="anchor" id="variable-filename~7"></span>
               character(len=256),
             </td>
               <td>private</td>
@@ -758,6 +759,23 @@ large graphs.</div>
             </td>
             <td>::</td>
             <td><strong>filename</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-have_charmult"></span>
+              logical,
+            </td>
+              <td>private</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>have_charmult</strong></td>
                 <td></td>
                 <td></td>
             <td>
@@ -851,7 +869,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~5"></span>
+              <span class="anchor" id="variable-i~103"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -868,7 +886,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ios"></span>
+              <span class="anchor" id="variable-ios~3"></span>
               integer,
             </td>
               <td>private</td>
@@ -885,7 +903,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-j"></span>
+              <span class="anchor" id="variable-j~27"></span>
               integer,
             </td>
               <td>private</td>
@@ -902,7 +920,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-level"></span>
+              <span class="anchor" id="variable-level~17"></span>
               integer,
             </td>
               <td>private</td>
@@ -953,7 +971,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit"></span>
+              <span class="anchor" id="variable-unit~6"></span>
               integer,
             </td>
               <td>private</td>
@@ -997,6 +1015,7 @@ large graphs.</div>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">have_scf</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">have_orbitals</span>
 <span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">have_energy</span><span class="p">,</span><span class="w"> </span><span class="n">have_delta</span><span class="p">,</span><span class="w"> </span><span class="n">have_distance</span>
+<span class="w">      </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">have_charmult</span>
 <span class="w">      </span><span class="k">type</span><span class="p">(</span><span class="n">timer_type</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">table_timer</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span>
 <span class="w">      </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">col</span>
@@ -1020,7 +1039,7 @@ large graphs.</div>
 <span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">col</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a,i0)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,m&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">j</span>
 <span class="w">         </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">advance</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">)</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
 <span class="w">      </span><span class="k">end do</span>
-<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,energy,delta_energy,distance,scf,homo,lumo,gap_ev&quot;</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult&quot;</span>
 
 <span class="w">      </span><span class="c">! Presence of the value columns is fixed for the whole run, so decide once</span>
 <span class="w">      </span><span class="c">! rather than per row.</span>
@@ -1031,6 +1050,7 @@ large graphs.</div>
 <span class="w">      </span><span class="n">have_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_lumo</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                      </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_has_orbitals</span><span class="p">)</span>
 <span class="w">      </span><span class="n">have_orbitals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_lumo</span><span class="p">)</span>
+<span class="w">      </span><span class="n">have_charmult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">)</span>
 
 <span class="w">      </span><span class="c">! Explicit repeat count for the monomer columns rather than an unlimited &quot;*&quot;</span>
 <span class="w">      </span><span class="c">! group: the unlimited form emits the separator before it discovers the data is</span>
@@ -1069,11 +1089,20 @@ large graphs.</div>
 <span class="w">         </span><span class="c">! up in a plot. Blank, not zero, where the method reported no pair:</span>
 <span class="w">         </span><span class="c">! a gap of zero is a claim about the fragment.</span>
 <span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">have_orbitals</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_has_orbitals</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(2(&quot;,&quot;,es24.16),&quot;,&quot;,f12.6)&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(2(&quot;,&quot;,es24.16),&quot;,&quot;,f12.6)&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">advance</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">               </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_lumo</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">               </span><span class="p">(</span><span class="k">data</span><span class="p">%</span><span class="n">fragment_lumo</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="o">*</span><span class="n">HARTREE_TO_EV</span>
 <span class="w">         </span><span class="k">else</span>
-<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,,,&quot;</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">advance</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,,,&quot;</span>
+<span class="w">         </span><span class="k">end if</span>
+
+<span class="w">         </span><span class="c">! Charge and multiplicity last, so appending them left every existing</span>
+<span class="w">         </span><span class="c">! column where a reader&#39;s parser already expects it. A charged</span>
+<span class="w">         </span><span class="c">! fragment is otherwise invisible in the breakdown.</span>
+<span class="w">         </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">have_charmult</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(&quot;,&quot;,i0,&quot;,&quot;,i0)&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="k">data</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">         </span><span class="k">else</span>
+<span class="k">            write</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;(a)&quot;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;,,&quot;</span>
 <span class="w">         </span><span class="k">end if</span>
 <span class="k">      end do</span>
 
@@ -1108,7 +1137,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 14:07 +0000             </p>
+ on 2026-08-12 00:57 +0000             </p>
           </div>
         </div>
         <br>

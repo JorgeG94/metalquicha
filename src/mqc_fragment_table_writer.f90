@@ -50,6 +50,7 @@ contains
       logical :: have_scf
       logical :: have_orbitals
       logical :: have_energy, have_delta, have_distance
+      logical :: have_charmult
       type(timer_type) :: table_timer
       character(len=256) :: filename
       character(len=32) :: col
@@ -73,7 +74,7 @@ contains
          write (col, "(a,i0)") ",m", j
          write (unit, "(a)", advance="no") trim(col)
       end do
-      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev"
+      write (unit, "(a)") ",energy,delta_energy,distance,scf,homo,lumo,gap_ev,charge,mult"
 
       ! Presence of the value columns is fixed for the whole run, so decide once
       ! rather than per row.
@@ -84,6 +85,7 @@ contains
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo) &
                       .and. allocated(data%fragment_has_orbitals)
       have_orbitals = allocated(data%fragment_homo) .and. allocated(data%fragment_lumo)
+      have_charmult = allocated(data%fragment_charges) .and. allocated(data%fragment_multiplicities)
 
       ! Explicit repeat count for the monomer columns rather than an unlimited "*"
       ! group: the unlimited form emits the separator before it discovers the data is
@@ -122,11 +124,20 @@ contains
          ! up in a plot. Blank, not zero, where the method reported no pair:
          ! a gap of zero is a claim about the fragment.
          if (have_orbitals .and. data%fragment_has_orbitals(i)) then
-            write (unit, '(2(",",es24.16),",",f12.6)') data%fragment_homo(i), &
+            write (unit, '(2(",",es24.16),",",f12.6)', advance="no") data%fragment_homo(i), &
                data%fragment_lumo(i), &
                (data%fragment_lumo(i) - data%fragment_homo(i))*HARTREE_TO_EV
          else
-            write (unit, "(a)") ",,,"
+            write (unit, "(a)", advance="no") ",,,"
+         end if
+
+         ! Charge and multiplicity last, so appending them left every existing
+         ! column where a reader's parser already expects it. A charged
+         ! fragment is otherwise invisible in the breakdown.
+         if (have_charmult) then
+            write (unit, '(",",i0,",",i0)') data%fragment_charges(i), data%fragment_multiplicities(i)
+         else
+            write (unit, "(a)") ",,"
          end if
       end do
 

@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.9% of total for procedures.">274 statements</a>
+                 title=" 1.9% of total for procedures.">277 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -145,14 +145,14 @@
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-current_log_level~3">current_log_level</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_e~2">delta_E</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_dipoles~2">delta_dipoles</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~2">delta_energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-delta_energies~3">delta_energies</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-do_detailed_print">do_detailed_print</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~2">energies</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~4">fragment_size</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-energies~3">energies</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-fragment_size~12">fragment_size</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-hess_dim">hess_dim</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~31">i</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-i~38">i</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-ir_intensities">ir_intensities</a>
-            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~6">lookup</a>
+            <a class="list-group-item" href="../proc/compute_mbe.html#variable-lookup~5">lookup</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-nlevel~3">nlevel</a>
             <a class="list-group-item" href="../proc/compute_mbe.html#variable-sum_by_level~2">sum_by_level</a>
         </div>
@@ -198,8 +198,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
                   <li class="list-inline-item"><a href='../module/mqc_error.html'>mqc_error</a></li>
+                  <li class="list-inline-item"><a href='../module/mqc_result_types.html'>mqc_result_types</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -383,7 +383,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~4"></span>
+              <span class="anchor" id="variable-polymers~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -398,7 +398,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~4"></span>
+              <span class="anchor" id="variable-fragment_count~5"></span>
               integer(kind=int64),
             </td>
 <td>intent(in)</td>
@@ -413,7 +413,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~13"></span>
+              <span class="anchor" id="variable-max_level~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -428,7 +428,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-results~3"></span>
+              <span class="anchor" id="variable-results~6"></span>
               type(<a href='../type/calculation_result_t.html'>calculation_result_t</a>),
             </td>
 <td>intent(in)</td>
@@ -443,7 +443,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mbe_result~4"></span>
+              <span class="anchor" id="variable-mbe_result~3"></span>
               type(<a href='../type/mbe_result_t.html'>mbe_result_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -458,7 +458,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-sys_geom~9"></span>
+              <span class="anchor" id="variable-sys_geom~14"></span>
               type(<a href='../type/system_geometry_t.html'>system_geometry_t</a>),
             </td>
 <td>intent(in),</td>
@@ -473,7 +473,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-world_comm~4"></span>
+              <span class="anchor" id="variable-world_comm~18"></span>
               type(comm_t),
             </td>
 <td>intent(in),</td>
@@ -488,7 +488,7 @@ Bond connectivity is accessed via sys_geom%bonds</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-json_data~2"></span>
+              <span class="anchor" id="variable-json_data~8"></span>
               type(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(out),</td>
@@ -516,1459 +516,1480 @@ Bond connectivity is accessed via sys_geom%bonds</p>
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: proc~~compute_mbe~~CallsGraph Pages: 1 -->
-<svg id="proccompute_mbeCallsGraph" width="641pt" height="896pt"
- viewBox="0.00 0.00 641.00 896.41" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="proc~~compute_mbe~~CallsGraph" class="graph" transform="scale(0.45 0.45) rotate(0) translate(4 1986)">
+<svg id="proccompute_mbeCallsGraph" width="641pt" height="854pt"
+ viewBox="0.00 0.00 641.00 854.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~compute_mbe~~CallsGraph" class="graph" transform="scale(0.45 0.45) rotate(0) translate(4 1891.94)">
 <title>proc~~compute_mbe~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-1986 1419,-1986 1419,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1891.94 1419,-1891.94 1419,4 -4,4"/>
 <!-- proc~compute_mbe -->
 <g id="proc~~compute_mbe~~CallsGraph_node1" class="node">
 <title>proc~compute_mbe</title>
-<polygon fill="none" stroke="black" points="89,-633 0,-633 0,-609 89,-609 89,-633"/>
-<text text-anchor="middle" x="44.5" y="-618.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe</text>
+<polygon fill="none" stroke="black" points="89,-1081 0,-1081 0,-1057 89,-1057 89,-1081"/>
+<text text-anchor="middle" x="44.5" y="-1066.6" font-family="Helvetica,sans-Serif" font-size="10.50">compute_mbe</text>
 </g>
 <!-- abort_comm -->
 <g id="proc~~compute_mbe~~CallsGraph_node2" class="node">
 <title>abort_comm</title>
-<polygon fill="#777777" stroke="#777777" points="582,-1761 502,-1761 502,-1737 582,-1737 582,-1761"/>
-<text text-anchor="middle" x="542" y="-1746.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
+<polygon fill="#777777" stroke="#777777" points="582,-1121 502,-1121 502,-1097 582,-1097 582,-1121"/>
+<text text-anchor="middle" x="542" y="-1106.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">abort_comm</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;abort_comm -->
 <g id="proc~~compute_mbe~~CallsGraph_edge1" class="edge">
 <title>proc~compute_mbe&#45;&gt;abort_comm</title>
-<path fill="none" stroke="#ff0000" d="M45.42,-633.22C44.75,-748.95 42.22,-1649.34 125,-1730 224.74,-1827.19 409.91,-1788.88 495.47,-1763.95"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="496.58,-1767.28 505.16,-1761.06 494.58,-1760.57 496.58,-1767.28"/>
+<path fill="none" stroke="#ff0000" d="M84.37,-1081.03C97.19,-1084.53 111.59,-1087.95 125,-1090 256.32,-1110.11 413.44,-1111.14 491.68,-1110.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="491.78,-1113.62 501.73,-1109.97 491.68,-1106.62 491.78,-1113.62"/>
 </g>
 <!-- cart_disp -->
 <g id="proc~~compute_mbe~~CallsGraph_node3" class="node">
 <title>cart_disp</title>
-<polygon fill="#777777" stroke="#777777" points="284,-402 223,-402 223,-378 284,-378 284,-402"/>
-<text text-anchor="middle" x="253.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cart_disp</text>
+<polygon fill="#777777" stroke="#777777" points="284,-1689 223,-1689 223,-1665 284,-1665 284,-1689"/>
+<text text-anchor="middle" x="253.5" y="-1674.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cart_disp</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;cart_disp -->
 <g id="proc~~compute_mbe~~CallsGraph_edge2" class="edge">
 <title>proc~compute_mbe&#45;&gt;cart_disp</title>
-<path fill="none" stroke="#ff0000" d="M46.09,-608.9C48.56,-572.5 61.21,-463.23 125,-411 149.32,-391.09 185.21,-386.68 212.72,-386.77"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="212.73,-390.27 222.81,-387 212.89,-383.28 212.73,-390.27"/>
+<path fill="none" stroke="#ff0000" d="M45.27,-1081.25C44.12,-1157.86 41.86,-1570.45 125,-1656 147.35,-1679 184.49,-1682.86 212.94,-1681.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="213.21,-1685.28 222.98,-1681.19 212.8,-1678.29 213.21,-1685.28"/>
 </g>
 <!-- configuration -->
 <g id="proc~~compute_mbe~~CallsGraph_node4" class="node">
 <title>configuration</title>
-<polygon fill="#777777" stroke="#777777" points="295.5,-360 211.5,-360 211.5,-336 295.5,-336 295.5,-360"/>
-<text text-anchor="middle" x="253.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
+<polygon fill="#777777" stroke="#777777" points="295.5,-1647 211.5,-1647 211.5,-1623 295.5,-1623 295.5,-1647"/>
+<text text-anchor="middle" x="253.5" y="-1632.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">configuration</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;configuration -->
 <g id="proc~~compute_mbe~~CallsGraph_edge3" class="edge">
 <title>proc~compute_mbe&#45;&gt;configuration</title>
-<path fill="none" stroke="#ff0000" d="M45.23,-608.94C45.03,-568.06 50.3,-433.76 125,-369 145.63,-351.11 175.47,-345.49 201.1,-344.51"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="201.47,-348 211.41,-344.35 201.36,-341 201.47,-348"/>
+<path fill="none" stroke="#ff0000" d="M45.41,-1081.32C45.16,-1154.86 47.63,-1535.19 125,-1614 144.42,-1633.79 174.81,-1639.36 201.05,-1639.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="201.26,-1643.33 211.24,-1639.78 201.22,-1636.34 201.26,-1643.33"/>
 </g>
 <!-- debug -->
 <g id="proc~~compute_mbe~~CallsGraph_node5" class="node">
 <title>debug</title>
-<polygon fill="#777777" stroke="#777777" points="569,-1067 515,-1067 515,-1043 569,-1043 569,-1067"/>
-<text text-anchor="middle" x="542" y="-1052.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
+<polygon fill="#777777" stroke="#777777" points="569,-1483 515,-1483 515,-1459 569,-1459 569,-1483"/>
+<text text-anchor="middle" x="542" y="-1468.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">debug</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;debug -->
 <g id="proc~~compute_mbe~~CallsGraph_edge4" class="edge">
 <title>proc~compute_mbe&#45;&gt;debug</title>
-<path fill="none" stroke="#ff0000" d="M46.12,-633.21C49.46,-693.38 67.27,-957.45 125,-1010 180.1,-1060.15 413.99,-1058.83 504.77,-1056.32"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="504.97,-1059.81 514.86,-1056.02 504.76,-1052.82 504.97,-1059.81"/>
+<path fill="none" stroke="#ff0000" d="M45.77,-1081.24C47.48,-1145.28 58.89,-1441.06 125,-1496 212.85,-1569 268.46,-1508.46 382,-1496 398.29,-1494.21 401.87,-1490.9 418,-1488 447.15,-1482.76 480.43,-1478.25 505.02,-1475.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="505.49,-1478.66 514.99,-1473.97 504.64,-1471.71 505.49,-1478.66"/>
 </g>
 <!-- error -->
 <g id="proc~~compute_mbe~~CallsGraph_node6" class="node">
 <title>error</title>
-<polygon fill="#777777" stroke="#777777" points="1147.5,-1766 1093.5,-1766 1093.5,-1742 1147.5,-1742 1147.5,-1766"/>
-<text text-anchor="middle" x="1120.5" y="-1751.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
+<polygon fill="#777777" stroke="#777777" points="1147.5,-1121 1093.5,-1121 1093.5,-1097 1147.5,-1097 1147.5,-1121"/>
+<text text-anchor="middle" x="1120.5" y="-1106.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;error -->
 <g id="proc~~compute_mbe~~CallsGraph_edge5" class="edge">
 <title>proc~compute_mbe&#45;&gt;error</title>
-<path fill="none" stroke="#ff0000" d="M45.39,-633.33C44.45,-752.07 39.72,-1690.06 125,-1775 191.39,-1841.12 875.2,-1809.92 968,-1797 1008.51,-1791.36 1053.41,-1777.63 1083.73,-1767.19"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1085.15,-1770.4 1093.43,-1763.79 1082.83,-1763.8 1085.15,-1770.4"/>
+<path fill="none" stroke="#ff0000" d="M62.19,-1081.17C77.64,-1091.7 101.66,-1106.25 125,-1113 250.3,-1149.26 287.61,-1126.22 418,-1130 662.34,-1137.08 724.14,-1146.82 968,-1130 1007.57,-1127.27 1052.55,-1120.58 1083.15,-1115.47"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1084.07,-1118.87 1093.34,-1113.74 1082.9,-1111.97 1084.07,-1118.87"/>
 </g>
 <!-- fc_mdyne -->
 <g id="proc~~compute_mbe~~CallsGraph_node7" class="node">
 <title>fc_mdyne</title>
-<polygon fill="#777777" stroke="#777777" points="285.5,-318 221.5,-318 221.5,-294 285.5,-294 285.5,-318"/>
-<text text-anchor="middle" x="253.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fc_mdyne</text>
+<polygon fill="#777777" stroke="#777777" points="285.5,-1487 221.5,-1487 221.5,-1463 285.5,-1463 285.5,-1487"/>
+<text text-anchor="middle" x="253.5" y="-1472.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fc_mdyne</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;fc_mdyne -->
 <g id="proc~~compute_mbe~~CallsGraph_edge6" class="edge">
 <title>proc~compute_mbe&#45;&gt;fc_mdyne</title>
-<path fill="none" stroke="#ff0000" d="M47.03,-608.9C53.65,-558.55 81.46,-366.36 125,-327 148.09,-306.12 183.62,-301.71 211.31,-302.05"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="211.38,-305.55 221.49,-302.38 211.61,-298.55 211.38,-305.55"/>
+<path fill="none" stroke="#ff0000" d="M46.2,-1081.03C49.92,-1140.28 69.25,-1400.46 125,-1454 147.53,-1475.63 183.26,-1479.95 211.17,-1479.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="211.6,-1482.87 221.44,-1478.95 211.3,-1475.87 211.6,-1482.87"/>
 </g>
 <!-- force_constants -->
 <g id="proc~~compute_mbe~~CallsGraph_node8" class="node">
 <title>force_constants</title>
-<polygon fill="#777777" stroke="#777777" points="301.5,-276 205.5,-276 205.5,-252 301.5,-252 301.5,-276"/>
-<text text-anchor="middle" x="253.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">force_constants</text>
+<polygon fill="#777777" stroke="#777777" points="301.5,-1445 205.5,-1445 205.5,-1421 301.5,-1421 301.5,-1445"/>
+<text text-anchor="middle" x="253.5" y="-1430.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">force_constants</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;force_constants -->
 <g id="proc~~compute_mbe~~CallsGraph_edge7" class="edge">
 <title>proc~compute_mbe&#45;&gt;force_constants</title>
-<path fill="none" stroke="#ff0000" d="M46.62,-608.71C51.86,-553.7 75.92,-330.81 125,-285 143.58,-267.66 170.7,-261.55 195.15,-260.14"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="195.55,-263.62 205.43,-259.8 195.32,-256.63 195.55,-263.62"/>
+<path fill="none" stroke="#ff0000" d="M46.54,-1081.17C51.54,-1136.67 74.94,-1365.07 125,-1412 143.55,-1429.39 170.65,-1435.49 195.11,-1436.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.29,-1440.41 205.4,-1437.24 195.52,-1433.42 195.29,-1440.41"/>
 </g>
 <!-- frequencies -->
 <g id="proc~~compute_mbe~~CallsGraph_node9" class="node">
 <title>frequencies</title>
-<polygon fill="#777777" stroke="#777777" points="291,-234 216,-234 216,-210 291,-210 291,-234"/>
-<text text-anchor="middle" x="253.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">frequencies</text>
+<polygon fill="#777777" stroke="#777777" points="291,-1403 216,-1403 216,-1379 291,-1379 291,-1403"/>
+<text text-anchor="middle" x="253.5" y="-1388.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">frequencies</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;frequencies -->
 <g id="proc~~compute_mbe~~CallsGraph_edge8" class="edge">
 <title>proc~compute_mbe&#45;&gt;frequencies</title>
-<path fill="none" stroke="#ff0000" d="M46.26,-608.8C50.21,-549.88 70.25,-295.39 125,-243 146.13,-222.78 178.79,-217.71 205.77,-217.6"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="205.74,-221.1 215.8,-217.78 205.86,-214.1 205.74,-221.1"/>
+<path fill="none" stroke="#ff0000" d="M47.06,-1081.14C53.79,-1131.65 81.98,-1324.53 125,-1365 146.36,-1385.09 178.82,-1391.49 205.65,-1392.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="205.89,-1396.43 216,-1393.25 206.11,-1389.43 205.89,-1396.43"/>
 </g>
 <!-- get_elapsed_time -->
 <g id="proc~~compute_mbe~~CallsGraph_node10" class="node">
 <title>get_elapsed_time</title>
-<polygon fill="#777777" stroke="#777777" points="595,-1025 489,-1025 489,-1001 595,-1001 595,-1025"/>
-<text text-anchor="middle" x="542" y="-1010.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
+<polygon fill="#777777" stroke="#777777" points="595,-1441 489,-1441 489,-1417 595,-1417 595,-1441"/>
+<text text-anchor="middle" x="542" y="-1426.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_elapsed_time</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;get_elapsed_time -->
 <g id="proc~~compute_mbe~~CallsGraph_edge9" class="edge">
 <title>proc~compute_mbe&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#ff0000" d="M46.36,-633.3C50.65,-690.43 71.56,-929.17 125,-976 176.14,-1020.82 375.64,-1019.82 478.66,-1016.09"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="479.07,-1019.58 488.93,-1015.7 478.8,-1012.58 479.07,-1019.58"/>
+<path fill="none" stroke="#ff0000" d="M45.01,-1081.03C44.01,-1123.08 46.82,-1264.53 125,-1332 212.41,-1407.44 275.83,-1324.62 382,-1370 400.64,-1377.97 399.78,-1389.11 418,-1398 436.88,-1407.21 458.76,-1413.86 478.8,-1418.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="478.24,-1422.05 488.77,-1420.81 479.77,-1415.21 478.24,-1422.05"/>
 </g>
 <!-- get_message -->
 <g id="proc~~compute_mbe~~CallsGraph_node11" class="node">
 <title>get_message</title>
-<polygon fill="#777777" stroke="#777777" points="295,-192 212,-192 212,-168 295,-168 295,-192"/>
-<text text-anchor="middle" x="253.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_message</text>
+<polygon fill="#777777" stroke="#777777" points="295,-1323 212,-1323 212,-1299 295,-1299 295,-1323"/>
+<text text-anchor="middle" x="253.5" y="-1308.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_message</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;get_message -->
 <g id="proc~~compute_mbe~~CallsGraph_edge10" class="edge">
 <title>proc~compute_mbe&#45;&gt;get_message</title>
-<path fill="none" stroke="#ff0000" d="M45.99,-608.74C48.77,-545.82 64.6,-259.98 125,-201 144.91,-181.56 175.46,-176.03 201.66,-175.49"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="201.82,-178.99 211.83,-175.52 201.84,-171.99 201.82,-178.99"/>
+<path fill="none" stroke="#ff0000" d="M45.84,-1081.17C47.59,-1118.88 58.41,-1234.56 125,-1290 146.06,-1307.54 176.06,-1313.12 201.66,-1314.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="201.9,-1317.67 211.96,-1314.35 202.03,-1310.67 201.9,-1317.67"/>
 </g>
 <!-- has_error -->
 <g id="proc~~compute_mbe~~CallsGraph_node12" class="node">
 <title>has_error</title>
-<polygon fill="#777777" stroke="#777777" points="285,-150 222,-150 222,-126 285,-126 285,-150"/>
-<text text-anchor="middle" x="253.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">has_error</text>
+<polygon fill="#777777" stroke="#777777" points="285,-1281 222,-1281 222,-1257 285,-1257 285,-1281"/>
+<text text-anchor="middle" x="253.5" y="-1266.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">has_error</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;has_error -->
 <g id="proc~~compute_mbe~~CallsGraph_edge11" class="edge">
 <title>proc~compute_mbe&#45;&gt;has_error</title>
-<path fill="none" stroke="#ff0000" d="M45.76,-608.86C47.44,-542.54 58.87,-224.66 125,-159 147.3,-136.86 183.38,-132.66 211.48,-133.4"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="211.65,-136.91 221.81,-133.9 211.99,-129.92 211.65,-136.91"/>
+<path fill="none" stroke="#ff0000" d="M47,-1081.43C51.7,-1114.49 69.31,-1204.95 125,-1248 149.37,-1266.83 184.26,-1271.51 211.39,-1271.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="211.77,-1275.29 221.74,-1271.7 211.71,-1268.29 211.77,-1275.29"/>
 </g>
 <!-- info -->
 <g id="proc~~compute_mbe~~CallsGraph_node13" class="node">
 <title>info</title>
-<polygon fill="#777777" stroke="#777777" points="862,-575 808,-575 808,-551 862,-551 862,-575"/>
-<text text-anchor="middle" x="835" y="-560.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
+<polygon fill="#777777" stroke="#777777" points="862,-474 808,-474 808,-450 862,-450 862,-474"/>
+<text text-anchor="middle" x="835" y="-459.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">info</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;info -->
 <g id="proc~~compute_mbe~~CallsGraph_edge12" class="edge">
 <title>proc~compute_mbe&#45;&gt;info</title>
-<path fill="none" stroke="#ff0000" d="M89,-615.42C158.44,-606.72 298.66,-589.98 418,-581 557.87,-570.47 724.71,-565.56 797.27,-563.8"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="797.77,-567.29 807.68,-563.56 797.6,-560.29 797.77,-567.29"/>
+<path fill="none" stroke="#ff0000" d="M46.21,-1056.78C51.01,-975.78 80.01,-518.25 125,-478 175.31,-433 659.66,-453.35 797.54,-460.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="797.44,-463.62 807.6,-460.62 797.78,-456.62 797.44,-463.62"/>
 </g>
 <!-- proc~accumulate_fragment_derivatives -->
 <g id="proc~~compute_mbe~~CallsGraph_node14" class="node">
 <title>proc~accumulate_fragment_derivatives</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node14"><a xlink:href="../proc/accumulate_fragment_derivatives.html" xlink:title="accumulate_fragment_derivatives">
-<polygon fill="#d9534f" stroke="#d9534f" points="350.5,-1433 156.5,-1433 156.5,-1409 350.5,-1409 350.5,-1433"/>
-<text text-anchor="middle" x="253.5" y="-1418.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">accumulate_fragment_derivatives</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="350.5,-1605 156.5,-1605 156.5,-1581 350.5,-1581 350.5,-1605"/>
+<text text-anchor="middle" x="253.5" y="-1590.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">accumulate_fragment_derivatives</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~accumulate_fragment_derivatives -->
 <g id="proc~~compute_mbe~~CallsGraph_edge13" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~accumulate_fragment_derivatives</title>
-<path fill="none" stroke="#ff0000" d="M46.5,-633.21C51.22,-688.67 73.37,-921.98 125,-1106 157.06,-1220.26 217.45,-1349.43 241.86,-1399.55"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="238.83,-1401.31 246.37,-1408.75 245.11,-1398.23 238.83,-1401.31"/>
+<path fill="none" stroke="#ff0000" d="M46.15,-1081.21C49.81,-1146.54 69.83,-1454.64 125,-1529 142.27,-1552.28 170.41,-1567.65 195.86,-1577.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.86,-1580.84 205.45,-1580.98 197.25,-1574.26 194.86,-1580.84"/>
 </g>
 <!-- proc~build_mbe_lookup_table -->
 <g id="proc~~compute_mbe~~CallsGraph_node15" class="node">
 <title>proc~build_mbe_lookup_table</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node15"><a xlink:href="../proc/build_mbe_lookup_table.html" xlink:title="build_mbe_lookup_table">
-<polygon fill="#d9534f" stroke="#d9534f" points="324.5,-1097 182.5,-1097 182.5,-1073 324.5,-1073 324.5,-1097"/>
-<text text-anchor="middle" x="253.5" y="-1082.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_mbe_lookup_table</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="324.5,-1239 182.5,-1239 182.5,-1215 324.5,-1215 324.5,-1239"/>
+<text text-anchor="middle" x="253.5" y="-1224.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_mbe_lookup_table</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~build_mbe_lookup_table -->
 <g id="proc~~compute_mbe~~CallsGraph_edge14" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~build_mbe_lookup_table</title>
-<path fill="none" stroke="#ff0000" d="M45.93,-633.31C48.46,-697.8 63.38,-996.03 125,-1059 137.67,-1071.94 154.9,-1079.33 172.6,-1083.37"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="171.97,-1086.81 182.45,-1085.28 173.31,-1079.94 171.97,-1086.81"/>
+<path fill="none" stroke="#ff0000" d="M49.1,-1081.15C57.6,-1107.56 81.52,-1170.29 125,-1201 138.96,-1210.86 155.8,-1217.16 172.61,-1221.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="171.97,-1224.59 182.47,-1223.24 173.42,-1217.74 171.97,-1224.59"/>
 </g>
 <!-- proc~compute_mbe_coefficients -->
 <g id="proc~~compute_mbe~~CallsGraph_node16" class="node">
 <title>proc~compute_mbe_coefficients</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node16"><a xlink:href="../proc/compute_mbe_coefficients.html" xlink:title="compute_mbe_coefficients">
-<polygon fill="#d9534f" stroke="#d9534f" points="331.5,-1637 175.5,-1637 175.5,-1613 331.5,-1613 331.5,-1637"/>
-<text text-anchor="middle" x="253.5" y="-1622.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_coefficients</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="331.5,-997 175.5,-997 175.5,-973 331.5,-973 331.5,-997"/>
+<text text-anchor="middle" x="253.5" y="-982.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_coefficients</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~compute_mbe_coefficients -->
 <g id="proc~~compute_mbe~~CallsGraph_edge15" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~compute_mbe_coefficients</title>
-<path fill="none" stroke="#ff0000" d="M45.84,-633.19C48.44,-723.07 66.84,-1283.92 125,-1442 149.55,-1508.72 204.46,-1573.86 233.56,-1605.37"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="231.31,-1608.09 240.7,-1612.99 236.42,-1603.3 231.31,-1608.09"/>
+<path fill="none" stroke="#ff0000" d="M56.87,-1056.81C71.24,-1042.2 97.46,-1018.19 125,-1006 137.63,-1000.41 151.56,-996.3 165.43,-993.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.38,-996.65 175.5,-991.25 165.01,-989.78 166.38,-996.65"/>
 </g>
 <!-- proc~compute_mbe_delta -->
 <g id="proc~~compute_mbe~~CallsGraph_node17" class="node">
 <title>proc~compute_mbe_delta</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node17"><a xlink:href="../proc/compute_mbe_delta.html" xlink:title="compute_mbe_delta">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="314,-1679 193,-1679 193,-1655 314,-1655 314,-1679"/>
-<text text-anchor="middle" x="253.5" y="-1664.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_delta</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="314,-1039 193,-1039 193,-1015 314,-1015 314,-1039"/>
+<text text-anchor="middle" x="253.5" y="-1024.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_delta</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~compute_mbe_delta -->
 <g id="proc~~compute_mbe~~CallsGraph_edge16" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~compute_mbe_delta</title>
-<path fill="none" stroke="#ff0000" d="M45.55,-633.27C46.15,-743.9 52.97,-1567.51 125,-1646 139.67,-1661.98 161.44,-1668.89 182.86,-1671.29"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="182.73,-1674.79 192.98,-1672.11 183.3,-1667.82 182.73,-1674.79"/>
+<path fill="none" stroke="#ff0000" d="M88.23,-1056.92C100.08,-1053.78 112.99,-1050.57 125,-1048 143.69,-1044 164.06,-1040.34 182.92,-1037.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="183.61,-1040.67 192.93,-1035.61 182.49,-1033.76 183.61,-1040.67"/>
 </g>
 <!-- proc~compute_mbe_dipole -->
 <g id="proc~~compute_mbe~~CallsGraph_node18" class="node">
 <title>proc~compute_mbe_dipole</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node18"><a xlink:href="../proc/compute_mbe_dipole.html" xlink:title="compute_mbe_dipole">
-<polygon fill="#d9534f" stroke="#d9534f" points="317,-1721 190,-1721 190,-1697 317,-1697 317,-1721"/>
-<text text-anchor="middle" x="253.5" y="-1706.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_dipole</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="317,-1081 190,-1081 190,-1057 317,-1057 317,-1081"/>
+<text text-anchor="middle" x="253.5" y="-1066.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_mbe_dipole</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~compute_mbe_dipole -->
 <g id="proc~~compute_mbe~~CallsGraph_edge17" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~compute_mbe_dipole</title>
-<path fill="none" stroke="#ff0000" d="M45.51,-633.05C45.75,-745.33 50,-1606.02 125,-1688 138.99,-1703.29 159.49,-1710.28 179.97,-1712.97"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="179.7,-1716.46 190,-1713.96 180.39,-1709.49 179.7,-1716.46"/>
+<path fill="none" stroke="#ff0000" d="M89.15,-1069C115.36,-1069 149.38,-1069 179.59,-1069"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="179.67,-1072.5 189.67,-1069 179.67,-1065.5 179.67,-1072.5"/>
 </g>
 <!-- proc~compute_thermochemistry -->
 <g id="proc~~compute_mbe~~CallsGraph_node19" class="node">
 <title>proc~compute_thermochemistry</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node19"><a xlink:href="../proc/compute_thermochemistry.html" xlink:title="compute_thermochemistry">
-<polygon fill="#d9534f" stroke="#d9534f" points="620.5,-836 463.5,-836 463.5,-812 620.5,-812 620.5,-836"/>
-<text text-anchor="middle" x="542" y="-821.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_thermochemistry</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="620.5,-213 463.5,-213 463.5,-189 620.5,-189 620.5,-213"/>
+<text text-anchor="middle" x="542" y="-198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_thermochemistry</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~compute_thermochemistry -->
 <g id="proc~~compute_mbe~~CallsGraph_edge18" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~compute_thermochemistry</title>
-<path fill="none" stroke="#ff0000" d="M52.9,-633.23C65.31,-652.7 92.25,-690.64 125,-711 227.05,-774.45 364.73,-802.76 453.21,-815.05"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="452.83,-818.53 463.21,-816.4 453.77,-811.59 452.83,-818.53"/>
+<path fill="none" stroke="#ff0000" d="M45.77,-1056.8C48.07,-959.26 65.55,-308.41 125,-248 218.12,-153.38 390.13,-169.86 481.05,-187.06"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="480.44,-190.51 490.93,-188.99 481.79,-183.64 480.44,-190.51"/>
 </g>
 <!-- proc~compute_vibrational_analysis -->
 <g id="proc~~compute_mbe~~CallsGraph_node20" class="node">
 <title>proc~compute_vibrational_analysis</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node20"><a xlink:href="../proc/compute_vibrational_analysis.html" xlink:title="compute_vibrational_analysis">
-<polygon fill="#d9534f" stroke="#d9534f" points="627,-1899 457,-1899 457,-1875 627,-1875 627,-1899"/>
-<text text-anchor="middle" x="542" y="-1884.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_analysis</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="627,-919 457,-919 457,-895 627,-895 627,-919"/>
+<text text-anchor="middle" x="542" y="-904.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_analysis</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~compute_vibrational_analysis -->
 <g id="proc~~compute_mbe~~CallsGraph_edge19" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~compute_vibrational_analysis</title>
-<path fill="none" stroke="#ff0000" d="M45.37,-633.24C44.14,-755.16 36.91,-1748.85 125,-1841 217.44,-1937.7 392.06,-1919.11 482.86,-1901.04"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="483.62,-1904.45 492.71,-1899.01 482.21,-1897.6 483.62,-1904.45"/>
+<path fill="none" stroke="#ff0000" d="M50.82,-1056.75C61.34,-1034.15 87.11,-986.17 125,-964 223.75,-906.21 357.78,-897.86 446.71,-900.04"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="446.69,-903.55 456.79,-900.34 446.9,-896.55 446.69,-903.55"/>
 </g>
 <!-- proc~energy_total -->
 <g id="proc~~compute_mbe~~CallsGraph_node21" class="node">
 <title>proc~energy_total</title>
 <g id="a_proc~~compute_mbe~~CallsGraph_node21"><a xlink:href="../proc/energy_total.html" xlink:title="energy_t%energy_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="321.5,-108 185.5,-108 185.5,-84 321.5,-84 321.5,-108"/>
-<text text-anchor="middle" x="253.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="321.5,-887 185.5,-887 185.5,-863 321.5,-863 321.5,-887"/>
+<text text-anchor="middle" x="253.5" y="-872.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">energy_t%energy_total</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~energy_total -->
 <g id="proc~~compute_mbe~~CallsGraph_edge20" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~energy_total</title>
-<path fill="none" stroke="#ff0000" d="M45.57,-608.7C46.25,-538.5 53.21,-189.28 125,-117 138.33,-103.58 156.72,-96.72 175.38,-93.56"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="176.01,-97 185.45,-92.19 175.07,-90.07 176.01,-97"/>
+<path fill="none" stroke="#ff0000" d="M48.79,-1056.75C56.92,-1028.7 80.62,-959.31 125,-921 141.23,-906.99 162.05,-897.13 182.14,-890.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="183.48,-893.48 191.93,-887.08 181.33,-886.82 183.48,-893.48"/>
+</g>
+<!-- proc~fragment_charge_multiplicity -->
+<g id="proc~~compute_mbe~~CallsGraph_node22" class="node">
+<title>proc~fragment_charge_multiplicity</title>
+<g id="a_proc~~compute_mbe~~CallsGraph_node22"><a xlink:href="../proc/fragment_charge_multiplicity.html" xlink:title="fragment_charge_multiplicity">
+<polygon fill="#d9534f" stroke="#d9534f" points="919.5,-1883 750.5,-1883 750.5,-1859 919.5,-1859 919.5,-1883"/>
+<text text-anchor="middle" x="835" y="-1868.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_charge_multiplicity</text>
+</a>
+</g>
+</g>
+<!-- proc~compute_mbe&#45;&gt;proc~fragment_charge_multiplicity -->
+<g id="proc~~compute_mbe~~CallsGraph_edge21" class="edge">
+<title>proc~compute_mbe&#45;&gt;proc~fragment_charge_multiplicity</title>
+<path fill="none" stroke="#ff0000" d="M45.58,-1081.25C46.29,-1159.7 53.48,-1591.9 125,-1698 258.49,-1896.03 579.76,-1896.23 739.93,-1882.57"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="740.59,-1886.02 750.24,-1881.65 739.97,-1879.05 740.59,-1886.02"/>
 </g>
 <!-- proc~fragment_lookup_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_node22" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node23" class="node">
 <title>proc~fragment_lookup_destroy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node22"><a xlink:href="../proc/fragment_lookup_destroy.html" xlink:title="fragment_lookup_t%fragment_lookup_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="382,-66 125,-66 125,-42 382,-42 382,-66"/>
-<text text-anchor="middle" x="253.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_destroy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node23"><a xlink:href="../proc/fragment_lookup_destroy.html" xlink:title="fragment_lookup_t%fragment_lookup_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="382,-751 125,-751 125,-727 382,-727 382,-751"/>
+<text text-anchor="middle" x="253.5" y="-736.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~fragment_lookup_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge21" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge22" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~fragment_lookup_destroy</title>
-<path fill="none" stroke="#ff0000" d="M45.41,-608.65C45.13,-534.99 47.5,-153.96 125,-75 125.93,-74.05 126.88,-73.14 127.86,-72.26"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="130.03,-75 135.78,-66.1 125.73,-69.48 130.03,-75"/>
+<path fill="none" stroke="#ff0000" d="M46.85,-1057C52.93,-1005.22 79.44,-801.7 125,-760 126.16,-758.94 127.36,-757.91 128.59,-756.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="130.86,-759.62 137.08,-751.04 126.86,-753.87 130.86,-759.62"/>
 </g>
 <!-- proc~print_detailed_breakdown -->
-<g id="proc~~compute_mbe~~CallsGraph_node23" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node24" class="node">
 <title>proc~print_detailed_breakdown</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node23"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
-<polygon fill="#d9534f" stroke="#d9534f" points="328.5,-444 178.5,-444 178.5,-420 328.5,-420 328.5,-444"/>
-<text text-anchor="middle" x="253.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node24"><a xlink:href="../proc/print_detailed_breakdown.html" xlink:title="print_detailed_breakdown">
+<polygon fill="#d9534f" stroke="#d9534f" points="328.5,-793 178.5,-793 178.5,-769 328.5,-769 328.5,-793"/>
+<text text-anchor="middle" x="253.5" y="-778.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_detailed_breakdown</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~print_detailed_breakdown -->
-<g id="proc~~compute_mbe~~CallsGraph_edge22" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge23" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~print_detailed_breakdown</title>
-<path fill="none" stroke="#ff0000" d="M47.63,-608.88C53.69,-578.27 73.97,-497.53 125,-458 137.65,-448.2 153.05,-441.84 168.72,-437.75"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="169.53,-441.16 178.49,-435.5 167.95,-434.34 169.53,-441.16"/>
+<path fill="none" stroke="#ff0000" d="M47.05,-1056.85C52.1,-1021.6 71,-917.79 125,-854 147.19,-827.79 181.3,-808.96 208.66,-796.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="210.17,-800.16 218.02,-793.05 207.45,-793.71 210.17,-800.16"/>
 </g>
 <!-- proc~print_mbe_energy_breakdown -->
-<g id="proc~~compute_mbe~~CallsGraph_node24" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node25" class="node">
 <title>proc~print_mbe_energy_breakdown</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node24"><a xlink:href="../proc/print_mbe_energy_breakdown.html" xlink:title="print_mbe_energy_breakdown">
-<polygon fill="#d9534f" stroke="#d9534f" points="340,-562 167,-562 167,-538 340,-538 340,-562"/>
-<text text-anchor="middle" x="253.5" y="-547.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_mbe_energy_breakdown</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node25"><a xlink:href="../proc/print_mbe_energy_breakdown.html" xlink:title="print_mbe_energy_breakdown">
+<polygon fill="#d9534f" stroke="#d9534f" points="340,-511 167,-511 167,-487 340,-487 340,-511"/>
+<text text-anchor="middle" x="253.5" y="-496.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_mbe_energy_breakdown</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~print_mbe_energy_breakdown -->
-<g id="proc~~compute_mbe~~CallsGraph_edge23" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge24" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~print_mbe_energy_breakdown</title>
-<path fill="none" stroke="#ff0000" d="M63.02,-608.94C78.63,-598.73 102.42,-584.45 125,-576 137.31,-571.39 150.61,-567.54 163.81,-564.33"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="164.91,-567.67 173.87,-562 163.34,-560.85 164.91,-567.67"/>
+<path fill="none" stroke="#ff0000" d="M45.46,-1056.74C45.48,-983.58 49.26,-605.11 125,-525 133.82,-515.67 145,-509.21 157.07,-504.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.43,-508.03 166.9,-501.67 156.31,-501.36 158.43,-508.03"/>
 </g>
 <!-- proc~print_mbe_gradient_info -->
-<g id="proc~~compute_mbe~~CallsGraph_node25" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node26" class="node">
 <title>proc~print_mbe_gradient_info</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node25"><a xlink:href="../proc/print_mbe_gradient_info.html" xlink:title="print_mbe_gradient_info">
-<polygon fill="#d9534f" stroke="#d9534f" points="613,-735 471,-735 471,-711 613,-711 613,-735"/>
-<text text-anchor="middle" x="542" y="-720.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_mbe_gradient_info</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node26"><a xlink:href="../proc/print_mbe_gradient_info.html" xlink:title="print_mbe_gradient_info">
+<polygon fill="#d9534f" stroke="#d9534f" points="613,-629 471,-629 471,-605 613,-605 613,-629"/>
+<text text-anchor="middle" x="542" y="-614.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_mbe_gradient_info</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~print_mbe_gradient_info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge24" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge25" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~print_mbe_gradient_info</title>
-<path fill="none" stroke="#ff0000" d="M59.31,-633.2C74.33,-645.73 99.63,-664.66 125,-674 236.49,-715.03 375.09,-723.65 460.8,-724.51"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="460.96,-728.01 470.98,-724.58 461,-721.01 460.96,-728.01"/>
+<path fill="none" stroke="#ff0000" d="M46.59,-1056.65C51.83,-1000.31 76.1,-768.28 125,-718 212.86,-627.65 366.85,-612.68 460.81,-612.87"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="460.81,-616.37 470.84,-612.95 460.87,-609.37 460.81,-616.37"/>
 </g>
 <!-- proc~print_vibrational_analysis -->
-<g id="proc~~compute_mbe~~CallsGraph_node26" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node27" class="node">
 <title>proc~print_vibrational_analysis</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node26"><a xlink:href="../proc/print_vibrational_analysis.html" xlink:title="print_vibrational_analysis">
-<polygon fill="#d9534f" stroke="#d9534f" points="327.5,-665 179.5,-665 179.5,-641 327.5,-641 327.5,-665"/>
-<text text-anchor="middle" x="253.5" y="-650.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_vibrational_analysis</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node27"><a xlink:href="../proc/print_vibrational_analysis.html" xlink:title="print_vibrational_analysis">
+<polygon fill="#d9534f" stroke="#d9534f" points="327.5,-371 179.5,-371 179.5,-347 327.5,-347 327.5,-371"/>
+<text text-anchor="middle" x="253.5" y="-356.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_vibrational_analysis</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~print_vibrational_analysis -->
-<g id="proc~~compute_mbe~~CallsGraph_edge25" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge26" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~print_vibrational_analysis</title>
-<path fill="none" stroke="#ff0000" d="M89.15,-627.75C112.39,-631.34 141.76,-635.88 169.18,-640.12"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="168.75,-643.6 179.17,-641.66 169.82,-636.68 168.75,-643.6"/>
+<path fill="none" stroke="#ff0000" d="M46.14,-1056.99C50.82,-971 80.86,-450.84 125,-398 136.41,-384.34 152.48,-375.36 169.36,-369.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="170.86,-372.7 179.37,-366.39 168.79,-366.01 170.86,-372.7"/>
 </g>
 <!-- proc~report_unconverged -->
-<g id="proc~~compute_mbe~~CallsGraph_node27" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node28" class="node">
 <title>proc~report_unconverged</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node27"><a xlink:href="../proc/report_unconverged.html" xlink:title="report_unconverged">
-<polygon fill="#d9534f" stroke="#d9534f" points="602.5,-499 481.5,-499 481.5,-475 602.5,-475 602.5,-499"/>
-<text text-anchor="middle" x="542" y="-484.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">report_unconverged</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node28"><a xlink:href="../proc/report_unconverged.html" xlink:title="report_unconverged">
+<polygon fill="#d9534f" stroke="#d9534f" points="602.5,-549 481.5,-549 481.5,-525 602.5,-525 602.5,-549"/>
+<text text-anchor="middle" x="542" y="-534.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">report_unconverged</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe&#45;&gt;proc~report_unconverged -->
-<g id="proc~~compute_mbe~~CallsGraph_edge26" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge27" class="edge">
 <title>proc~compute_mbe&#45;&gt;proc~report_unconverged</title>
-<path fill="none" stroke="#ff0000" d="M51.89,-608.85C63.42,-588.34 89.79,-547.3 125,-529 183.53,-498.57 368.65,-490.18 471.1,-487.87"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="471.43,-491.37 481.35,-487.65 471.28,-484.37 471.43,-491.37"/>
+<path fill="none" stroke="#ff0000" d="M45.45,-1056.99C45.45,-986.96 49.23,-632.01 125,-563 173.99,-518.38 365.81,-524.3 471.01,-531.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="471.01,-534.79 481.23,-531.98 471.49,-527.8 471.01,-534.79"/>
 </g>
 <!-- reduced_masses -->
-<g id="proc~~compute_mbe~~CallsGraph_node28" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node29" class="node">
 <title>reduced_masses</title>
-<polygon fill="#777777" stroke="#777777" points="304,-24 203,-24 203,0 304,0 304,-24"/>
-<text text-anchor="middle" x="253.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">reduced_masses</text>
+<polygon fill="#777777" stroke="#777777" points="304,-431 203,-431 203,-407 304,-407 304,-431"/>
+<text text-anchor="middle" x="253.5" y="-416.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">reduced_masses</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;reduced_masses -->
-<g id="proc~~compute_mbe~~CallsGraph_edge27" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge28" class="edge">
 <title>proc~compute_mbe&#45;&gt;reduced_masses</title>
-<path fill="none" stroke="#ff0000" d="M45.27,-608.72C44.09,-531.99 41.73,-118.71 125,-33 142.3,-15.19 168.48,-8.86 192.62,-7.4"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="192.93,-10.89 202.81,-7.06 192.7,-3.9 192.93,-10.89"/>
+<path fill="none" stroke="#ff0000" d="M45.21,-1056.8C43.58,-977.72 38.54,-538.15 125,-445 142.08,-426.6 168.35,-419.28 192.63,-416.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="193.15,-420.35 202.87,-416.13 192.64,-413.37 193.15,-420.35"/>
 </g>
 <!-- start -->
-<g id="proc~~compute_mbe~~CallsGraph_node29" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node30" class="node">
 <title>start</title>
-<polygon fill="#777777" stroke="#777777" points="569,-983 515,-983 515,-959 569,-959 569,-983"/>
-<text text-anchor="middle" x="542" y="-968.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
+<polygon fill="#777777" stroke="#777777" points="569,-1201 515,-1201 515,-1177 569,-1177 569,-1201"/>
+<text text-anchor="middle" x="542" y="-1186.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">start</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;start -->
-<g id="proc~~compute_mbe~~CallsGraph_edge28" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge29" class="edge">
 <title>proc~compute_mbe&#45;&gt;start</title>
-<path fill="none" stroke="#ff0000" d="M46.62,-633.33C51.8,-687.5 75.34,-903.49 125,-945 181.88,-992.55 414.18,-980.64 504.67,-973.99"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="505.03,-977.47 514.74,-973.23 504.5,-970.49 505.03,-977.47"/>
+<path fill="none" stroke="#ff0000" d="M51.57,-1081.22C62.77,-1102.27 88.9,-1144.86 125,-1163 191.02,-1196.17 416.4,-1192.97 504.9,-1190.31"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="505.11,-1193.81 515,-1189.99 504.89,-1186.81 505.11,-1193.81"/>
 </g>
 <!-- to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_node30" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node31" class="node">
 <title>to_char</title>
-<polygon fill="#777777" stroke="#777777" points="1147.5,-733 1093.5,-733 1093.5,-709 1147.5,-709 1147.5,-733"/>
-<text text-anchor="middle" x="1120.5" y="-718.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
+<polygon fill="#777777" stroke="#777777" points="1147.5,-628 1093.5,-628 1093.5,-604 1147.5,-604 1147.5,-628"/>
+<text text-anchor="middle" x="1120.5" y="-613.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_char</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge29" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge30" class="edge">
 <title>proc~compute_mbe&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff0000" d="M48.7,-633.41C56.64,-661.81 79.96,-731.99 125,-770 318.66,-933.43 479.48,-778.47 666,-950 695.9,-977.49 668.09,-1011.64 702,-1034 800.7,-1099.08 867.84,-1096.8 968,-1034 1074.18,-967.43 1107.77,-803.02 1116.69,-743.21"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1120.15,-743.7 1118.07,-733.31 1113.22,-742.73 1120.15,-743.7"/>
+<path fill="none" stroke="#ff0000" d="M45.67,-1056.9C46.9,-990.8 56.32,-674.23 125,-613 222.37,-526.2 287.61,-599.78 418,-596 672.66,-588.62 979.32,-606.64 1083.13,-613.49"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1083.17,-617 1093.38,-614.17 1083.64,-610.01 1083.17,-617"/>
 </g>
 <!-- warning -->
-<g id="proc~~compute_mbe~~CallsGraph_node31" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node32" class="node">
 <title>warning</title>
-<polygon fill="#777777" stroke="#777777" points="1148,-615 1093,-615 1093,-591 1148,-591 1148,-615"/>
-<text text-anchor="middle" x="1120.5" y="-600.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
+<polygon fill="#777777" stroke="#777777" points="1148,-394 1093,-394 1093,-370 1148,-370 1148,-394"/>
+<text text-anchor="middle" x="1120.5" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">warning</text>
 </g>
 <!-- proc~compute_mbe&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge30" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge31" class="edge">
 <title>proc~compute_mbe&#45;&gt;warning</title>
-<path fill="none" stroke="#ff0000" d="M48.64,-608.65C56.34,-581.23 78.98,-515.44 125,-487 180.53,-452.69 352.76,-468.33 418,-466 540.15,-461.63 853.88,-428.21 968,-472 1027.64,-494.89 1079.71,-552.4 1104.35,-583.04"/>
-<polygon fill="#ff0000" stroke="#ff0000" points="1101.62,-585.24 1110.56,-590.93 1107.12,-580.9 1101.62,-585.24"/>
+<path fill="none" stroke="#ff0000" d="M45.91,-1057C49.12,-966.3 71.54,-390.94 125,-338 191.71,-271.94 878.15,-253.79 968,-281 1020.92,-297.02 1072.25,-338.3 1099.45,-362.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1097.37,-365.68 1107.1,-369.87 1102.11,-360.53 1097.37,-365.68"/>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;abort_comm -->
-<g id="proc~~compute_mbe~~CallsGraph_edge31" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge32" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;abort_comm</title>
-<path fill="none" stroke="#00ff66" d="M265.34,-1433.41C289.58,-1461.73 348.63,-1534.12 382,-1604 406.73,-1655.78 375.19,-1689.79 418,-1728 437.82,-1745.69 466.86,-1751.25 491.76,-1752.24"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="491.72,-1755.74 501.77,-1752.41 491.83,-1748.74 491.72,-1755.74"/>
+<path fill="none" stroke="#00ff52" d="M281.18,-1580.91C311.27,-1565.73 358.99,-1536.67 382,-1496 454.22,-1368.36 333.22,-1287.66 418,-1168 435.42,-1143.41 465.91,-1128.69 492.18,-1120.1"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="493.46,-1123.37 502,-1117.1 491.41,-1116.67 493.46,-1123.37"/>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge32" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge33" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;error</title>
-<path fill="none" stroke="#00ff66" d="M263.62,-1433.03C286.19,-1461.84 347.96,-1534.84 418,-1568 518.78,-1615.72 578.41,-1536.99 666,-1606 699.19,-1632.15 668.44,-1668.33 702,-1694 749.31,-1730.19 909.1,-1718.1 968,-1727 989.67,-1730.27 1045.8,-1740.44 1083.31,-1747.32"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="1082.88,-1750.8 1093.35,-1749.17 1084.15,-1743.92 1082.88,-1750.8"/>
+<path fill="none" stroke="#00ff52" d="M332.07,-1605.02C359.18,-1608.68 389.87,-1612.2 418,-1614 528,-1621.04 557.68,-1634.41 666,-1614 807.61,-1587.32 870.9,-1602.48 968,-1496 1006.96,-1453.28 984.29,-1425.35 1004,-1371 1037.25,-1279.3 1087.38,-1174.25 1108.98,-1130.19"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="1112.21,-1131.56 1113.49,-1121.04 1105.93,-1128.46 1112.21,-1131.56"/>
 </g>
 <!-- proc~accumulate_uncapped -->
-<g id="proc~~compute_mbe~~CallsGraph_node34" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node35" class="node">
 <title>proc~accumulate_uncapped</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node34"><a xlink:href="../proc/accumulate_uncapped.html" xlink:title="accumulate_uncapped">
-<polygon fill="#d9534f" stroke="#d9534f" points="609,-1433 475,-1433 475,-1409 609,-1409 609,-1433"/>
-<text text-anchor="middle" x="542" y="-1418.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">accumulate_uncapped</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node35"><a xlink:href="../proc/accumulate_uncapped.html" xlink:title="accumulate_uncapped">
+<polygon fill="#d9534f" stroke="#d9534f" points="609,-1853 475,-1853 475,-1829 609,-1829 609,-1853"/>
+<text text-anchor="middle" x="542" y="-1838.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">accumulate_uncapped</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~accumulate_uncapped -->
-<g id="proc~~compute_mbe~~CallsGraph_edge33" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge34" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~accumulate_uncapped</title>
-<path fill="none" stroke="#00ff66" d="M350.7,-1421C387.83,-1421 429.72,-1421 464.72,-1421"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="464.87,-1424.5 474.87,-1421 464.87,-1417.5 464.87,-1424.5"/>
+<path fill="none" stroke="#00ff52" d="M350.66,-1595.45C362.35,-1599.4 373.23,-1605.32 382,-1614 448.04,-1679.4 352.15,-1754.41 418,-1820 430.45,-1832.4 447.35,-1839.05 464.63,-1842.35"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="464.41,-1845.85 474.82,-1843.92 465.48,-1838.94 464.41,-1845.85"/>
 </g>
 <!-- proc~build_fragment_from_indices -->
-<g id="proc~~compute_mbe~~CallsGraph_node35" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node36" class="node">
 <title>proc~build_fragment_from_indices</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node35"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
-<polygon fill="#d9534f" stroke="#d9534f" points="625,-1349 459,-1349 459,-1325 625,-1325 625,-1349"/>
-<text text-anchor="middle" x="542" y="-1334.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node36"><a xlink:href="../proc/build_fragment_from_indices.html" xlink:title="build_fragment_from_indices">
+<polygon fill="#d9534f" stroke="#d9534f" points="625,-1685 459,-1685 459,-1661 625,-1661 625,-1685"/>
+<text text-anchor="middle" x="542" y="-1670.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">build_fragment_from_indices</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~build_fragment_from_indices -->
-<g id="proc~~compute_mbe~~CallsGraph_edge34" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge35" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~build_fragment_from_indices</title>
-<path fill="none" stroke="#00ff66" d="M280.86,-1408.97C312.73,-1394.86 368.29,-1371.68 418,-1358 427.89,-1355.28 438.34,-1352.85 448.79,-1350.69"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="449.66,-1354.08 458.79,-1348.7 448.3,-1347.22 449.66,-1354.08"/>
+<path fill="none" stroke="#00ff52" d="M350.72,-1602.65C361.56,-1605.53 372.22,-1609.24 382,-1614 401.52,-1623.49 398.7,-1637.07 418,-1647 427.66,-1651.97 438.21,-1655.99 448.94,-1659.24"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="448.26,-1662.68 458.83,-1662.02 450.15,-1655.94 448.26,-1662.68"/>
 </g>
 <!-- proc~error_get_full_trace -->
-<g id="proc~~compute_mbe~~CallsGraph_node51" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node52" class="node">
 <title>proc~error_get_full_trace</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node51"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="622.5,-1269 461.5,-1269 461.5,-1245 622.5,-1245 622.5,-1269"/>
-<text text-anchor="middle" x="542" y="-1254.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node52"><a xlink:href="../proc/error_get_full_trace.html" xlink:title="error_t%error_get_full_trace">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="622.5,-1563 461.5,-1563 461.5,-1539 622.5,-1539 622.5,-1563"/>
+<text text-anchor="middle" x="542" y="-1548.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_get_full_trace</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~error_get_full_trace -->
-<g id="proc~~compute_mbe~~CallsGraph_edge35" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge36" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~error_get_full_trace</title>
-<path fill="none" stroke="#00ff66" d="M264.97,-1408.76C289.01,-1381.5 351.26,-1315.63 418,-1283 428.49,-1277.87 439.98,-1273.75 451.57,-1270.44"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="452.56,-1273.8 461.32,-1267.84 450.76,-1267.03 452.56,-1273.8"/>
+<path fill="none" stroke="#00ff52" d="M336.6,-1580.96C372.42,-1575.71 414.52,-1569.54 451.17,-1564.17"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="451.97,-1567.59 461.36,-1562.68 450.96,-1560.66 451.97,-1567.59"/>
 </g>
 <!-- proc~error_has_error -->
-<g id="proc~~compute_mbe~~CallsGraph_node52" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node53" class="node">
 <title>proc~error_has_error</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node52"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="904.5,-1269 765.5,-1269 765.5,-1245 904.5,-1245 904.5,-1269"/>
-<text text-anchor="middle" x="835" y="-1254.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node53"><a xlink:href="../proc/error_has_error.html" xlink:title="error_t%error_has_error">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="904.5,-1445 765.5,-1445 765.5,-1421 904.5,-1421 904.5,-1445"/>
+<text text-anchor="middle" x="835" y="-1430.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_has_error</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~error_has_error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge36" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge37" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#00ff66" d="M268.66,-1408.83C295.68,-1386.35 357.29,-1338.57 418,-1316 433.63,-1310.19 639.31,-1282.56 755.47,-1267.26"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="755.94,-1270.73 765.39,-1265.95 755.02,-1263.79 755.94,-1270.73"/>
+<path fill="none" stroke="#00ff52" d="M280.54,-1580.95C312.32,-1566.71 368.02,-1543.29 418,-1530 525.76,-1501.34 567.21,-1543.71 666,-1492 686.61,-1481.21 681.42,-1464.85 702,-1454 718.19,-1445.46 736.94,-1440.19 755.13,-1436.99"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="755.83,-1440.42 765.16,-1435.41 754.74,-1433.51 755.83,-1440.42"/>
 </g>
 <!-- proc~fragment_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_node53" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node54" class="node">
 <title>proc~fragment_destroy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node53"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="653.5,-1189 430.5,-1189 430.5,-1165 653.5,-1165 653.5,-1189"/>
-<text text-anchor="middle" x="542" y="-1174.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node54"><a xlink:href="../proc/fragment_destroy.html" xlink:title="physical_fragment_t%fragment_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="653.5,-1811 430.5,-1811 430.5,-1787 653.5,-1787 653.5,-1811"/>
+<text text-anchor="middle" x="542" y="-1796.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~fragment_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge37" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge38" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~fragment_destroy</title>
-<path fill="none" stroke="#00ff66" d="M262.71,-1408.68C284.61,-1376.59 347.55,-1289.24 418,-1236 442.1,-1217.78 472.73,-1203.07 497.39,-1192.9"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="498.89,-1196.06 506.86,-1189.09 496.28,-1189.57 498.89,-1196.06"/>
+<path fill="none" stroke="#00ff52" d="M350.64,-1595.91C362.26,-1599.8 373.13,-1605.59 382,-1614 436.14,-1665.35 364.01,-1726.49 418,-1778 419.29,-1779.23 420.63,-1780.41 422.01,-1781.53"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="420.11,-1784.48 430.31,-1787.36 424.14,-1778.75 420.11,-1784.48"/>
 </g>
 <!-- proc~redistribute_cap_dipole_derivatives -->
-<g id="proc~~compute_mbe~~CallsGraph_node61" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node62" class="node">
 <title>proc~redistribute_cap_dipole_derivatives</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node61"><a xlink:href="../proc/redistribute_cap_dipole_derivatives.html" xlink:title="redistribute_cap_dipole_derivatives">
-<polygon fill="#d9534f" stroke="#d9534f" points="642,-1559 442,-1559 442,-1535 642,-1535 642,-1559"/>
-<text text-anchor="middle" x="542" y="-1544.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_dipole_derivatives</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node62"><a xlink:href="../proc/redistribute_cap_dipole_derivatives.html" xlink:title="redistribute_cap_dipole_derivatives">
+<polygon fill="#d9534f" stroke="#d9534f" points="642,-1769 442,-1769 442,-1745 642,-1745 642,-1769"/>
+<text text-anchor="middle" x="542" y="-1754.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_dipole_derivatives</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_dipole_derivatives -->
-<g id="proc~~compute_mbe~~CallsGraph_edge38" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge39" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_dipole_derivatives</title>
-<path fill="none" stroke="#00ff66" d="M268.72,-1433.01C295.84,-1455.23 357.61,-1502.58 418,-1526 424.17,-1528.39 430.63,-1530.52 437.21,-1532.4"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="436.35,-1535.79 446.92,-1534.98 438.15,-1529.03 436.35,-1535.79"/>
+<path fill="none" stroke="#00ff52" d="M350.74,-1596.72C362.2,-1600.51 373,-1606.05 382,-1614 424.37,-1651.43 375.74,-1698.45 418,-1736 422.46,-1739.96 427.39,-1743.32 432.62,-1746.15"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="431.17,-1749.33 441.71,-1750.43 434.15,-1743 431.17,-1749.33"/>
 </g>
 <!-- proc~redistribute_cap_gradients -->
-<g id="proc~~compute_mbe~~CallsGraph_node62" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node63" class="node">
 <title>proc~redistribute_cap_gradients</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node62"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
-<polygon fill="#d9534f" stroke="#d9534f" points="619,-1517 465,-1517 465,-1493 619,-1493 619,-1517"/>
-<text text-anchor="middle" x="542" y="-1502.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node63"><a xlink:href="../proc/redistribute_cap_gradients.html" xlink:title="redistribute_cap_gradients">
+<polygon fill="#d9534f" stroke="#d9534f" points="619,-1727 465,-1727 465,-1703 619,-1703 619,-1727"/>
+<text text-anchor="middle" x="542" y="-1712.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_gradients</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_gradients -->
-<g id="proc~~compute_mbe~~CallsGraph_edge39" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge40" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_gradients</title>
-<path fill="none" stroke="#00ff66" d="M280.86,-1433.03C312.73,-1447.14 368.29,-1470.32 418,-1484 429.78,-1487.24 442.35,-1490.07 454.78,-1492.52"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="454.22,-1495.98 464.7,-1494.4 455.52,-1489.1 454.22,-1495.98"/>
+<path fill="none" stroke="#00ff52" d="M350.74,-1598.2C362,-1601.8 372.75,-1606.89 382,-1614 412.91,-1637.77 387.16,-1670.14 418,-1694 428.75,-1702.32 441.63,-1707.82 454.94,-1711.39"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="454.15,-1714.8 464.68,-1713.66 455.73,-1707.98 454.15,-1714.8"/>
 </g>
 <!-- proc~redistribute_cap_hessian -->
-<g id="proc~~compute_mbe~~CallsGraph_node63" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node64" class="node">
 <title>proc~redistribute_cap_hessian</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node63"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="614,-1475 470,-1475 470,-1451 614,-1451 614,-1475"/>
-<text text-anchor="middle" x="542" y="-1460.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node64"><a xlink:href="../proc/redistribute_cap_hessian.html" xlink:title="redistribute_cap_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="614,-1605 470,-1605 470,-1581 614,-1581 614,-1605"/>
+<text text-anchor="middle" x="542" y="-1590.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">redistribute_cap_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_hessian -->
-<g id="proc~~compute_mbe~~CallsGraph_edge40" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge41" class="edge">
 <title>proc~accumulate_fragment_derivatives&#45;&gt;proc~redistribute_cap_hessian</title>
-<path fill="none" stroke="#00ff66" d="M336.6,-1433.04C375.15,-1438.69 420.98,-1445.41 459.47,-1451.05"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="459.19,-1454.54 469.6,-1452.53 460.21,-1447.62 459.19,-1454.54"/>
+<path fill="none" stroke="#00ff52" d="M350.7,-1593C386.05,-1593 425.71,-1593 459.64,-1593"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="459.97,-1596.5 469.97,-1593 459.97,-1589.5 459.97,-1596.5"/>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;debug -->
-<g id="proc~~compute_mbe~~CallsGraph_edge41" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge42" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;debug</title>
-<path fill="none" stroke="#00ff99" d="M324.59,-1077.66C381.48,-1071.7 459.43,-1063.54 504.59,-1058.81"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="505.2,-1062.27 514.78,-1057.75 504.47,-1055.31 505.2,-1062.27"/>
+<path fill="none" stroke="#00ff83" d="M324.69,-1223.75C345.59,-1226.35 366.91,-1233.11 382,-1248 446.9,-1312.06 353.28,-1385.75 418,-1450 440.42,-1472.26 477.23,-1475.97 504.74,-1475.05"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="504.99,-1478.54 514.78,-1474.49 504.61,-1471.55 504.99,-1478.54"/>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;get_elapsed_time -->
-<g id="proc~~compute_mbe~~CallsGraph_edge42" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge43" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;get_elapsed_time</title>
-<path fill="none" stroke="#00ff99" d="M288.58,-1072.91C321.4,-1061.61 372.61,-1044.9 418,-1034 437.64,-1029.28 459.29,-1025.22 478.88,-1021.95"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="479.61,-1025.38 488.92,-1020.32 478.49,-1018.47 479.61,-1025.38"/>
+<path fill="none" stroke="#00ff83" d="M324.57,-1224.26C345.33,-1226.92 366.61,-1233.58 382,-1248 433.61,-1296.36 367.5,-1353.49 418,-1403 434.01,-1418.7 456.98,-1425.98 478.74,-1429.08"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="478.63,-1432.59 488.96,-1430.25 479.42,-1425.63 478.63,-1432.59"/>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;start -->
-<g id="proc~~compute_mbe~~CallsGraph_edge47" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge48" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;start</title>
-<path fill="none" stroke="#00ff99" d="M271.2,-1072.85C299.76,-1052.7 360.49,-1012.55 418,-992 446.2,-981.92 479.82,-976.61 504.77,-973.85"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="505.3,-977.31 514.9,-972.81 504.59,-970.35 505.3,-977.31"/>
+<path fill="none" stroke="#00ff83" d="M324.59,-1217.7C381.6,-1210.14 459.76,-1199.77 504.87,-1193.79"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="505.33,-1197.26 514.78,-1192.48 504.41,-1190.32 505.33,-1197.26"/>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge48" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge49" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff99" d="M257.74,-1072.72C270.1,-1028.42 318.68,-875.7 418,-803 470.17,-764.82 637.92,-748.5 702,-740 841.91,-721.44 1010.24,-720.12 1083.03,-720.55"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="1083.44,-724.05 1093.47,-720.63 1083.49,-717.05 1083.44,-724.05"/>
+<path fill="none" stroke="#00ff83" d="M324.64,-1238.8C360.39,-1244.6 400.03,-1250.63 418,-1252 539.96,-1261.27 881.49,-1317.47 968,-1231 1048.99,-1150.06 953.05,-819.54 1004,-717 1022.31,-680.14 1060.6,-650.97 1088.08,-633.65"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="1090.23,-636.44 1096.94,-628.23 1086.58,-630.46 1090.23,-636.44"/>
 </g>
 <!-- proc~error_add_context -->
-<g id="proc~~compute_mbe~~CallsGraph_node50" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node51" class="node">
 <title>proc~error_add_context</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node50"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
-<polygon fill="#d9534f" stroke="#d9534f" points="912,-1227 758,-1227 758,-1203 912,-1203 912,-1227"/>
-<text text-anchor="middle" x="835" y="-1212.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node51"><a xlink:href="../proc/error_add_context.html" xlink:title="error_t%error_add_context">
+<polygon fill="#d9534f" stroke="#d9534f" points="912,-1403 758,-1403 758,-1379 912,-1379 912,-1403"/>
+<text text-anchor="middle" x="835" y="-1388.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_add_context</text>
 </a>
 </g>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;proc~error_add_context -->
-<g id="proc~~compute_mbe~~CallsGraph_edge43" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge44" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;proc~error_add_context</title>
-<path fill="none" stroke="#00ff99" d="M310.75,-1097.03C342.22,-1103.6 382.22,-1111.65 418,-1118 527.79,-1137.48 567.21,-1104.29 666,-1156 686.61,-1166.79 681.42,-1183.15 702,-1194 716.11,-1201.44 732.16,-1206.39 748.09,-1209.67"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="747.5,-1213.12 757.97,-1211.5 748.77,-1206.24 747.5,-1213.12"/>
+<path fill="none" stroke="#00ff83" d="M324.76,-1226.19C344.95,-1229.05 365.84,-1235.34 382,-1248 413.97,-1273.05 385.75,-1307.31 418,-1332 430.98,-1341.94 629.79,-1366.89 747.79,-1380.96"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="747.56,-1384.45 757.9,-1382.16 748.38,-1377.5 747.56,-1384.45"/>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;proc~error_has_error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge44" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge45" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#00ff99" d="M267.25,-1097.02C293.27,-1120.76 355.34,-1173.49 418,-1198 433.53,-1204.08 639.26,-1231.59 755.45,-1246.81"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="755,-1250.28 765.37,-1248.1 755.91,-1243.34 755,-1250.28"/>
+<path fill="none" stroke="#00ff83" d="M324.61,-1225.03C345.14,-1227.78 366.27,-1234.3 382,-1248 422.71,-1283.45 377.37,-1328.46 418,-1364 424.33,-1369.54 636.22,-1402.72 755.08,-1420.98"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="754.82,-1424.48 765.23,-1422.54 755.88,-1417.56 754.82,-1424.48"/>
 </g>
 <!-- proc~fragment_lookup_init -->
-<g id="proc~~compute_mbe~~CallsGraph_node55" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node56" class="node">
 <title>proc~fragment_lookup_init</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node55"><a xlink:href="../proc/fragment_lookup_init.html" xlink:title="fragment_lookup_t%fragment_lookup_init">
-<polygon fill="#d9534f" stroke="#d9534f" points="659.5,-1109 424.5,-1109 424.5,-1085 659.5,-1085 659.5,-1109"/>
-<text text-anchor="middle" x="542" y="-1094.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_init</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node56"><a xlink:href="../proc/fragment_lookup_init.html" xlink:title="fragment_lookup_t%fragment_lookup_init">
+<polygon fill="#d9534f" stroke="#d9534f" points="659.5,-1323 424.5,-1323 424.5,-1299 659.5,-1299 659.5,-1323"/>
+<text text-anchor="middle" x="542" y="-1308.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_init</text>
 </a>
 </g>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;proc~fragment_lookup_init -->
-<g id="proc~~compute_mbe~~CallsGraph_edge45" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge46" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;proc~fragment_lookup_init</title>
-<path fill="none" stroke="#00ff99" d="M324.59,-1087.94C351.6,-1089.07 383.36,-1090.4 414.1,-1091.68"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="414.34,-1095.2 424.48,-1092.12 414.63,-1088.2 414.34,-1095.2"/>
+<path fill="none" stroke="#00ff83" d="M324.55,-1230.46C343.97,-1233.53 364.5,-1238.86 382,-1248 402.34,-1258.62 397.91,-1273.93 418,-1285 425.86,-1289.33 434.37,-1292.94 443.12,-1295.95"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="442.09,-1299.3 452.68,-1298.99 444.21,-1292.63 442.09,-1299.3"/>
 </g>
 <!-- proc~fragment_lookup_insert -->
-<g id="proc~~compute_mbe~~CallsGraph_node56" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node57" class="node">
 <title>proc~fragment_lookup_insert</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node56"><a xlink:href="../proc/fragment_lookup_insert.html" xlink:title="fragment_lookup_t%fragment_lookup_insert">
-<polygon fill="#d9534f" stroke="#d9534f" points="666,-1391 418,-1391 418,-1367 666,-1367 666,-1391"/>
-<text text-anchor="middle" x="542" y="-1376.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_insert</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node57"><a xlink:href="../proc/fragment_lookup_insert.html" xlink:title="fragment_lookup_t%fragment_lookup_insert">
+<polygon fill="#d9534f" stroke="#d9534f" points="666,-1243 418,-1243 418,-1219 666,-1219 666,-1243"/>
+<text text-anchor="middle" x="542" y="-1228.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_insert</text>
 </a>
 </g>
 </g>
 <!-- proc~build_mbe_lookup_table&#45;&gt;proc~fragment_lookup_insert -->
-<g id="proc~~compute_mbe~~CallsGraph_edge46" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge47" class="edge">
 <title>proc~build_mbe_lookup_table&#45;&gt;proc~fragment_lookup_insert</title>
-<path fill="none" stroke="#00ff99" d="M257.75,-1097.06C270.15,-1140.53 318.84,-1290.14 418,-1358 420.31,-1359.58 422.7,-1361.05 425.15,-1362.43"/>
-<polygon fill="#00ff99" stroke="#00ff99" points="423.79,-1365.66 434.31,-1366.98 426.91,-1359.39 423.79,-1365.66"/>
+<path fill="none" stroke="#00ff83" d="M324.59,-1227.98C349.7,-1228.33 378.92,-1228.74 407.61,-1229.14"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="407.68,-1232.64 417.73,-1229.28 407.78,-1225.64 407.68,-1232.64"/>
 </g>
 <!-- proc~fragment_lookup_find -->
-<g id="proc~~compute_mbe~~CallsGraph_node54" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node55" class="node">
 <title>proc~fragment_lookup_find</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node54"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="661,-1639 423,-1639 423,-1615 661,-1615 661,-1639"/>
-<text text-anchor="middle" x="542" y="-1624.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node55"><a xlink:href="../proc/fragment_lookup_find.html" xlink:title="fragment_lookup_t%fragment_lookup_find">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="661,-1041 423,-1041 423,-1017 661,-1017 661,-1041"/>
+<text text-anchor="middle" x="542" y="-1026.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fragment_lookup_t%fragment_lookup_find</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_coefficients&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~compute_mbe~~CallsGraph_edge49" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge50" class="edge">
 <title>proc~compute_mbe_coefficients&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#00ffcb" d="M331.65,-1625.54C356.6,-1625.71 384.97,-1625.91 412.6,-1626.1"/>
-<polygon fill="#00ffcb" stroke="#00ffcb" points="412.71,-1629.6 422.73,-1626.17 412.76,-1622.6 412.71,-1629.6"/>
+<path fill="none" stroke="#00ffb4" d="M331.65,-996.85C368.93,-1002.57 413.85,-1009.47 452.51,-1015.41"/>
+<polygon fill="#00ffb4" stroke="#00ffb4" points="452.3,-1018.92 462.71,-1016.98 453.36,-1012 452.3,-1018.92"/>
 </g>
 <!-- proc~get_next_combination -->
-<g id="proc~~compute_mbe~~CallsGraph_node58" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node59" class="node">
 <title>proc~get_next_combination</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node58"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
-<polygon fill="#d9534f" stroke="#d9534f" points="607,-1719 477,-1719 477,-1695 607,-1695 607,-1719"/>
-<text text-anchor="middle" x="542" y="-1704.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node59"><a xlink:href="../proc/get_next_combination.html" xlink:title="get_next_combination">
+<polygon fill="#d9534f" stroke="#d9534f" points="607,-961 477,-961 477,-937 607,-937 607,-961"/>
+<text text-anchor="middle" x="542" y="-946.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_next_combination</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_mbe_coefficients&#45;&gt;proc~get_next_combination -->
-<g id="proc~~compute_mbe~~CallsGraph_edge50" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge51" class="edge">
 <title>proc~compute_mbe_coefficients&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#00ffcb" d="M331.57,-1635.1C348.33,-1638.02 365.87,-1641.63 382,-1646 425.45,-1657.78 473.45,-1677.12 505.23,-1690.87"/>
-<polygon fill="#00ffcb" stroke="#00ffcb" points="503.98,-1694.14 514.55,-1694.94 506.78,-1687.73 503.98,-1694.14"/>
+<path fill="none" stroke="#00ffb4" d="M331.65,-975.31C373.61,-970.03 425.25,-963.55 466.74,-958.33"/>
+<polygon fill="#00ffb4" stroke="#00ffb4" points="467.3,-961.79 476.79,-957.07 466.43,-954.84 467.3,-961.79"/>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;abort_comm -->
-<g id="proc~~compute_mbe~~CallsGraph_edge51" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge52" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;abort_comm</title>
-<path fill="none" stroke="#00ffff" d="M314,-1668.54C336.41,-1671.18 361.43,-1676.75 382,-1688 402.98,-1699.48 397.05,-1716.46 418,-1728 440.4,-1740.34 468.29,-1745.76 491.85,-1748.03"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="491.74,-1751.53 501.99,-1748.84 492.3,-1744.55 491.74,-1751.53"/>
+<path fill="none" stroke="#00ffe6" d="M314.07,-1034.25C335.67,-1037.55 360.13,-1042.07 382,-1048 425.45,-1059.78 473.45,-1079.12 505.23,-1092.87"/>
+<polygon fill="#00ffe6" stroke="#00ffe6" points="503.98,-1096.14 514.55,-1096.94 506.78,-1089.73 503.98,-1096.14"/>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge52" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge53" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;error</title>
-<path fill="none" stroke="#00ffff" d="M314.14,-1664.11C412.92,-1660.26 605.57,-1656.95 666,-1686 687.85,-1696.51 680.24,-1716.29 702,-1727 768.54,-1759.75 994.56,-1757.43 1083.31,-1755.15"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="1083.53,-1758.65 1093.43,-1754.88 1083.34,-1751.65 1083.53,-1758.65"/>
+<path fill="none" stroke="#00ffe6" d="M314.15,-1018.39C345.07,-1014.35 383.48,-1010 418,-1008 662.04,-993.87 734.04,-937.16 968,-1008 1020.92,-1024.02 1072.25,-1065.3 1099.45,-1089.84"/>
+<polygon fill="#00ffe6" stroke="#00ffe6" points="1097.37,-1092.68 1107.1,-1096.87 1102.11,-1087.53 1097.37,-1092.68"/>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~compute_mbe~~CallsGraph_edge53" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge54" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#00ffff" d="M314.21,-1658.66C352.02,-1653.38 401.76,-1646.44 445.02,-1640.4"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="445.59,-1643.86 455.01,-1639.01 444.62,-1636.92 445.59,-1643.86"/>
+<path fill="none" stroke="#00ffe6" d="M314.21,-1027.42C342.87,-1027.62 378.38,-1027.86 412.74,-1028.1"/>
+<polygon fill="#00ffe6" stroke="#00ffe6" points="412.84,-1031.61 422.87,-1028.18 412.89,-1024.61 412.84,-1031.61"/>
 </g>
 <!-- proc~compute_mbe_delta&#45;&gt;proc~get_next_combination -->
-<g id="proc~~compute_mbe~~CallsGraph_edge54" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge55" class="edge">
 <title>proc~compute_mbe_delta&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#00ffff" d="M314.21,-1675.34C358.61,-1681.54 419.47,-1690.03 466.96,-1696.66"/>
-<polygon fill="#00ffff" stroke="#00ffff" points="466.5,-1700.13 476.89,-1698.05 467.47,-1693.2 466.5,-1700.13"/>
+<path fill="none" stroke="#00ffe6" d="M314.26,-1023.94C336.34,-1021.09 361.07,-1015.78 382,-1006 401.13,-997.06 399.08,-984.37 418,-975 432.98,-967.58 450.01,-962.28 466.52,-958.48"/>
+<polygon fill="#00ffe6" stroke="#00ffe6" points="467.66,-961.82 476.71,-956.31 466.2,-954.97 467.66,-961.82"/>
 </g>
 <!-- proc~compute_mbe_dipole&#45;&gt;abort_comm -->
-<g id="proc~~compute_mbe~~CallsGraph_edge55" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge56" class="edge">
 <title>proc~compute_mbe_dipole&#45;&gt;abort_comm</title>
-<path fill="none" stroke="#00cbff" d="M317.02,-1717.73C369.59,-1725.07 443.7,-1735.41 492.04,-1742.16"/>
-<polygon fill="#00cbff" stroke="#00cbff" points="491.56,-1745.63 501.94,-1743.55 492.52,-1738.7 491.56,-1745.63"/>
+<path fill="none" stroke="#00e6ff" d="M317.02,-1077.73C369.59,-1085.07 443.7,-1095.41 492.04,-1102.16"/>
+<polygon fill="#00e6ff" stroke="#00e6ff" points="491.56,-1105.63 501.94,-1103.55 492.52,-1098.7 491.56,-1105.63"/>
 </g>
 <!-- proc~compute_mbe_dipole&#45;&gt;error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge56" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge57" class="edge">
 <title>proc~compute_mbe_dipole&#45;&gt;error</title>
-<path fill="none" stroke="#00cbff" d="M278.38,-1721.01C309.56,-1735.96 366.27,-1760.66 418,-1770 669.22,-1815.34 979.2,-1775.73 1083.41,-1759.87"/>
-<polygon fill="#00cbff" stroke="#00cbff" points="1084.06,-1763.31 1093.41,-1758.32 1082.99,-1756.39 1084.06,-1763.31"/>
+<path fill="none" stroke="#00e6ff" d="M317.14,-1068.33C441.46,-1067.53 728.11,-1068.24 968,-1088 1007.53,-1091.26 1052.52,-1097.86 1083.13,-1102.8"/>
+<polygon fill="#00e6ff" stroke="#00e6ff" points="1082.89,-1106.31 1093.32,-1104.47 1084.02,-1099.4 1082.89,-1106.31"/>
 </g>
 <!-- proc~compute_mbe_dipole&#45;&gt;proc~fragment_lookup_find -->
-<g id="proc~~compute_mbe~~CallsGraph_edge57" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge58" class="edge">
 <title>proc~compute_mbe_dipole&#45;&gt;proc~fragment_lookup_find</title>
-<path fill="none" stroke="#00cbff" d="M317.3,-1701.25C338.09,-1698 361.21,-1693.64 382,-1688 425.45,-1676.22 473.45,-1656.88 505.23,-1643.13"/>
-<polygon fill="#00cbff" stroke="#00cbff" points="506.78,-1646.27 514.55,-1639.06 503.98,-1639.86 506.78,-1646.27"/>
+<path fill="none" stroke="#00e6ff" d="M317.02,-1060.27C354.44,-1055.05 402.77,-1048.3 444.96,-1042.41"/>
+<polygon fill="#00e6ff" stroke="#00e6ff" points="445.56,-1045.86 454.98,-1041.01 444.59,-1038.93 445.56,-1045.86"/>
 </g>
 <!-- proc~compute_mbe_dipole&#45;&gt;proc~get_next_combination -->
-<g id="proc~~compute_mbe~~CallsGraph_edge58" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge59" class="edge">
 <title>proc~compute_mbe_dipole&#45;&gt;proc~get_next_combination</title>
-<path fill="none" stroke="#00cbff" d="M317.02,-1708.56C361.04,-1708.26 420.17,-1707.84 466.62,-1707.52"/>
-<polygon fill="#00cbff" stroke="#00cbff" points="466.65,-1711.02 476.63,-1707.45 466.6,-1704.02 466.65,-1711.02"/>
+<path fill="none" stroke="#00e6ff" d="M317.23,-1067.06C338.8,-1064.27 362.42,-1058.71 382,-1048 402.98,-1036.52 398.85,-1022.33 418,-1008 442.27,-989.83 473.02,-975.08 497.71,-964.87"/>
+<polygon fill="#00e6ff" stroke="#00e6ff" points="499.22,-968.04 507.19,-961.05 496.6,-961.54 499.22,-968.04"/>
 </g>
 <!-- proc~compute_electronic_entropy -->
-<g id="proc~~compute_mbe~~CallsGraph_node37" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node38" class="node">
 <title>proc~compute_electronic_entropy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node37"><a xlink:href="../proc/compute_electronic_entropy.html" xlink:title="compute_electronic_entropy">
-<polygon fill="#d9534f" stroke="#d9534f" points="916.5,-941 753.5,-941 753.5,-917 916.5,-917 916.5,-941"/>
-<text text-anchor="middle" x="835" y="-926.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_electronic_entropy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node38"><a xlink:href="../proc/compute_electronic_entropy.html" xlink:title="compute_electronic_entropy">
+<polygon fill="#d9534f" stroke="#d9534f" points="916.5,-24 753.5,-24 753.5,0 916.5,0 916.5,-24"/>
+<text text-anchor="middle" x="835" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_electronic_entropy</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge59" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge60" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_electronic_entropy</title>
-<path fill="none" stroke="#0099ff" d="M576,-836.07C601.45,-846 637.07,-861.29 666,-879 683.52,-889.73 683.22,-899.66 702,-908 714.92,-913.74 729.17,-917.94 743.39,-921"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="742.71,-924.43 753.2,-922.94 744.07,-917.57 742.71,-924.43"/>
+<path fill="none" stroke="#00b4ff" d="M550.45,-188.69C570.46,-156.86 628.83,-71.59 702,-33 714.76,-26.27 729.1,-21.57 743.51,-18.31"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="744.38,-21.71 753.48,-16.28 742.98,-14.85 744.38,-21.71"/>
 </g>
 <!-- proc~compute_moments_of_inertia -->
-<g id="proc~~compute_mbe~~CallsGraph_node40" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node41" class="node">
 <title>proc~compute_moments_of_inertia</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node40"><a xlink:href="../proc/compute_moments_of_inertia.html" xlink:title="compute_moments_of_inertia">
-<polygon fill="#d9534f" stroke="#d9534f" points="920.5,-1025 749.5,-1025 749.5,-1001 920.5,-1001 920.5,-1025"/>
-<text text-anchor="middle" x="835" y="-1010.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_moments_of_inertia</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node41"><a xlink:href="../proc/compute_moments_of_inertia.html" xlink:title="compute_moments_of_inertia">
+<polygon fill="#d9534f" stroke="#d9534f" points="920.5,-314 749.5,-314 749.5,-290 920.5,-290 920.5,-314"/>
+<text text-anchor="middle" x="835" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_moments_of_inertia</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia -->
-<g id="proc~~compute_mbe~~CallsGraph_edge60" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge61" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_moments_of_inertia</title>
-<path fill="none" stroke="#0099ff" d="M593.5,-836.04C618.39,-844.34 647.06,-857.81 666,-879 701.13,-918.3 662.03,-957.64 702,-992 712.69,-1001.19 725.74,-1007.2 739.43,-1011.02"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="738.94,-1014.51 749.49,-1013.44 740.58,-1007.7 738.94,-1014.51"/>
+<path fill="none" stroke="#00b4ff" d="M577.81,-213.08C630.72,-231.45 731.35,-266.37 789.5,-286.55"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="788.55,-289.93 799.15,-289.9 790.85,-283.32 788.55,-289.93"/>
 </g>
 <!-- proc~compute_partition_functions -->
-<g id="proc~~compute_mbe~~CallsGraph_node41" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node42" class="node">
 <title>proc~compute_partition_functions</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node41"><a xlink:href="../proc/compute_partition_functions.html" xlink:title="compute_partition_functions">
-<polygon fill="#d9534f" stroke="#d9534f" points="917,-815 753,-815 753,-791 917,-791 917,-815"/>
-<text text-anchor="middle" x="835" y="-800.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_partition_functions</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node42"><a xlink:href="../proc/compute_partition_functions.html" xlink:title="compute_partition_functions">
+<polygon fill="#d9534f" stroke="#d9534f" points="917,-234 753,-234 753,-210 917,-210 917,-234"/>
+<text text-anchor="middle" x="835" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_partition_functions</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions -->
-<g id="proc~~compute_mbe~~CallsGraph_edge61" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge62" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_partition_functions</title>
-<path fill="none" stroke="#0099ff" d="M620.6,-818.4C658.16,-815.69 703.5,-812.42 742.71,-809.59"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="743.08,-813.07 752.8,-808.86 742.58,-806.09 743.08,-813.07"/>
+<path fill="none" stroke="#00b4ff" d="M620.6,-206.6C658.16,-209.31 703.5,-212.58 742.71,-215.41"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="742.58,-218.91 752.8,-216.14 743.08,-211.93 742.58,-218.91"/>
 </g>
 <!-- proc~compute_rotational_constants -->
-<g id="proc~~compute_mbe~~CallsGraph_node43" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node44" class="node">
 <title>proc~compute_rotational_constants</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node43"><a xlink:href="../proc/compute_rotational_constants.html" xlink:title="compute_rotational_constants">
-<polygon fill="#d9534f" stroke="#d9534f" points="921,-773 749,-773 749,-749 921,-749 921,-773"/>
-<text text-anchor="middle" x="835" y="-758.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_constants</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node44"><a xlink:href="../proc/compute_rotational_constants.html" xlink:title="compute_rotational_constants">
+<polygon fill="#d9534f" stroke="#d9534f" points="921,-192 749,-192 749,-168 921,-168 921,-192"/>
+<text text-anchor="middle" x="835" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_constants</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants -->
-<g id="proc~~compute_mbe~~CallsGraph_edge62" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge63" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_constants</title>
-<path fill="none" stroke="#0099ff" d="M583.91,-811.98C615.86,-802.89 661.49,-790.55 702,-782 714.39,-779.38 727.5,-776.93 740.46,-774.69"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="741.05,-778.14 750.32,-773.01 739.88,-771.23 741.05,-778.14"/>
+<path fill="none" stroke="#00b4ff" d="M620.6,-195.4C656.92,-192.78 700.52,-189.63 738.81,-186.87"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="739.22,-190.35 748.94,-186.14 738.72,-183.37 739.22,-190.35"/>
 </g>
 <!-- proc~compute_rotational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_node44" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node45" class="node">
 <title>proc~compute_rotational_thermo</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node44"><a xlink:href="../proc/compute_rotational_thermo.html" xlink:title="compute_rotational_thermo">
-<polygon fill="#d9534f" stroke="#d9534f" points="915,-983 755,-983 755,-959 915,-959 915,-983"/>
-<text text-anchor="middle" x="835" y="-968.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_thermo</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node45"><a xlink:href="../proc/compute_rotational_thermo.html" xlink:title="compute_rotational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="915,-150 755,-150 755,-126 915,-126 915,-150"/>
+<text text-anchor="middle" x="835" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_rotational_thermo</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_edge63" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge64" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_rotational_thermo</title>
-<path fill="none" stroke="#0099ff" d="M588.24,-836.01C613.57,-844.6 644.32,-858.35 666,-879 691.62,-903.4 673.4,-929.17 702,-950 714.54,-959.14 729.53,-964.93 744.84,-968.51"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="744.43,-972 754.92,-970.55 745.82,-965.14 744.43,-972"/>
+<path fill="none" stroke="#00b4ff" d="M583.91,-188.98C615.86,-179.89 661.49,-167.55 702,-159 715.84,-156.08 730.56,-153.36 744.98,-150.91"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="745.6,-154.35 754.89,-149.26 744.45,-147.45 745.6,-154.35"/>
 </g>
 <!-- proc~compute_translational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_node45" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node46" class="node">
 <title>proc~compute_translational_thermo</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node45"><a xlink:href="../proc/compute_translational_thermo.html" xlink:title="compute_translational_thermo">
-<polygon fill="#d9534f" stroke="#d9534f" points="923,-899 747,-899 747,-875 923,-875 923,-899"/>
-<text text-anchor="middle" x="835" y="-884.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_translational_thermo</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node46"><a xlink:href="../proc/compute_translational_thermo.html" xlink:title="compute_translational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="923,-108 747,-108 747,-84 923,-84 923,-108"/>
+<text text-anchor="middle" x="835" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_translational_thermo</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_edge64" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge65" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_translational_thermo</title>
-<path fill="none" stroke="#0099ff" d="M583.91,-836.02C615.86,-845.11 661.49,-857.45 702,-866 714.39,-868.62 727.5,-871.07 740.46,-873.31"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="739.88,-876.77 750.32,-874.99 741.05,-869.86 739.88,-876.77"/>
+<path fill="none" stroke="#00b4ff" d="M561.19,-188.81C589.84,-170.23 647.8,-135.07 702,-117 713.09,-113.3 724.93,-110.24 736.8,-107.72"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="737.63,-111.12 746.75,-105.72 736.26,-104.26 737.63,-111.12"/>
 </g>
 <!-- proc~compute_vibrational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_node47" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node48" class="node">
 <title>proc~compute_vibrational_thermo</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node47"><a xlink:href="../proc/compute_vibrational_thermo.html" xlink:title="compute_vibrational_thermo">
-<polygon fill="#d9534f" stroke="#d9534f" points="918,-857 752,-857 752,-833 918,-833 918,-857"/>
-<text text-anchor="middle" x="835" y="-842.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_thermo</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node48"><a xlink:href="../proc/compute_vibrational_thermo.html" xlink:title="compute_vibrational_thermo">
+<polygon fill="#d9534f" stroke="#d9534f" points="918,-66 752,-66 752,-42 918,-42 918,-66"/>
+<text text-anchor="middle" x="835" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_thermo</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo -->
-<g id="proc~~compute_mbe~~CallsGraph_edge65" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge66" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_vibrational_thermo</title>
-<path fill="none" stroke="#0099ff" d="M620.6,-829.6C657.77,-832.28 702.56,-835.51 741.49,-838.32"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="741.55,-841.84 751.78,-839.07 742.06,-834.86 741.55,-841.84"/>
+<path fill="none" stroke="#00b4ff" d="M553.95,-188.85C577.95,-163.08 638.15,-103.05 702,-75 714.48,-69.52 728.18,-65.44 741.89,-62.42"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="742.75,-65.82 751.85,-60.41 741.36,-58.96 742.75,-65.82"/>
 </g>
 <!-- proc~compute_zpe -->
-<g id="proc~~compute_mbe~~CallsGraph_node48" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node49" class="node">
 <title>proc~compute_zpe</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node48"><a xlink:href="../proc/compute_zpe.html" xlink:title="compute_zpe">
-<polygon fill="#d9534f" stroke="#d9534f" points="877,-693 793,-693 793,-669 877,-669 877,-693"/>
-<text text-anchor="middle" x="835" y="-678.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_zpe</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node49"><a xlink:href="../proc/compute_zpe.html" xlink:title="compute_zpe">
+<polygon fill="#d9534f" stroke="#d9534f" points="877,-394 793,-394 793,-370 877,-370 877,-394"/>
+<text text-anchor="middle" x="835" y="-379.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_zpe</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_thermochemistry&#45;&gt;proc~compute_zpe -->
-<g id="proc~~compute_mbe~~CallsGraph_edge66" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge67" class="edge">
 <title>proc~compute_thermochemistry&#45;&gt;proc~compute_zpe</title>
-<path fill="none" stroke="#0099ff" d="M564.63,-811.99C595.01,-795.26 652.18,-764.26 702,-740 733.46,-724.68 769.79,-708.55 796.36,-697.04"/>
-<polygon fill="#0099ff" stroke="#0099ff" points="797.89,-700.19 805.69,-693.02 795.12,-693.76 797.89,-700.19"/>
+<path fill="none" stroke="#00b4ff" d="M556.67,-213.28C583.24,-236.74 644.31,-288.62 702,-323 730.81,-340.17 765.5,-355.48 792.08,-366.21"/>
+<polygon fill="#00b4ff" stroke="#00b4ff" points="790.9,-369.5 801.48,-369.94 793.48,-363 790.9,-369.5"/>
 </g>
 <!-- proc~compute_cartesian_displacements -->
-<g id="proc~~compute_mbe~~CallsGraph_node36" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node37" class="node">
 <title>proc~compute_cartesian_displacements</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node36"><a xlink:href="../proc/compute_cartesian_displacements.html" xlink:title="compute_cartesian_displacements">
-<polygon fill="#d9534f" stroke="#d9534f" points="1219,-1982 1022,-1982 1022,-1958 1219,-1958 1219,-1982"/>
-<text text-anchor="middle" x="1120.5" y="-1967.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_cartesian_displacements</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node37"><a xlink:href="../proc/compute_cartesian_displacements.html" xlink:title="compute_cartesian_displacements">
+<polygon fill="#d9534f" stroke="#d9534f" points="1219,-876 1022,-876 1022,-852 1219,-852 1219,-876"/>
+<text text-anchor="middle" x="1120.5" y="-861.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_cartesian_displacements</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_cartesian_displacements -->
-<g id="proc~~compute_mbe~~CallsGraph_edge67" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge68" class="edge">
 <title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_cartesian_displacements</title>
-<path fill="none" stroke="#0066ff" d="M573.22,-1899.04C604.8,-1911.06 656.06,-1929 702,-1938 805.86,-1958.34 926.61,-1965.9 1011.45,-1968.63"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1011.52,-1972.13 1021.62,-1968.94 1011.73,-1965.14 1011.52,-1972.13"/>
+<path fill="none" stroke="#0083ff" d="M627.14,-900.72C728.81,-893.14 900.08,-880.37 1011.44,-872.06"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="1011.98,-875.53 1021.69,-871.3 1011.46,-868.55 1011.98,-875.53"/>
 </g>
 <!-- proc~compute_force_constants -->
-<g id="proc~~compute_mbe~~CallsGraph_node38" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node39" class="node">
 <title>proc~compute_force_constants</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node38"><a xlink:href="../proc/compute_force_constants.html" xlink:title="compute_force_constants">
-<polygon fill="#d9534f" stroke="#d9534f" points="909,-1879 761,-1879 761,-1855 909,-1855 909,-1879"/>
-<text text-anchor="middle" x="835" y="-1864.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_force_constants</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node39"><a xlink:href="../proc/compute_force_constants.html" xlink:title="compute_force_constants">
+<polygon fill="#d9534f" stroke="#d9534f" points="909,-841 761,-841 761,-817 909,-817 909,-841"/>
+<text text-anchor="middle" x="835" y="-826.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_force_constants</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_force_constants -->
-<g id="proc~~compute_mbe~~CallsGraph_edge68" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge69" class="edge">
 <title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_force_constants</title>
-<path fill="none" stroke="#0066ff" d="M627.17,-1881.22C666,-1878.55 711.96,-1875.39 750.69,-1872.73"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="751.15,-1876.2 760.89,-1872.03 750.67,-1869.22 751.15,-1876.2"/>
+<path fill="none" stroke="#0083ff" d="M627.24,-898.88C640.59,-895.83 653.95,-891.67 666,-886 685.1,-877.01 683.01,-864.24 702,-855 717.19,-847.61 734.33,-842.32 751.1,-838.54"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="751.85,-841.96 760.92,-836.48 750.42,-835.11 751.85,-841.96"/>
 </g>
 <!-- proc~compute_ir_intensities -->
-<g id="proc~~compute_mbe~~CallsGraph_node39" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node40" class="node">
 <title>proc~compute_ir_intensities</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node39"><a xlink:href="../proc/compute_ir_intensities.html" xlink:title="compute_ir_intensities">
-<polygon fill="#d9534f" stroke="#d9534f" points="1186.5,-1927 1054.5,-1927 1054.5,-1903 1186.5,-1903 1186.5,-1927"/>
-<text text-anchor="middle" x="1120.5" y="-1912.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_ir_intensities</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node40"><a xlink:href="../proc/compute_ir_intensities.html" xlink:title="compute_ir_intensities">
+<polygon fill="#d9534f" stroke="#d9534f" points="1186.5,-960 1054.5,-960 1054.5,-936 1186.5,-936 1186.5,-960"/>
+<text text-anchor="middle" x="1120.5" y="-945.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_ir_intensities</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_ir_intensities -->
-<g id="proc~~compute_mbe~~CallsGraph_edge69" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge70" class="edge">
 <title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_ir_intensities</title>
-<path fill="none" stroke="#0066ff" d="M587.15,-1899.06C618.83,-1907.07 662.7,-1916.85 702,-1921 821.03,-1933.58 960.19,-1927.44 1044,-1921.49"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1044.48,-1924.97 1054.2,-1920.75 1043.97,-1917.98 1044.48,-1924.97"/>
+<path fill="none" stroke="#0083ff" d="M627.15,-914.11C651.31,-916.09 677.69,-918.19 702,-920 821.62,-928.9 960.61,-937.97 1044.23,-943.28"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="1044.19,-946.79 1054.39,-943.93 1044.64,-939.8 1044.19,-946.79"/>
 </g>
 <!-- proc~compute_reduced_masses -->
-<g id="proc~~compute_mbe~~CallsGraph_node42" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node43" class="node">
 <title>proc~compute_reduced_masses</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node42"><a xlink:href="../proc/compute_reduced_masses.html" xlink:title="compute_reduced_masses">
-<polygon fill="#d9534f" stroke="#d9534f" points="1197.5,-1859 1043.5,-1859 1043.5,-1835 1197.5,-1835 1197.5,-1859"/>
-<text text-anchor="middle" x="1120.5" y="-1844.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_reduced_masses</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node43"><a xlink:href="../proc/compute_reduced_masses.html" xlink:title="compute_reduced_masses">
+<polygon fill="#d9534f" stroke="#d9534f" points="1197.5,-918 1043.5,-918 1043.5,-894 1197.5,-894 1197.5,-918"/>
+<text text-anchor="middle" x="1120.5" y="-903.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_reduced_masses</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_reduced_masses -->
-<g id="proc~~compute_mbe~~CallsGraph_edge70" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge71" class="edge">
 <title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_reduced_masses</title>
-<path fill="none" stroke="#0066ff" d="M627.3,-1893.83C713.36,-1899.25 850.61,-1903.6 968,-1888 1005.01,-1883.08 1045.8,-1871.68 1075.72,-1862.15"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="1077,-1865.42 1085.43,-1859 1074.84,-1858.76 1077,-1865.42"/>
+<path fill="none" stroke="#0083ff" d="M627.14,-906.85C735.78,-906.67 923.89,-906.34 1033.45,-906.15"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="1033.49,-909.65 1043.48,-906.13 1033.48,-902.65 1033.49,-909.65"/>
 </g>
 <!-- proc~compute_vibrational_frequencies -->
-<g id="proc~~compute_mbe~~CallsGraph_node46" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node47" class="node">
 <title>proc~compute_vibrational_frequencies</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node46"><a xlink:href="../proc/compute_vibrational_frequencies.html" xlink:title="compute_vibrational_frequencies">
-<polygon fill="#d9534f" stroke="#d9534f" points="930,-1685 740,-1685 740,-1661 930,-1661 930,-1685"/>
-<text text-anchor="middle" x="835" y="-1670.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_frequencies</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node47"><a xlink:href="../proc/compute_vibrational_frequencies.html" xlink:title="compute_vibrational_frequencies">
+<polygon fill="#d9534f" stroke="#d9534f" points="930,-771 740,-771 740,-747 930,-747 930,-771"/>
+<text text-anchor="middle" x="835" y="-756.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">compute_vibrational_frequencies</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_analysis&#45;&gt;proc~compute_vibrational_frequencies -->
-<g id="proc~~compute_mbe~~CallsGraph_edge71" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge72" class="edge">
 <title>proc~compute_vibrational_analysis&#45;&gt;proc~compute_vibrational_frequencies</title>
-<path fill="none" stroke="#0066ff" d="M559.48,-1874.88C608.08,-1839.14 751.07,-1733.99 809.1,-1691.31"/>
-<polygon fill="#0066ff" stroke="#0066ff" points="811.36,-1694 817.34,-1685.25 807.21,-1688.36 811.36,-1694"/>
+<path fill="none" stroke="#0083ff" d="M627.25,-903.76C641.18,-900.22 654.74,-894.63 666,-886 696.31,-862.78 673.98,-833.94 702,-808 719.03,-792.23 741.59,-781.42 763.23,-774.06"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="764.29,-777.39 772.75,-771.01 762.16,-770.72 764.29,-777.39"/>
 </g>
 <!-- proc~mp2_total -->
-<g id="proc~~compute_mbe~~CallsGraph_node59" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node60" class="node">
 <title>proc~mp2_total</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node59"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="617.5,-108 466.5,-108 466.5,-84 617.5,-84 617.5,-108"/>
-<text text-anchor="middle" x="542" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node60"><a xlink:href="../proc/mp2_total.html" xlink:title="mp2_energy_t%mp2_total">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="617.5,-877 466.5,-877 466.5,-853 617.5,-853 617.5,-877"/>
+<text text-anchor="middle" x="542" y="-862.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mp2_energy_t%mp2_total</text>
 </a>
 </g>
 </g>
 <!-- proc~energy_total&#45;&gt;proc~mp2_total -->
-<g id="proc~~compute_mbe~~CallsGraph_edge72" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge73" class="edge">
 <title>proc~energy_total&#45;&gt;proc~mp2_total</title>
-<path fill="none" stroke="#0033ff" d="M321.67,-96C361.86,-96 413.31,-96 456.28,-96"/>
-<polygon fill="#0033ff" stroke="#0033ff" points="456.44,-99.5 466.44,-96 456.44,-92.5 456.44,-99.5"/>
+<path fill="none" stroke="#0052ff" d="M321.67,-872.66C361.86,-871.25 413.31,-869.46 456.28,-867.96"/>
+<polygon fill="#0052ff" stroke="#0052ff" points="456.57,-871.45 466.44,-867.6 456.32,-864.45 456.57,-871.45"/>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge77" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge78" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;warning</title>
-<path fill="none" stroke="#3200ff" d="M328.74,-424.56C487.72,-409.84 855.71,-382.57 968,-433 1036.86,-463.93 1087.28,-543.29 1108.46,-581.63"/>
-<polygon fill="#3200ff" stroke="#3200ff" points="1105.61,-583.72 1113.43,-590.86 1111.77,-580.4 1105.61,-583.72"/>
+<path fill="none" stroke="#4100ff" d="M328.74,-781.2C347.67,-778.1 366.9,-771.83 382,-760 413.97,-734.95 385.89,-700.87 418,-676 506.16,-607.72 558.39,-667.22 666,-638 805.38,-600.15 849.46,-600.51 968,-518 987.63,-504.34 986.76,-494.58 1004,-478 1033.97,-449.19 1071.4,-419.03 1095.38,-400.38"/>
+<polygon fill="#4100ff" stroke="#4100ff" points="1097.8,-402.94 1103.57,-394.05 1093.52,-397.4 1097.8,-402.94"/>
 </g>
 <!-- header -->
-<g id="proc~~compute_mbe~~CallsGraph_node32" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node33" class="node">
 <title>header</title>
-<polygon fill="#777777" stroke="#777777" points="569,-255 515,-255 515,-231 569,-231 569,-255"/>
-<text text-anchor="middle" x="542" y="-240.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">header</text>
+<polygon fill="#777777" stroke="#777777" points="569,-709 515,-709 515,-685 569,-685 569,-709"/>
+<text text-anchor="middle" x="542" y="-694.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">header</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;header -->
-<g id="proc~~compute_mbe~~CallsGraph_edge73" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge74" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;header</title>
-<path fill="none" stroke="#3200ff" d="M328.78,-434.02C348.14,-431.01 367.6,-424.34 382,-411 431.36,-365.3 368.78,-309.84 418,-264 440.95,-242.62 477.28,-238.71 504.52,-239.34"/>
-<polygon fill="#3200ff" stroke="#3200ff" points="504.69,-242.85 514.83,-239.81 505,-235.86 504.69,-242.85"/>
+<path fill="none" stroke="#4100ff" d="M328.59,-777.65C346.9,-774.49 365.87,-769.08 382,-760 403.42,-747.94 396.61,-730.12 418,-718 444.5,-702.98 479,-698.12 504.72,-696.8"/>
+<polygon fill="#4100ff" stroke="#4100ff" points="504.94,-700.29 514.8,-696.43 504.68,-693.3 504.94,-700.29"/>
 </g>
 <!-- level_name -->
-<g id="proc~~compute_mbe~~CallsGraph_node33" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node34" class="node">
 <title>level_name</title>
-<polygon fill="#777777" stroke="#777777" points="579,-381 505,-381 505,-357 579,-357 579,-381"/>
-<text text-anchor="middle" x="542" y="-366.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">level_name</text>
+<polygon fill="#777777" stroke="#777777" points="579,-835 505,-835 505,-811 579,-811 579,-835"/>
+<text text-anchor="middle" x="542" y="-820.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">level_name</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;level_name -->
-<g id="proc~~compute_mbe~~CallsGraph_edge74" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge75" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;level_name</title>
-<path fill="none" stroke="#3200ff" d="M328.72,-423.05C346.38,-420.02 365.02,-416.08 382,-411 398.77,-405.98 401.34,-400.4 418,-395 442.96,-386.91 471.6,-380.69 494.96,-376.36"/>
-<polygon fill="#3200ff" stroke="#3200ff" points="495.73,-379.78 504.96,-374.56 494.49,-372.89 495.73,-379.78"/>
+<path fill="none" stroke="#4100ff" d="M328.65,-791.87C381.11,-799.56 449.81,-809.63 494.66,-816.21"/>
+<polygon fill="#4100ff" stroke="#4100ff" points="494.28,-819.69 504.68,-817.68 495.3,-812.76 494.28,-819.69"/>
 </g>
 <!-- proc~get_frag_level_name -->
-<g id="proc~~compute_mbe~~CallsGraph_node57" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node58" class="node">
 <title>proc~get_frag_level_name</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node57"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="604,-339 480,-339 480,-315 604,-315 604,-339"/>
-<text text-anchor="middle" x="542" y="-324.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node58"><a xlink:href="../proc/get_frag_level_name.html" xlink:title="get_frag_level_name">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="604,-793 480,-793 480,-769 604,-769 604,-793"/>
+<text text-anchor="middle" x="542" y="-778.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_frag_level_name</text>
 </a>
 </g>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;proc~get_frag_level_name -->
-<g id="proc~~compute_mbe~~CallsGraph_edge75" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge76" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;proc~get_frag_level_name</title>
-<path fill="none" stroke="#3200ff" d="M328.54,-430.92C347.25,-427.78 366.43,-421.82 382,-411 408.48,-392.59 391.57,-366.48 418,-348 433.05,-337.47 451.63,-331.61 469.74,-328.49"/>
-<polygon fill="#3200ff" stroke="#3200ff" points="470.35,-331.94 479.73,-327.02 469.33,-325.01 470.35,-331.94"/>
+<path fill="none" stroke="#4100ff" d="M328.65,-781C372.09,-781 426.68,-781 469.63,-781"/>
+<polygon fill="#4100ff" stroke="#4100ff" points="469.72,-784.5 479.72,-781 469.72,-777.5 469.72,-784.5"/>
 </g>
 <!-- verbose -->
-<g id="proc~~compute_mbe~~CallsGraph_node64" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node65" class="node">
 <title>verbose</title>
-<polygon fill="#777777" stroke="#777777" points="569.5,-297 514.5,-297 514.5,-273 569.5,-273 569.5,-297"/>
-<text text-anchor="middle" x="542" y="-282.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
+<polygon fill="#777777" stroke="#777777" points="569.5,-751 514.5,-751 514.5,-727 569.5,-727 569.5,-751"/>
+<text text-anchor="middle" x="542" y="-736.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">verbose</text>
 </g>
 <!-- proc~print_detailed_breakdown&#45;&gt;verbose -->
-<g id="proc~~compute_mbe~~CallsGraph_edge76" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge77" class="edge">
 <title>proc~print_detailed_breakdown&#45;&gt;verbose</title>
-<path fill="none" stroke="#3200ff" d="M328.68,-433.05C347.82,-429.99 367.18,-423.53 382,-411 419.67,-379.15 380.42,-337.96 418,-306 441.67,-285.87 477.44,-281.7 504.31,-281.93"/>
-<polygon fill="#3200ff" stroke="#3200ff" points="504.4,-285.44 514.49,-282.23 504.6,-278.44 504.4,-285.44"/>
+<path fill="none" stroke="#4100ff" d="M328.65,-770.13C384.99,-761.87 460.06,-750.87 504.2,-744.39"/>
+<polygon fill="#4100ff" stroke="#4100ff" points="504.81,-747.84 514.19,-742.93 503.79,-740.92 504.81,-747.84"/>
 </g>
 <!-- proc~print_mbe_energy_breakdown&#45;&gt;info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge78" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge79" class="edge">
 <title>proc~print_mbe_energy_breakdown&#45;&gt;info</title>
-<path fill="none" stroke="#6500ff" d="M340.04,-548.49C423.3,-547.43 553.38,-546.85 666,-551 711.35,-552.67 763.46,-556.73 797.47,-559.66"/>
-<polygon fill="#6500ff" stroke="#6500ff" points="797.57,-563.18 807.84,-560.57 798.18,-556.21 797.57,-563.18"/>
+<path fill="none" stroke="#7300ff" d="M340.01,-493.65C423.25,-488.44 553.31,-480.25 666,-473 711.27,-470.09 763.4,-466.66 797.43,-464.42"/>
+<polygon fill="#7300ff" stroke="#7300ff" points="798.06,-467.88 807.81,-463.73 797.6,-460.9 798.06,-467.88"/>
 </g>
 <!-- proc~print_mbe_gradient_info&#45;&gt;info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge79" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge80" class="edge">
 <title>proc~print_mbe_gradient_info&#45;&gt;info</title>
-<path fill="none" stroke="#9900ff" d="M575.8,-710.97C601.62,-700.64 637.83,-684.25 666,-664 684.63,-650.61 683.4,-640.43 702,-627 732.2,-605.2 770.98,-587.42 798.67,-576.18"/>
-<polygon fill="#9900ff" stroke="#9900ff" points="799.98,-579.43 807.98,-572.48 797.39,-572.92 799.98,-579.43"/>
+<path fill="none" stroke="#a400ff" d="M574.1,-604.94C599.77,-594.32 636.62,-577.54 666,-558 683.82,-546.14 684.2,-537.89 702,-526 732.65,-505.52 770.83,-487.74 798.23,-476.16"/>
+<polygon fill="#a400ff" stroke="#a400ff" points="799.92,-479.25 807.81,-472.17 797.23,-472.78 799.92,-479.25"/>
 </g>
 <!-- proc~print_mbe_gradient_info&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge80" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge81" class="edge">
 <title>proc~print_mbe_gradient_info&#45;&gt;to_char</title>
-<path fill="none" stroke="#9900ff" d="M613.22,-715.55C631.18,-711.69 649.94,-705.85 666,-697 686.09,-685.93 680.86,-668.93 702,-660 810.91,-614.01 851.94,-637.51 968,-660 1011.45,-668.42 1058.25,-689.25 1088.15,-704.23"/>
-<polygon fill="#9900ff" stroke="#9900ff" points="1086.74,-707.44 1097.24,-708.86 1089.92,-701.2 1086.74,-707.44"/>
+<path fill="none" stroke="#a400ff" d="M613.37,-624C640.97,-626.41 672.94,-628.81 702,-630 820.12,-634.82 849.9,-635.45 968,-630 1007.42,-628.18 1052.42,-623.72 1083.07,-620.32"/>
+<polygon fill="#a400ff" stroke="#a400ff" points="1083.73,-623.76 1093.28,-619.16 1082.95,-616.81 1083.73,-623.76"/>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge81" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge82" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;info</title>
-<path fill="none" stroke="#cc00ff" d="M314.18,-641C345.1,-634.95 383.51,-627.71 418,-622 557.93,-598.83 725.28,-576.82 797.67,-567.57"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="798.17,-571.04 807.65,-566.3 797.29,-564.09 798.17,-571.04"/>
+<path fill="none" stroke="#d500ff" d="M295.18,-371.08C328.08,-380.51 375.72,-393.42 418,-402 557.05,-430.22 724.85,-450.18 797.52,-458.15"/>
+<polygon fill="#d500ff" stroke="#d500ff" points="797.22,-461.64 807.54,-459.24 797.97,-454.68 797.22,-461.64"/>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry -->
-<g id="proc~~compute_mbe~~CallsGraph_edge82" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge83" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;proc~compute_thermochemistry</title>
-<path fill="none" stroke="#cc00ff" d="M274.65,-665.02C324.58,-694.83 454.2,-772.19 512.2,-806.81"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="510.5,-809.87 520.88,-811.99 514.08,-803.86 510.5,-809.87"/>
+<path fill="none" stroke="#d500ff" d="M276.51,-346.86C327.02,-319.01 451.43,-250.4 509.81,-218.2"/>
+<polygon fill="#d500ff" stroke="#d500ff" points="511.85,-221.07 518.92,-213.18 508.47,-214.94 511.85,-221.07"/>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge85" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge86" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;warning</title>
-<path fill="none" stroke="#cc00ff" d="M327.7,-658.98C355.9,-661 388.43,-663.01 418,-664 528.16,-667.7 563.87,-705.46 666,-664 686.68,-655.61 681.59,-638.03 702,-629 832.18,-571.37 1007.8,-586.76 1082.93,-597.12"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="1082.46,-600.59 1092.85,-598.55 1083.45,-593.66 1082.46,-600.59"/>
+<path fill="none" stroke="#d500ff" d="M302.79,-347C335.15,-339.59 378.85,-330.8 418,-327 671.92,-302.39 978.37,-354.53 1082.69,-374.58"/>
+<polygon fill="#d500ff" stroke="#d500ff" points="1082.22,-378.05 1092.71,-376.53 1083.56,-371.18 1082.22,-378.05"/>
 </g>
 <!-- proc~element_number_to_symbol -->
-<g id="proc~~compute_mbe~~CallsGraph_node49" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node50" class="node">
 <title>proc~element_number_to_symbol</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node49"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1202,-1288 1039,-1288 1039,-1264 1202,-1264 1202,-1288"/>
-<text text-anchor="middle" x="1120.5" y="-1273.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node50"><a xlink:href="../proc/element_number_to_symbol.html" xlink:title="element_number_to_symbol">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1202,-834 1039,-834 1039,-810 1202,-810 1202,-834"/>
+<text text-anchor="middle" x="1120.5" y="-819.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_number_to_symbol</text>
 </a>
 </g>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~compute_mbe~~CallsGraph_edge83" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge84" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#cc00ff" d="M261.84,-665.04C282.53,-698.05 344.57,-791.13 418,-845 514.51,-915.8 581.18,-865.55 666,-950 694.78,-978.66 671.52,-1007.15 702,-1034 794.27,-1115.27 881.24,-1022.88 968,-1110 1009.7,-1151.87 963.14,-1195.31 1004,-1238 1013.19,-1247.6 1024.84,-1254.78 1037.19,-1260.14"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="1036.16,-1263.49 1046.75,-1263.9 1038.72,-1256.98 1036.16,-1263.49"/>
+<path fill="none" stroke="#d500ff" d="M327.65,-351.89C429.49,-343.22 608.02,-332.84 666,-360 688.57,-370.57 680.22,-390.88 702,-403 806.35,-461.07 885.36,-354.79 968,-441 1023.64,-499.04 949.47,-741.92 1004,-801 1010.95,-808.53 1019.61,-813.91 1029.06,-817.69"/>
+<polygon fill="#d500ff" stroke="#d500ff" points="1028.14,-821.08 1038.74,-820.97 1030.39,-814.45 1028.14,-821.08"/>
 </g>
 <!-- proc~print_thermochemistry -->
-<g id="proc~~compute_mbe~~CallsGraph_node60" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node61" class="node">
 <title>proc~print_thermochemistry</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node60"><a xlink:href="../proc/print_thermochemistry.html" xlink:title="print_thermochemistry">
-<polygon fill="#d9534f" stroke="#d9534f" points="609,-655 475,-655 475,-631 609,-631 609,-655"/>
-<text text-anchor="middle" x="542" y="-640.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_thermochemistry</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node61"><a xlink:href="../proc/print_thermochemistry.html" xlink:title="print_thermochemistry">
+<polygon fill="#d9534f" stroke="#d9534f" points="609,-393 475,-393 475,-369 609,-369 609,-393"/>
+<text text-anchor="middle" x="542" y="-378.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_thermochemistry</text>
 </a>
 </g>
 </g>
 <!-- proc~print_vibrational_analysis&#45;&gt;proc~print_thermochemistry -->
-<g id="proc~~compute_mbe~~CallsGraph_edge84" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge85" class="edge">
 <title>proc~print_vibrational_analysis&#45;&gt;proc~print_thermochemistry</title>
-<path fill="none" stroke="#cc00ff" d="M327.54,-650.45C369.59,-648.98 422.37,-647.14 464.93,-645.66"/>
-<polygon fill="#cc00ff" stroke="#cc00ff" points="465.08,-649.15 474.95,-645.31 464.84,-642.16 465.08,-649.15"/>
+<path fill="none" stroke="#d500ff" d="M327.54,-364.61C369.59,-367.84 422.37,-371.89 464.93,-375.16"/>
+<polygon fill="#d500ff" stroke="#d500ff" points="464.71,-378.65 474.95,-375.93 465.25,-371.67 464.71,-378.65"/>
 </g>
 <!-- proc~report_unconverged&#45;&gt;info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge86" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge87" class="edge">
 <title>proc~report_unconverged&#45;&gt;info</title>
-<path fill="none" stroke="#ff00ff" d="M602.57,-494.89C623.18,-498.84 646.08,-504.62 666,-513 683.73,-520.46 684.22,-529.67 702,-537 732.88,-549.74 770.45,-556.36 797.61,-559.72"/>
-<polygon fill="#ff00ff" stroke="#ff00ff" points="797.49,-563.23 807.83,-560.89 798.29,-556.28 797.49,-563.23"/>
+<path fill="none" stroke="#ff00f6" d="M602.79,-528.83C623.31,-524.87 646.1,-519.14 666,-511 683.57,-503.81 684.38,-495.07 702,-488 733,-475.56 770.56,-468.91 797.68,-465.46"/>
+<polygon fill="#ff00f6" stroke="#ff00f6" points="798.37,-468.9 807.88,-464.24 797.54,-461.95 798.37,-468.9"/>
 </g>
 <!-- proc~report_unconverged&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge87" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge88" class="edge">
 <title>proc~report_unconverged&#45;&gt;to_char</title>
-<path fill="none" stroke="#ff00ff" d="M602.83,-494.36C719.05,-508.71 964.37,-539.28 968,-542 999.86,-565.86 980.14,-592.15 1004,-624 1028.44,-656.62 1065.85,-685.43 1091.44,-703.01"/>
-<polygon fill="#ff00ff" stroke="#ff00ff" points="1089.7,-706.06 1099.95,-708.74 1093.61,-700.25 1089.7,-706.06"/>
+<path fill="none" stroke="#ff00f6" d="M602.52,-545.16C721.76,-561.5 986.72,-597.8 1083.34,-611.05"/>
+<polygon fill="#ff00f6" stroke="#ff00f6" points="1083.1,-614.54 1093.49,-612.44 1084.05,-607.61 1083.1,-614.54"/>
 </g>
 <!-- proc~report_unconverged&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge88" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge89" class="edge">
 <title>proc~report_unconverged&#45;&gt;warning</title>
-<path fill="none" stroke="#ff00ff" d="M602.72,-480.91C686.49,-474.4 842.68,-469.75 968,-509 1018.86,-524.93 1069.84,-561.96 1097.77,-584.49"/>
-<polygon fill="#ff00ff" stroke="#ff00ff" points="1095.72,-587.34 1105.67,-590.98 1100.17,-581.93 1095.72,-587.34"/>
+<path fill="none" stroke="#ff00f6" d="M602.76,-532.8C703.47,-525.16 902.41,-507.48 968,-483 1019.26,-463.87 1070.47,-424.43 1098.25,-400.9"/>
+<polygon fill="#ff00f6" stroke="#ff00f6" points="1100.8,-403.32 1106.1,-394.14 1096.24,-398.02 1100.8,-403.32"/>
+</g>
+<!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity -->
+<g id="proc~~compute_mbe~~CallsGraph_edge96" class="edge">
+<title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_charge_multiplicity</title>
+<path fill="none" stroke="#ff8b00" d="M625.22,-1673.64C640.26,-1677.25 654.74,-1683.53 666,-1694 714.94,-1739.51 654.48,-1793.01 702,-1840 712.61,-1850.49 726.05,-1857.69 740.28,-1862.58"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="739.64,-1866.04 750.23,-1865.61 741.68,-1859.35 739.64,-1866.04"/>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~error_add_context -->
-<g id="proc~~compute_mbe~~CallsGraph_edge93" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge94" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~error_add_context</title>
-<path fill="none" stroke="#ff8b00" d="M577.49,-1324.93C603.41,-1314.84 638.95,-1298.77 666,-1278 685.5,-1263.03 680.54,-1248 702,-1236 715.92,-1228.21 731.88,-1223.1 747.78,-1219.77"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="748.47,-1223.2 757.66,-1217.93 747.19,-1216.32 748.47,-1223.2"/>
+<path fill="none" stroke="#ff8b00" d="M592.59,-1660.98C618.34,-1652.19 648.08,-1637.57 666,-1614 721.19,-1541.4 636.92,-1475.88 702,-1412 714.39,-1399.84 730.81,-1392.99 747.85,-1389.39"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="748.68,-1392.8 757.93,-1387.63 747.48,-1385.9 748.68,-1392.8"/>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~error_has_error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge94" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge95" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#ff8b00" d="M625.17,-1326.02C639.25,-1322.36 653.38,-1317.49 666,-1311 685.3,-1301.07 682.45,-1287.44 702,-1278 718.4,-1270.08 737.14,-1265.05 755.26,-1261.87"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="755.91,-1265.31 765.24,-1260.29 754.82,-1258.39 755.91,-1265.31"/>
+<path fill="none" stroke="#ff8b00" d="M591.25,-1660.97C617.09,-1652.12 647.34,-1637.44 666,-1614 711.4,-1556.98 648.85,-1503.88 702,-1454 716.34,-1440.55 735.64,-1433.7 755.06,-1430.56"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="755.73,-1434 765.2,-1429.24 754.83,-1427.06 755.73,-1434"/>
 </g>
 <!-- proc~add_hydrogen_caps -->
-<g id="proc~~compute_mbe~~CallsGraph_node67" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node68" class="node">
 <title>proc~add_hydrogen_caps</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node67"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="894,-1353 776,-1353 776,-1329 894,-1329 894,-1353"/>
-<text text-anchor="middle" x="835" y="-1338.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node68"><a xlink:href="../proc/add_hydrogen_caps.html" xlink:title="add_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="894,-1705 776,-1705 776,-1681 894,-1681 894,-1705"/>
+<text text-anchor="middle" x="835" y="-1690.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">add_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps -->
-<g id="proc~~compute_mbe~~CallsGraph_edge89" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge90" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~add_hydrogen_caps</title>
-<path fill="none" stroke="#ff8b00" d="M625.22,-1338.13C669.63,-1338.74 723.8,-1339.49 765.84,-1340.06"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="765.93,-1343.56 775.97,-1340.2 766.02,-1336.57 765.93,-1343.56"/>
+<path fill="none" stroke="#ff8b00" d="M625.22,-1678.65C669.63,-1681.7 723.8,-1685.43 765.84,-1688.32"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="765.76,-1691.82 775.97,-1689.01 766.24,-1684.83 765.76,-1691.82"/>
 </g>
 <!-- proc~calculate_monomer_distance -->
-<g id="proc~~compute_mbe~~CallsGraph_node70" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node71" class="node">
 <title>proc~calculate_monomer_distance</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node70"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="919.5,-1479 750.5,-1479 750.5,-1455 919.5,-1455 919.5,-1479"/>
-<text text-anchor="middle" x="835" y="-1464.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node71"><a xlink:href="../proc/calculate_monomer_distance.html" xlink:title="calculate_monomer_distance">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="919.5,-1789 750.5,-1789 750.5,-1765 919.5,-1765 919.5,-1789"/>
+<text text-anchor="middle" x="835" y="-1774.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_monomer_distance</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance -->
-<g id="proc~~compute_mbe~~CallsGraph_edge90" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge91" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~calculate_monomer_distance</title>
-<path fill="none" stroke="#ff8b00" d="M625.02,-1339.2C639.82,-1342.73 654.25,-1348.58 666,-1358 698.97,-1384.43 668.88,-1419.75 702,-1446 713.23,-1454.9 726.72,-1460.73 740.73,-1464.45"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="739.96,-1467.86 750.49,-1466.7 741.54,-1461.04 739.96,-1467.86"/>
+<path fill="none" stroke="#ff8b00" d="M625.32,-1676.82C639.76,-1680.26 653.99,-1685.66 666,-1694 692.17,-1712.17 675.72,-1737.98 702,-1756 713.39,-1763.82 726.63,-1769.13 740.23,-1772.69"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="739.65,-1776.15 750.18,-1774.98 741.22,-1769.33 739.65,-1776.15"/>
 </g>
 <!-- proc~check_duplicate_atoms -->
-<g id="proc~~compute_mbe~~CallsGraph_node71" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node72" class="node">
 <title>proc~check_duplicate_atoms</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node71"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
-<polygon fill="#d9534f" stroke="#d9534f" points="903.5,-1311 766.5,-1311 766.5,-1287 903.5,-1287 903.5,-1311"/>
-<text text-anchor="middle" x="835" y="-1296.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node72"><a xlink:href="../proc/check_duplicate_atoms.html" xlink:title="check_duplicate_atoms">
+<polygon fill="#d9534f" stroke="#d9534f" points="903.5,-1487 766.5,-1487 766.5,-1463 903.5,-1463 903.5,-1487"/>
+<text text-anchor="middle" x="835" y="-1472.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">check_duplicate_atoms</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms -->
-<g id="proc~~compute_mbe~~CallsGraph_edge91" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge92" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~check_duplicate_atoms</title>
-<path fill="none" stroke="#ff8b00" d="M625.22,-1326.26C666.28,-1320.9 715.69,-1314.45 756.13,-1309.17"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="756.75,-1312.62 766.21,-1307.85 755.84,-1305.68 756.75,-1312.62"/>
+<path fill="none" stroke="#ff8b00" d="M573.15,-1660.99C598.74,-1650.23 635.98,-1633.21 666,-1614 723.66,-1577.1 783.69,-1522.97 813.97,-1494.37"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="816.52,-1496.77 821.35,-1487.34 811.7,-1491.7 816.52,-1496.77"/>
 </g>
 <!-- proc~count_hydrogen_caps -->
-<g id="proc~~compute_mbe~~CallsGraph_node72" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node73" class="node">
 <title>proc~count_hydrogen_caps</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node72"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
-<polygon fill="#d9534f" stroke="#d9534f" points="899,-1437 771,-1437 771,-1413 899,-1413 899,-1437"/>
-<text text-anchor="middle" x="835" y="-1422.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node73"><a xlink:href="../proc/count_hydrogen_caps.html" xlink:title="count_hydrogen_caps">
+<polygon fill="#d9534f" stroke="#d9534f" points="899,-1663 771,-1663 771,-1639 899,-1639 899,-1663"/>
+<text text-anchor="middle" x="835" y="-1648.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">count_hydrogen_caps</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps -->
-<g id="proc~~compute_mbe~~CallsGraph_edge92" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge93" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~count_hydrogen_caps</title>
-<path fill="none" stroke="#ff8b00" d="M625.08,-1342.35C639.38,-1345.66 653.63,-1350.62 666,-1358 688.29,-1371.3 679.63,-1390.83 702,-1404 719.62,-1414.38 740.75,-1420.1 760.88,-1423.14"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="760.61,-1426.63 770.98,-1424.46 761.52,-1419.69 760.61,-1426.63"/>
+<path fill="none" stroke="#ff8b00" d="M625.22,-1666.78C667.92,-1663.56 719.65,-1659.65 760.93,-1656.52"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="761.21,-1660.01 770.92,-1655.77 760.69,-1653.03 761.21,-1660.01"/>
 </g>
 <!-- proc~fragment_compute_nelec -->
-<g id="proc~~compute_mbe~~CallsGraph_node75" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node76" class="node">
 <title>proc~fragment_compute_nelec</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node75"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
-<polygon fill="#d9534f" stroke="#d9534f" points="968,-1395 702,-1395 702,-1371 968,-1371 968,-1395"/>
-<text text-anchor="middle" x="835" y="-1380.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node76"><a xlink:href="../proc/fragment_compute_nelec.html" xlink:title="physical_fragment_t%fragment_compute_nelec">
+<polygon fill="#d9534f" stroke="#d9534f" points="968,-1747 702,-1747 702,-1723 968,-1723 968,-1747"/>
+<text text-anchor="middle" x="835" y="-1732.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">physical_fragment_t%fragment_compute_nelec</text>
 </a>
 </g>
 </g>
 <!-- proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec -->
-<g id="proc~~compute_mbe~~CallsGraph_edge95" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge97" class="edge">
 <title>proc~build_fragment_from_indices&#45;&gt;proc~fragment_compute_nelec</title>
-<path fill="none" stroke="#ff8b00" d="M619.08,-1349.03C658.59,-1355.27 707.03,-1362.93 747.91,-1369.39"/>
-<polygon fill="#ff8b00" stroke="#ff8b00" points="747.44,-1372.86 757.86,-1370.96 748.53,-1365.95 747.44,-1372.86"/>
+<path fill="none" stroke="#ff8b00" d="M625.04,-1683.02C638.92,-1685.85 653.02,-1689.44 666,-1694 683.27,-1700.07 684.7,-1708.03 702,-1714 709.25,-1716.5 716.83,-1718.71 724.53,-1720.65"/>
+<polygon fill="#ff8b00" stroke="#ff8b00" points="723.79,-1724.08 734.33,-1722.98 725.41,-1717.27 723.79,-1724.08"/>
 </g>
 <!-- proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_node73" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node74" class="node">
 <title>proc~element_mass</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node73"><a xlink:href="../proc/element_mass.html" xlink:title="element_mass">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1389,-1766 1299,-1766 1299,-1742 1389,-1742 1389,-1766"/>
-<text text-anchor="middle" x="1344" y="-1751.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_mass</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node74"><a xlink:href="../proc/element_mass.html" xlink:title="element_mass">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1389,-834 1299,-834 1299,-810 1389,-810 1389,-834"/>
+<text text-anchor="middle" x="1344" y="-819.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">element_mass</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_cartesian_displacements&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge96" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge98" class="edge">
 <title>proc~compute_cartesian_displacements&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#ffb900" d="M1193.36,-1957.94C1208.84,-1952.96 1224.33,-1945.93 1237,-1936 1291.45,-1893.32 1323.32,-1814.31 1336.24,-1775.98"/>
-<polygon fill="#ffb900" stroke="#ffb900" points="1339.62,-1776.91 1339.38,-1766.32 1332.96,-1774.74 1339.62,-1776.91"/>
+<path fill="none" stroke="#ffb900" d="M1188.72,-851.96C1204.56,-849.08 1221.38,-845.97 1237,-843 1253.87,-839.8 1272.22,-836.2 1288.84,-832.9"/>
+<polygon fill="#ffb900" stroke="#ffb900" points="1289.81,-836.28 1298.94,-830.89 1288.44,-829.41 1289.81,-836.28"/>
 </g>
 <!-- proc~compute_ir_intensities&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge97" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge99" class="edge">
 <title>proc~compute_ir_intensities&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#b9ff00" d="M1163.24,-1902.94C1186.22,-1895.12 1214.55,-1883.49 1237,-1868 1275.2,-1841.63 1309.86,-1799.33 1328.53,-1774.35"/>
-<polygon fill="#b9ff00" stroke="#b9ff00" points="1331.35,-1776.42 1334.44,-1766.29 1325.71,-1772.28 1331.35,-1776.42"/>
+<path fill="none" stroke="#b9ff00" d="M1186.69,-943.12C1203.74,-940.01 1221.64,-935 1237,-927 1276.28,-906.54 1310.38,-866.56 1328.69,-842.27"/>
+<polygon fill="#b9ff00" stroke="#b9ff00" points="1331.6,-844.23 1334.71,-834.1 1325.96,-840.08 1331.6,-844.23"/>
 </g>
 <!-- proc~compute_moments_of_inertia&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge100" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge102" class="edge">
 <title>proc~compute_moments_of_inertia&#45;&gt;to_char</title>
-<path fill="none" stroke="#8bff00" d="M920.63,-1011.01C937.41,-1007.57 954.11,-1001.7 968,-992 1057.54,-929.5 1100.24,-796.2 1114.16,-743.3"/>
-<polygon fill="#8bff00" stroke="#8bff00" points="1117.63,-743.84 1116.7,-733.29 1110.85,-742.12 1117.63,-743.84"/>
+<path fill="none" stroke="#8bff00" d="M890.68,-314.1C917.7,-322.8 948.59,-337.31 968,-361 1013.93,-417.04 966.13,-458.23 1004,-520 1024.94,-554.15 1062.34,-581.89 1088.91,-598.61"/>
+<polygon fill="#8bff00" stroke="#8bff00" points="1087.11,-601.61 1097.46,-603.85 1090.77,-595.64 1087.11,-601.61"/>
 </g>
 <!-- proc~compute_moments_of_inertia&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge101" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge103" class="edge">
 <title>proc~compute_moments_of_inertia&#45;&gt;warning</title>
-<path fill="none" stroke="#8bff00" d="M920.81,-1015.48C938.48,-1011.97 955.51,-1004.94 968,-992 1013.41,-944.97 972.8,-757.46 1004,-700 1023.08,-664.85 1060.51,-637.12 1087.6,-620.46"/>
-<polygon fill="#8bff00" stroke="#8bff00" points="1089.55,-623.37 1096.35,-615.24 1085.96,-617.36 1089.55,-623.37"/>
+<path fill="none" stroke="#8bff00" d="M907.35,-314.05C927.13,-317.94 948.52,-322.64 968,-328 1008.21,-339.06 1053.06,-355.59 1083.45,-367.45"/>
+<polygon fill="#8bff00" stroke="#8bff00" points="1082.2,-370.72 1092.79,-371.12 1084.77,-364.2 1082.2,-370.72"/>
 </g>
 <!-- pic_syev -->
-<g id="proc~~compute_mbe~~CallsGraph_node66" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node67" class="node">
 <title>pic_syev</title>
-<polygon fill="#777777" stroke="#777777" points="1149.5,-1383 1091.5,-1383 1091.5,-1359 1149.5,-1359 1149.5,-1383"/>
-<text text-anchor="middle" x="1120.5" y="-1368.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
+<polygon fill="#777777" stroke="#777777" points="1149.5,-511 1091.5,-511 1091.5,-487 1149.5,-487 1149.5,-511"/>
+<text text-anchor="middle" x="1120.5" y="-496.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_syev</text>
 </g>
 <!-- proc~compute_moments_of_inertia&#45;&gt;pic_syev -->
-<g id="proc~~compute_mbe~~CallsGraph_edge98" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge100" class="edge">
 <title>proc~compute_moments_of_inertia&#45;&gt;pic_syev</title>
-<path fill="none" stroke="#8bff00" d="M862.75,-1025.05C893.31,-1040.29 942.4,-1069.49 968,-1110 1013.22,-1181.55 956.52,-1226.94 1004,-1297 1022.92,-1324.92 1056.25,-1344.59 1082.26,-1356.6"/>
-<polygon fill="#8bff00" stroke="#8bff00" points="1080.91,-1359.83 1091.47,-1360.68 1083.74,-1353.43 1080.91,-1359.83"/>
+<path fill="none" stroke="#8bff00" d="M874.52,-314.1C902.21,-323.97 939.54,-339.75 968,-361 987.7,-375.71 986.48,-385.75 1004,-403 1033.45,-432.01 1070.72,-461.9 1094.83,-480.46"/>
+<polygon fill="#8bff00" stroke="#8bff00" points="1093,-483.47 1103.08,-486.76 1097.25,-477.91 1093,-483.47"/>
 </g>
 <!-- proc~compute_moments_of_inertia&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge99" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge101" class="edge">
 <title>proc~compute_moments_of_inertia&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#8bff00" d="M882.23,-1025.1C910.66,-1034.77 945.78,-1051.1 968,-1077 1003.42,-1118.3 964.72,-1156.35 1004,-1194 1081.28,-1268.07 1168.16,-1173.03 1237,-1255 1299.52,-1329.45 1229.82,-1603.89 1273,-1691 1282.1,-1709.37 1299.08,-1724.86 1314.04,-1735.88"/>
-<polygon fill="#8bff00" stroke="#8bff00" points="1312.34,-1738.96 1322.54,-1741.84 1316.36,-1733.23 1312.34,-1738.96"/>
+<path fill="none" stroke="#8bff00" d="M899.52,-289.96C988.89,-277.1 1150.46,-269.48 1237,-361 1298.02,-425.52 1233.25,-679.59 1273,-759 1282.18,-777.33 1299.16,-792.82 1314.1,-803.85"/>
+<polygon fill="#8bff00" stroke="#8bff00" points="1312.39,-806.93 1322.58,-809.82 1316.42,-801.21 1312.39,-806.93"/>
 </g>
 <!-- proc~compute_reduced_masses&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge102" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge104" class="edge">
 <title>proc~compute_reduced_masses&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#2eff00" d="M1150.46,-1834.84C1190.03,-1818.23 1261.09,-1788.39 1304.93,-1769.98"/>
-<polygon fill="#2eff00" stroke="#2eff00" points="1306.52,-1773.11 1314.39,-1766.01 1303.81,-1766.66 1306.52,-1773.11"/>
+<path fill="none" stroke="#2eff00" d="M1197.72,-896.13C1211.04,-893.28 1224.59,-889.64 1237,-885 1266.82,-873.84 1297.78,-854.38 1318.48,-840.03"/>
+<polygon fill="#2eff00" stroke="#2eff00" points="1320.54,-842.86 1326.69,-834.23 1316.5,-837.14 1320.54,-842.86"/>
 </g>
 <!-- proc~compute_vibrational_frequencies&#45;&gt;error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge103" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge105" class="edge">
 <title>proc~compute_vibrational_frequencies&#45;&gt;error</title>
-<path fill="none" stroke="#00ff8b" d="M930.17,-1684.75C943.29,-1688.31 956.27,-1692.96 968,-1699 987.56,-1709.08 984.36,-1723.07 1004,-1733 1028.71,-1745.5 1059.73,-1750.65 1083.4,-1752.73"/>
-<polygon fill="#00ff8b" stroke="#00ff8b" points="1083.15,-1756.22 1093.38,-1753.46 1083.67,-1749.24 1083.15,-1756.22"/>
+<path fill="none" stroke="#00ff8b" d="M905.75,-771C928.5,-778.19 952,-789.68 968,-808 1016.22,-863.24 971.78,-903.13 1004,-969 1027.96,-1017.99 1072.32,-1064.74 1098.54,-1089.88"/>
+<polygon fill="#00ff8b" stroke="#00ff8b" points="1096.38,-1092.65 1106.06,-1096.96 1101.18,-1087.55 1096.38,-1092.65"/>
 </g>
 <!-- proc~compute_vibrational_frequencies&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge107" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge109" class="edge">
 <title>proc~compute_vibrational_frequencies&#45;&gt;warning</title>
-<path fill="none" stroke="#00ff8b" d="M930.08,-1674.22C944.56,-1670.19 957.99,-1663.29 968,-1652 1038.23,-1572.8 957.48,-795.08 1004,-700 1021.47,-664.29 1058.85,-636.81 1086.37,-620.37"/>
-<polygon fill="#00ff8b" stroke="#00ff8b" points="1088.38,-623.25 1095.29,-615.22 1084.88,-617.19 1088.38,-623.25"/>
+<path fill="none" stroke="#00ff8b" d="M844.61,-746.86C866.56,-715.68 925.85,-629.85 968,-554 986.16,-521.33 981.09,-507.53 1004,-478 1028.88,-445.94 1066.2,-417.37 1091.64,-399.91"/>
+<polygon fill="#00ff8b" stroke="#00ff8b" points="1093.76,-402.7 1100.1,-394.21 1089.85,-396.89 1093.76,-402.7"/>
 </g>
 <!-- proc~compute_vibrational_frequencies&#45;&gt;pic_syev -->
-<g id="proc~~compute_mbe~~CallsGraph_edge104" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge106" class="edge">
 <title>proc~compute_vibrational_frequencies&#45;&gt;pic_syev</title>
-<path fill="none" stroke="#00ff8b" d="M930.21,-1672.7C944.31,-1668.75 957.59,-1662.27 968,-1652 1034.79,-1586.11 951.86,-1522 1004,-1444 1022.67,-1416.07 1056.03,-1396.71 1082.11,-1384.97"/>
-<polygon fill="#00ff8b" stroke="#00ff8b" points="1083.55,-1388.16 1091.35,-1380.99 1080.78,-1381.73 1083.55,-1388.16"/>
+<path fill="none" stroke="#00ff8b" d="M847.91,-746.72C874.97,-718.97 943.44,-649.57 1004,-595 1035.05,-567.02 1072.51,-536.44 1096.17,-517.48"/>
+<polygon fill="#00ff8b" stroke="#00ff8b" points="1098.59,-520.03 1104.22,-511.05 1094.23,-514.56 1098.59,-520.03"/>
 </g>
 <!-- proc~mass_weight_hessian -->
-<g id="proc~~compute_mbe~~CallsGraph_node76" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node77" class="node">
 <title>proc~mass_weight_hessian</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node76"><a xlink:href="../proc/mass_weight_hessian.html" xlink:title="mass_weight_hessian">
-<polygon fill="#d9534f" stroke="#d9534f" points="1184,-1724 1057,-1724 1057,-1700 1184,-1700 1184,-1724"/>
-<text text-anchor="middle" x="1120.5" y="-1709.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mass_weight_hessian</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node77"><a xlink:href="../proc/mass_weight_hessian.html" xlink:title="mass_weight_hessian">
+<polygon fill="#d9534f" stroke="#d9534f" points="1184,-792 1057,-792 1057,-768 1184,-768 1184,-792"/>
+<text text-anchor="middle" x="1120.5" y="-777.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">mass_weight_hessian</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_frequencies&#45;&gt;proc~mass_weight_hessian -->
-<g id="proc~~compute_mbe~~CallsGraph_edge105" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge107" class="edge">
 <title>proc~compute_vibrational_frequencies&#45;&gt;proc~mass_weight_hessian</title>
-<path fill="none" stroke="#00ff8b" d="M923.37,-1685.02C962.78,-1690.44 1008.8,-1696.77 1046.35,-1701.94"/>
-<polygon fill="#00ff8b" stroke="#00ff8b" points="1046.32,-1705.47 1056.71,-1703.36 1047.28,-1698.53 1046.32,-1705.47"/>
+<path fill="none" stroke="#00ff8b" d="M930.01,-765.96C968,-768.78 1011.18,-771.98 1046.71,-774.61"/>
+<polygon fill="#00ff8b" stroke="#00ff8b" points="1046.77,-778.12 1057,-775.37 1047.28,-771.14 1046.77,-778.12"/>
 </g>
 <!-- proc~project_translation_rotation -->
-<g id="proc~~compute_mbe~~CallsGraph_node78" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node79" class="node">
 <title>proc~project_translation_rotation</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node78"><a xlink:href="../proc/project_translation_rotation.html" xlink:title="project_translation_rotation">
-<polygon fill="#d9534f" stroke="#d9534f" points="1199.5,-1682 1041.5,-1682 1041.5,-1658 1199.5,-1658 1199.5,-1682"/>
-<text text-anchor="middle" x="1120.5" y="-1667.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">project_translation_rotation</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node79"><a xlink:href="../proc/project_translation_rotation.html" xlink:title="project_translation_rotation">
+<polygon fill="#d9534f" stroke="#d9534f" points="1199.5,-750 1041.5,-750 1041.5,-726 1199.5,-726 1199.5,-750"/>
+<text text-anchor="middle" x="1120.5" y="-735.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">project_translation_rotation</text>
 </a>
 </g>
 </g>
 <!-- proc~compute_vibrational_frequencies&#45;&gt;proc~project_translation_rotation -->
-<g id="proc~~compute_mbe~~CallsGraph_edge106" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge108" class="edge">
 <title>proc~compute_vibrational_frequencies&#45;&gt;proc~project_translation_rotation</title>
-<path fill="none" stroke="#00ff8b" d="M930.01,-1672.01C962.59,-1671.66 998.97,-1671.28 1031.09,-1670.94"/>
-<polygon fill="#00ff8b" stroke="#00ff8b" points="1031.39,-1674.43 1041.35,-1670.83 1031.32,-1667.43 1031.39,-1674.43"/>
+<path fill="none" stroke="#00ff8b" d="M930.01,-752.04C962.59,-749.62 998.97,-746.93 1031.09,-744.55"/>
+<polygon fill="#00ff8b" stroke="#00ff8b" points="1031.64,-748.02 1041.35,-743.79 1031.12,-741.04 1031.64,-748.02"/>
 </g>
 <!-- proc~compute_zpe&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge108" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge110" class="edge">
 <title>proc~compute_zpe&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ffe7" d="M877.22,-686.82C932.8,-694.66 1030.84,-708.49 1083.56,-715.93"/>
-<polygon fill="#00ffe7" stroke="#00ffe7" points="1083.08,-719.4 1093.47,-717.33 1084.06,-712.46 1083.08,-719.4"/>
+<path fill="none" stroke="#00ffe7" d="M877.08,-379.77C905.85,-380.44 943.4,-386.11 968,-408 1007.06,-442.76 974.73,-476.68 1004,-520 1026.46,-553.24 1063.64,-581.2 1089.74,-598.22"/>
+<polygon fill="#00ffe7" stroke="#00ffe7" points="1088.15,-601.36 1098.46,-603.78 1091.91,-595.46 1088.15,-601.36"/>
 </g>
 <!-- proc~compute_zpe&#45;&gt;warning -->
-<g id="proc~~compute_mbe~~CallsGraph_edge109" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge111" class="edge">
 <title>proc~compute_zpe&#45;&gt;warning</title>
-<path fill="none" stroke="#00ffe7" d="M877.22,-669.66C932.51,-654.45 1029.83,-627.67 1082.74,-613.11"/>
-<polygon fill="#00ffe7" stroke="#00ffe7" points="1083.99,-616.4 1092.7,-610.37 1082.13,-609.65 1083.99,-616.4"/>
+<path fill="none" stroke="#00ffe7" d="M877.22,-382C932.39,-382 1029.42,-382 1082.41,-382"/>
+<polygon fill="#00ffe7" stroke="#00ffe7" points="1082.7,-385.5 1092.7,-382 1082.7,-378.5 1082.7,-385.5"/>
 </g>
 <!-- proc~error_get_full_trace&#45;&gt;proc~error_has_error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge110" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge112" class="edge">
 <title>proc~error_get_full_trace&#45;&gt;proc~error_has_error</title>
-<path fill="none" stroke="#008bff" d="M622.52,-1257C663.78,-1257 714.03,-1257 755.19,-1257"/>
-<polygon fill="#008bff" stroke="#008bff" points="755.45,-1260.5 765.45,-1257 755.45,-1253.5 755.45,-1260.5"/>
+<path fill="none" stroke="#008bff" d="M622.65,-1544.93C638.14,-1540.9 653.45,-1534.64 666,-1525 694.06,-1503.45 673.4,-1474.83 702,-1454 717.34,-1442.82 736.36,-1436.64 755.13,-1433.41"/>
+<polygon fill="#008bff" stroke="#008bff" points="755.82,-1436.85 765.21,-1431.94 754.8,-1429.92 755.82,-1436.85"/>
 </g>
 <!-- proc~basis_set_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_node69" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node70" class="node">
 <title>proc~basis_set_destroy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node69"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="949.5,-1185 720.5,-1185 720.5,-1161 949.5,-1161 949.5,-1185"/>
-<text text-anchor="middle" x="835" y="-1170.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node70"><a xlink:href="../proc/basis_set_destroy.html" xlink:title="molecular_basis_type%basis_set_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="949.5,-1831 720.5,-1831 720.5,-1807 949.5,-1807 949.5,-1831"/>
+<text text-anchor="middle" x="835" y="-1816.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">molecular_basis_type%basis_set_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_destroy&#45;&gt;proc~basis_set_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge111" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge113" class="edge">
 <title>proc~fragment_destroy&#45;&gt;proc~basis_set_destroy</title>
-<path fill="none" stroke="#002eff" d="M653.84,-1175.48C672.22,-1175.22 691.39,-1174.96 710.07,-1174.7"/>
-<polygon fill="#002eff" stroke="#002eff" points="710.13,-1178.2 720.08,-1174.57 710.04,-1171.2 710.13,-1178.2"/>
+<path fill="none" stroke="#002eff" d="M653.84,-1806.62C672.22,-1807.88 691.39,-1809.2 710.07,-1810.48"/>
+<polygon fill="#002eff" stroke="#002eff" points="709.87,-1813.98 720.08,-1811.17 710.35,-1806.99 709.87,-1813.98"/>
 </g>
 <!-- fnv_1a_hash -->
-<g id="proc~~compute_mbe~~CallsGraph_node65" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node66" class="node">
 <title>fnv_1a_hash</title>
-<polygon fill="#777777" stroke="#777777" points="874.5,-1601 795.5,-1601 795.5,-1577 874.5,-1577 874.5,-1601"/>
-<text text-anchor="middle" x="835" y="-1586.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
+<polygon fill="#777777" stroke="#777777" points="874.5,-1121 795.5,-1121 795.5,-1097 874.5,-1097 874.5,-1121"/>
+<text text-anchor="middle" x="835" y="-1106.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">fnv_1a_hash</text>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;fnv_1a_hash -->
-<g id="proc~~compute_mbe~~CallsGraph_edge112" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge114" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;fnv_1a_hash</title>
-<path fill="none" stroke="#0000ff" d="M635.07,-1614.98C684.96,-1608.46 744.58,-1600.68 785.46,-1595.34"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="785.97,-1598.8 795.43,-1594.04 785.06,-1591.86 785.97,-1598.8"/>
+<path fill="none" stroke="#0000ff" d="M586.88,-1041.06C640.24,-1055.73 730.03,-1080.42 785.43,-1095.65"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="784.78,-1099.1 795.35,-1098.38 786.64,-1092.35 784.78,-1099.1"/>
 </g>
 <!-- proc~arrays_equal_internal -->
-<g id="proc~~compute_mbe~~CallsGraph_node68" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node69" class="node">
 <title>proc~arrays_equal_internal</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node68"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="899,-1643 771,-1643 771,-1619 899,-1619 899,-1643"/>
-<text text-anchor="middle" x="835" y="-1628.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node69"><a xlink:href="../proc/arrays_equal_internal.html" xlink:title="arrays_equal_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="899,-1041 771,-1041 771,-1017 899,-1017 899,-1041"/>
+<text text-anchor="middle" x="835" y="-1026.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">arrays_equal_internal</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal -->
-<g id="proc~~compute_mbe~~CallsGraph_edge113" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge115" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;proc~arrays_equal_internal</title>
-<path fill="none" stroke="#0000ff" d="M661.36,-1628.63C694.86,-1629.09 730.35,-1629.58 760.38,-1629.99"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="760.72,-1633.49 770.77,-1630.13 760.82,-1626.49 760.72,-1633.49"/>
+<path fill="none" stroke="#0000ff" d="M661.36,-1029C694.86,-1029 730.35,-1029 760.38,-1029"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="760.77,-1032.5 770.77,-1029 760.77,-1025.5 760.77,-1032.5"/>
 </g>
 <!-- sort -->
-<g id="proc~~compute_mbe~~CallsGraph_node79" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node80" class="node">
 <title>sort</title>
-<polygon fill="#777777" stroke="#777777" points="862,-1559 808,-1559 808,-1535 862,-1535 862,-1559"/>
-<text text-anchor="middle" x="835" y="-1544.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
+<polygon fill="#777777" stroke="#777777" points="862,-1222 808,-1222 808,-1198 862,-1198 862,-1222"/>
+<text text-anchor="middle" x="835" y="-1207.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">sort</text>
 </g>
 <!-- proc~fragment_lookup_find&#45;&gt;sort -->
-<g id="proc~~compute_mbe~~CallsGraph_edge114" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge116" class="edge">
 <title>proc~fragment_lookup_find&#45;&gt;sort</title>
-<path fill="none" stroke="#0000ff" d="M570.33,-1614.97C601.59,-1601.66 654.58,-1580.44 702,-1568 733.9,-1559.63 771.07,-1554.08 797.82,-1550.8"/>
-<polygon fill="#0000ff" stroke="#0000ff" points="798.37,-1554.26 807.89,-1549.61 797.55,-1547.31 798.37,-1554.26"/>
+<path fill="none" stroke="#0000ff" d="M577.49,-1041.07C603.41,-1051.16 638.95,-1067.23 666,-1088 685.5,-1102.97 683.25,-1114.1 702,-1130 732.48,-1155.85 772.24,-1178.74 800.13,-1193.33"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="798.61,-1196.49 809.1,-1197.96 801.82,-1190.27 798.61,-1196.49"/>
 </g>
 <!-- proc~next_prime_internal -->
-<g id="proc~~compute_mbe~~CallsGraph_node77" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node78" class="node">
 <title>proc~next_prime_internal</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node77"><a xlink:href="../proc/next_prime_internal.html" xlink:title="next_prime_internal">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="894,-1143 776,-1143 776,-1119 894,-1119 894,-1143"/>
-<text text-anchor="middle" x="835" y="-1128.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_prime_internal</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node78"><a xlink:href="../proc/next_prime_internal.html" xlink:title="next_prime_internal">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="894,-1361 776,-1361 776,-1337 894,-1337 894,-1361"/>
+<text text-anchor="middle" x="835" y="-1346.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">next_prime_internal</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_init&#45;&gt;proc~next_prime_internal -->
-<g id="proc~~compute_mbe~~CallsGraph_edge115" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge117" class="edge">
 <title>proc~fragment_lookup_init&#45;&gt;proc~next_prime_internal</title>
-<path fill="none" stroke="#2e00ff" d="M646.01,-1109.03C685.59,-1113.66 729.77,-1118.82 765.35,-1122.98"/>
-<polygon fill="#2e00ff" stroke="#2e00ff" points="765.29,-1126.5 775.63,-1124.18 766.1,-1119.54 765.29,-1126.5"/>
+<path fill="none" stroke="#2e00ff" d="M635.07,-1323.02C677.41,-1328.55 726.76,-1335 765.72,-1340.08"/>
+<polygon fill="#2e00ff" stroke="#2e00ff" points="765.53,-1343.59 775.9,-1341.41 766.44,-1336.65 765.53,-1343.59"/>
 </g>
 <!-- proc~fragment_lookup_insert&#45;&gt;fnv_1a_hash -->
-<g id="proc~~compute_mbe~~CallsGraph_edge116" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge118" class="edge">
 <title>proc~fragment_lookup_insert&#45;&gt;fnv_1a_hash</title>
-<path fill="none" stroke="#5c00ff" d="M654.54,-1391.12C658.63,-1393.68 662.48,-1396.63 666,-1400 721.12,-1452.85 646.58,-1515.46 702,-1568 723.8,-1588.67 757.31,-1593.8 785.11,-1593.83"/>
-<polygon fill="#5c00ff" stroke="#5c00ff" points="785.52,-1597.32 795.45,-1593.61 785.38,-1590.32 785.52,-1597.32"/>
+<path fill="none" stroke="#5c00ff" d="M636,-1218.94C646.27,-1216.49 656.45,-1213.54 666,-1210 669.74,-1208.61 758.12,-1155.08 805.15,-1126.53"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="807.24,-1129.35 813.97,-1121.17 803.61,-1123.37 807.24,-1129.35"/>
 </g>
 <!-- proc~error_set -->
-<g id="proc~~compute_mbe~~CallsGraph_node74" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node75" class="node">
 <title>proc~error_set</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node74"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
-<polygon fill="#d9534f" stroke="#d9534f" points="1173,-1519 1068,-1519 1068,-1495 1173,-1495 1173,-1519"/>
-<text text-anchor="middle" x="1120.5" y="-1504.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node75"><a xlink:href="../proc/error_set.html" xlink:title="error_t%error_set">
+<polygon fill="#d9534f" stroke="#d9534f" points="1173,-1404 1068,-1404 1068,-1380 1173,-1380 1173,-1404"/>
+<text text-anchor="middle" x="1120.5" y="-1389.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">error_t%error_set</text>
 </a>
 </g>
 </g>
 <!-- proc~fragment_lookup_insert&#45;&gt;proc~error_set -->
-<g id="proc~~compute_mbe~~CallsGraph_edge117" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge119" class="edge">
 <title>proc~fragment_lookup_insert&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#5c00ff" d="M652.1,-1391.01C657.02,-1393.57 661.69,-1396.54 666,-1400 698.97,-1426.43 667.46,-1463.65 702,-1488 757.55,-1527.15 955.33,-1519.18 1057.46,-1512.09"/>
-<polygon fill="#5c00ff" stroke="#5c00ff" points="1057.91,-1515.56 1067.64,-1511.36 1057.41,-1508.58 1057.91,-1515.56"/>
+<path fill="none" stroke="#5c00ff" d="M612.83,-1243.04C697.88,-1258.6 845.37,-1288.44 968,-1328 1009.44,-1341.37 1055.27,-1361.52 1085.55,-1375.63"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="1084.27,-1378.9 1094.81,-1379.98 1087.25,-1372.56 1084.27,-1378.9"/>
 </g>
 <!-- proc~fragment_lookup_insert&#45;&gt;sort -->
-<g id="proc~~compute_mbe~~CallsGraph_edge118" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge120" class="edge">
 <title>proc~fragment_lookup_insert&#45;&gt;sort</title>
-<path fill="none" stroke="#5c00ff" d="M653.65,-1391.14C658.04,-1393.69 662.19,-1396.62 666,-1400 707.98,-1437.22 660.49,-1483.25 702,-1521 727.78,-1544.44 768.34,-1549.39 797.7,-1549.44"/>
-<polygon fill="#5c00ff" stroke="#5c00ff" points="798.02,-1552.94 807.96,-1549.26 797.9,-1545.94 798.02,-1552.94"/>
+<path fill="none" stroke="#5c00ff" d="M666.41,-1222.09C713.93,-1218.66 764.68,-1215 797.72,-1212.62"/>
+<polygon fill="#5c00ff" stroke="#5c00ff" points="798.08,-1216.1 807.8,-1211.89 797.57,-1209.12 798.08,-1216.1"/>
 </g>
 <!-- proc~print_thermochemistry&#45;&gt;info -->
-<g id="proc~~compute_mbe~~CallsGraph_edge119" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge121" class="edge">
 <title>proc~print_thermochemistry&#45;&gt;info</title>
-<path fill="none" stroke="#ff00e7" d="M609.24,-634.69C628.15,-630.82 648.38,-625.18 666,-617 684.38,-608.46 683.56,-597.41 702,-589 732.49,-575.1 770.26,-568.61 797.57,-565.6"/>
-<polygon fill="#ff00e7" stroke="#ff00e7" points="798.26,-569.05 807.86,-564.57 797.56,-562.08 798.26,-569.05"/>
+<path fill="none" stroke="#ff00e7" d="M609.02,-389.06C628.01,-392.93 648.35,-398.62 666,-407 684.56,-415.81 683.38,-427.32 702,-436 732.37,-450.16 770.15,-456.61 797.5,-459.55"/>
+<polygon fill="#ff00e7" stroke="#ff00e7" points="797.51,-463.07 807.8,-460.55 798.19,-456.1 797.51,-463.07"/>
 </g>
 <!-- proc~atomic_basis_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_node81" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node82" class="node">
 <title>proc~atomic_basis_destroy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node81"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1237,-1185 1004,-1185 1004,-1161 1237,-1161 1237,-1185"/>
-<text text-anchor="middle" x="1120.5" y="-1170.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node82"><a xlink:href="../proc/atomic_basis_destroy.html" xlink:title="atomic_basis_type%atomic_basis_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1237,-1831 1004,-1831 1004,-1807 1237,-1807 1237,-1831"/>
+<text text-anchor="middle" x="1120.5" y="-1816.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">atomic_basis_type%atomic_basis_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge120" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge122" class="edge">
 <title>proc~basis_set_destroy&#45;&gt;proc~atomic_basis_destroy</title>
-<path fill="none" stroke="#65ff00" d="M949.68,-1173C964.2,-1173 979.12,-1173 993.82,-1173"/>
-<polygon fill="#65ff00" stroke="#65ff00" points="993.95,-1176.5 1003.95,-1173 993.95,-1169.5 993.95,-1176.5"/>
+<path fill="none" stroke="#65ff00" d="M949.68,-1819C964.2,-1819 979.12,-1819 993.82,-1819"/>
+<polygon fill="#65ff00" stroke="#65ff00" points="993.95,-1822.5 1003.95,-1819 993.95,-1815.5 993.95,-1822.5"/>
 </g>
 <!-- proc~to_angstrom -->
-<g id="proc~~compute_mbe~~CallsGraph_node82" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node83" class="node">
 <title>proc~to_angstrom</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node82"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="1160,-1477 1081,-1477 1081,-1453 1160,-1453 1160,-1477"/>
-<text text-anchor="middle" x="1120.5" y="-1462.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node83"><a xlink:href="../proc/to_angstrom.html" xlink:title="to_angstrom">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="1160,-1789 1081,-1789 1081,-1765 1160,-1765 1160,-1789"/>
+<text text-anchor="middle" x="1120.5" y="-1774.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">to_angstrom</text>
 </a>
 </g>
 </g>
 <!-- proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom -->
-<g id="proc~~compute_mbe~~CallsGraph_edge121" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge123" class="edge">
 <title>proc~calculate_monomer_distance&#45;&gt;proc~to_angstrom</title>
-<path fill="none" stroke="#00ff00" d="M919.53,-1466.41C968.76,-1466.06 1029.34,-1465.64 1070.84,-1465.34"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1070.99,-1468.84 1080.96,-1465.27 1070.94,-1461.84 1070.99,-1468.84"/>
+<path fill="none" stroke="#00ff00" d="M919.53,-1777C968.76,-1777 1029.34,-1777 1070.84,-1777"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1070.96,-1780.5 1080.96,-1777 1070.96,-1773.5 1070.96,-1780.5"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;error -->
-<g id="proc~~compute_mbe~~CallsGraph_edge122" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge124" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;error</title>
-<path fill="none" stroke="#00ff66" d="M903.63,-1293.8C927.16,-1295.7 951.71,-1302.51 968,-1320 1030.8,-1387.41 941.95,-1664.9 1004,-1733 1023.54,-1754.45 1057.08,-1758.54 1082.99,-1757.94"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="1083.39,-1761.42 1093.21,-1757.46 1083.06,-1754.43 1083.39,-1761.42"/>
+<path fill="none" stroke="#00ff66" d="M903.56,-1476.88C925.99,-1474.41 949.85,-1468.08 968,-1454 999.77,-1429.36 987.89,-1407.84 1004,-1371 1043.17,-1281.42 1090.33,-1174.84 1110.08,-1130.25"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1113.33,-1131.56 1114.18,-1121 1106.93,-1128.73 1113.33,-1131.56"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;to_char -->
-<g id="proc~~compute_mbe~~CallsGraph_edge125" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge127" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;to_char</title>
-<path fill="none" stroke="#00ff66" d="M903.73,-1302.41C926.57,-1300.16 950.65,-1293.58 968,-1278 970.63,-1275.64 1085.96,-846.05 1113.6,-743.02"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="1117.05,-743.66 1116.26,-733.1 1110.29,-741.85 1117.05,-743.66"/>
+<path fill="none" stroke="#00ff66" d="M903.65,-1480.56C927.32,-1478.74 951.97,-1471.88 968,-1454 1022.73,-1392.96 968.3,-790.81 1004,-717 1021.92,-679.94 1060.29,-650.82 1087.9,-633.56"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1090.06,-636.34 1096.8,-628.16 1086.43,-630.35 1090.06,-636.34"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol -->
-<g id="proc~~compute_mbe~~CallsGraph_edge123" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge125" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~element_number_to_symbol</title>
-<path fill="none" stroke="#00ff66" d="M903.55,-1293.52C940.99,-1290.48 988.05,-1286.66 1028.68,-1283.37"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="1029.17,-1286.84 1038.86,-1282.54 1028.61,-1279.86 1029.17,-1286.84"/>
+<path fill="none" stroke="#00ff66" d="M903.55,-1480.47C927.22,-1478.64 951.88,-1471.8 968,-1454 1059.3,-1353.19 913.82,-944.82 1004,-843 1010.96,-835.14 1019.8,-829.59 1029.48,-825.74"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1030.62,-829.06 1038.99,-822.56 1028.39,-822.42 1030.62,-829.06"/>
 </g>
 <!-- proc~check_duplicate_atoms&#45;&gt;proc~error_set -->
-<g id="proc~~compute_mbe~~CallsGraph_edge124" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge126" class="edge">
 <title>proc~check_duplicate_atoms&#45;&gt;proc~error_set</title>
-<path fill="none" stroke="#00ff66" d="M903.5,-1295.03C926.59,-1297.16 950.89,-1303.82 968,-1320 1022.85,-1371.87 949.73,-1433.53 1004,-1486 1018.22,-1499.75 1038.27,-1506.09 1057.68,-1508.67"/>
-<polygon fill="#00ff66" stroke="#00ff66" points="1057.43,-1512.16 1067.73,-1509.69 1058.14,-1505.2 1057.43,-1512.16"/>
+<path fill="none" stroke="#00ff66" d="M903.8,-1467.28C924.61,-1464.09 947.44,-1459.76 968,-1454 1009.86,-1442.28 1055.78,-1422.43 1085.96,-1408.35"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="1087.63,-1411.43 1095.19,-1404 1084.65,-1405.1 1087.63,-1411.43"/>
 </g>
 <!-- proc~mass_weight_hessian&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge126" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge128" class="edge">
 <title>proc~mass_weight_hessian&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#6500ff" d="M1184.17,-1723.21C1201.31,-1726.33 1219.88,-1729.75 1237,-1733 1253.87,-1736.2 1272.22,-1739.8 1288.84,-1743.1"/>
-<polygon fill="#6500ff" stroke="#6500ff" points="1288.44,-1746.59 1298.94,-1745.11 1289.81,-1739.72 1288.44,-1746.59"/>
+<path fill="none" stroke="#6500ff" d="M1184.17,-791.21C1201.31,-794.33 1219.88,-797.75 1237,-801 1253.87,-804.2 1272.22,-807.8 1288.84,-811.1"/>
+<polygon fill="#6500ff" stroke="#6500ff" points="1288.44,-814.59 1298.94,-813.11 1289.81,-807.72 1288.44,-814.59"/>
 </g>
 <!-- proc~project_translation_rotation&#45;&gt;proc~element_mass -->
-<g id="proc~~compute_mbe~~CallsGraph_edge128" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge130" class="edge">
 <title>proc~project_translation_rotation&#45;&gt;proc~element_mass</title>
-<path fill="none" stroke="#ff00cb" d="M1199.57,-1680.27C1212.29,-1683.06 1225.17,-1686.57 1237,-1691 1266.82,-1702.16 1297.78,-1721.62 1318.48,-1735.97"/>
-<polygon fill="#ff00cb" stroke="#ff00cb" points="1316.5,-1738.86 1326.69,-1741.77 1320.54,-1733.14 1316.5,-1738.86"/>
+<path fill="none" stroke="#ff00cb" d="M1199.57,-748.27C1212.29,-751.06 1225.17,-754.57 1237,-759 1266.82,-770.16 1297.78,-789.62 1318.48,-803.97"/>
+<polygon fill="#ff00cb" stroke="#ff00cb" points="1316.5,-806.86 1326.69,-809.77 1320.54,-801.14 1316.5,-806.86"/>
 </g>
 <!-- pic_gesvd -->
-<g id="proc~~compute_mbe~~CallsGraph_node80" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node81" class="node">
 <title>pic_gesvd</title>
-<polygon fill="#777777" stroke="#777777" points="1376.5,-1682 1311.5,-1682 1311.5,-1658 1376.5,-1658 1376.5,-1682"/>
-<text text-anchor="middle" x="1344" y="-1667.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gesvd</text>
+<polygon fill="#777777" stroke="#777777" points="1376.5,-750 1311.5,-750 1311.5,-726 1376.5,-726 1376.5,-750"/>
+<text text-anchor="middle" x="1344" y="-735.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pic_gesvd</text>
 </g>
 <!-- proc~project_translation_rotation&#45;&gt;pic_gesvd -->
-<g id="proc~~compute_mbe~~CallsGraph_edge127" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge129" class="edge">
 <title>proc~project_translation_rotation&#45;&gt;pic_gesvd</title>
-<path fill="none" stroke="#ff00cb" d="M1199.59,-1670C1233.87,-1670 1272.73,-1670 1301.35,-1670"/>
-<polygon fill="#ff00cb" stroke="#ff00cb" points="1301.4,-1673.5 1311.4,-1670 1301.4,-1666.5 1301.4,-1673.5"/>
+<path fill="none" stroke="#ff00cb" d="M1199.59,-738C1233.87,-738 1272.73,-738 1301.35,-738"/>
+<polygon fill="#ff00cb" stroke="#ff00cb" points="1301.4,-741.5 1311.4,-738 1301.4,-734.5 1301.4,-741.5"/>
 </g>
 <!-- proc~cgto_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_node83" class="node">
+<g id="proc~~compute_mbe~~CallsGraph_node84" class="node">
 <title>proc~cgto_destroy</title>
-<g id="a_proc~~compute_mbe~~CallsGraph_node83"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
-<polygon fill="#d9534f" stroke="#d9534f" points="1415,-1185 1273,-1185 1273,-1161 1415,-1161 1415,-1185"/>
-<text text-anchor="middle" x="1344" y="-1170.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
+<g id="a_proc~~compute_mbe~~CallsGraph_node84"><a xlink:href="../proc/cgto_destroy.html" xlink:title="cgto_type%cgto_destroy">
+<polygon fill="#d9534f" stroke="#d9534f" points="1415,-1831 1273,-1831 1273,-1807 1415,-1807 1415,-1831"/>
+<text text-anchor="middle" x="1344" y="-1816.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cgto_type%cgto_destroy</text>
 </a>
 </g>
 </g>
 <!-- proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy -->
-<g id="proc~~compute_mbe~~CallsGraph_edge129" class="edge">
+<g id="proc~~compute_mbe~~CallsGraph_edge131" class="edge">
 <title>proc~atomic_basis_destroy&#45;&gt;proc~cgto_destroy</title>
-<path fill="none" stroke="#00ff00" d="M1237.12,-1173C1245.77,-1173 1254.38,-1173 1262.74,-1173"/>
-<polygon fill="#00ff00" stroke="#00ff00" points="1262.79,-1176.5 1272.79,-1173 1262.79,-1169.5 1262.79,-1176.5"/>
+<path fill="none" stroke="#00ff00" d="M1237.12,-1819C1245.77,-1819 1254.38,-1819 1262.74,-1819"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="1262.79,-1822.5 1272.79,-1819 1262.79,-1815.5 1262.79,-1822.5"/>
 </g>
 </g>
 </svg>
@@ -2441,7 +2462,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~2"></span>
+              <span class="anchor" id="variable-delta_energies~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2475,7 +2496,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-energies~2"></span>
+              <span class="anchor" id="variable-energies~3"></span>
               real(kind=dp),
             </td>
               <td>private,</td>
@@ -2492,7 +2513,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_size~4"></span>
+              <span class="anchor" id="variable-fragment_size~12"></span>
               integer,
             </td>
               <td>private</td>
@@ -2526,7 +2547,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i~31"></span>
+              <span class="anchor" id="variable-i~38"></span>
               integer(kind=int64),
             </td>
               <td>private</td>
@@ -2560,7 +2581,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-lookup~6"></span>
+              <span class="anchor" id="variable-lookup~5"></span>
               type(<a href='../type/fragment_lookup_t.html'>fragment_lookup_t</a>),
             </td>
               <td>private</td>
@@ -3004,9 +3025,17 @@ large graphs.</div>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">))</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_lumo</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">))</span>
 <span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_has_orbitals</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">))</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">))</span>
+<span class="w">         </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="n">fragment_count</span><span class="p">))</span>
 <span class="w">         </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1_int64</span><span class="p">,</span><span class="w"> </span><span class="n">fragment_count</span>
 <span class="w">            </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_distances</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">distance</span>
 <span class="w">            </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_scf_status</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">(</span><span class="n">i</span><span class="p">)%</span><span class="n">scf_status</span>
+<span class="w">            </span><span class="c">! Same rule the fragment was built and run with, from the same</span>
+<span class="w">            </span><span class="c">! helper, so the table cannot disagree with what the SCF saw.</span>
+<span class="w">            </span><span class="k">call </span><span class="n">fragment_charge_multiplicity</span><span class="p">(</span><span class="n">sys_geom</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                              </span><span class="nb">pack</span><span class="p">(</span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">max_level</span><span class="p">),</span><span class="w"> </span><span class="n">polymers</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">max_level</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                              </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_charges</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                              </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_multiplicities</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
 <span class="w">            </span><span class="c">! Zero when the method did not report a pair, which the table</span>
 <span class="w">            </span><span class="c">! writes as a blank rather than as a gap of zero.</span>
 <span class="w">            </span><span class="n">json_data</span><span class="p">%</span><span class="n">fragment_homo</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span>
@@ -3067,7 +3096,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 14:07 +0000             </p>
+ on 2026-08-12 00:57 +0000             </p>
           </div>
         </div>
         <br>

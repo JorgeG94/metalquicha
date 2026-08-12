@@ -20,6 +20,7 @@ module mqc_physical_fragment
    public :: system_geometry_t          !! Complete system geometry type
    public :: initialize_system_geometry  !! System geometry initialization
    public :: build_fragment_from_indices  !! Extract fragment from system
+   public :: fragment_charge_multiplicity  !! Charge/multiplicity a set of monomers forms
    public :: build_fragment_from_atom_list  !! Build fragment from explicit atom indices (for intersections)
    public :: check_duplicate_atoms      !! Validate fragment has no overlapping atoms
    ! TODO: in theory there should be a nice way to redistribute for a general matrix of any shape, need to think about this!
@@ -352,43 +353,11 @@ contains
          call add_hydrogen_caps(atoms_in_fragment, bonds, sys_geom, fragment, n_atoms_no_caps)
       end if
 
-      ! Set electronic structure properties from system geometry
-      if (use_explicit_fragments .and. allocated(sys_geom%fragment_charges) .and. &
-          allocated(sys_geom%fragment_multiplicities)) then
-         ! Explicit fragments: sum charges and multiplicities from constituent fragments
-         fragment%charge = 0
-         fragment%multiplicity = 1  ! Start with singlet assumption
-
-         do i = 1, n_monomers_in_frag
-            mono_idx = monomer_indices(i)
-            fragment%charge = fragment%charge + sys_geom%fragment_charges(mono_idx)
-         end do
-
-         ! Unpaired electrons add, exactly as the charges above do. A
-         ! composite taking `sys_geom%multiplicity` instead -- which is what
-         ! this did -- is wrong the moment spin is localised rather than
-         ! spread: give one monomer of a neutral cluster a +1 charge and a
-         ! doublet, and every *neutral* dimer in the expansion inherited the
-         ! doublet too, then failed as an even electron count with one
-         ! unpaired electron. That is also why an MBE of a charged system
-         ! could not be run at all.
-         !
-         ! Summing unpaired counts is high-spin coupling. For the case this
-         ! exists to serve -- one open-shell monomer among closed shells --
-         ! there is nothing to choose: the composite's spin is that monomer's.
-         ! Where two or more monomers are open-shell it takes the highest
-         ! multiplet, which is a choice, and a low-spin state has to be asked
-         ! for by giving the fragment its own multiplicity.
-         do i = 1, n_monomers_in_frag
-            mono_idx = monomer_indices(i)
-            fragment%multiplicity = fragment%multiplicity + &
-                                    (sys_geom%fragment_multiplicities(mono_idx) - 1)
-         end do
-      else
-         ! Fixed-size monomers: use system defaults
-         fragment%charge = sys_geom%charge
-         fragment%multiplicity = sys_geom%multiplicity
-      end if
+      ! Charge and multiplicity of the composite, by the same rule the
+      ! per-fragment breakdown reports -- computed in one place so the number
+      ! the SCF runs and the number the table prints cannot drift apart.
+      call fragment_charge_multiplicity(sys_geom, monomer_indices, &
+                                        fragment%charge, fragment%multiplicity)
       call fragment%compute_nelec()
 
       ! Validate: check for spatially overlapping atoms
@@ -404,6 +373,46 @@ contains
       deallocate (atoms_in_fragment)
 
    end subroutine build_fragment_from_indices
+
+   pure subroutine fragment_charge_multiplicity(sys_geom, monomer_indices, charge, multiplicity)
+      !! Total charge and spin multiplicity of the fragment these monomers form
+      !!
+      !! Explicit partition: the charge is the sum of the constituent monomer
+      !! charges, and the unpaired-electron count sums the same way. Taking
+      !! `sys_geom%multiplicity` for the composite instead is wrong the moment
+      !! spin is localised rather than spread: give one monomer of a neutral
+      !! cluster a +1 charge and a doublet, and every neutral dimer would
+      !! inherit the doublet too, then fail as an even electron count with one
+      !! unpaired electron -- which is also why a charged MBE could not be run.
+      !!
+      !! Summing unpaired counts is high-spin coupling. For the case this
+      !! serves -- one open-shell monomer among closed shells -- there is
+      !! nothing to choose: the composite's spin is that monomer's. Two or more
+      !! open-shell monomers take the highest multiplet, a choice a low-spin
+      !! state overrides by giving the fragment its own multiplicity.
+      !!
+      !! With no explicit partition (fixed-size monomers) it is the
+      !! whole-system charge and multiplicity, as the caller had before.
+      type(system_geometry_t), intent(in) :: sys_geom
+      integer, intent(in) :: monomer_indices(:)
+      integer, intent(out) :: charge, multiplicity
+
+      integer :: i, mono_idx
+
+      if (allocated(sys_geom%fragment_atoms) .and. allocated(sys_geom%fragment_charges) &
+          .and. allocated(sys_geom%fragment_multiplicities)) then
+         charge = 0
+         multiplicity = 1
+         do i = 1, size(monomer_indices)
+            mono_idx = monomer_indices(i)
+            charge = charge + sys_geom%fragment_charges(mono_idx)
+            multiplicity = multiplicity + (sys_geom%fragment_multiplicities(mono_idx) - 1)
+         end do
+      else
+         charge = sys_geom%charge
+         multiplicity = sys_geom%multiplicity
+      end if
+   end subroutine fragment_charge_multiplicity
 
    subroutine build_fragment_from_atom_list(sys_geom, atom_indices, n_atoms, fragment, error, bonds)
       !! Build a fragment from explicit atom list (for GMBE intersection fragments)

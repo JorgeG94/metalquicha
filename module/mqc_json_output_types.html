@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for modules and submodules.">87 statements</a>
+                 title=" 0.5% of total for modules and submodules.">91 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -1298,7 +1298,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-delta_energies~3"></span>
+              <span class="anchor" id="variable-delta_energies~4"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1332,7 +1332,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fingerprint~2"></span>
+              <span class="anchor" id="variable-fingerprint"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1352,7 +1352,7 @@ Where the per-fragment table goes: &ldquo;csv&rdquo;, &ldquo;json&rdquo; or &ldq
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-force_constants~4"></span>
+              <span class="anchor" id="variable-force_constants"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1369,7 +1369,7 @@ Where the per-fragment table goes: &ldquo;csv&rdquo;, &ldquo;json&rdquo; or &ldq
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_breakdown"></span>
+              <span class="anchor" id="variable-fragment_breakdown~2"></span>
               character(len=16),
             </td>
               <td>public</td>
@@ -1386,7 +1386,24 @@ Where the per-fragment table goes: &ldquo;csv&rdquo;, &ldquo;json&rdquo; or &ldq
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fragment_count~5"></span>
+              <span class="anchor" id="variable-fragment_charges"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragment_charges</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Per-fragment total charge</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fragment_count~6"></span>
               integer(kind=int64),
             </td>
               <td>public</td>
@@ -1490,6 +1507,23 @@ leaves behind, and printing it as a gap of zero is a claim.</p>
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-fragment_multiplicities"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>fragment_multiplicities</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+<p>Per-fragment spin multiplicity</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-fragment_scf_status"></span>
               integer,
             </td>
@@ -1510,7 +1544,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-frequencies~8"></span>
+              <span class="anchor" id="variable-frequencies~5"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1527,7 +1561,7 @@ millions of terms nobody is reading the log.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gradient~3"></span>
+              <span class="anchor" id="variable-gradient"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1665,7 +1699,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-hessian~6"></span>
+              <span class="anchor" id="variable-hessian"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1699,7 +1733,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ir_intensities~5"></span>
+              <span class="anchor" id="variable-ir_intensities~2"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1733,7 +1767,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-max_level~15"></span>
+              <span class="anchor" id="variable-max_level~13"></span>
               integer,
             </td>
               <td>public</td>
@@ -1835,7 +1869,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-polymers~5"></span>
+              <span class="anchor" id="variable-polymers~11"></span>
               integer,
             </td>
               <td>public,</td>
@@ -1852,7 +1886,7 @@ so there is no expansion of them to report.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-reduced_masses~5"></span>
+              <span class="anchor" id="variable-reduced_masses"></span>
               real(kind=dp),
             </td>
               <td>public,</td>
@@ -1934,7 +1968,7 @@ so there is no expansion of them to report.</p>
               </tr>
               <tr>
                 <td>  procedure, public ::
-  <strong><a href='../type/json_output_data_t.html#boundprocedure-reset~2'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_reset.html'>json_output_data_reset</a></td>
+  <strong><a href='../type/json_output_data_t.html#boundprocedure-reset'>reset</a></strong> => <a href='/home/runner/work/metalquicha/metalquicha/docs/fpm-ford/proc/json_output_data_reset.html'>json_output_data_reset</a></td>
                   <td></td>
               </tr>
           </tbody>
@@ -1968,7 +2002,7 @@ so there is no expansion of them to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~54"></span>
+              <span class="anchor" id="variable-this~18"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2008,7 +2042,7 @@ so there is no expansion of them to report.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~55"></span>
+              <span class="anchor" id="variable-this~19"></span>
               class(<a href='../type/json_output_data_t.html'>json_output_data_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -2051,7 +2085,7 @@ so there is no expansion of them to report.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-11 14:07 +0000             </p>
+ on 2026-08-12 00:57 +0000             </p>
           </div>
         </div>
         <br>
