@@ -43,6 +43,7 @@ module mqc_libcint_direct
    public :: schwarz_bounds
    public :: build_fock_direct
    public :: build_fock_direct_many
+   public :: build_fock_direct_nosym
    public :: build_fock_direct_uhf
    public :: direct_stats_t
    public :: DEFAULT_SCREEN_TOL
@@ -628,6 +629,253 @@ contains
 
       deallocate (g, d_half, dims, offs, pair_i, pair_j)
    end subroutine build_fock_direct_many
+
+   subroutine build_fock_direct_nosym(mol, h, densities, bounds, focks, stats, error, &
+                                      screen_tol)
+      !! J - K/2 for densities of **any** symmetry, over one pass of the integrals
+      !!
+      !! `build_fock_direct_many` is faster and cannot be used here. It folds three
+      !! of the eightfold permutations into a `deg` factor -- doubling for
+      !! `s1 /= s2` rather than ever touching `D(nu,mu)` -- which is only the same
+      !! thing when `D` is symmetric. Hand it an antisymmetric density and those
+      !! permutations reinforce where they must cancel, so the Coulomb term comes
+      !! back at twice its size instead of at zero. Nothing detects that, and it is
+      !! not repairable by changing the final symmetrisation, because the error is
+      !! already in the accumulation.
+      !!
+      !! So this routine writes the permutations out. For each computed integral it
+      !! generates the distinct index tuples that the block enumeration does not
+      !! already cover -- exactly the ones `deg` was standing in for, under the same
+      !! three conditions -- and applies to each
+      !!
+      !!     g(p,q) += V D(r,s)          the Coulomb contribution
+      !!     g(p,r) -= V D(q,s) / 2      the exchange contribution
+      !!
+      !! with the real density elements rather than a multiplicity. **There is no
+      !! final symmetrisation**, and there must not be: for an antisymmetric density
+      !! `J` vanishes and `G = -K/2` is itself antisymmetric, so
+      !! `0.5*(g + transpose(g))` would annihilate the entire result.
+      !!
+      !! For a symmetric density this reduces term by term to what
+      !! `build_fock_direct_many` computes, which is asserted in the tests rather
+      !! than asserted here.
+      !!
+      !! **Why this is the wanted operator.** The frequency-dependent
+      !! coupled-perturbed equations need `A - B` as well as `A + B`, and both are
+      !! this same contraction: symmetrise the response density and get `A + B`,
+      !! antisymmetrise it and get `A - B`. The Coulomb term dropping out of the
+      !! second is not a special case to code around -- it happens by itself,
+      !! because the two-electron integral is symmetric in its ket pair while the
+      !! density is not.
+      !!
+      !! **Cost.** Up to eight tuples times two updates against six updates, so
+      !! roughly 2.7x the contraction work per integral. Since the batched build is
+      !! contraction-bound rather than integral-bound past a few densities, prefer
+      !! two passes -- symmetric densities through `build_fock_direct_many` and
+      !! antisymmetric ones through here -- over routing everything through this one.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: h(:, :)             !! Added to every set
+      real(dp), intent(in) :: densities(:, :, :)  !! (n_ao, n_ao, n_set), any symmetry
+      real(dp), intent(in) :: bounds(:, :)        !! From `schwarz_bounds`
+      real(dp), allocatable, intent(out) :: focks(:, :, :)
+      type(direct_stats_t), intent(out) :: stats
+      type(error_t), intent(inout) :: error
+      real(dp), intent(in), optional :: screen_tol
+
+      real(dp), allocatable :: buf(:), g(:, :, :), g_local(:, :, :)
+      type(c_ptr) :: opt
+      integer :: s1, s2, s3, s4
+      integer :: d1, d2, d3, d4, o1, o2, o3, o4
+      integer :: shls(4)
+      integer :: f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, block_max, n, iset, n_set
+      integer :: ij, kl, npair, ipair, i1, i2, i3, pp, qq, rr, ss, tmp
+      integer, allocatable :: pair_i(:), pair_j(:), dims(:), offs(:)
+      integer(int64) :: n_total, n_computed, n_screened
+      real(dp) :: tol, value
+      logical :: swap_bra, swap_ket, swap_pairs
+
+      n = mol%nao
+      n_set = size(densities, 3)
+      if (size(h, 1) /= n .or. size(densities, 1) /= n .or. size(densities, 2) /= n) then
+         call error%set(ERROR_VALIDATION, "direct Fock: matrix dimensions do not match the basis")
+         return
+      end if
+      if (n_set < 1) then
+         call error%set(ERROR_VALIDATION, "direct Fock: no densities to contract against")
+         return
+      end if
+      allocate (focks(n, n, n_set))
+
+      tol = DEFAULT_SCREEN_TOL
+      if (present(screen_tol)) tol = screen_tol
+
+      allocate (dims(mol%nbas), offs(mol%nbas))
+      block_max = 1
+      do s1 = 1, mol%nbas
+         dims(s1) = shell_dim(mol%cartesian, s1 - 1, mol%bas)
+         offs(s1) = mol%shell_offset(s1)
+         block_max = max(block_max, dims(s1))
+      end do
+
+      npair = mol%nbas*(mol%nbas + 1)/2
+      allocate (pair_i(npair), pair_j(npair))
+      ipair = 0
+      do s1 = 1, mol%nbas
+         do s2 = 1, s1
+            ipair = ipair + 1
+            pair_i(ipair) = s1
+            pair_j(ipair) = s2
+         end do
+      end do
+
+      allocate (g(n, n, n_set))
+      g = 0.0_dp
+
+      opt = c_null_ptr
+      call two_electron_optimizer(mol%cartesian, opt, mol%atm, mol%natm, mol%bas, &
+                                  mol%nbas, mol%env)
+
+      n_total = 0_int64
+      n_computed = 0_int64
+      n_screened = 0_int64
+
+      !$omp parallel default(none) &
+      !$omp    shared(mol, bounds, densities, g, dims, offs, pair_i, pair_j, npair, tol, &
+      !$omp           opt, n, block_max, n_set) &
+      !$omp    private(ij, kl, s1, s2, s3, s4, d1, d2, d3, d4, o1, o2, o3, o4, &
+      !$omp            shls, f1, f2, f3, f4, b1, b2, b3, b4, idx, ret, value, &
+      !$omp            buf, g_local, iset, i1, i2, i3, pp, qq, rr, ss, tmp, &
+      !$omp            swap_bra, swap_ket, swap_pairs) &
+      !$omp    reduction(+:n_total, n_computed, n_screened)
+      allocate (buf(block_max**4))
+      allocate (g_local(n, n, n_set))
+      g_local = 0.0_dp
+
+      !$omp do schedule(dynamic)
+      do ij = 1, npair
+         s1 = pair_i(ij)
+         s2 = pair_j(ij)
+         d1 = dims(s1)
+         o1 = offs(s1)
+         d2 = dims(s2)
+         o2 = offs(s2)
+
+         do kl = 1, ij
+            s3 = pair_i(kl)
+            s4 = pair_j(kl)
+            d3 = dims(s3)
+            o3 = offs(s3)
+            d4 = dims(s4)
+            o4 = offs(s4)
+
+            n_total = n_total + 1_int64
+
+            if (bounds(s1, s2)*bounds(s3, s4) < tol) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+
+            shls = [s1 - 1, s2 - 1, s3 - 1, s4 - 1]
+            ret = two_electron_block(mol%cartesian, buf, shls, mol%atm, mol%natm, &
+                                     mol%bas, mol%nbas, mol%env, opt)
+            if (ret == 0) then
+               n_screened = n_screened + 1_int64
+               cycle
+            end if
+            n_computed = n_computed + 1_int64
+
+            ! Which permutations the block enumeration leaves uncovered. Shell
+            ! equality, not function equality: a block with s1 == s2 already runs
+            ! over both orderings of its function pair as separate elements, so
+            ! generating the swap as well would count it twice. These are the same
+            ! three conditions that produce `deg` in `build_fock_direct_many`.
+            swap_bra = s1 /= s2
+            swap_ket = s3 /= s4
+            swap_pairs = .not. (s1 == s3 .and. s2 == s4)
+
+            do f4 = 1, d4
+               b4 = o4 + f4
+               do f3 = 1, d3
+                  b3 = o3 + f3
+                  do f2 = 1, d2
+                     b2 = o2 + f2
+                     do f1 = 1, d1
+                        b1 = o1 + f1
+
+                        idx = f1 + (f2 - 1)*d1 + (f3 - 1)*d1*d2 + (f4 - 1)*d1*d2*d3
+                        value = buf(idx)
+
+                        ! The orbit, generated by three independent swaps. Skipping
+                        ! a swap when its shells coincide is what keeps each
+                        ! distinct tuple appearing exactly once.
+                        do i1 = 1, 2
+                           if (i1 == 2 .and. .not. swap_bra) cycle
+                           do i2 = 1, 2
+                              if (i2 == 2 .and. .not. swap_ket) cycle
+                              do i3 = 1, 2
+                                 if (i3 == 2 .and. .not. swap_pairs) cycle
+
+                                 pp = b1
+                                 qq = b2
+                                 rr = b3
+                                 ss = b4
+                                 if (i1 == 2) then
+                                    tmp = pp
+                                    pp = qq
+                                    qq = tmp
+                                 end if
+                                 if (i2 == 2) then
+                                    tmp = rr
+                                    rr = ss
+                                    ss = tmp
+                                 end if
+                                 if (i3 == 2) then
+                                    tmp = pp
+                                    pp = rr
+                                    rr = tmp
+                                    tmp = qq
+                                    qq = ss
+                                    ss = tmp
+                                 end if
+
+                                 do iset = 1, n_set
+                                    g_local(pp, qq, iset) = g_local(pp, qq, iset) &
+                                                            + densities(rr, ss, iset)*value
+                                    g_local(pp, rr, iset) = g_local(pp, rr, iset) &
+                                                            - 0.5_dp*densities(qq, ss, iset)*value
+                                 end do
+                              end do
+                           end do
+                        end do
+                     end do
+                  end do
+               end do
+            end do
+         end do
+      end do
+      !$omp end do
+
+      !$omp critical(mqc_direct_nosym_accumulate)
+      g = g + g_local
+      !$omp end critical(mqc_direct_nosym_accumulate)
+
+      deallocate (buf, g_local)
+      !$omp end parallel
+
+      stats%quartets_total = n_total
+      stats%quartets_computed = n_computed
+      stats%quartets_screened = n_screened
+
+      call libcint_del_optimizer(opt)
+
+      ! No symmetrisation. See the note at the top: for an antisymmetric density
+      ! the result is antisymmetric, and symmetrising would return zero.
+      do iset = 1, n_set
+         focks(:, :, iset) = h + g(:, :, iset)
+      end do
+
+      deallocate (g, dims, offs, pair_i, pair_j)
+   end subroutine build_fock_direct_nosym
 
    subroutine build_fock_direct_uhf(mol, h, d_alpha, d_beta, bounds, fock_a, fock_b, stats, error, &
                                     screen_tol, k_scale, j_scale, omega)
