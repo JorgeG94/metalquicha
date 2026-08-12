@@ -17,9 +17,16 @@ repos:
       - id: check-symlinks
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: '^tools/efp_validation/reference/.*\.efp$'
       - id: check-case-conflict
       - id: mixed-line-ending
       - id: trailing-whitespace
+        # GAMESS's MAKEFP output is a reference and has to stay byte-identical to
+        # what GAMESS wrote. It emits trailing spaces -- section headers such as
+        # " MONOPOLES " carry one, and the banner several -- so tidying them away
+        # quietly stops the reference being one, and would make any future
+        # byte-level comparison of our renderer against it meaningless.
+        exclude: '^tools/efp_validation/reference/.*\.efp$'
   - repo: local
     hooks:
       - id: fprettify

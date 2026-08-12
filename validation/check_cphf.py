@@ -37,13 +37,28 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools" / "cpu_validation"))
 from gen_cpu_validation import bse_to_pyscf, molecule_form, CARTESIAN  # noqa: E402
 
-ATOMS = [("O", (0.0, 0.0, 0.0)),
-         ("H", (0.0, 0.0, 0.9584)),
-         ("H", (0.9268, 0.0, -0.2400))]
+#: Geometries, in Angstrom, keyed by the name the Fortran writes into its dump.
+#: HCN is linear, so its two perpendicular polarizabilities must come out equal --
+#: a symmetry water cannot supply. It is also the molecule GAMESS's own AO-basis
+#: CPHF fails to converge, which is why it is here.
+MOLECULES = {
+    "water": [("O", (0.0, 0.0, 0.0)),
+              ("H", (0.0, 0.0, 0.9584)),
+              ("H", (0.9268, 0.0, -0.2400))],
+    "hcn": [("N", (0.0, 0.0, 0.0)),
+            ("C", (0.0, 0.0, 1.1560)),
+            ("H", (0.0, 0.0, 2.2230))],
+}
 
-#: Agreement demanded against the dense exact solve. Our CG drives the residual
-#: to 1e-11 relative, so this is loose by three orders of magnitude and still
-#: admits nothing real.
+#: Agreement demanded against the dense exact solve, **relative** to the largest
+#: component of alpha.
+#:
+#: Relative because that is what the solver controls: CG stops on a residual norm
+#: measured against ||h||, so the error in alpha scales with alpha itself. An
+#: absolute threshold looks equivalent on water and then fails HCN, whose
+#: alpha_zz is 20.2 against water's 8.7 -- 2.2e-8 absolute, but 1.1e-9 relative
+#: and no worse converged. Our CG drives the residual to 1e-11, so this is loose
+#: by an order of magnitude and still admits nothing real.
 ALPHA_TOL = 1e-8
 
 #: Largest field for the finite-difference reference; a halved step is also taken.
@@ -65,20 +80,28 @@ CONTEXT_TOL = 2e-6
 
 def read_dump(path):
     tokens = path.read_text().split()
-    basis = tokens[0]
-    values = [float(x) for x in tokens[1:]]
+    basis, molecule = tokens[0], tokens[1]
+    values = [float(x) for x in tokens[2:]]
     nao, n_occ = int(values[0]), int(values[1])
     energy = values[2]
     alpha = np.array(values[3:12]).reshape((3, 3), order="F")
-    return dict(basis=basis, nao=nao, n_occ=n_occ, energy=energy, alpha=alpha)
+    return dict(basis=basis, molecule=molecule, nao=nao, n_occ=n_occ,
+                energy=energy, alpha=alpha)
 
 
-def build_mol(basis):
+def build_mol(basis, molecule):
+    """PySCF's molecule, on the *same* basis table the Fortran read.
+
+    Through `bse_to_pyscf`, never PySCF's built-in library: it ships 6-31G* to
+    eight significant figures where `basis_sets/*.json` carries ten, which is
+    enough to move a polarizability by 4e-6 and look exactly like a solver bug.
+    """
     from pyscf import gto
 
-    symbols = {a[0] for a in ATOMS}
+    atoms = MOLECULES[molecule]
+    symbols = {a[0] for a in atoms}
     mol = gto.Mole()
-    mol.atom = ATOMS
+    mol.atom = atoms
     mol.unit = "Angstrom"
     mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
     mol.cart = molecule_form(basis, symbols) == CARTESIAN
@@ -207,7 +230,7 @@ def field_polarizability(mol):
 
 def main():
     failures = 0
-    for index in (1, 2, 3):
+    for index in (1, 2, 3, 4):
         path = pathlib.Path(f"/tmp/mqc_cphf_{index}.txt")
         if not path.exists():
             print(f"  MISSING {path} -- run ./build/check_cphf first")
@@ -215,7 +238,7 @@ def main():
             continue
         ours = read_dump(path)
 
-        mol = build_mol(ours["basis"])
+        mol = build_mol(ours["basis"], ours["molecule"])
         mf = converged_scf(mol)
         n_occ = mol.nelectron // 2
 
@@ -223,14 +246,15 @@ def main():
         krylov = krylov_polarizability(mol, mf, n_occ)
         by_field = field_polarizability(mol)
 
-        worst = np.abs(ours["alpha"] - dense).max()
+        scale = max(np.abs(dense).max(), 1.0)
+        worst = np.abs(ours["alpha"] - dense).max()/scale
         ok = worst < ALPHA_TOL and asymmetry < 1e-10
         status = "ok  " if ok else "FAIL"
         iso = np.trace(ours["alpha"])/3.0
-        print(f"  {status} {ours['basis']:12s} nao {ours['nao']:3d}  "
-              f"alpha_iso {iso:9.6f}   vs dense {worst:8.2e}   "
-              f"[PySCF krylov {np.abs(dense - krylov).max():8.2e}   "
-              f"field {np.abs(dense - by_field).max():8.2e}]   "
+        print(f"  {status} {ours['molecule']:6s} {ours['basis']:12s} nao {ours['nao']:3d}  "
+              f"alpha_iso {iso:9.6f}   vs dense {worst:8.2e} rel   "
+              f"[PySCF krylov {np.abs(dense - krylov).max()/scale:8.2e}   "
+              f"field {np.abs(dense - by_field).max()/scale:8.2e}]   "
               f"E {abs(ours['energy'] - mf.e_tot):8.2e}")
 
         if asymmetry >= 1e-10:
@@ -245,7 +269,7 @@ def main():
         # Not a failure -- these are context, and PySCF's Krylov solver is known
         # to sit further out than either the dense solve or the finite field.
         for label, value in (("krylov", krylov), ("field", by_field)):
-            gap = np.abs(dense - value).max()
+            gap = np.abs(dense - value).max()/scale
             if gap > CONTEXT_TOL:
                 print(f"       note: PySCF's {label} route is {gap:.2e} from the "
                       f"dense solve, further than expected")
