@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.6% of total for procedures.">80 statements</a>
+                 title=" 0.6% of total for procedures.">88 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -802,7 +802,20 @@ large graphs.</div>
 <span class="k">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">use_scs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">corr_scs</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">scs_ss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">corr_scs_ss</span>
 <span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">corr</span><span class="p">%</span><span class="n">scs_os</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">corr_scs_os</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">max_iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_maxiter</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">amplitude_convergence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_tolerance</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">use_diis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_diis</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">diis_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_diis_size</span>
+<span class="w">      </span><span class="c">! The method name settles the triples unless a deck said otherwise:</span>
+<span class="w">      </span><span class="c">! &quot;ccsd(t)&quot; and &quot;ccsd&quot; are separate method types, so the distinction</span>
+<span class="w">      </span><span class="c">! survives the parse and does not have to be recovered from the spelling</span>
+<span class="w">      </span><span class="c">! the way RI does.</span>
+<span class="w">      </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">include_triples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">         </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">method</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">METHOD_TYPE_CCSD_T</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_triples_set</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">cc</span><span class="p">%</span><span class="n">include_triples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">cc_triples</span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_guess</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
 <span class="k">         </span><span class="n">driver_config</span><span class="p">%</span><span class="n">method_config</span><span class="p">%</span><span class="n">scf</span><span class="p">%</span><span class="n">guess</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mqc_config</span><span class="p">%</span><span class="n">scf_guess</span>
 <span class="w">      </span><span class="k">end if</span>
 
@@ -837,7 +850,7 @@ large graphs.</div>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-12 07:11 +0000             </p>
+ on 2026-08-12 08:11 +0000             </p>
           </div>
         </div>
         <br>

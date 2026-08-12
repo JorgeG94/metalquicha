@@ -9,6 +9,7 @@ module mqc_config_adapter
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_calculation_keywords, only: hessian_keywords_t, aimd_keywords_t, scf_keywords_t
    use mqc_method_config, only: method_config_t
+   use mqc_method_types, only: METHOD_TYPE_CCSD_T
    use pic_logger, only: logger => global_logger
    implicit none
    private
@@ -171,6 +172,19 @@ contains
       driver_config%method_config%corr%use_scs = mqc_config%corr_scs
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
+      driver_config%method_config%cc%max_iter = mqc_config%cc_maxiter
+      driver_config%method_config%cc%amplitude_convergence = mqc_config%cc_tolerance
+      driver_config%method_config%cc%use_diis = mqc_config%cc_diis
+      driver_config%method_config%cc%diis_size = mqc_config%cc_diis_size
+      ! The method name settles the triples unless a deck said otherwise:
+      ! "ccsd(t)" and "ccsd" are separate method types, so the distinction
+      ! survives the parse and does not have to be recovered from the spelling
+      ! the way RI does.
+      driver_config%method_config%cc%include_triples = &
+         (mqc_config%method == METHOD_TYPE_CCSD_T)
+      if (mqc_config%cc_triples_set) then
+         driver_config%method_config%cc%include_triples = mqc_config%cc_triples
+      end if
       if (allocated(mqc_config%scf_guess)) then
          driver_config%method_config%scf%guess = mqc_config%scf_guess
       end if

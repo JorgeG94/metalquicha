@@ -94,7 +94,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.0% of total for modules and submodules.">167 statements</a>
+                 title=" 1.1% of total for modules and submodules.">180 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -201,15 +201,15 @@ Convenience function</p>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='mqc_method_dft.html'>mqc_method_dft</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
-                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
-                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item"><a href='mqc_method_mcscf.html'>mqc_method_mcscf</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_types.html'>mqc_method_types</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_config.html'>mqc_method_config</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_hf.html'>mqc_method_hf</a></li>
+                  <li class="list-inline-item">pic_types</li>
                   <li class="list-inline-item">mctc_env</li>
+                  <li class="list-inline-item"><a href='mqc_method_base.html'>mqc_method_base</a></li>
                   <li class="list-inline-item"><a href='mqc_method_xtb.html'>mqc_method_xtb</a></li>
+                  <li class="list-inline-item"><a href='mqc_method_dft.html'>mqc_method_dft</a></li>
               </ul>
             </li>
             <li class="list-group-item">
@@ -1600,7 +1600,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~17"></span>
+              <span class="anchor" id="variable-config~21"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1645,7 +1645,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-this~58"></span>
+              <span class="anchor" id="variable-this~93"></span>
               class(<a href='../type/method_factory_t.html'>method_factory_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1660,7 +1660,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~12"></span>
+              <span class="anchor" id="variable-config~16"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1710,7 +1710,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~4"></span>
+              <span class="anchor" id="variable-m~3"></span>
               type(<a href='../type/dft_method_t.html'>dft_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1725,7 +1725,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~15"></span>
+              <span class="anchor" id="variable-config~19"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1746,7 +1746,7 @@ large graphs.</div>
   </div>
 
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-configure_hf"></span> <h3>private  subroutine <a href='../proc/configure_hf.html'>configure_hf</a>(m, config, with_mp2)  
+    <div class="card-header codesum"><span class="anchor" id="proc-configure_hf"></span> <h3>private  subroutine <a href='../proc/configure_hf.html'>configure_hf</a>(m, config, with_mp2, with_cc)  
 </h3></div>
     <div class="card-body">
           
@@ -1765,7 +1765,7 @@ large graphs.</div>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~3"></span>
+              <span class="anchor" id="variable-m~2"></span>
               type(<a href='../type/hf_method_t.html'>hf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1780,7 +1780,7 @@ large graphs.</div>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~14"></span>
+              <span class="anchor" id="variable-config~18"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1812,6 +1812,22 @@ orbitals. A separate class would duplicate every SCF setting to
 reach the same code.</p>
             </td>
         </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-with_cc"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>with_cc</strong></td>
+            <td>
+<p>Follow the reference with coupled cluster. Same argument as
+<code>with_mp2</code>: a method, not an option.</p>
+            </td>
+        </tr>
     </tbody>
   </table>
 
@@ -1839,7 +1855,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~5"></span>
+              <span class="anchor" id="variable-m~4"></span>
               type(<a href='../type/mcscf_method_t.html'>mcscf_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1854,7 +1870,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~16"></span>
+              <span class="anchor" id="variable-config~20"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1894,7 +1910,7 @@ reach the same code.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-m~2"></span>
+              <span class="anchor" id="variable-m"></span>
               type(<a href='../type/xtb_method_t.html'>xtb_method_t</a>),
             </td>
 <td>intent(inout)</td>
@@ -1909,7 +1925,7 @@ reach the same code.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-config~13"></span>
+              <span class="anchor" id="variable-config~17"></span>
               type(<a href='../type/method_config_t.html'>method_config_t</a>),
             </td>
 <td>intent(in)</td>
@@ -1952,7 +1968,7 @@ reach the same code.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on 2026-08-12 07:11 +0000             </p>
+ on 2026-08-12 08:11 +0000             </p>
           </div>
         </div>
         <br>

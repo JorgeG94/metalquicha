@@ -33,6 +33,14 @@ module mqc_cuest_iface
       character(len=256) :: corr_aux_basis = ""
       real(dp) :: scs_ss = 1.0_dp       !! Spin-component scaling, one for plain MP2
       real(dp) :: scs_os = 1.0_dp
+      ! Coupled cluster. CPU backend only -- cuEST has no CC -- and refused
+      ! rather than ignored there, so a deck cannot ask the GPU for CCSD and be
+      ! handed Hartree-Fock.
+      logical :: run_cc = .false.
+      logical :: cc_triples = .false.   !! Run the perturbative (T) after CCSD
+      integer :: cc_max_iter = 100
+      real(dp) :: cc_tolerance = 1.0e-8_dp
+      integer :: cc_diis_size = 8
          !! Read by the CPU backend only; cuEST always fits.
          !! Auxiliary (JKFIT) basis. Required: cuEST fits J and K always.
       character(len=32) :: functional = ""
