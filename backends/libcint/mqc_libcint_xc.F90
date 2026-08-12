@@ -34,6 +34,7 @@ module mqc_libcint_xc
    use xc_f03_lib_m, only: xc_f03_func_t, xc_f03_func_init, xc_f03_func_end, &
                            xc_f03_lda_exc_vxc, xc_f03_func_get_info, &
                            xc_f03_func_info_get_family, xc_f03_hyb_exx_coef, &
+                           xc_f03_hyb_cam_coef, xc_f03_nlc_coef, &
                            xc_f03_functional_get_number, xc_f03_func_info_t, &
                            xc_f03_gga_exc_vxc, xc_f03_mgga_exc_vxc, &
                            xc_f03_func_info_get_flags, XC_FLAGS_NEEDS_LAPLACIAN, &
@@ -107,6 +108,7 @@ contains
 #ifdef MQC_WITH_LIBXC
       type(xc_f03_func_info_t) :: info
       real(dp) :: libxc_exx
+      real(dp) :: cam_omega, cam_alpha, cam_beta, nlc_b, nlc_c
 #endif
 
       if (.not. xc_available()) then
@@ -173,7 +175,38 @@ contains
             return
          end select
 
-         ! libxc owns a hybrid's fraction, so ask rather than assume. Only a
+         ! **Range separation is refused, and has to be detected rather than
+         ! asked about.** libxc 7.1.2's Fortran bindings expose no `xc_hyb_type`,
+         ! so the test is on the coefficients themselves: a global hybrid reports
+         ! omega = 0, and anything else splits its exchange into short and long
+         ! range with an erf-attenuated kernel. Those integrals are not computed
+         ! here, and `hyb_exx_coef` does not mean for such a functional what it
+         ! means for a global one -- taking it at face value gave CAM-B3LYP an
+         ! energy 3.4 Hartree low and wB97X 6.4 low, both converged and neither
+         ! flagged. Exactly what this backend exists to refuse.
+         call xc_f03_hyb_cam_coef(ctx%func(i), cam_omega, cam_alpha, cam_beta)
+         if (cam_omega /= 0.0_dp .or. cam_beta /= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
+                           "' is a range-separated hybrid, which needs "// &
+                           "erf-attenuated two-electron integrals the CPU path does "// &
+                           "not compute. Refused rather than treated as a global "// &
+                           "hybrid, which would converge to a badly wrong energy.")
+            return
+         end if
+
+         ! Non-local correlation likewise: VV10 is a double integral over the
+         ! density, not a functional of it at a point, and a functional carrying it
+         ! would silently lose that whole term.
+         call xc_f03_nlc_coef(ctx%func(i), nlc_b, nlc_c)
+         if (nlc_b /= 0.0_dp .or. nlc_c /= 0.0_dp) then
+            call error%set(ERROR_VALIDATION, "'"//trim(spec%component(i)%name)// &
+                           "' carries a non-local correlation term (VV10), which the "// &
+                           "CPU path does not implement. Refused rather than evaluated "// &
+                           "without it.")
+            return
+         end if
+
+         ! libxc owns a global hybrid's fraction, so ask rather than assume. Only a
          ! composition libxc does not carry may state its own, and `mqc_xc_spec`
          ! leaves that at zero for everything libxc knows -- so the two can never
          ! both be nonzero and disagree.

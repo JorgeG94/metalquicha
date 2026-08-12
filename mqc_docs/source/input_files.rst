@@ -232,9 +232,27 @@ beta transform, the second a spin-polarised functional evaluation.
 Functionals
 ^^^^^^^^^^^
 
-Named to `libxc <https://libxc.gitlab.io/>`_, so **any functional libxc carries is
-available by its libxc name** -- ``gga_x_pbe``, ``hyb_gga_xc_b3lyp``,
-``mgga_c_tpss`` and several thousand others. Nothing here shadows that list.
+Named to `libxc <https://libxc.gitlab.io/>`_, so a functional is available by its
+libxc name -- ``gga_x_pbe``, ``hyb_gga_xc_b3lyp``, ``mgga_c_tpss`` and most of the
+several thousand others. Nothing here shadows that list.
+
+**Three families are refused rather than approximated**, and each is checked on
+libxc's own report of the functional rather than a list of names kept here:
+
+- **range-separated hybrids** (CAM-B3LYP, the ωB97 family) split their exchange
+  into short and long range with an erf-attenuated kernel, and those integrals are
+  not computed. Detected by ``xc_hyb_cam_coef`` reporting a nonzero range parameter.
+- **functionals carrying non-local correlation** (VV10, so ωB97M-V and relatives) --
+  that term is a double integral over the density, not a functional of it at a
+  point. Detected by ``xc_nlc_coef``.
+- **meta-GGAs needing the density Laplacian**, which is a second derivative of every
+  basis function. Detected by the ``XC_FLAGS_NEEDS_LAPLACIAN`` flag.
+
+Each refusal names what is missing. The reason they are refusals is worth stating:
+before they were detected, asking for CAM-B3LYP returned a converged energy 3.4
+Hartree low and ωB97X one 6.4 Hartree low, because a range-separated functional's
+exchange coefficient does not mean what a global hybrid's does. Nothing about
+either run looked wrong.
 
 What metalquicha adds on top is friendly names for combinations libxc has the
 parts for but not a name for the pair, plus double hybrids, which libxc does not

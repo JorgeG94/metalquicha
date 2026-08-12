@@ -80,9 +80,10 @@ against PySCF on the same geometries and the same basis data.
 - **Coupled cluster**: CCSD and CCSD(T), conventional and density-fitted, in the
   spin-orbital basis over a restricted reference.
 - **Kohn-Sham DFT**: the whole ladder -- LDA, GGA, hybrid, meta-GGA and double
-  hybrid -- over `libxc <https://libxc.gitlab.io/>`_, so any functional libxc
-  carries is available by name, with friendly names and double-hybrid compositions
-  layered on top. Grids are Treutler-Ahlrichs radial times Lebedev angular with a
+  hybrid -- over `libxc <https://libxc.gitlab.io/>`_, so most of what libxc carries
+  is available by name, with friendly names and double-hybrid compositions layered
+  on top. Range-separated hybrids, non-local correlation and Laplacian-dependent
+  meta-GGAs are refused rather than approximated. Grids are Treutler-Ahlrichs radial times Lebedev angular with a
   Becke partition, from the same level tables PySCF uses.
 
 Basis sets come from the Basis Set Exchange data shipped in ``basis_sets/``, and
