@@ -203,25 +203,45 @@ contains
    end subroutine two_electron_optimizer
 
    subroutine build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
-                                     basis_name, mol, error)
+                                     basis_name, mol, error, normalize_contractions)
       !! A molecule from a basis set *name*, through the ordinary reader
       !!
       !! This is what makes the backend general rather than a demonstration:
       !! any of the basis sets in `basis_sets/` rather than whatever was
       !! typed into a test.
       !!
-      !! No normalisation is applied here beyond libcint's own. The BSE files
-      !! give contraction coefficients against normalised primitives, the
-      !! reader passes them through untouched, and `molecule_build` folds in
-      !! `libcint_gto_norm` -- which is the one convention libcint asks for.
-      !! Applying `normalize_shell_coefficients` as well would count it twice,
-      !! and the symptom is an overlap diagonal that is not 1.
+      !! **Two normalisations, and they are not the same thing.** The BSE files
+      !! give contraction coefficients against normalised *primitives*, and
+      !! `molecule_build` folds in `libcint_gto_norm`, which is the primitive
+      !! convention libcint asks for. That leaves the *contracted* function
+      !! normalised only to the precision the coefficients were published at --
+      !! about 1e-6 for cc-pVDZ -- so `<chi|chi>` is 1.000001, not 1.
+      !!
+      !! This comment used to say applying a second normalisation "would count
+      !! it twice", which conflated the two. It does not: the contraction norm
+      !! is a separate sum over primitive pairs, and PySCF applies it.
+      !!
+      !! Why it went unnoticed for so long is worth stating, because it says
+      !! which tests can and cannot see it: an SCF energy is **invariant** to the
+      !! normalisation of a basis function. Scaling one does not change the space
+      !! the basis spans, so the orbital coefficients absorb it and the energy is
+      !! identical. Every energy validated against PySCF to 1e-9 was therefore
+      !! correct and stayed correct. It shows up only in per-AO quantities -- an
+      !! overlap diagonal, a multipole matrix element, anything an effective
+      !! fragment potential is made of -- and nothing looked at one until the
+      !! multipole integrals arrived.
       integer, intent(in) :: atomic_numbers(:)
       character(len=*), intent(in) :: element_symbols(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
       character(len=*), intent(in) :: basis_name
       type(libcint_molecule_t), intent(out) :: mol
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: normalize_contractions
+         !! Scale each contracted shell so `<chi|chi>` is exactly one. Default
+         !! true, which is both physically right and what PySCF does. False
+         !! reproduces the behaviour from before this was fixed, which is worth
+         !! being able to ask for: it is how the effect on any given quantity can
+         !! be measured rather than argued about.
 
       type(molecular_basis_type) :: basis
       character(len=:), allocatable :: path
@@ -241,7 +261,8 @@ contains
          return
       end if
 
-      call mol%build(atomic_numbers, coordinates, basis, error)
+      call mol%build(atomic_numbers, coordinates, basis, error, &
+                     normalize_contractions=normalize_contractions)
       call basis%destroy()
    end subroutine build_libcint_molecule
 
@@ -283,16 +304,26 @@ contains
       end do
    end function contraction_group_size
 
-   subroutine molecule_build(this, atomic_numbers, coordinates, basis, error)
+   subroutine molecule_build(this, atomic_numbers, coordinates, basis, error, &
+                             normalize_contractions)
       !! Pack atoms and shells into libcint's atm/bas/env
       class(libcint_molecule_t), intent(inout) :: this
       integer, intent(in) :: atomic_numbers(:)
       real(dp), intent(in) :: coordinates(:, :)   !! (3, natm), Bohr
       type(molecular_basis_type), intent(in) :: basis
       type(error_t), intent(inout) :: error
+      logical, intent(in), optional :: normalize_contractions
+         !! See `build_libcint_molecule`. Default true.
+
+      logical :: do_normalize
+      integer :: jprim
+      real(dp) :: norm2, scale, ai, aj
 
       integer :: iatom, ishell, iprim, nprim, off, env_size, ang
       integer :: shell_index, ictr, nctr, first
+
+      do_normalize = .true.
+      if (present(normalize_contractions)) do_normalize = normalize_contractions
 
       this%natm = size(atomic_numbers)
       ! What the basis file said, carried through the reader. Every integral
@@ -379,6 +410,36 @@ contains
                      basis%elements(iatom)%shells(first + ictr - 1)%coefficients(iprim) &
                      *libcint_gto_norm(ang, basis%elements(iatom)%shells(first)%exponents(iprim))
                end do
+
+               ! And now the *contraction* normalisation, which is a different
+               ! sum: <chi|chi> over primitive pairs, where two normalised
+               ! primitives of the same l on the same centre overlap as
+               !
+               !     S_ij = (2 sqrt(a_i a_j) / (a_i + a_j))^(l + 3/2)
+               !
+               ! A single primitive gives S = 1 and a norm of exactly one, which
+               ! is why uncontracted shells were already right and only the
+               ! contracted ones were off. Done per column, since each
+               ! contraction has its own coefficients and its own norm.
+               if (do_normalize) then
+                  norm2 = 0.0_dp
+                  do iprim = 1, nprim
+                     do jprim = 1, nprim
+                        ai = basis%elements(iatom)%shells(first)%exponents(iprim)
+                        aj = basis%elements(iatom)%shells(first)%exponents(jprim)
+                        norm2 = norm2 + this%env(off + iprim)*this%env(off + jprim) &
+                                /(libcint_gto_norm(ang, ai)*libcint_gto_norm(ang, aj)) &
+                                *(2.0_dp*sqrt(ai*aj)/(ai + aj))**(real(ang, dp) + 1.5_dp)
+                     end do
+                  end do
+                  if (norm2 > 0.0_dp) then
+                     scale = 1.0_dp/sqrt(norm2)
+                     do iprim = 1, nprim
+                        this%env(off + iprim) = this%env(off + iprim)*scale
+                     end do
+                  end if
+               end if
+
                off = off + nprim
             end do
 
