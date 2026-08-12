@@ -37,6 +37,24 @@ KS_CASES = [("lda_x", "LDA_X", "cc-pvdz", 3), ("svwn", "SVWN", "cc-pvdz", 3),
             ("gga_x_pbe", "GGA_X_PBE", "cc-pvdz", 3), ("pbe", "PBE", "cc-pvdz", 3),
             ("b3lyp", "B3LYP", "cc-pvdz", 3), ("pbe0", "PBE0", "cc-pvdz", 3)]
 KS_TOL = 1e-9   # measured 2e-11; the SCF thresholds set the floor
+
+# Double hybrids, against pyscf-forge's DFDH on the same geometry and basis.
+#
+# The tolerance is 5e-5 and that is not slack -- it is DFDH's own error. Its SCF is
+# density-fitted with an auto-generated even-tempered auxiliary basis while ours is
+# exact, which is worth ~1.9e-5 here; forcing DFDH onto cc-pVDZ-RIFIT for J/K makes
+# it *worse* by 1.7e-3, because RIFIT fits correlation and not J/K. So the residual
+# is the reference's approximation, not ours, and tightening this bound would mean
+# reproducing an approximation rather than an answer.
+#
+# What is checked tightly instead: the perturbative term on its own, where both
+# codes fit and the only difference is which auxiliary basis. And the composition,
+# in test_mqc_xc_spec, against the coefficients DFDH reports for itself.
+DH_CASES = [("b2plyp", "B2PLYP", -76.3533921732, -0.0652456679),
+            ("b2gp-plyp", "B2GPPLYP", -76.3369776292, None),
+            ("mpw2plyp", "mPW2PLYP", -76.3528724926, None)]
+DH_TOL = 5e-5
+DH_PT2_TOL = 1e-5
 FUNCTIONAL_TOL = 1e-10   # same library, same numbers: roundoff only
 CHAIN_TOL = 1e-8         # the grid cancels; see below
 
@@ -144,6 +162,39 @@ def main():
               f"(<= {KS_TOL:.0e})  {iters} iterations")
         if not ok:
             failures += 1
+
+    # ---- double hybrids -----------------------------------------------------
+    for tag, name, ref_total, ref_pt2 in DH_CASES:
+        path = pathlib.Path(f"/tmp/mqc_dh_{tag}_cc-pvdz_ri.txt")
+        if not path.exists():
+            print(f"  MISSING {path} -- run ./build/check_dft first")
+            failures += 1
+            continue
+        v = [float(x) for x in path.read_text().split()]
+        total, ks, pt2 = v[0], v[1], v[2]
+        d = abs(total - ref_total)
+        ok = d < DH_TOL
+        line = (f"  {'ok  ' if ok else 'FAIL'} DH {tag:10s} ours {total:.10f}  "
+                f"DFDH {ref_total:.10f}  diff {d:.2e} (<= {DH_TOL:.0e})")
+        if ref_pt2 is not None:
+            dp2 = abs(pt2 - ref_pt2)
+            ok = ok and dp2 < DH_PT2_TOL
+            line += f"\n       PT2 {pt2:.10f} vs {ref_pt2:.10f}  diff {dp2:.2e}"
+        print(line)
+        if not ok:
+            failures += 1
+
+    # The fitting error in the perturbative term, measured against our own
+    # conventional transform rather than against anyone else's auxiliary basis.
+    ri = pathlib.Path("/tmp/mqc_dh_b2plyp_cc-pvdz_ri.txt")
+    conv = pathlib.Path("/tmp/mqc_dh_b2plyp_cc-pvdz_conv.txt")
+    if ri.exists() and conv.exists():
+        a = [float(x) for x in ri.read_text().split()]
+        b = [float(x) for x in conv.read_text().split()]
+        # Same Kohn-Sham part by construction; only the PT2 term may move.
+        assert abs(a[1] - b[1]) < 1e-12, "the KS part should not depend on the MP2 route"
+        print(f"  ok   DH b2plyp RI vs conventional PT2: {abs(a[2] - b[2]):.2e} "
+              f"(the fitting error, ours, measured internally)")
 
     print()
     if failures:

@@ -65,8 +65,22 @@ module mqc_result_types
       !! Container for quantum chemistry energy components
       !!
       !! Stores energy contributions from different levels of theory.
-      !! Total energy is computed as: scf + mp2%total() + cc%total()
-      real(dp) :: scf = 0.0_dp           !! SCF/HF reference energy (Hartree)
+      !! Total energy is computed as: scf + dh_pt2 + mp2%total() + cc%total()
+      real(dp) :: scf = 0.0_dp           !! SCF/HF/KS reference energy (Hartree)
+      real(dp) :: dh_pt2 = 0.0_dp
+         !! The perturbative part of a double hybrid's *functional*.
+         !!
+         !! Separate from `mp2` on purpose, and the distinction is not cosmetic. A
+         !! double hybrid's second-order term is a component of its exchange-
+         !! correlation functional, not a correction applied on top of a reference
+         !! -- B2PLYP's energy is not "B2PLYP plus MP2". Putting it in `mp2` would
+         !! give the right total today, for the wrong reason, and the wrong total
+         !! the moment anyone asked for MP2 alongside a double hybrid: `total`
+         !! would add it twice.
+         !!
+         !! Belongs with `scf` conceptually -- it is part of what the functional
+         !! defines -- and is kept as its own field only so a run can report it.
+         !! Already scaled by the functional's coefficient when it is stored.
       type(mp2_energy_t) :: mp2          !! MP2 correlation components
       type(cc_energy_t) :: cc            !! Coupled cluster correlation components
       ! add more as needed, also need to modify the total energy function
@@ -247,13 +261,14 @@ contains
       real(dp) :: total
 
       ! this line needs to me modified if more components are added
-      total = this%scf + this%mp2%total() + this%cc%total()
+      total = this%scf + this%dh_pt2 + this%mp2%total() + this%cc%total()
    end function energy_total
 
    subroutine energy_reset(this)
       !! Reset all energy components to zero
       class(energy_t), intent(inout) :: this
       this%scf = 0.0_dp
+      this%dh_pt2 = 0.0_dp
       call this%mp2%reset()
       call this%cc%reset()
    end subroutine energy_reset
