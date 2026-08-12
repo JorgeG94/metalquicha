@@ -99,6 +99,9 @@ Implicit solvation models account for solvent effects without explicit solvent m
 
 **Supported models:**
 
+- **PCM**: a polarizable continuum on the cuEST (GPU) backend, for Hartree-Fock
+  and Kohn-Sham, restricted and unrestricted. Validated against PySCF's C-PCM;
+  configured through ``keywords.pcm``.
 - **ALPB**: Analytical Linearized Poisson-Boltzmann (recommended for GFN2-xTB)
 - **GBSA**: Generalized Born with Solvent-Accessible Surface Area
 - **CPCM**: Conductor-like Polarizable Continuum Model

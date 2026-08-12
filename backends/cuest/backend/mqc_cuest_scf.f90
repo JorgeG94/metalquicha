@@ -456,6 +456,9 @@ contains
          ! thing to look at if a solvation energy comes out wrong, and it is not
          ! recoverable from the total.
          if (system%has_pcm) then
+            write (*, "(A,F10.4,A,I0,A,F6.3,A,F7.3)") "    continuum: eps = ", &
+               system%pcm_dielectric, "   angular points ", system%pcm_angular_points, &
+               "   radii x ", system%pcm_radii_scale, "   zeta ", system%pcm_zeta
             write (*, "(A,I0,A,I0)") "    continuum: ", system%n_pcm_points, &
                " surface points, active ", system%n_pcm_active
          end if

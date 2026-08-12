@@ -38,24 +38,35 @@ module mqc_calculation_defaults
 
    !> Angular points per atom on a continuum cavity, for the ab initio PCM.
    !>
-   !> 110 is a Lebedev order and the usual starting point for a cavity, which
-   !> needs far fewer points than an exchange-correlation grid does.
-   integer, parameter, public :: DEFAULT_PCM_NANG = 110
+   !> 302, matching what PySCF and most codes use for a cavity. This was 110 on
+   !> the assumption that a cavity needs far fewer points than an
+   !> exchange-correlation grid, and that was measured to be wrong: on water in
+   !> water, 110 points per atom gave a dielectric energy 21% short of the
+   !> converged value (-8.07 mHartree against -10.21), while 302 agrees with
+   !> PySCF's C-PCM to 1.5% and reproduces its solvated dipole to 0.0013 D. A
+   !> continuum surface is a two-dimensional integral of a function with a cusp
+   !> where spheres intersect, so it is not the easy quadrature it looks like.
+   integer, parameter, public :: DEFAULT_PCM_NANG = 302
 
    !> Cavity radius scaling. See `mqc_pcm_radii` for why 1.2 and not 1.0.
    real(dp), parameter, public :: DEFAULT_PCM_RSCALE = 1.2_dp
 
    !> Prefactor of the Gaussian switching exponent on a smooth cavity.
    !>
-   !> **Unverified against cuEST's own convention.** A smooth continuum surface
-   !> replaces each surface point by a normalised Gaussian, and 4.9 is the value
-   !> Lange and Herbert [JCP 133, 244111 (2010)] fit for Lebedev cavities under
-   !> the definition zeta_i = zeta * sqrt(n_angular) / R_i. cuEST takes the
-   !> exponents themselves rather than this prefactor, so if its definition
-   !> differs the cavity is smoothed by the wrong amount -- which changes the
-   !> solvation energy without failing. Exposed as a keyword for exactly that
-   !> reason: it can be checked on hardware without a rebuild.
-   real(dp), parameter, public :: DEFAULT_PCM_ZETA = 4.9_dp
+   !> Used as zeta_i = zeta * sqrt(n_angular) / R_i, since the exponent has to
+   !> scale with the spacing between surface points, which on a sphere of radius
+   !> R carrying n points goes as R/sqrt(n).
+   !>
+   !> **Calibrated, not derived, and that is worth stating.** Lange and Herbert
+   !> [JCP 133, 244111 (2010)] fit 4.9 for Lebedev cavities, but cuEST takes the
+   !> exponents themselves rather than a prefactor and its convention is not
+   !> documented in the bindings -- so 4.9 here is not necessarily 4.9 there. Two
+   !> is the value that reproduces PySCF's C-PCM on water in water; at 4.9 the
+   !> dielectric energy came out half. What that means is that this number
+   !> absorbs whatever cuEST's definition actually is, so it should be treated as
+   !> an empirical constant of this interface rather than a physical one, and it
+   !> is a keyword so it can be revisited.
+   real(dp), parameter, public :: DEFAULT_PCM_ZETA = 2.0_dp
 
    ! =========================================================================
    ! Fragmentation

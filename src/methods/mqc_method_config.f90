@@ -135,7 +135,7 @@ module mqc_method_config
          !! Lebedev points per atom on the cavity surface.
       real(dp) :: radii_scale = 1.2_dp
          !! Scaling from van der Waals radii, per `mqc_pcm_radii`.
-      real(dp) :: zeta = 4.9_dp
+      real(dp) :: zeta = 2.0_dp
          !! Gaussian switching prefactor for the smooth surface. Unverified
          !! against cuEST's convention -- see `DEFAULT_PCM_ZETA`.
       real(dp) :: tolerance = 1.0e-8_dp

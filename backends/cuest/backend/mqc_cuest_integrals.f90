@@ -159,6 +159,13 @@ module mqc_cuest_integrals
       integer(c_int64_t) :: n_pcm_active = 0      !! Of those, the ones not buried
       real(dp) :: pcm_tolerance = 1.0e-8_dp
       integer :: pcm_max_iter = 100
+      ! Kept for reporting. A solvation energy is meaningless without the
+      ! dielectric and the cavity that produced it, and none of these is
+      ! recoverable from the output afterwards.
+      real(dp) :: pcm_dielectric = 0.0_dp
+      real(dp) :: pcm_zeta = 0.0_dp
+      real(dp) :: pcm_radii_scale = 0.0_dp
+      integer :: pcm_angular_points = 0
       real(dp) :: pcm_residual = 0.0_dp           !! Last solve's residual
       integer :: pcm_iterations = 0               !! Last solve's iteration count
       logical :: pcm_solved = .true.
@@ -1108,6 +1115,10 @@ contains
 
       this%pcm_tolerance = pcm%tolerance
       this%pcm_max_iter = pcm%max_iter
+      this%pcm_dielectric = pcm%dielectric
+      this%pcm_zeta = pcm%zeta
+      this%pcm_radii_scale = pcm%radii_scale
+      this%pcm_angular_points = pcm%angular_points
       this%has_pcm = .true.
    end subroutine build_pcm_plan
 

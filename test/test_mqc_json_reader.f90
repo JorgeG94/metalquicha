@@ -505,7 +505,7 @@ contains
       call check(error, config%pcm_max_iter, 50)
       if (allocated(error)) return
       ! Untouched keys keep their defaults rather than being zeroed.
-      call check(error, abs(config%pcm_zeta - 4.9_dp) < 1.0e-10_dp, &
+      call check(error, abs(config%pcm_zeta - 2.0_dp) < 1.0e-10_dp, &
                  "an unmentioned key must keep its default")
       if (allocated(error)) return
 

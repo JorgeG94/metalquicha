@@ -23,9 +23,9 @@
         },
         "pcm": {
             "dielectric": 78.39,
-            "angular_points": 110,
+            "angular_points": 302,
             "radii_scale": 1.2,
-            "zeta": 4.9,
+            "zeta": 2.0,
             "tolerance": 1e-08,
             "max_iter": 100
         }
