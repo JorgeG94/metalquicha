@@ -467,6 +467,13 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_multipole
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_multipole PRIVATE ${main_lib} cint_fortran cint)
+
+  # Boys localization: the invariants first, then against pyscf.lo.Boys.
+  add_executable(check_localize
+                 ${PROJECT_SOURCE_DIR}/validation/check_localize.f90)
+  target_include_directories(check_localize
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_localize PRIVATE ${main_lib} cint_fortran cint)
 endif()
 
 add_executable(check_session_run
