@@ -55,15 +55,34 @@ Adding a New Test
 1. Create Input File
 ^^^^^^^^^^^^^^^^^^^^
 
-Place JSON input files in ``validation/inputs/``:
+Input decks live under ``validation/inputs/`` in a tree by hardware, engine and
+method, so that listing a directory answers "what is covered" rather than
+scrolling past two hundred files::
+
+   validation/inputs/
+   |-- sample_inputs/          geometries, shared by every backend
+   |-- cpu/mqc/rhf/            the libcint CPU backend, one directory per method
+   |   |-- df-hf/  uhf/  mp2/  ri-mp2/  ccsd/  ccsd-t/  ri-ccsd/  ...
+   |-- cpu/tblite/gfn1/        the semi-empirical backend
+   `-- gpu/cuest/dft/          the GPU backend
+
+The geometries deliberately stay at the top, shared: a deck three levels down
+reaches one with ``../../../sample_inputs/``. Paths inside a deck are resolved
+relative to that deck, so nothing here is absolute and the whole tree can be
+moved or copied.
+
+Decks for the CPU suite are **generated**, so a new one goes in
+``tools/cpu_validation/gen_cpu_validation.py`` rather than here -- a deck added
+by hand under ``cpu/mqc/`` is deleted by the next regeneration. Add a deck by hand only for a backend the generator does not
+cover:
 
 .. code-block:: bash
 
-   cat > validation/inputs/my_test.json << EOF
+   cat > validation/inputs/cpu/tblite/gfn1/my_test.json << EOF
    {
      "schema": {"name": "mqc-frag", "version": "1.0"},
      "molecules": [{
-       "xyz": "my_molecule.xyz",
+       "xyz": "../../../sample_inputs/my_molecule.xyz",
        "molecular_charge": 0,
        "molecular_multiplicity": 1
      }],
@@ -80,7 +99,7 @@ Run the calculation to get the reference energy:
 .. code-block:: bash
 
    # Run calculation
-   ./build/mqc validation/inputs/my_test.json
+   ./build/mqc validation/inputs/cpu/tblite/gfn1/my_test.json
 
    # Extract energy from output JSON
    cat output_my_test.json | grep '"total_energy"' | head -1
@@ -98,7 +117,7 @@ Edit ``validation_tests.json`` to add your test with expected energy:
      "tests": [
        {
          "name": "My test case",
-         "input": "validation/inputs/my_test.json",
+         "input": "inputs/cpu/tblite/gfn1/my_test.json",
          "expected_energy": -123.456789,
          "type": "unfragmented"
        }
@@ -145,8 +164,8 @@ Output:
    Metalquicha Validation Suite
    ============================
 
-   ✓ Converted validation/inputs/h3o.json
-   ✓ Converted validation/inputs/prism.json
+   ✓ Converted validation/inputs/cpu/tblite/gfn1/h3o.json
+   ✓ Converted validation/inputs/cpu/tblite/gfn1/prism.json
    ...
 
    Running 10 validation tests...
@@ -184,13 +203,13 @@ Unfragmented Tests
 
 Single molecule calculations without fragmentation.
 
-**Example**: ``validation/inputs/h3o.json``
+**Example**: ``validation/inputs/cpu/tblite/gfn1/h3o.json``
 
 .. code-block:: json
 
    {
      "name": "Hydronium ion unfragmented",
-     "input": "validation/inputs/h3o.json",
+     "input": "inputs/cpu/tblite/gfn1/h3o.json",
      "expected_energy": -5.773131213617977,
      "type": "unfragmented"
    }
@@ -210,13 +229,13 @@ Fragmented Tests (MBE/GMBE)
 
 Many-body expansion calculations with fragment-based energies.
 
-**Example**: ``validation/inputs/prism.json`` (MBE(2) on water prism)
+**Example**: ``validation/inputs/cpu/tblite/gfn1/prism.json`` (MBE(2) on water prism)
 
 .. code-block:: json
 
    {
      "name": "Water prism MBE",
-     "input": "validation/inputs/prism.json",
+     "input": "inputs/cpu/tblite/gfn1/prism.json",
      "expected_energy": -34.6736678571,
      "type": "fragmented"
    }
@@ -248,13 +267,13 @@ Multi-Molecule Tests
 
 Multiple independent molecules (conformers, isomers) in one input.
 
-**Example**: ``validation/inputs/multi_frag.json``
+**Example**: ``validation/inputs/cpu/tblite/gfn1/multi_frag.json``
 
 .. code-block:: json
 
    {
      "name": "Multi-fragment calculation",
-     "input": "validation/inputs/multi_frag.json",
+     "input": "inputs/cpu/tblite/gfn1/multi_frag.json",
      "expected_energies": {
        "molecule_1": -34.6736678571,
        "molecule_2": -34.6736678571
@@ -471,7 +490,7 @@ Debugging Failed Tests
 
    .. code-block:: bash
 
-      ./build/mqc validation/inputs/my_test.json
+      ./build/mqc validation/inputs/cpu/tblite/gfn1/my_test.json
 
 3. **Check JSON output**:
 
@@ -527,7 +546,7 @@ Best Practices
    .. code-block:: bash
 
       for i in {1..5}; do
-        ./build/mqc validation/inputs/my_test.json
+        ./build/mqc validation/inputs/cpu/tblite/gfn1/my_test.json
         grep total_energy output_my_test.json
       done
 
@@ -593,7 +612,7 @@ Example contribution:
 
    {
      "name": "Charged peptide with broken bonds",
-     "input": "validation/inputs/charged_peptide.json",
+     "input": "inputs/cpu/tblite/gfn1/charged_peptide.json",
      "expected_energy": -78.1234567890,
      "type": "fragmented",
      "comment": "Tests H-capping on charged system with multiple broken C-C bonds"

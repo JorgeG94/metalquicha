@@ -1,0 +1,29 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/sih4.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "hf",
+        "basis": "def2-tzvp"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-08
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}

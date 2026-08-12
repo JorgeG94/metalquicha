@@ -27,6 +27,11 @@ module test_mqc_json_config
    private
    public :: collect_mqc_json_config_tests
 
+   !> Decks are grouped under inputs/ by hardware, engine and method, so a stem
+   !> below carries the directory with it. Spelling the path out rather than
+   !> searching for the file keeps the test honest about which deck it is reading:
+   !> two backends may ship a deck of the same name, and a search would silently
+   !> pick one.
    character(len=*), parameter :: INPUT_DIR = "../validation/inputs/"
       !! Tests run with their source directory as the working directory
 
@@ -54,9 +59,9 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("h3o", config, error)
+      call load("cpu/tblite/gfn1/h3o", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "h3o", config, 0, 4, 0, 0, 1, 1)
+      call expect_molecule(error, "cpu/tblite/gfn1/h3o", config, 0, 4, 0, 0, 1, 1)
       if (allocated(error)) return
       ! The xyz gave real coordinates, not a zeroed array.
       call check(error, maxval(abs(config%geometry%coords)) > 0.0_dp, &
@@ -68,9 +73,9 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("frag_water20_hf", config, error)
+      call load("gpu/cuest/rhf/frag_water20_hf", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "frag_water20_hf", config, 0, 60, 20, 0, 0, 1)
+      call expect_molecule(error, "gpu/cuest/rhf/frag_water20_hf", config, 0, 60, 20, 0, 0, 1)
       if (allocated(error)) return
       call check(error, allocated(config%fragment_cutoffs), &
                  "frag_water20_hf: cutoffs should be allocated")
@@ -84,9 +89,9 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("overlapping_gly3", config, error)
+      call load("cpu/tblite/gfn1/overlapping_gly3", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "overlapping_gly3", config, 0, 24, 3, 3, 0, 1)
+      call expect_molecule(error, "cpu/tblite/gfn1/overlapping_gly3", config, 0, 24, 3, 3, 0, 1)
       if (allocated(error)) return
       ! These bonds are listed precisely because fragmentation severs them; a
       ! reader that failed to derive is_broken would report none.
@@ -99,7 +104,7 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("multi_frag", config, error)
+      call load("cpu/tblite/gfn1/multi_frag", config, error)
       if (allocated(error)) return
       call check(error, config%nmol, 2, "multi_frag: should be two molecules")
       if (allocated(error)) return
@@ -121,9 +126,9 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("dft_water_b3lyp", config, error)
+      call load("gpu/cuest/dft/dft_water_b3lyp", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "dft_water_b3lyp", config, 0, 3, 0, 0, 0, 1)
+      call expect_molecule(error, "gpu/cuest/dft/dft_water_b3lyp", config, 0, 3, 0, 0, 0, 1)
       if (allocated(error)) return
       call check(error, allocated(config%functional), &
                  "dft_water_b3lyp: functional should be set")
@@ -136,18 +141,18 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("uhf_oh", config, error)
+      call load("gpu/cuest/uhf/uhf_oh", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "uhf_oh", config, 0, 2, 0, 0, 0, 2)
+      call expect_molecule(error, "gpu/cuest/uhf/uhf_oh", config, 0, 2, 0, 0, 0, 2)
    end subroutine test_uhf_oh
 
    subroutine test_solvation(error)
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("w1_water_cpcm", config, error)
+      call load("cpu/tblite/gfn1/w1_water_cpcm", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "w1_water_cpcm", config, 0, 4, 0, 0, 1, 1)
+      call expect_molecule(error, "cpu/tblite/gfn1/w1_water_cpcm", config, 0, 4, 0, 0, 1, 1)
       if (allocated(error)) return
       call check(error, allocated(config%solvent), "w1_water_cpcm: solvent should be set")
       if (allocated(error)) return
@@ -161,9 +166,9 @@ contains
       type(mqc_config_t) :: config
       integer :: ifrag, total
 
-      call load("charged_cluster", config, error)
+      call load("cpu/tblite/gfn1/charged_cluster", config, error)
       if (allocated(error)) return
-      call expect_molecule(error, "charged_cluster", config, 0, 28, 8, 0, 4, 1)
+      call expect_molecule(error, "cpu/tblite/gfn1/charged_cluster", config, 0, 28, 8, 0, 4, 1)
       if (allocated(error)) return
 
       total = 0
@@ -182,14 +187,14 @@ contains
       type(error_type), allocatable, intent(out) :: error
       type(mqc_config_t) :: config
 
-      call load("charged_cluster", config, error)
+      call load("cpu/tblite/gfn1/charged_cluster", config, error)
       if (allocated(error)) return
-      call expect_indices_in_range(error, "charged_cluster", config)
+      call expect_indices_in_range(error, "cpu/tblite/gfn1/charged_cluster", config)
       if (allocated(error)) return
 
-      call load("overlapping_gly3", config, error)
+      call load("cpu/tblite/gfn1/overlapping_gly3", config, error)
       if (allocated(error)) return
-      call expect_indices_in_range(error, "overlapping_gly3", config)
+      call expect_indices_in_range(error, "cpu/tblite/gfn1/overlapping_gly3", config)
    end subroutine test_indices_in_range
 
    subroutine test_missing_file(error)

@@ -274,7 +274,7 @@ MP2_CASES = [
 # energy and no entry in the manifest. Without this they match the cpu_*.json
 # sweep below and vanish on the next regeneration.
 HAND_MAINTAINED = {
-    "cpu_peptide46_sto-3g.json",
+    "cpu/mqc/rhf/cpu_peptide46_sto-3g.json",
 }
 
 # Coupled cluster. Small on purpose: the spin-orbital tensor is (2 n_act)^4, so
@@ -323,10 +323,36 @@ DF_CASES = [
 # (run_cuest_validation.sh, run_guess_comparison.sh). Reuse rather than
 # duplicate them; the generator still produces their reference energies.
 DECK_OVERRIDES = {
-    ("water", "sto-3g"): "inputs/hf_water_sto-3g.json",
-    ("water", "cc-pvdz"): "inputs/hf_water_cc-pvdz.json",
-    ("water", "def2-svp"): "inputs/hf_water_def2-svp.json",
+    ("water", "sto-3g"): "inputs/cpu/mqc/rhf/hf_water_sto-3g.json",
+    ("water", "cc-pvdz"): "inputs/cpu/mqc/rhf/hf_water_cc-pvdz.json",
+    ("water", "def2-svp"): "inputs/cpu/mqc/rhf/hf_water_def2-svp.json",
 }
+
+# Where each theory's decks live under inputs/. One directory per method, so
+# `ls` answers "what is covered" instead of scrolling past two hundred files.
+#
+# The tree is inputs/<hardware>/<engine>/<method>/, which is three levels down
+# from inputs/ -- and `sample_inputs/` deliberately stays at inputs/, shared by
+# every backend, so a deck reaches its geometry with XYZ_UP. Nothing here holds
+# an absolute path; the `xyz` field in a deck is resolved relative to the deck.
+CPU_MQC = "cpu/mqc"
+XYZ_UP = "../../../"
+
+
+def _write_deck(path, text):
+    """Write a deck, creating its directory. Keeps every emitter to one line."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def deck_for(subdir, stem):
+    """Path of a deck, relative to validation/."""
+    return f"inputs/{subdir}/{stem}.json"
+
+
+def xyz_for(mol):
+    """How a deck three levels down refers to a shared geometry."""
+    return XYZ_UP + mol.xyz
 
 
 # --------------------------------------------------------------------------
@@ -661,12 +687,16 @@ def main():
         for name in names:
             mol = MOLECULES[name]
             energy, nao = pyscf_rhf(mol.atoms, basis)
-            deck = DECK_OVERRIDES.get((name, basis), f"inputs/cpu_{name}_{stem}.json")
+            deck = DECK_OVERRIDES.get((name, basis), deck_for(f"{CPU_MQC}/rhf", f"cpu_{name}_{stem}"))
+            # Recorded as produced even when it is an override, which is not the
+            # same as being written. The sweep below deletes anything in the tree
+            # that this run did not account for, and an override is accounted for
+            # -- it is just maintained by hand rather than emitted here.
+            written.add(str((VALIDATION / deck).relative_to(INPUTS)))
             if (name, basis) not in DECK_OVERRIDES:
-                written.add((VALIDATION / deck).name)
                 if not args.dry_run:
-                    (VALIDATION / deck).write_text(
-                        json.dumps(deck_json(mol.xyz, basis), indent=4) + "\n"
+                    _write_deck(VALIDATION / deck,
+                        json.dumps(deck_json(xyz_for(mol), basis), indent=4) + "\n"
                     )
             tests.append({
                 "name": f"RHF {mol.label} {basis} (CPU)",
@@ -679,11 +709,11 @@ def main():
     for name, basis, aux in DF_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_rhf(mol.atoms, basis, aux=aux)
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_df.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/df-hf", f"cpu_{name}_{normalize_basis_name(basis)}_df")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, aux=aux), indent=4) + "\n"
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, aux=aux), indent=4) + "\n"
             )
         tests.append({
             "name": f"RHF {mol.label} {basis} density fitted with {aux} (CPU)",
@@ -696,11 +726,11 @@ def main():
     for name, basis, mult in OPEN_SHELL:
         mol = MOLECULES[name]
         energy, nao = pyscf_rhf(mol.atoms, basis, multiplicity=mult)
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_m{mult}.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/uhf", f"cpu_{name}_{normalize_basis_name(basis)}_m{mult}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, multiplicity=mult), indent=4) + "\n"
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, multiplicity=mult), indent=4) + "\n"
             )
         tests.append({
             "name": f"UHF {mol.label} {basis} multiplicity {mult} (CPU)",
@@ -713,11 +743,11 @@ def main():
     for name, basis, method, frozen in MP2_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_mp2(mol.atoms, basis, method, frozen)
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{method}_f{frozen}.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/{method}", f"cpu_{name}_{normalize_basis_name(basis)}_{method}_f{frozen}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, method=method,
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, method=method,
                                      correlation={"freeze_core": frozen > 0,
                                                   "n_frozen_core": frozen}), indent=4) + "\n"
             )
@@ -733,13 +763,17 @@ def main():
         mol = MOLECULES[name]
         energy, nao = pyscf_cc(mol.atoms, basis, method, frozen)
         tag = method.replace("(", "").replace(")", "")
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}.json"
-        written.add((VALIDATION / deck).name)
+        # "ccsd(t)" cannot be a directory name with brackets in it, so the
+        # directory takes the hyphenated spelling while the file keeps the
+        # bracket-free one it already had.
+        deck = deck_for(f"{CPU_MQC}/" + method.replace("(", "-").replace(")", ""),
+                        f"cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
             # A tighter amplitude tolerance than the default 1e-8, so the case
             # tests the equations rather than where the iteration was stopped.
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, method=method,
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, method=method,
                                      correlation={"freeze_core": frozen > 0,
                                                   "n_frozen_core": frozen},
                                      cc={"tolerance": 1e-10}), indent=4) + "\n"
@@ -756,11 +790,12 @@ def main():
         mol = MOLECULES[name]
         energy, nao = pyscf_ri_cc(mol.atoms, basis, aux, method, frozen)
         tag = "ri" + method.replace("(", "").replace(")", "")
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/ri-" + method.replace("(", "-").replace(")", ""),
+                        f"cpu_{name}_{normalize_basis_name(basis)}_{tag}_f{frozen}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, method="ri-" + method,
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, method="ri-" + method,
                                      correlation={"freeze_core": frozen > 0,
                                                   "n_frozen_core": frozen,
                                                   "aux_basis": aux},
@@ -777,11 +812,11 @@ def main():
     for name, basis, aux, frozen in RI_MP2_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_ri_mp2(mol.atoms, basis, aux, frozen)
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_rimp2_f{frozen}.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/ri-mp2", f"cpu_{name}_{normalize_basis_name(basis)}_rimp2_f{frozen}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            (VALIDATION / deck).write_text(
-                json.dumps(deck_json(mol.xyz, basis, method="ri-mp2",
+            _write_deck(VALIDATION / deck,
+                json.dumps(deck_json(xyz_for(mol), basis, method="ri-mp2",
                                      correlation={"freeze_core": frozen > 0,
                                                   "n_frozen_core": frozen,
                                                   "aux_basis": aux}), indent=4) + "\n"
@@ -797,10 +832,10 @@ def main():
     for name, basis, method, frozen, fragments in FRAGMENTED_CASES:
         mol = MOLECULES[name]
         energy, nao = pyscf_mp2(mol.atoms, basis, method, frozen)
-        deck = f"inputs/cpu_{name}_{normalize_basis_name(basis)}_{method}_mbe2.json"
-        written.add((VALIDATION / deck).name)
+        deck = deck_for(f"{CPU_MQC}/{method}", f"cpu_{name}_{normalize_basis_name(basis)}_{method}_mbe2")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
         if not args.dry_run:
-            d = deck_json(mol.xyz, basis, method=method,
+            d = deck_json(xyz_for(mol), basis, method=method,
                           correlation={"freeze_core": True})
             d["molecules"][0]["fragments"] = fragments
             d["molecules"][0]["fragment_charges"] = [0]*len(fragments)
@@ -809,7 +844,7 @@ def main():
                 "method": "MBE", "level": len(fragments),
                 "allow_overlapping_fragments": False, "embedding": "none",
             }
-            (VALIDATION / deck).write_text(json.dumps(d, indent=4) + "\n")
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
         tests.append({
             "name": f"MBE({len(fragments)}) {method.upper()} {mol.label} {basis} (CPU)",
             "input": deck,
@@ -826,12 +861,19 @@ def main():
     # Drop decks left behind by an earlier, wider case list, so that what is on
     # disk is exactly what this script produces -- except the few that are
     # deliberately hand-maintained and merely happen to share the prefix.
-    for stale in sorted(INPUTS.glob("cpu_*.json")):
-        if stale.name in HAND_MAINTAINED:
+    for stale in sorted((INPUTS / CPU_MQC).rglob("*.json")):
+        rel = str(stale.relative_to(INPUTS))
+        if rel in HAND_MAINTAINED:
             continue
-        if stale.name not in written:
+        if rel not in written:
             stale.unlink()
-            print(f"removed stale {stale.name}")
+            print(f"removed stale {rel}")
+    # And drop directories the case list no longer produces anything for, so a
+    # method that is removed does not leave an empty folder implying coverage.
+    for d in sorted((INPUTS / CPU_MQC).glob("*"), reverse=True):
+        if d.is_dir() and not any(d.iterdir()):
+            d.rmdir()
+            print(f"removed empty {d.relative_to(INPUTS)}")
 
     MANIFEST.write_text(json.dumps(manifest, indent=4) + "\n")
     print(f"\nwrote {MANIFEST} with {len(tests)} cases")

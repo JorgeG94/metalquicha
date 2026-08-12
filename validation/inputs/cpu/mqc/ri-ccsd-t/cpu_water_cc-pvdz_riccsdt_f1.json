@@ -1,0 +1,37 @@
+{
+    "schema": {
+        "name": "mqc-frag",
+        "version": "1.0"
+    },
+    "molecules": [
+        {
+            "xyz": "../../../sample_inputs/w1.xyz",
+            "molecular_charge": 0,
+            "molecular_multiplicity": 1
+        }
+    ],
+    "model": {
+        "method": "ri-ccsd(t)",
+        "basis": "cc-pvdz"
+    },
+    "keywords": {
+        "scf": {
+            "maxiter": 100,
+            "tolerance": 1e-08
+        },
+        "correlation": {
+            "freeze_core": true,
+            "n_frozen_core": 1,
+            "aux_basis": "cc-pvdz-rifit"
+        },
+        "cc": {
+            "tolerance": 1e-10
+        }
+    },
+    "system": {
+        "logger": {
+            "level": "Verbose"
+        }
+    },
+    "driver": "Energy"
+}
