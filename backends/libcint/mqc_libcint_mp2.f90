@@ -41,6 +41,10 @@ module mqc_libcint_mp2
    public :: run_libcint_mp2
    public :: run_libcint_ri_mp2
    public :: mp2_result_t
+   ! Exported for coupled cluster, which needs every MO block rather than just
+   ! (ia|jb). Lives here because this is where the two-half transform is, and a
+   ! second copy of it in the CC module is a second chance to transpose a half.
+   public :: transform_block
 
    type :: mp2_result_t
       !! What an MP2 calculation leaves behind
@@ -246,7 +250,26 @@ contains
    end subroutine run_libcint_ri_mp2
 
    subroutine transform_ovov(eri, coeff, frozen, n_occ, n_ao, n_mo, ovov)
-      !! (pq|rs) over packed AO pairs -> (ia|jb), in two symmetric halves
+      !! (pq|rs) over packed AO pairs -> (ia|jb)
+      !!
+      !! A thin caller for `transform_block`, kept so the MP2 path reads as the
+      !! one block it wants rather than as the general routine underneath.
+      real(dp), intent(in) :: eri(:, :)      !! (n_pair, n_pair), see `pair_index`
+      real(dp), intent(in) :: coeff(:, :)
+      integer, intent(in) :: frozen, n_occ, n_ao, n_mo
+      real(dp), allocatable, intent(out) :: ovov(:, :, :, :)
+
+      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
+
+      allocate (c_occ(n_ao, n_occ - frozen), c_vir(n_ao, n_mo - n_occ))
+      c_occ = coeff(:, frozen + 1:n_occ)
+      c_vir = coeff(:, n_occ + 1:n_mo)
+      call transform_block(eri, c_occ, c_vir, c_occ, c_vir, ovov)
+      deallocate (c_occ, c_vir)
+   end subroutine transform_ovov
+
+   subroutine transform_block(eri, c1, c2, c3, c4, out)
+      !! (pq|rs) over packed AO pairs -> (12|34) for any four coefficient blocks
       !!
       !! With the AO pairs packed, the four quarter transforms fall into two
       !! identical halves. One column of the packed tensor is a whole AO pair
@@ -260,31 +283,36 @@ contains
       !! The unpack is the price of the packing, and it is a good trade: it
       !! touches nao^2 elements where the dense form wrote nao^4 across eight
       !! stride patterns to avoid it.
+      !!
+      !! Which blocks come out is entirely the caller's four coefficient
+      !! matrices: C_occ/C_vir twice over gives (ia|jb) for MP2, and C_act four
+      !! times over gives the whole active MO tensor, which is what coupled
+      !! cluster needs. Nothing here knows the difference, which is the point --
+      !! the alternative was six near-identical transforms and six chances to
+      !! transpose one.
       real(dp), intent(in) :: eri(:, :)      !! (n_pair, n_pair), see `pair_index`
-      real(dp), intent(in) :: coeff(:, :)
-      integer, intent(in) :: frozen, n_occ, n_ao, n_mo
-      real(dp), allocatable, intent(out) :: ovov(:, :, :, :)
+      real(dp), intent(in) :: c1(:, :), c2(:, :)   !! Bra pair, left and right
+      real(dp), intent(in) :: c3(:, :), c4(:, :)   !! Ket pair, left and right
+      real(dp), allocatable, intent(out) :: out(:, :, :, :)
 
-      real(dp), allocatable :: c_occ(:, :), c_vir(:, :)
       real(dp), allocatable :: half(:, :)
-      real(dp), allocatable :: m(:, :), tmp(:, :), block_ov(:, :)
-      integer :: n_o, n_v, n_pair, pq, i, a, j, b, p, q
+      real(dp), allocatable :: m(:, :), tmp(:, :), blk(:, :)
+      integer :: n_ao, n1, n2, n3, n4, n_pair, pq, l, mm, n, o, p, q
 
-      n_o = n_occ - frozen
-      n_v = n_mo - n_occ
+      n_ao = size(c1, 1)
+      n1 = size(c1, 2)
+      n2 = size(c2, 2)
+      n3 = size(c3, 2)
+      n4 = size(c4, 2)
       n_pair = n_ao*(n_ao + 1)/2
 
-      allocate (c_occ(n_ao, n_o), c_vir(n_ao, n_v))
-      c_occ = coeff(:, frozen + 1:n_occ)
-      c_vir = coeff(:, n_occ + 1:n_mo)
-
-      ! First half: every packed bra pair transformed to (ia), leaving (ia|rs).
+      ! First half: every packed bra pair transformed to (12), leaving (12|rs).
       ! Held with the packed index first so the second half reads columns.
-      allocate (half(n_pair, n_o*n_v))
+      allocate (half(n_pair, n1*n2))
       !$omp parallel default(none) &
-      !$omp    shared(eri, half, c_occ, c_vir, n_pair, n_ao, n_o, n_v) &
-      !$omp    private(pq, p, q, i, a, m, tmp, block_ov)
-      allocate (m(n_ao, n_ao), tmp(n_o, n_ao), block_ov(n_o, n_v))
+      !$omp    shared(eri, half, c1, c2, n_pair, n_ao, n1, n2) &
+      !$omp    private(pq, p, q, l, mm, m, tmp, blk)
+      allocate (m(n_ao, n_ao), tmp(n1, n_ao), blk(n1, n2))
       !$omp do schedule(static)
       do pq = 1, n_pair
          do q = 1, n_ao
@@ -292,46 +320,46 @@ contains
                m(p, q) = eri(pair_index(p, q), pq)
             end do
          end do
-         call pic_gemm(c_occ, m, tmp, transa="T")
-         call pic_gemm(tmp, c_vir, block_ov)
-         do a = 1, n_v
-            do i = 1, n_o
-               half(pq, (a - 1)*n_o + i) = block_ov(i, a)
+         call pic_gemm(c1, m, tmp, transa="T")
+         call pic_gemm(tmp, c2, blk)
+         do mm = 1, n2
+            do l = 1, n1
+               half(pq, (mm - 1)*n1 + l) = blk(l, mm)
             end do
          end do
       end do
       !$omp end do
-      deallocate (m, tmp, block_ov)
+      deallocate (m, tmp, blk)
       !$omp end parallel
 
-      ! Second half: the same operation on the ket pair, for each (ia).
-      allocate (ovov(n_o, n_v, n_o, n_v))
+      ! Second half: the same operation on the ket pair, for each (12).
+      allocate (out(n1, n2, n3, n4))
       !$omp parallel default(none) &
-      !$omp    shared(half, ovov, c_occ, c_vir, n_pair, n_ao, n_o, n_v) &
-      !$omp    private(pq, p, q, i, a, j, b, m, tmp, block_ov)
-      allocate (m(n_ao, n_ao), tmp(n_o, n_ao), block_ov(n_o, n_v))
+      !$omp    shared(half, out, c3, c4, n_pair, n_ao, n1, n2, n3, n4) &
+      !$omp    private(pq, p, q, l, mm, n, o, m, tmp, blk)
+      allocate (m(n_ao, n_ao), tmp(n3, n_ao), blk(n3, n4))
       !$omp do schedule(static) collapse(2)
-      do a = 1, n_v
-         do i = 1, n_o
+      do mm = 1, n2
+         do l = 1, n1
             do q = 1, n_ao
                do p = 1, n_ao
-                  m(p, q) = half(pair_index(p, q), (a - 1)*n_o + i)
+                  m(p, q) = half(pair_index(p, q), (mm - 1)*n1 + l)
                end do
             end do
-            call pic_gemm(c_occ, m, tmp, transa="T")
-            call pic_gemm(tmp, c_vir, block_ov)
-            do b = 1, n_v
-               do j = 1, n_o
-                  ovov(i, a, j, b) = block_ov(j, b)
+            call pic_gemm(c3, m, tmp, transa="T")
+            call pic_gemm(tmp, c4, blk)
+            do o = 1, n4
+               do n = 1, n3
+                  out(l, mm, n, o) = blk(n, o)
                end do
             end do
          end do
       end do
       !$omp end do
-      deallocate (m, tmp, block_ov)
+      deallocate (m, tmp, blk)
       !$omp end parallel
 
-      deallocate (half, c_occ, c_vir)
-   end subroutine transform_ovov
+      deallocate (half)
+   end subroutine transform_block
 
 end module mqc_libcint_mp2
