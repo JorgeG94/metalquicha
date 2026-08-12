@@ -981,8 +981,12 @@ contains
       type(cuestWorkspace_t) :: temporary_ws
       type(c_ptr) :: plan_params
       integer(c_int64_t), allocatable :: angular_per_atom(:)
-      real(dp), allocatable :: radii(:), zetas(:), charges(:)
-      type(c_ptr) :: d_radii, d_zetas, d_charges
+      real(dp), allocatable, target :: radii(:), zetas(:), charges(:)
+         !! HOST arrays, and `target` so they can be passed by address. cuEST
+         !! reads plan-creation data on the host -- as `cuestMolecularGridCreate`
+         !! and `cuestAOBasisCreate` do with their coordinates -- so these must
+         !! not be device buffers. They were, and cuEST segfaulted inside
+         !! `cuestPCMIntPlanCreate` dereferencing a device address on the host.
       integer(c_int) :: status
       integer :: iatom, natm
       real(dp) :: radius
@@ -1033,16 +1037,6 @@ contains
          charges(iatom) = real(atomic_numbers(iatom), dp)
       end do
 
-      d_radii = c_null_ptr
-      d_zetas = c_null_ptr
-      d_charges = c_null_ptr
-      call device_alloc(d_radii, int(natm, c_int64_t), "PCM cavity radii", error)
-      call device_alloc(d_zetas, int(natm, c_int64_t), "PCM switching exponents", error)
-      call device_alloc(d_charges, int(natm, c_int64_t), "PCM nuclear charges", error)
-      if (.not. error%has_error()) call copy_to_device(d_radii, radii, "PCM radii", error)
-      if (.not. error%has_error()) call copy_to_device(d_zetas, zetas, "PCM zetas", error)
-      if (.not. error%has_error()) call copy_to_device(d_charges, charges, "PCM charges", error)
-
       plan_params = c_null_ptr
       if (.not. error%has_error()) then
          call cuest_status_check(cuestParametersCreate(CUEST_PCMINTPLAN_PARAMETERS, plan_params), &
@@ -1053,8 +1047,9 @@ contains
                                                                      plan_params, persistent_desc, &
                                                                      temporary_desc, &
                                                                      angular_per_atom, &
-                                                                     pcm%dielectric, d_zetas, &
-                                                                     d_radii, d_charges, &
+                                                                     pcm%dielectric, &
+                                                                     c_loc(zetas), c_loc(radii), &
+                                                                     c_loc(charges), &
                                                                      this%pcm_plan), &
                                  "cuestPCMIntPlanCreateWorkspaceQuery", error)
       end if
@@ -1066,7 +1061,8 @@ contains
          call cuest_status_check(cuestPCMIntPlanCreate(this%handle, this%oe_plan, plan_params, &
                                                        this%ws_pcm_plan, temporary_ws, &
                                                        angular_per_atom, pcm%dielectric, &
-                                                       d_zetas, d_radii, d_charges, &
+                                                       c_loc(zetas), c_loc(radii), &
+                                                       c_loc(charges), &
                                                        this%pcm_plan), &
                                  "cuestPCMIntPlanCreate", error)
       end if
@@ -1076,10 +1072,7 @@ contains
          call cuest_status_check(status, "cuestParametersDestroy(PCM plan)", error)
       end if
 
-      ! The radii, exponents and charges were copied into the plan.
-      call device_free(d_radii)
-      call device_free(d_zetas)
-      call device_free(d_charges)
+      ! Copied into the plan by now, as the molecular grid copies its coordinates.
       deallocate (angular_per_atom, radii, zetas, charges)
       if (error%has_error()) return
 
