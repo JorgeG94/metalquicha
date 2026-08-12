@@ -97,6 +97,8 @@ contains
       call check_grandchild_object(core, root, "keywords", "correlation", &
                                    correlation_keys(), error)
       if (error%has_error()) return
+      call check_grandchild_object(core, root, "keywords", "dft", dft_keys(), error)
+      if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "cc", cc_keys(), error)
       if (error%has_error()) return
       call check_grandchild_object(core, root, "keywords", "hessian", hessian_keys(), error)
@@ -183,6 +185,7 @@ contains
       call allow(keys, "xtb")
       call allow(keys, "correlation")
       call allow(keys, "cc")
+      call allow(keys, "dft")
    end function keywords_keys
 
    function scf_keys() result(keys)
@@ -212,6 +215,17 @@ contains
       call allow(keys, "scs_ss")
       call allow(keys, "scs_os")
    end function correlation_keys
+
+   function dft_keys() result(keys)
+      !! The integration grid, which is the only thing DFT adds to an SCF
+      !!
+      !! The functional is `model.functional`, not a keyword: it names the method
+      !! as much as the basis does. These are the quadrature it is integrated on.
+      type(key_set_t) :: keys
+      call allow(keys, "grid_level")
+      call allow(keys, "radial_points")
+      call allow(keys, "angular_points")
+   end function dft_keys
 
    function cc_keys() result(keys)
       !! Coupled-cluster settings, separate from "correlation"

@@ -295,6 +295,20 @@ CC_CASES = [
 # builds oooo, ovov, ovvo, oovv and ovvv from the fitted tensor -- so ours does
 # too, and the (T) is fitted along with the rest because ccsd_t consumes that same
 # object. Fitting a different set would leave us ~1e-5 away permanently.
+# Kohn-Sham DFT, one per rung of the ladder plus a second in each family that
+# exercises a different path: SVWN and PBE are compositions of libxc halves, B3LYP
+# and PBE0 are libxc-owned hybrids where libxc reports the exchange fraction, and
+# TPSS and M06-L need the kinetic energy density. grid_level 3 on both sides.
+DFT_CASES = [
+    ("water", "cc-pvdz", "svwn", 3),
+    ("water", "cc-pvdz", "pbe", 3),
+    ("water", "cc-pvdz", "b3lyp", 3),
+    ("water", "cc-pvdz", "pbe0", 3),
+    ("water", "cc-pvdz", "tpss", 3),
+    ("water", "cc-pvdz", "m06-l", 3),
+    ("ch4", "cc-pvdz", "pbe", 3),
+]
+
 RI_CC_CASES = [
     ("water", "sto-3g", "cc-pvdz-rifit", "ccsd", 0),
     ("water", "cc-pvdz", "cc-pvdz-rifit", "ccsd", 1),
@@ -587,6 +601,33 @@ def pyscf_cc(atoms, basis, method, frozen):
     return float(escf + ecorr), mol.nao
 
 
+def pyscf_rks(atoms, basis, functional, level):
+    """Reference Kohn-Sham total energy, on the same grid level.
+
+    `dft.RKS` builds its own grid from the same tables ours does, which is what
+    makes a level-for-level comparison meaningful -- the grids do not cancel here
+    the way they do when one code evaluates on the other's points.
+    """
+    from pyscf import dft, gto
+
+    mol = gto.Mole()
+    mol.atom = [(s, (x, y, z)) for s, x, y, z in atoms]
+    mol.unit = "Angstrom"
+    symbols = {a[0] for a in atoms}
+    mol.basis = {s: bse_to_pyscf(basis, s) for s in symbols}
+    mol.charge = 0
+    mol.spin = 0
+    mol.cart = molecule_form(basis, symbols) == CARTESIAN
+    mol.verbose = 0
+    mol.build()
+    mf = dft.RKS(mol)
+    mf.xc = functional
+    mf.grids.level = level
+    mf.conv_tol = 1e-11
+    energy = mf.kernel()
+    return float(energy), mol.nao
+
+
 def pyscf_ri_cc(atoms, basis, aux, method, frozen):
     """Reference RI-CCSD / RI-CCSD(T), from pyscf.cc.dfccsd.
 
@@ -785,6 +826,25 @@ def main():
             "type": "unfragmented",
         })
         print(f"{mol.label:6s} {basis:12s} {method:8s} frozen={frozen}  nao={nao:4d} E={energy:.12f}", flush=True)
+
+    for name, basis, functional, level in DFT_CASES:
+        mol = MOLECULES[name]
+        energy, nao = pyscf_rks(mol.atoms, basis, functional, level)
+        tag = functional.replace("-", "")
+        deck = deck_for(f"{CPU_MQC}/dft", f"cpu_{name}_{normalize_basis_name(basis)}_{tag}")
+        written.add(str((VALIDATION / deck).relative_to(INPUTS)))
+        if not args.dry_run:
+            d = deck_json(xyz_for(mol), basis, method="dft")
+            d["model"]["functional"] = functional
+            d["keywords"]["dft"] = {"grid_level": level}
+            _write_deck(VALIDATION / deck, json.dumps(d, indent=4) + "\n")
+        tests.append({
+            "name": f"KS {functional.upper()} {mol.label} {basis} grid {level} (CPU)",
+            "input": deck,
+            "expected_energy": round(energy, 12),
+            "type": "unfragmented",
+        })
+        print(f"{mol.label:6s} {basis:12s} {functional:8s} grid={level}  nao={nao:4d} E={energy:.12f}", flush=True)
 
     for name, basis, aux, method, frozen in RI_CC_CASES:
         mol = MOLECULES[name]

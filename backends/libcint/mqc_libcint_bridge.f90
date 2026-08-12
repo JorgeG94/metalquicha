@@ -26,6 +26,7 @@ module mqc_libcint_bridge
                               SCF_GUESS_GWH, SCF_GUESS_SAC, SCF_GUESS_SAD
    use mqc_libcint_atomic_guess, only: build_atomic_guess, parse_guess_name, &
                                        guess_display_name
+   use mqc_libcint_xc, only: xc_context_t, xc_context_create, xc_available
    use mqc_libcint_mp2, only: mp2_result_t, run_libcint_mp2, run_libcint_ri_mp2
    use mqc_libcint_cc, only: cc_result_t, run_libcint_ccsd
    implicit none
@@ -60,6 +61,8 @@ contains
       ! argument, so the SCF calls below need no branching on which guess ran.
       real(dp), allocatable :: guess_a(:, :), guess_b(:, :), guess_total(:, :)
       type(error_t) :: guess_error
+      type(xc_context_t) :: xc
+      logical :: kohn_sham
 
       if (present(want_gradient)) then
          if (want_gradient) then
@@ -126,6 +129,44 @@ contains
 
       diis_size = settings%diis_size
       if (.not. settings%use_diis) diis_size = 0
+
+      ! ---- Kohn-Sham or Hartree-Fock? ---------------------------------------
+      !
+      ! A named functional is the whole difference. Nothing else about this
+      ! routine changes: the SCF takes the context as one optional argument, so
+      ! Hartree-Fock is the case where there is no functional to build one from.
+      kohn_sham = len_trim(settings%functional) > 0
+      if (kohn_sham) then
+         if (.not. xc_available()) then
+            call result%error%set(ERROR_VALIDATION, "a functional was requested ('"// &
+                                  trim(settings%functional)//"') but this build has no "// &
+                                  "libxc: configure with -DMQC_ENABLE_LIBXC=ON")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         if (unrestricted) then
+            call result%error%set(ERROR_VALIDATION, "unrestricted Kohn-Sham is not "// &
+                                  "implemented on the CPU backend: the functional is "// &
+                                  "evaluated spin-unpolarised. Run a closed-shell "// &
+                                  "system, or use Hartree-Fock.")
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         call xc_context_create(mol, trim(settings%functional), xc, error, &
+                                level=settings%grid_level)
+         if (error%has_error()) then
+            call result%error%set(ERROR_VALIDATION, error%get_message())
+            result%has_error = .true.
+            call mol%destroy()
+            return
+         end if
+         if (settings%verbose) then
+            write (*, "(a,a,a,i0)") "  functional: ", trim(settings%functional), &
+               ", grid level ", settings%grid_level
+         end if
+      end if
 
       ! ---- which initial guess? ---------------------------------------------
       call parse_guess_name(settings%guess, guess_kind, error)
@@ -200,7 +241,7 @@ contains
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               aux=aux, diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total)
+                              guess_density=guess_total, xc=xc)
          call aux%destroy()
       else if (unrestricted) then
          call run_libcint_uhf(mol, fragment%nelec, fragment%multiplicity, settings%max_iter, &
@@ -211,7 +252,7 @@ contains
          call run_libcint_rhf(mol, fragment%nelec, settings%max_iter, settings%energy_tol, &
                               settings%density_tol, settings%verbose, scf, error, &
                               diis_vectors=diis_size, guess=guess_kind, &
-                              guess_density=guess_total)
+                              guess_density=guess_total, xc=xc)
       end if
       if (error%has_error()) then
          call result%error%set(ERROR_VALIDATION, error%get_message())
@@ -365,6 +406,7 @@ contains
          end if
       end if
 
+      if (kohn_sham) call xc%destroy()
       call mol%destroy()
    end subroutine run_libcint_hf
 

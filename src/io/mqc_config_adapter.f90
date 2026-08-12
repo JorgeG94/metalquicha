@@ -172,6 +172,16 @@ contains
       driver_config%method_config%corr%use_scs = mqc_config%corr_scs
       driver_config%method_config%corr%scs_ss = mqc_config%corr_scs_ss
       driver_config%method_config%corr%scs_os = mqc_config%corr_scs_os
+      driver_config%method_config%dft%grid_level = mqc_config%dft_grid_level
+      ! Only overridden when a deck asked; -1 leaves the level in charge, and
+      ! the grid builder refuses one without the other rather than half-applying.
+      if (mqc_config%dft_radial_points > 0 .and. mqc_config%dft_angular_points > 0) then
+         driver_config%method_config%dft%radial_points = mqc_config%dft_radial_points
+         driver_config%method_config%dft%angular_points = mqc_config%dft_angular_points
+         ! Negative level means "the counts are in charge", which is what the
+         ! banner and the grid builder both read to decide which was asked for.
+         driver_config%method_config%dft%grid_level = -1
+      end if
       driver_config%method_config%cc%max_iter = mqc_config%cc_maxiter
       driver_config%method_config%cc%amplitude_convergence = mqc_config%cc_tolerance
       driver_config%method_config%cc%use_diis = mqc_config%cc_diis

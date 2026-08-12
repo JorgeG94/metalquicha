@@ -97,6 +97,8 @@ module mqc_method_config
       ! Integration grid
       character(len=16) :: grid_type = "medium"
          !! Grid quality: "coarse", "medium", "fine", "ultrafine"
+      integer :: grid_level = 3
+         !! Standard grid tables, 0 to 9. Three is the usual production default.
       integer :: radial_points = 75
          !! Radial grid points per atom
       integer :: angular_points = 302
@@ -495,9 +497,20 @@ contains
          ! with the function count that distinguishes the two.
          if (this%method_type == METHOD_TYPE_DFT) then
             block
-               character(len=64) :: grid_line
-               write (grid_line, "(a,i0,a,i0)") "  XC grid:         ", &
-                  this%dft%radial_points, " radial x ", this%dft%angular_points
+               character(len=80) :: grid_line
+               ! Reported as the level unless a deck overrode it with explicit
+               ! counts, because the level is what the CPU path actually uses --
+               ! printing "75 radial x 302" for a level-3 run was true of neither
+               ! backend and is the reporting half of a bug rather than a bug's
+               ! symptom. The counts still appear when they are the thing in force.
+               if (this%dft%radial_points > 0 .and. this%dft%angular_points > 0 &
+                   .and. this%dft%grid_level < 0) then
+                  write (grid_line, "(a,i0,a,i0)") "  XC grid:         ", &
+                     this%dft%radial_points, " radial x ", this%dft%angular_points
+               else
+                  write (grid_line, "(a,i0)") "  XC grid:         level ", &
+                     this%dft%grid_level
+               end if
                call logger%info(trim(grid_line))
             end block
          end if

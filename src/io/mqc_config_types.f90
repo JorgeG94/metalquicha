@@ -104,6 +104,10 @@ module mqc_config_types
       logical :: cc_triples = .false.
       logical :: cc_diis = .true.
       integer :: cc_diis_size = 8
+      ! keywords.dft -- the quadrature, not the functional
+      integer :: dft_grid_level = 3
+      integer :: dft_radial_points = -1    !! -1 leaves grid_level in charge
+      integer :: dft_angular_points = -1
          !! Fit J and K against the auxiliary basis, on the CPU backend
          !! Let a non-converged SCF into the expansion instead of stopping.
          !! Off by default: the energy of an SCF that ran out of iterations is

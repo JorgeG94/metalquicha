@@ -218,6 +218,9 @@ contains
       ! absent, which cannot distinguish absent from false on its own.
       call optional_logical_seen(json, "keywords.cc.triples", config%cc_triples, &
                                  config%cc_triples_set)
+      call optional_int(json, "keywords.dft.grid_level", config%dft_grid_level)
+      call optional_int(json, "keywords.dft.radial_points", config%dft_radial_points)
+      call optional_int(json, "keywords.dft.angular_points", config%dft_angular_points)
 
       ! Both spellings of the displacement key are accepted, as the JSON
       ! generator used to allow.

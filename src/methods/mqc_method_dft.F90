@@ -22,6 +22,7 @@ module mqc_method_dft
    use mqc_semi_numerical_hessian, only: finite_difference_hessian
    use mqc_cuest_iface, only: cuest_scf_settings_t
    use mqc_cuest_bridge, only: run_cuest_scf
+   use mqc_libcint_bridge, only: run_libcint_hf
    implicit none
    private
 
@@ -61,6 +62,9 @@ module mqc_method_dft
       integer :: radial_points = 75
          !! Number of radial grid points per atom
       integer :: angular_points = 302
+      integer :: grid_level = 3
+         !! 0 to 9, the standard tables. Three is the usual default and what a
+         !! production calculation should start from.
          !! Number of angular grid points (Lebedev)
 
       ! Density fitting
@@ -120,7 +124,7 @@ contains
          ! expansion amplifies rather than cancels.
          call result%error%set(ERROR_VALIDATION, &
                                "Empirical dispersion ("//trim(this%options%dispersion_type)// &
-                               ") is not implemented for the cuEST backend")
+                               ") is not implemented")
          result%has_error = .true.
          return
       end if
@@ -140,8 +144,23 @@ contains
       settings%diis_size = this%options%diis_size
       settings%radial_points = this%options%radial_points
       settings%angular_points = this%options%angular_points
+      settings%grid_level = this%options%grid_level
 
+      ! The same choice Hartree-Fock makes, and made the same way rather than a
+      ! second time: cuEST when this build has it, because that is the production
+      ! path and the only one with gradients, and the CPU backend otherwise --
+      ! which is how a fragmented Kohn-Sham calculation runs on a laptop, and what
+      ! gives the GPU path a second implementation to disagree with.
+      !
+      ! Kohn-Sham reaches the CPU backend through `run_libcint_hf` rather than a
+      ! routine of its own. That is deliberate: on that side a functional is one
+      ! optional argument to the same SCF, so a separate entry point would be two
+      ! names for one code path and two places to keep the settings in step.
+#ifdef MQC_WITH_CUEST
       call run_cuest_scf(settings, fragment, result, want_gradient)
+#else
+      call run_libcint_hf(settings, fragment, result, want_gradient)
+#endif
    end subroutine dft_run
 
    subroutine dft_calc_gradient(this, fragment, result)
