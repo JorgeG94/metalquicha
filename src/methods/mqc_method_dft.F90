@@ -47,8 +47,13 @@ module mqc_method_dft
          !! Node-local MPI rank, for spreading ranks across a node's GPUs
       logical :: unrestricted = .false.
          !! Force UHF/UKS even for a closed shell
-      character(len=16) :: guess = "gwh"
-         !! Initial guess: 'core', 'gwh' or 'sac'
+      character(len=16) :: guess = "auto"
+         !! Initial guess: 'core', 'gwh', 'sac', 'sad', or 'auto'
+         !!
+         !! 'auto' means the backend picks, because the best starting point
+         !! is a property of the backend rather than of the request: the CPU
+         !! path resolves it to 'sad', and cuEST to 'gwh', each having
+         !! measured its own. An explicit spelling always wins over both.
 
       ! Grid settings
       character(len=16) :: grid_type = "medium"

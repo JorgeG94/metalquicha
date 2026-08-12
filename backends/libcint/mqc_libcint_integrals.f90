@@ -65,6 +65,11 @@ module mqc_libcint_integrals
    public :: pair_index
    public :: two_electron_block
    public :: two_electron_optimizer
+   ! Where an atom's functions live, and what angular momentum each carries.
+   ! Both follow from the packing order in `molecule_build`, so they belong
+   ! beside it rather than being re-derived by whatever needs them.
+   public :: atom_ao_blocks
+   public :: subshell_layout
 
    type :: libcint_molecule_t
       !! One molecule, packed the way libcint wants it
@@ -93,6 +98,7 @@ module mqc_libcint_integrals
       procedure :: eris => molecule_eris
       procedure :: eris_packed => molecule_eris_packed
       procedure :: nuclear_repulsion => molecule_nuclear_repulsion
+      procedure :: atom_subset => molecule_atom_subset
       procedure :: destroy => molecule_destroy
    end type libcint_molecule_t
 
@@ -1078,6 +1084,172 @@ contains
          end do
       end do
    end function molecule_nuclear_repulsion
+
+   subroutine molecule_atom_subset(this, iatom, atom_mol, error)
+      !! One atom of this molecule, on its own, in the same basis
+      !!
+      !! Built by copying the parent's shell data rather than re-reading the
+      !! basis file. That is the whole point: the free atom then carries
+      !! bit-identical exponents and contraction coefficients to the block it
+      !! will be dropped back into, so its AO count cannot disagree with that
+      !! block's and its orbitals are expressed in exactly those functions. A
+      !! re-read would usually agree and would occasionally not -- a general
+      !! contraction merged differently, a Cartesian/spherical flag taken from a
+      !! different file -- and the symptom would be a guess quietly built in the
+      !! wrong basis.
+      !!
+      !! The coefficients already carry `libcint_gto_norm` from `molecule_build`,
+      !! so they are copied untouched. Re-normalising here would apply it twice.
+      !!
+      !! Placed at the origin. A free atom has no field to be oriented in, and
+      !! nothing downstream reads the coordinate except the nuclear repulsion,
+      !! which is zero for one atom.
+      class(libcint_molecule_t), intent(in) :: this
+      integer, intent(in) :: iatom                          !! 1-based
+      type(libcint_molecule_t), intent(out) :: atom_mol
+      type(error_t), intent(inout) :: error
+
+      integer :: ish, k, nprim, nctr, off, env_size, target_atom, ncoeff
+
+      if (iatom < 1 .or. iatom > this%natm) then
+         call error%set(ERROR_VALIDATION, "libcint: atom index outside the molecule")
+         return
+      end if
+
+      target_atom = iatom - 1   ! libcint counts atoms from zero
+
+      atom_mol%nbas = 0
+      env_size = LIBCINT_PTR_ENV_START + 3
+      do ish = 1, this%nbas
+         if (this%bas(LIBCINT_ATOM_OF, ish) /= target_atom) cycle
+         nprim = this%bas(LIBCINT_NPRIM_OF, ish)
+         nctr = this%bas(LIBCINT_NCTR_OF, ish)
+         atom_mol%nbas = atom_mol%nbas + 1
+         env_size = env_size + nprim + nprim*nctr
+      end do
+
+      if (atom_mol%nbas == 0) then
+         call error%set(ERROR_VALIDATION, "libcint: this atom carries no basis functions")
+         return
+      end if
+
+      atom_mol%natm = 1
+      atom_mol%cartesian = this%cartesian
+
+      allocate (atom_mol%atm(LIBCINT_ATM_SLOTS, 1))
+      allocate (atom_mol%bas(LIBCINT_BAS_SLOTS, atom_mol%nbas))
+      allocate (atom_mol%env(env_size))
+      allocate (atom_mol%shell_offset(atom_mol%nbas + 1))
+      allocate (atom_mol%charges(1))
+      allocate (atom_mol%coords(3, 1))
+
+      ! Zeroed for the same reason `molecule_build` zeroes: libcint reads slots
+      ! nothing here sets, and garbage in a pointer slot crashes inside the
+      ! library with nothing to say why.
+      atom_mol%atm = 0
+      atom_mol%bas = 0
+      atom_mol%env = 0.0_dp
+
+      atom_mol%atm(LIBCINT_CHARGE_OF, 1) = this%atm(LIBCINT_CHARGE_OF, iatom)
+      atom_mol%atm(LIBCINT_PTR_COORD, 1) = LIBCINT_PTR_ENV_START
+      atom_mol%charges(1) = this%charges(iatom)
+      atom_mol%coords = 0.0_dp
+
+      off = LIBCINT_PTR_ENV_START + 3
+      k = 0
+      do ish = 1, this%nbas
+         if (this%bas(LIBCINT_ATOM_OF, ish) /= target_atom) cycle
+         k = k + 1
+         nprim = this%bas(LIBCINT_NPRIM_OF, ish)
+         nctr = this%bas(LIBCINT_NCTR_OF, ish)
+         ncoeff = nprim*nctr
+
+         atom_mol%bas(LIBCINT_ATOM_OF, k) = 0
+         atom_mol%bas(LIBCINT_ANG_OF, k) = this%bas(LIBCINT_ANG_OF, ish)
+         atom_mol%bas(LIBCINT_NPRIM_OF, k) = nprim
+         atom_mol%bas(LIBCINT_NCTR_OF, k) = nctr
+
+         atom_mol%bas(LIBCINT_PTR_EXP, k) = off
+         atom_mol%env(off + 1:off + nprim) = &
+            this%env(this%bas(LIBCINT_PTR_EXP, ish) + 1:this%bas(LIBCINT_PTR_EXP, ish) + nprim)
+         off = off + nprim
+
+         atom_mol%bas(LIBCINT_PTR_COEFF, k) = off
+         atom_mol%env(off + 1:off + ncoeff) = &
+            this%env(this%bas(LIBCINT_PTR_COEFF, ish) + 1:this%bas(LIBCINT_PTR_COEFF, ish) + ncoeff)
+         off = off + ncoeff
+      end do
+
+      atom_mol%shell_offset(1) = 0
+      do k = 1, atom_mol%nbas
+         atom_mol%shell_offset(k + 1) = atom_mol%shell_offset(k) &
+                                        + shell_dim(atom_mol%cartesian, k - 1, atom_mol%bas)
+      end do
+      atom_mol%nao = atom_mol%shell_offset(atom_mol%nbas + 1)
+   end subroutine molecule_atom_subset
+
+   pure subroutine atom_ao_blocks(mol, offsets, counts)
+      !! Where each atom's basis functions sit in the molecular matrices
+      !!
+      !! `molecule_build` walks atoms outermost when it packs shells, so every
+      !! atom's functions are one contiguous run and an atomic block can be
+      !! copied into a row range rather than scattered. This is the routine that
+      !! records that fact; if the packing order ever changed, this is what
+      !! would have to change with it.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, intent(out) :: offsets(:)   !! First AO of each atom, 0-based
+      integer, intent(out) :: counts(:)    !! Functions on each atom
+
+      integer :: ish, iatom
+
+      counts = 0
+      do ish = 1, mol%nbas
+         iatom = mol%bas(LIBCINT_ATOM_OF, ish) + 1
+         counts(iatom) = counts(iatom) + mol%shell_offset(ish + 1) - mol%shell_offset(ish)
+      end do
+
+      offsets(1) = 0
+      do iatom = 2, mol%natm
+         offsets(iatom) = offsets(iatom - 1) + counts(iatom - 1)
+      end do
+   end subroutine atom_ao_blocks
+
+   subroutine subshell_layout(mol, ang, first, ncomp, n_sub)
+      !! One entry per contraction column: its angular momentum and AO range
+      !!
+      !! A libcint shell with `NCTR_OF` columns lays its functions out with the
+      !! contraction index outermost -- all components of column one, then all
+      !! of column two -- so each column is a contiguous run of `2l+1` (or
+      !! `(l+1)(l+2)/2`) functions. Those runs are the sets a spherical average
+      !! has to act within, which is the only reason this is worth extracting.
+      type(libcint_molecule_t), intent(in) :: mol
+      integer, allocatable, intent(out) :: ang(:)     !! Angular momentum per column
+      integer, allocatable, intent(out) :: first(:)   !! First AO of the column, 0-based
+      integer, allocatable, intent(out) :: ncomp(:)   !! Functions in the column
+      integer, intent(out) :: n_sub
+
+      integer :: ish, ictr, nctr, per, total
+
+      n_sub = 0
+      do ish = 1, mol%nbas
+         n_sub = n_sub + mol%bas(LIBCINT_NCTR_OF, ish)
+      end do
+
+      allocate (ang(n_sub), first(n_sub), ncomp(n_sub))
+
+      n_sub = 0
+      do ish = 1, mol%nbas
+         nctr = mol%bas(LIBCINT_NCTR_OF, ish)
+         total = mol%shell_offset(ish + 1) - mol%shell_offset(ish)
+         per = total/nctr
+         do ictr = 1, nctr
+            n_sub = n_sub + 1
+            ang(n_sub) = mol%bas(LIBCINT_ANG_OF, ish)
+            first(n_sub) = mol%shell_offset(ish) + (ictr - 1)*per
+            ncomp(n_sub) = per
+         end do
+      end do
+   end subroutine subshell_layout
 
    pure function angular_form_name(cartesian) result(name)
       !! "Cartesian" or "spherical", for an error message to say which is which
