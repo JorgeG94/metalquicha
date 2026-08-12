@@ -23,8 +23,9 @@ module test_mqc_libcint_ao
    use pic_types, only: dp
    use mqc_error, only: error_t
    use mqc_libcint_integrals, only: libcint_molecule_t, build_libcint_molecule
-   use mqc_libcint_ao, only: eval_ao_block, max_ao_l
+   use mqc_libcint_ao, only: eval_ao_block, eval_rho, max_ao_l
    use mqc_dft_grid, only: dft_grid_t, build_dft_grid
+   use mqc_libcint_rhf, only: rhf_result_t, run_libcint_rhf
    implicit none
    private
    public :: collect_mqc_libcint_ao_tests
@@ -37,11 +38,12 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
 
       testsuite = [ &
-              new_unittest("numerical_overlap_matches_analytic", test_overlap_spherical), &
-              new_unittest("numerical_overlap_matches_analytic_cartesian", test_overlap_cart), &
+                  new_unittest("numerical_overlap_matches_analytic", test_overlap_spherical), &
+                  new_unittest("numerical_overlap_matches_analytic_cartesian", test_overlap_cart), &
                   new_unittest("grid_refinement_reduces_the_error", test_convergence), &
                   new_unittest("value_on_a_nucleus_is_finite", test_on_nucleus), &
-                  new_unittest("high_angular_momentum_is_refused", test_l_limit) &
+                  new_unittest("high_angular_momentum_is_refused", test_l_limit), &
+                  new_unittest("integrated_density_is_the_electron_count", test_rho) &
                   ]
    end subroutine collect_mqc_libcint_ao_tests
 
@@ -200,6 +202,53 @@ contains
       call check(error, max_ao_l(mol) >= 3, "cc-pVTZ should reach l = 3")
       call mol%destroy()
    end subroutine test_l_limit
+
+   subroutine test_rho(error)
+      !! sum_g w_g rho(r_g) must be the number of electrons
+      !!
+      !! An exact identity, and the one milestone-1 check that needs neither an
+      !! external reference nor a functional. It covers the density assembly and
+      !! the grid weights at once, and it is the check that would catch a factor
+      !! of two in the restricted density -- an error that otherwise survives all
+      !! the way to an exchange-correlation energy that is merely wrong.
+      type(error_type), allocatable, intent(out) :: error
+      type(libcint_molecule_t) :: mol
+      type(dft_grid_t) :: grid
+      type(rhf_result_t) :: scf
+      type(error_t) :: err
+      real(dp), allocatable :: ao(:, :), rho(:)
+      real(dp) :: n_elec
+
+      call water(mol, err, "cc-pvdz")
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call run_libcint_rhf(mol, 10, 200, 1.0e-10_dp, 1.0e-8_dp, .false., scf, err, &
+                           in_core=.true.)
+      call check(error,.not. err%has_error() .and. scf%converged, "water SCF must converge")
+      if (allocated(error)) return
+
+      call build_dft_grid(mol%coords, [8, 1, 1], grid, err, level=4)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call eval_ao_block(mol, grid%coords, ao, err)
+      call check(error,.not. err%has_error(), err%get_message())
+      if (allocated(error)) return
+
+      call eval_rho(ao, scf%density, rho)
+      n_elec = sum(grid%weights*rho)
+
+      ! Ten electrons in water. The tolerance is the grid's, not the identity's.
+      call check(error, abs(n_elec - 10.0_dp) < 1.0e-5_dp, &
+                 "the integrated density is not the electron count")
+      if (allocated(error)) return
+      ! Positive everywhere it matters: a sign or transpose error shows here.
+      call check(error, minval(rho) > -1.0e-10_dp, "the density went negative")
+
+      call grid%destroy()
+      call mol%destroy()
+   end subroutine test_rho
 
 end module test_mqc_libcint_ao
 

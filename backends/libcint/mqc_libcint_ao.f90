@@ -30,6 +30,7 @@ module mqc_libcint_ao
    !! megabytes at a real basis size -- the shape of mistake the coupled-cluster
    !! work already paid for once.
    use pic_types, only: dp
+   use pic_blas_interfaces, only: pic_gemm
    use mqc_error, only: error_t, ERROR_VALIDATION
    use mqc_libcint_integrals, only: libcint_molecule_t, shell_dim
    use mqc_libcint_ao_data, only: C2S_LMAX, c2s_block, common_fac_sp
@@ -39,6 +40,7 @@ module mqc_libcint_ao
    private
 
    public :: eval_ao_block
+   public :: eval_rho
    public :: max_ao_l
 
    !> Points per pass when a caller asks for a whole grid at once.
@@ -166,6 +168,48 @@ contains
       deallocate (cart, sph, trans)
       !$omp end parallel
    end subroutine eval_ao_block
+
+   subroutine eval_rho(ao, density, rho)
+      !! The electron density at every point, from the density matrix
+      !!
+      !!     rho(r) = sum_uv D_uv chi_u(r) chi_v(r)
+      !!
+      !! Through a gemm rather than a double loop over basis functions: form
+      !! X = chi D once, then rho at a point is the row-wise dot of X with chi.
+      !! The alternative is n_points n_ao^2 scalar work with the density matrix
+      !! read in the worst possible order, which is the mistake the coupled-cluster
+      !! ladder already paid for.
+      !!
+      !! `density` is whatever convention the caller's SCF uses -- the restricted
+      !! path's D already carries two electrons per orbital, so this returns the
+      !! total density for it and a spin density for an unrestricted D. Nothing
+      !! here applies a factor, because doing so would be right for exactly one of
+      !! those and silently wrong for the other.
+      real(dp), intent(in) :: ao(:, :)        !! (n_points, n_ao)
+      real(dp), intent(in) :: density(:, :)   !! (n_ao, n_ao)
+      real(dp), allocatable, intent(out) :: rho(:)
+
+      real(dp), allocatable :: work(:, :)
+      integer :: n_points, n_ao, ig, mu
+
+      n_points = size(ao, 1)
+      n_ao = size(ao, 2)
+
+      allocate (work(n_points, n_ao), rho(n_points))
+      call pic_gemm(ao, density, work)
+
+      rho = 0.0_dp
+      !$omp parallel do default(none) shared(rho, work, ao, n_points, n_ao) &
+      !$omp    private(ig, mu) schedule(static)
+      do ig = 1, n_points
+         do mu = 1, n_ao
+            rho(ig) = rho(ig) + work(ig, mu)*ao(ig, mu)
+         end do
+      end do
+      !$omp end parallel do
+
+      deallocate (work)
+   end subroutine eval_rho
 
    pure function pow(x, n) result(v)
       !! x**n for small non-negative n, without the intrinsic's generality

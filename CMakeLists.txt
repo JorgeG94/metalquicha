@@ -372,6 +372,15 @@ if(MQC_ENABLE_HDF5)
   target_link_libraries(check_hdf5_checkpoint PRIVATE ${main_lib})
 endif()
 
+# Needs both: libcint for the density, libxc for the functional.
+if(MQC_ENABLE_LIBXC AND MQC_ENABLE_LIBCINT)
+  add_executable(check_dft ${PROJECT_SOURCE_DIR}/validation/check_dft.f90)
+  target_include_directories(check_dft PRIVATE "${CMAKE_BINARY_DIR}/modules"
+                                               ${libxc_BINARY_DIR})
+  target_link_libraries(check_dft PRIVATE ${main_lib} cint_fortran cint xcf03
+                                          xc)
+endif()
+
 if(MQC_ENABLE_LIBXC)
   add_executable(check_libxc ${PROJECT_SOURCE_DIR}/validation/check_libxc.f90)
   target_include_directories(check_libxc PRIVATE "${CMAKE_BINARY_DIR}/modules"
