@@ -70,13 +70,16 @@ def read_dump(path):
     values = [float(x) for x in tokens[1:]]
     nao, n_occ, n_lmo = int(values[0]), int(values[1]), int(values[2])
     at = 3
+    base = 3 + n_lmo*n_lmo + 3*n_lmo + nao*n_lmo
+    orbital_energies = np.array(values[base:base + n_occ])
     fock = np.array(values[at:at + n_lmo*n_lmo]).reshape((n_lmo, n_lmo), order="F")
     at += n_lmo*n_lmo
     centroids = np.array(values[at:at + 3*n_lmo]).reshape((3, n_lmo), order="F")
     at += 3*n_lmo
     orbitals = np.array(values[at:at + nao*n_lmo]).reshape((nao, n_lmo), order="F")
-    return dict(basis=basis, nao=nao, n_occ=n_occ, n_lmo=n_lmo,
-                fock=fock, centroids=centroids, orbitals=orbitals)
+    return dict(basis=basis, nao=nao, n_occ=n_occ, n_lmo=n_lmo, fock=fock,
+                centroids=centroids, orbitals=orbitals,
+                orbital_energies=orbital_energies)
 
 
 def gamess_primitive_norm(l, exponent):
@@ -158,6 +161,28 @@ def check_basis_normalization():
     return matched, len(listed), worst
 
 
+def check_charge_transfer(orbital_energies):
+    """`CTFOK` is the canonical occupied orbital energies, and nothing more.
+
+    Identified by recognising the numbers: -20.5605, -1.3414, -0.7066, -0.5709,
+    -0.4979 for water in 6-31G* are its five occupied canonical eigenvalues, not
+    anything charge-transfer specific. So one of the two charge-transfer sections
+    needs no new physics at all -- it is the SCF's own output, serialized.
+
+    `CTVEC` is not settled. It holds seven vectors of nineteen AO coefficients under
+    a header reading `5 7`, and its first vector is within 3e-3 of our canonical
+    oxygen 1s -- close enough to suggest it is built from the occupied orbitals,
+    far too loose to be them, since the basis-table difference between the two codes
+    shows up at 1e-7 in the eigenvalues above. Seven against five occupied suggests
+    a couple of virtuals join them, which is what a charge-transfer term would want.
+    """
+    s = parse_efp(REFERENCE.read_text())["sections"]
+    values = _numbers(" ".join(s["CTFOK"]["raw"]).replace(">", " "))
+    n = len(values)
+    gap = float(np.abs(np.array(values) - orbital_energies[:n]).max())
+    return n, gap
+
+
 def reference_coefficients(n_lmo, nao):
     """GAMESS's localized orbital coefficients, one row per LMO."""
     s = parse_efp(REFERENCE.read_text())["sections"]
@@ -207,6 +232,30 @@ def main():
     if ours["n_lmo"] != theirs.shape[0]:
         print(f"  FAIL we have {ours['n_lmo']} LMOs, GAMESS has {theirs.shape[0]}")
         return 1
+
+    # **Pair the orbitals by centroid rather than assuming a shared order.**
+    # Water's two lone pairs are mirror images, so they are degenerate under the
+    # Boys functional and their order is arbitrary -- it follows the Jacobi sweep
+    # path, which moves with the OpenMP reduction order in the SCF underneath. This
+    # check originally compared elementwise and passed for several runs before the
+    # pair came out swapped, reporting a 1.0 Bohr centroid disagreement on an
+    # identical localization. `check_distributed_polarizability.py` pairs by
+    # centroid for exactly this reason; this one now does too.
+    order = []
+    for j in range(ref_centroids.shape[1]):
+        distances = [np.linalg.norm(ours["centroids"][:, i] - ref_centroids[:, j])
+                     for i in range(ours["n_lmo"])]
+        order.append(int(np.argmin(distances)))
+    if sorted(order) != list(range(ours["n_lmo"])):
+        print(f"  FAIL the centroid pairing is not one-to-one: {order}")
+        return 1
+    ours["centroids"] = ours["centroids"][:, order]
+    ours["fock"] = ours["fock"][np.ix_(order, order)]
+    ours["orbitals"] = ours["orbitals"][:, order]
+    if order != list(range(ours["n_lmo"])):
+        print(f"        our LMOs pair to GAMESS's CT1..CT{ours['n_lmo']} as "
+              f"{[i + 1 for i in order]} -- degenerate lone pairs, so the order is "
+              f"arbitrary and not a disagreement")
 
     centroid_gap = np.abs(ours["centroids"] - ref_centroids).max()
 
@@ -281,6 +330,14 @@ def main():
     if max(worst_sp, worst_d) >= 1e-7:
         print("        FAIL the localized orbital coefficients do not map onto "
               "GAMESS's basis-function order")
+        failures += 1
+
+    # CTFOK, which turns out to be the SCF's own occupied eigenvalues.
+    n_ct, ct_gap = check_charge_transfer(ours["orbital_energies"])
+    print(f"        CTFOK: {n_ct} values, our occupied orbital energies to "
+          f"{ct_gap:.2e}")
+    if ct_gap > 1e-6:
+        print("        FAIL CTFOK is not the canonical occupied orbital energies")
         failures += 1
 
     matched, total, worst = check_basis_normalization()

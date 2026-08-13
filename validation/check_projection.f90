@@ -132,6 +132,8 @@ contains
       write (unit, "(es25.16e3)") loc
       ! The shell layout, so the consumer can apply the Cartesian-d permutation
       ! wherever a d shell happens to sit rather than at a hard-coded offset.
+      ! The canonical occupied orbital energies, which is all CTFOK turns out to be.
+      write (unit, "(es25.16e3)") scf%orbital_energies(1:n_occ)
       write (unit, "(I0)") mol%nbas
       do k = 1, mol%nbas
          write (unit, "(4(I0,1X))") mol%bas(LIBCINT_ATOM_OF, k) + 1, &

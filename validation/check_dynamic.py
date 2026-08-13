@@ -92,6 +92,26 @@ def main():
     dynamic = ours["tensors"][:, :, :, 1:]
     our_freq = ours["frequencies"][1:]
 
+    # Pair by centroid, not by position. Water's two lone pairs are degenerate
+    # under the Boys functional -- mirror images -- so which comes first follows the
+    # Jacobi sweep path and moves with the OpenMP reduction order in the SCF
+    # underneath. Comparing per-orbital tensors by index passed for several runs and
+    # then failed on an identical localization when the pair came out swapped.
+    ref_centroids = np.array([p["xyz"] for p in blocks[0]]).T
+    order = []
+    for j in range(ref_centroids.shape[1]):
+        distances = [np.linalg.norm(ours["centroids"][:, i] - ref_centroids[:, j])
+                     for i in range(ours["n_lmo"])]
+        order.append(int(np.argmin(distances)))
+    if sorted(order) != list(range(ours["n_lmo"])):
+        print(f"  FAIL the centroid pairing is not one-to-one: {order}")
+        return 1
+    static = static[:, :, order]
+    dynamic = dynamic[:, :, order, :]
+    if order != list(range(ours["n_lmo"])):
+        print(f"        our LMOs pair to CT1..CT{ours['n_lmo']} as "
+              f"{[i + 1 for i in order]} -- degenerate lone pairs, arbitrary order")
+
     print(f"  {ours['n_lmo']} localized orbitals, {len(ref_freq)} frequencies")
     gap = np.abs(our_freq - ref_freq).max()
     print(f"        quadrature points agree with GAMESS's to {gap:.2e}")
@@ -105,8 +125,6 @@ def main():
     for k, nu in enumerate(ref_freq):
         theirs = np.array([unpack(p["tensor"]) for p in blocks[k]])
         mine = np.array([dynamic[:, :, i, k] for i in range(ours["n_lmo"])])
-        # Paired by centroid order, which the static comparison already showed
-        # matches GAMESS's CT1..CT4 in sequence.
         worst = np.abs(mine - theirs).max()
         worst_overall = max(worst_overall, worst)
         print(f"        {nu:10.6f} {np.trace(theirs.sum(0))/3:13.8f} "
