@@ -26,7 +26,8 @@ contains
    end function libcint_backend_available
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, path, error, charge, verbose)
+                                 basis_name, name, path, error, charge, verbose, &
+                                 aux_basis)
       !! No-op stand-in: an effective fragment potential needs the CPU backend
       use pic_types, only: dp
       use mqc_error, only: error_t
@@ -37,6 +38,7 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
       logical, intent(in), optional :: verbose
+      character(len=*), intent(in), optional :: aux_basis
 
       call error%set(ERROR_VALIDATION, &
                      "MAKEFP needs the CPU integral backend; build with "// &

@@ -425,7 +425,7 @@ contains
    subroutine dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, &
                                      frequencies, alpha, error, max_iter, tol, &
                                      response, perturbations, in_core, hessian, &
-                                     progress)
+                                     progress, aux)
       !! `alpha(i nu)` at each imaginary frequency
       !!
       !! **Imaginary frequency is the friendly case.** The time-dependent equations
@@ -488,6 +488,12 @@ contains
          !! Report where the two long phases are while they run. On a fragment of any
          !! size this routine is most of the wall clock and prints nothing for minutes
          !! at a time, which is indistinguishable from a hang.
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! An auxiliary basis. Supplied, the Hessian is built from fitted integrals
+         !! rather than from `n_ov` Fock builds, which is the whole cost of a
+         !! potential -- see `build_hessian_df`, and `validation/check_df_hessian`
+         !! for what the approximation costs in accuracy. Absent, the build is
+         !! exact. Nothing downstream of the build changes either way.
 
       real(dp), allocatable :: dip(:, :, :), bounds(:, :), zero_h(:, :)
       real(dp), allocatable :: c_occ(:, :), c_vir(:, :), gaps(:, :), h(:, :, :)
@@ -598,8 +604,13 @@ contains
             return
          end if
       else
-         call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
-                            aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
+         if (present(aux)) then
+            call build_hessian_df(mol, aux, c_occ, c_vir, gaps, aplus, aminus, error, &
+                                  progress=talk)
+         else
+            call build_hessian(mol, direct, eri0, bounds, zero_h, c_occ, c_vir, gaps, &
+                               aplus, aminus, HESSIAN_CHUNK, error, progress=talk)
+         end if
          if (error%has_error()) return
       end if
 
@@ -1118,7 +1129,7 @@ contains
    subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
                                         frequencies, measure, respond, tensors, &
                                         centroids, error, n_core, max_iter, tol, hessian, &
-                                        progress)
+                                        progress, aux)
       !! Mixed-multipole dynamic response, per localized orbital and frequency
       !!
       !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
@@ -1168,6 +1179,8 @@ contains
          !! Passed straight through, so the blocks of one potential share a build.
       logical, intent(in), optional :: progress
          !! Passed straight through as well: the solver is where the time goes.
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Passed straight through: fit the Hessian rather than build it exactly.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
@@ -1192,7 +1205,7 @@ contains
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, perturbations=respond, &
-                                  hessian=hessian, progress=progress)
+                                  hessian=hessian, progress=progress, aux=aux)
       if (error%has_error()) return
 
       allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
@@ -1232,7 +1245,7 @@ contains
    subroutine distributed_dynamic_polarizability(mol, orbitals, orbital_energies, &
                                                  n_occ, frequencies, tensors, &
                                                  centroids, error, n_core, max_iter, &
-                                                 tol, hessian, progress)
+                                                 tol, hessian, progress, aux)
       !! One tensor per localized orbital at each imaginary frequency
       !!
       !! What `DYNAMIC POLARIZABLE POINTS` carries, and what dispersion is built
@@ -1260,6 +1273,8 @@ contains
          !! Passed straight through, so the blocks of one potential share a build.
       logical, intent(in), optional :: progress
          !! Passed straight through as well: the solver is where the time goes.
+      type(libcint_molecule_t), intent(in), optional :: aux
+         !! Passed straight through: fit the Hessian rather than build it exactly.
 
       real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
       real(dp), allocatable :: dip(:, :, :), s(:, :), sc(:, :), w(:, :)
@@ -1285,7 +1300,7 @@ contains
       call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
                                   alpha, error, max_iter=max_iter, tol=tol, &
                                   response=s_all, hessian=hessian, &
-                                  progress=progress)
+                                  progress=progress, aux=aux)
       if (error%has_error()) return
 
       call multipole_matrices(mol, [0.0_dp, 0.0_dp, 0.0_dp], 1, dip, error)

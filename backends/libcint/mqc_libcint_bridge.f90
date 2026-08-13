@@ -45,7 +45,8 @@ contains
    end function libcint_backend_available
 
    subroutine run_libcint_makefp(atomic_numbers, element_symbols, coordinates, &
-                                 basis_name, name, path, error, charge, verbose)
+                                 basis_name, name, path, error, charge, verbose, &
+                                 aux_basis)
       !! Build an effective fragment potential and write it
       !!
       !! Here rather than in the driver so the driver needs no knowledge of whether
@@ -63,12 +64,21 @@ contains
       type(error_t), intent(inout) :: error
       integer, intent(in), optional :: charge   !! Net charge; a fragment may be an ion
       logical, intent(in), optional :: verbose
+      character(len=*), intent(in), optional :: aux_basis
+         !! Fit the response Hessian against this basis instead of building it
+         !! exactly. Absent, the build is exact.
 
       type(efp_potential_t) :: pot
 
-      call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
-                              basis_name, name, pot, error, charge=charge, &
-                              verbose=verbose)
+      if (present(aux_basis)) then
+         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, pot, error, charge=charge, &
+                                 verbose=verbose, aux_basis=aux_basis)
+      else
+         call make_efp_potential(atomic_numbers, element_symbols, coordinates, &
+                                 basis_name, name, pot, error, charge=charge, &
+                                 verbose=verbose)
+      end if
       if (error%has_error()) return
       call write_efp_potential(pot, path, error)
       call pot%destroy()

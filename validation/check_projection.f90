@@ -44,6 +44,11 @@ program check_projection
    ! an odd power of y, and a slot that is zero on both sides fits any scale factor,
    ! so the components it would determine are the ones left undetermined.
    call one_case(2, "6-31g(2df,p)", 1, force_cartesian=.true., rotated=.true.)
+   ! The same basis in the original planar frame. The maps cannot be *derived* here,
+   ! but once derived they must hold, and this geometry took no part in deriving
+   ! them -- so it is the held-out case that says the f map is right rather than
+   ! merely consistent with the data it came from.
+   call one_case(3, "6-31g(2df,p)", 1, force_cartesian=.true.)
 
    write (*, "(A)") ""
    if (failures == 0) then

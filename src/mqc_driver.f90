@@ -932,9 +932,20 @@ contains
       path = trim(name)//".efp"
 
       call logger%info("Building an effective fragment potential")
-      call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
-                              config%method_config%basis_set, name, path, err, &
-                              charge=sys_geom%charge, verbose=.true.)
+      ! `keywords.scf.density_fitting` and `keywords.scf.aux_basis_set` already
+      ! existed for the SCF, and mean here what they mean there: fit the two-electron
+      ! integrals against that auxiliary basis. What they reach in a MAKEFP run is the
+      ! response Hessian, which is where the time goes.
+      if (config%method_config%scf%density_fitting) then
+         call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                                 config%method_config%basis_set, name, path, err, &
+                                 charge=sys_geom%charge, verbose=.true., &
+                                 aux_basis=trim(config%method_config%scf%aux_basis_set))
+      else
+         call run_libcint_makefp(sys_geom%element_numbers, symbols, sys_geom%coordinates, &
+                                 config%method_config%basis_set, name, path, err, &
+                                 charge=sys_geom%charge, verbose=.true.)
+      end if
       if (err%has_error()) then
          call logger%error("MAKEFP failed: "//err%get_message())
          return

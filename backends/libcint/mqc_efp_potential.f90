@@ -76,6 +76,24 @@ module mqc_efp_potential
    integer, parameter :: D_FROM_LIBCINT(6) = [1, 4, 6, 2, 3, 5]
    real(dp), parameter :: D_NORMALIZATION = 1.585330892_dp
 
+   !> The same for the ten Cartesian f slots, read off GAMESS's own coefficients in
+   !> `validation/check_projection` and solved for in its Python half. Derived rather
+   !> than reasoned about, exactly as the d map was.
+   !>
+   !> The molecule has to be in a frame with no zero coordinate for this to be
+   !> solvable at all: planar water puts an exact zero in every function with an odd
+   !> power of y, and a slot that is zero on both sides admits any scale factor. A
+   !> first attempt in the planar frame returned a map that looked plausible, sent
+   !> four different GAMESS slots to the same one of ours, and was wrong.
+   integer, parameter :: F_FROM_LIBCINT(10) = [1, 7, 10, 2, 3, 4, 8, 6, 9, 5]
+   real(dp), parameter :: F_NORMALIZATION = 1.339849174_dp
+
+   !> Which of the three normalization classes each GAMESS f slot belongs to. The
+   !> measured scales come out as `F_NORMALIZATION` divided by one of 1, sqrt(5) and
+   !> sqrt(15) -- the ratios are exact to eight figures, so they are written as the
+   !> square roots rather than as the fitted decimals.
+   integer, parameter :: F_CLASS(10) = [1, 1, 1, 2, 2, 2, 2, 2, 2, 3]
+
    type :: efp_potential_t
       !! Every parameter a `.efp` carries that we can compute
       character(len=:), allocatable :: name        !! `$FRAGNAME`, without the `$`
@@ -162,7 +180,7 @@ contains
 
    subroutine make_efp_potential(atomic_numbers, element_symbols, coordinates, &
                                  basis_name, name, pot, error, charge, n_core, &
-                                 vdwscl, verbose)
+                                 vdwscl, verbose, aux_basis)
       !! The whole pipeline: SCF, localization, and every parameter block
       !!
       !! The order is forced by what depends on what. The SCF gives the density
@@ -188,8 +206,18 @@ contains
          !! its exchange-repulsion orbitals are valence only.
       real(dp), intent(in), optional :: vdwscl
       logical, intent(in), optional :: verbose
+      character(len=*), intent(in), optional :: aux_basis
+         !! Fit the dynamic response rather than building its Hessian exactly. That
+         !! build is `n_ov` Fock builds and is most of what a potential costs; fitted,
+         !! it is two matrix products. The approximation is real and is measured by
+         !! `validation/check_df_hessian`, so this is asked for rather than inferred.
+         !!
+         !! The auxiliary basis must match the orbital basis in angular form, which
+         !! `build_df_mo_block` checks: libcint builds all three centres of a fitting
+         !! integral in one form. In practice that means a Cartesian Pople orbital
+         !! basis has no usable fitting set here, since the ones on hand are spherical.
 
-      type(libcint_molecule_t) :: mol
+      type(libcint_molecule_t) :: mol, aux
       type(rhf_result_t) :: scf
       type(dma_result_t) :: dma
       type(response_hessian_t) :: shared_hessian
@@ -222,6 +250,17 @@ contains
 
       if (talk) write (*, "(A,A,A,I0,A)") "  basis ", trim(basis_name), ", ", &
          mol%nao, " functions"
+
+      if (present(aux_basis)) then
+         call build_libcint_molecule(atomic_numbers, element_symbols, coordinates, &
+                                     aux_basis, aux, error)
+         if (error%has_error()) then
+            call mol%destroy()
+            return
+         end if
+         if (talk) write (*, "(A,A,A,I0,A)") "  fitting the response with ", &
+            trim(aux_basis), ", ", aux%nao, " functions"
+      end if
 
       ! Checked here, not where the ordering map needs it. The map runs after the
       ! SCF, the localization and every response solve, so a basis this cannot emit
@@ -317,11 +356,24 @@ contains
       ! One Hessian for all three dynamic blocks. It depends on the reference alone,
       ! so rebuilding it per block is three identical builds -- 55 seconds each at 115
       ! orbitals, which was most of the potential's cost.
-      call distributed_dynamic_polarizability(mol, scf%orbitals, &
-                                              scf%orbital_energies, pot%n_occ, &
-                                              pot%frequencies, pot%dynamic_pol, &
-                                              pot%centroids, error, n_core=core, &
-                                              hessian=shared_hessian, progress=talk)
+      ! Only this call can build the Hessian: it is the first of the three, and the
+      ! two blocks after it are handed the built one and reuse it. So this is the one
+      ! place the auxiliary basis has to reach, and an optional dummy cannot be passed
+      ! conditionally from a local -- hence the branch rather than one call.
+      if (present(aux_basis)) then
+         call distributed_dynamic_polarizability(mol, scf%orbitals, &
+                                                 scf%orbital_energies, pot%n_occ, &
+                                                 pot%frequencies, pot%dynamic_pol, &
+                                                 pot%centroids, error, n_core=core, &
+                                                 hessian=shared_hessian, &
+                                                 progress=talk, aux=aux)
+      else
+         call distributed_dynamic_polarizability(mol, scf%orbitals, &
+                                                 scf%orbital_energies, pot%n_occ, &
+                                                 pot%frequencies, pot%dynamic_pol, &
+                                                 pot%centroids, error, n_core=core, &
+                                                 hessian=shared_hessian, progress=talk)
+      end if
       if (error%has_error()) then
          call mol%destroy()
          return
@@ -697,13 +749,27 @@ contains
                if (slot > 3) scale = D_NORMALIZATION/sqrt(3.0_dp)
                mapped(off + slot, :) = coefficients(off + D_FROM_LIBCINT(slot), :)*scale
             end do
+         else if (l == 3 .and. dim == 10) then
+            do slot = 1, 10
+               select case (F_CLASS(slot))
+               case (1)
+                  scale = F_NORMALIZATION
+               case (2)
+                  scale = F_NORMALIZATION/sqrt(5.0_dp)
+               case default
+                  scale = F_NORMALIZATION/sqrt(15.0_dp)
+               end select
+               mapped(off + slot, :) = coefficients(off + F_FROM_LIBCINT(slot), :)*scale
+            end do
          else if (l >= 2) then
-            ! f and up need their own permutation and normalizations against
-            ! GAMESS's ordering, derived the way the d ones were: read off its own
-            ! printed coefficients for a basis that has them.
+            ! g and up need their own permutation and normalizations against
+            ! GAMESS's ordering, derived the way the d and f ones were: read off its
+            ! own printed coefficients for a basis that has them. Fifteen Cartesian
+            ! components with several normalization classes, so guessing is worse
+            ! than usual here.
             call error%set(ERROR_VALIDATION, &
-                           "makefp: this basis has f functions or higher, and only "// &
-                           "Cartesian s, p and d are mapped to GAMESS's ordering "// &
+                           "makefp: this basis has g functions or higher, and only "// &
+                           "Cartesian s, p, d and f are mapped to GAMESS's ordering "// &
                            "so far")
             return
          end if
