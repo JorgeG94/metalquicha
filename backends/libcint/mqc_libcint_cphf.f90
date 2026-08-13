@@ -70,6 +70,7 @@ module mqc_libcint_cphf
    public :: distributed_polarizability
    public :: dynamic_polarizability
    public :: distributed_dynamic_polarizability
+   public :: distributed_dynamic_cross
    public :: casimir_polder_frequencies
 
    !> CG iterations before giving up.
@@ -598,6 +599,122 @@ contains
       au = au + nu*nu*scratch
       deallocate (r, z, p, ap)
    end subroutine apply_dynamic
+
+   subroutine distributed_dynamic_cross(mol, orbitals, orbital_energies, n_occ, &
+                                        frequencies, measure, respond, tensors, &
+                                        centroids, error, n_core, max_iter, tol)
+      !! Mixed-multipole dynamic response, per localized orbital and frequency
+      !!
+      !! The general object the three dynamic blocks of a potential are cases of:
+      !!
+      !!     alpha^(i)_{km}(i nu) = -2 sum_a h^{measure,k}_{ai} S^{respond,m}_{ai}
+      !!
+      !! with `measure` the operator the response is read off with and `respond` the
+      !! one that drives it. Both dipole gives `DYNAMIC POLARIZABLE POINTS`; dipole
+      !! against quadrupole gives the dipole-quadrupole block; both quadrupole gives
+      !! `LMOQQPOL`. Nothing in the solver distinguishes them.
+      !!
+      !! **Validated for dipole against dipole only.** With both operators the
+      !! dipole this reproduces `DYNAMIC POLARIZABLE POINTS` to 8e-5, GAMESS's own
+      !! precision. Dipole against quadrupole does *not* reproduce GAMESS's
+      !! `DIPOLE-QUADRUPOLE` block, and two hypotheses have been ruled out rather
+      !! than one being confirmed:
+      !!
+      !!   * the raw second moment `r_l r_m` as the driving operator -- no component
+      !!     of the reference is proportional to any component of ours, across all
+      !!     48 samples of four orbitals by twelve frequencies, so it is not a
+      !!     permutation and scale of what this computes;
+      !!   * the same with the quadrupole referred to each orbital's own centroid,
+      !!     which was the physically motivated guess -- the dipole's
+      !!     occupied-virtual block is origin independent because `<a|i> = 0`, but
+      !!     the quadrupole's is not, so a distributed quadrupole response ought to
+      !!     be expanded about its own point. Implemented as the exact linear
+      !!     combination `S_quad - R_l S_dip,m - R_m S_dip,l` and it does not match
+      !!     either.
+      !!
+      !! So GAMESS defines that block over some other operator -- a traceless
+      !! quadrupole, or a field *gradient* rather than a quadrupole moment, are the
+      !! next candidates. Until it is identified this routine should be used with
+      !! dipole operators only, and the two quadrupole blocks of a potential cannot
+      !! be emitted.
+      !!
+      !! **No phase ambiguity here, unlike the Fock matrix.** Each tensor is
+      !! quadratic in its localized orbital -- the orbital appears once in `h` and
+      !! once in `S` -- so flipping an orbital's sign leaves every component
+      !! unchanged. That is why these can be compared against a reference
+      !! elementwise while the Fock matrix cannot.
+      type(libcint_molecule_t), intent(in) :: mol
+      real(dp), intent(in) :: orbitals(:, :)
+      real(dp), intent(in) :: orbital_energies(:)
+      integer, intent(in) :: n_occ
+      real(dp), intent(in) :: frequencies(:)
+      real(dp), intent(in) :: measure(:, :, :)   !! AO operators, (n_ao, n_ao, n_measure)
+      real(dp), intent(in) :: respond(:, :, :)   !! AO operators, (n_ao, n_ao, n_respond)
+      real(dp), allocatable, intent(out) :: tensors(:, :, :, :)
+         !! `(n_measure, n_respond, n_localized, n_frequencies)`
+      real(dp), allocatable, intent(out) :: centroids(:, :)
+      type(error_t), intent(inout) :: error
+      integer, intent(in), optional :: n_core, max_iter
+      real(dp), intent(in), optional :: tol
+
+      real(dp), allocatable :: alpha(:, :, :), s_all(:, :, :, :), localized(:, :)
+      real(dp), allocatable :: s(:, :), sc(:, :), w(:, :), h_loc(:, :, :)
+      real(dp), allocatable :: s_loc(:, :), c_occ(:, :), c_vir(:, :), work(:, :)
+      integer :: n_ao, n_mo, n_vir, n_lmo, core, k, m, i, a, ifreq
+
+      n_ao = size(orbitals, 1)
+      n_mo = size(orbitals, 2)
+      n_vir = n_mo - n_occ
+      core = 0
+      if (present(n_core)) core = n_core
+      n_lmo = n_occ - core
+      if (core < 0 .or. n_lmo < 1) then
+         call error%set(ERROR_VALIDATION, "no orbitals left to distribute over")
+         return
+      end if
+
+      call boys_localize(mol, orbitals(:, core + 1:n_occ), n_lmo, localized, &
+                         centroids, error)
+      if (error%has_error()) return
+
+      call dynamic_polarizability(mol, orbitals, orbital_energies, n_occ, frequencies, &
+                                  alpha, error, max_iter=max_iter, tol=tol, &
+                                  response=s_all, perturbations=respond)
+      if (error%has_error()) return
+
+      allocate (c_occ(n_ao, n_occ), c_vir(n_ao, n_vir))
+      c_occ = orbitals(:, 1:n_occ)
+      c_vir = orbitals(:, n_occ + 1:n_mo)
+      call mol%overlap(s)
+      allocate (sc(n_ao, n_lmo), w(n_occ, n_lmo))
+      call pic_gemm(s, localized, sc)
+      call pic_gemm(c_occ, sc, w, transa="T")
+
+      allocate (h_loc(n_vir, n_lmo, size(measure, 3)), work(n_ao, n_lmo))
+      do k = 1, size(measure, 3)
+         call pic_gemm(measure(:, :, k), localized, work)
+         call pic_gemm(c_vir, work, h_loc(:, :, k), transa="T")
+      end do
+
+      allocate (s_loc(n_vir, n_lmo))
+      allocate (tensors(size(measure, 3), size(respond, 3), n_lmo, size(frequencies)))
+      do ifreq = 1, size(frequencies)
+         do m = 1, size(respond, 3)
+            call pic_gemm(s_all(:, :, m, ifreq), w, s_loc)
+            do i = 1, n_lmo
+               do k = 1, size(measure, 3)
+                  tensors(k, m, i, ifreq) = 0.0_dp
+                  do a = 1, n_vir
+                     tensors(k, m, i, ifreq) = tensors(k, m, i, ifreq) &
+                                               - 2.0_dp*h_loc(a, i, k)*s_loc(a, i)
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      deallocate (alpha, s_all, localized, s, sc, w, h_loc, s_loc, c_occ, c_vir, work)
+   end subroutine distributed_dynamic_cross
 
    subroutine distributed_dynamic_polarizability(mol, orbitals, orbital_energies, &
                                                  n_occ, frequencies, tensors, &
