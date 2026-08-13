@@ -503,6 +503,15 @@ if(MQC_ENABLE_LIBCINT)
                              PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_dynamic PRIVATE ${main_lib} cint_fortran cint)
 
+  # The dipole-quadrupole response summed over localized orbitals: the one
+  # comparison that is independent of how the response is projected onto them.
+  add_executable(check_dipquad_sumrule
+                 ${PROJECT_SOURCE_DIR}/validation/check_dipquad_sumrule.f90)
+  target_include_directories(check_dipquad_sumrule
+                             PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(check_dipquad_sumrule PRIVATE ${main_lib} cint_fortran
+                                                      cint)
+
   # The whole of MAKEFP: a geometry in, a .efp out. Not one parameter block
   # against a reference but every block we can compute, assembled into a file.
   add_executable(check_makefp ${PROJECT_SOURCE_DIR}/validation/check_makefp.f90)

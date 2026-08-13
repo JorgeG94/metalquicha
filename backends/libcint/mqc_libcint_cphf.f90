@@ -771,25 +771,50 @@ contains
       !! pre-shift tensor is itself not GAMESS's, and the translation being confirmed
       !! from source does not localise what differs.
       !!
-      !! **Nor is the shift the remaining difference.** Fitting the reference against
-      !! our tensor *augmented* with the three shift terms -- four free coefficients
-      !! over all 1296 values, so the formula's own factors are not assumed -- leaves a
-      !! relative residual of 0.88. So the reference is not in the span of our
-      !! dipole-quadrupole components together with the dipole-dipole terms that
-      !! `DQSHIFT` mixes into them. The pre-shift tensor itself differs.
+      !! **Everything above this line is superseded, and the conclusion it reached was
+      !! wrong.** `validation/check_dipquad_sumrule` settles it: summed over the
+      !! localized orbitals, this routine's dipole-quadrupole tensor **is** GAMESS's,
+      !! to 9.2e-05 relative -- its own precision on this block -- at a fitted scale
+      !! of 1.00008. The quantity was right the whole time.
       !!
-      !! Confirmed against GAMESS's source: the operator, its order, the frequency, the
-      !! right-hand side, the drive, the measure, the contraction, its factor, the
-      !! nesting, the sample ordering, and the translation applied at write time. All
-      !! of it agrees with what this routine computes, and the numbers do not. Something
-      !! differs in what `LDQPOL` receives as `U` or in what its `HF` holds, upstream of
-      !! everything that has been read.
+      !! The two span arguments recorded above were sound as tests and wrong as
+      !! evidence for that conclusion. Both were run on GAMESS's *shifted* values
+      !! under an index convention that is transposed, so they compared objects that
+      !! were never commensurable; no rearrangement or translation could have related
+      !! them, and that fact said nothing about the underlying quantity. The lesson is
+      !! narrower than "the quantity differs": a span argument is only as good as the
+      !! correspondence between the two bases, and that correspondence had not been
+      !! established.
       !!
-      !! The two facts to keep: it is not a rearrangement of our components (rank 18),
-      !! and it is not a translation of them either (the augmented fit above). Both are
-      !! span arguments, so they hold regardless of what any particular convention turns
-      !! out to be, and between them they rule out every hypothesis of the shape that
-      !! settled every other convention in this project.
+      !! **Three conventions, pinned by structure rather than by fitting.** The
+      !! pre-shift tensor must be symmetric in its two quadrupole indices, because the
+      !! driving operator is. Requiring that symmetry to return after undoing
+      !! `DQSHIFT` is a test that never touches our numbers, and it holds to 1.2e-09 --
+      !! the file's printing precision -- for exactly one combination:
+      !!
+      !!   * `slot = (a-1)*9 + (c-1)*3 + b`. The **first** quadrupole index runs
+      !!     fastest, transposed from what the `DQSHIFT` source reading above assumed;
+      !!   * the `alpha` the shift mixes in is the **dynamic** dipole-dipole tensor at
+      !!     the same frequency. The static one leaves 3.2e-01;
+      !!   * the factor 1.5 on the asymmetric part.
+      !!
+      !! **The trace belongs to the shift, not to the tensor.** With the traceless
+      !! Buckingham quadrupole driving, this routine's tensor is traceless in the
+      !! quadrupole pair to 1.6e-11; GAMESS's recovered tensor carries a trace of
+      !! 0.54, which is exactly `DQSHIFT`'s `delta_bc` term. So the trace is produced
+      !! by applying the shift forward, not by carrying it. The raw second moment is
+      !! ruled out properly now: it fits at scale 1.5001 -- the Buckingham off-diagonal
+      !! factor -- with residual 0.33.
+      !!
+      !! **What is actually still open, and it is much smaller.** Applying the shift
+      !! forward *per orbital* leaves 1.4e-01 relative with the quadrupole measuring
+      !! and the dipole driving, which is the order this module's reading of
+      !! `locpol.src` implies, and 4.5e-01 the other way round; no linear mixing of the
+      !! two does better. So the sum is right and its distribution over the orbitals is
+      !! not, which is why the block is still not written. The sum is now a constraint
+      !! any candidate decomposition has to satisfy, and the same projection machinery
+      !! reproduces the dipole-dipole block to 8e-05, so what differs is specific to
+      !! operators of unequal rank.
       !!
       !! Until then this routine should be used with dipole operators only, and the
       !! two quadrupole blocks of a potential cannot be emitted.
