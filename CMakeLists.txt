@@ -490,6 +490,12 @@ if(MQC_ENABLE_LIBCINT)
   target_include_directories(check_rhf PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_rhf PRIVATE ${main_lib} cint_fortran cint)
 
+  # What an EFP interaction energy costs at cluster size. A dimer is too small
+  # to time, so this builds a lattice of fragments.
+  add_executable(bench_efp ${PROJECT_SOURCE_DIR}/validation/bench_efp.f90)
+  target_include_directories(bench_efp PRIVATE "${CMAKE_BINARY_DIR}/modules")
+  target_link_libraries(bench_efp PRIVATE ${main_lib} cint_fortran cint)
+
   add_executable(check_cc ${PROJECT_SOURCE_DIR}/validation/check_cc.f90)
   target_include_directories(check_cc PRIVATE "${CMAKE_BINARY_DIR}/modules")
   target_link_libraries(check_cc PRIVATE ${main_lib} cint_fortran cint)

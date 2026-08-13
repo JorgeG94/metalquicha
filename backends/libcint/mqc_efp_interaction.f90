@@ -236,6 +236,18 @@ contains
       ! Ready to thread: the iterations are independent and the only shared write
       ! is the reduction. Not threaded yet -- correctness first, and a directive
       ! here would be measuring nothing until the higher ranks are in.
+      !
+      ! Threaded over the outer index with a reduction on the one scalar. The pair
+      ! count is triangular so the work per outer iteration falls linearly, and a
+      ! static schedule would leave the threads that drew the high indices idle --
+      ! hence `guided`. `pair_energy` and `penetration` are `pure`, which is what
+      ! makes calling them from here safe with nothing shared but the reduction.
+      !
+      ! Threshold rather than always: a dimer of two waters is ten points and 25
+      ! pairs, where the barriers cost more than the arithmetic.
+      !$omp parallel do default(none) private(a, b, r, pair) &
+      !$omp shared(system, max_rank, screening) schedule(guided) &
+      !$omp reduction(+:energy) if(system%n_points >= 64)
       do a = 1, system%n_points - 1
          do b = a + 1, system%n_points
             if (system%fragment_of(a) == system%fragment_of(b)) cycle
@@ -247,6 +259,7 @@ contains
             energy = energy + pair
          end do
       end do
+      !$omp end parallel do
    end function electrostatic_energy
 
    pure function pair_energy(system, a, b, r, max_rank) result(e)
@@ -412,7 +425,8 @@ contains
       integer, parameter :: DEFAULT_ITER = 200
       real(dp), parameter :: DEFAULT_TOL = 1.0e-12_dp
       real(dp), allocatable :: centres(:, :), pol(:, :, :), fstat(:, :)
-      real(dp), allocatable :: mu(:, :), mu_new(:, :), field(:)
+      real(dp), allocatable :: mu(:, :), mu_new(:, :)
+      real(dp) :: field(3)
       integer, allocatable :: owner(:)
       real(dp) :: r(3)
       real(dp) :: dist, inv3, inv5, change
@@ -435,7 +449,7 @@ contains
       ! induction loop is then over pairs of polarizable points with a fragment
       ! index to skip on, which threads without restructuring.
       allocate (centres(3, n_pol), pol(3, 3, n_pol), owner(n_pol))
-      allocate (fstat(3, n_pol), mu(3, n_pol), mu_new(3, n_pol), field(3))
+      allocate (fstat(3, n_pol), mu(3, n_pol), mu_new(3, n_pol))
       at = 0
       do f = 1, size(fragments)
          if (.not. fragments(f)%has_static_pol) cycle
@@ -449,6 +463,11 @@ contains
 
       ! The static field, from the permanent multipoles of the other fragments.
       fstat = 0.0_dp
+      ! Each polarizable point writes only its own column, so no reduction is
+      ! needed here -- just an independent row per thread.
+      !$omp parallel do default(none) private(i, k, r, dist, inv3, inv5) &
+      !$omp shared(n_pol, system, centres, owner, fstat) schedule(static) &
+      !$omp if(n_pol >= 32)
       do i = 1, n_pol
          do k = 1, system%n_points
             if (system%fragment_of(k) == owner(i)) cycle
@@ -465,9 +484,18 @@ contains
                           - 0.5_dp*quadrupole_field(system%quad(:, :, k), r)
          end do
       end do
+      !$omp end parallel do
 
       mu = 0.0_dp
+      change = huge(1.0_dp)
       do iter = 1, limit
+         ! A Jacobi sweep: every new dipole is built from the previous iteration's
+         ! set, so the points are independent within a sweep and this threads
+         ! directly. `field` has to be private, which is why it is a local array
+         ! rather than a shared scratch buffer.
+         !$omp parallel do default(none) private(i, j, r, dist, inv3, inv5, field) &
+         !$omp shared(n_pol, owner, centres, mu, mu_new, fstat, pol) &
+         !$omp schedule(static) if(n_pol >= 32)
          do i = 1, n_pol
             field = fstat(:, i)
             do j = 1, n_pol
@@ -481,6 +509,7 @@ contains
             end do
             mu_new(:, i) = matmul(pol(:, :, i), field)
          end do
+         !$omp end parallel do
          change = maxval(abs(mu_new - mu))
          mu = mu_new
          if (change < use_tol) exit
@@ -494,7 +523,7 @@ contains
          energy = energy - 0.5_dp*dot_product(mu(:, i), fstat(:, i))
       end do
 
-      deallocate (centres, pol, owner, fstat, mu, mu_new, field)
+      deallocate (centres, pol, owner, fstat, mu, mu_new)
    end function polarization_energy
 
    pure function quadrupole_field(quad, r) result(f)
@@ -547,6 +576,12 @@ contains
       integer :: fa, fb, ia, ib, k
 
       energy = 0.0_dp
+      ! Threaded over the first fragment with a reduction, like the multipole loop
+      ! and for the same reason: the pair set is triangular, so `guided` keeps the
+      ! threads that drew the high indices from finishing early and idling.
+      !$omp parallel do default(none) private(fa, fb, ia, ib, k, c6, sep, dist, r6) &
+      !$omp shared(fragments, system) schedule(guided) reduction(+:energy) &
+      !$omp if(size(fragments) >= 8)
       do fa = 1, size(fragments) - 1
          if (.not. fragments(fa)%has_dynamic) cycle
          do fb = fa + 1, size(fragments)
@@ -569,6 +604,7 @@ contains
             end do
          end do
       end do
+      !$omp end parallel do
    end function dispersion_energy_e6
 
    pure function isotropic(tensor) result(a)
