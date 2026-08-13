@@ -46,7 +46,7 @@ module mqc_libcint_cphf
    !! so a hybrid handed to this module would silently get the Hartree-Fock response
    !! of Kohn-Sham orbitals. There is no functional argument to get wrong; the caller
    !! has to keep it straight. EFP2 wants Hartree-Fock anyway.
-   use iso_fortran_env, only: output_unit
+   use, intrinsic :: iso_fortran_env, only: output_unit
    use pic_types, only: dp
    use pic_timer, only: timer_type
    use pic_blas_interfaces, only: pic_gemm
@@ -919,7 +919,8 @@ contains
       real(dp), intent(in) :: bounds(:, :), zero_h(:, :)
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
       real(dp), intent(in) :: u(:, :, :)
-      integer, intent(in) :: idx(:), nact
+      integer, intent(in) :: idx(:)
+      integer, intent(in) :: nact
       logical, intent(in) :: minus
       real(dp), intent(inout) :: au(:, :, :)
       type(error_t), intent(inout) :: error
@@ -983,7 +984,8 @@ contains
       real(dp), intent(in) :: c_occ(:, :), c_vir(:, :), gaps(:, :)
       real(dp), intent(in) :: nu(:)
       real(dp), intent(in) :: u(:, :, :)
-      integer, intent(in) :: idx(:), nact
+      integer, intent(in) :: idx(:)
+      integer, intent(in) :: nact
       real(dp), intent(inout) :: au(:, :, :)
       integer, intent(in) :: limit
       real(dp), intent(in) :: tol

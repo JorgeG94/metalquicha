@@ -58,13 +58,24 @@ module mqc_efp_potential
    !> Longest line any section emits, with room to spare.
    integer, parameter :: MAX_LINE = 160
 
+   !> Flattened extents of the Cartesian tensors the polarizability blocks carry:
+   !> a pair of directions, a triple, and a quadruple. Nine is also the number of
+   !> slots GAMESS writes a polarizability in, those being the same thing.
+   integer, parameter :: N_CART_PAIR = 9
+   integer, parameter :: N_CART_TRIPLE = 27
+   integer, parameter :: N_CART_QUAD = 81
+
+   !> Components in a Cartesian d and f shell.
+   integer, parameter :: N_CART_D = 6
+   integer, parameter :: N_CART_F = 10
+
    !> Row and column of each of GAMESS's nine polarizability slots. The
    !> off-diagonal triples are the transpose of what its labels suggest; that was
    !> measured in `validation/check_distributed_polarizability.py` rather than
    !> assumed, and it is the one convention here that a symmetric test tensor
    !> would not have caught.
-   integer, parameter :: POL_ROW(9) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
-   integer, parameter :: POL_COL(9) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
+   integer, parameter :: POL_ROW(N_CART_PAIR) = [1, 2, 3, 2, 3, 3, 1, 1, 2]
+   integer, parameter :: POL_COL(N_CART_PAIR) = [1, 2, 3, 1, 1, 2, 2, 3, 3]
 
    !> libcint's index for each of GAMESS's six Cartesian d slots, and the
    !> normalization between the two codes' d functions. Both established in
@@ -73,7 +84,7 @@ module mqc_efp_potential
    integer, parameter :: QXX = 1, QXY = 2, QXZ = 3, QYX = 4, QYY = 5
    integer, parameter :: QYZ = 6, QZX = 7, QZY = 8, QZZ = 9
 
-   integer, parameter :: D_FROM_LIBCINT(6) = [1, 4, 6, 2, 3, 5]
+   integer, parameter :: D_FROM_LIBCINT(N_CART_D) = [1, 4, 6, 2, 3, 5]
    real(dp), parameter :: D_NORMALIZATION = 1.585330892_dp
 
    !> The same for the ten Cartesian f slots, read off GAMESS's own coefficients in
@@ -85,14 +96,14 @@ module mqc_efp_potential
    !> power of y, and a slot that is zero on both sides admits any scale factor. A
    !> first attempt in the planar frame returned a map that looked plausible, sent
    !> four different GAMESS slots to the same one of ours, and was wrong.
-   integer, parameter :: F_FROM_LIBCINT(10) = [1, 7, 10, 2, 3, 4, 8, 6, 9, 5]
+   integer, parameter :: F_FROM_LIBCINT(N_CART_F) = [1, 7, 10, 2, 3, 4, 8, 6, 9, 5]
    real(dp), parameter :: F_NORMALIZATION = 1.339849174_dp
 
    !> Which of the three normalization classes each GAMESS f slot belongs to. The
    !> measured scales come out as `F_NORMALIZATION` divided by one of 1, sqrt(5) and
    !> sqrt(15) -- the ratios are exact to eight figures, so they are written as the
    !> square roots rather than as the fitted decimals.
-   integer, parameter :: F_CLASS(10) = [1, 1, 1, 2, 2, 2, 2, 2, 2, 3]
+   integer, parameter :: F_CLASS(N_CART_F) = [1, 1, 1, 2, 2, 2, 2, 2, 2, 3]
 
    type :: efp_potential_t
       !! Every parameter a `.efp` carries that we can compute
@@ -104,7 +115,7 @@ module mqc_efp_potential
       integer :: n_occ = 0        !! Including the core, which `CTFOK` needs
       integer :: n_lmo = 0        !! Valence localized orbitals
       integer :: multiplicity = 1
-      real(dp) :: vdwscl = 0.7_dp !! The screening grid's van der Waals scale
+      real(dp) :: vdwscl = 0.7_dp  !! The screening grid's van der Waals scale
       character(len=8), allocatable :: labels(:)      !! `A01O`, `BO21`, ...
       real(dp), allocatable :: points(:, :)           !! (3, n_points), Bohr
       real(dp), allocatable :: mass(:)                !! amu, zero at a midpoint
@@ -115,7 +126,7 @@ module mqc_efp_potential
       real(dp), allocatable :: octopole(:, :)         !! (10, n_points)
       real(dp), allocatable :: centroids(:, :)        !! (3, n_lmo)
       real(dp), allocatable :: static_pol(:, :, :)    !! (3, 3, n_lmo)
-      real(dp), allocatable :: dynamic_pol(:, :, :, :)!! (3, 3, n_lmo, n_freq)
+      real(dp), allocatable :: dynamic_pol(:, :, :, :)  !! (3, 3, n_lmo, n_freq)
       real(dp), allocatable :: dipquad_pre(:, :, :, :, :)
          !! The dipole-quadrupole tensor *before* the translation, which is what
          !! `QQSHIFT` takes as an input -- so it has to be kept, not just the
@@ -510,7 +521,8 @@ contains
 
       real(dp), allocatable :: dip(:, :, :), quad(:, :, :), buck(:, :, :)
       real(dp), allocatable :: raw(:, :, :, :), centroids(:, :), qq(:, :, :, :)
-      real(dp) :: com(3), mass_total, r(3), alpha(3, 3), isotropic
+      real(dp) :: com(3), r(3), alpha(3, 3)
+      real(dp) :: mass_total, isotropic
       integer :: i, a, b, c, d, k, f, n_freq
 
       com = 0.0_dp
@@ -611,7 +623,7 @@ contains
       !! Transcribed term for term. It mixes in both the dipole-dipole and the
       !! *pre-shift* dipole-quadrupole tensors, which is why the two blocks are
       !! built together.
-      real(dp), intent(in) :: qq(9, 9)       !! pre-shift, already scaled by 1/3
+      real(dp), intent(in) :: qq(N_CART_PAIR, N_CART_PAIR)       !! pre-shift, already scaled by 1/3
       real(dp), intent(in) :: dq(3, 3, 3)    !! pre-shift dipole-quadrupole
       real(dp), intent(in) :: alpha(3, 3)
       real(dp), intent(in) :: r(3)
@@ -943,9 +955,9 @@ contains
 
       integer :: unit, i, k, f, stat, a, b, c, e
       character(len=8) :: label
-      real(dp) :: tensor(9)
-      real(dp) :: wide(27)
-      real(dp) :: broad(81)
+      real(dp) :: tensor(N_CART_PAIR)
+      real(dp) :: wide(N_CART_TRIPLE)
+      real(dp) :: broad(N_CART_QUAD)
 
       open (newunit=unit, file=path, status="replace", action="write", iostat=stat)
       if (stat /= 0) then
@@ -1181,7 +1193,7 @@ contains
       integer, intent(in) :: unit
       character(len=*), intent(in) :: label
       real(dp), intent(in) :: xyz(3)
-      real(dp), intent(in) :: tensor(9)
+      real(dp), intent(in) :: tensor(N_CART_PAIR)
       real(dp), intent(in), optional :: frequency
 
       if (present(frequency)) then
