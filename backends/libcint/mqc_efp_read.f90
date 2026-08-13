@@ -103,6 +103,13 @@ module mqc_efp_read
       integer, allocatable :: shell_atom(:), shell_l(:), shell_first(:), shell_nprim(:)
       real(dp), allocatable :: prim_expo(:), prim_coef(:)
       logical :: has_basis = .false.
+      !> The localized orbitals, in **GAMESS's** AO order -- the order the file uses,
+      !> not libcint's. Converting them needs the shell layout of a built molecule, so
+      !> it is left to whoever builds one; see `mqc_efp_pair`.
+      integer :: n_lmo_proj = 0
+      integer :: nao_proj = 0
+      real(dp), allocatable :: lmo_gamess(:, :)   !! (nao_proj, n_lmo_proj)
+      logical :: has_lmo = .false.
    contains
       procedure :: destroy => fragment_destroy
       procedure :: net_charge => fragment_net_charge
@@ -149,6 +156,10 @@ contains
       if (allocated(self%prim_coef)) deallocate (self%prim_coef)
       self%n_shells = 0
       self%has_basis = .false.
+      if (allocated(self%lmo_gamess)) deallocate (self%lmo_gamess)
+      self%n_lmo_proj = 0
+      self%nao_proj = 0
+      self%has_lmo = .false.
       self%n_points = 0
       self%n_atoms = 0
       self%has_screen = .false.
@@ -269,6 +280,9 @@ contains
                              frag%n_lmo, frag%n_freq, error)
       if (error%has_error()) return
 
+      call read_projection_wavefunction(lines, n_lines, frag, error)
+      if (error%has_error()) return
+
       call read_projection_basis(lines, n_lines, frag, error)
       if (error%has_error()) return
 
@@ -277,6 +291,82 @@ contains
       if (allocated(labels)) deallocate (labels)
       if (allocated(values)) deallocate (values)
    end subroutine read_efp_potential
+
+   subroutine read_projection_wavefunction(lines, n_lines, frag, error)
+      !! `PROJECTION WAVEFUNCTION`: the localized orbitals exchange repulsion needs
+      !!
+      !! The header carries the two counts -- `PROJECTION WAVEFUNCTION 4 19` is four
+      !! localized orbitals over nineteen basis functions -- so nothing has to be
+      !! inferred from the record count. Each row is an orbital index, a chunk index,
+      !! then five coefficients in fixed columns, continuing over as many lines as the
+      !! orbital needs.
+      !!
+      !! **Left in GAMESS's AO order.** Converting to libcint's needs the shell layout
+      !! of a molecule, which this module does not build, and the d and f ordering maps
+      !! in `mqc_efp_potential` have to be applied in *reverse* -- silently wrong if
+      !! done by eye. So the coefficients are handed over as they are read and the
+      !! conversion belongs with the molecule.
+      character(len=*), intent(in) :: lines(:)
+      integer, intent(in) :: n_lines
+      type(efp_fragment_t), intent(inout) :: frag
+      type(error_t), intent(inout) :: error
+
+      integer, parameter :: WIDTH = 15
+      integer :: at, i, stat, lmo, filled, pos, n_lmo, nao
+      character(len=MAX_LINE) :: text
+      real(dp) :: value
+
+      at = 0
+      do i = 1, n_lines
+         if (index(adjustl(lines(i)), "PROJECTION WAVEFUNCTION") == 1) then
+            at = i
+            exit
+         end if
+      end do
+      if (at == 0) return
+
+      text = adjustl(lines(at))
+      read (text(24:), *, iostat=stat) n_lmo, nao
+      if (stat /= 0 .or. n_lmo < 1 .or. nao < 1) then
+         call error%set(ERROR_VALIDATION, "efp: the PROJECTION WAVEFUNCTION header "// &
+                        "does not carry an orbital and a function count")
+         return
+      end if
+
+      frag%n_lmo_proj = n_lmo
+      frag%nao_proj = nao
+      allocate (frag%lmo_gamess(nao, n_lmo))
+      frag%lmo_gamess = 0.0_dp
+
+      lmo = 0
+      filled = 0
+      do i = at + 1, n_lines
+         text = lines(i)
+         if (len_trim(text) == 0) cycle
+         if (trim(adjustl(text)) == "STOP") exit
+         ! A row belongs to the orbital its first token names, so a new orbital is
+         ! recognised from the data rather than by counting lines per orbital -- the
+         ! last row of each is short.
+         read (text(1:2), *, iostat=stat) lmo
+         if (stat /= 0 .or. lmo < 1 .or. lmo > n_lmo) exit
+         if (lmo == 1 .and. filled >= nao) exit
+         if (filled >= nao) filled = 0
+         pos = 6
+         do while (pos + WIDTH - 1 <= len_trim(text))
+            read (text(pos:pos + WIDTH - 1), *, iostat=stat) value
+            if (stat /= 0) exit
+            filled = filled + 1
+            if (filled > nao) then
+               call error%set(ERROR_VALIDATION, "efp: PROJECTION WAVEFUNCTION carries "// &
+                              "more coefficients than its header declares")
+               return
+            end if
+            frag%lmo_gamess(filled, lmo) = value
+            pos = pos + WIDTH
+         end do
+      end do
+      frag%has_lmo = .true.
+   end subroutine read_projection_wavefunction
 
    subroutine read_projection_basis(lines, n_lines, frag, error)
       !! `PROJECTION BASIS SET`, with GAMESS's normalization taken back out

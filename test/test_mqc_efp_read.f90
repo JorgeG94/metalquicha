@@ -344,6 +344,23 @@ contains
       call check(error, worst_e < 1.0e-6_dp, "a recovered exponent does not match")
       if (allocated(error)) return
       call check(error, worst_c < 1.0e-6_dp, "a recovered coefficient does not match")
+      if (allocated(error)) return
+
+      ! The localized orbitals, still in GAMESS's AO order. Only what can be checked
+      ! without converting them: the declared shape, the first coefficient against the
+      ! file, and that every orbital carries something. The conversion needs a molecule
+      ! and belongs with `mqc_efp_pair`.
+      call check(error, frag%has_lmo, "the projection wavefunction was not read")
+      if (allocated(error)) return
+      call check(error, frag%n_lmo_proj == 4, "expected four localized orbitals")
+      if (allocated(error)) return
+      call check(error, frag%nao_proj == 19, "expected nineteen basis functions")
+      if (allocated(error)) return
+      do sh = 1, frag%n_lmo_proj
+         call check(error, maxval(abs(frag%lmo_gamess(:, sh))) > 1.0e-3_dp, &
+                    "a localized orbital came back empty")
+         if (allocated(error)) return
+      end do
 
       call frag%destroy()
       call pot%destroy()
